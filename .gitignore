@@ -1,0 +1,24 @@
+# Gradle
+.gradle/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android Studio
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+local.properties
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Keystores / secrets
+**/keystore/**
+**/*.jks
+**/*.keystore
+
+# Content pack images / generated
+content-packs/**/img/*
+content-packs/**/generated/**
