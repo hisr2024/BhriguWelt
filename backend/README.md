@@ -29,6 +29,7 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+export PYTHONPATH=src  # keep set for CLI, API, and tests
 ```
 
 ### CLI usage
@@ -104,10 +105,13 @@ manuscript folios are added.
 
 ### Testing
 
-Add tests under `backend/tests/` and execute them with:
+Add tests under `backend/tests/` and execute them with the same module layout
+used in production:
 
 ```bash
-pytest
+cd backend
+PYTHONPATH=src pytest
 ```
 
-(ensure your virtual environment is activated first).
+(ensure your virtual environment is activated first so the package resolves to
+the local source tree).

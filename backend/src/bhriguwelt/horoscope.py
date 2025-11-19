@@ -31,6 +31,7 @@ __all__ = [
     "build_future_report",
     "build_matchmaking_report",
     "build_calendar_context",
+    "build_cli_parser",
     "parse_cli_args",
     "main",
 ]
@@ -342,7 +343,9 @@ def _render_calendar(context: HinduCalendarContext) -> None:
         print(f"  - {source}")
 
 
-def _build_parser() -> argparse.ArgumentParser:
+def build_cli_parser() -> argparse.ArgumentParser:
+    """Create the argparse parser so tests and embeddings can share it."""
+
     parser = argparse.ArgumentParser(description="Bhrigu Samhita derived prediction engines")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -379,7 +382,7 @@ def _build_parser() -> argparse.ArgumentParser:
 def parse_cli_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Expose the CLI parser for reuse in integration tests or shells."""
 
-    return _build_parser().parse_args(argv)
+    return build_cli_parser().parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None) -> None:

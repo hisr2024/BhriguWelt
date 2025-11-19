@@ -86,12 +86,18 @@ references to manuscript folios.
    python -m bhriguwelt.horoscope matchmaking ...
 
    # Gregorian → Hindu (Śaka) calendar conversion helper
-    python -m bhriguwelt.horoscope calendar --birth-date 1995-05-18 --birth-time 14:45 --birth-place "Varanasi"
+   python -m bhriguwelt.horoscope calendar \
+       --birth-date 1995-05-18 \
+       --birth-time 14:45 \
+       --birth-place "Varanasi"
    ```
 
 4. Build the UI/API bridge. The backend already ships with an offline-friendly
    HTTP server (documented below), but teams can also wrap the engines using the
-   framework of their choice by importing the `bhriguwelt` package directly.
+   framework of their choice by importing the `bhriguwelt` package directly. If
+   you extend the backend, remember to run the pytest suite from inside
+   `backend/` with `PYTHONPATH=src pytest` so the package layout mirrors
+   production usage.
 
 ### Lightweight HTTP API
 

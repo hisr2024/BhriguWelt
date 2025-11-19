@@ -12,6 +12,9 @@ from .horoscope import (
     build_matchmaking_report,
     build_past_life_report,
     build_prediction,
+    parse_cli_args,
+    main,
+    build_cli_parser,
 )
 
 __all__ = [
@@ -20,6 +23,7 @@ __all__ = [
     "build_future_report",
     "build_matchmaking_report",
     "build_calendar_context",
+    "build_cli_parser",
     "HoroscopeRequest",
     "HoroscopeReport",
     "PastLifeReport",
@@ -27,4 +31,6 @@ __all__ = [
     "MatchmakingReport",
     "HinduCalendarContext",
     "convert_birth_details",
+    "parse_cli_args",
+    "main",
 ]
