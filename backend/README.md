@@ -2,7 +2,8 @@
 
 The backend houses the deterministic Bhrigu Samhita calculation engine. It is a
 standard Python package (`bhriguwelt`) that exposes a CLI for generating
-horoscope, past-life, future-prediction, and matchmaking narratives.
+horoscope, past-life, future-prediction, matchmaking narratives, and Śaka
+calendar conversions for onboarding parity across devices.
 
 ## Structure
 
@@ -10,11 +11,13 @@ horoscope, past-life, future-prediction, and matchmaking narratives.
 backend/
 ├── data/                      # Canonical Bhrigu Samhita rule corpus
 ├── src/bhriguwelt/            # Python package source
+│   ├── __init__.py            # Stable exports for CLI/API consumers
 │   ├── bhrigu_data.py         # Offline copy of the manuscript corpus
 │   ├── calculations.py        # Core planetary math + karmic weightings
 │   ├── calendar_conversion.py # Gregorian → Śaka conversion utilities
 │   ├── data_loader.py         # YAML/JSON loaders with manuscript citations
-│   └── horoscope.py           # CLI + orchestration helpers
+│   ├── horoscope.py           # CLI + orchestration helpers
+│   └── api.py                 # Zero-dependency HTTP server
 ├── requirements.txt           # Runtime dependencies
 └── tests/                     # Pytest modules (add new suites here)
 ```
@@ -94,6 +97,10 @@ Supported routes:
 - `POST /future`
 - `POST /matchmaking`
 - `POST /calendar` (Gregorian → Śaka conversion with IST reference)
+
+Every route is powered by the same request/response dataclasses, so backend
+consumers, CLI tooling, and HTTP integrations all stay in sync even when new
+manuscript folios are added.
 
 ### Testing
 

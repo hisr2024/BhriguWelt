@@ -1,4 +1,4 @@
-"""CLI for generating horoscopes rooted in Bhrigu Samhita sutras."""
+"""CLI + helpers for generating horoscopes rooted in Bhrigu Samhita sutras."""
 
 from __future__ import annotations
 
@@ -19,6 +19,21 @@ from .calculations import (
     score_principles,
 )
 from .data_loader import load_bhrigu_data
+
+__all__ = [
+    "HoroscopeRequest",
+    "HoroscopeReport",
+    "PastLifeReport",
+    "FutureReport",
+    "MatchmakingReport",
+    "build_prediction",
+    "build_past_life_report",
+    "build_future_report",
+    "build_matchmaking_report",
+    "build_calendar_context",
+    "parse_cli_args",
+    "main",
+]
 
 
 @dataclass
@@ -327,7 +342,7 @@ def _render_calendar(context: HinduCalendarContext) -> None:
         print(f"  - {source}")
 
 
-def main(argv: Sequence[str] | None = None) -> None:
+def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Bhrigu Samhita derived prediction engines")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -358,7 +373,17 @@ def main(argv: Sequence[str] | None = None) -> None:
     calendar_parser.add_argument("--birth-time", required=True, help="Birth time HH:MM")
     calendar_parser.add_argument("--birth-place", required=True, help="Birth location per passport")
 
-    args = parser.parse_args(argv)
+    return parser
+
+
+def parse_cli_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    """Expose the CLI parser for reuse in integration tests or shells."""
+
+    return _build_parser().parse_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    args = parse_cli_args(argv)
 
     if args.command == "horoscope":
         request = _request_from_namespace(args)
