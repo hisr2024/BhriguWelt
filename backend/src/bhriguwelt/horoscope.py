@@ -1,4 +1,4 @@
-"""CLI for generating horoscopes rooted in Bhrigu Samhita sutras."""
+"""CLI + helpers for generating horoscopes rooted in Bhrigu Samhita sutras."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import argparse
 from dataclasses import dataclass
 from typing import Dict, List, Sequence
 
+from .calendar_conversion import HinduCalendarContext, convert_birth_details
 from .calculations import (
     CelestialSnapshot,
     FutureTrajectory,
@@ -18,6 +19,22 @@ from .calculations import (
     score_principles,
 )
 from .data_loader import load_bhrigu_data
+
+__all__ = [
+    "HoroscopeRequest",
+    "HoroscopeReport",
+    "PastLifeReport",
+    "FutureReport",
+    "MatchmakingReport",
+    "build_prediction",
+    "build_past_life_report",
+    "build_future_report",
+    "build_matchmaking_report",
+    "build_calendar_context",
+    "build_cli_parser",
+    "parse_cli_args",
+    "main",
+]
 
 
 @dataclass
@@ -82,6 +99,14 @@ class MatchmakingReport:
     primary_name: str
     partner_name: str
     compatibility: MatchmakingCompatibility
+
+
+def build_calendar_context(
+    birth_date: str, birth_time: str, birth_place: str
+) -> HinduCalendarContext:
+    """Return a Hindu calendar representation for the supplied birth record."""
+
+    return convert_birth_details(birth_date=birth_date, birth_time=birth_time, birth_place=birth_place)
 
 
 def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
@@ -302,7 +327,25 @@ def _render_matchmaking(report: MatchmakingReport) -> None:
             print(f"  - {note}")
 
 
-def main(argv: Sequence[str] | None = None) -> None:
+def _render_calendar(context: HinduCalendarContext) -> None:
+    print("Bhrigu Samhita insists on capturing exact birth particulars.")
+    print(f"Gregorian record: {context.birth_date.isoformat()} {context.birth_time.isoformat(timespec='minutes')} at {context.birth_place}")
+    saka = context.saka_date
+    print(
+        "Śaka (Hindu national) conversion:"
+        f" Year {saka.year}, Month {saka.month} ({saka.month_index}), Day {saka.day},"
+        f" Leap-adjusted Chaitra: {'Yes' if saka.leap_year else 'No'}"
+    )
+    print(f"Conversion factor (Gregorian minus Śaka): {context.conversion_factor_years} years")
+    print(f"Indian Standard Time reference longitude: {context.ist_reference_longitude}°E")
+    print("Authentic Indian sources consulted:")
+    for source in context.sources:
+        print(f"  - {source}")
+
+
+def build_cli_parser() -> argparse.ArgumentParser:
+    """Create the argparse parser so tests and embeddings can share it."""
+
     parser = argparse.ArgumentParser(description="Bhrigu Samhita derived prediction engines")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -325,7 +368,25 @@ def main(argv: Sequence[str] | None = None) -> None:
         help="Tag matchmaking intent such as remote-first, research-partnership, startup-ops, arts-collab",
     )
 
-    args = parser.parse_args(argv)
+    calendar_parser = subparsers.add_parser(
+        "calendar",
+        help="Convert Gregorian birth data to Hindu (Śaka) calendar measurements",
+    )
+    calendar_parser.add_argument("--birth-date", required=True, help="Birth date YYYY-MM-DD")
+    calendar_parser.add_argument("--birth-time", required=True, help="Birth time HH:MM")
+    calendar_parser.add_argument("--birth-place", required=True, help="Birth location per passport")
+
+    return parser
+
+
+def parse_cli_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    """Expose the CLI parser for reuse in integration tests or shells."""
+
+    return build_cli_parser().parse_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    args = parse_cli_args(argv)
 
     if args.command == "horoscope":
         request = _request_from_namespace(args)
@@ -344,6 +405,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         partner_request = _request_from_namespace(args, prefix="partner")
         report = build_matchmaking_report(primary_request, partner_request, args.modern_preference)
         _render_matchmaking(report)
+    elif args.command == "calendar":
+        context = build_calendar_context(args.birth_date, args.birth_time, args.birth_place)
+        _render_calendar(context)
     else:  # pragma: no cover - defensive
         parser.error("Unknown command")
 

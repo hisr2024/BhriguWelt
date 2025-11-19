@@ -8,15 +8,21 @@ references to manuscript folios.
 
 ## Architecture
 
-- **Backend** (`backend/`): Python package responsible for ingesting
-  Bhrigu Samhita data (mirrored both as `data/bhrigu_samhita_principles.yml` and a
+- **Backend** (`backend/`): Python package responsible for ingesting Bhrigu
+  Samhita data (mirrored both as `data/bhrigu_samhita_principles.yml` and a
   fallback `bhriguwelt/bhrigu_data.py` module), applying deterministic
-  calculations, and exposing CLI/API entry points for horoscopes, past-life
-  readings, future directives, and matchmaking diagnostics.
+  calculations, converting Gregorian birth records into the Hindu Śaka calendar,
+  and exposing CLI/API entry points for horoscopes, past-life readings, future
+  directives, matchmaking diagnostics, and calendar conversions. The backend is
+  intentionally self-contained so mobile/web stacks can embed it without
+  third-party runtime dependencies.
 - **Frontend** (`frontend/`): placeholder React/Vite-ready workspace meant for
-  building cross-platform experiences that consume the backend APIs.
+  building cross-platform experiences that consume the backend APIs. Treat this
+  directory as the landing zone for React Native, Flutter, or Vite projects so
+  UI engineers are not blocked by backend changes.
 - **Documentation** (`docs/`): reference notes that enumerate the manuscript
-  citations backing each rule embedded in the backend data files.
+  citations backing each rule embedded in the backend data files, plus targeted
+  guides (for example the Hindu calendar conversion explainer).
 
 ## Repository layout
 
@@ -30,11 +36,13 @@ references to manuscript folios.
 │   │   ├── __init__.py
 │   │   ├── bhrigu_data.py
 │   │   ├── calculations.py
+│   │   ├── calendar_conversion.py
 │   │   ├── data_loader.py
 │   │   └── horoscope.py
 │   └── tests/
 ├── docs/
-│   └── bhrigu_references.md
+│   ├── bhrigu_references.md
+│   └── hindu_calendar_conversion.md
 └── frontend/
     ├── public/
     └── src/
@@ -76,21 +84,59 @@ references to manuscript folios.
 
    # Modern Bhrigu matchmaking (supports --modern-preference tags)
    python -m bhriguwelt.horoscope matchmaking ...
+
+   # Gregorian → Hindu (Śaka) calendar conversion helper
+   python -m bhriguwelt.horoscope calendar \
+       --birth-date 1995-05-18 \
+       --birth-time 14:45 \
+       --birth-place "Varanasi"
    ```
 
-4. (Optional) Add API endpoints by introducing a FastAPI or Flask app inside
-   `backend/src` and importing the existing `horoscope` helpers.
+4. Build the UI/API bridge. The backend already ships with an offline-friendly
+   HTTP server (documented below), but teams can also wrap the engines using the
+   framework of their choice by importing the `bhriguwelt` package directly. If
+   you extend the backend, remember to run the pytest suite from inside
+   `backend/` with `PYTHONPATH=src pytest` so the package layout mirrors
+   production usage.
 
-## Frontend quick start
+### Lightweight HTTP API
+
+BhriguWelt already includes a zero-dependency HTTP server for mobile or web
+clients. Launch it from the backend workspace:
+
+```bash
+cd backend
+PYTHONPATH=src python -m bhriguwelt.api
+```
+
+Endpoints:
+
+- `GET /health` – readiness probe referencing the Bhrigu Samhita source.
+- `POST /horoscope` – accepts the same payload as the CLI arguments and
+  responds with karmic epochs plus past/future narratives.
+- `POST /past-life`, `POST /future`, `POST /matchmaking` – specialized engines
+  for the dedicated experiences.
+- `POST /calendar` – converts the supplied Gregorian birth record into the
+  Hindu Śaka calendar (Śaka year, month, day, and IST reference notes).
+
+Each POST body must supply the fields listed in `HoroscopeRequest` (see
+`backend/src/bhriguwelt/horoscope.py`). Responses mirror the CLI output so the
+frontend/mobile layers can present manuscripts alongside insights.
+
+## Frontend & mobile quick start
 
 The `frontend/` directory intentionally begins as a lightweight scaffold so you
-can pick any stack (React, Next.js, Flutter web, etc.). A typical flow:
+can pick any stack (React, Next.js, Flutter, React Native, etc.). A typical
+workflow:
 
 1. Initialize your chosen framework, e.g. `npm create vite@latest bhriguwelt-ui`.
 2. Store the generated files under `frontend/` (replacing the `.gitkeep`
-   placeholders).
+   placeholders) and configure your bundler/dev server there.
 3. Consume backend APIs via REST/GraphQL and surface the Bhrigu Samhita
    predictions with high-fidelity typography and multilingual support.
+4. Mirror the `/calendar` endpoint response in onboarding flows so every new
+   profile stores both the Gregorian and Śaka records exactly as required by the
+   Samhita manuscripts.
 
 ## Contribution guidelines
 

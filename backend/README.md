@@ -2,7 +2,8 @@
 
 The backend houses the deterministic Bhrigu Samhita calculation engine. It is a
 standard Python package (`bhriguwelt`) that exposes a CLI for generating
-horoscope, past-life, future-prediction, and matchmaking narratives.
+horoscope, past-life, future-prediction, matchmaking narratives, and Śaka
+calendar conversions for onboarding parity across devices.
 
 ## Structure
 
@@ -10,10 +11,13 @@ horoscope, past-life, future-prediction, and matchmaking narratives.
 backend/
 ├── data/                      # Canonical Bhrigu Samhita rule corpus
 ├── src/bhriguwelt/            # Python package source
+│   ├── __init__.py            # Stable exports for CLI/API consumers
 │   ├── bhrigu_data.py         # Offline copy of the manuscript corpus
 │   ├── calculations.py        # Core planetary math + karmic weightings
+│   ├── calendar_conversion.py # Gregorian → Śaka conversion utilities
 │   ├── data_loader.py         # YAML/JSON loaders with manuscript citations
-│   └── horoscope.py           # CLI + orchestration helpers
+│   ├── horoscope.py           # CLI + orchestration helpers
+│   └── api.py                 # Zero-dependency HTTP server
 ├── requirements.txt           # Runtime dependencies
 └── tests/                     # Pytest modules (add new suites here)
 ```
@@ -25,6 +29,7 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+export PYTHONPATH=src  # keep set for CLI, API, and tests
 ```
 
 ### CLI usage
@@ -41,6 +46,9 @@ python -m bhriguwelt.horoscope horoscope --name "Asha" --birth-date 1995-05-18 \
 python -m bhriguwelt.horoscope past-life ...
 python -m bhriguwelt.horoscope future ...
 python -m bhriguwelt.horoscope matchmaking --modern-preference remote-first
+
+# Gregorian → Śaka (Hindu) calendar helper
+python -m bhriguwelt.horoscope calendar --birth-date 1995-05-18 --birth-time 14:45 --birth-place "Varanasi"
 ```
 
 Outputs reference the originating Bhrigu folios from
@@ -50,12 +58,60 @@ engine supports `--modern-preference` tags such as `remote-first`,
 `research-partnership`, `startup-ops`, and `arts-collab` to blend sutra guidance
 with contemporary relationship goals.
 
-### Testing
+### HTTP API usage
 
-Add tests under `backend/tests/` and execute them with:
+For web and mobile clients, run the bundled HTTP server (no third-party
+framework required):
 
 ```bash
-pytest
+cd backend
+PYTHONPATH=src python -m bhriguwelt.api
 ```
 
-(ensure your virtual environment is activated first).
+Example `curl` request:
+
+```bash
+curl -X POST http://localhost:8000/horoscope \
+  -H 'Content-Type: application/json' \
+  -d '{
+        "name": "Asha",
+        "birth_date": "1995-05-18",
+        "birth_time": "14:45",
+        "birth_place": "Varanasi",
+        "lunar_tithi": 5,
+        "moon_element": "water",
+        "mars_house": 10,
+        "saturn_house": 2,
+        "venus_house": 2,
+        "rahu_aspects_ascendant": true
+      }'
+```
+
+Responses mirror the CLI content so the UI layer can display manuscripts,
+insights, and remedies verbatim.
+
+Supported routes:
+
+- `GET /health`
+- `POST /horoscope`
+- `POST /past-life`
+- `POST /future`
+- `POST /matchmaking`
+- `POST /calendar` (Gregorian → Śaka conversion with IST reference)
+
+Every route is powered by the same request/response dataclasses, so backend
+consumers, CLI tooling, and HTTP integrations all stay in sync even when new
+manuscript folios are added.
+
+### Testing
+
+Add tests under `backend/tests/` and execute them with the same module layout
+used in production:
+
+```bash
+cd backend
+PYTHONPATH=src pytest
+```
+
+(ensure your virtual environment is activated first so the package resolves to
+the local source tree).
