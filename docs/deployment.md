@@ -52,7 +52,10 @@ Render settings:
 7. Add an environment variable `PYTHONPATH=src` (matches local/testing usage).
 8. Deploy. Once Railway shows the service as running, copy the generated domain
    (for example `https://bhriguwelt-production.up.railway.app`).
-9. Validate health with:
+9. Make sure `start.sh` is executable (`chmod +x start.sh`) before the first
+   deploy so Nixpacks can run it, and keep the build command as
+   `python -m pip install -r requirements.txt` to avoid `pip` lookup issues.
+10. Validate health with:
 
    ```bash
    curl https://<your-railway-host>/health

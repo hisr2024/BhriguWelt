@@ -181,5 +181,8 @@ changes:
    running `python -m bhriguwelt.api`).
 6. Add environment variable `PYTHONPATH=src` so the package resolves like local
    development.
-7. After deploy, hit `https://<your-railway-host>/health` and expect
+7. Ensure `start.sh` is executable (`chmod +x start.sh`) and keep the build
+   command as `python -m pip install -r requirements.txt` so Nixpacks always
+   finds `pip`.
+8. After deploy, hit `https://<your-railway-host>/health` and expect
    `{ "status": "ok" }` before wiring the URL into Vercel or mobile clients.

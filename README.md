@@ -84,6 +84,9 @@ ready for web and mobile clients:
    deployment, load the Vercel preview in a browser and submit each form
    (horoscope, past-life, future, matchmaking, calendar) to confirm responses
    render.
+   - If the preview cannot reach your backend, double-check that the Render or
+     Railway service is using the `python -m pip install -r requirements.txt`
+     build command and that `./start.sh` is executable (`chmod +x start.sh`).
 
 4. **Local parity**: Run `PYTHONPATH=src python -m bhriguwelt.api` inside
    `backend/`, export `NEXT_PUBLIC_BACKEND_URL=http://localhost:8000`, and run
