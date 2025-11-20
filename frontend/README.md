@@ -68,7 +68,8 @@ key so `npm run dev` and `npm run build` compile against the right host.
 ## Environment and CI
 
 - Copy `.env.example` to `.env.local` (or `.env`) and set `NEXT_PUBLIC_BACKEND_URL`
-  to your Render/Railway/local backend before running the app.
+  to your Render/Railway/local backend before running the app. Optional telemetry
+  hooks use `NEXT_PUBLIC_SENTRY_DSN` when you install `@sentry/nextjs`.
 - Optional client telemetry is controlled by `NEXT_PUBLIC_SENTRY_DSN`; when set
   and paired with `@sentry/nextjs`, errors surface in your Sentry project. When
   unset, telemetry helpers no-op to preserve the zero-dependency runtime.

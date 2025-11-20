@@ -220,8 +220,8 @@ notes on mobile packaging.
 
 ## Environment quick-start files
 
-- Backend: copy `backend/.env.example` to `.env` and adjust `PORT` or
-  `BHRIGU_DATA_PATH` as needed.
+- Backend: copy `backend/.env.example` to `.env`; `./start.sh` auto-loads it so
+  HOST/PORT/BHRIGU_DATA_PATH/SENTRY_DSN stay consistent locally and on hosts.
 - Frontend: copy `frontend/.env.example` and point `NEXT_PUBLIC_BACKEND_URL` to
   your Render/Railway/local backend.
 
@@ -243,7 +243,16 @@ GitHub Actions guardrails ship with the repo:
 - Start with `CONTRIBUTING.md` for style, testing, and sourcing rules that keep
   every addition aligned with Bhrigu Samhita folios.
 - `CODE_OF_CONDUCT.md` outlines expected behavior.
-- `SECURITY.md` describes how to report vulnerabilities privately.
+- `SECURITY.md` describes how to report vulnerabilities privately (contact
+  `security@bhriguwelt.com`).
+
+## Repository hygiene
+
+- Set GitHub topics such as `astrology`, `python`, `nextjs`, and
+  `bhrigu-samhita` on the repository for discoverability after pushing your
+  changes.
+- Use the GitHub Projects board or wiki (enabled in this repo) to track the
+  roadmap for UI/i18n expansions and deployment milestones.
 
 ## License
 

@@ -3,6 +3,8 @@ All notable changes to this project will be documented here.
 
 ## [Unreleased]
 - Add production telemetry and localization flows.
+- Align governance metadata (license notice, conduct contact) and documentation
+  so merge conflicts in the public PR history stay resolved going forward.
 
 ## [2025-11-20]
 - Published an OpenAPI snapshot, backup helper script, and Dependabot config to
@@ -12,7 +14,7 @@ All notable changes to this project will be documented here.
 - Extended backend coverage with threaded HTTP integration tests and documented
   pytest coverage runs for CI.
 
-## [2026-02-12]
+## [2025-02-12]
 - Added governance docs (License, Code of Conduct, Contributing, Security policy).
 - Introduced CI workflows for backend pytest and frontend lint/type-check.
 - Published API reference, backup plan, and environment examples.
