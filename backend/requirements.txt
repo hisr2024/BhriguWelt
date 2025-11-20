@@ -1,0 +1,2 @@
+# Standard library only – no third-party runtime dependencies required.
+# (Install PyYAML>=6.0 separately if you prefer YAML parsing over the baked-in JSON.)
