@@ -51,6 +51,22 @@ python -m bhriguwelt.horoscope matchmaking --modern-preference remote-first
 python -m bhriguwelt.horoscope calendar --birth-date 1995-05-18 --birth-time 14:45 --birth-place "Varanasi"
 ```
 
+> **Samhita input fidelity:** Both the CLI and HTTP payloads accept the full
+> Panchanga-compliant lunar tithi range (1–30) and the complete Mahabhuta set for
+> the Moon element (`water`, `fire`, `air`, `earth`, `ether`). Requests outside
+> these authentic Indian ranges are rejected early so downstream predictions stay
+> aligned with the manuscripts. CLI flags now surface these guardrails directly
+> via argparse `choices` so developers see the constraints before payloads reach
+> the calculation engine.
+
+Allowed ranges at a glance:
+
+| Field                     | Constraint                                   |
+| ------------------------- | --------------------------------------------- |
+| `lunar_tithi`             | Integer 1–30 (inclusive)                      |
+| `moon_element`            | `water`, `fire`, `air`, `earth`, `ether`      |
+| `mars_house`/`saturn_house`/`venus_house` | Integer 1–12 (inclusive)     |
+
 Outputs reference the originating Bhrigu folios from
 `data/bhrigu_samhita_principles.yml` (and the mirrored
 `bhriguwelt/bhrigu_data.py` module for offline environments). The matchmaking
@@ -103,7 +119,7 @@ Every route is powered by the same request/response dataclasses, so backend
 consumers, CLI tooling, and HTTP integrations all stay in sync even when new
 manuscript folios are added.
 
-### Testing
+### Testing & deployment
 
 Add tests under `backend/tests/` and execute them with the same module layout
 used in production:
@@ -115,3 +131,23 @@ PYTHONPATH=src pytest
 
 (ensure your virtual environment is activated first so the package resolves to
 the local source tree).
+
+#### Render blueprint
+
+The repository root ships with a `render.yaml` blueprint that provisions the
+backend as a Python Web Service:
+
+```yaml
+services:
+  - type: web
+    name: bhriguwelt-backend
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: PYTHONPATH=src python -m bhriguwelt.api
+    healthCheckPath: /health
+```
+
+Connect your GitHub repo inside Render, point it at this blueprint, and every
+push will deploy the API used by the Vercel-hosted frontend as well as mobile
+clients.

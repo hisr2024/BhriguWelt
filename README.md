@@ -16,10 +16,14 @@ references to manuscript folios.
   directives, matchmaking diagnostics, and calendar conversions. The backend is
   intentionally self-contained so mobile/web stacks can embed it without
   third-party runtime dependencies.
-- **Frontend** (`frontend/`): placeholder React/Vite-ready workspace meant for
-  building cross-platform experiences that consume the backend APIs. Treat this
-  directory as the landing zone for React Native, Flutter, or Vite projects so
-  UI engineers are not blocked by backend changes.
+- **Frontend** (`frontend/`): production-grade Next.js app that already ships
+  responsive flows for the horoscope, past-life, future, matchmaking, and Śaka
+  calendar engines. It consumes the backend REST API via
+  `NEXT_PUBLIC_BACKEND_URL`, builds with `npm run build`, and deploys straight to
+  Vercel for immediate testing across desktop and mobile web. Point
+  `NEXT_PUBLIC_BACKEND_URL` to a Render deployment, local tunnel, or any HTTPS
+  instance of the Python API before running `npm run dev`, `npm run build`, or
+  `npm run start`.
 - **Documentation** (`docs/`): reference notes that enumerate the manuscript
   citations backing each rule embedded in the backend data files, plus targeted
   guides (for example the Hindu calendar conversion explainer).
@@ -73,6 +77,10 @@ references to manuscript folios.
    The CLI prints karmic backlog, present-life guidance, and remedial rituals
    along with explicit manuscript citations pulled from the data corpus.
 
+   > **Input guardrails:** Lunar tithis follow the Panchanga's full 1–30 range
+   > and the Moon element accepts all five Mahabhutas (water, fire, air, earth,
+   > ether) so the predictions remain faithful to the Bhrigu Samhita lineage.
+
 3. Explore the dedicated engines documented in the CLI help:
 
    ```bash
@@ -93,11 +101,13 @@ references to manuscript folios.
    ```
 
 4. Build the UI/API bridge. The backend already ships with an offline-friendly
-   HTTP server (documented below), but teams can also wrap the engines using the
-   framework of their choice by importing the `bhriguwelt` package directly. If
-   you extend the backend, remember to run the pytest suite from inside
+   HTTP server (documented below), and the `/frontend` Next.js experience calls
+   it out of the box (see the Frontend quick start below). If you extend the
+   backend, remember to run the pytest suite from inside
    `backend/` with `PYTHONPATH=src pytest` so the package layout mirrors
-   production usage.
+   production usage. To validate the web bundle, run `npm run lint` and `npm run
+   type-check` from within `frontend/` after pointing
+   `NEXT_PUBLIC_BACKEND_URL` at your chosen backend.
 
 ### Lightweight HTTP API
 
@@ -125,18 +135,25 @@ frontend/mobile layers can present manuscripts alongside insights.
 
 ## Frontend & mobile quick start
 
-The `frontend/` directory intentionally begins as a lightweight scaffold so you
-can pick any stack (React, Next.js, Flutter, React Native, etc.). A typical
-workflow:
+The `frontend/` directory now contains a ready-to-ship Next.js application that
+mirrors every backend capability.
 
-1. Initialize your chosen framework, e.g. `npm create vite@latest bhriguwelt-ui`.
-2. Store the generated files under `frontend/` (replacing the `.gitkeep`
-   placeholders) and configure your bundler/dev server there.
-3. Consume backend APIs via REST/GraphQL and surface the Bhrigu Samhita
-   predictions with high-fidelity typography and multilingual support.
-4. Mirror the `/calendar` endpoint response in onboarding flows so every new
-   profile stores both the Gregorian and Śaka records exactly as required by the
-   Samhita manuscripts.
+```bash
+cd frontend
+npm install
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8000 npm run dev
+```
+
+- `npm run build` matches the production bundle Vercel produces before serving
+  the UI from its edge network.
+- `npm run lint` / `npm run type-check` keep the React codebase aligned with the
+  backend schema.
+- The bundled forms demonstrate the exact JSON payload expected by `/horoscope`,
+  `/past-life`, `/future`, `/matchmaking`, and `/calendar`, so React Native or
+  Flutter teams can reuse the same contracts when shipping Android/iOS builds.
+
+See `docs/deployment.md` for Render (backend) and Vercel (frontend) recipes plus
+notes on mobile packaging.
 
 ## Contribution guidelines
 
