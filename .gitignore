@@ -5,11 +5,13 @@ __pycache__/
 .pytest_cache/
 node_modules/
 .next/
+.next/types/
 .turbo/
 dist/
 build/
 coverage.xml
 .coverage
+coverage/
 *.tsbuildinfo
 *.log
 npm-debug.log*
@@ -17,6 +19,12 @@ yarn-debug.log*
 frontend/.env.local
 frontend/.env
 frontend/.vercel
+backend/.env
+backend/.env.local
 .env
 .env.local
 .DS_Store
+.vscode/
+.idea/
+.railway/
+render.yaml.local
