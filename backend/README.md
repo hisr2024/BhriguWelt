@@ -202,9 +202,10 @@ changes. Two layouts are supported so Nixpacks always installs Python and `pip`:
 ## Environment and CI helpers
 
 - Copy `.env.example` to `.env` to mirror local settings used in deployment
-  blueprints (including `HOST`, `PORT`, and optional `BHRIGU_DATA_PATH` if you
-  relocate the dataset). The start script reads these values automatically and
-  exports `PYTHONPATH=src` before launching.
+  blueprints (including `HOST`, `PORT`, optional `BHRIGU_DATA_PATH` if you
+  relocate the dataset, and `SENTRY_DSN` when telemetry is enabled). The start
+  script reads these values automatically and exports `PYTHONPATH=src` before
+  launching.
 - Backend GitHub Action (`Backend CI`) installs dependencies and runs
   `PYTHONPATH=src pytest` on pushes/PRs touching backend assets.
 - Endpoint request/response formats are documented in `../docs/api_reference.md`.

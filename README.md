@@ -220,8 +220,8 @@ notes on mobile packaging.
 
 ## Environment quick-start files
 
-- Backend: copy `backend/.env.example` to `.env` and adjust `HOST`/`PORT` or
-  `BHRIGU_DATA_PATH` as needed.
+- Backend: copy `backend/.env.example` to `.env`; `./start.sh` auto-loads it so
+  HOST/PORT/BHRIGU_DATA_PATH/SENTRY_DSN stay consistent locally and on hosts.
 - Frontend: copy `frontend/.env.example` and point `NEXT_PUBLIC_BACKEND_URL` to
   your Render/Railway/local backend.
 

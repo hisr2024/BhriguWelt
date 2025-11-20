@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 export PYTHONPATH=${PYTHONPATH:-src}
+
+# Load optional local overrides so HOST/PORT/BHRIGU_DATA_PATH remain consistent
+# between local runs and hosted environments without extra flags.
+if [ -f .env ]; then
+  set -o allexport
+  # shellcheck disable=SC1091
+  source .env
+  set +o allexport
+fi
+
 HOST=${HOST:-0.0.0.0}
 PORT=${PORT:-8000}
 python - <<'PY'
