@@ -1,0 +1,102 @@
+# Deployment playbook
+
+BhriguWelt is now wired for a two-tier deployment model: the Python backend runs
+on Render (or any long-lived VM/container platform) while the React/Next.js
+frontend deploys on Vercel. Native apps (Android/iOS) reuse the same HTTP
+contracts exposed by the backend. No hosted instances ship with the repository,
+so follow the steps below to publish your own endpoints before testing clients.
+
+## Backend → Render
+
+### Fast path (blueprint)
+
+1. Push this repository to GitHub (Render reads the `render.yaml` blueprint at
+   the repo root).
+2. In the Render dashboard, click **New → Blueprint** and pick your GitHub repo.
+3. Render auto-detects `render.yaml`; leave the defaults in place:
+   - Runtime: Python 3.11+
+   - Root directory: `backend`
+   - Build command: `python -m pip install -r requirements.txt`
+   - Start command: `./start.sh` (exports `PYTHONPATH=src` before running the API)
+   - Health check path: `/health`
+4. Deploy. Your live API URL will look like
+   `https://bhriguwelt-backend.onrender.com`—copy this for the frontend and
+   mobile clients.
+
+### Manual service (if you skip the blueprint)
+
+1. Create a **Web Service** in Render and point it at this repo.
+2. Set **Root Directory** to `backend` and **Runtime** to Python 3.11.
+3. Build command: `python -m pip install -r requirements.txt`
+4. Start command: `./start.sh` (exports `PYTHONPATH=src` and launches the API)
+5. Health check path: `/health`
+6. Deploy and watch the Render logs until you see `Serving on ('0.0.0.0', 8000)`.
+7. Verify with `curl https://<your-render-host>/health`; if it returns
+   `{"status":"ok"}`, the backend is ready for Vercel and mobile traffic.
+
+## Backend → Railway
+
+Railway can host the same Python backend as a **Service** that mirrors the
+Render settings. Two repository layouts are supported so the build always has
+Python + `pip` available:
+
+1. Push this repository to GitHub (Railway will import the repo directly).
+2. In Railway, click **New Project → Deploy from GitHub repo** and select your
+   fork.
+3. If you set the service root to `backend/`, the existing `backend/nixpacks.toml`
+   provisions Python 3.11 + `pip` and runs `python -m pip install -r
+   requirements.txt`.
+4. If you keep the service root at the repository root, the top-level
+   `nixpacks.toml` executes the same build commands from inside `backend/` and
+   calls the root `./start.sh` wrapper (which cds into `backend/` before running
+   the API). This avoids the `pip: not found` Railpack error even when the root
+   isn’t restricted to `backend/`.
+5. Set the **Build Command** to `python -m pip install -r requirements.txt`.
+6. Set the **Start Command** to `./start.sh` (works in both root layouts and
+   wraps `PYTHONPATH=src python -m bhriguwelt.api`).
+7. Add an environment variable `PYTHONPATH=src` (matches local/testing usage).
+8. Make sure both `start.sh` scripts are executable (`chmod +x start.sh` at the
+   repo root and inside `backend/`) so Nixpacks can invoke them.
+9. Deploy. Once Railway shows the service as running, copy the generated domain
+   (for example `https://bhriguwelt-production.up.railway.app`).
+10. Validate health with:
+
+   ```bash
+   curl https://<your-railway-host>/health
+   ```
+
+   A `{\"status\":\"ok\"}` response confirms the backend is ready to pair with the
+   Vercel frontend and native clients. Use the copied URL as
+   `NEXT_PUBLIC_BACKEND_URL` in Vercel or mobile `.env` files.
+
+## Frontend → Vercel
+
+1. In Vercel, create a new project and point it at the same GitHub repository.
+2. When prompted for the project root, choose `frontend/`.
+3. Add the environment variable `NEXT_PUBLIC_BACKEND_URL` and set it to the
+   Render URL created above.
+4. Deploy using Node 18+ (matches local development). Vercel automatically
+   installs dependencies and runs `npm run build`. Preview deployments get
+   unique URLs, perfect for QA.
+
+## Mobile apps
+
+- **React Native / Expo**: reuse the fetch helpers from `frontend/lib/api.ts` or
+  copy the payload structure visible in the web forms. Point the base URL to the
+  Render host.
+- **Flutter / Kotlin / Swift**: mirror the JSON bodies described in the backend
+  README and API docstrings. Every route returns manuscript citations so they can
+  be shown verbatim in native UI components.
+- **Offline support**: if devices need offline fallback, bundle the canonical
+  folios (see `backend/data/bhrigu_samhita_principles.yml`) and reuse the Python
+  package through Pyodide or a microservice running locally on-device.
+
+## Testing the full stack
+
+1. Run `PYTHONPATH=src python -m bhriguwelt.api` inside `backend/`.
+2. Set `NEXT_PUBLIC_BACKEND_URL=http://localhost:8000` and launch the frontend
+   with `npm run dev`.
+3. Exercise every form. The responses should match CLI/pytest outputs because the
+   API reuses the same dataclasses.
+
+Keep this doc updated as you add CI/CD, CDN, or infrastructure automation.
