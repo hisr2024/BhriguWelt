@@ -3,7 +3,8 @@
 BhriguWelt is now wired for a two-tier deployment model: the Python backend runs
 on Render (or any long-lived VM/container platform) while the React/Next.js
 frontend deploys on Vercel. Native apps (Android/iOS) reuse the same HTTP
-contracts exposed by the backend.
+contracts exposed by the backend. No hosted instances ship with the repository,
+so follow the steps below to publish your own endpoints before testing clients.
 
 ## Backend → Render
 
@@ -64,8 +65,9 @@ Render settings:
 2. When prompted for the project root, choose `frontend/`.
 3. Add the environment variable `NEXT_PUBLIC_BACKEND_URL` and set it to the
    Render URL created above.
-4. Deploy. Vercel automatically installs dependencies and runs `npm run build`.
-   Preview deployments get unique URLs, perfect for QA.
+4. Deploy using Node 18+ (matches local development). Vercel automatically
+   installs dependencies and runs `npm run build`. Preview deployments get
+   unique URLs, perfect for QA.
 
 ## Mobile apps
 

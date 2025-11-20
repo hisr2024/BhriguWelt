@@ -135,7 +135,8 @@ the local source tree).
 #### Render blueprint
 
 The repository root ships with a `render.yaml` blueprint that provisions the
-backend as a Python Web Service:
+backend as a Python Web Service. There is no default hosted instance; you must
+deploy it yourself using the steps below:
 
 ```yaml
 services:

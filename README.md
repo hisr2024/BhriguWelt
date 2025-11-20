@@ -54,9 +54,9 @@ references to manuscript folios.
 
 ## Deployment readiness (Render + Vercel + Railway)
 
-The codebase is wired for a Render backend and Vercel frontend, but no hosted
-instances are bundled in the repository. Deploy and validate with the steps
-below:
+No live instances are bundled with the repository; you must deploy the backend
+and frontend yourself. Follow the host-specific steps below to get an endpoint
+ready for web and mobile clients:
 
 1. **Backend → Render**: Connect the repo in Render and apply the included
    `render.yaml` blueprint (or follow the manual Web Service steps in
