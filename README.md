@@ -52,6 +52,30 @@ references to manuscript folios.
     └── src/
 ```
 
+## Deployment readiness (Render + Vercel)
+
+The codebase is wired for a Render backend and Vercel frontend, but no hosted
+instances are bundled in the repository. Deploy and validate with the steps
+below:
+
+1. **Backend → Render**: Connect the repo in Render and apply the included
+   `render.yaml` blueprint. Once deployed, verify the service responds with a
+   health payload:
+
+   ```bash
+   curl https://<your-render-host>/health
+   ```
+
+2. **Frontend → Vercel**: Point Vercel at the `frontend/` directory (Node 18+)
+   and set `NEXT_PUBLIC_BACKEND_URL` to the Render URL. After deployment, load
+   the Vercel preview in a browser and submit each form (horoscope, past-life,
+   future, matchmaking, calendar) to confirm responses render.
+
+3. **Local parity**: Run `PYTHONPATH=src python -m bhriguwelt.api` inside
+   `backend/`, export `NEXT_PUBLIC_BACKEND_URL=http://localhost:8000`, and run
+   `npm run dev` from `frontend/` to mirror the hosted topology without needing
+   cloud accounts.
+
 ## Backend quick start
 
 1. Create an isolated environment inside `backend/` and install dependencies:

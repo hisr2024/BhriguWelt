@@ -151,3 +151,13 @@ services:
 Connect your GitHub repo inside Render, point it at this blueprint, and every
 push will deploy the API used by the Vercel-hosted frontend as well as mobile
 clients.
+
+After Render finishes the first deploy, confirm the service is reachable:
+
+```bash
+curl https://<your-render-host>/health
+```
+
+> **Deployment note:** The blueprint locks the service to Python 3.11 and the
+> included zero-dependency HTTP server. If you introduce dependencies, add them
+> to `requirements.txt` so Render caches them between builds.
