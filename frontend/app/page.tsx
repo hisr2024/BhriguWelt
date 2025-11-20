@@ -8,6 +8,14 @@ import { useI18n } from "@/lib/i18n";
 
 export default function HomePage() {
   const { t } = useI18n();
+  const heroBody =
+    "Launch vibrant, mobile-first flows that speak to modern seekers while honoring the exacting Śaka and Bhrigu Samhita guidance. Run it locally, ship to Vercel, or plug the API into your Android/iOS builds.";
+  const navigationBody =
+    "Jump straight to horoscope, past-life, future, matchmaking, or calendar from the navigation shell or the cards below.";
+  const deployBody =
+    "Point NEXT_PUBLIC_BACKEND_URL at your backend host and the same flows light up on Android and iOS.";
+  const accessibilityBody =
+    "High contrast, keyboard friendly nav, and ARIA-labelled forms built for Vercel previews and production.";
 
   return (
     <div className="stack">
@@ -15,10 +23,7 @@ export default function HomePage() {
         <p className="eyebrow">{t("hero.eyebrow", "Bhrigu Samhita studio")}</p>
         <h1>{t("hero.title", "Zero-fluff astrology journeys for Gen Z and every generation.")}</h1>
         <p className="muted" style={{ maxWidth: "760px" }}>
-          {t(
-            "hero.body",
-            "Launch vibrant, mobile-first flows that speak to modern seekers while honoring the exacting Śaka and Bhrigu Samhita guidance. Run it locally, ship to Vercel, or plug the API into your Android/iOS builds.",
-          )}
+          {t("hero.body", heroBody)}
         </p>
         <div className="hero-actions">
           <Link href="/horoscope" className="button-link">
@@ -35,17 +40,17 @@ export default function HomePage() {
         <div className="card">
           <p className="eyebrow">Navigation</p>
           <h3>{t("home.grid.navigation.title", "Every ritual has its own page")}</h3>
-          <p>{t("home.grid.navigation.body", "Jump straight to horoscope, past-life, future, matchmaking, or calendar from the navigation shell or the cards below.")}</p>
+          <p>{t("home.grid.navigation.body", navigationBody)}</p>
         </div>
         <div className="card">
           <p className="eyebrow">Deploy-ready</p>
           <h3>{t("home.grid.deploy.title", "Render API, Vercel UI, native next")}</h3>
-          <p>{t("home.grid.deploy.body", "Point NEXT_PUBLIC_BACKEND_URL at your backend host and the same flows light up on Android and iOS.")}</p>
+          <p>{t("home.grid.deploy.body", deployBody)}</p>
         </div>
         <div className="card">
           <p className="eyebrow">Accessibility</p>
           <h3>{t("home.grid.accessibility.title", "Screen-reader friendly interactions")}</h3>
-          <p>{t("home.grid.accessibility.body", "High contrast, keyboard friendly nav, and ARIA-labelled forms built for Vercel previews and production.")}</p>
+          <p>{t("home.grid.accessibility.body", accessibilityBody)}</p>
         </div>
       </section>
 
