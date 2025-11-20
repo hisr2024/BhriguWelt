@@ -18,6 +18,7 @@ export default function CalendarForm() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    setPayload(null);
     setLoading(true);
     try {
       const response = await requestCalendar(details);
@@ -32,9 +33,13 @@ export default function CalendarForm() {
   return (
     <section>
       <form onSubmit={handleSubmit}>
-        <header style={{ marginBottom: "1rem" }}>
+        <header className="section-heading">
+          <p className="eyebrow">Calendar alignment</p>
           <h2>Gregorian → Śaka calendar conversion</h2>
-          <p>Every onboarding flow can derive Śaka year, month, and IST reference for downstream predictions.</p>
+          <p className="muted">
+            Every onboarding flow can derive Śaka year, month, and IST reference for downstream predictions.
+            Use 24-hour birth times for accurate IST normalization.
+          </p>
         </header>
         <div className="form-grid">
           <div>
@@ -50,7 +55,7 @@ export default function CalendarForm() {
             <input required value={details.birthPlace} onChange={(event) => setDetails({ ...details, birthPlace: event.target.value })} />
           </div>
         </div>
-        <div style={{ marginTop: "1.25rem" }}>
+        <div className="form-actions">
           <button type="submit" disabled={loading}>
             {loading ? "Referencing pañchāṅga..." : "Convert"}
           </button>

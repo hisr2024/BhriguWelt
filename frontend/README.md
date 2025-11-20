@@ -4,7 +4,9 @@ The `frontend/` workspace now contains a production-ready Next.js application
 that surfaces every Bhrigu Samhita engine (horoscope, past-life, future,
 matchmaking, and Śaka calendar conversion). It is designed to deploy directly to
 Vercel while consuming the Python backend hosted on Render (or any HTTPS URL you
-provide via an environment variable).
+provide via an environment variable). The UI is intentionally bold—glassmorphic
+panels, gradients, and multi-page navigation tuned for Gen Z while still
+remaining legible for all ages.
 
 ## Getting started
 
@@ -27,6 +29,22 @@ dashboard to the Render (or self-hosted) API endpoint you control. Vercel
 defaults to a Node 18 runtime, which matches the app's tested environment. For
 local testing against a remote backend, create a `.env.local` file with the same
 key so `npm run dev` and `npm run build` compile against the right host.
+
+## Experience map
+
+- `/` (Home): hero story plus quick-access horoscope, calendar, and
+  matchmaking forms—all styled with neon gradients and mobile-friendly grids.
+- `/horoscope`: full Panchanga-aligned intake with citations for dashboards and
+  mobile onboarding.
+- `/past-life`: reincarnation storytelling with the same validated inputs for
+  parity across devices.
+- `/future`: actionable future directives ready for streaks, notifications, and
+  checklists.
+- `/matchmaking`: dual-profile intake with modern preference tags for Gen Z use
+  cases.
+- `/calendar`: standalone Gregorian → Śaka converter for international users.
+- Skip links and high-contrast defaults keep the neon look while preserving
+  keyboard/screen-reader usability.
 
 ### Deployment verification
 

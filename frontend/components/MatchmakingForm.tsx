@@ -29,6 +29,7 @@ export default function MatchmakingForm() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    setPayload(null);
     setLoading(true);
     try {
       const response = await requestMatchmaking(primary, partner, modernPreferences);
@@ -41,7 +42,7 @@ export default function MatchmakingForm() {
   };
 
   const renderInputs = (label: string, details: BirthDetails, setDetails: (next: BirthDetails) => void) => (
-    <div style={{ border: "1px solid #e2e8f0", padding: "1rem", borderRadius: "1rem" }}>
+    <div className="split-panel">
       <h3 style={{ marginTop: 0 }}>{label}</h3>
       <div className="form-grid">
         <div>
@@ -103,9 +104,10 @@ export default function MatchmakingForm() {
   return (
     <section>
       <form onSubmit={handleSubmit}>
-        <header style={{ marginBottom: "1rem" }}>
+        <header className="section-heading">
+          <p className="eyebrow">Compatibility lab</p>
           <h2>Modern Bhrigu matchmaking</h2>
-          <p>Compare two complete Bhrigu Samhita birth records plus contemporary lifestyle tags.</p>
+          <p className="muted">Compare two complete Bhrigu Samhita birth records plus contemporary lifestyle tags.</p>
         </header>
         {renderInputs("Primary", primary, setPrimary)}
         {renderInputs("Partner", partner, setPartner)}
@@ -116,14 +118,15 @@ export default function MatchmakingForm() {
             onChange={(event) => setModernPreferences(event.target.value)}
             placeholder="remote-first, startup-ops, arts-collab"
           />
+          <p className="muted" style={{ marginTop: "0.35rem" }}>
+            Tags are optional but help align manuscript guna scores with contemporary compatibility signals.
+          </p>
         </div>
-        <div style={{ marginTop: "1.25rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+        <div className="form-actions">
           <button type="submit" disabled={loading}>
             {loading ? "Evaluating guna..." : "Compute compatibility"}
           </button>
-          <span style={{ color: "#475569" }}>
-            Compatibility indices blend sutra guidance with modern priorities.
-          </span>
+          <span className="muted">Compatibility indices blend sutra guidance with modern priorities.</span>
         </div>
         {error && <div className="error-banner">{error}</div>}
       </form>

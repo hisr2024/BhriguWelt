@@ -33,6 +33,7 @@ export default function PredictionForm({ engine, title, description }: Props) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    setPayload(null);
     setLoading(true);
     try {
       const response = await requestPrediction(engine, details);
@@ -47,9 +48,10 @@ export default function PredictionForm({ engine, title, description }: Props) {
   return (
     <section>
       <form onSubmit={handleSubmit}>
-        <header style={{ marginBottom: "1rem" }}>
+        <header className="section-heading">
+          <p className="eyebrow">Bhrigu Samhita aligned</p>
           <h2>{title}</h2>
-          <p>{description}</p>
+          <p className="muted">{description}</p>
         </header>
         <div className="form-grid">
           <div>
@@ -163,13 +165,11 @@ export default function PredictionForm({ engine, title, description }: Props) {
             </select>
           </div>
         </div>
-        <div style={{ marginTop: "1.25rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+        <div className="form-actions">
           <button type="submit" disabled={loading}>
             {loading ? "Consulting Bhrigu..." : "Fetch insights"}
           </button>
-          <span style={{ color: "#475569" }}>
-            All guidance references the cited Bhrigu Samhita folios.
-          </span>
+          <span className="muted">All guidance references the cited Bhrigu Samhita folios.</span>
         </div>
         {error && <div className="error-banner">{error}</div>}
       </form>
