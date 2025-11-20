@@ -1,7 +1,9 @@
 'use client';
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { requestMatchmaking } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
+import { captureClientError } from "@/lib/telemetry";
 import { BirthDetails } from "@/types/astro";
 import PredictionCard from "./PredictionCard";
 
@@ -19,12 +21,20 @@ const defaultDetails: BirthDetails = {
 };
 
 export default function MatchmakingForm() {
+  const { t } = useI18n();
   const [primary, setPrimary] = useState<BirthDetails>({ ...defaultDetails });
   const [partner, setPartner] = useState<BirthDetails>({ ...defaultDetails });
   const [modernPreferences, setModernPreferences] = useState("remote-first, research-partnership");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [payload, setPayload] = useState<unknown>(null);
+  const errorRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.focus();
+    }
+  }, [error]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -35,7 +45,9 @@ export default function MatchmakingForm() {
       const response = await requestMatchmaking(primary, partner, modernPreferences);
       setPayload(response);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to fetch compatibility");
+      const message = err instanceof Error ? err.message : "Unable to fetch compatibility";
+      setError(message);
+      captureClientError(message, { primary, partner, feature: "matchmaking" });
     } finally {
       setLoading(false);
     }
@@ -46,27 +58,27 @@ export default function MatchmakingForm() {
       <h3 style={{ marginTop: 0 }}>{label}</h3>
       <div className="form-grid">
         <div>
-          <label>Full name</label>
+          <label>{t("form.name", "Full name")}</label>
           <input value={details.name} onChange={(event) => setDetails({ ...details, name: event.target.value })} required />
         </div>
         <div>
-          <label>Birth date</label>
+          <label>{t("form.birthDate", "Birth date (YYYY-MM-DD)")}</label>
           <input type="date" value={details.birthDate} onChange={(event) => setDetails({ ...details, birthDate: event.target.value })} required />
         </div>
         <div>
-          <label>Birth time</label>
+          <label>{t("form.birthTime", "Birth time (HH:MM)")}</label>
           <input type="time" value={details.birthTime} onChange={(event) => setDetails({ ...details, birthTime: event.target.value })} required />
         </div>
         <div>
-          <label>Birth place</label>
+          <label>{t("form.birthPlace", "Birth place")}</label>
           <input value={details.birthPlace} onChange={(event) => setDetails({ ...details, birthPlace: event.target.value })} required />
         </div>
         <div>
-          <label>Lunar tithi</label>
+          <label>{t("form.lunarTithi", "Lunar tithi")}</label>
           <input type="number" min={1} max={30} value={details.lunarTithi} onChange={(event) => setDetails({ ...details, lunarTithi: event.target.value })} />
         </div>
         <div>
-          <label>Moon element</label>
+          <label>{t("form.moonElement", "Moon element")}</label>
           <select value={details.moonElement} onChange={(event) => setDetails({ ...details, moonElement: event.target.value })}>
             <option value="water">Water</option>
             <option value="fire">Fire</option>
@@ -76,25 +88,26 @@ export default function MatchmakingForm() {
           </select>
         </div>
         <div>
-          <label>Mars house</label>
+          <label>{t("form.marsHouse", "Mars house")}</label>
           <input type="number" min={1} max={12} value={details.marsHouse} onChange={(event) => setDetails({ ...details, marsHouse: event.target.value })} />
         </div>
         <div>
-          <label>Saturn house</label>
+          <label>{t("form.saturnHouse", "Saturn house")}</label>
           <input type="number" min={1} max={12} value={details.saturnHouse} onChange={(event) => setDetails({ ...details, saturnHouse: event.target.value })} />
         </div>
         <div>
-          <label>Venus house</label>
+          <label>{t("form.venusHouse", "Venus house")}</label>
           <input type="number" min={1} max={12} value={details.venusHouse} onChange={(event) => setDetails({ ...details, venusHouse: event.target.value })} />
         </div>
         <div>
-          <label>Rahu aspects ascendant</label>
+          <label>{t("form.rahu", "Rahu aspects ascendant")}</label>
           <select
             value={details.rahuAspectsAscendant ? "yes" : "no"}
             onChange={(event) => setDetails({ ...details, rahuAspectsAscendant: event.target.value === "yes" })}
+            aria-label={t("form.rahu", "Rahu aspects ascendant")}
           >
-            <option value="no">No</option>
-            <option value="yes">Yes</option>
+            <option value="no">{t("form.no", "No")}</option>
+            <option value="yes">{t("form.yes", "Yes")}</option>
           </select>
         </div>
       </div>
@@ -102,33 +115,39 @@ export default function MatchmakingForm() {
   );
 
   return (
-    <section>
-      <form onSubmit={handleSubmit}>
+    <section aria-labelledby="matchmaking-heading">
+      <form onSubmit={handleSubmit} aria-busy={loading} aria-describedby="matchmaking-helper">
         <header className="section-heading">
           <p className="eyebrow">Compatibility lab</p>
-          <h2>Modern Bhrigu matchmaking</h2>
-          <p className="muted">Compare two complete Bhrigu Samhita birth records plus contemporary lifestyle tags.</p>
+          <h2 id="matchmaking-heading">{t("pages.matchmaking.title", "Modern Bhrigu matchmaking")}</h2>
+          <p className="muted" id="matchmaking-helper">
+            {t("form.helper", "Compare two complete birth records plus lifestyle tags to align manuscript and modern signals.")}
+          </p>
         </header>
-        {renderInputs("Primary", primary, setPrimary)}
-        {renderInputs("Partner", partner, setPartner)}
+        {renderInputs(t("matchmaking.primary", "Primary"), primary, setPrimary)}
+        {renderInputs(t("matchmaking.partner", "Partner"), partner, setPartner)}
         <div style={{ marginTop: "1rem" }}>
-          <label>Modern preference tags (comma separated)</label>
+          <label>{t("matchmaking.preferences", "Modern preference tags (comma separated)")}</label>
           <input
             value={modernPreferences}
             onChange={(event) => setModernPreferences(event.target.value)}
             placeholder="remote-first, startup-ops, arts-collab"
           />
           <p className="muted" style={{ marginTop: "0.35rem" }}>
-            Tags are optional but help align manuscript guna scores with contemporary compatibility signals.
+            {t("form.accessibility", "Tags are optional but help align manuscript guna scores with compatibility signals.")}
           </p>
         </div>
         <div className="form-actions">
-          <button type="submit" disabled={loading}>
-            {loading ? "Evaluating guna..." : "Compute compatibility"}
+          <button type="submit" disabled={loading} aria-label={t("pages.matchmaking.title", "Compute compatibility")}> 
+            {loading ? t("form.loading", "Evaluating guna...") : t("pages.matchmaking.title", "Compute compatibility")}
           </button>
-          <span className="muted">Compatibility indices blend sutra guidance with modern priorities.</span>
+          <span className="muted">{t("form.accessibility", "Compatibility indices blend sutra guidance with modern priorities.")}</span>
         </div>
-        {error && <div className="error-banner">{error}</div>}
+        {error && (
+          <div className="error-banner" role="alert" aria-live="assertive" tabIndex={-1} ref={errorRef}>
+            {t("form.error", error)}
+          </div>
+        )}
       </form>
       <PredictionCard title="Matchmaking result" payload={payload} />
     </section>

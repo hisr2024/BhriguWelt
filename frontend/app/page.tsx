@@ -4,43 +4,48 @@ import Link from "next/link";
 import CalendarForm from "@/components/CalendarForm";
 import MatchmakingForm from "@/components/MatchmakingForm";
 import PredictionForm from "@/components/PredictionForm";
+import { useI18n } from "@/lib/i18n";
 
 export default function HomePage() {
+  const { t } = useI18n();
+
   return (
     <div className="stack">
       <div className="hero">
-        <p className="eyebrow">Bhrigu Samhita studio</p>
-        <h1>Zero-fluff astrology journeys for Gen Z and every generation.</h1>
+        <p className="eyebrow">{t("hero.eyebrow", "Bhrigu Samhita studio")}</p>
+        <h1>{t("hero.title", "Zero-fluff astrology journeys for Gen Z and every generation.")}</h1>
         <p className="muted" style={{ maxWidth: "760px" }}>
-          Launch vibrant, mobile-first flows that speak to modern seekers while honoring the exacting Śaka and Bhrigu
-          Samhita guidance. Run it locally, ship to Vercel, or plug the API into your Android/iOS builds.
+          {t(
+            "hero.body",
+            "Launch vibrant, mobile-first flows that speak to modern seekers while honoring the exacting Śaka and Bhrigu Samhita guidance. Run it locally, ship to Vercel, or plug the API into your Android/iOS builds.",
+          )}
         </p>
         <div className="hero-actions">
           <Link href="/horoscope" className="button-link">
-            Explore horoscope
+            {t("hero.cta.horoscope", "Explore horoscope")}
           </Link>
           <Link href="/matchmaking" className="button-link" style={{ background: "rgba(255,255,255,0.08)", color: "#fff" }}>
-            Modern matchmaking
+            {t("hero.cta.matchmaking", "Modern matchmaking")}
           </Link>
-          <span className="badge">Śaka-aligned • Render + Vercel ready</span>
+          <span className="badge">{t("hero.badge", "Śaka-aligned • Render + Vercel ready")}</span>
         </div>
       </div>
 
       <section className="card-grid">
         <div className="card">
           <p className="eyebrow">Navigation</p>
-          <h3>Every ritual has its own page</h3>
-          <p>Jump straight to horoscope, past-life, future, matchmaking, or calendar from the navigation shell or the cards below.</p>
+          <h3>{t("home.grid.navigation.title", "Every ritual has its own page")}</h3>
+          <p>{t("home.grid.navigation.body", "Jump straight to horoscope, past-life, future, matchmaking, or calendar from the navigation shell or the cards below.")}</p>
         </div>
         <div className="card">
           <p className="eyebrow">Deploy-ready</p>
-          <h3>Render API, Vercel UI, native next</h3>
-          <p>Point <code>NEXT_PUBLIC_BACKEND_URL</code> at your backend host and the same flows light up on Android and iOS.</p>
+          <h3>{t("home.grid.deploy.title", "Render API, Vercel UI, native next")}</h3>
+          <p>{t("home.grid.deploy.body", "Point NEXT_PUBLIC_BACKEND_URL at your backend host and the same flows light up on Android and iOS.")}</p>
         </div>
         <div className="card">
-          <p className="eyebrow">Accessible defaults</p>
-          <h3>Skip links and high-contrast layouts</h3>
-          <p>New accessibility affordances keep the Gen Z aesthetic while remaining screen-reader and keyboard friendly.</p>
+          <p className="eyebrow">Accessibility</p>
+          <h3>{t("home.grid.accessibility.title", "Screen-reader friendly interactions")}</h3>
+          <p>{t("home.grid.accessibility.body", "High contrast, keyboard friendly nav, and ARIA-labelled forms built for Vercel previews and production.")}</p>
         </div>
       </section>
 
@@ -78,7 +83,7 @@ export default function HomePage() {
           <p>Blends karmic epoch, remedies, past lives, and future trajectories with one crisp submission.</p>
           <PredictionForm
             engine="horoscope"
-            title="Holistic horoscope"
+            title={t("pages.horoscope.title", "Holistic horoscope")}
             description="Perfect for welcome screens, drop-in popups, or mobile onboarding modals."
           />
         </div>
@@ -118,7 +123,7 @@ export default function HomePage() {
           <h3>Same JSON across web and native</h3>
           <p>Each page mirrors the backend contracts, keeping Android, iOS, and browser clients perfectly aligned.</p>
           <Link className="button-link" href="/calendar">
-            View calendar API flow
+            View calendar helper
           </Link>
         </div>
       </section>

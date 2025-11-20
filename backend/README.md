@@ -22,6 +22,12 @@ backend/
 └── tests/                     # Pytest modules (add new suites here)
 ```
 
+- An OpenAPI snapshot of the HTTP surface ships in `docs/openapi.yaml` for quick
+  client generation and contract review.
+- Use `python scripts/backup_data.py` (with `PYTHONPATH=src`) to create
+  timestamped backups of `data/bhrigu_samhita_principles.yml` under
+  `backend/backups/` before changing manuscript data.
+
 ## Local development
 
 ```bash
@@ -126,11 +132,14 @@ used in production:
 
 ```bash
 cd backend
-PYTHONPATH=src pytest
+PYTHONPATH=src pytest --cov=src --cov-report=xml
 ```
 
 (ensure your virtual environment is activated first so the package resolves to
-the local source tree).
+the local source tree). Install dev dependencies with `pip install -r
+requirements-dev.txt` if your environment does not ship `pytest` by default.
+The suite now includes threaded HTTP integration tests, so both handler
+functions and the live API surface stay in sync.
 
 #### Render blueprint
 

@@ -7,6 +7,9 @@
 ## Local backups
 - Commit data changes to git with clear folio references.
 - Keep an offline copy of `backend/data/` and `docs/` (encrypted if containing notes about manuscripts).
+- Run the built-in helper to create timestamped snapshots in `backend/backups/`:
+  - `cd backend && PYTHONPATH=src python scripts/backup_data.py`
+  - Override the dataset path with `BHRIGU_DATA_PATH` if you are testing a custom folio file.
 
 ## Hosted backups
 - Render/Railway: enable automatic disk snapshots if persistent volumes are used; otherwise, redeploy from git.

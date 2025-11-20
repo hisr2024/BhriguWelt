@@ -19,8 +19,11 @@ yarn-debug.log*
 frontend/.env.local
 frontend/.env
 frontend/.vercel
+frontend/playwright-report/
+frontend/test-results/
 backend/.env
 backend/.env.local
+backend/backups/
 .env
 .env.local
 .DS_Store

@@ -1,6 +1,7 @@
 'use client';
 
 import React from "react";
+import { useI18n } from "@/lib/i18n";
 
 interface Props {
   title: string;
@@ -27,24 +28,26 @@ function renderValue(value: unknown) {
 }
 
 export default function PredictionCard({ title, payload }: Props) {
+  const { t } = useI18n();
+
   if (!payload) {
     return (
-      <section className="results card" aria-live="polite">
+      <section className="results card" aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
         <div className="section-heading">
           <p className="eyebrow">Response</p>
           <h3>{title}</h3>
-          <p className="muted">Results will appear here after you submit the form.</p>
+          <p className="muted">{t("results.helper", "Results will appear here after you submit the form.")}</p>
         </div>
       </section>
     );
   }
 
   return (
-    <section className="results card" aria-live="polite">
+    <section className="results card" aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
       <div className="section-heading">
         <p className="eyebrow">Response</p>
         <h3>{title}</h3>
-        <p className="muted">Raw JSON you can paste into mobile, web, or chat UI layers.</p>
+        <p className="muted">{t("results.helperRaw", "Raw JSON you can paste into mobile, web, or chat UI layers.")}</p>
       </div>
       {renderValue(payload)}
     </section>

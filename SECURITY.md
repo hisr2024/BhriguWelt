@@ -4,7 +4,7 @@
 We support the latest main branch. Report vulnerabilities even if you are unsure about impact.
 
 ## Reporting a vulnerability
-- Email **security@bhriguwelt.example** with a description, reproduction steps, and affected deployment (Render, Railway, Vercel, or local).
+- Email **security@bhriguwelt.com** with a description, reproduction steps, and affected deployment (Render, Railway, Vercel, or local).
 - Please do not file public issues for suspected vulnerabilities.
 
 ## Expectations

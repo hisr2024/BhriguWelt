@@ -182,6 +182,15 @@ Each POST body must supply the fields listed in `HoroscopeRequest` (see
 `backend/src/bhriguwelt/horoscope.py`). Responses mirror the CLI output so the
 frontend/mobile layers can present manuscripts alongside insights.
 
+- A concise OpenAPI spec lives at `docs/openapi.yaml` and mirrors the
+  validation rules enforced by the CLI/API handlers for `/health`, `/horoscope`,
+  `/past-life`, `/future`, `/matchmaking`, and `/calendar`.
+- A dataset backup helper is available via `cd backend && PYTHONPATH=src python
+  scripts/backup_data.py`, which writes timestamped copies into
+  `backend/backups/` for safe archival.
+- Frontend telemetry is opt-in through `NEXT_PUBLIC_SENTRY_DSN`; without the
+  DSN, telemetry calls become no-ops to preserve the zero-dependency baseline.
+
 ## Frontend & mobile quick start
 
 The `frontend/` directory now contains a ready-to-ship Next.js application that
@@ -197,6 +206,11 @@ NEXT_PUBLIC_BACKEND_URL=http://localhost:8000 npm run dev
   the UI from its edge network.
 - `npm run lint` / `npm run type-check` keep the React codebase aligned with the
   backend schema.
+- The UI ships with a Hindi/English language toggle, ARIA-labelled forms, and
+  live regions so screen readers can pick up validation states and results.
+- Optional Playwright smoke tests live in `frontend/tests/e2e/`; install
+  `@playwright/test` locally and run `npm run test:e2e` to validate form
+  submissions against mocked backend responses.
 - The bundled forms demonstrate the exact JSON payload expected by `/horoscope`,
   `/past-life`, `/future`, `/matchmaking`, and `/calendar`, so React Native or
   Flutter teams can reuse the same contracts when shipping Android/iOS builds.

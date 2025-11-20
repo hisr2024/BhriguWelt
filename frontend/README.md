@@ -63,11 +63,17 @@ key so `npm run dev` and `npm run build` compile against the right host.
 | `npm run start`       | Serves the production build locally.                                        |
 | `npm run lint`        | Runs ESLint using Next.js' recommended config.                              |
 | `npm run type-check`  | Runs the TypeScript compiler without emitting files to catch regressions.   |
+| `npm run test:e2e`    | Runs Playwright smoke tests (install `@playwright/test` before running).    |
 
 ## Environment and CI
 
 - Copy `.env.example` to `.env.local` (or `.env`) and set `NEXT_PUBLIC_BACKEND_URL`
   to your Render/Railway/local backend before running the app.
+- Optional client telemetry is controlled by `NEXT_PUBLIC_SENTRY_DSN`; when set
+  and paired with `@sentry/nextjs`, errors surface in your Sentry project. When
+  unset, telemetry helpers no-op to preserve the zero-dependency runtime.
+- The Hindi/English toggle persists the selected language in `localStorage` so
+  multilingual users keep their preference across visits.
 - GitHub Actions (`Frontend CI`) runs `npm install`, `npm run lint`, and
   `npm run type-check` with Node 18 on pushes and pull requests that touch the
   frontend.
