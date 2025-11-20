@@ -204,16 +204,34 @@ NEXT_PUBLIC_BACKEND_URL=http://localhost:8000 npm run dev
 See `docs/deployment.md` for Render (backend) and Vercel (frontend) recipes plus
 notes on mobile packaging.
 
-## Contribution guidelines
+## Environment quick-start files
 
-- Preserve the **Bhrigu-only** sourcing requirement. Every new rule, remedy, or
-  narrative string must cite the manuscript folio, language, and archive.
-- Organize code by domain: calculations in `calculations.py`, orchestration in
-  `horoscope.py`, loaders inside `data_loader.py`, and presentation-only logic
-  in the frontend.
-- Document any new modules inside the relevant README before opening a PR.
+- Backend: copy `backend/.env.example` to `.env` and adjust `PORT` or
+  `BHRIGU_DATA_PATH` as needed.
+- Frontend: copy `frontend/.env.example` and point `NEXT_PUBLIC_BACKEND_URL` to
+  your Render/Railway/local backend.
+
+## CI/CD
+
+GitHub Actions guardrails ship with the repo:
+- `Backend CI` runs pytest with `PYTHONPATH=src`.
+- `Frontend CI` installs dependencies, lints, and type-checks with Node 18.
+
+## API reference and docs
+
+- Endpoint contracts live in `docs/api_reference.md`.
+- Deployment playbooks and hosting options are in `docs/deployment.md`.
+- Backup and recovery guidance is documented in
+  `docs/backup_and_recovery.md`.
+
+## Contribution and community guidelines
+
+- Start with `CONTRIBUTING.md` for style, testing, and sourcing rules that keep
+  every addition aligned with Bhrigu Samhita folios.
+- `CODE_OF_CONDUCT.md` outlines expected behavior.
+- `SECURITY.md` describes how to report vulnerabilities privately.
 
 ## License
 
-This repository is released under the MIT License so the Bhrigu Samhita wisdom
-can be shared responsibly.
+This repository is released under the MIT License (`LICENSE`) so the Bhrigu
+Samhita wisdom can be shared responsibly.

@@ -64,6 +64,14 @@ key so `npm run dev` and `npm run build` compile against the right host.
 | `npm run lint`        | Runs ESLint using Next.js' recommended config.                              |
 | `npm run type-check`  | Runs the TypeScript compiler without emitting files to catch regressions.   |
 
+## Environment and CI
+
+- Copy `.env.example` to `.env.local` (or `.env`) and set `NEXT_PUBLIC_BACKEND_URL`
+  to your Render/Railway/local backend before running the app.
+- GitHub Actions (`Frontend CI`) runs `npm install`, `npm run lint`, and
+  `npm run type-check` with Node 18 on pushes and pull requests that touch the
+  frontend.
+
 ## Deployment to Vercel
 
 1. Push your changes to GitHub.

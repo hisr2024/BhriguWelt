@@ -189,3 +189,11 @@ changes. Two layouts are supported so Nixpacks always installs Python and `pip`:
    repo root and inside `backend/`) so Nixpacks can invoke them.
 8. After deploy, hit `https://<your-railway-host>/health` and expect
    `{ "status": "ok" }` before wiring the URL into Vercel or mobile clients.
+
+## Environment and CI helpers
+
+- Copy `.env.example` to `.env` to mirror local settings used in deployment
+  blueprints (including `PYTHONPATH=src`).
+- Backend GitHub Action (`Backend CI`) installs dependencies and runs
+  `PYTHONPATH=src pytest` on pushes/PRs touching backend assets.
+- Endpoint request/response formats are documented in `../docs/api_reference.md`.
