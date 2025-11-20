@@ -136,7 +136,8 @@ the local source tree).
 
 The repository root ships with a `render.yaml` blueprint that provisions the
 backend as a Python Web Service. There is no default hosted instance; you must
-deploy it yourself using the steps below:
+deploy it yourself using the steps below. The build/start commands mirror local
+development so PYTHONPATH is set and `pip` is guaranteed to exist:
 
 ```yaml
 services:
@@ -144,8 +145,8 @@ services:
     name: bhriguwelt-backend
     env: python
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: PYTHONPATH=src python -m bhriguwelt.api
+    buildCommand: python -m pip install -r requirements.txt
+    startCommand: ./start.sh  # exports PYTHONPATH=src before launching the API
     healthCheckPath: /health
 ```
 
@@ -173,9 +174,15 @@ changes:
 
 1. Create a new Railway project and deploy from this GitHub repository.
 2. When prompted for the project root, select `backend/`.
-3. Build command: `pip install -r requirements.txt`.
-4. Start command: `PYTHONPATH=src python -m bhriguwelt.api`.
-5. Add environment variable `PYTHONPATH=src` so the package resolves like local
+3. Ensure `nixpacks.toml` stays in `backend/` so Railway’s Nixpacks build picks
+   Python 3.11 and bundles `pip` (avoiding the “pip: not found” failure). 
+4. Build command: `python -m pip install -r requirements.txt`.
+5. Start command: `./start.sh` (the script exports `PYTHONPATH=src` before
+   running `python -m bhriguwelt.api`).
+6. Add environment variable `PYTHONPATH=src` so the package resolves like local
    development.
-6. After deploy, hit `https://<your-railway-host>/health` and expect
+7. Ensure `start.sh` is executable (`chmod +x start.sh`) and keep the build
+   command as `python -m pip install -r requirements.txt` so Nixpacks always
+   finds `pip`.
+8. After deploy, hit `https://<your-railway-host>/health` and expect
    `{ "status": "ok" }` before wiring the URL into Vercel or mobile clients.

@@ -60,25 +60,33 @@ ready for web and mobile clients:
 
 1. **Backend → Render**: Connect the repo in Render and apply the included
    `render.yaml` blueprint (or follow the manual Web Service steps in
-   `docs/deployment.md`). Once deployed, verify the service responds with a
-   health payload:
+   `docs/deployment.md`). The blueprint uses `python -m pip install -r
+   requirements.txt` plus `./start.sh` (which exports `PYTHONPATH=src` and
+   runs the API) so the build mirrors local development. Once deployed, verify
+   the service responds with a health payload:
 
    ```bash
    curl https://<your-render-host>/health
    ```
 
 2. **Backend → Railway (alternative)**: If you prefer Railway, deploy the
-   backend as a Python service from the `backend/` root, using the commands
-   `pip install -r requirements.txt` (build) and `PYTHONPATH=src python -m
-   bhriguwelt.api` (start). Add `PYTHONPATH=src` as an environment variable and
-   confirm `/health` returns `{ "status": "ok" }`. See `docs/deployment.md` for
-   the click-by-click flow.
+   backend as a Python service from the `backend/` root and keep `nixpacks.toml`
+   in that directory so Nixpacks provisions Python 3.11 with `pip`. Use the
+   build command `python -m pip install -r requirements.txt` and start command
+   `./start.sh` (wraps `PYTHONPATH=src python -m bhriguwelt.api`); this matches
+   the Render blueprint and prevents the `pip: not found` Railpack error. Add
+   `PYTHONPATH=src` as an environment variable and confirm `/health` returns
+   `{ "status": "ok" }`. See `docs/deployment.md` for the click-by-click flow
+   plus the Railpack/Nixpacks notes.
 
 3. **Frontend → Vercel**: Point Vercel at the `frontend/` directory (Node 18+)
    and set `NEXT_PUBLIC_BACKEND_URL` to the Render or Railway URL. After
    deployment, load the Vercel preview in a browser and submit each form
    (horoscope, past-life, future, matchmaking, calendar) to confirm responses
    render.
+   - If the preview cannot reach your backend, double-check that the Render or
+     Railway service is using the `python -m pip install -r requirements.txt`
+     build command and that `./start.sh` is executable (`chmod +x start.sh`).
 
 4. **Local parity**: Run `PYTHONPATH=src python -m bhriguwelt.api` inside
    `backend/`, export `NEXT_PUBLIC_BACKEND_URL=http://localhost:8000`, and run

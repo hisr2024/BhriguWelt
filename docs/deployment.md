@@ -16,8 +16,8 @@ so follow the steps below to publish your own endpoints before testing clients.
 3. Render auto-detects `render.yaml`; leave the defaults in place:
    - Runtime: Python 3.11+
    - Root directory: `backend`
-   - Build command: `pip install -r requirements.txt`
-   - Start command: `PYTHONPATH=src python -m bhriguwelt.api`
+   - Build command: `python -m pip install -r requirements.txt`
+   - Start command: `./start.sh` (exports `PYTHONPATH=src` before running the API)
    - Health check path: `/health`
 4. Deploy. Your live API URL will look like
    `https://bhriguwelt-backend.onrender.com`—copy this for the frontend and
@@ -27,8 +27,8 @@ so follow the steps below to publish your own endpoints before testing clients.
 
 1. Create a **Web Service** in Render and point it at this repo.
 2. Set **Root Directory** to `backend` and **Runtime** to Python 3.11.
-3. Build command: `pip install -r requirements.txt`
-4. Start command: `PYTHONPATH=src python -m bhriguwelt.api`
+3. Build command: `python -m pip install -r requirements.txt`
+4. Start command: `./start.sh` (exports `PYTHONPATH=src` and launches the API)
 5. Health check path: `/health`
 6. Deploy and watch the Render logs until you see `Serving on ('0.0.0.0', 8000)`.
 7. Verify with `curl https://<your-render-host>/health`; if it returns
@@ -44,12 +44,18 @@ Render settings:
    fork.
 3. When prompted for the root, choose `backend/` so the build runs against the
    Python package.
-4. Set the **Build Command** to `pip install -r requirements.txt`.
-5. Set the **Start Command** to `PYTHONPATH=src python -m bhriguwelt.api`.
-6. Add an environment variable `PYTHONPATH=src` (matches local/testing usage).
-7. Deploy. Once Railway shows the service as running, copy the generated domain
+4. Keep `backend/nixpacks.toml` in place so Nixpacks provisions Python 3.11 and
+   `pip`, preventing the `pip: not found` build failure Railpack can emit.
+5. Set the **Build Command** to `python -m pip install -r requirements.txt`.
+6. Set the **Start Command** to `./start.sh` (wraps `PYTHONPATH=src python -m
+   bhriguwelt.api`).
+7. Add an environment variable `PYTHONPATH=src` (matches local/testing usage).
+8. Deploy. Once Railway shows the service as running, copy the generated domain
    (for example `https://bhriguwelt-production.up.railway.app`).
-8. Validate health with:
+9. Make sure `start.sh` is executable (`chmod +x start.sh`) before the first
+   deploy so Nixpacks can run it, and keep the build command as
+   `python -m pip install -r requirements.txt` to avoid `pip` lookup issues.
+10. Validate health with:
 
    ```bash
    curl https://<your-railway-host>/health
