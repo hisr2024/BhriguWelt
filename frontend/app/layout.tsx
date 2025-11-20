@@ -20,6 +20,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="app-body">
+        <a href="#main" className="skip-link">
+          Skip to content
+        </a>
         <div className="bg-aurora" aria-hidden />
         <header className="nav-shell">
           <div className="nav-bar">
@@ -41,7 +44,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
           </div>
         </header>
-        <main className="page-wrapper">{children}</main>
+        <main id="main" className="page-wrapper">
+          {children}
+        </main>
         <footer className="footer">
           <div>
             <p className="eyebrow">Bhrigu Samhita native</p>

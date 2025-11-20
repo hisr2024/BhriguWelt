@@ -43,6 +43,8 @@ key so `npm run dev` and `npm run build` compile against the right host.
 - `/matchmaking`: dual-profile intake with modern preference tags for Gen Z use
   cases.
 - `/calendar`: standalone Gregorian → Śaka converter for international users.
+- Skip links and high-contrast defaults keep the neon look while preserving
+  keyboard/screen-reader usability.
 
 ### Deployment verification
 

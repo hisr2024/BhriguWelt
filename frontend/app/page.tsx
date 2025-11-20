@@ -28,6 +28,24 @@ export default function HomePage() {
 
       <section className="card-grid">
         <div className="card">
+          <p className="eyebrow">Navigation</p>
+          <h3>Every ritual has its own page</h3>
+          <p>Jump straight to horoscope, past-life, future, matchmaking, or calendar from the navigation shell or the cards below.</p>
+        </div>
+        <div className="card">
+          <p className="eyebrow">Deploy-ready</p>
+          <h3>Render API, Vercel UI, native next</h3>
+          <p>Point <code>NEXT_PUBLIC_BACKEND_URL</code> at your backend host and the same flows light up on Android and iOS.</p>
+        </div>
+        <div className="card">
+          <p className="eyebrow">Accessible defaults</p>
+          <h3>Skip links and high-contrast layouts</h3>
+          <p>New accessibility affordances keep the Gen Z aesthetic while remaining screen-reader and keyboard friendly.</p>
+        </div>
+      </section>
+
+      <section className="card-grid">
+        <div className="card">
           <p className="eyebrow">Gen Z polish</p>
           <h3>Bold gradients, microcopy, and haptics-ready flows.</h3>
           <p>

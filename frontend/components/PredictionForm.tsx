@@ -33,6 +33,7 @@ export default function PredictionForm({ engine, title, description }: Props) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    setPayload(null);
     setLoading(true);
     try {
       const response = await requestPrediction(engine, details);

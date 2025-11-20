@@ -29,6 +29,7 @@ export default function MatchmakingForm() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    setPayload(null);
     setLoading(true);
     try {
       const response = await requestMatchmaking(primary, partner, modernPreferences);
@@ -117,6 +118,9 @@ export default function MatchmakingForm() {
             onChange={(event) => setModernPreferences(event.target.value)}
             placeholder="remote-first, startup-ops, arts-collab"
           />
+          <p className="muted" style={{ marginTop: "0.35rem" }}>
+            Tags are optional but help align manuscript guna scores with contemporary compatibility signals.
+          </p>
         </div>
         <div className="form-actions">
           <button type="submit" disabled={loading}>

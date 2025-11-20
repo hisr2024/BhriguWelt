@@ -18,6 +18,7 @@ export default function CalendarForm() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    setPayload(null);
     setLoading(true);
     try {
       const response = await requestCalendar(details);
@@ -37,6 +38,7 @@ export default function CalendarForm() {
           <h2>Gregorian → Śaka calendar conversion</h2>
           <p className="muted">
             Every onboarding flow can derive Śaka year, month, and IST reference for downstream predictions.
+            Use 24-hour birth times for accurate IST normalization.
           </p>
         </header>
         <div className="form-grid">
