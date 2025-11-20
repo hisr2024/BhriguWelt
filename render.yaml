@@ -5,7 +5,7 @@ services:
     rootDir: backend
     pythonVersion: 3.11
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: python -m pip install -r requirements.txt  # Changed from 'pip install'
     startCommand: PYTHONPATH=src python -m bhriguwelt.api
     envVars:
       - key: PYTHONPATH
