@@ -66,9 +66,9 @@ below:
    curl https://<your-render-host>/health
    ```
 
-2. **Frontend → Vercel**: Point Vercel at the `frontend/` directory and set
-   `NEXT_PUBLIC_BACKEND_URL` to the Render URL. After deployment, load the
-   Vercel preview in a browser and submit each form (horoscope, past-life,
+2. **Frontend → Vercel**: Point Vercel at the `frontend/` directory (Node 18+)
+   and set `NEXT_PUBLIC_BACKEND_URL` to the Render URL. After deployment, load
+   the Vercel preview in a browser and submit each form (horoscope, past-life,
    future, matchmaking, calendar) to confirm responses render.
 
 3. **Local parity**: Run `PYTHONPATH=src python -m bhriguwelt.api` inside
