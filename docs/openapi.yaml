@@ -1,0 +1,250 @@
+openapi: 3.1.0
+info:
+  title: BhriguWelt API
+  version: 1.0.0
+  description: |
+    Lightweight HTTP interface for the Bhrigu Samhita engines. The server is
+    intentionally dependency-free and aligns with the CLI validation rules.
+servers:
+  - url: http://localhost:8000
+    description: Local development
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: Service is reachable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  source:
+                    type: string
+  /calendar:
+    post:
+      summary: Convert Gregorian birth details to Śaka calendar context
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarRequest'
+      responses:
+        "200":
+          description: Calendar conversion payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarResponse'
+  /horoscope:
+    post:
+      summary: Generate a full horoscope report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HoroscopeRequest'
+      responses:
+        "200":
+          description: Horoscope report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HoroscopeResponse'
+        "400":
+          description: Validation error
+  /past-life:
+    post:
+      summary: Summarize past-life insights
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HoroscopeRequest'
+      responses:
+        "200":
+          description: Past-life narrative
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PastLifeResponse'
+  /future:
+    post:
+      summary: Generate future trajectories
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HoroscopeRequest'
+      responses:
+        "200":
+          description: Future directives
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FutureResponse'
+  /matchmaking:
+    post:
+      summary: Modern matchmaking guidance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                primary:
+                  $ref: '#/components/schemas/HoroscopeRequest'
+                partner:
+                  $ref: '#/components/schemas/HoroscopeRequest'
+                modern_preferences:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Compatibility insights
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchmakingResponse'
+components:
+  schemas:
+    HoroscopeRequest:
+      type: object
+      required:
+        - name
+        - birth_date
+        - birth_time
+        - birth_place
+        - lunar_tithi
+        - moon_element
+        - mars_house
+        - saturn_house
+        - venus_house
+      properties:
+        name:
+          type: string
+        birth_date:
+          type: string
+          format: date
+        birth_time:
+          type: string
+          pattern: "^\\d{2}:\\d{2}$"
+        birth_place:
+          type: string
+        lunar_tithi:
+          type: integer
+          minimum: 1
+          maximum: 30
+        moon_element:
+          type: string
+          enum: [water, fire, air, earth, ether]
+        mars_house:
+          type: integer
+          minimum: 1
+          maximum: 12
+        saturn_house:
+          type: integer
+          minimum: 1
+          maximum: 12
+        venus_house:
+          type: integer
+          minimum: 1
+          maximum: 12
+        rahu_aspects_ascendant:
+          type: boolean
+    CalendarRequest:
+      type: object
+      required:
+        - birth_date
+        - birth_time
+        - birth_place
+      properties:
+        birth_date:
+          type: string
+          format: date
+        birth_time:
+          type: string
+          pattern: "^\\d{2}:\\d{2}$"
+        birth_place:
+          type: string
+    CalendarResponse:
+      type: object
+      properties:
+        saka_date:
+          type: object
+        nakshatra:
+          type: string
+        conversion_factor_years:
+          type: integer
+    HoroscopeResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        karmic_epoch:
+          type: string
+        weights:
+          type: object
+        principles:
+          type: array
+          items:
+            type: object
+        remedies:
+          type: array
+          items:
+            type: object
+        past_life_insights:
+          type: array
+          items:
+            type: object
+        future_trajectories:
+          type: array
+          items:
+            type: object
+    PastLifeResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        insights:
+          type: array
+          items:
+            type: object
+    FutureResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        trajectories:
+          type: array
+          items:
+            type: object
+    MatchmakingResponse:
+      type: object
+      properties:
+        primary_name:
+          type: string
+        partner_name:
+          type: string
+        compatibility:
+          type: object
+          properties:
+            compatibility_index:
+              type: number
+            breakdown:
+              type: array
+              items:
+                type: object
+            modern_highlights:
+              type: array
+              items:
+                type: string
