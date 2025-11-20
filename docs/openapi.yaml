@@ -1,0 +1,275 @@
+openapi: 3.0.3
+info:
+  title: BhriguWelt API
+  description: |
+    HTTP API exposing Bhrigu Samhita engines for horoscope, past-life, future, matchmaking,
+    and Śaka calendar conversion.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Service is reachable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  source:
+                    type: string
+  /horoscope:
+    post:
+      summary: Generate full horoscope report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HoroscopeRequest'
+      responses:
+        '200':
+          description: Horoscope report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HoroscopeResponse'
+        '400':
+          description: Validation failure
+  /past-life:
+    post:
+      summary: Retrieve past-life insights
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HoroscopeRequest'
+      responses:
+        '200':
+          description: Past-life report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  insights:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Insight'
+        '400':
+          description: Validation failure
+  /future:
+    post:
+      summary: Generate future trajectories
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HoroscopeRequest'
+      responses:
+        '200':
+          description: Future trajectories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  trajectories:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Insight'
+        '400':
+          description: Validation failure
+  /matchmaking:
+    post:
+      summary: Compute compatibility between two charts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                primary:
+                  $ref: '#/components/schemas/HoroscopeRequest'
+                partner:
+                  $ref: '#/components/schemas/HoroscopeRequest'
+                modern_preferences:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Compatibility report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  primary_name:
+                    type: string
+                  partner_name:
+                    type: string
+                  compatibility:
+                    $ref: '#/components/schemas/Compatibility'
+        '400':
+          description: Validation failure
+  /calendar:
+    post:
+      summary: Convert Gregorian birth details to Śaka calendar context
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [birth_date, birth_time, birth_place]
+              properties:
+                birth_date:
+                  type: string
+                  format: date
+                birth_time:
+                  type: string
+                  description: HH:MM 24h format
+                birth_place:
+                  type: string
+      responses:
+        '200':
+          description: Śaka calendar context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarResponse'
+        '400':
+          description: Validation failure
+components:
+  schemas:
+    HoroscopeRequest:
+      type: object
+      required:
+        - name
+        - birth_date
+        - birth_time
+        - birth_place
+        - lunar_tithi
+        - moon_element
+        - mars_house
+        - saturn_house
+        - venus_house
+      properties:
+        name:
+          type: string
+        birth_date:
+          type: string
+          format: date
+        birth_time:
+          type: string
+          description: HH:MM 24h format
+        birth_place:
+          type: string
+        lunar_tithi:
+          type: integer
+          minimum: 1
+          maximum: 30
+        moon_element:
+          type: string
+          enum: [water, fire, air, earth, ether]
+        mars_house:
+          type: integer
+          minimum: 1
+          maximum: 12
+        saturn_house:
+          type: integer
+          minimum: 1
+          maximum: 12
+        venus_house:
+          type: integer
+          minimum: 1
+          maximum: 12
+        rahu_aspects_ascendant:
+          type: boolean
+          default: false
+    Insight:
+      type: object
+      properties:
+        principle:
+          type: string
+        weight:
+          type: integer
+        guidance:
+          type: string
+    HoroscopeResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        karmic_epoch:
+          type: string
+        weights:
+          type: object
+        principles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Insight'
+        remedies:
+          type: array
+          items:
+            type: string
+        past_life_insights:
+          type: array
+          items:
+            $ref: '#/components/schemas/Insight'
+        future_trajectories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Insight'
+    Compatibility:
+      type: object
+      properties:
+        compatibility_index:
+          type: number
+        breakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/Insight'
+        modern_highlights:
+          type: array
+          items:
+            type: string
+    CalendarResponse:
+      type: object
+      properties:
+        birth_date:
+          type: string
+        birth_time:
+          type: string
+        birth_place:
+          type: string
+        saka_date:
+          type: object
+          properties:
+            year:
+              type: integer
+            month:
+              type: integer
+            day:
+              type: integer
+        lunar_month:
+          type: string
+        lunar_phase:
+          type: string
+        conversion_factor_years:
+          type: integer
+        timezone_reference:
+          type: string

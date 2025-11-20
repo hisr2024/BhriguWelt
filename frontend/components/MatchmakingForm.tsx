@@ -1,0 +1,202 @@
+'use client';
+
+import { FormEvent, useState } from "react";
+import { requestMatchmaking } from "@/lib/api";
+import { getCopy, type Locale } from "@/lib/i18n";
+import { BirthDetails } from "@/types/astro";
+import PredictionCard from "./PredictionCard";
+
+const defaultDetails: BirthDetails = {
+  name: "",
+  birthDate: "",
+  birthTime: "",
+  birthPlace: "",
+  lunarTithi: "5",
+  moonElement: "water",
+  marsHouse: "1",
+  saturnHouse: "2",
+  venusHouse: "3",
+  rahuAspectsAscendant: false,
+};
+
+export default function MatchmakingForm() {
+  const [primary, setPrimary] = useState<BirthDetails>({ ...defaultDetails });
+  const [partner, setPartner] = useState<BirthDetails>({ ...defaultDetails });
+  const [modernPreferences, setModernPreferences] = useState("remote-first, research-partnership");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [payload, setPayload] = useState<unknown>(null);
+  const copy = getCopy(process.env.NEXT_PUBLIC_LOCALE as Locale | undefined);
+  const helperId = "matchmaking-helper";
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    setPayload(null);
+    setLoading(true);
+    try {
+      const response = await requestMatchmaking(primary, partner, modernPreferences);
+      setPayload(response);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to fetch compatibility");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderInputs = (label: string, details: BirthDetails, setDetails: (next: BirthDetails) => void) => (
+    <div className="split-panel">
+      <h3 style={{ marginTop: 0 }}>{label}</h3>
+      <div className="form-grid">
+        <div>
+          <label>Full name</label>
+          <input
+            aria-label={`${label} full name`}
+            value={details.name}
+            onChange={(event) => setDetails({ ...details, name: event.target.value })}
+            required
+          />
+        </div>
+        <div>
+          <label>Birth date</label>
+          <input
+            type="date"
+            aria-label={`${label} birth date`}
+            value={details.birthDate}
+            onChange={(event) => setDetails({ ...details, birthDate: event.target.value })}
+            required
+          />
+        </div>
+        <div>
+          <label>Birth time</label>
+          <input
+            type="time"
+            aria-label={`${label} birth time`}
+            value={details.birthTime}
+            onChange={(event) => setDetails({ ...details, birthTime: event.target.value })}
+            required
+          />
+        </div>
+        <div>
+          <label>Birth place</label>
+          <input
+            aria-label={`${label} birth place`}
+            value={details.birthPlace}
+            onChange={(event) => setDetails({ ...details, birthPlace: event.target.value })}
+            required
+          />
+        </div>
+        <div>
+          <label>Lunar tithi</label>
+          <input
+            type="number"
+            min={1}
+            max={30}
+            aria-label={`${label} lunar tithi between 1 and 30`}
+            value={details.lunarTithi}
+            onChange={(event) => setDetails({ ...details, lunarTithi: event.target.value })}
+          />
+        </div>
+        <div>
+          <label>Moon element</label>
+          <select
+            aria-label={`${label} moon element`}
+            value={details.moonElement}
+            onChange={(event) => setDetails({ ...details, moonElement: event.target.value })}
+          >
+            <option value="water">Water</option>
+            <option value="fire">Fire</option>
+            <option value="air">Air</option>
+            <option value="earth">Earth</option>
+            <option value="ether">Ether</option>
+          </select>
+        </div>
+        <div>
+          <label>Mars house</label>
+          <input
+            type="number"
+            min={1}
+            max={12}
+            aria-label={`${label} mars house between 1 and 12`}
+            value={details.marsHouse}
+            onChange={(event) => setDetails({ ...details, marsHouse: event.target.value })}
+          />
+        </div>
+        <div>
+          <label>Saturn house</label>
+          <input
+            type="number"
+            min={1}
+            max={12}
+            aria-label={`${label} saturn house between 1 and 12`}
+            value={details.saturnHouse}
+            onChange={(event) => setDetails({ ...details, saturnHouse: event.target.value })}
+          />
+        </div>
+        <div>
+          <label>Venus house</label>
+          <input
+            type="number"
+            min={1}
+            max={12}
+            aria-label={`${label} venus house between 1 and 12`}
+            value={details.venusHouse}
+            onChange={(event) => setDetails({ ...details, venusHouse: event.target.value })}
+          />
+        </div>
+        <div>
+          <label>Rahu aspects ascendant</label>
+          <select
+            aria-label={`${label} rahu aspects ascendant`}
+            value={details.rahuAspectsAscendant ? "yes" : "no"}
+            onChange={(event) => setDetails({ ...details, rahuAspectsAscendant: event.target.value === "yes" })}
+          >
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <section>
+      <form onSubmit={handleSubmit} aria-describedby={helperId} aria-busy={loading}>
+        <header className="section-heading">
+          <p className="eyebrow">Compatibility lab</p>
+          <h2>Modern Bhrigu matchmaking</h2>
+          <p className="muted">Compare two complete Bhrigu Samhita birth records plus contemporary lifestyle tags.</p>
+        </header>
+        {renderInputs("Primary", primary, setPrimary)}
+        {renderInputs("Partner", partner, setPartner)}
+        <div style={{ marginTop: "1rem" }}>
+          <label>Modern preference tags (comma separated)</label>
+          <input
+            aria-label="Modern preference tags"
+            value={modernPreferences}
+            onChange={(event) => setModernPreferences(event.target.value)}
+            placeholder="remote-first, startup-ops, arts-collab"
+          />
+          <p className="muted" style={{ marginTop: "0.35rem" }}>
+            Tags are optional but help align manuscript guna scores with contemporary compatibility signals.
+          </p>
+        </div>
+        <div className="form-actions">
+          <button type="submit" disabled={loading}>
+            {loading ? "Evaluating guna..." : "Compute compatibility"}
+          </button>
+          <span className="muted">Compatibility indices blend sutra guidance with modern priorities.</span>
+        </div>
+        <p id={helperId} className="muted" style={{ marginTop: "0.25rem" }}>
+          {copy.accessibility.formHelper}
+        </p>
+        {error && (
+          <div className="error-banner" role="alert" aria-live="assertive">
+            {copy.accessibility.errorPrefix} {error}
+          </div>
+        )}
+      </form>
+      <PredictionCard title="Matchmaking result" payload={payload} />
+    </section>
+  );
+}

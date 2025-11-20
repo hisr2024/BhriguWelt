@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: bhriguwelt-backend
+    env: python
+    rootDir: backend
+    pythonVersion: 3.11
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: PYTHONPATH=src python -m bhriguwelt.api
+    envVars:
+      - key: PYTHONPATH
+        value: src
+    healthCheckPath: /health
+    autoDeploy: true
