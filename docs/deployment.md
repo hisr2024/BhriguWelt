@@ -37,24 +37,28 @@ so follow the steps below to publish your own endpoints before testing clients.
 ## Backend → Railway
 
 Railway can host the same Python backend as a **Service** that mirrors the
-Render settings:
+Render settings. Two repository layouts are supported so the build always has
+Python + `pip` available:
 
 1. Push this repository to GitHub (Railway will import the repo directly).
 2. In Railway, click **New Project → Deploy from GitHub repo** and select your
    fork.
-3. When prompted for the root, choose `backend/` so the build runs against the
-   Python package.
-4. Keep `backend/nixpacks.toml` in place so Nixpacks provisions Python 3.11 and
-   `pip`, preventing the `pip: not found` build failure Railpack can emit.
+3. If you set the service root to `backend/`, the existing `backend/nixpacks.toml`
+   provisions Python 3.11 + `pip` and runs `python -m pip install -r
+   requirements.txt`.
+4. If you keep the service root at the repository root, the top-level
+   `nixpacks.toml` executes the same build commands from inside `backend/` and
+   calls the root `./start.sh` wrapper (which cds into `backend/` before running
+   the API). This avoids the `pip: not found` Railpack error even when the root
+   isn’t restricted to `backend/`.
 5. Set the **Build Command** to `python -m pip install -r requirements.txt`.
-6. Set the **Start Command** to `./start.sh` (wraps `PYTHONPATH=src python -m
-   bhriguwelt.api`).
+6. Set the **Start Command** to `./start.sh` (works in both root layouts and
+   wraps `PYTHONPATH=src python -m bhriguwelt.api`).
 7. Add an environment variable `PYTHONPATH=src` (matches local/testing usage).
-8. Deploy. Once Railway shows the service as running, copy the generated domain
+8. Make sure both `start.sh` scripts are executable (`chmod +x start.sh` at the
+   repo root and inside `backend/`) so Nixpacks can invoke them.
+9. Deploy. Once Railway shows the service as running, copy the generated domain
    (for example `https://bhriguwelt-production.up.railway.app`).
-9. Make sure `start.sh` is executable (`chmod +x start.sh`) before the first
-   deploy so Nixpacks can run it, and keep the build command as
-   `python -m pip install -r requirements.txt` to avoid `pip` lookup issues.
 10. Validate health with:
 
    ```bash

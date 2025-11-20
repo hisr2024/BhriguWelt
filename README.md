@@ -70,14 +70,22 @@ ready for web and mobile clients:
    ```
 
 2. **Backend → Railway (alternative)**: If you prefer Railway, deploy the
-   backend as a Python service from the `backend/` root and keep `nixpacks.toml`
-   in that directory so Nixpacks provisions Python 3.11 with `pip`. Use the
-   build command `python -m pip install -r requirements.txt` and start command
-   `./start.sh` (wraps `PYTHONPATH=src python -m bhriguwelt.api`); this matches
-   the Render blueprint and prevents the `pip: not found` Railpack error. Add
-   `PYTHONPATH=src` as an environment variable and confirm `/health` returns
-   `{ "status": "ok" }`. See `docs/deployment.md` for the click-by-click flow
-   plus the Railpack/Nixpacks notes.
+   backend as a Python service and let the Nixpacks config supply Python 3.11
+   and `pip`:
+   - If your Railway root is set to `backend/`, the existing `backend/nixpacks.toml`
+     handles setup plus `python -m pip install -r requirements.txt`.
+ - If your Railway root stays at the repository root, the new top-level
+    `nixpacks.toml` runs the same `python -m pip install -r requirements.txt`
+    flow from within `backend/` and invokes the root `./start.sh` wrapper (which
+    cds into `backend/` before running the API). Both paths avoid the
+    "pip: not found" Railpack error by explicitly provisioning `python311` and
+    `python311Packages.pip`.
+  - Ensure both `start.sh` scripts are executable (`chmod +x start.sh` at the
+    repo root and inside `backend/`) before triggering a deploy so Nixpacks can
+    invoke the wrapper successfully.
+  - Add `PYTHONPATH=src` as an environment variable and confirm `/health`
+    returns `{ "status": "ok" }`. See `docs/deployment.md` for the
+    click-by-click flow plus the Railpack/Nixpacks notes.
 
 3. **Frontend → Vercel**: Point Vercel at the `frontend/` directory (Node 18+)
    and set `NEXT_PUBLIC_BACKEND_URL` to the Render or Railway URL. After

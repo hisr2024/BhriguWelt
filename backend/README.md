@@ -170,19 +170,22 @@ curl https://<your-render-host>/health
 #### Railway service (alternative)
 
 Railway can run the same backend as a Python **Service** without any code
-changes:
+changes. Two layouts are supported so Nixpacks always installs Python and `pip`:
 
 1. Create a new Railway project and deploy from this GitHub repository.
-2. When prompted for the project root, select `backend/`.
-3. Ensure `nixpacks.toml` stays in `backend/` so Railway’s Nixpacks build picks
-   Python 3.11 and bundles `pip` (avoiding the “pip: not found” failure). 
-4. Build command: `python -m pip install -r requirements.txt`.
-5. Start command: `./start.sh` (the script exports `PYTHONPATH=src` before
-   running `python -m bhriguwelt.api`).
+2. If you set the project root to `backend/`, the included `backend/nixpacks.toml`
+   provisions Python 3.11 and runs `python -m pip install -r requirements.txt`.
+3. If you keep the Railway root at the repository root, the top-level
+   `nixpacks.toml` executes the same build commands from within `backend/` and
+   calls the root `./start.sh` wrapper (which cds into `backend/` before running
+   `python -m bhriguwelt.api`).
+4. Build command: `python -m pip install -r requirements.txt` (works in either
+   layout because the Nixpacks files explicitly provide `python311Packages.pip`).
+5. Start command: `./start.sh` (uses the correct wrapper in both root
+   configurations and exports `PYTHONPATH=src`).
 6. Add environment variable `PYTHONPATH=src` so the package resolves like local
    development.
-7. Ensure `start.sh` is executable (`chmod +x start.sh`) and keep the build
-   command as `python -m pip install -r requirements.txt` so Nixpacks always
-   finds `pip`.
+7. Ensure both `start.sh` scripts are executable (`chmod +x start.sh` at the
+   repo root and inside `backend/`) so Nixpacks can invoke them.
 8. After deploy, hit `https://<your-railway-host>/health` and expect
    `{ "status": "ok" }` before wiring the URL into Vercel or mobile clients.
