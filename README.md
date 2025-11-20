@@ -52,26 +52,35 @@ references to manuscript folios.
     └── src/
 ```
 
-## Deployment readiness (Render + Vercel)
+## Deployment readiness (Render + Vercel + Railway)
 
-The codebase is wired for a Render backend and Vercel frontend, but no hosted
-instances are bundled in the repository. Deploy and validate with the steps
-below:
+No live instances are bundled with the repository; you must deploy the backend
+and frontend yourself. Follow the host-specific steps below to get an endpoint
+ready for web and mobile clients:
 
 1. **Backend → Render**: Connect the repo in Render and apply the included
-   `render.yaml` blueprint. Once deployed, verify the service responds with a
+   `render.yaml` blueprint (or follow the manual Web Service steps in
+   `docs/deployment.md`). Once deployed, verify the service responds with a
    health payload:
 
    ```bash
    curl https://<your-render-host>/health
    ```
 
-2. **Frontend → Vercel**: Point Vercel at the `frontend/` directory (Node 18+)
-   and set `NEXT_PUBLIC_BACKEND_URL` to the Render URL. After deployment, load
-   the Vercel preview in a browser and submit each form (horoscope, past-life,
-   future, matchmaking, calendar) to confirm responses render.
+2. **Backend → Railway (alternative)**: If you prefer Railway, deploy the
+   backend as a Python service from the `backend/` root, using the commands
+   `pip install -r requirements.txt` (build) and `PYTHONPATH=src python -m
+   bhriguwelt.api` (start). Add `PYTHONPATH=src` as an environment variable and
+   confirm `/health` returns `{ "status": "ok" }`. See `docs/deployment.md` for
+   the click-by-click flow.
 
-3. **Local parity**: Run `PYTHONPATH=src python -m bhriguwelt.api` inside
+3. **Frontend → Vercel**: Point Vercel at the `frontend/` directory (Node 18+)
+   and set `NEXT_PUBLIC_BACKEND_URL` to the Render or Railway URL. After
+   deployment, load the Vercel preview in a browser and submit each form
+   (horoscope, past-life, future, matchmaking, calendar) to confirm responses
+   render.
+
+4. **Local parity**: Run `PYTHONPATH=src python -m bhriguwelt.api` inside
    `backend/`, export `NEXT_PUBLIC_BACKEND_URL=http://localhost:8000`, and run
    `npm run dev` from `frontend/` to mirror the hosted topology without needing
    cloud accounts.

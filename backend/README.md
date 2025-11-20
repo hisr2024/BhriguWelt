@@ -135,7 +135,8 @@ the local source tree).
 #### Render blueprint
 
 The repository root ships with a `render.yaml` blueprint that provisions the
-backend as a Python Web Service:
+backend as a Python Web Service. There is no default hosted instance; you must
+deploy it yourself using the steps below:
 
 ```yaml
 services:
@@ -150,7 +151,10 @@ services:
 
 Connect your GitHub repo inside Render, point it at this blueprint, and every
 push will deploy the API used by the Vercel-hosted frontend as well as mobile
-clients.
+clients. If you prefer configuring a Web Service manually, mirror the settings
+from the blueprint (`rootDir=backend`, Python 3.11, the build/start commands
+above, and a `/health` check). See `docs/deployment.md` for a click-by-click
+Render walk-through.
 
 After Render finishes the first deploy, confirm the service is reachable:
 
@@ -161,3 +165,17 @@ curl https://<your-render-host>/health
 > **Deployment note:** The blueprint locks the service to Python 3.11 and the
 > included zero-dependency HTTP server. If you introduce dependencies, add them
 > to `requirements.txt` so Render caches them between builds.
+
+#### Railway service (alternative)
+
+Railway can run the same backend as a Python **Service** without any code
+changes:
+
+1. Create a new Railway project and deploy from this GitHub repository.
+2. When prompted for the project root, select `backend/`.
+3. Build command: `pip install -r requirements.txt`.
+4. Start command: `PYTHONPATH=src python -m bhriguwelt.api`.
+5. Add environment variable `PYTHONPATH=src` so the package resolves like local
+   development.
+6. After deploy, hit `https://<your-railway-host>/health` and expect
+   `{ "status": "ok" }` before wiring the URL into Vercel or mobile clients.
