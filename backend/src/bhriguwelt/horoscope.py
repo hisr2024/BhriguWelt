@@ -26,6 +26,7 @@ __all__ = [
     "PastLifeReport",
     "FutureReport",
     "MatchmakingReport",
+    "SUPPORTED_MOON_ELEMENTS",
     "build_prediction",
     "build_past_life_report",
     "build_future_report",
@@ -37,7 +38,7 @@ __all__ = [
 ]
 
 
-_SUPPORTED_MOON_ELEMENTS = {"water", "fire", "air", "earth", "ether"}
+SUPPORTED_MOON_ELEMENTS = {"water", "fire", "air", "earth", "ether"}
 
 
 @dataclass
@@ -61,7 +62,7 @@ class HoroscopeRequest:
             if not (1 <= value <= 12):
                 raise ValueError(f"{field} must be between 1 and 12")
         normalized = self.moon_element.lower()
-        if normalized not in _SUPPORTED_MOON_ELEMENTS:
+        if normalized not in SUPPORTED_MOON_ELEMENTS:
             raise ValueError(
                 "moon_element must be one of water, fire, air, earth, ether"
             )
@@ -207,12 +208,15 @@ def _add_common_arguments(parser: argparse.ArgumentParser, prefix: str = "") -> 
         dest=f"{dest}lunar_tithi",
         required=True,
         type=int,
+        choices=range(1, 31),
+        metavar="{1..30}",
         help="Lunar tithi (1-30)",
     )
     parser.add_argument(
         f"--{opt}moon-element",
         dest=f"{dest}moon_element",
         required=True,
+        choices=sorted(SUPPORTED_MOON_ELEMENTS),
         help="Element of Moon (water/fire/air/earth/ether)",
     )
     parser.add_argument(
@@ -220,6 +224,8 @@ def _add_common_arguments(parser: argparse.ArgumentParser, prefix: str = "") -> 
         dest=f"{dest}mars_house",
         required=True,
         type=int,
+        choices=range(1, 13),
+        metavar="{1..12}",
         help="House position of Mars",
     )
     parser.add_argument(
@@ -227,6 +233,8 @@ def _add_common_arguments(parser: argparse.ArgumentParser, prefix: str = "") -> 
         dest=f"{dest}saturn_house",
         required=True,
         type=int,
+        choices=range(1, 13),
+        metavar="{1..12}",
         help="House position of Saturn",
     )
     parser.add_argument(
@@ -234,6 +242,8 @@ def _add_common_arguments(parser: argparse.ArgumentParser, prefix: str = "") -> 
         dest=f"{dest}venus_house",
         required=True,
         type=int,
+        choices=range(1, 13),
+        metavar="{1..12}",
         help="House position of Venus",
     )
     parser.add_argument(

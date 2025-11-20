@@ -22,6 +22,11 @@ backend by setting `NEXT_PUBLIC_BACKEND_URL` before running any script:
 NEXT_PUBLIC_BACKEND_URL=https://bhriguwelt-backend.onrender.com npm run dev
 ```
 
+For Vercel previews and production, set `NEXT_PUBLIC_BACKEND_URL` in the Vercel
+dashboard to the Render (or self-hosted) API endpoint you control. For local
+testing against a remote backend, create a `.env.local` file with the same key
+so `npm run dev` and `npm run build` compile against the right host.
+
 ## Available scripts
 
 | Command               | Description                                                                 |

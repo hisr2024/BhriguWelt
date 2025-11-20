@@ -20,7 +20,10 @@ references to manuscript folios.
   responsive flows for the horoscope, past-life, future, matchmaking, and Śaka
   calendar engines. It consumes the backend REST API via
   `NEXT_PUBLIC_BACKEND_URL`, builds with `npm run build`, and deploys straight to
-  Vercel for immediate testing across desktop and mobile web.
+  Vercel for immediate testing across desktop and mobile web. Point
+  `NEXT_PUBLIC_BACKEND_URL` to a Render deployment, local tunnel, or any HTTPS
+  instance of the Python API before running `npm run dev`, `npm run build`, or
+  `npm run start`.
 - **Documentation** (`docs/`): reference notes that enumerate the manuscript
   citations backing each rule embedded in the backend data files, plus targeted
   guides (for example the Hindu calendar conversion explainer).
@@ -102,7 +105,9 @@ references to manuscript folios.
    it out of the box (see the Frontend quick start below). If you extend the
    backend, remember to run the pytest suite from inside
    `backend/` with `PYTHONPATH=src pytest` so the package layout mirrors
-   production usage.
+   production usage. To validate the web bundle, run `npm run lint` and `npm run
+   type-check` from within `frontend/` after pointing
+   `NEXT_PUBLIC_BACKEND_URL` at your chosen backend.
 
 ### Lightweight HTTP API
 

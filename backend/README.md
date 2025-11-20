@@ -55,7 +55,17 @@ python -m bhriguwelt.horoscope calendar --birth-date 1995-05-18 --birth-time 14:
 > Panchanga-compliant lunar tithi range (1–30) and the complete Mahabhuta set for
 > the Moon element (`water`, `fire`, `air`, `earth`, `ether`). Requests outside
 > these authentic Indian ranges are rejected early so downstream predictions stay
-> aligned with the manuscripts.
+> aligned with the manuscripts. CLI flags now surface these guardrails directly
+> via argparse `choices` so developers see the constraints before payloads reach
+> the calculation engine.
+
+Allowed ranges at a glance:
+
+| Field                     | Constraint                                   |
+| ------------------------- | --------------------------------------------- |
+| `lunar_tithi`             | Integer 1–30 (inclusive)                      |
+| `moon_element`            | `water`, `fire`, `air`, `earth`, `ether`      |
+| `mars_house`/`saturn_house`/`venus_house` | Integer 1–12 (inclusive)     |
 
 Outputs reference the originating Bhrigu folios from
 `data/bhrigu_samhita_principles.yml` (and the mirrored
