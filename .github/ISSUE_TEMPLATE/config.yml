@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Deployment help
+    url: https://render.com/docs
+    about: Render hosting reference for the backend.
+  - name: Vercel docs
+    url: https://vercel.com/docs
+    about: Frontend deployment reference.
