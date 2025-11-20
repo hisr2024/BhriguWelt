@@ -74,18 +74,18 @@ ready for web and mobile clients:
    and `pip`:
    - If your Railway root is set to `backend/`, the existing `backend/nixpacks.toml`
      handles setup plus `python -m pip install -r requirements.txt`.
- - If your Railway root stays at the repository root, the new top-level
-    `nixpacks.toml` runs the same `python -m pip install -r requirements.txt`
-    flow from within `backend/` and invokes the root `./start.sh` wrapper (which
-    cds into `backend/` before running the API). Both paths avoid the
-    "pip: not found" Railpack error by explicitly provisioning `python311` and
-    `python311Packages.pip`.
-  - Ensure both `start.sh` scripts are executable (`chmod +x start.sh` at the
-    repo root and inside `backend/`) before triggering a deploy so Nixpacks can
-    invoke the wrapper successfully.
-  - Add `PYTHONPATH=src` as an environment variable and confirm `/health`
-    returns `{ "status": "ok" }`. See `docs/deployment.md` for the
-    click-by-click flow plus the Railpack/Nixpacks notes.
+   - If your Railway root stays at the repository root, the top-level
+     `nixpacks.toml` runs the same `python -m pip install -r requirements.txt`
+     flow from within `backend/` and invokes the root `./start.sh` wrapper
+     (which cds into `backend/` before running the API). Both paths avoid the
+     "pip: not found" Railpack error by explicitly provisioning `python311` and
+     `python311Packages.pip`.
+   - Ensure both `start.sh` scripts are executable (`chmod +x start.sh` at the
+     repo root and inside `backend/`) before triggering a deploy so Nixpacks can
+     invoke the wrapper successfully.
+   - Add `PYTHONPATH=src` as an environment variable and confirm `/health`
+     returns `{ "status": "ok" }`. See `docs/deployment.md` for the
+     click-by-click flow plus the Railpack/Nixpacks notes.
 
 3. **Frontend → Vercel**: Point Vercel at the `frontend/` directory (Node 18+)
    and set `NEXT_PUBLIC_BACKEND_URL` to the Render or Railway URL. After
