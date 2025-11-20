@@ -16,8 +16,8 @@ so follow the steps below to publish your own endpoints before testing clients.
 3. Render auto-detects `render.yaml`; leave the defaults in place:
    - Runtime: Python 3.11+
    - Root directory: `backend`
-   - Build command: `pip install -r requirements.txt`
-   - Start command: `PYTHONPATH=src python -m bhriguwelt.api`
+   - Build command: `python -m pip install -r requirements.txt`
+   - Start command: `./start.sh` (exports `PYTHONPATH=src` before running the API)
    - Health check path: `/health`
 4. Deploy. Your live API URL will look like
    `https://bhriguwelt-backend.onrender.com`—copy this for the frontend and

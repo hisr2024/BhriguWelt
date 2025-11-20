@@ -60,8 +60,10 @@ ready for web and mobile clients:
 
 1. **Backend → Render**: Connect the repo in Render and apply the included
    `render.yaml` blueprint (or follow the manual Web Service steps in
-   `docs/deployment.md`). Once deployed, verify the service responds with a
-   health payload:
+   `docs/deployment.md`). The blueprint uses `python -m pip install -r
+   requirements.txt` plus `./start.sh` (which exports `PYTHONPATH=src` and
+   runs the API) so the build mirrors local development. Once deployed, verify
+   the service responds with a health payload:
 
    ```bash
    curl https://<your-render-host>/health
@@ -71,7 +73,8 @@ ready for web and mobile clients:
    backend as a Python service from the `backend/` root and keep `nixpacks.toml`
    in that directory so Nixpacks provisions Python 3.11 with `pip`. Use the
    build command `python -m pip install -r requirements.txt` and start command
-   `./start.sh` (which wraps `PYTHONPATH=src python -m bhriguwelt.api`). Add
+   `./start.sh` (wraps `PYTHONPATH=src python -m bhriguwelt.api`); this matches
+   the Render blueprint and prevents the `pip: not found` Railpack error. Add
    `PYTHONPATH=src` as an environment variable and confirm `/health` returns
    `{ "status": "ok" }`. See `docs/deployment.md` for the click-by-click flow
    plus the Railpack/Nixpacks notes.

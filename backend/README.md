@@ -136,7 +136,8 @@ the local source tree).
 
 The repository root ships with a `render.yaml` blueprint that provisions the
 backend as a Python Web Service. There is no default hosted instance; you must
-deploy it yourself using the steps below:
+deploy it yourself using the steps below. The build/start commands mirror local
+development so PYTHONPATH is set and `pip` is guaranteed to exist:
 
 ```yaml
 services:
@@ -144,8 +145,8 @@ services:
     name: bhriguwelt-backend
     env: python
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: PYTHONPATH=src python -m bhriguwelt.api
+    buildCommand: python -m pip install -r requirements.txt
+    startCommand: ./start.sh  # exports PYTHONPATH=src before launching the API
     healthCheckPath: /health
 ```
 
