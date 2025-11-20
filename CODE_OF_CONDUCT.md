@@ -26,7 +26,7 @@ Maintainers clarify standards, take corrective action when needed, and may remov
 This Code applies within project spaces and when representing the project in public.
 
 ## Enforcement
-Report abusive, harassing, or otherwise unacceptable behavior to **security@bhriguwelt.com**. Complaints will be reviewed and responded to fairly and promptly.
+Report abusive, harassing, or otherwise unacceptable behavior to **security@bhriguwelt.com** (as also documented in `SECURITY.md`). Complaints will be reviewed and responded to fairly and promptly.
 
 ## Attribution
 Adapted from the [Contributor Covenant, version 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html).

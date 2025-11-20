@@ -243,7 +243,8 @@ GitHub Actions guardrails ship with the repo:
 - Start with `CONTRIBUTING.md` for style, testing, and sourcing rules that keep
   every addition aligned with Bhrigu Samhita folios.
 - `CODE_OF_CONDUCT.md` outlines expected behavior.
-- `SECURITY.md` describes how to report vulnerabilities privately.
+- `SECURITY.md` describes how to report vulnerabilities privately (contact
+  `security@bhriguwelt.com`).
 
 ## Repository hygiene
 
