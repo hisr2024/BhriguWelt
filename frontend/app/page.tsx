@@ -89,8 +89,8 @@ export default function HomePage() {
           <div className="card">
             <h3>Soft cosmic gradients</h3>
             <p>
-              Aurora veils, starlit dots, and translucent glass panels guide focus without overwhelming. Micro-interactions lift
-              buttons and cards like constellations coming to life.
+              Aurora veils, soft neon, and translucent glass panels guide focus without overwhelming. Micro-interactions lift
+              buttons and cards with a clean glow that still feels serene.
             </p>
           </div>
           <div className="card">
