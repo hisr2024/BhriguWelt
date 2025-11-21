@@ -14,6 +14,7 @@ from .horoscope import (
     HoroscopeRequest,
     build_future_report,
     build_matchmaking_report,
+    build_transit_report,
     build_past_life_report,
     build_prediction,
 )
@@ -31,6 +32,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/future"): "_handle_future",
         ("POST", "/matchmaking"): "_handle_matchmaking",
         ("POST", "/calendar"): "_handle_calendar",
+        ("POST", "/transits"): "_handle_transits",
     }
 
     def do_GET(self) -> None:  # pragma: no cover - exercised via route map
@@ -78,6 +80,10 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     def _handle_calendar(self) -> None:
         payload = self._read_json()
         self._respond_with_command("calendar", payload)
+
+    def _handle_transits(self) -> None:
+        payload = self._read_json()
+        self._respond_with_command("transits", payload)
 
     # Utility helpers --------------------------------------------------------------
     def _respond_with_command(self, command: str, payload: Dict[str, Any]) -> None:
@@ -170,6 +176,19 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             missing = exc.args[0]
             raise ValueError(f"Missing required field: {missing}") from exc
         return context.as_payload()
+    if command == "transits":
+        try:
+            request = _request_from_payload(payload["natal"])
+            transit_payload = payload["transit"]
+        except KeyError as exc:
+            missing = exc.args[0]
+            raise ValueError(f"Missing required field: {missing}") from exc
+        report = build_transit_report(request, transit_payload)
+        return {
+            "name": report.name,
+            "directives": [_serialize_obj(item) for item in report.directives],
+            "interpretation": report.interpretation,
+        }
     raise ValueError(f"Unsupported command: {command}")
 
 
@@ -181,11 +200,12 @@ def _request_from_payload(payload: Dict[str, Any]) -> HoroscopeRequest:
             birth_time=payload["birth_time"],
             birth_place=payload["birth_place"],
             tradition=payload.get("tradition", "universal"),
-            lunar_tithi=int(payload["lunar_tithi"]),
-            moon_element=payload["moon_element"],
-            mars_house=int(payload["mars_house"]),
-            saturn_house=int(payload["saturn_house"]),
-            venus_house=int(payload["venus_house"]),
+            timezone=payload.get("timezone"),
+            lunar_tithi=int(payload.get("lunar_tithi", 0)),
+            moon_element=payload.get("moon_element", ""),
+            mars_house=int(payload.get("mars_house", 0)),
+            saturn_house=int(payload.get("saturn_house", 0)),
+            venus_house=int(payload.get("venus_house", 0)),
             rahu_aspects_ascendant=bool(payload.get("rahu_aspects_ascendant", False)),
             ketu_house=int(payload.get("ketu_house", 0)),
             mercury_house=int(payload.get("mercury_house", 0)),
