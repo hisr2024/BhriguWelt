@@ -617,3 +617,66 @@ button:disabled {
     flex-direction: column;
   }
 }
+
+.kundli-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.kundli-card {
+  border: 1px solid var(--surface-border);
+  border-radius: 16px;
+  padding: 1.25rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+}
+
+.kundli-ring {
+  fill: none;
+  stroke: var(--surface-border);
+  stroke-width: 2;
+}
+
+.kundli-core {
+  fill: var(--surface-strong);
+  stroke: var(--surface-border);
+}
+
+.kundli-spoke {
+  stroke: var(--surface-border);
+  stroke-width: 1;
+}
+
+.kundli-label {
+  fill: var(--text-primary);
+  font-size: 11px;
+}
+
+.kundli-sign {
+  font-size: 10px;
+  fill: var(--text-muted);
+}
+
+.kundli-occupants {
+  font-size: 9px;
+  fill: var(--accent);
+}
+
+.kundli-center {
+  fill: var(--text-primary);
+  font-weight: 700;
+}
+
+.kundli-dasha {
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+  padding: 0;
+}
+
+.dasha-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
