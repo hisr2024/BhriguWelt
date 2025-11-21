@@ -23,7 +23,7 @@ def running_server():
         thread.join()
 
 
-def _post(path: str, payload: dict, address) -> tuple[int, dict]:
+def _post(path: str, payload: dict, address) -> tuple[int, dict, dict]:
     connection = http.client.HTTPConnection(*address)
     body = json.dumps(payload).encode()
     connection.request(
@@ -34,12 +34,30 @@ def _post(path: str, payload: dict, address) -> tuple[int, dict]:
     )
     response = connection.getresponse()
     content = response.read().decode()
+    headers = dict(response.getheaders())
     connection.close()
     try:
         data = json.loads(content) if content else {}
     except json.JSONDecodeError:
         data = {"raw": content}
-    return response.status, data
+    return response.status, data, headers
+
+
+def _options(path: str, address) -> tuple[int, dict]:
+    connection = http.client.HTTPConnection(*address)
+    connection.request(
+        "OPTIONS",
+        path,
+        headers={
+            "Origin": "https://example.com",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "Content-Type",
+        },
+    )
+    response = connection.getresponse()
+    headers = dict(response.getheaders())
+    connection.close()
+    return response.status, headers
 
 
 def _payload(**overrides):
@@ -61,14 +79,24 @@ def _payload(**overrides):
 
 def test_http_horoscope_round_trip():
     with running_server() as address:
-        status, data = _post("/horoscope", _payload(), address)
+        status, data, headers = _post("/horoscope", _payload(), address)
         assert status == 200
         assert data.get("principles"), "Horoscope response missing principles"
         assert data.get("past_life_insights"), "Horoscope response missing past-life insights"
+        assert headers.get("Access-Control-Allow-Origin") == "*"
 
 
 def test_http_validation_rejects_out_of_range_tithi():
     with running_server() as address:
-        status, data = _post("/horoscope", _payload(lunar_tithi=31), address)
+        status, data, _ = _post("/horoscope", _payload(lunar_tithi=31), address)
         assert status == 400
         assert "tithi" in (data.get("message") or "") or "tithi" in (data.get("raw") or "")
+
+
+def test_http_cors_preflight_allows_json_posts():
+    with running_server() as address:
+        status, headers = _options("/future", address)
+        assert status == 204
+        assert headers.get("Access-Control-Allow-Origin") == "*"
+        assert "POST" in headers.get("Access-Control-Allow-Methods", "")
+        assert "Content-Type" in headers.get("Access-Control-Allow-Headers", "")

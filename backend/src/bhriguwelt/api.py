@@ -39,6 +39,11 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # pragma: no cover - exercised via route map
         self._dispatch("POST")
 
+    def do_OPTIONS(self) -> None:  # pragma: no cover - exercised via route map
+        self.send_response(HTTPStatus.NO_CONTENT)
+        self._add_cors_headers()
+        self.end_headers()
+
     def log_message(self, format: str, *args: Any) -> None:  # pragma: no cover - silence
         return
 
@@ -96,9 +101,26 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         encoded = json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header(*_JSON_HEADER)
+        self._add_cors_headers()
         self.send_header("Content-Length", str(len(encoded)))
         self.end_headers()
         self.wfile.write(encoded)
+
+    def _add_cors_headers(self) -> None:
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
+    def send_error(  # type: ignore[override]
+        self, code: int, message: str | None = None, explain: str | None = None
+    ) -> None:
+        content = json.dumps({"message": message or HTTPStatus(code).phrase}, ensure_ascii=False).encode("utf-8")
+        self.send_response(code)
+        self.send_header(*_JSON_HEADER)
+        self._add_cors_headers()
+        self.send_header("Content-Length", str(len(content)))
+        self.end_headers()
+        self.wfile.write(content)
 
 
 def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
