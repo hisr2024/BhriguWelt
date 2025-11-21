@@ -40,6 +40,9 @@ __all__ = [
     "build_cli_parser",
     "parse_cli_args",
     "main",
+    "ChartHouse",
+    "DashaPeriod",
+    "generate_kundli",
 ]
 
 
@@ -124,6 +127,9 @@ class HoroscopeReport:
     past_life_insights: List[PastLifeInsight]
     future_trajectories: List[FutureTrajectory]
     interpretation: str
+    rashi_chart: List[ChartHouse]
+    bhava_chart: List[ChartHouse]
+    dashas: List[DashaPeriod]
 
 
 @dataclass
@@ -188,6 +194,8 @@ def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
 
     remedies = _personalize_remedies(remedies, weights)
 
+    kundli = generate_kundli(snapshot, weights, timezone_name=request.timezone)
+
     return HoroscopeReport(
         name=request.name,
         karmic_epoch=karmic_epoch,
@@ -206,6 +214,9 @@ def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
             request.birth_place,
             runtime_config.get("interpretation", {}),
         ),
+        rashi_chart=kundli["rashi_chart"],
+        bhava_chart=kundli["bhava_chart"],
+        dashas=kundli["dashas"],
     )
 
 
