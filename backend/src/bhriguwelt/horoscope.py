@@ -80,6 +80,7 @@ class HoroscopeReport:
     remedies: List[Dict]
     past_life_insights: List[PastLifeInsight]
     future_trajectories: List[FutureTrajectory]
+    interpretation: str
 
 
 @dataclass
@@ -88,6 +89,7 @@ class PastLifeReport:
 
     name: str
     insights: List[PastLifeInsight]
+    interpretation: str
 
 
 @dataclass
@@ -96,6 +98,7 @@ class FutureReport:
 
     name: str
     trajectories: List[FutureTrajectory]
+    interpretation: str
 
 
 @dataclass
@@ -105,6 +108,7 @@ class MatchmakingReport:
     primary_name: str
     partner_name: str
     compatibility: MatchmakingCompatibility
+    interpretation: str
 
 
 def build_calendar_context(
@@ -137,6 +141,13 @@ def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
         remedies=remedies,
         past_life_insights=past_life_insights,
         future_trajectories=future_trajectories,
+        interpretation=_compose_horoscope_interpretation(
+            karmic_epoch,
+            weights,
+            past_life_insights,
+            future_trajectories,
+            remedies,
+        ),
     )
 
 
@@ -144,14 +155,22 @@ def build_past_life_report(request: HoroscopeRequest) -> PastLifeReport:
     bhrigu_data = load_bhrigu_data()
     snapshot = _snapshot_from_request(request)
     insights = evaluate_past_life(snapshot, bhrigu_data.get("past_life_engines", []))
-    return PastLifeReport(name=request.name, insights=insights)
+    return PastLifeReport(
+        name=request.name,
+        insights=insights,
+        interpretation=_compose_past_life_interpretation(insights),
+    )
 
 
 def build_future_report(request: HoroscopeRequest) -> FutureReport:
     bhrigu_data = load_bhrigu_data()
     snapshot = _snapshot_from_request(request)
     trajectories = evaluate_future_directives(snapshot, bhrigu_data.get("future_engines", []))
-    return FutureReport(name=request.name, trajectories=trajectories)
+    return FutureReport(
+        name=request.name,
+        trajectories=trajectories,
+        interpretation=_compose_future_interpretation(trajectories),
+    )
 
 
 def build_matchmaking_report(
@@ -174,6 +193,7 @@ def build_matchmaking_report(
         primary_name=primary_request.name,
         partner_name=partner_request.name,
         compatibility=compatibility,
+        interpretation=_compose_matchmaking_interpretation(compatibility),
     )
 
 
@@ -194,6 +214,80 @@ def _snapshot_from_request(request: HoroscopeRequest) -> CelestialSnapshot:
 def _render_common_intro(name: str, birth_place: str) -> None:
     print(f"Bhrigu Samhita transmission for {name}")
     print(f"Birth locale recorded as {birth_place}")
+
+
+def _compose_horoscope_interpretation(
+    karmic_epoch: str,
+    weights: Dict[str, float],
+    past_life_insights: List[PastLifeInsight],
+    future_trajectories: List[FutureTrajectory],
+    remedies: List[Dict],
+) -> str:
+    """Blend the raw signals into a concise, manuscript-anchored summary."""
+
+    phrases: List[str] = []
+    if weights:
+        top_weights = sorted(weights.items(), key=lambda item: item[1], reverse=True)[:2]
+        weight_phrase = ", ".join(f"{name.replace('_', ' ')} ({score:.2f})" for name, score in top_weights)
+        phrases.append(f"Dominant Bhrigu currents: {weight_phrase}.")
+
+    if past_life_insights:
+        primary = max(past_life_insights, key=lambda insight: insight.confidence)
+        phrases.append(
+            f"Past-life recall per {primary.sutra_reference}: {primary.narrative} (confidence {primary.confidence:.2f})."
+        )
+
+    if future_trajectories:
+        primary_future = max(future_trajectories, key=lambda directive: directive.certainty)
+        window = f" in {primary_future.window}" if primary_future.window else ""
+        phrases.append(
+            f"Future mandate from {primary_future.sutra_reference}: {primary_future.focus}{window} with certainty {primary_future.certainty:.2f}."
+        )
+
+    if remedies:
+        remedy_refs = ", ".join(remedy["id"] for remedy in remedies[:2])
+        phrases.append(f"Remedy anchors: {remedy_refs} from the folios.")
+
+    phrases.append(karmic_epoch)
+    return " ".join(phrases)
+
+
+def _compose_past_life_interpretation(insights: List[PastLifeInsight]) -> str:
+    if not insights:
+        return "Past-life folios are silent; default remedies advised."
+
+    top = max(insights, key=lambda insight: insight.confidence)
+    return (
+        f"Primary past-life transmission ({top.sutra_reference}) emphasizes {top.narrative} "
+        f"with confidence {top.confidence:.2f}."
+    )
+
+
+def _compose_future_interpretation(trajectories: List[FutureTrajectory]) -> str:
+    if not trajectories:
+        return "Future directives await fuller planetary transits; continue dharmic discipline."
+
+    top = max(trajectories, key=lambda directive: directive.certainty)
+    window = f" during {top.window}" if top.window else ""
+    return (
+        f"Highest-certainty mandate from {top.sutra_reference}: {top.focus}{window} "
+        f"(certainty {top.certainty:.2f})."
+    )
+
+
+def _compose_matchmaking_interpretation(compatibility: MatchmakingCompatibility) -> str:
+    breakdown_sorted = sorted(compatibility.breakdown, key=lambda entry: entry.score, reverse=True)
+    top_entry = breakdown_sorted[0] if breakdown_sorted else None
+    highlight = compatibility.modern_highlights[0] if compatibility.modern_highlights else ""
+
+    parts = [f"Composite compatibility index: {compatibility.compatibility_index:.2f}%."]
+    if top_entry:
+        parts.append(
+            f"Strongest folio ({top_entry.sutra_reference}): {top_entry.description.strip()} -> score {top_entry.score:.2f}."
+        )
+    if highlight:
+        parts.append(f"Modern alignment: {highlight}.")
+    return " ".join(parts)
 
 
 def _add_common_arguments(parser: argparse.ArgumentParser, prefix: str = "") -> None:
@@ -273,6 +367,7 @@ def _request_from_namespace(namespace: argparse.Namespace, prefix: str = "") -> 
 def _render_horoscope(report: HoroscopeReport, birth_place: str) -> None:
     _render_common_intro(report.name, birth_place)
     print(f"Karmic epoch: {report.karmic_epoch}")
+    print(f"Interpretation: {report.interpretation}")
     print("Weights derived from Bhrigu sutras:")
     for key, value in report.weights.items():
         print(f"  - {key}: {value}")
@@ -306,6 +401,7 @@ def _render_horoscope(report: HoroscopeReport, birth_place: str) -> None:
 
 def _render_past_life(report: PastLifeReport, birth_place: str) -> None:
     _render_common_intro(report.name, birth_place)
+    print(f"Interpretation: {report.interpretation}")
     if not report.insights:
         print("No past-life folios matched the provided placements.")
         return
@@ -318,6 +414,7 @@ def _render_past_life(report: PastLifeReport, birth_place: str) -> None:
 
 def _render_future(report: FutureReport, birth_place: str) -> None:
     _render_common_intro(report.name, birth_place)
+    print(f"Interpretation: {report.interpretation}")
     if not report.trajectories:
         print("Future sutras are dormant for this configuration.")
         return
@@ -330,6 +427,7 @@ def _render_matchmaking(report: MatchmakingReport) -> None:
     print(
         f"Modern Bhrigu matchmaking for {report.primary_name} × {report.partner_name}: {report.compatibility.compatibility_index}%"
     )
+    print(f"Interpretation: {report.interpretation}")
     print("Breakdown by folio:")
     for criterion in report.compatibility.breakdown:
         print(

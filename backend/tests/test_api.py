@@ -27,6 +27,7 @@ def test_handle_command_horoscope_emits_full_payload():
     assert response["name"] == "Asha"
     assert response["past_life_insights"]
     assert response["future_trajectories"]
+    assert response["interpretation"]
 
 
 def test_handle_command_matchmaking_summarizes_highlights():
@@ -48,16 +49,19 @@ def test_handle_command_matchmaking_summarizes_highlights():
     )
     assert response["compatibility"]["breakdown"], "Compatibility breakdown missing"
     assert response["compatibility"]["modern_highlights"], "Modern notes missing"
+    assert response["interpretation"], "Interpretation missing for matchmaking"
 
 
 def test_handle_command_past_life_includes_insights():
     response = api.handle_command("past-life", _payload())
     assert response["insights"], "Past-life response missing insights"
+    assert response["interpretation"], "Past-life response missing interpretation"
 
 
 def test_handle_command_future_includes_trajectories():
     response = api.handle_command("future", _payload())
     assert response["trajectories"], "Future response missing trajectories"
+    assert response["interpretation"], "Future response missing interpretation"
 
 
 def test_handle_command_calendar_returns_saka_payload():

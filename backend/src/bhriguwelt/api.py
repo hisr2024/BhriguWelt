@@ -131,10 +131,18 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         return _serialize_horoscope_report(report)
     if command == "past-life":
         report = build_past_life_report(_request_from_payload(payload))
-        return {"name": report.name, "insights": [_serialize_obj(item) for item in report.insights]}
+        return {
+            "name": report.name,
+            "insights": [_serialize_obj(item) for item in report.insights],
+            "interpretation": report.interpretation,
+        }
     if command == "future":
         report = build_future_report(_request_from_payload(payload))
-        return {"name": report.name, "trajectories": [_serialize_obj(item) for item in report.trajectories]}
+        return {
+            "name": report.name,
+            "trajectories": [_serialize_obj(item) for item in report.trajectories],
+            "interpretation": report.interpretation,
+        }
     if command == "matchmaking":
         primary = _request_from_payload(payload.get("primary", {}))
         partner = _request_from_payload(payload.get("partner", {}))
@@ -149,6 +157,7 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
                 "breakdown": [_serialize_obj(entry) for entry in compatibility.breakdown],
                 "modern_highlights": compatibility.modern_highlights,
             },
+            "interpretation": report.interpretation,
         }
     if command == "calendar":
         try:
@@ -192,6 +201,7 @@ def _serialize_horoscope_report(report) -> Dict[str, Any]:
         "remedies": report.remedies,
         "past_life_insights": [_serialize_obj(item) for item in report.past_life_insights],
         "future_trajectories": [_serialize_obj(item) for item in report.future_trajectories],
+        "interpretation": report.interpretation,
     }
 
 

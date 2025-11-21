@@ -58,3 +58,43 @@ def test_modern_matchmaking_scores_include_modifiers():
     assert compatibility.breakdown, "Each criterion should have a breakdown entry"
     assert compatibility.compatibility_index > 0
     assert compatibility.modern_highlights, "Modern preferences must contribute notes"
+
+
+def test_interpretations_can_be_composed_from_reports():
+    data = load_bhrigu_data()
+    snapshot = _snapshot()
+    past_report = evaluate_past_life(snapshot, data["past_life_engines"])
+    future_report = evaluate_future_directives(snapshot, data["future_engines"])
+    assert past_report[0].narrative
+    assert future_report[0].focus
+
+
+def test_interpretations_flow_into_reports():
+    from bhriguwelt.horoscope import (
+        HoroscopeRequest,
+        build_future_report,
+        build_past_life_report,
+        build_prediction,
+    )
+
+    request = HoroscopeRequest(
+        name="Test Native",
+        birth_date="1990-05-18",
+        birth_time="04:30",
+        birth_place="Varanasi",
+        lunar_tithi=5,
+        moon_element="water",
+        mars_house=10,
+        saturn_house=2,
+        venus_house=2,
+        rahu_aspects_ascendant=True,
+    )
+
+    horoscope_report = build_prediction(request)
+    assert horoscope_report.interpretation
+
+    past_report = build_past_life_report(request)
+    assert past_report.interpretation
+
+    future_report = build_future_report(request)
+    assert future_report.interpretation
