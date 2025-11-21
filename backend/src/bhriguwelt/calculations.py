@@ -34,36 +34,71 @@ class CelestialSnapshot:
         birth_date: str,
         birth_time: str,
         birth_place: str,
-        lunar_tithi: int,
-        moon_element: str,
-        mars_house: int,
-        saturn_house: int,
-        venus_house: int,
-        rahu_aspects_ascendant: bool,
+        lunar_tithi: int | None = None,
+        moon_element: str | None = None,
+        mars_house: int | None = None,
+        saturn_house: int | None = None,
+        venus_house: int | None = None,
+        rahu_aspects_ascendant: bool | None = None,
         tradition: str | None = None,
-        ketu_house: int = 0,
-        mercury_house: int = 0,
-        jupiter_house: int = 0,
-        saturn_retrograde: bool = False,
+        ketu_house: int | None = None,
+        mercury_house: int | None = None,
+        jupiter_house: int | None = None,
+        saturn_retrograde: bool | None = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+        timezone_name: str | None = None,
     ) -> "CelestialSnapshot":
-        parsed_date = datetime.fromisoformat(birth_date).date()
-        parsed_time = time.fromisoformat(birth_time)
+        baseline = auto_snapshot_kwargs(
+            birth_date=birth_date,
+            birth_time=birth_time,
+            birth_place=birth_place,
+            latitude=latitude,
+            longitude=longitude,
+            timezone_name=timezone_name,
+        )
+
+        computed: Dict[str, object] = {
+            "lunar_tithi": lunar_tithi,
+            "moon_element": moon_element,
+            "mars_house": mars_house,
+            "saturn_house": saturn_house,
+            "venus_house": venus_house,
+            "ketu_house": ketu_house,
+            "mercury_house": mercury_house,
+            "jupiter_house": jupiter_house,
+            "rahu_aspects_ascendant": rahu_aspects_ascendant,
+            "saturn_retrograde": saturn_retrograde,
+        }
+
+        for key, value in computed.items():
+            if value is None:
+                continue
+            if isinstance(value, str) and value == "":
+                continue
+            if isinstance(value, (int, float)) and value == 0:
+                continue
+            baseline[key] = value
+
+        parsed_date = datetime.fromisoformat(str(baseline["birth_date"])).date()
+        parsed_time = time.fromisoformat(str(baseline["birth_time"]))
         normalized_tradition = (tradition or "universal").lower()
+
         return cls(
             birth_date=parsed_date,
             birth_time=parsed_time,
             birth_place=birth_place,
             tradition=normalized_tradition,
-            lunar_tithi=lunar_tithi,
-            moon_element=moon_element,
-            mars_house=mars_house,
-            saturn_house=saturn_house,
-            venus_house=venus_house,
-            ketu_house=ketu_house,
-            mercury_house=mercury_house,
-            jupiter_house=jupiter_house,
-            rahu_aspects_ascendant=rahu_aspects_ascendant,
-            saturn_retrograde=saturn_retrograde,
+            lunar_tithi=int(baseline["lunar_tithi"]),
+            moon_element=str(baseline["moon_element"]),
+            mars_house=int(baseline["mars_house"]),
+            saturn_house=int(baseline["saturn_house"]),
+            venus_house=int(baseline["venus_house"]),
+            ketu_house=int(baseline["ketu_house"]),
+            mercury_house=int(baseline["mercury_house"]),
+            jupiter_house=int(baseline["jupiter_house"]),
+            rahu_aspects_ascendant=bool(baseline["rahu_aspects_ascendant"]),
+            saturn_retrograde=bool(baseline["saturn_retrograde"]),
         )
 
     @classmethod
@@ -88,7 +123,25 @@ class CelestialSnapshot:
             longitude=longitude,
             timezone_name=timezone_name,
         )
-        return cls.from_strings(tradition=tradition or "universal", **derived)
+        return cls.from_strings(
+            birth_date=str(derived["birth_date"]),
+            birth_time=str(derived["birth_time"]),
+            birth_place=birth_place,
+            tradition=tradition or "universal",
+            lunar_tithi=int(derived["lunar_tithi"]),
+            moon_element=str(derived["moon_element"]),
+            mars_house=int(derived["mars_house"]),
+            saturn_house=int(derived["saturn_house"]),
+            venus_house=int(derived["venus_house"]),
+            rahu_aspects_ascendant=bool(derived["rahu_aspects_ascendant"]),
+            ketu_house=int(derived["ketu_house"]),
+            mercury_house=int(derived["mercury_house"]),
+            jupiter_house=int(derived["jupiter_house"]),
+            saturn_retrograde=bool(derived["saturn_retrograde"]),
+            latitude=derived.get("latitude"),
+            longitude=derived.get("longitude"),
+            timezone_name=derived.get("timezone"),
+        )
 
 
 @dataclass
