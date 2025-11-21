@@ -15,8 +15,16 @@ HOST=${HOST:-0.0.0.0}
 PORT=${PORT:-8000}
 python - <<'PY'
 import os
-from bhriguwelt.api import serve
+print("Starting Bhrigu API", flush=True)
+print(f"PYTHONPATH: {os.environ.get('PYTHONPATH')}", flush=True)
+try:
+    from bhriguwelt.api import serve
+    print("Import successful", flush=True)
+except ImportError as e:
+    print(f"Import error: {e}", flush=True)
+    exit(1)
 host = os.environ.get("HOST", "0.0.0.0")
 port = int(os.environ.get("PORT", "8000"))
+print(f"Host: {host}, Port: {port}", flush=True)
 serve(host, port)
 PY
