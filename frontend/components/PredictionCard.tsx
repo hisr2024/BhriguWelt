@@ -3,6 +3,8 @@
 import React from "react";
 import { useI18n } from "@/lib/i18n";
 import { ResultEngine } from "@/types/astro";
+import KundliCharts from "./KundliCharts";
+import { ChartHouse, DashaPeriod } from "@/types/astro";
 
 interface Props {
   title: string;
@@ -27,6 +29,9 @@ type HoroscopePayload = {
   remedies?: { sutra_reference?: string; description?: string }[];
   past_life_insights?: { narrative?: string; sutra_reference?: string }[];
   future_trajectories?: { focus?: string; window?: string }[];
+  rashi_chart?: ChartHouse[];
+  bhava_chart?: ChartHouse[];
+  dashas?: DashaPeriod[];
 };
 
 type PastLifePayload = {
@@ -152,6 +157,15 @@ function interpretHoroscope(payload: HoroscopePayload): InsightSection[] {
         .map((item) => `${item.focus}${item.window ? ` (${item.window})` : ""}`)
         .join(" "),
       hindi: "आने वाले चरणों के लिए करुणा और संयम से कर्म करें।",
+    });
+  }
+  if (payload.dashas?.length) {
+    const bullets = payload.dashas.map((dasha) => `${dasha.lord}: ${dasha.start} → ${dasha.end}`);
+    sections.push({
+      heading: "Vimshottari dasha",
+      english: "Lifecycle windows blended with Bhrigu overlays.",
+      hindi: "दशा क्रम भृगु सूत्रों के साथ संयोजित है।",
+      bullets,
     });
   }
   return sections;
@@ -290,6 +304,7 @@ function buildSections(engine: ResultEngine, payload: unknown): InsightSection[]
 export default function PredictionCard({ title, payload, engine }: Props) {
   const { t } = useI18n();
   const sections = buildSections(engine, payload);
+  const horoscopePayload = engine === "horoscope" && typeof payload === "object" ? (payload as HoroscopePayload) : null;
 
   if (!payload || !sections.length) {
     return (
@@ -311,6 +326,13 @@ export default function PredictionCard({ title, payload, engine }: Props) {
         <p className="muted">{t("results.helperRaw", "Narratives are ready to share—no JSON needed.")}</p>
       </div>
       <div className="insight-grid">{sections.map(renderSection)}</div>
+      {horoscopePayload && (
+        <KundliCharts
+          rashiChart={horoscopePayload.rashi_chart}
+          bhavaChart={horoscopePayload.bhava_chart}
+          dashas={horoscopePayload.dashas}
+        />
+      )}
     </section>
   );
 }
