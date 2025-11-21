@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-export PYTHONPATH=${PYTHONPATH:-/app/backend/src}
 
 # Load optional local overrides so HOST/PORT/BHRIGU_DATA_PATH remain consistent
 # between local runs and hosted environments without extra flags.
