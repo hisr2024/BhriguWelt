@@ -3,6 +3,15 @@
   "env": {
     "NEXT_PUBLIC_BACKEND_URL": "https://your-render-service.onrender.com"
   },
+  "builds": [
+    {
+      "src": "frontend/next.config.js",
+      "use": "@vercel/next",
+      "config": {
+        "outputDirectory": "frontend/.next"
+      }
+    }
+  ],
   "installCommand": "npm install --workspaces --include-workspace-root=false",
   "buildCommand": "cd frontend && npm run build",
   "routes": [
