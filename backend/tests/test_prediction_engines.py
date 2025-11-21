@@ -1,5 +1,8 @@
 """Regression tests for the Bhrigu prediction engines."""
 
+from datetime import timedelta
+
+from bhriguwelt.astronomical_calculations import derive_transit_snapshot, normalize_birth_datetime
 from bhriguwelt.calculations import (
     CelestialSnapshot,
     evaluate_future_directives,
@@ -53,11 +56,31 @@ def test_modern_matchmaking_scores_include_modifiers():
         primary=_snapshot(),
         partner=partner,
         criteria=data["matchmaking_criteria"],
-        modern_preferences=["remote-first", "startup-ops"],
+        modern_preferences=["remote-first", "startup-ops", "slow-travel"],
     )
     assert compatibility.breakdown, "Each criterion should have a breakdown entry"
     assert compatibility.compatibility_index > 0
+    assert compatibility.long_term_index > 0
+    assert compatibility.short_term_index > 0
     assert compatibility.modern_highlights, "Modern preferences must contribute notes"
+
+
+def test_future_directives_fold_in_transit_rules():
+    data = load_bhrigu_data()
+    snapshot = _snapshot()
+    natal_dt = normalize_birth_datetime("1990-05-18", "04:30", timezone_name="UTC")
+    transit_dt = natal_dt + timedelta(days=45)
+    transit_details = derive_transit_snapshot(natal_dt, transit_dt)
+
+    directives = evaluate_future_directives(
+        snapshot,
+        data["future_engines"],
+        transit_rules=data["transit_rules"],
+        transit_details=transit_details,
+    )
+
+    assert directives, "Transit-aware directives should surface"
+    assert any(d.engine_id.startswith("TRANSIT") for d in directives)
 
 
 def test_interpretations_can_be_composed_from_reports():

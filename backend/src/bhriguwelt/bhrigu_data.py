@@ -1110,6 +1110,217 @@ BHRIGU_CANON: Dict[str, Any] = {
             ),
             "confidence": 0.79,
         },
+        {
+            "id": "PL-71",
+            "tradition": "universal",
+            "sutra_reference": "Composite oral 71",
+            "description": (
+                "Fire-ruled Moons with Mercury in the third and Jupiter in the ninth "
+                "recall pilgrim-poets who ferried mantras between monasteries."
+            ),
+            "conditions": {
+                "moon_element": {"any_of": ["fire"]},
+                "mercury_house": {"equals": 3},
+                "jupiter_house": {"equals": 9},
+            },
+            "narrative": (
+                "The Samhita paints a roaming bard who carried copper tablets of hymns "
+                "across river crossings; they return with a melodic memory for sacred "
+                "code-switching."
+            ),
+            "confidence": 0.77,
+        },
+        {
+            "id": "PL-72",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha palm 72d",
+            "description": (
+                "When Venus rises in the ascendant with Ketu guarding the ninth, the "
+                "palm leaves note temple dancers turned wisdom keepers."
+            ),
+            "conditions": {
+                "venus_house": {"any_of": [1]},
+                "ketu_house": {"equals": 9},
+                "moon_element": {"any_of": ["earth", "water"]},
+            },
+            "narrative": (
+                "Past-life memories surface as choreographed rituals and archival "
+                "instincts to protect dance notation, now digitized for modern students."
+            ),
+            "confidence": 0.74,
+        },
+        {
+            "id": "PL-73",
+            "tradition": "western-grantha",
+            "sutra_reference": "Pune Modi folio 73a",
+            "description": (
+                "Ether-leaning Moons with Jupiter in the twelfth reflect mystics who "
+                "mapped night skies for maritime caravans."
+            ),
+            "conditions": {
+                "moon_element": {"any_of": ["ether"]},
+                "jupiter_house": {"equals": 12},
+                "saturn_retrograde": {"equals": True},
+            },
+            "narrative": (
+                "The manuscripts describe a star-cartographer guiding spice fleets; the "
+                "native revives those instincts through celestial navigation apps."
+            ),
+            "confidence": 0.72,
+        },
+        {
+            "id": "PL-74",
+            "tradition": "northern",
+            "sutra_reference": "Kashi palm 74b",
+            "description": (
+                "Mercury fortified in the fifth with earthy Moons marks artisan-"
+                "architects who balanced acoustics and sculpture."
+            ),
+            "conditions": {
+                "mercury_house": {"equals": 5},
+                "moon_element": {"any_of": ["earth"]},
+                "saturn_house": {"max": 4},
+            },
+            "narrative": (
+                "Bhrigu chronicles a sculptor who tuned temple halls for mantra "
+                "resonance; the soul now returns to design immersive arts venues and "
+                "spatial audio labs."
+            ),
+            "confidence": 0.75,
+        },
+        {
+            "id": "PL-75",
+            "tradition": "universal",
+            "sutra_reference": "Bharuch copper 75c",
+            "description": (
+                "Watery Moons on early tithis with Rahu's ascendant aspect hint at "
+                "seafaring scribes handling port ledgers."
+            ),
+            "conditions": {
+                "moon_element": {"any_of": ["water"]},
+                "lunar_tithi": {"max": 3},
+                "rahu_aspects_ascendant": {"equals": True},
+            },
+            "narrative": (
+                "Prior births involved recording maritime treaties; the native now "
+                "gravitates to coastal research labs and blockchain customs registries."
+            ),
+            "confidence": 0.69,
+        },
+        {
+            "id": "PL-76",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha scroll 76e",
+            "description": (
+                "Ketu in the eighth with Venus in the eleventh records occult healers "
+                "who doubled as guild treasurers."
+            ),
+            "conditions": {
+                "ketu_house": {"equals": 8},
+                "venus_house": {"equals": 11},
+                "moon_element": {"any_of": ["air", "ether"]},
+            },
+            "narrative": (
+                "The folio praises tantric accountants balancing mantra rites with "
+                "cooperative finance; those instincts now fuel ethical fintech design."
+            ),
+            "confidence": 0.78,
+        },
+        {
+            "id": "PL-77",
+            "tradition": "western-grantha",
+            "sutra_reference": "Grantha palm 77c",
+            "description": (
+                "Air-ruled Moons with Mars in the third and Saturn in the eleventh point "
+                "to dispatch riders preserving encrypted edicts."
+            ),
+            "conditions": {
+                "moon_element": {"any_of": ["air"]},
+                "mars_house": {"equals": 3},
+                "saturn_house": {"equals": 11},
+            },
+            "narrative": (
+                "Past duties involved courier networks for dynastic councils; in this age "
+                "the native excels at secure communications and zero-knowledge archives."
+            ),
+            "confidence": 0.73,
+        },
+        {
+            "id": "PL-78",
+            "tradition": "northern",
+            "sutra_reference": "Sharada bundle 78a",
+            "description": (
+                "Earthy Moons with Jupiter in the seventh and Mercury in the second reveal "
+                "contract negotiators and guild mediators."
+            ),
+            "conditions": {
+                "moon_element": {"any_of": ["earth"]},
+                "jupiter_house": {"equals": 7},
+                "mercury_house": {"equals": 2},
+            },
+            "narrative": (
+                "The Samhita depicts a treaty-drafter fluent in multiple scripts; they "
+                "return to harmonize cross-border collaborations and digital DAO charters."
+            ),
+            "confidence": 0.7,
+        },
+        {
+            "id": "PL-79",
+            "tradition": "universal",
+            "sutra_reference": "Composite oral 79",
+            "description": (
+                "Saturn retrograde in the tenth with Venus in a kendra highlights artisan "
+                "engineers sustaining community wells."
+            ),
+            "conditions": {
+                "saturn_retrograde": {"equals": True},
+                "saturn_house": {"equals": 10},
+                "venus_house": {"any_of": [1, 4, 7, 10]},
+            },
+            "narrative": (
+                "Prior incarnations rebuilt aqueducts after droughts; the native now "
+                "stewards climate tech and community-owned water grids."
+            ),
+            "confidence": 0.8,
+        },
+        {
+            "id": "PL-80",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha leaf 80b",
+            "description": (
+                "Moons in ether with Mercury in the eleventh and Rahu on the ascendant "
+                "show astrologer-innovators bridging guilds."
+            ),
+            "conditions": {
+                "moon_element": {"any_of": ["ether"]},
+                "mercury_house": {"equals": 11},
+                "rahu_aspects_ascendant": {"equals": True},
+            },
+            "narrative": (
+                "The folio honors a sky-watcher who standardized star charts for merchant "
+                "alliances; today they revive that service via open-data observatories."
+            ),
+            "confidence": 0.71,
+        },
+        {
+            "id": "PL-81",
+            "tradition": "western-grantha",
+            "sutra_reference": "Grantha scroll 81e",
+            "description": (
+                "Venus in the fifth with Ketu in the twelfth highlights lyricists who "
+                "encoded bhakti poetry to outlast invasions."
+            ),
+            "conditions": {
+                "venus_house": {"equals": 5},
+                "ketu_house": {"equals": 12},
+                "lunar_tithi": {"min": 11, "max": 15},
+            },
+            "narrative": (
+                "They return with an artistic mandate to digitize endangered songs, pairing "
+                "studio craft with archival rigor for diaspora listeners."
+            ),
+            "confidence": 0.82,
+        },
     ],
     "future_engines": [
         {
@@ -1200,6 +1411,7 @@ BHRIGU_CANON: Dict[str, Any] = {
                 "partnerships that Bhrigu recommends for both spiritual and modern "
                 "entrepreneurial households."
             ),
+            "time_horizon": "long-term",
             "base_weight": 0.6,
             "pair_rules": [
                 {
@@ -1222,6 +1434,7 @@ BHRIGU_CANON: Dict[str, Any] = {
             "modern_modifiers": {
                 "remote-first": 0.05,
                 "research-partnership": 0.04,
+                "co-living": 0.03,
             },
         },
         {
@@ -1233,6 +1446,7 @@ BHRIGU_CANON: Dict[str, Any] = {
                 "\"digital grihastha\" households that balance art, finance, and product "
                 "roadmaps."
             ),
+            "time_horizon": "short-term",
             "base_weight": 0.4,
             "pair_rules": [
                 {
@@ -1256,6 +1470,7 @@ BHRIGU_CANON: Dict[str, Any] = {
             "modern_modifiers": {
                 "startup-ops": 0.07,
                 "arts-collab": 0.05,
+                "creative-startup": 0.05,
             },
         },
         {
@@ -1266,6 +1481,7 @@ BHRIGU_CANON: Dict[str, Any] = {
                 "Jupiter-Mercury pairings in the fifth bhava strengthen joint study and "
                 "translation work across families."
             ),
+            "time_horizon": "long-term",
             "base_weight": 0.55,
             "pair_rules": [
                 {
@@ -1290,6 +1506,78 @@ BHRIGU_CANON: Dict[str, Any] = {
             "modern_modifiers": {
                 "research-partnership": 0.06,
                 "multi-lingual": 0.05,
+                "family-planning": 0.04,
+            },
+        },
+        {
+            "id": "MM-19",
+            "tradition": "universal",
+            "sutra_reference": "Bharuch copper 19e",
+            "description": (
+                "Moon-Venus harmonies in travel houses signal couples who thrive on "
+                "creative sabbaticals and rotating studio hubs."
+            ),
+            "time_horizon": "short-term",
+            "base_weight": 0.45,
+            "pair_rules": [
+                {
+                    "label": "Shared travel cadence",
+                    "primary_field": "lunar_tithi",
+                    "partner_field": "lunar_tithi",
+                    "comparator": "distance",
+                    "max_difference": 3,
+                    "weight": 0.45,
+                },
+                {
+                    "label": "Venus studio sync",
+                    "primary_field": "venus_house",
+                    "partner_field": "venus_house",
+                    "comparator": "distance",
+                    "max_difference": 2,
+                    "circular": True,
+                    "weight": 0.55,
+                },
+            ],
+            "modern_modifiers": {
+                "slow-travel": 0.06,
+                "digital-nomad": 0.05,
+                "arts-collab": 0.04,
+            },
+        },
+        {
+            "id": "MM-21",
+            "tradition": "universal",
+            "sutra_reference": "Composite oral 21",
+            "description": (
+                "Saturn-Jupiter steadiness across kendras maps to partners building "
+                "intergenerational trusts and community projects."
+            ),
+            "time_horizon": "long-term",
+            "base_weight": 0.65,
+            "pair_rules": [
+                {
+                    "label": "Saturn stability span",
+                    "primary_field": "saturn_house",
+                    "partner_field": "saturn_house",
+                    "comparator": "distance",
+                    "max_difference": 2,
+                    "circular": True,
+                    "weight": 0.45,
+                },
+                {
+                    "label": "Jupiter value sync",
+                    "primary_field": "jupiter_house",
+                    "partner_field": "jupiter_house",
+                    "comparator": "distance",
+                    "max_difference": 3,
+                    "circular": True,
+                    "weight": 0.55,
+                },
+            ],
+            "modern_modifiers": {
+                "family-planning": 0.07,
+                "co-living": 0.05,
+                "impact-projects": 0.06,
             },
         },
     ],
