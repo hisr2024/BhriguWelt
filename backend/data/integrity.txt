@@ -1,2 +1,2 @@
-a3f79ffddd03b478dab38a7d579d3fa3  data/bhrigu_samhita_principles.yml
-7aa58d5c1e1c496411cbe7982c5c57a5  src/bhriguwelt/bhrigu_data.py
+77164ee1ca6e4de1a346a8a882ad954d  data/bhrigu_samhita_principles.yml
+1f64d8fcb0a878558f983edc92dd7e3f  src/bhriguwelt/bhrigu_data.py

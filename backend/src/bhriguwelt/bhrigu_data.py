@@ -223,6 +223,757 @@ BHRIGU_CANON: Dict[str, Any] = {
                 "bridge_building": 0.71,
             },
         },
+        {
+            "id": "BR-73",
+            "tradition": "northern",
+            "sutra_reference": "Bikaner folio 45d",
+            "description": (
+                "Ketu in the twelfth bhava with Mercury fortified in the fourth yields "
+                "monastic translators who balance solitude with community archives. Bhrigu "
+                "notes their ability to sustain daily meditation alongside rigorous record "
+                "keeping."
+            ),
+            "weights": {
+                "spiritual_detachment": 0.84,
+                "translation_gift": 0.72,
+                "archive_care": 0.67,
+            },
+        },
+        {
+            "id": "BR-74",
+            "tradition": "northern",
+            "sutra_reference": "Kashi palm 82b",
+            "description": (
+                "Mercury receiving Jupiter's aspect in dual signs produces interpreters "
+                "who revive commentaries lost to floods. The folio links their service to "
+                "rebuilding temple libraries after monsoon damage."
+            ),
+            "weights": {
+                "commentary_revival": 0.78,
+                "scholarly_pursuits": 0.73,
+                "disaster_response": 0.61,
+            },
+        },
+        {
+            "id": "BR-75",
+            "tradition": "western-grantha",
+            "sutra_reference": "Pune Modi folio 25c",
+            "description": (
+                "A waxing Moon conjoined with Jupiter while Ketu guards the twelfth bhava "
+                "inspires bilingual scribes who preserve merchant guild ledgers. The Modi "
+                "annotation ties their karma to ethical accounting in border towns."
+            ),
+            "weights": {
+                "ethical_wealth": 0.71,
+                "bilingual_fluency": 0.76,
+                "pilgrimage_service": 0.58,
+            },
+        },
+        {
+            "id": "BR-76",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha palm 70a",
+            "description": (
+                "When Ketu occupies the twelfth and Venus rules the ninth, the Grantha "
+                "leaf praises contemplatives who uplift devotional art for pilgrims. They "
+                "curate soundscapes and lighting in sanctuaries while keeping silence vows."
+            ),
+            "weights": {
+                "artistic_service": 0.74,
+                "spiritual_detachment": 0.8,
+                "pilgrimage_service": 0.63,
+            },
+        },
+        {
+            "id": "BR-77",
+            "tradition": "northern",
+            "sutra_reference": "Kashi scroll 83d",
+            "description": (
+                "Mercury-Jupiter mutual reception in kendra houses signals research pairs "
+                "who translate law codes and mediate disputes. Bhrigu assigns them to civic "
+                "courts and modern compliance work."
+            ),
+            "weights": {
+                "conciliatory_skill": 0.77,
+                "research_partners": 0.79,
+                "legal_draftsmanship": 0.7,
+            },
+        },
+        {
+            "id": "BR-78",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Tanjore palm 41f",
+            "description": (
+                "Ketu twelfth with Saturn aspecting from the eighth denotes retreat leaders "
+                "who hold space for grief rituals. The manuscript stresses their grounding "
+                "breathwork and marshaling of community healers."
+            ),
+            "weights": {
+                "grief_counsel": 0.82,
+                "retreat_facilitation": 0.75,
+                "karmic_debts": 0.52,
+            },
+        },
+        {
+            "id": "BR-79",
+            "tradition": "universal",
+            "sutra_reference": "Bharuch copper 61a",
+            "description": (
+                "Rahu conjoined Mercury in the third with Jupiter's ninth aspect produces "
+                "data storytellers who bridge ancestral lore with civic dashboards. Copper "
+                "etchings emphasize truthful visualization practices."
+            ),
+            "weights": {
+                "data_stewardship": 0.78,
+                "storytelling": 0.69,
+                "civic_tech": 0.66,
+            },
+        },
+        {
+            "id": "BR-80",
+            "tradition": "western-grantha",
+            "sutra_reference": "Pune Modi folio 28b",
+            "description": (
+                "Jupiter retrograde in the eleventh facing Mercury in the fifth yields "
+                "product visionaries who revive postponed scholarly tools. The folio notes "
+                "delayed yet enduring patronage from educator guilds."
+            ),
+            "weights": {
+                "innovation_patience": 0.77,
+                "scholarly_pursuits": 0.72,
+                "patronage": 0.64,
+            },
+        },
+        {
+            "id": "BR-81",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha scroll 72d",
+            "description": (
+                "Moon in Rohini with Ketu in twelfth and Venus exalted signals artists who "
+                "blend traditional crafts with digital residencies. Bhrigu ties their karma "
+                "to curating immersive heritage exhibits."
+            ),
+            "weights": {
+                "artistic_service": 0.81,
+                "digital_curation": 0.7,
+                "moksha_drive": 0.62,
+            },
+        },
+        {
+            "id": "BR-82",
+            "tradition": "northern",
+            "sutra_reference": "Sharada bundle 88c",
+            "description": (
+                "Mercury combust under Sun while Jupiter aspects from a trikona grants sharp "
+                "editors who rescue corrupted manuscripts. The Sharada bundle praises their "
+                "stamina in disinfecting mold-damaged libraries."
+            ),
+            "weights": {
+                "preservation_skill": 0.82,
+                "editorial_precision": 0.74,
+                "health_resilience": 0.6,
+            },
+        },
+        {
+            "id": "BR-83",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha palm 74b",
+            "description": (
+                "Ketu twelfth with Mercury in the second and Jupiter in the ninth inspires "
+                "polyglot singers who archive oral histories. They travel shrine circuits to "
+                "record vanishing ragas."
+            ),
+            "weights": {
+                "oral_archive": 0.78,
+                "multilingual_chant": 0.73,
+                "pilgrimage_service": 0.66,
+            },
+        },
+        {
+            "id": "BR-84",
+            "tradition": "universal",
+            "sutra_reference": "Composite oral 84",
+            "description": (
+                "Ketu's glance on the Moon from the twelfth bhava awakens lucid dreaming and "
+                "disciplined journaling. Oral commentators highlight lifelong devotion to "
+                "sleep hygiene and pre-dawn mantra writing."
+            ),
+            "weights": {
+                "dream_recall": 0.83,
+                "contemplative_writing": 0.72,
+                "spiritual_detachment": 0.68,
+            },
+        },
+        {
+            "id": "BR-85",
+            "tradition": "northern",
+            "sutra_reference": "Bikaner folio 47a",
+            "description": (
+                "Jupiter with Mercury in the first bhava during Shukla Navami produces "
+                "cultural diplomats adept at protocol. The folio links them to embassy "
+                "archivists cataloguing bilateral treaties."
+            ),
+            "weights": {
+                "diplomacy": 0.79,
+                "documentation": 0.71,
+                "travel_fortune": 0.65,
+            },
+        },
+        {
+            "id": "BR-86",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha palm 77a",
+            "description": (
+                "Saturn in the twelfth aspecting Mercury in the sixth yields jurists who "
+                "defend migrant artisans. The palm-leaf underlines pro-bono advocacy and "
+                "preservation of craft lineages."
+            ),
+            "weights": {
+                "legal_draftsmanship": 0.72,
+                "service_orientation": 0.74,
+                "karmic_debts": 0.55,
+            },
+        },
+        {
+            "id": "BR-87",
+            "tradition": "western-grantha",
+            "sutra_reference": "Pune Modi folio 32d",
+            "description": (
+                "Mercury-Jupiter conjunction in airy signs with Rahu in the eleventh crafts "
+                "community radio pioneers. Modi annotations encourage open-licensing of "
+                "educational broadcasts."
+            ),
+            "weights": {
+                "community_voice": 0.8,
+                "open_knowledge": 0.77,
+                "technology_evangelism": 0.69,
+            },
+        },
+        {
+            "id": "BR-88",
+            "tradition": "universal",
+            "sutra_reference": "Bharuch copper 64f",
+            "description": (
+                "Ketu twelfth combined with Moon in a fixed sign marks archivists who secure "
+                "long-term cold storage. Copper inscriptions emphasize humidity rituals and "
+                "intergenerational stewardship."
+            ),
+            "weights": {
+                "archive_care": 0.82,
+                "resilience": 0.71,
+                "spiritual_detachment": 0.63,
+            },
+        },
+        {
+            "id": "BR-89",
+            "tradition": "northern",
+            "sutra_reference": "Kashi palm 90c",
+            "description": (
+                "Jupiter's fifth aspect on Mercury placed in the ninth produces curriculum "
+                "designers who translate ritual sciences for students. The palm mentions "
+                "remote learning caravans along the Ganga."
+            ),
+            "weights": {
+                "pedagogy": 0.81,
+                "translation_gift": 0.74,
+                "travel_fortune": 0.6,
+            },
+        },
+        {
+            "id": "BR-90",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Kanchipuram cadjan 5d",
+            "description": (
+                "Ketu in moksha houses with Jupiter exalted in the ninth creates spiritual "
+                "cartographers mapping pilgrimage trails. Cadjan leaves recommend sharing "
+                "geospatial guides with fellow seekers."
+            ),
+            "weights": {
+                "pilgrimage_service": 0.83,
+                "cartography": 0.68,
+                "moksha_drive": 0.76,
+            },
+        },
+        {
+            "id": "BR-91",
+            "tradition": "northern",
+            "sutra_reference": "Varanasi folio 12a",
+            "description": (
+                "Mercury-Jupiter trine across the first and fifth bhavas grants storytellers "
+                "who compose epics for civic morale. The folio highlights their knack for "
+                "weaving policy reforms into mythic narrative."
+            ),
+            "weights": {
+                "storytelling": 0.82,
+                "civic_tech": 0.64,
+                "scholarship_outreach": 0.74,
+            },
+        },
+        {
+            "id": "BR-92",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Rameswaram palm 22e",
+            "description": (
+                "Moon waning with Ketu in the twelfth and Mercury on the ascendant indicates "
+                "contemplatives who serve as conflict-free mediators. Grantha notes praise "
+                "their silent presence during negotiations."
+            ),
+            "weights": {
+                "mediation": 0.8,
+                "spiritual_detachment": 0.77,
+                "calm_presence": 0.71,
+            },
+        },
+        {
+            "id": "BR-93",
+            "tradition": "universal",
+            "sutra_reference": "Composite oral 93",
+            "description": (
+                "Jupiter's full aspect on Mercury with Ketu twelfth signifies community "
+                "coders who build open prayer timers and donate code to temples. Oral lines "
+                "advise pairing coding sprints with mantra chanting."
+            ),
+            "weights": {
+                "open_knowledge": 0.8,
+                "technology_evangelism": 0.72,
+                "devotional_service": 0.69,
+            },
+        },
+        {
+            "id": "BR-94",
+            "tradition": "western-grantha",
+            "sutra_reference": "Pune Modi folio 34a",
+            "description": (
+                "Mercury retrograde under Jupiter's blessing shapes reviewers who audit "
+                "legacy contracts. The folio applauds patience with redlines and honoring "
+                "elders during negotiations."
+            ),
+            "weights": {
+                "contract_audit": 0.79,
+                "patience": 0.73,
+                "conciliatory_skill": 0.66,
+            },
+        },
+        {
+            "id": "BR-95",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha palm 80f",
+            "description": (
+                "Ketu twelfth with Moon in Anuradha yields devotees who revive forest "
+                "hermitage ecology. They oversee sapling drives and document medicinal "
+                "flora for villagers."
+            ),
+            "weights": {
+                "ecological_service": 0.82,
+                "spiritual_detachment": 0.7,
+                "community_health": 0.69,
+            },
+        },
+        {
+            "id": "BR-96",
+            "tradition": "northern",
+            "sutra_reference": "Kashi scroll 95a",
+            "description": (
+                "Jupiter-Mercury in the tenth with Saturn aspecting from the seventh marks "
+                "protocol chiefs who draft emergency governance manuals. The scroll notes "
+                "their calm in crisis simulations."
+            ),
+            "weights": {
+                "governance": 0.78,
+                "documentation": 0.75,
+                "resilience": 0.66,
+            },
+        },
+        {
+            "id": "BR-97",
+            "tradition": "universal",
+            "sutra_reference": "Bharuch copper 70e",
+            "description": (
+                "Ketu in the twelfth with Jupiter and Mercury in benefic houses marks "
+                "contemplative technologists who secure data sanctuaries. Copper plates "
+                "advise encryption mantras and ethical consent rituals."
+            ),
+            "weights": {
+                "data_stewardship": 0.81,
+                "spiritual_detachment": 0.73,
+                "privacy_advocacy": 0.72,
+            },
+        },
+        {
+            "id": "BR-98",
+            "tradition": "northern",
+            "sutra_reference": "Bikaner folio 50b",
+            "description": (
+                "Mercury-Jupiter in the seventh with Ketu twelfth denotes negotiators who "
+                "bridge river-sharing treaties. The folio links their speech to rainfall "
+                "harmonization and water equity."
+            ),
+            "weights": {
+                "water_diplomacy": 0.83,
+                "conciliatory_skill": 0.74,
+                "environmental_ethics": 0.69,
+            },
+        },
+        {
+            "id": "BR-99",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha palm 82c",
+            "description": (
+                "Ketu twelfth with Mercury in the third grants musicians who code rhythm "
+                "analyzers for temple orchestras. The palm-leaf values their blend of tala "
+                "knowledge and scripting."
+            ),
+            "weights": {
+                "musical_math": 0.8,
+                "technology_evangelism": 0.68,
+                "devotional_service": 0.71,
+            },
+        },
+        {
+            "id": "BR-100",
+            "tradition": "western-grantha",
+            "sutra_reference": "Pune Modi folio 34c",
+            "description": (
+                "Jupiter conjunct Mercury in Virgo with Ketu in the twelfth produces "
+                "healers who document herbal compendiums in digital form. Modi margins urge "
+                "them to publish bilingual glossaries."
+            ),
+            "weights": {
+                "herbal_knowledge": 0.82,
+                "bilingual_fluency": 0.75,
+                "documentation": 0.73,
+            },
+        },
+        {
+            "id": "BR-101",
+            "tradition": "northern",
+            "sutra_reference": "Sharada bundle 92d",
+            "description": (
+                "Mercury exalted with Jupiter in the ninth fosters grant writers funding "
+                "scholarship digitization. The bundle notes their success when budgets "
+                "include preservation training."
+            ),
+            "weights": {
+                "fundraising": 0.79,
+                "scholarly_pursuits": 0.77,
+                "preservation_skill": 0.7,
+            },
+        },
+        {
+            "id": "BR-102",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Thiruvananthapuram ola 17b",
+            "description": (
+                "Ketu in moksha houses with Mercury in the eleventh indicates community "
+                "technologists running offline-first libraries. Ola leaves praise their "
+                "mesh networks for rural seekers."
+            ),
+            "weights": {
+                "infrastructure_service": 0.78,
+                "spiritual_detachment": 0.65,
+                "open_knowledge": 0.76,
+            },
+        },
+        {
+            "id": "BR-103",
+            "tradition": "northern",
+            "sutra_reference": "Kashi palm 99d",
+            "description": (
+                "Jupiter's seventh aspect on Mercury in the first births linguists who "
+                "steward endangered scripts. The palm mentions custom fonts and workshops "
+                "for scribes."
+            ),
+            "weights": {
+                "language_mastery": 0.83,
+                "preservation_skill": 0.74,
+                "mentorship": 0.69,
+            },
+        },
+        {
+            "id": "BR-104",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha palm 82f",
+            "description": (
+                "Ketu twelfth with Moon in Uttara Phalguni gives hospitality planners who "
+                "host silent retreats. The palm encourages accessible pricing and mindful "
+                "dining halls."
+            ),
+            "weights": {
+                "hospitality": 0.76,
+                "retreat_facilitation": 0.78,
+                "spiritual_detachment": 0.64,
+            },
+        },
+        {
+            "id": "BR-105",
+            "tradition": "universal",
+            "sutra_reference": "Composite oral 105",
+            "description": (
+                "Mercury conjunct Jupiter while Ketu watches from the twelfth inspires "
+                "ethics reviewers for AI divination tools. Oral custodians stress fairness, "
+                "consent, and ritual transparency."
+            ),
+            "weights": {
+                "ethics_guardian": 0.82,
+                "research_partners": 0.71,
+                "transparency": 0.7,
+            },
+        },
+        {
+            "id": "BR-106",
+            "tradition": "northern",
+            "sutra_reference": "Bikaner folio 53c",
+            "description": (
+                "Mercury in the eighth with Jupiter in the second and Ketu in twelfth marks "
+                "archivists who rebuild destroyed ledgers after conflict. They champion "
+                "trauma-aware cataloguing."
+            ),
+            "weights": {
+                "archive_care": 0.83,
+                "resilience": 0.76,
+                "humanitarian_service": 0.7,
+            },
+        },
+        {
+            "id": "BR-107",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha palm 83a",
+            "description": (
+                "Ketu twelfth with Mercury in the ninth produces philosophical podcasters "
+                "broadcasting dharma dialogues. Grantha margins note clean audio rituals "
+                "and gratitude to teachers."
+            ),
+            "weights": {
+                "broadcasting": 0.77,
+                "philosophy_depth": 0.74,
+                "devotional_service": 0.67,
+            },
+        },
+        {
+            "id": "BR-108",
+            "tradition": "western-grantha",
+            "sutra_reference": "Pune Modi folio 36b",
+            "description": (
+                "Mercury-Jupiter in watery signs with Ketu twelfth creates healers who "
+                "integrate hydrotherapy with mantra. The folio favors them leading "
+                "community bath restorations."
+            ),
+            "weights": {
+                "healing_arts": 0.8,
+                "water_stewardship": 0.73,
+                "spiritual_detachment": 0.62,
+            },
+        },
+        {
+            "id": "BR-109",
+            "tradition": "northern",
+            "sutra_reference": "Kashi palm 101b",
+            "description": (
+                "Mercury combust yet graced by Jupiter in upachaya houses yields newsroom "
+                "editors protecting investigative integrity. The palm extols cross-checking "
+                "sources and long-form diligence."
+            ),
+            "weights": {
+                "editorial_precision": 0.82,
+                "courage": 0.69,
+                "transparency": 0.71,
+            },
+        },
+        {
+            "id": "BR-110",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha palm 84d",
+            "description": (
+                "Ketu twelfth with Mercury in the tenth and Jupiter in the sixth produces "
+                "workplace chaplains guiding burnout recovery. The palm prescribes pranayama "
+                "circles and ethical HR reforms."
+            ),
+            "weights": {
+                "workplace_wellbeing": 0.82,
+                "service_orientation": 0.71,
+                "spiritual_detachment": 0.63,
+            },
+        },
+        {
+            "id": "BR-111",
+            "tradition": "universal",
+            "sutra_reference": "Bharuch copper 72b",
+            "description": (
+                "Mercury-Jupiter conjunction with Ketu in moksha houses shapes seers who "
+                "translate dream symbolism into practical checklists. Copper margins stress "
+                "disciplined follow-through."
+            ),
+            "weights": {
+                "dream_recall": 0.79,
+                "translation_gift": 0.74,
+                "execution": 0.68,
+            },
+        },
+        {
+            "id": "BR-112",
+            "tradition": "northern",
+            "sutra_reference": "Bikaner folio 55e",
+            "description": (
+                "Jupiter's ninth aspect on Mercury in the third with Ketu twelfth highlights "
+                "pilgrim guides who maintain river safety drills. Bikaner custodians applaud "
+                "their blended use of hymns and rope work."
+            ),
+            "weights": {
+                "safety_training": 0.82,
+                "pilgrimage_service": 0.74,
+                "communication": 0.7,
+            },
+        },
+        {
+            "id": "BR-113",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha palm 85b",
+            "description": (
+                "Ketu twelfth with Mercury in the eleventh and Jupiter in the third fosters "
+                "community grant reviewers ensuring equity for artisans. The palm-leaf "
+                "celebrates their bias audits."
+            ),
+            "weights": {
+                "fairness": 0.81,
+                "community_finance": 0.73,
+                "artisan_support": 0.7,
+            },
+        },
+        {
+            "id": "BR-114",
+            "tradition": "northern",
+            "sutra_reference": "Kashi palm 103c",
+            "description": (
+                "Mercury-Jupiter in trines with Ketu twelfth births translators who keep "
+                "climate records for monasteries. The palm urges redundant backups across "
+                "regions."
+            ),
+            "weights": {
+                "climate_archives": 0.82,
+                "translation_gift": 0.72,
+                "redundancy_planning": 0.68,
+            },
+        },
+        {
+            "id": "BR-115",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha palm 86d",
+            "description": (
+                "Moon bright with Ketu twelfth and Mercury-Jupiter in the ninth produces "
+                "festival coordinators who digitize rituals for diaspora devotees. Grantha "
+                "notes emphasize timezone-sensitive livestreams."
+            ),
+            "weights": {
+                "festival_design": 0.83,
+                "digital_curation": 0.75,
+                "inclusivity": 0.72,
+            },
+        },
+        {
+            "id": "BR-116",
+            "tradition": "universal",
+            "sutra_reference": "Composite oral 116",
+            "description": (
+                "Ketu's seclusion paired with Mercury-Jupiter counsel creates sages who "
+                "mentor coding monks. Oral keepers advise pairing Git literacy with vinaya "
+                "study."
+            ),
+            "weights": {
+                "mentorship": 0.8,
+                "open_knowledge": 0.74,
+                "spiritual_detachment": 0.66,
+            },
+        },
+        {
+            "id": "BR-117",
+            "tradition": "northern",
+            "sutra_reference": "Kashi palm 104a",
+            "description": (
+                "Mercury in the fourth with Jupiter in the eighth and Ketu twelfth fashions "
+                "hospice scribes who record final wishes. The palm respects their gentle "
+                "bedside presence."
+            ),
+            "weights": {
+                "hospice_care": 0.82,
+                "documentation": 0.74,
+                "compassion": 0.78,
+            },
+        },
+        {
+            "id": "BR-118",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha palm 87c",
+            "description": (
+                "Ketu twelfth with Mercury-Jupiter in the second yields archivists of "
+                "culinary hymns. They standardize kitchen safety protocols while preserving "
+                "chant rhythms."
+            ),
+            "weights": {
+                "culinary_tradition": 0.79,
+                "safety_training": 0.7,
+                "devotional_service": 0.72,
+            },
+        },
+        {
+            "id": "BR-119",
+            "tradition": "western-grantha",
+            "sutra_reference": "Pune Modi folio 37e",
+            "description": (
+                "Mercury retrograde with Jupiter direct and Ketu twelfth empowers auditors "
+                "who reconcile diaspora donations. Modi scribes recommend transparent ledgers "
+                "and multilingual receipts."
+            ),
+            "weights": {
+                "accountability": 0.82,
+                "bilingual_fluency": 0.7,
+                "community_finance": 0.74,
+            },
+        },
+        {
+            "id": "BR-120",
+            "tradition": "northern",
+            "sutra_reference": "Sharada bundle 99f",
+            "description": (
+                "Jupiter's grace on Mercury in the eleventh with Ketu twelfth produces "
+                "youth mentors teaching astronomy clubs. Sharada notes endorse night-sky "
+                "walks aligned with ekadashi vows."
+            ),
+            "weights": {
+                "mentorship": 0.82,
+                "astronomy_love": 0.7,
+                "spiritual_detachment": 0.6,
+            },
+        },
+        {
+            "id": "BR-121",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha palm 88e",
+            "description": (
+                "Ketu twelfth with Mercury-Jupiter in dual signs shapes adaptable scribes "
+                "who localize rituals for migrants. The palm urges inclusive glossaries and "
+                "shared pronunciation guides."
+            ),
+            "weights": {
+                "localization": 0.8,
+                "inclusivity": 0.74,
+                "translation_gift": 0.72,
+            },
+        },
+        {
+            "id": "BR-122",
+            "tradition": "universal",
+            "sutra_reference": "Composite oral 122",
+            "description": (
+                "When Ketu severs worldly ties and Mercury meets Jupiter, Bhrigu assigns the "
+                "native to steward community charters. Oral custodians encourage consensus "
+                "circles and transparent amendments."
+            ),
+            "weights": {
+                "governance": 0.8,
+                "transparency": 0.75,
+                "community_trust": 0.73,
+            },
+        },
     ],
     "remedies": [
         {
