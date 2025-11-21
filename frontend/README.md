@@ -5,8 +5,8 @@ that surfaces every Bhrigu Samhita engine (horoscope, past-life, future,
 matchmaking, and Śaka calendar conversion). It is designed to deploy directly to
 Vercel while consuming the Python backend hosted on Render (or any HTTPS URL you
 provide via an environment variable). The UI is intentionally bold—glassmorphic
-panels, gradients, and multi-page navigation tuned for Gen Z while still
-remaining legible for all ages.
+panels, gradients, and multi-page navigation that stay legible for seekers of
+every age.
 
 ## Getting started
 
@@ -40,8 +40,8 @@ key so `npm run dev` and `npm run build` compile against the right host.
   parity across devices.
 - `/future`: actionable future directives ready for streaks, notifications, and
   checklists.
-- `/matchmaking`: dual-profile intake with modern preference tags for Gen Z use
-  cases.
+- `/matchmaking`: dual-profile intake with modern preference tags for families,
+  friends, or partners.
 - `/calendar`: standalone Gregorian → Śaka converter for international users.
 - Skip links and high-contrast defaults keep the neon look while preserving
   keyboard/screen-reader usability.

@@ -79,8 +79,8 @@ function Shell({ children }: Props) {
       <footer className="footer" aria-label="Footer">
         <div>
           <p className="eyebrow">Bhrigu Samhita</p>
-          <h3>{t("nav.tagline", "Designed for Gen Z, accessible for every generation.")}</h3>
-          <p className="muted">{t("nav.desc", "Crafted for responsive web, Vercel previews, and Android/iOS builds.")}</p>
+          <h3>{t("nav.tagline", "Ancient wisdom, modern calm for every generation.")}</h3>
+          <p className="muted">{t("nav.desc", "Share Bhrigu insights across responsive web, Vercel previews, and Android/iOS builds.")}</p>
         </div>
         <div className="footer-links">
           {navLinks.map((link) => (
