@@ -16,6 +16,20 @@ export interface BirthDetails {
   saturnRetrograde?: boolean;
 }
 
+export interface ChartHouse {
+  index: number;
+  sign: string;
+  occupants: string[];
+  bhrigu_notes: string[];
+}
+
+export interface DashaPeriod {
+  lord: string;
+  start: string;
+  end: string;
+  anchor_rule: string;
+}
+
 export interface CalendarDetails {
   birthDate: string;
   birthTime: string;
