@@ -1,0 +1,24 @@
+scoring:
+  bayesian_alpha: 1.2
+  bayesian_beta: 1.1
+  ml_weight_floor: 0.45
+  max_modifier: 1.4
+  logistic_positive_bias: 0.25
+  logistic_negative_bias: -0.15
+conflicts:
+  strategy: antiquity
+  prefer_higher_weight: true
+  default_rank: 50
+  antiquity_ranks:
+    BR-1: 5
+    BR-7: 9
+    BR-18: 14
+    BR-19: 18
+    BR-22: 22
+    BR-30: 30
+interpretation:
+  personalized_prefix: "{name} of {birth_place},"
+  fallback_name: "the native"
+  fallback_birth_place: "their recorded locale"
+  gratitude_phrase: "the folios honor your lineage."
+  remedy_prefix: "Prescribed for {name}:"

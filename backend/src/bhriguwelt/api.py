@@ -229,6 +229,9 @@ def _serialize_horoscope_report(report) -> Dict[str, Any]:
         "past_life_insights": [_serialize_obj(item) for item in report.past_life_insights],
         "future_trajectories": [_serialize_obj(item) for item in report.future_trajectories],
         "interpretation": report.interpretation,
+        "rashi_chart": [_serialize_obj(item) for item in report.rashi_chart],
+        "bhava_chart": [_serialize_obj(item) for item in report.bhava_chart],
+        "dashas": [_serialize_obj(item) for item in report.dashas],
     }
 
 
