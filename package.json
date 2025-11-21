@@ -1,0 +1,7 @@
+{
+  "name": "bhriguwelt-monorepo",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ]
+}
