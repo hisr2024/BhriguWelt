@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 from typing import Dict, List
+
+from zoneinfo import ZoneInfo
+
+from .astronomical_calculations import has_swisseph
 
 _SAKA_MONTHS = [
     "Chaitra",
@@ -81,7 +85,41 @@ _YOGAS = [
     "Vaidhriti",
 ]
 
-_KARANAS = [
+_TITHI_NAMES = [
+    "Pratipada",
+    "Dwitiya",
+    "Tritiya",
+    "Chaturthi",
+    "Panchami",
+    "Shashthi",
+    "Saptami",
+    "Ashtami",
+    "Navami",
+    "Dashami",
+    "Ekadashi",
+    "Dwadashi",
+    "Trayodashi",
+    "Chaturdashi",
+    "Purnima",
+    "Pratipada",
+    "Dwitiya",
+    "Tritiya",
+    "Chaturthi",
+    "Panchami",
+    "Shashthi",
+    "Saptami",
+    "Ashtami",
+    "Navami",
+    "Dashami",
+    "Ekadashi",
+    "Dwadashi",
+    "Trayodashi",
+    "Chaturdashi",
+    "Amavasya",
+]
+
+_KARANA_CYCLE = [
+    "Kimstughna",
     "Bava",
     "Balava",
     "Kaulava",
@@ -89,10 +127,17 @@ _KARANAS = [
     "Garaja",
     "Vanija",
     "Vishti",
+]
+
+_KARANA_SEQUENCE = [
+    _KARANA_CYCLE[0],
+    *_KARANA_CYCLE[1:] * 8,
     "Shakuni",
     "Chatushpada",
     "Naga",
 ]
+
+_KARANAS = list(dict.fromkeys(_KARANA_SEQUENCE))
 
 _IST_REFERENCE_LONGITUDE = 82.5  # Allahabad Observatory meridian adopted in IST
 _AUTHENTIC_SOURCES = [
@@ -124,9 +169,14 @@ class HinduCalendarContext:
     ist_reference_longitude: float
     sources: List[str]
     nakshatra: str
+    nakshatra_index: int
     yoga: str
+    yoga_index: int
     karana: str
+    karana_index: int
     tithi_name: str
+    tithi_number: int
+    weekday: str
 
     def as_payload(self) -> Dict[str, object]:
         return {
@@ -144,9 +194,14 @@ class HinduCalendarContext:
             "ist_reference_longitude": self.ist_reference_longitude,
             "sources": list(self.sources),
             "nakshatra": self.nakshatra,
+            "nakshatra_index": self.nakshatra_index,
             "yoga": self.yoga,
+            "yoga_index": self.yoga_index,
             "karana": self.karana,
+            "karana_index": self.karana_index,
             "tithi_name": self.tithi_name,
+            "tithi_number": self.tithi_number,
+            "weekday": self.weekday,
         }
 
 
@@ -157,10 +212,7 @@ def convert_birth_details(birth_date: str, birth_time: str, birth_place: str) ->
     parsed_time = time.fromisoformat(birth_time)
     saka_date = _gregorian_to_saka(parsed_date)
     conversion_factor = parsed_date.year - saka_date.year
-    tithi_index = _cyclic_value(parsed_date.toordinal() + parsed_time.hour, 30)
-    nakshatra_index = _cyclic_value(parsed_date.toordinal(), len(_NAKSHATRAS))
-    yoga_index = _cyclic_value(parsed_date.toordinal() + parsed_time.hour, len(_YOGAS))
-    karana_index = _cyclic_value(parsed_date.toordinal() + parsed_time.hour, len(_KARANAS))
+    panchang = _derive_panchang(parsed_date, parsed_time)
     return HinduCalendarContext(
         birth_date=parsed_date,
         birth_time=parsed_time,
@@ -169,10 +221,15 @@ def convert_birth_details(birth_date: str, birth_time: str, birth_place: str) ->
         conversion_factor_years=conversion_factor,
         ist_reference_longitude=_IST_REFERENCE_LONGITUDE,
         sources=_AUTHENTIC_SOURCES,
-        nakshatra=_NAKSHATRAS[nakshatra_index - 1],
-        yoga=_YOGAS[yoga_index - 1],
-        karana=_KARANAS[karana_index - 1],
-        tithi_name=_tithi_label(tithi_index),
+        nakshatra=panchang["nakshatra"],
+        nakshatra_index=panchang["nakshatra_index"],
+        yoga=panchang["yoga"],
+        yoga_index=panchang["yoga_index"],
+        karana=panchang["karana"],
+        karana_index=panchang["karana_index"],
+        tithi_name=panchang["tithi_name"],
+        tithi_number=panchang["tithi_number"],
+        weekday=panchang["weekday"],
     )
 
 
@@ -211,8 +268,83 @@ def _cyclic_value(seed: int, modulus: int) -> int:
 
 def _tithi_label(index: int) -> str:
     phase = "Shukla" if index <= 15 else "Krishna"
-    position = index if index <= 15 else index - 15
-    return f"{phase} {position}"
+    name = _TITHI_NAMES[index - 1]
+    return f"{phase} {name}"
+
+
+def _karana_name(index: int) -> str:
+    capped_index = min(index, len(_KARANA_SEQUENCE))
+    return _KARANA_SEQUENCE[capped_index - 1]
+
+
+def _ist_datetime(gregorian_date: date, gregorian_time: time) -> datetime:
+    ist_tz = ZoneInfo("Asia/Kolkata")
+    naive = datetime.combine(gregorian_date, gregorian_time)
+    return naive.replace(tzinfo=ist_tz)
+
+
+def _derive_panchang(gregorian_date: date, gregorian_time: time) -> Dict[str, object]:
+    dt = _ist_datetime(gregorian_date, gregorian_time)
+    weekday = dt.strftime("%A")
+
+    if has_swisseph():
+        panchang = _swisseph_panchang(dt)
+    else:
+        panchang = _fallback_panchang(dt)
+
+    return {**panchang, "weekday": weekday}
+
+
+def _swisseph_panchang(dt: datetime) -> Dict[str, object]:  # pragma: no cover - optional dependency
+    import swisseph as swe  # type: ignore
+
+    ut_dt = dt.astimezone(timezone.utc)
+    swe.set_ephe_path(".")
+
+    julian_day = swe.julday(
+        ut_dt.year,
+        ut_dt.month,
+        ut_dt.day,
+        ut_dt.hour + ut_dt.minute / 60.0 + ut_dt.second / 3600.0,
+    )
+    sun_longitude = swe.calc_ut(julian_day, swe.SUN)[0][0]
+    moon_longitude = swe.calc_ut(julian_day, swe.MOON)[0][0]
+    angle_difference = (moon_longitude - sun_longitude) % 360.0
+
+    tithi_number = int(angle_difference // 12) + 1
+    nakshatra_index = int((moon_longitude % 360) // (360 / len(_NAKSHATRAS))) + 1
+    yoga_index = int(((sun_longitude + moon_longitude) % 360) // (360 / len(_YOGAS))) + 1
+    karana_index = int(angle_difference // 6) + 1
+
+    return {
+        "tithi_number": tithi_number,
+        "tithi_name": _tithi_label(tithi_number),
+        "nakshatra_index": nakshatra_index,
+        "nakshatra": _NAKSHATRAS[nakshatra_index - 1],
+        "yoga_index": yoga_index,
+        "yoga": _YOGAS[yoga_index - 1],
+        "karana_index": karana_index,
+        "karana": _karana_name(karana_index),
+    }
+
+
+def _fallback_panchang(dt: datetime) -> Dict[str, object]:
+    ordinal_hash = abs(hash((dt.date().toordinal(), dt.hour, dt.minute)))
+    tithi_number = _cyclic_value(ordinal_hash, 30)
+    nakshatra_index = _cyclic_value(ordinal_hash, len(_NAKSHATRAS))
+    yoga_index = _cyclic_value(ordinal_hash, len(_YOGAS))
+    karana_index = _cyclic_value(ordinal_hash, len(_KARANA_SEQUENCE))
+
+    return {
+        "tithi_number": tithi_number,
+        "tithi_name": _tithi_label(tithi_number),
+        "nakshatra_index": nakshatra_index,
+        "nakshatra": _NAKSHATRAS[nakshatra_index - 1],
+        "yoga_index": yoga_index,
+        "yoga": _YOGAS[yoga_index - 1],
+        "karana_index": karana_index,
+        "karana": _karana_name(karana_index),
+    }
 
 
 def _is_gregorian_leap(year: int) -> bool:
