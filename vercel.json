@@ -3,7 +3,7 @@
   "env": {
     "NEXT_PUBLIC_BACKEND_URL": "https://your-render-service.onrender.com"
   },
-  "installCommand": "cd frontend && npm install",
+  "installCommand": "cd frontend && npm install --legacy-peer-deps",
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/.next",
   "builds": [
