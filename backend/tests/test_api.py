@@ -50,6 +50,16 @@ def test_handle_command_matchmaking_summarizes_highlights():
     assert response["compatibility"]["modern_highlights"], "Modern notes missing"
 
 
+def test_handle_command_past_life_includes_insights():
+    response = api.handle_command("past-life", _payload())
+    assert response["insights"], "Past-life response missing insights"
+
+
+def test_handle_command_future_includes_trajectories():
+    response = api.handle_command("future", _payload())
+    assert response["trajectories"], "Future response missing trajectories"
+
+
 def test_handle_command_calendar_returns_saka_payload():
     response = api.handle_command(
         "calendar",
