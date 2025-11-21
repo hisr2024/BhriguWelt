@@ -30,7 +30,7 @@ export default function HoroscopePage() {
           <div className="section-heading">
             <p className="eyebrow">Live experience</p>
             <h2>Holistic horoscope</h2>
-            <p>Blend karmic epoch, remedies, past lives, and future trajectories for a single seeker.</p>
+            <p>Blend karmic epoch, remedies, past lives, and future trajectories for a single seeker in clear narrative form.</p>
           </div>
           <PredictionForm
             engine="horoscope"
@@ -46,7 +46,7 @@ export default function HoroscopePage() {
           <ul className="kudos-list">
             <li>
               <span className="badge">Citations</span>
-              <span>Every output is JSON you can store and display with folio references intact.</span>
+              <span>Every output arrives as prose with folio references intact for English and Hindi readers.</span>
             </li>
             <li>
               <span className="badge">Mobile ready</span>
@@ -54,7 +54,7 @@ export default function HoroscopePage() {
             </li>
             <li>
               <span className="badge">API parity</span>
-              <span>Fields mirror the Python backend contracts used by Render and Railway.</span>
+              <span>Fields mirror the Python backend contracts while returning language-rich guidance instead of JSON blocks.</span>
             </li>
           </ul>
         </div>

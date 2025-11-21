@@ -4,6 +4,8 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:800
 const FALLBACK_RESPONSES: Record<string, unknown> = {
   "/horoscope": {
     name: "Fallback seeker",
+    interpretation: "Bhrigu folios speak of a seeker whose service-oriented Mars and calm moon weave compassion with steady leadership.",
+    interpretation_hi: "भृगु पांडुलिपि बताती है कि सेवा प्रधान मंगल और शांत चंद्रमा करुणा के साथ स्थिर नेतृत्व देते हैं।",
     karmic_epoch: "Bhrigu epoch: activation of Mars mandates for infrastructural service.",
     weights: {
       intuitive_dreams: 0.88,
@@ -45,6 +47,8 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
   },
   "/past-life": {
     name: "Fallback seeker",
+    interpretation: "Earlier lifetimes show healing work along sacred rivers with vows that continue into this birth.",
+    interpretation_hi: "पूर्व जन्मों में पवित्र नदियों के किनारे चिकित्सा सेवा की प्रतिज्ञा दिखती है जो इस जन्म में भी जारी है।",
     insights: [
       {
         engine_id: "PL-DEMO",
@@ -56,6 +60,8 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
   },
   "/future": {
     name: "Fallback seeker",
+    interpretation: "The folios point toward disciplined study, community mentorship, and health rituals over the coming decades.",
+    interpretation_hi: "आने वाले दशकों में अनुशासित अध्ययन, समुदाय का मार्गदर्शन और स्वास्थ्य अनुष्ठान प्राथमिक हैं।",
     trajectories: [
       {
         engine_id: "FU-DEMO",
@@ -69,6 +75,8 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
   "/matchmaking": {
     primary_name: "Fallback seeker",
     partner_name: "Partner seeker",
+    interpretation: "Their gunas complement each other, encouraging devotion, learning, and purposeful travel together.",
+    interpretation_hi: "दोनों के गुण एक-दूसरे को संतुलित करते हैं—भक्ति, अध्ययन और उद्देश्यपूर्ण यात्राएँ साथ मिलकर उभरती हैं।",
     compatibility: {
       compatibility_index: 89.5,
       breakdown: [
@@ -97,6 +105,8 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
     birth_date: "1995-05-18",
     birth_time: "14:45",
     birth_place: "Varanasi",
+    interpretation: "Gregorian details have been aligned to the Śaka calendar so remedies follow the correct lunar rhythm.",
+    interpretation_hi: "ग्रेगोरियन विवरण शक पंचांग से जोड़े गए हैं ताकि उपाय सही चंद्र लय में रहें।",
     saka_date: {
       year: 1917,
       month: "Jyaishtha",

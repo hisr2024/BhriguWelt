@@ -242,6 +242,25 @@ button:disabled {
   font-family: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
 }
 
+.insight-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.insight-block {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.insight-block h4 {
+  margin: 0 0 0.4rem;
+  font-size: 1.05rem;
+}
+
 .eyebrow {
   letter-spacing: 0.2em;
   text-transform: uppercase;

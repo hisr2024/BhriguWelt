@@ -24,3 +24,5 @@ export interface MatchmakingDetails {
 }
 
 export type PredictionEngine = "horoscope" | "past-life" | "future";
+
+export type ResultEngine = PredictionEngine | "matchmaking" | "calendar";

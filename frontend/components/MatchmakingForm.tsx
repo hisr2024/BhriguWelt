@@ -149,7 +149,7 @@ export default function MatchmakingForm() {
           </div>
         )}
       </form>
-      <PredictionCard title="Matchmaking result" payload={payload} />
+      <PredictionCard title="Matchmaking result" payload={payload} engine="matchmaking" />
     </section>
   );
 }

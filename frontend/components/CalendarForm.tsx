@@ -96,7 +96,7 @@ export default function CalendarForm() {
           </div>
         )}
       </form>
-      <PredictionCard title="Calendar context" payload={payload} />
+      <PredictionCard title="Calendar context" payload={payload} engine="calendar" />
     </section>
   );
 }

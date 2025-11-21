@@ -4,6 +4,8 @@ const { test, expect } = require('@playwright/test');
 const mockHoroscope = {
   name: 'Asha',
   karmic_epoch: 'sadhana',
+  interpretation: 'The folios say Asha leads with gentle service and steadfast study.',
+  interpretation_hi: 'पांडुलिपि बताती है कि आशा सेवा और अध्ययन में स्थिर है।',
   principles: [{ title: 'Dharma', detail: 'Stay aligned with Bhrigu counsel.' }],
   remedies: [{ title: 'Mantra', detail: 'Chant with devotion.' }],
   past_life_insights: [{ title: 'Past', detail: 'Seeker has served in prior era.' }],
@@ -20,7 +22,7 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test('horoscope form submits and renders JSON payload', async ({ page }) => {
+test('horoscope form submits and renders narrative payload', async ({ page }) => {
   await page.goto('/horoscope');
 
   await page.getByLabel(/Full name/i).fill('Asha');
@@ -36,5 +38,5 @@ test('horoscope form submits and renders JSON payload', async ({ page }) => {
   await page.getByRole('button', { name: /fetch|insights|consulting/i }).click();
 
   await expect(page.getByRole('status')).toContainText('Asha');
-  await expect(page.getByRole('status')).toContainText('karmic');
+  await expect(page.getByRole('status')).toContainText('sadhana');
 });

@@ -8,8 +8,7 @@ export default function MatchmakingPage() {
         <p className="eyebrow">Matchmaking • Modern + classical</p>
         <h1>Compatibility scoring that respects guna and lifestyle tags.</h1>
         <p className="muted" style={{ maxWidth: "760px" }}>
-          Pair Bhrigu Samhita manuscripts with Gen Z-friendly filters like remote-first, creator economy, or adventure-aligned
-          so every duo gets nuanced guidance.
+          Pair Bhrigu Samhita manuscripts with modern filters like remote-first, creator economy, or adventure-aligned so every duo receives nuanced, language-rich guidance.
         </p>
         <div className="hero-actions">
           <Link href="/" className="button-link" style={{ background: "rgba(255,255,255,0.08)" }}>

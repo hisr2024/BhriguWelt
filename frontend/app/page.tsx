@@ -15,7 +15,7 @@ export default function HomePage() {
     <div className="stack">
       <div className="hero">
         <p className="eyebrow">{t("hero.eyebrow", "Bhrigu Samhita studio")}</p>
-        <h1>{t("hero.title", "Zero-fluff astrology journeys for Gen Z and every generation.")}</h1>
+        <h1>{t("hero.title", "Bhrigu astrology that speaks clearly to every age.")}</h1>
         <p className="muted" style={{ maxWidth: "760px" }}>
           {t("hero.body", heroBody)}
         </p>
@@ -50,11 +50,11 @@ export default function HomePage() {
 
       <section className="card-grid">
         <div className="card">
-          <p className="eyebrow">Gen Z polish</p>
-          <h3>Bold gradients, microcopy, and haptics-ready flows.</h3>
+          <p className="eyebrow">Modern yet timeless</p>
+          <h3>Bold gradients with the calm of ancient counsel.</h3>
           <p>
-            Every page layers glassmorphic panels and breathing room so the same UI can live inside mobile webviews and native
-            wrappers without extra design work.
+            Every page layers glassmorphic panels and breathing room so elders, seekers, and youth all feel welcomed. Typography
+            and spacing keep the focus on the guidance, not on JSON payloads.
           </p>
         </div>
         <div className="card">
@@ -66,11 +66,11 @@ export default function HomePage() {
           </p>
         </div>
         <div className="card">
-          <p className="eyebrow">Ship it anywhere</p>
-          <h3>Render backend, Vercel frontend, native clients soon.</h3>
+          <p className="eyebrow">Shareable stories</p>
+          <h3>Plain English and Hindi, ready for other languages.</h3>
           <p>
-            Point <code>NEXT_PUBLIC_BACKEND_URL</code> at your Render or Railway host, then mirror the same calls from Kotlin,
-            Swift, or React Native without rewriting payloads.
+            Point <code>NEXT_PUBLIC_BACKEND_URL</code> at your Render or Railway host and share the same interpretations across
+            chat, mobile, or web—no restructuring or JSON parsing required.
           </p>
         </div>
       </section>
@@ -104,7 +104,7 @@ export default function HomePage() {
         <div className="card">
           <p className="eyebrow">Past-life explorer</p>
           <h3>Trace prior eras</h3>
-          <p>Surface cross-era narratives straight from the preserved folios.</p>
+          <p>Surface cross-era narratives straight from the preserved folios in flowing prose.</p>
           <Link className="button-link" href="/past-life">
             Open past-life page
           </Link>
@@ -112,15 +112,15 @@ export default function HomePage() {
         <div className="card">
           <p className="eyebrow">Future directives</p>
           <h3>Actionable steps</h3>
-          <p>Chart the finance, devotion, and health moves Bhrigu prescribes for the next decade.</p>
+          <p>Chart the finance, devotion, and health moves Bhrigu prescribes for the next decade—written as guidance, not code.</p>
           <Link className="button-link" href="/future">
             Plan the future
           </Link>
         </div>
         <div className="card">
-          <p className="eyebrow">API first</p>
-          <h3>Same JSON across web and native</h3>
-          <p>Each page mirrors the backend contracts, keeping Android, iOS, and browser clients perfectly aligned.</p>
+          <p className="eyebrow">Wisdom first</p>
+          <h3>Readable insights across web and native</h3>
+          <p>Each page mirrors the backend contracts yet presents results as human stories so Android, iOS, and browser clients stay aligned without exposing raw payloads.</p>
           <Link className="button-link" href="/calendar">
             View calendar helper
           </Link>
