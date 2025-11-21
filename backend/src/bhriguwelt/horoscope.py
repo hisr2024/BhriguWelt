@@ -423,10 +423,10 @@ def _compose_matchmaking_interpretation(
     top_entry = breakdown_sorted[0] if breakdown_sorted else None
     highlight = compatibility.modern_highlights[0] if compatibility.modern_highlights else ""
 
-    prefix = interpretation_config.get("personalized_prefix", "{name}, born in {birth_place},").format(
-        name=name, birth_place=f"aligned with {partner_name}"
+    parts = [f"Composite compatibility index: {compatibility.compatibility_index:.2f}%."]
+    parts.append(
+        f"Long-term: {compatibility.long_term_index:.2f}% | Short-term: {compatibility.short_term_index:.2f}%."
     )
-    parts = [f"{prefix} Composite compatibility index: {compatibility.compatibility_index:.2f}%."]
     if top_entry:
         parts.append(
             f"Strongest folio ({top_entry.sutra_reference}): {top_entry.description.strip()} -> score {top_entry.score:.2f}."
@@ -644,6 +644,9 @@ def _render_future(report: FutureReport, birth_place: str) -> None:
 def _render_matchmaking(report: MatchmakingReport) -> None:
     print(
         f"Modern Bhrigu matchmaking for {report.primary_name} × {report.partner_name}: {report.compatibility.compatibility_index}%"
+    )
+    print(
+        f"Long-term index: {report.compatibility.long_term_index}% | Short-term index: {report.compatibility.short_term_index}%"
     )
     print(f"Interpretation: {report.interpretation}")
     print("Breakdown by folio:")

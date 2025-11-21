@@ -195,6 +195,8 @@ class MatchmakingCompatibility:
     """Aggregate compatibility score plus detailed folio references."""
 
     compatibility_index: float
+    long_term_index: float
+    short_term_index: float
     breakdown: List[MatchCriterionResult]
     modern_highlights: List[str]
 
@@ -305,8 +307,18 @@ def evaluate_past_life(snapshot: CelestialSnapshot, engines: List[Dict]) -> List
     return sorted(insights, key=lambda insight: insight.confidence, reverse=True)
 
 
-def evaluate_future_directives(snapshot: CelestialSnapshot, engines: List[Dict]) -> List[FutureTrajectory]:
-    """Map future trajectories for the native from the Samhita folios."""
+def evaluate_future_directives(
+    snapshot: CelestialSnapshot,
+    engines: List[Dict],
+    transit_rules: List[Dict] | None = None,
+    transit_details: Dict[str, object] | None = None,
+) -> List[FutureTrajectory]:
+    """Map future trajectories for the native from the Samhita folios.
+
+    When transit details and gochar rules are supplied, append transit-driven
+    mandates so callers can surface time-sensitive guidance alongside the
+    longer-horizon folio trajectories.
+    """
 
     directives: List[FutureTrajectory] = []
     for engine in engines:
@@ -324,6 +336,19 @@ def evaluate_future_directives(snapshot: CelestialSnapshot, engines: List[Dict])
                 certainty=certainty,
             )
         )
+
+    if transit_rules and transit_details is not None:
+        transit_directives = evaluate_transits(snapshot, transit_details, transit_rules)
+        for directive in transit_directives:
+            directives.append(
+                FutureTrajectory(
+                    engine_id=f"TRANSIT-{directive.planet}",
+                    sutra_reference=directive.reference,
+                    focus=directive.influence,
+                    window="Active transit window",
+                    certainty=directive.certainty,
+                )
+            )
 
     if not directives:
         directives.append(
@@ -398,6 +423,10 @@ def evaluate_matchmaking(
     breakdown: List[MatchCriterionResult] = []
     total_score = 0.0
     total_weight = 0.0
+    long_term_score = 0.0
+    long_term_weight = 0.0
+    short_term_score = 0.0
+    short_term_weight = 0.0
     modern_highlights: List[str] = []
 
     for criterion in criteria:
@@ -420,6 +449,13 @@ def evaluate_matchmaking(
         criterion_score = round(base_weight * ratio, 2)
         total_score += criterion_score
         total_weight += base_weight
+        horizon = (criterion.get("time_horizon") or "").lower()
+        if horizon == "long-term":
+            long_term_score += criterion_score
+            long_term_weight += base_weight
+        elif horizon == "short-term":
+            short_term_score += criterion_score
+            short_term_weight += base_weight
 
         modifier_notes: List[str] = []
         for preference in modern_preferences:
@@ -427,6 +463,12 @@ def evaluate_matchmaking(
             if bonus:
                 total_score += bonus
                 total_weight += bonus
+                if horizon == "long-term":
+                    long_term_score += bonus
+                    long_term_weight += bonus
+                elif horizon == "short-term":
+                    short_term_score += bonus
+                    short_term_weight += bonus
                 note = (
                     f"{criterion['id']} aligns with {preference} per {criterion['sutra_reference']} (+{bonus:.2f})"
                 )
@@ -457,8 +499,16 @@ def evaluate_matchmaking(
         )
 
     compatibility_index = round((total_score / total_weight) * 100, 2) if total_weight else 50.0
+    long_term_index = (
+        round((long_term_score / long_term_weight) * 100, 2) if long_term_weight else compatibility_index
+    )
+    short_term_index = (
+        round((short_term_score / short_term_weight) * 100, 2) if short_term_weight else compatibility_index
+    )
     return MatchmakingCompatibility(
         compatibility_index=compatibility_index,
+        long_term_index=long_term_index,
+        short_term_index=short_term_index,
         breakdown=breakdown,
         modern_highlights=modern_highlights,
     )
