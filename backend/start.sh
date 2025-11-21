@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+export PYTHONPATH=${PYTHONPATH:-"$SCRIPT_DIR/src"}
+
 # Load optional local overrides so HOST/PORT/BHRIGU_DATA_PATH remain consistent
 # between local runs and hosted environments without extra flags.
 if [ -f .env ]; then
