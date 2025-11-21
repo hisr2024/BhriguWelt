@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import PredictionForm from "@/components/PredictionForm";
+import { helperCopy } from "@/lib/copy";
 import { useI18n } from "@/lib/i18n";
 
 export default function HoroscopePage() {
   const { t } = useI18n();
+  const helperText = helperCopy.horoscope;
 
   return (
     <div className="stack">
@@ -13,10 +15,7 @@ export default function HoroscopePage() {
         <p className="eyebrow">Horoscope • Panchanga aligned</p>
         <h1>{t("pages.horoscope.title", "Deep-dive consultations with the full Bhrigu Samhita stack.")}</h1>
         <p className="muted" style={{ maxWidth: "760px" }}>
-          {t(
-            "form.helper",
-            "Capture tithi, the five moon elements, and the houses that shape karmic momentum. Each response cites the preserved folios so you can map it directly into mobile onboarding or web dashboards.",
-          )}
+          {t("form.helper", helperText)}
         </p>
         <div className="hero-actions">
           <Link href="/" className="button-link" style={{ background: "rgba(255,255,255,0.08)" }}>
