@@ -86,6 +86,44 @@ def test_http_horoscope_round_trip():
         assert headers.get("Access-Control-Allow-Origin") == "*"
 
 
+def test_http_future_round_trip():
+    with running_server() as address:
+        status, data, _ = _post("/future", _payload(), address)
+        assert status == 200
+        assert data.get("trajectories"), "Future response missing trajectories"
+
+
+def test_http_past_life_round_trip():
+    with running_server() as address:
+        status, data, _ = _post("/past-life", _payload(), address)
+        assert status == 200
+        assert data.get("insights"), "Past-life response missing insights"
+
+
+def test_http_matchmaking_round_trip():
+    with running_server() as address:
+        status, data, _ = _post(
+            "/matchmaking",
+            dict(
+                primary=_payload(),
+                partner=_payload(
+                    name="Arjun",
+                    birth_date="1992-09-09",
+                    lunar_tithi=4,
+                    moon_element="earth",
+                    mars_house=8,
+                    venus_house=3,
+                    rahu_aspects_ascendant=False,
+                ),
+                modern_preferences=["remote-first", "arts-collab"],
+            ),
+            address,
+        )
+        assert status == 200
+        assert data.get("compatibility", {}).get("breakdown"), "Compatibility breakdown missing"
+        assert data.get("compatibility", {}).get("modern_highlights"), "Modern highlights missing"
+
+
 def test_http_validation_rejects_out_of_range_tithi():
     with running_server() as address:
         status, data, _ = _post("/horoscope", _payload(lunar_tithi=31), address)
