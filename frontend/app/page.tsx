@@ -4,18 +4,12 @@ import Link from "next/link";
 import CalendarForm from "@/components/CalendarForm";
 import MatchmakingForm from "@/components/MatchmakingForm";
 import PredictionForm from "@/components/PredictionForm";
+import { heroCopy } from "@/lib/copy";
 import { useI18n } from "@/lib/i18n";
 
 export default function HomePage() {
   const { t } = useI18n();
-  const heroBody =
-    "Launch vibrant, mobile-first flows that speak to modern seekers while honoring the exacting Śaka and Bhrigu Samhita guidance. Run it locally, ship to Vercel, or plug the API into your Android/iOS builds.";
-  const navigationBody =
-    "Jump straight to horoscope, past-life, future, matchmaking, or calendar from the navigation shell or the cards below.";
-  const deployBody =
-    "Point NEXT_PUBLIC_BACKEND_URL at your backend host and the same flows light up on Android and iOS.";
-  const accessibilityBody =
-    "High contrast, keyboard friendly nav, and ARIA-labelled forms built for Vercel previews and production.";
+  const { heroBody, navigationBody, deployBody, accessibilityBody } = heroCopy;
 
   return (
     <div className="stack">
