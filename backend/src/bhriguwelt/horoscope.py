@@ -6,7 +6,7 @@ import argparse
 from dataclasses import dataclass
 from typing import Dict, List, Sequence
 
-from .astronomical_calculations import auto_snapshot_kwargs, derive_transit_snapshot, normalize_birth_datetime
+from .astronomical_calculations import derive_transit_snapshot, normalize_birth_datetime
 from .calendar_conversion import HinduCalendarContext, convert_birth_details
 from .calculations import (
     CelestialSnapshot,
@@ -274,38 +274,33 @@ def build_matchmaking_report(
 
 
 def _snapshot_from_request(request: HoroscopeRequest) -> CelestialSnapshot:
-    if not request.lunar_tithi or not request.moon_element:
-        auto_kwargs = auto_snapshot_kwargs(
-            request.birth_date,
-            request.birth_time,
-            request.birth_place,
-            timezone_name=request.timezone,
-        )
-        request.lunar_tithi = auto_kwargs["lunar_tithi"]
-        request.moon_element = auto_kwargs["moon_element"]
-        request.mars_house = auto_kwargs["mars_house"]
-        request.saturn_house = auto_kwargs["saturn_house"]
-        request.venus_house = auto_kwargs["venus_house"]
-        request.ketu_house = auto_kwargs["ketu_house"]
-        request.mercury_house = auto_kwargs["mercury_house"]
-        request.jupiter_house = auto_kwargs["jupiter_house"]
-        request.rahu_aspects_ascendant = bool(auto_kwargs["rahu_aspects_ascendant"])
-        request.saturn_retrograde = bool(auto_kwargs["saturn_retrograde"])
+    lunar_tithi = request.lunar_tithi or None
+    moon_element = request.moon_element or None
+    mars_house = request.mars_house or None
+    saturn_house = request.saturn_house or None
+    venus_house = request.venus_house or None
+    ketu_house = request.ketu_house or None
+    mercury_house = request.mercury_house or None
+    jupiter_house = request.jupiter_house or None
+    rahu_aspects_ascendant = request.rahu_aspects_ascendant or None
+    saturn_retrograde = request.saturn_retrograde or None
+
     return CelestialSnapshot.from_strings(
         birth_date=request.birth_date,
         birth_time=request.birth_time,
         birth_place=request.birth_place,
         tradition=request.tradition,
-        lunar_tithi=request.lunar_tithi,
-        moon_element=request.moon_element,
-        mars_house=request.mars_house,
-        saturn_house=request.saturn_house,
-        venus_house=request.venus_house,
-        ketu_house=request.ketu_house,
-        mercury_house=request.mercury_house,
-        jupiter_house=request.jupiter_house,
-        rahu_aspects_ascendant=request.rahu_aspects_ascendant,
-        saturn_retrograde=request.saturn_retrograde,
+        timezone_name=request.timezone,
+        lunar_tithi=lunar_tithi,
+        moon_element=moon_element,
+        mars_house=mars_house,
+        saturn_house=saturn_house,
+        venus_house=venus_house,
+        ketu_house=ketu_house,
+        mercury_house=mercury_house,
+        jupiter_house=jupiter_house,
+        rahu_aspects_ascendant=rahu_aspects_ascendant,
+        saturn_retrograde=saturn_retrograde,
     )
 
 

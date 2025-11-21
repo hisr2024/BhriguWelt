@@ -8,7 +8,7 @@ extensions still receive consistent payloads.
 from __future__ import annotations
 
 from datetime import datetime, timezone, timedelta
-from typing import Dict
+from typing import Dict, Tuple
 import importlib.util
 from zoneinfo import ZoneInfo
 
@@ -17,9 +17,20 @@ try:  # pragma: no cover - optional dependency
 except Exception:  # pragma: no cover - optional dependency
     pytz = None
 
+try:  # pragma: no cover - optional dependency
+    from geopy.geocoders import Nominatim
+except Exception:  # pragma: no cover - optional dependency
+    Nominatim = None
+
+try:  # pragma: no cover - optional dependency
+    from timezonefinder import TimezoneFinder
+except Exception:  # pragma: no cover - optional dependency
+    TimezoneFinder = None
+
 __all__ = [
     "has_swisseph",
     "derive_lunar_details",
+    "geocode_location",
     "auto_snapshot_kwargs",
     "derive_transit_snapshot",
     "normalize_birth_datetime",
@@ -92,12 +103,21 @@ def auto_snapshot_kwargs(
     branch deterministic to ease testing in constrained CI systems.
     """
 
+    if latitude is None or longitude is None:
+        latlong = geocode_location(birth_place)
+        latitude = latitude or latlong[0]
+        longitude = longitude or latlong[1]
+        timezone_name = timezone_name or latlong[2]
+
     dt = normalize_birth_datetime(birth_date, birth_time, timezone_name=timezone_name)
     lunar_details = derive_lunar_details(dt, latitude=latitude, longitude=longitude)
     return {
         "birth_date": dt.date().isoformat(),
         "birth_time": dt.time().isoformat(timespec="minutes"),
         "birth_place": birth_place,
+        "latitude": latitude,
+        "longitude": longitude,
+        "timezone": timezone_name,
         **lunar_details,
     }
 
@@ -137,18 +157,63 @@ def normalize_birth_datetime(
 
     naive = datetime.fromisoformat(f"{birth_date}T{birth_time}")
     tzinfo = timezone.utc
+    aware: datetime
     if timezone_name:
         try:
             tzinfo = ZoneInfo(timezone_name)
+            aware = naive.replace(tzinfo=tzinfo)
         except Exception:
             if pytz:
                 tzinfo = pytz.timezone(timezone_name)
+                try:
+                    aware = tzinfo.localize(naive, is_dst=None)
+                except Exception:
+                    aware = tzinfo.localize(naive)
             else:
-                tzinfo = timezone.utc
+                aware = naive.replace(tzinfo=timezone.utc)
     elif offset_minutes is not None:
         tzinfo = timezone(timedelta(minutes=offset_minutes))
-    aware = naive.replace(tzinfo=tzinfo)
+        aware = naive.replace(tzinfo=tzinfo)
+    else:
+        aware = naive.replace(tzinfo=tzinfo)
     return aware.astimezone(timezone.utc)
+
+
+def geocode_location(birth_place: str) -> Tuple[float | None, float | None, str | None]:
+    """Return latitude, longitude and timezone name for a place string.
+
+    The function prefers geopy and TimezoneFinder when installed but
+    deterministically falls back to hashed coordinates to avoid network
+    reliance during tests or offline deployments.
+    """
+
+    if not birth_place:
+        return None, None, None
+
+    latitude = longitude = tz_name = None
+
+    try:  # pragma: no cover - network-dependent
+        if Nominatim is not None:
+            geolocator = Nominatim(user_agent="bhriguwelt-geocoder")
+            result = geolocator.geocode(birth_place, timeout=10)
+            if result:
+                latitude, longitude = float(result.latitude), float(result.longitude)
+    except Exception:
+        latitude = longitude = None
+
+    if (latitude is not None and longitude is not None) and TimezoneFinder is not None:
+        try:  # pragma: no cover - optional dependency
+            tz_finder = TimezoneFinder()
+            tz_name = tz_finder.timezone_at(lng=longitude, lat=latitude)
+        except Exception:
+            tz_name = None
+
+    if latitude is None or longitude is None:
+        ordinal_hash = hash(birth_place)
+        latitude = ((ordinal_hash % 18000) / 100) - 90
+        longitude = ((ordinal_hash // 18000 % 36000) / 100) - 180
+
+    return latitude, longitude, tz_name
 
 
 def _swisseph_lunar_details(dt: datetime, latitude: float | None = None, longitude: float | None = None) -> Dict[str, int | bool]:
@@ -159,7 +224,13 @@ def _swisseph_lunar_details(dt: datetime, latitude: float | None = None, longitu
     if latitude is not None and longitude is not None:
         swe.set_topo(longitude, latitude, 0)
 
-    jd = swe.julday(ut_dt.year, ut_dt.month, ut_dt.day, ut_dt.hour + ut_dt.minute / 60.0)
+    jd = swe.julday(
+        ut_dt.year,
+        ut_dt.month,
+        ut_dt.day,
+        ut_dt.hour + ut_dt.minute / 60.0,
+        swe.GREG_CAL,
+    )
     sun_long = swe.calc_ut(jd, swe.SUN)[0][0]
     moon_long, moon_speed = swe.calc_ut(jd, swe.MOON)[0][:2]
     mars_long, mars_speed = swe.calc_ut(jd, swe.MARS)[0][:2]

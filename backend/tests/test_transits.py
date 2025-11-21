@@ -12,6 +12,21 @@ def test_normalize_birth_datetime_handles_offset():
     assert dt.year == 1899
 
 
+def test_snapshot_autofills_with_geocoding_and_timezone():
+    snapshot = CelestialSnapshot.from_strings(
+        birth_date="1888-01-15",
+        birth_time="06:45",
+        birth_place="London",
+        tradition="universal",
+        timezone_name="Europe/London",
+    )
+
+    assert 1 <= snapshot.lunar_tithi <= 30
+    assert snapshot.moon_element
+    assert 1 <= snapshot.mars_house <= 12
+    assert isinstance(snapshot.saturn_retrograde, bool)
+
+
 def test_evaluate_transits_matches_rule():
     data = as_dict()
     rules = data["transit_rules"]
