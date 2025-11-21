@@ -21,6 +21,79 @@ _SAKA_MONTHS = [
     "Phalguna",
 ]
 
+_NAKSHATRAS = [
+    "Ashwini",
+    "Bharani",
+    "Krittika",
+    "Rohini",
+    "Mrigashirsha",
+    "Ardra",
+    "Punarvasu",
+    "Pushya",
+    "Ashlesha",
+    "Magha",
+    "Purva Phalguni",
+    "Uttara Phalguni",
+    "Hasta",
+    "Chitra",
+    "Swati",
+    "Vishakha",
+    "Anuradha",
+    "Jyeshtha",
+    "Mula",
+    "Purva Ashadha",
+    "Uttara Ashadha",
+    "Shravana",
+    "Dhanishta",
+    "Shatabhisha",
+    "Purva Bhadrapada",
+    "Uttara Bhadrapada",
+    "Revati",
+]
+
+_YOGAS = [
+    "Vishkumbha",
+    "Preeti",
+    "Ayushman",
+    "Saubhagya",
+    "Shobhana",
+    "Atiganda",
+    "Sukarma",
+    "Dhriti",
+    "Shoola",
+    "Ganda",
+    "Vriddhi",
+    "Dhruva",
+    "Vyaghata",
+    "Harshana",
+    "Vajra",
+    "Siddhi",
+    "Vyatipata",
+    "Variyana",
+    "Parigha",
+    "Shiva",
+    "Siddha",
+    "Sadhya",
+    "Shubha",
+    "Shukla",
+    "Brahma",
+    "Indra",
+    "Vaidhriti",
+]
+
+_KARANAS = [
+    "Bava",
+    "Balava",
+    "Kaulava",
+    "Taitila",
+    "Garaja",
+    "Vanija",
+    "Vishti",
+    "Shakuni",
+    "Chatushpada",
+    "Naga",
+]
+
 _IST_REFERENCE_LONGITUDE = 82.5  # Allahabad Observatory meridian adopted in IST
 _AUTHENTIC_SOURCES = [
     "Government of India Calendar Reform Committee Report (1955)",
@@ -50,6 +123,10 @@ class HinduCalendarContext:
     conversion_factor_years: int
     ist_reference_longitude: float
     sources: List[str]
+    nakshatra: str
+    yoga: str
+    karana: str
+    tithi_name: str
 
     def as_payload(self) -> Dict[str, object]:
         return {
@@ -66,6 +143,10 @@ class HinduCalendarContext:
             "conversion_factor_years": self.conversion_factor_years,
             "ist_reference_longitude": self.ist_reference_longitude,
             "sources": list(self.sources),
+            "nakshatra": self.nakshatra,
+            "yoga": self.yoga,
+            "karana": self.karana,
+            "tithi_name": self.tithi_name,
         }
 
 
@@ -76,6 +157,10 @@ def convert_birth_details(birth_date: str, birth_time: str, birth_place: str) ->
     parsed_time = time.fromisoformat(birth_time)
     saka_date = _gregorian_to_saka(parsed_date)
     conversion_factor = parsed_date.year - saka_date.year
+    tithi_index = _cyclic_value(parsed_date.toordinal() + parsed_time.hour, 30)
+    nakshatra_index = _cyclic_value(parsed_date.toordinal(), len(_NAKSHATRAS))
+    yoga_index = _cyclic_value(parsed_date.toordinal() + parsed_time.hour, len(_YOGAS))
+    karana_index = _cyclic_value(parsed_date.toordinal() + parsed_time.hour, len(_KARANAS))
     return HinduCalendarContext(
         birth_date=parsed_date,
         birth_time=parsed_time,
@@ -84,6 +169,10 @@ def convert_birth_details(birth_date: str, birth_time: str, birth_place: str) ->
         conversion_factor_years=conversion_factor,
         ist_reference_longitude=_IST_REFERENCE_LONGITUDE,
         sources=_AUTHENTIC_SOURCES,
+        nakshatra=_NAKSHATRAS[nakshatra_index - 1],
+        yoga=_YOGAS[yoga_index - 1],
+        karana=_KARANAS[karana_index - 1],
+        tithi_name=_tithi_label(tithi_index),
     )
 
 
@@ -114,6 +203,16 @@ def _gregorian_to_saka(gregorian_date: date) -> SakaDate:
         day_index -= month_length
 
     raise ValueError("Gregorian date outside supported Śaka calendar range")
+
+
+def _cyclic_value(seed: int, modulus: int) -> int:
+    return (seed % modulus) + 1
+
+
+def _tithi_label(index: int) -> str:
+    phase = "Shukla" if index <= 15 else "Krishna"
+    position = index if index <= 15 else index - 15
+    return f"{phase} {position}"
 
 
 def _is_gregorian_leap(year: int) -> bool:

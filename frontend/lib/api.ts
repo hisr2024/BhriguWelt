@@ -116,6 +116,10 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
     },
     conversion_factor_years: 78,
     ist_reference_longitude: 82.5,
+    nakshatra: "Rohini",
+    yoga: "Sukarma",
+    karana: "Balava",
+    tithi_name: "Shukla 12",
     sources: [
       "Government of India Calendar Reform Committee Report (1955)",
       "Surya Siddhanta translation by Bapu Deva Sastri (Calcutta, 1860)",
@@ -134,12 +138,17 @@ function mapBirthDetails(input: BirthDetails) {
     birth_date: input.birthDate,
     birth_time: input.birthTime,
     birth_place: input.birthPlace.trim(),
+    tradition: (input.tradition || "universal").toLowerCase(),
     lunar_tithi: Number(input.lunarTithi) || 1,
     moon_element: input.moonElement,
     mars_house: Number(input.marsHouse) || 1,
     saturn_house: Number(input.saturnHouse) || 1,
     venus_house: Number(input.venusHouse) || 1,
     rahu_aspects_ascendant: input.rahuAspectsAscendant,
+    ketu_house: Number(input.ketuHouse || 0),
+    mercury_house: Number(input.mercuryHouse || 0),
+    jupiter_house: Number(input.jupiterHouse || 0),
+    saturn_retrograde: Boolean(input.saturnRetrograde),
   };
 }
 

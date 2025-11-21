@@ -19,6 +19,7 @@ BHRIGU_CANON: Dict[str, Any] = {
     "principles": [
         {
             "id": "BR-1",
+            "tradition": "universal",
             "sutra_reference": "Bikaner folio 12b",
             "description": (
                 "When the native's Moon occupies a watery rashi and receives Jupiter's "
@@ -34,6 +35,7 @@ BHRIGU_CANON: Dict[str, Any] = {
         },
         {
             "id": "BR-7",
+            "tradition": "northern",
             "sutra_reference": "Kashi palm 44a",
             "description": (
                 "Bhrigu states that a native born on the fifth lunar tithi with Mars in "
@@ -49,6 +51,7 @@ BHRIGU_CANON: Dict[str, Any] = {
         },
         {
             "id": "BR-18",
+            "tradition": "western-grantha",
             "sutra_reference": "Pune Modi folio 3c",
             "description": (
                 "If Saturn and Venus conjoin in the second bhava while Rahu aspects the "
@@ -62,10 +65,56 @@ BHRIGU_CANON: Dict[str, Any] = {
                 "speech_refinement": 0.57,
             },
         },
+        {
+            "id": "BR-19",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha palm 19b",
+            "description": (
+                "Ketu residing in the twelfth bhava with a waxing Moon in a watery rashi "
+                "indicates a contemplative mendicant in prior births. The manuscript notes "
+                "clairvoyant dreams and strong detachment from material pursuits."
+            ),
+            "weights": {
+                "past_life_clarity": 0.69,
+                "spiritual_detachment": 0.81,
+                "dream_recall": 0.72,
+            },
+        },
+        {
+            "id": "BR-22",
+            "tradition": "northern",
+            "sutra_reference": "Bikaner folio 27a",
+            "description": (
+                "Mercury conjoined with Jupiter in the fifth bhava yields matchmaking "
+                "acumen and scriptural fluency. The folio remarks on skilled interpreters "
+                "who reconcile families through scholarship."
+            ),
+            "weights": {
+                "matchmaking_insight": 0.77,
+                "scholarly_pursuits": 0.68,
+                "conciliatory_skill": 0.71,
+            },
+        },
+        {
+            "id": "BR-30",
+            "tradition": "universal",
+            "sutra_reference": "Bharuch copper 30c",
+            "description": (
+                "Retrograde Saturn aspecting Mars in a kendra signals rigorous patience "
+                "and disciplined rebuilding after setbacks. Bhrigu aligns this with "
+                "infrastructural resilience and long-term karma clearing."
+            ),
+            "weights": {
+                "resilience": 0.83,
+                "infrastructural_success": 0.66,
+                "karmic_debts": 0.49,
+            },
+        },
     ],
     "remedies": [
         {
             "id": "REM-3",
+            "tradition": "universal",
             "sutra_reference": "Grantha leaf 9a",
             "description": (
                 "Offer clarified butter lamps to Maharishi Bhrigu on Thursdays while "
@@ -75,6 +124,7 @@ BHRIGU_CANON: Dict[str, Any] = {
         },
         {
             "id": "REM-9",
+            "tradition": "northern",
             "sutra_reference": "Bikaner folio 21c",
             "description": (
                 "Meditate at dawn facing east with a copper yantra inscribed with the "
@@ -82,10 +132,29 @@ BHRIGU_CANON: Dict[str, Any] = {
                 "incarnations."
             ),
         },
+        {
+            "id": "REM-14",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha palm 22d",
+            "description": (
+                "Offer sandal paste to a Ketu yantra on Tuesdays while reciting the "
+                "mantra \"Om Ketave Namah\" to cool restless dreams and guide moksha quests."
+            ),
+        },
+        {
+            "id": "REM-20",
+            "tradition": "universal",
+            "sutra_reference": "Kashi palm 63b",
+            "description": (
+                "Donate copper vessels to riverfront temples during Shukla Paksha to "
+                "harmonize retrograde Saturn lessons with compassionate service."
+            ),
+        },
     ],
     "past_life_engines": [
         {
             "id": "PL-27",
+            "tradition": "universal",
             "sutra_reference": "Bharuch copper folio 27d",
             "description": (
                 "Bhrigu's copper folios recount that watery Moons remembering Rahu's "
@@ -104,6 +173,7 @@ BHRIGU_CANON: Dict[str, Any] = {
         },
         {
             "id": "PL-42",
+            "tradition": "northern",
             "sutra_reference": "Sharada bundle 42c",
             "description": (
                 "When Mars occupies a kendra and Saturn guards the second house, the "
@@ -121,6 +191,7 @@ BHRIGU_CANON: Dict[str, Any] = {
         },
         {
             "id": "PL-51",
+            "tradition": "southern-grantha",
             "sutra_reference": "Grantha leaf 51b",
             "description": (
                 "Venus in the second bhava with watery lunar influence signals past lives "
@@ -136,10 +207,30 @@ BHRIGU_CANON: Dict[str, Any] = {
             ),
             "confidence": 0.71,
         },
+        {
+            "id": "PL-60",
+            "tradition": "northern",
+            "sutra_reference": "Kashi palm 60a",
+            "description": (
+                "Retrograde Saturn gazing at Mars in a kendra highlights artisans who "
+                "rebuilt shrines after invasions, carrying patience and precision into "
+                "this birth."
+            ),
+            "conditions": {
+                "saturn_retrograde": {"equals": True},
+                "mars_house": {"min": 4, "max": 10},
+            },
+            "narrative": (
+                "The folio praises stoneworkers whose chisels carried mantras; they "
+                "reincarnate to restore heritage architecture and digital archives alike."
+            ),
+            "confidence": 0.79,
+        },
     ],
     "future_engines": [
         {
             "id": "FU-11",
+            "tradition": "northern",
             "sutra_reference": "Kashi palm 58a",
             "description": (
                 "The fifth tithi with Mars elevated in the tenth bhava signals future "
@@ -158,6 +249,7 @@ BHRIGU_CANON: Dict[str, Any] = {
         },
         {
             "id": "FU-29",
+            "tradition": "western-grantha",
             "sutra_reference": "Pune Modi folio 19d",
             "description": (
                 "Saturn-Venus stewardship of the second bhava points to financial systems "
@@ -176,6 +268,7 @@ BHRIGU_CANON: Dict[str, Any] = {
         },
         {
             "id": "FU-40",
+            "tradition": "universal",
             "sutra_reference": "Bikaner folio 33f",
             "description": (
                 "Moons rooted in water yet stationed in tech-forward locales drive "
@@ -191,10 +284,32 @@ BHRIGU_CANON: Dict[str, Any] = {
             "window": "Years 18-40",
             "certainty": 0.73,
         },
+        {
+            "id": "FU-55",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha palm 55c",
+            "description": (
+                "Ketu in the twelfth with waxing Moon drives contemplative retreats. "
+                "Future instructions focus on pilgrim circuits, dream journaling, and "
+                "moksha-aligned service projects."
+            ),
+            "conditions": {
+                "moon_element": {"any_of": ["water", "ether"]},
+                "lunar_tithi": {"min": 8, "max": 14},
+                "ketu_house": {"equals": 12},
+            },
+            "trajectory": (
+                "Expect invitations to lead silence retreats, curate dream circles, and "
+                "mentor seekers on detachment disciplines."
+            ),
+            "window": "Years 24-48",
+            "certainty": 0.74,
+        },
     ],
     "matchmaking_criteria": [
         {
             "id": "MM-3",
+            "tradition": "universal",
             "sutra_reference": "Sharada palm 77c",
             "description": (
                 "Harmonious lunar elements and synchronized tithis create empathic "
@@ -227,6 +342,7 @@ BHRIGU_CANON: Dict[str, Any] = {
         },
         {
             "id": "MM-8",
+            "tradition": "southern-grantha",
             "sutra_reference": "Grantha scroll 18d",
             "description": (
                 "Venus stewardship and Mars missions must complement to support Bhrigu's "
@@ -256,6 +372,40 @@ BHRIGU_CANON: Dict[str, Any] = {
             "modern_modifiers": {
                 "startup-ops": 0.07,
                 "arts-collab": 0.05,
+            },
+        },
+        {
+            "id": "MM-15",
+            "tradition": "northern",
+            "sutra_reference": "Kashi scroll 15b",
+            "description": (
+                "Jupiter-Mercury pairings in the fifth bhava strengthen joint study and "
+                "translation work across families."
+            ),
+            "base_weight": 0.55,
+            "pair_rules": [
+                {
+                    "label": "Scholarship tandem",
+                    "primary_field": "mercury_house",
+                    "partner_field": "mercury_house",
+                    "comparator": "distance",
+                    "max_difference": 2,
+                    "circular": True,
+                    "weight": 0.35,
+                },
+                {
+                    "label": "Jupiter wisdom sync",
+                    "primary_field": "jupiter_house",
+                    "partner_field": "jupiter_house",
+                    "comparator": "distance",
+                    "max_difference": 2,
+                    "circular": True,
+                    "weight": 0.65,
+                },
+            ],
+            "modern_modifiers": {
+                "research-partnership": 0.06,
+                "multi-lingual": 0.05,
             },
         },
     ],

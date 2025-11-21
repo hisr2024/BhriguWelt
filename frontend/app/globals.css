@@ -54,6 +54,26 @@ body {
   z-index: 0;
 }
 
+.bg-celestial {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 15% 30%, rgba(99, 102, 241, 0.35), transparent 32%),
+    radial-gradient(circle at 82% 55%, rgba(236, 72, 153, 0.22), transparent 30%),
+    radial-gradient(circle at 65% 18%, rgba(14, 165, 233, 0.3), transparent 28%),
+    radial-gradient(circle at 35% 75%, rgba(16, 185, 129, 0.28), transparent 26%),
+    radial-gradient(2px 2px at 20% 10%, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0)),
+    radial-gradient(2px 2px at 70% 25%, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0)),
+    radial-gradient(2px 2px at 40% 60%, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0)),
+    radial-gradient(2px 2px at 85% 80%, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 160 160'%3E%3Cpath d='M10 80 L40 40 L80 60 L110 30 M70 120 L110 90 L150 110' stroke='%23cbd5f5' stroke-width='0.8' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='40' cy='40' r='1.8' fill='%23e0f2fe'/%3E%3Ccircle cx='80' cy='60' r='1.4' fill='%23bae6fd'/%3E%3Ccircle cx='110' cy='30' r='2' fill='%23e879f9'/%3E%3Ccircle cx='110' cy='90' r='1.6' fill='%23a5b4fc'/%3E%3Ccircle cx='150' cy='110' r='1.6' fill='%23fb7185'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  opacity: 0.9;
+  mix-blend-mode: screen;
+}
+
 .page-wrapper {
   position: relative;
   z-index: 1;

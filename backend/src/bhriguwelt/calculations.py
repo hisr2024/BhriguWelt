@@ -14,12 +14,17 @@ class CelestialSnapshot:
     birth_date: date
     birth_time: time
     birth_place: str
+    tradition: str
     lunar_tithi: int
     moon_element: str
     mars_house: int
     saturn_house: int
     venus_house: int
+    ketu_house: int
+    mercury_house: int
+    jupiter_house: int
     rahu_aspects_ascendant: bool
+    saturn_retrograde: bool
 
     @classmethod
     def from_strings(
@@ -33,19 +38,30 @@ class CelestialSnapshot:
         saturn_house: int,
         venus_house: int,
         rahu_aspects_ascendant: bool,
+        tradition: str | None = None,
+        ketu_house: int = 0,
+        mercury_house: int = 0,
+        jupiter_house: int = 0,
+        saturn_retrograde: bool = False,
     ) -> "CelestialSnapshot":
         parsed_date = datetime.fromisoformat(birth_date).date()
         parsed_time = time.fromisoformat(birth_time)
+        normalized_tradition = (tradition or "universal").lower()
         return cls(
             birth_date=parsed_date,
             birth_time=parsed_time,
             birth_place=birth_place,
+            tradition=normalized_tradition,
             lunar_tithi=lunar_tithi,
             moon_element=moon_element,
             mars_house=mars_house,
             saturn_house=saturn_house,
             venus_house=venus_house,
+            ketu_house=ketu_house,
+            mercury_house=mercury_house,
+            jupiter_house=jupiter_house,
             rahu_aspects_ascendant=rahu_aspects_ascendant,
+            saturn_retrograde=saturn_retrograde,
         )
 
 
@@ -95,6 +111,8 @@ def score_principles(snapshot: CelestialSnapshot, principles: List[Dict]) -> Dic
 
     scores: Dict[str, float] = {}
     for principle in principles:
+        if not _tradition_allows(principle, snapshot.tradition):
+            continue
         pid = principle["id"]
         weights = principle.get("weights", {})
         modifier = 1.0
@@ -105,6 +123,12 @@ def score_principles(snapshot: CelestialSnapshot, principles: List[Dict]) -> Dic
             modifier += 0.25
         if pid == "BR-18" and snapshot.saturn_house == 2 and snapshot.venus_house == 2 and snapshot.rahu_aspects_ascendant:
             modifier += 0.3
+        if pid == "BR-19" and snapshot.ketu_house == 12 and snapshot.moon_element in {"water", "ether"}:
+            modifier += 0.18
+        if pid == "BR-22" and snapshot.mercury_house in {4, 5, 6} and snapshot.jupiter_house in {4, 5, 6}:
+            modifier += 0.22
+        if pid == "BR-30" and snapshot.saturn_retrograde and 4 <= snapshot.mars_house <= 10:
+            modifier += 0.2
 
         for key, value in weights.items():
             scores[key] = round(value * modifier, 2)
@@ -128,6 +152,8 @@ def evaluate_past_life(snapshot: CelestialSnapshot, engines: List[Dict]) -> List
 
     insights: List[PastLifeInsight] = []
     for engine in engines:
+        if not _tradition_allows(engine, snapshot.tradition):
+            continue
         confidence = _score_conditions(snapshot, engine.get("conditions", {}), engine.get("confidence", 0.6))
         if confidence <= 0:
             continue
@@ -161,6 +187,8 @@ def evaluate_future_directives(snapshot: CelestialSnapshot, engines: List[Dict])
 
     directives: List[FutureTrajectory] = []
     for engine in engines:
+        if not _tradition_allows(engine, snapshot.tradition):
+            continue
         certainty = _score_conditions(snapshot, engine.get("conditions", {}), engine.get("certainty", 0.65))
         if certainty <= 0:
             continue
@@ -205,6 +233,8 @@ def evaluate_matchmaking(
     modern_highlights: List[str] = []
 
     for criterion in criteria:
+        if not _tradition_allows(criterion, primary.tradition):
+            continue
         base_weight = float(criterion.get("base_weight", 1.0))
         pair_rules = criterion.get("pair_rules", [])
         earned = 0.0
@@ -301,6 +331,25 @@ def _matches_rule(value, rule) -> bool:
         return True
 
     return value == rule
+
+
+def _tradition_allows(entry: Dict, target: str) -> bool:
+    """Return True when a corpus entry applies to the provided tradition."""
+
+    entry_tradition = entry.get("tradition")
+    if not entry_tradition:
+        return True
+    normalized_target = target.lower()
+    if isinstance(entry_tradition, (list, tuple, set)):
+        normalized = {str(item).lower() for item in entry_tradition}
+        return normalized_target in normalized or "universal" in normalized
+
+    normalized_entry = str(entry_tradition).lower()
+    if normalized_entry == "universal":
+        return True
+    if normalized_target == "universal":
+        return True
+    return normalized_entry == normalized_target
 
 
 def _evaluate_pair_rule(

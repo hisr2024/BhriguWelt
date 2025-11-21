@@ -180,12 +180,17 @@ def _request_from_payload(payload: Dict[str, Any]) -> HoroscopeRequest:
             birth_date=payload["birth_date"],
             birth_time=payload["birth_time"],
             birth_place=payload["birth_place"],
+            tradition=payload.get("tradition", "universal"),
             lunar_tithi=int(payload["lunar_tithi"]),
             moon_element=payload["moon_element"],
             mars_house=int(payload["mars_house"]),
             saturn_house=int(payload["saturn_house"]),
             venus_house=int(payload["venus_house"]),
             rahu_aspects_ascendant=bool(payload.get("rahu_aspects_ascendant", False)),
+            ketu_house=int(payload.get("ketu_house", 0)),
+            mercury_house=int(payload.get("mercury_house", 0)),
+            jupiter_house=int(payload.get("jupiter_house", 0)),
+            saturn_retrograde=bool(payload.get("saturn_retrograde", False)),
         )
     except KeyError as exc:  # pragma: no cover - validated via CLI/API tests
         missing = exc.args[0]

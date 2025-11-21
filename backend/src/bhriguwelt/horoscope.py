@@ -41,18 +41,46 @@ __all__ = [
 SUPPORTED_MOON_ELEMENTS = {"water", "fire", "air", "earth", "ether"}
 
 
+def _filter_by_tradition(entries: List[Dict], tradition: str) -> List[Dict]:
+    """Return entries compatible with the requested manuscript tradition."""
+
+    normalized = (tradition or "universal").lower()
+    filtered: List[Dict] = []
+    for entry in entries:
+        entry_tradition = entry.get("tradition")
+        if not entry_tradition:
+            filtered.append(entry)
+            continue
+        if isinstance(entry_tradition, (list, tuple, set)):
+            normalized_entry = {str(item).lower() for item in entry_tradition}
+            if normalized in normalized_entry or "universal" in normalized_entry:
+                filtered.append(entry)
+            continue
+
+        normalized_entry = str(entry_tradition).lower()
+        if normalized_entry == "universal" or normalized_entry == normalized or normalized == "universal":
+            filtered.append(entry)
+
+    return filtered
+
+
 @dataclass
 class HoroscopeRequest:
     name: str
     birth_date: str
     birth_time: str
     birth_place: str
+    tradition: str = "universal"
     lunar_tithi: int
     moon_element: str
     mars_house: int
     saturn_house: int
     venus_house: int
     rahu_aspects_ascendant: bool
+    ketu_house: int = 0
+    mercury_house: int = 0
+    jupiter_house: int = 0
+    saturn_retrograde: bool = False
 
     def __post_init__(self) -> None:
         if not (1 <= self.lunar_tithi <= 30):  # pragma: no cover - validation
@@ -61,12 +89,17 @@ class HoroscopeRequest:
             value = getattr(self, field)
             if not (1 <= value <= 12):
                 raise ValueError(f"{field} must be between 1 and 12")
+        for optional_field in ("ketu_house", "mercury_house", "jupiter_house"):
+            optional_value = getattr(self, optional_field, 0)
+            if optional_value and not (1 <= optional_value <= 12):
+                raise ValueError(f"{optional_field} must be between 1 and 12 when provided")
         normalized = self.moon_element.lower()
         if normalized not in SUPPORTED_MOON_ELEMENTS:
             raise ValueError(
                 "moon_element must be one of water, fire, air, earth, ether"
             )
         self.moon_element = normalized
+        self.tradition = (self.tradition or "universal").lower()
 
 
 @dataclass
@@ -121,10 +154,10 @@ def build_calendar_context(
 
 def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
     bhrigu_data = load_bhrigu_data()
-    principles = bhrigu_data.get("principles", [])
-    remedies = bhrigu_data.get("remedies", [])
-    past_life_engines = bhrigu_data.get("past_life_engines", [])
-    future_engines = bhrigu_data.get("future_engines", [])
+    principles = _filter_by_tradition(bhrigu_data.get("principles", []), request.tradition)
+    remedies = _filter_by_tradition(bhrigu_data.get("remedies", []), request.tradition)
+    past_life_engines = _filter_by_tradition(bhrigu_data.get("past_life_engines", []), request.tradition)
+    future_engines = _filter_by_tradition(bhrigu_data.get("future_engines", []), request.tradition)
 
     snapshot = _snapshot_from_request(request)
 
@@ -154,7 +187,8 @@ def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
 def build_past_life_report(request: HoroscopeRequest) -> PastLifeReport:
     bhrigu_data = load_bhrigu_data()
     snapshot = _snapshot_from_request(request)
-    insights = evaluate_past_life(snapshot, bhrigu_data.get("past_life_engines", []))
+    past_life_engines = _filter_by_tradition(bhrigu_data.get("past_life_engines", []), request.tradition)
+    insights = evaluate_past_life(snapshot, past_life_engines)
     return PastLifeReport(
         name=request.name,
         insights=insights,
@@ -165,7 +199,8 @@ def build_past_life_report(request: HoroscopeRequest) -> PastLifeReport:
 def build_future_report(request: HoroscopeRequest) -> FutureReport:
     bhrigu_data = load_bhrigu_data()
     snapshot = _snapshot_from_request(request)
-    trajectories = evaluate_future_directives(snapshot, bhrigu_data.get("future_engines", []))
+    future_engines = _filter_by_tradition(bhrigu_data.get("future_engines", []), request.tradition)
+    trajectories = evaluate_future_directives(snapshot, future_engines)
     return FutureReport(
         name=request.name,
         trajectories=trajectories,
@@ -182,10 +217,14 @@ def build_matchmaking_report(
     primary_snapshot = _snapshot_from_request(primary_request)
     partner_snapshot = _snapshot_from_request(partner_request)
 
+    matchmaking_criteria = _filter_by_tradition(
+        bhrigu_data.get("matchmaking_criteria", []), primary_request.tradition
+    )
+
     compatibility = evaluate_matchmaking(
         primary=primary_snapshot,
         partner=partner_snapshot,
-        criteria=bhrigu_data.get("matchmaking_criteria", []),
+        criteria=matchmaking_criteria,
         modern_preferences=modern_preferences,
     )
 
@@ -202,12 +241,17 @@ def _snapshot_from_request(request: HoroscopeRequest) -> CelestialSnapshot:
         birth_date=request.birth_date,
         birth_time=request.birth_time,
         birth_place=request.birth_place,
+        tradition=request.tradition,
         lunar_tithi=request.lunar_tithi,
         moon_element=request.moon_element,
         mars_house=request.mars_house,
         saturn_house=request.saturn_house,
         venus_house=request.venus_house,
+        ketu_house=request.ketu_house,
+        mercury_house=request.mercury_house,
+        jupiter_house=request.jupiter_house,
         rahu_aspects_ascendant=request.rahu_aspects_ascendant,
+        saturn_retrograde=request.saturn_retrograde,
     )
 
 
@@ -298,6 +342,13 @@ def _add_common_arguments(parser: argparse.ArgumentParser, prefix: str = "") -> 
     parser.add_argument(f"--{opt}birth-time", dest=f"{dest}birth_time", required=True, help="Birth time HH:MM")
     parser.add_argument(f"--{opt}birth-place", dest=f"{dest}birth_place", required=True, help="Birth location")
     parser.add_argument(
+        f"--{opt}tradition",
+        dest=f"{dest}tradition",
+        default="universal",
+        choices=["universal", "northern", "southern-grantha", "western-grantha"],
+        help="Manuscript tradition to prioritize",
+    )
+    parser.add_argument(
         f"--{opt}lunar-tithi",
         dest=f"{dest}lunar_tithi",
         required=True,
@@ -341,10 +392,43 @@ def _add_common_arguments(parser: argparse.ArgumentParser, prefix: str = "") -> 
         help="House position of Venus",
     )
     parser.add_argument(
+        f"--{opt}ketu-house",
+        dest=f"{dest}ketu_house",
+        type=int,
+        choices=range(0, 13),
+        metavar="{0..12}",
+        default=0,
+        help="House position of Ketu (0 to skip)",
+    )
+    parser.add_argument(
+        f"--{opt}mercury-house",
+        dest=f"{dest}mercury_house",
+        type=int,
+        choices=range(0, 13),
+        metavar="{0..12}",
+        default=0,
+        help="House position of Mercury (0 to skip)",
+    )
+    parser.add_argument(
+        f"--{opt}jupiter-house",
+        dest=f"{dest}jupiter_house",
+        type=int,
+        choices=range(0, 13),
+        metavar="{0..12}",
+        default=0,
+        help="House position of Jupiter (0 to skip)",
+    )
+    parser.add_argument(
         f"--{opt}rahu-aspects-ascendant",
         dest=f"{dest}rahu_aspects_ascendant",
         action="store_true",
         help="Flag when Rahu aspects the Ascendant",
+    )
+    parser.add_argument(
+        f"--{opt}saturn-retrograde",
+        dest=f"{dest}saturn_retrograde",
+        action="store_true",
+        help="Mark Saturn retrograde for resilience and restoration sutras",
     )
 
 
@@ -355,12 +439,17 @@ def _request_from_namespace(namespace: argparse.Namespace, prefix: str = "") -> 
         birth_date=getattr(namespace, f"{dest}birth_date"),
         birth_time=getattr(namespace, f"{dest}birth_time"),
         birth_place=getattr(namespace, f"{dest}birth_place"),
+        tradition=getattr(namespace, f"{dest}tradition"),
         lunar_tithi=getattr(namespace, f"{dest}lunar_tithi"),
         moon_element=getattr(namespace, f"{dest}moon_element"),
         mars_house=getattr(namespace, f"{dest}mars_house"),
         saturn_house=getattr(namespace, f"{dest}saturn_house"),
         venus_house=getattr(namespace, f"{dest}venus_house"),
         rahu_aspects_ascendant=getattr(namespace, f"{dest}rahu_aspects_ascendant"),
+        ketu_house=getattr(namespace, f"{dest}ketu_house"),
+        mercury_house=getattr(namespace, f"{dest}mercury_house"),
+        jupiter_house=getattr(namespace, f"{dest}jupiter_house"),
+        saturn_retrograde=getattr(namespace, f"{dest}saturn_retrograde"),
     )
 
 

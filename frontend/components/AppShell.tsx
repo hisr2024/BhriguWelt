@@ -50,6 +50,7 @@ function Shell({ children }: Props) {
         {t("nav.skip", "Skip to content")}
       </a>
       <div className="bg-aurora" aria-hidden />
+      <div className="bg-celestial" aria-hidden />
       <header className="nav-shell">
         <div className="nav-bar">
           <Link href="/" className="brand" aria-label={t("nav.home", "Home")}> 
