@@ -26,6 +26,14 @@ practice within the repository is extracted directly from these manuscripts.
 | Kashi palm 60a | Sharada | Private custodians near Manikarnika Ghat | Highlights artisans rebuilding shrines when Saturn retrogrades toward Mars. |
 | Grantha palm 55c | Grantha Tamil | Thanjavur Saraswathi Mahal | Connects Ketu-led contemplative retreats with future service trajectories. |
 | Kashi scroll 15b | Sharada | Scholars along the Ganga | Jupiter-Mercury fifth-house pairings used for translation and study alliances. |
+| Northern Bhrigu bundle 5a | Sharada | Scholars near Varanasi | Documents Ketu-Ascendant aspects, research alliances, and northern gochar notes. |
+| Grantha copper 38c | Grantha Tamil | Private conservators, Pudukkottai | Outlines Venus-Rahu-Mercury patronage effects for digital launches. |
+| Tanjore palm 41d | Grantha Tamil | Thanjavur Saraswathi Mahal | Describes retreat leadership when Ketu trines Moon amid Saturn retrograde. |
+| Kashi folio 46b | Sharada | Private custodians near Manikarnika Ghat | Highlights civic-technology courage from Mars-Sun pairings. |
+| Bharuch copper 52a | Copperplate Gujarati | Bharuch Bhrigu Copper Archives | Links airy Moons under Ketu's glance to data stewardship vows. |
+| Sharada bundle 61c | Sharada | Scholars along the Ganga | Notes Mercury-Venus exchanges with Saturn in upachaya houses for mentoring duty. |
+| Grantha scroll 68f | Grantha Tamil | Thanjavur Saraswathi Mahal | Details Magha Moons with exalted Jupiter and gochar remedies for heritage archives. |
+| Composite oral 72 | Oral tradition | Itinerant reciters along Narmada ghats | Captures Rahu-Jupiter alliance wisdom on cross-cultural collaborations. |
 
 Developers adding new predictive logic should append similar citations and
 update this table for full transparency. The same corpus is mirrored inside

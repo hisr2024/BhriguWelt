@@ -6,16 +6,19 @@ import argparse
 from dataclasses import dataclass
 from typing import Dict, List, Sequence
 
+from .astronomical_calculations import auto_snapshot_kwargs, derive_transit_snapshot, normalize_birth_datetime
 from .calendar_conversion import HinduCalendarContext, convert_birth_details
 from .calculations import (
     CelestialSnapshot,
     FutureTrajectory,
     MatchmakingCompatibility,
     PastLifeInsight,
+    TransitDirective,
     derive_karmic_epoch,
     evaluate_future_directives,
     evaluate_matchmaking,
     evaluate_past_life,
+    evaluate_transits,
     score_principles,
 )
 from .data_loader import load_bhrigu_data
@@ -31,6 +34,7 @@ __all__ = [
     "build_past_life_report",
     "build_future_report",
     "build_matchmaking_report",
+    "build_transit_report",
     "build_calendar_context",
     "build_cli_parser",
     "parse_cli_args",
@@ -71,34 +75,39 @@ class HoroscopeRequest:
     birth_time: str
     birth_place: str
     tradition: str = "universal"
-    lunar_tithi: int
-    moon_element: str
-    mars_house: int
-    saturn_house: int
-    venus_house: int
-    rahu_aspects_ascendant: bool
+    timezone: str | None = None
+    lunar_tithi: int = 0
+    moon_element: str = ""
+    mars_house: int = 0
+    saturn_house: int = 0
+    venus_house: int = 0
+    rahu_aspects_ascendant: bool = False
     ketu_house: int = 0
     mercury_house: int = 0
     jupiter_house: int = 0
     saturn_retrograde: bool = False
 
     def __post_init__(self) -> None:
-        if not (1 <= self.lunar_tithi <= 30):  # pragma: no cover - validation
+        if self.lunar_tithi == 0 and (
+            self.moon_element or any(getattr(self, field) for field in ("mars_house", "saturn_house", "venus_house"))
+        ):
+            raise ValueError("lunar_tithi must be between 1 and 30 or omitted for auto inference")
+        if self.lunar_tithi and not (1 <= self.lunar_tithi <= 30):  # pragma: no cover - validation
             raise ValueError("lunar_tithi must be between 1 and 30")
         for field in ("mars_house", "saturn_house", "venus_house"):
             value = getattr(self, field)
-            if not (1 <= value <= 12):
+            if value and not (1 <= value <= 12):
                 raise ValueError(f"{field} must be between 1 and 12")
         for optional_field in ("ketu_house", "mercury_house", "jupiter_house"):
             optional_value = getattr(self, optional_field, 0)
             if optional_value and not (1 <= optional_value <= 12):
                 raise ValueError(f"{optional_field} must be between 1 and 12 when provided")
-        normalized = self.moon_element.lower()
-        if normalized not in SUPPORTED_MOON_ELEMENTS:
+        normalized = self.moon_element.lower() if self.moon_element else ""
+        if normalized and normalized not in SUPPORTED_MOON_ELEMENTS:
             raise ValueError(
                 "moon_element must be one of water, fire, air, earth, ether"
             )
-        self.moon_element = normalized
+        self.moon_element = normalized or self.moon_element
         self.tradition = (self.tradition or "universal").lower()
 
 
@@ -144,6 +153,15 @@ class MatchmakingReport:
     interpretation: str
 
 
+@dataclass
+class TransitReport:
+    """Gochar overlay blending natal snapshot with current transits."""
+
+    name: str
+    directives: List[TransitDirective]
+    interpretation: str
+
+
 def build_calendar_context(
     birth_date: str, birth_time: str, birth_place: str
 ) -> HinduCalendarContext:
@@ -165,6 +183,8 @@ def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
     karmic_epoch = derive_karmic_epoch(snapshot)
     past_life_insights = evaluate_past_life(snapshot, past_life_engines)
     future_trajectories = evaluate_future_directives(snapshot, future_engines)
+
+    remedies = _personalize_remedies(remedies, weights)
 
     return HoroscopeReport(
         name=request.name,
@@ -208,6 +228,23 @@ def build_future_report(request: HoroscopeRequest) -> FutureReport:
     )
 
 
+def build_transit_report(request: HoroscopeRequest, transit_payload: Dict[str, str]) -> TransitReport:
+    bhrigu_data = load_bhrigu_data()
+    snapshot = _snapshot_from_request(request)
+    transit_rules = _filter_by_tradition(bhrigu_data.get("transit_rules", []), request.tradition)
+    transit_dt = normalize_birth_datetime(
+        transit_payload["transit_date"], transit_payload["transit_time"], timezone_name=transit_payload.get("timezone")
+    )
+    natal_dt = normalize_birth_datetime(request.birth_date, request.birth_time, timezone_name=transit_payload.get("timezone"))
+    transit_details = derive_transit_snapshot(natal_dt, transit_dt)
+    directives = evaluate_transits(snapshot, transit_details, transit_rules)
+    return TransitReport(
+        name=request.name,
+        directives=directives,
+        interpretation=_compose_transit_interpretation(directives, transit_dt),
+    )
+
+
 def build_matchmaking_report(
     primary_request: HoroscopeRequest,
     partner_request: HoroscopeRequest,
@@ -237,6 +274,23 @@ def build_matchmaking_report(
 
 
 def _snapshot_from_request(request: HoroscopeRequest) -> CelestialSnapshot:
+    if not request.lunar_tithi or not request.moon_element:
+        auto_kwargs = auto_snapshot_kwargs(
+            request.birth_date,
+            request.birth_time,
+            request.birth_place,
+            timezone_name=request.timezone,
+        )
+        request.lunar_tithi = auto_kwargs["lunar_tithi"]
+        request.moon_element = auto_kwargs["moon_element"]
+        request.mars_house = auto_kwargs["mars_house"]
+        request.saturn_house = auto_kwargs["saturn_house"]
+        request.venus_house = auto_kwargs["venus_house"]
+        request.ketu_house = auto_kwargs["ketu_house"]
+        request.mercury_house = auto_kwargs["mercury_house"]
+        request.jupiter_house = auto_kwargs["jupiter_house"]
+        request.rahu_aspects_ascendant = bool(auto_kwargs["rahu_aspects_ascendant"])
+        request.saturn_retrograde = bool(auto_kwargs["saturn_retrograde"])
     return CelestialSnapshot.from_strings(
         birth_date=request.birth_date,
         birth_time=request.birth_time,
@@ -332,6 +386,33 @@ def _compose_matchmaking_interpretation(compatibility: MatchmakingCompatibility)
     if highlight:
         parts.append(f"Modern alignment: {highlight}.")
     return " ".join(parts)
+
+
+def _personalize_remedies(remedies: List[Dict], weights: Dict[str, float]) -> List[Dict]:
+    if not weights:
+        return remedies
+
+    prioritized: List[Dict] = []
+    for remedy in remedies:
+        targets = remedy.get("personalize_for") or []
+        if not targets:
+            prioritized.append(remedy)
+            continue
+        if any(weights.get(target, 0) >= 0.6 for target in targets):
+            prioritized.append(remedy)
+
+    return prioritized or remedies
+
+
+def _compose_transit_interpretation(directives: List[TransitDirective], transit_dt: datetime) -> str:
+    if not directives:
+        return "Awaiting stronger gochar signals; continue remedial discipline."
+
+    top = directives[0]
+    formatted_date = transit_dt.date().isoformat()
+    return (
+        f"Transit focal point on {formatted_date} via {top.planet}: {top.influence} (certainty {top.certainty:.2f}) per {top.reference}."
+    )
 
 
 def _add_common_arguments(parser: argparse.ArgumentParser, prefix: str = "") -> None:
