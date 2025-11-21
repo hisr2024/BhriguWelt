@@ -15,8 +15,8 @@ if [ -f .env ]; then
   set +o allexport
 fi
 
-HOST=${HOST:-0.0.0.0}
-PORT=${PORT:-8000}
+export HOST=${HOST:-0.0.0.0}
+export PORT=${PORT:-${RAILWAY_TCP_PORT:-8000}}
 python - <<'PY'
 import os
 print("Starting Bhrigu API", flush=True)
@@ -28,7 +28,6 @@ except ImportError as e:
     print(f"Import error: {e}", flush=True)
     exit(1)
 host = os.environ.get("HOST", "0.0.0.0")
-port = int(os.environ.get("PORT", "8000"))
-print(f"Host: {host}, Port: {port}", flush=True)
+port = int(os.environ.get("RAILWAY_TCP_PORT") or os.environ.get("PORT", "8000"))
 serve(host, port)
 PY
