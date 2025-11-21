@@ -12,70 +12,105 @@ export default function HomePage() {
   const { heroBody, navigationBody, deployBody, accessibilityBody } = heroCopy;
 
   return (
-    <div className="stack">
-      <div className="hero">
-        <p className="eyebrow">{t("hero.eyebrow", "Bhrigu Samhita studio")}</p>
-        <h1>{t("hero.title", "Bhrigu astrology that speaks clearly to every age.")}</h1>
-        <p className="muted" style={{ maxWidth: "760px" }}>
-          {t("hero.body", heroBody)}
-        </p>
-        <div className="hero-actions">
-          <Link href="/horoscope" className="button-link">
-            {t("hero.cta.horoscope", "Explore horoscope")}
-          </Link>
-          <Link href="/matchmaking" className="button-link" style={{ background: "rgba(255,255,255,0.08)", color: "#fff" }}>
-            {t("hero.cta.matchmaking", "Modern matchmaking")}
-          </Link>
-          <span className="badge">{t("hero.badge", "Śaka-aligned • Render + Vercel ready")}</span>
+    <div className="cosmic-shell stack">
+      <section className="hero cosmic-panel">
+        <div className="hero-columns">
+          <div className="hero-copy">
+            <p className="eyebrow">{t("hero.eyebrow", "Bhrigu Samhita studio")}</p>
+            <h1>{t("hero.title", "Bhrigu astrology that speaks clearly to every age.")}</h1>
+            <p className="muted hero-lede">{t("hero.body", heroBody)}</p>
+            <div className="promise-chips" aria-label="Highlights of the experience">
+              <span className="chip">Futuristic calm</span>
+              <span className="chip">Śaka aligned</span>
+              <span className="chip">Screen-reader ready</span>
+              <span className="chip">Human narratives</span>
+            </div>
+            <div className="hero-actions">
+              <Link href="/horoscope" className="button-link">
+                {t("hero.cta.horoscope", "Explore horoscope")}
+              </Link>
+              <Link href="/matchmaking" className="ghost-button">
+                {t("hero.cta.matchmaking", "Modern matchmaking")}
+              </Link>
+              <span className="badge">{t("hero.badge", "Śaka-aligned • Render + Vercel ready")}</span>
+            </div>
+          </div>
+
+          <div className="hero-visual" aria-hidden="true">
+            <div className="orbital">
+              <span className="orb" />
+              <span className="orb orb-secondary" />
+              <span className="orb orb-tertiary" />
+            </div>
+            <div className="yantra-card">
+              <p className="eyebrow">Cosmic timeline</p>
+              <div className="yantra-grid">
+                <div className="yantra-dot" />
+                <div className="yantra-dot" />
+                <div className="yantra-dot" />
+                <div className="yantra-dot" />
+                <div className="yantra-dot" />
+                <div className="yantra-dot" />
+              </div>
+              <p className="muted">Destiny threads woven from past, present, and yet-to-arrive paths.</p>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
       <section className="card-grid">
-        <div className="card">
+        <div className="card luminous">
           <p className="eyebrow">Navigation</p>
           <h3>{t("home.grid.navigation.title", "Every ritual has its own page")}</h3>
           <p>{t("home.grid.navigation.body", navigationBody)}</p>
         </div>
-        <div className="card">
+        <div className="card luminous">
           <p className="eyebrow">Deploy-ready</p>
           <h3>{t("home.grid.deploy.title", "Render API, Vercel UI, native next")}</h3>
           <p>{t("home.grid.deploy.body", deployBody)}</p>
         </div>
-        <div className="card">
+        <div className="card luminous">
           <p className="eyebrow">Accessibility</p>
           <h3>{t("home.grid.accessibility.title", "Screen-reader friendly interactions")}</h3>
           <p>{t("home.grid.accessibility.body", accessibilityBody)}</p>
         </div>
       </section>
 
-      <section className="card-grid">
-        <div className="card">
-          <p className="eyebrow">Modern yet timeless</p>
-          <h3>Bold gradients with the calm of ancient counsel.</h3>
+      <section className="cosmic-panel journey">
+        <div className="section-heading">
+          <p className="eyebrow">Designed for every seeker</p>
+          <h2>Futuristic serenity, Bharat soul</h2>
           <p>
-            Every page layers glassmorphic panels and breathing room so elders, seekers, and youth all feel welcomed. Typography
-            and spacing keep the focus on the guidance, not on JSON payloads.
+            Modern gradients, yantra geometry, and warm tones keep Gen Z inspired while elders enjoy clarity and steady rhythm.
+            Each surface uses wide tap targets, WCAG contrast, and gentle animations to welcome every hand and eye.
           </p>
         </div>
-        <div className="card">
-          <p className="eyebrow">Manuscript strict</p>
-          <h3>Inputs match the authentic folios.</h3>
-          <p>
-            Lunar tithi 1–30, the five moon elements, and house ranges are constrained and validated so predictions stay true to
-            the Bhrigu Samhita canon.
-          </p>
-        </div>
-        <div className="card">
-          <p className="eyebrow">Shareable stories</p>
-          <h3>Plain English and Hindi, ready for other languages.</h3>
-          <p>
-            Point <code>NEXT_PUBLIC_BACKEND_URL</code> at your Render or Railway host and share the same interpretations across
-            chat, mobile, or web—no restructuring or JSON parsing required.
-          </p>
+        <div className="journey-grid">
+          <div className="card">
+            <h3>Soft cosmic gradients</h3>
+            <p>
+              Aurora veils, starlit dots, and translucent glass panels guide focus without overwhelming. Micro-interactions lift
+              buttons and cards like constellations coming to life.
+            </p>
+          </div>
+          <div className="card">
+            <h3>Folios, not clichés</h3>
+            <p>
+              Symbols draw from mandala symmetry and Bhrigu-inspired yantras instead of clipart. Inputs map to authentic tithis,
+              houses, and elements so destiny stays grounded.
+            </p>
+          </div>
+          <div className="card">
+            <h3>Story-first layout</h3>
+            <p>
+              Hierarchy uses bold headings, calm body text, and space for breath. Elders can glide across sections while younger
+              users enjoy immersive, emoji-free precision.
+            </p>
+          </div>
         </div>
       </section>
 
-      <section className="card-grid">
+      <section className="card-grid insight-lab">
         <div className="card highlight">
           <p className="eyebrow">Consult now</p>
           <h3>Holistic horoscope</h3>
@@ -100,7 +135,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="card-grid">
+      <section className="card-grid pathways">
         <div className="card">
           <p className="eyebrow">Past-life explorer</p>
           <h3>Trace prior eras</h3>
@@ -112,7 +147,9 @@ export default function HomePage() {
         <div className="card">
           <p className="eyebrow">Future directives</p>
           <h3>Actionable steps</h3>
-          <p>Chart the finance, devotion, and health moves Bhrigu prescribes for the next decade—written as guidance, not code.</p>
+          <p>
+            Chart the finance, devotion, and health moves Bhrigu prescribes for the next decade—written as guidance, not code.
+          </p>
           <Link className="button-link" href="/future">
             Plan the future
           </Link>
@@ -120,7 +157,10 @@ export default function HomePage() {
         <div className="card">
           <p className="eyebrow">Wisdom first</p>
           <h3>Readable insights across web and native</h3>
-          <p>Each page mirrors the backend contracts yet presents results as human stories so Android, iOS, and browser clients stay aligned without exposing raw payloads.</p>
+          <p>
+            Each page mirrors the backend contracts yet presents results as human stories so Android, iOS, and browser clients
+            stay aligned without exposing raw payloads.
+          </p>
           <Link className="button-link" href="/calendar">
             View calendar helper
           </Link>
