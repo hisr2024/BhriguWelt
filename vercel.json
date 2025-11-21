@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "env": {
+    "NEXT_PUBLIC_BACKEND_URL": "https://your-render-service.onrender.com",
+    "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+  },
+  "installCommand": "cd frontend && npm ci --legacy-peer-deps",
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/.next",
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/$1"
+    }
+  ]
+}

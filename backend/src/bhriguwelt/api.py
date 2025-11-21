@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import asdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -191,4 +192,5 @@ __all__ = ["BhriguAPIHandler", "handle_command", "serve"]
 
 
 if __name__ == "__main__":  # pragma: no cover - manual execution
-    serve()
+    env_port = os.environ.get("RAILWAY_TCP_PORT") or os.environ.get("PORT", "8000")
+    serve(host=os.environ.get("HOST", "0.0.0.0"), port=int(env_port))

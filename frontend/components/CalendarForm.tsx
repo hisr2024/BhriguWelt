@@ -5,10 +5,12 @@ import { requestCalendar } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { captureClientError } from "@/lib/telemetry";
 import { CalendarDetails } from "@/types/astro";
+import { helperCopy } from "@/lib/copy";
 import PredictionCard from "./PredictionCard";
 
 export default function CalendarForm() {
   const { t } = useI18n();
+  const helperText = helperCopy.calendar;
   const [details, setDetails] = useState<CalendarDetails>({
     birthDate: "",
     birthTime: "",
@@ -49,10 +51,7 @@ export default function CalendarForm() {
           <p className="eyebrow">Śaka conversion</p>
           <h2 id="calendar-heading">{t("calendar.title", "Gregorian → Śaka calendar conversion")}</h2>
           <p className="muted" id="calendar-helper">
-            {t(
-              "calendar.helper",
-              "Every onboarding flow can derive Śaka year, month, and IST reference for downstream predictions. Use 24-hour birth times for accurate IST normalization.",
-            )}
+            {t("calendar.helper", helperText)}
           </p>
         </header>
         <div className="form-grid">
