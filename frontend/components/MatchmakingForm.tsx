@@ -12,12 +12,17 @@ const defaultDetails: BirthDetails = {
   birthDate: "",
   birthTime: "",
   birthPlace: "",
+  tradition: "universal",
   lunarTithi: "5",
   moonElement: "water",
   marsHouse: "1",
   saturnHouse: "2",
   venusHouse: "3",
   rahuAspectsAscendant: false,
+  ketuHouse: "12",
+  mercuryHouse: "5",
+  jupiterHouse: "5",
+  saturnRetrograde: false,
 };
 
 export default function MatchmakingForm() {
@@ -74,6 +79,18 @@ export default function MatchmakingForm() {
           <input value={details.birthPlace} onChange={(event) => setDetails({ ...details, birthPlace: event.target.value })} required />
         </div>
         <div>
+          <label>{t("form.tradition", "Tradition focus")}</label>
+          <select
+            value={details.tradition || "universal"}
+            onChange={(event) => setDetails({ ...details, tradition: event.target.value })}
+          >
+            <option value="universal">{t("tradition.universal", "Universal")}</option>
+            <option value="northern">{t("tradition.northern", "Northern")}</option>
+            <option value="southern-grantha">{t("tradition.southern", "Southern (Grantha)")}</option>
+            <option value="western-grantha">{t("tradition.western", "Western Grantha")}</option>
+          </select>
+        </div>
+        <div>
           <label>{t("form.lunarTithi", "Lunar tithi")}</label>
           <input type="number" min={1} max={30} value={details.lunarTithi} onChange={(event) => setDetails({ ...details, lunarTithi: event.target.value })} />
         </div>
@@ -100,11 +117,51 @@ export default function MatchmakingForm() {
           <input type="number" min={1} max={12} value={details.venusHouse} onChange={(event) => setDetails({ ...details, venusHouse: event.target.value })} />
         </div>
         <div>
+          <label>{t("form.ketuHouse", "Ketu house (0 if unknown)")}</label>
+          <input
+            type="number"
+            min={0}
+            max={12}
+            value={details.ketuHouse || "0"}
+            onChange={(event) => setDetails({ ...details, ketuHouse: event.target.value })}
+          />
+        </div>
+        <div>
+          <label>{t("form.mercuryHouse", "Mercury house (0 if unknown)")}</label>
+          <input
+            type="number"
+            min={0}
+            max={12}
+            value={details.mercuryHouse || "0"}
+            onChange={(event) => setDetails({ ...details, mercuryHouse: event.target.value })}
+          />
+        </div>
+        <div>
+          <label>{t("form.jupiterHouse", "Jupiter house (0 if unknown)")}</label>
+          <input
+            type="number"
+            min={0}
+            max={12}
+            value={details.jupiterHouse || "0"}
+            onChange={(event) => setDetails({ ...details, jupiterHouse: event.target.value })}
+          />
+        </div>
+        <div>
           <label>{t("form.rahu", "Rahu aspects ascendant")}</label>
           <select
             value={details.rahuAspectsAscendant ? "yes" : "no"}
             onChange={(event) => setDetails({ ...details, rahuAspectsAscendant: event.target.value === "yes" })}
             aria-label={t("form.rahu", "Rahu aspects ascendant")}
+          >
+            <option value="no">{t("form.no", "No")}</option>
+            <option value="yes">{t("form.yes", "Yes")}</option>
+          </select>
+        </div>
+        <div>
+          <label>{t("form.saturnRetrograde", "Saturn retrograde")}</label>
+          <select
+            value={details.saturnRetrograde ? "yes" : "no"}
+            onChange={(event) => setDetails({ ...details, saturnRetrograde: event.target.value === "yes" })}
           >
             <option value="no">{t("form.no", "No")}</option>
             <option value="yes">{t("form.yes", "Yes")}</option>

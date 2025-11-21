@@ -3,12 +3,17 @@ export interface BirthDetails {
   birthDate: string;
   birthTime: string;
   birthPlace: string;
+  tradition?: string;
   lunarTithi: string;
   moonElement: string;
   marsHouse: string;
   saturnHouse: string;
   venusHouse: string;
   rahuAspectsAscendant: boolean;
+  ketuHouse?: string;
+  mercuryHouse?: string;
+  jupiterHouse?: string;
+  saturnRetrograde?: boolean;
 }
 
 export interface CalendarDetails {

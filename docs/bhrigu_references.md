@@ -19,6 +19,13 @@ practice within the repository is extracted directly from these manuscripts.
 | Bikaner folio 33f | Rajasthani | Maharishi Bhrigu Research Kendra, Bikaner | Notes humanitarian tech service patterns for watery moons in future forecasts. |
 | Sharada palm 77c | Sharada | Scholars along the Ganga | Specifies lunar harmonics for empathic matchmaking plus modern collaboration notes. |
 | Grantha scroll 18d | Grantha Tamil | Thanjavur Saraswathi Mahal | Explains Venus-Mars complementarity for digital grihastha households and matchmaking. |
+| Grantha palm 19b | Grantha Tamil | Thanjavur Saraswathi Mahal | Notes Ketu in the twelfth with watery Moon for contemplative mendicants. |
+| Bikaner folio 27a | Rajasthani | Maharishi Bhrigu Research Kendra, Bikaner | Details Mercury-Jupiter matchmaking and conciliatory skills. |
+| Bharuch copper 30c | Copperplate Gujarati | Bharuch Bhrigu Copper Archives | Records retrograde Saturn with Mars for resilience and reconstruction mandates. |
+| Grantha palm 22d | Grantha Tamil | Thanjavur Saraswathi Mahal | Ketu yantra sandal offerings for calming restless dreams and moksha focus. |
+| Kashi palm 60a | Sharada | Private custodians near Manikarnika Ghat | Highlights artisans rebuilding shrines when Saturn retrogrades toward Mars. |
+| Grantha palm 55c | Grantha Tamil | Thanjavur Saraswathi Mahal | Connects Ketu-led contemplative retreats with future service trajectories. |
+| Kashi scroll 15b | Sharada | Scholars along the Ganga | Jupiter-Mercury fifth-house pairings used for translation and study alliances. |
 
 Developers adding new predictive logic should append similar citations and
 update this table for full transparency. The same corpus is mirrored inside

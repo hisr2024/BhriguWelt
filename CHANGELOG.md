@@ -5,6 +5,8 @@ All notable changes to this project will be documented here.
 - Add production telemetry and localization flows.
 - Align governance metadata (license notice, conduct contact) and documentation
   so merge conflicts in the public PR history stay resolved going forward.
+- Expand Bhrigu Samhita corpus with tradition-aware entries, Panchang context,
+  and integrity scaffolding for manuscript-backed predictions.
 
 ## [2025-11-20]
 - Published an OpenAPI snapshot, backup helper script, and Dependabot config to
