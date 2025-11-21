@@ -21,7 +21,7 @@ from .calculations import (
     evaluate_transits,
     score_principles,
 )
-from .kundli_generator import ChartHouse, DashaPeriod, generate_kundli
+from .config import load_runtime_config
 from .data_loader import load_bhrigu_data
 
 __all__ = [
@@ -178,6 +178,7 @@ def build_calendar_context(
 
 
 def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
+    runtime_config = load_runtime_config()
     bhrigu_data = load_bhrigu_data()
     principles = _filter_by_tradition(bhrigu_data.get("principles", []), request.tradition)
     remedies = _filter_by_tradition(bhrigu_data.get("remedies", []), request.tradition)
@@ -186,7 +187,7 @@ def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
 
     snapshot = _snapshot_from_request(request)
 
-    weights = score_principles(snapshot, principles)
+    weights = score_principles(snapshot, principles, runtime_config)
     karmic_epoch = derive_karmic_epoch(snapshot)
     past_life_insights = evaluate_past_life(snapshot, past_life_engines)
     future_trajectories = evaluate_future_directives(snapshot, future_engines)
@@ -209,6 +210,9 @@ def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
             past_life_insights,
             future_trajectories,
             remedies,
+            request.name,
+            request.birth_place,
+            runtime_config.get("interpretation", {}),
         ),
         rashi_chart=kundli["rashi_chart"],
         bhava_chart=kundli["bhava_chart"],
@@ -217,6 +221,7 @@ def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
 
 
 def build_past_life_report(request: HoroscopeRequest) -> PastLifeReport:
+    runtime_config = load_runtime_config()
     bhrigu_data = load_bhrigu_data()
     snapshot = _snapshot_from_request(request)
     past_life_engines = _filter_by_tradition(bhrigu_data.get("past_life_engines", []), request.tradition)
@@ -224,11 +229,14 @@ def build_past_life_report(request: HoroscopeRequest) -> PastLifeReport:
     return PastLifeReport(
         name=request.name,
         insights=insights,
-        interpretation=_compose_past_life_interpretation(insights),
+        interpretation=_compose_past_life_interpretation(
+            insights, request.name, request.birth_place, runtime_config.get("interpretation", {})
+        ),
     )
 
 
 def build_future_report(request: HoroscopeRequest) -> FutureReport:
+    runtime_config = load_runtime_config()
     bhrigu_data = load_bhrigu_data()
     snapshot = _snapshot_from_request(request)
     future_engines = _filter_by_tradition(bhrigu_data.get("future_engines", []), request.tradition)
@@ -236,7 +244,9 @@ def build_future_report(request: HoroscopeRequest) -> FutureReport:
     return FutureReport(
         name=request.name,
         trajectories=trajectories,
-        interpretation=_compose_future_interpretation(trajectories),
+        interpretation=_compose_future_interpretation(
+            trajectories, request.name, request.birth_place, runtime_config.get("interpretation", {})
+        ),
     )
 
 
@@ -262,6 +272,7 @@ def build_matchmaking_report(
     partner_request: HoroscopeRequest,
     modern_preferences: List[str],
 ) -> MatchmakingReport:
+    runtime_config = load_runtime_config()
     bhrigu_data = load_bhrigu_data()
     primary_snapshot = _snapshot_from_request(primary_request)
     partner_snapshot = _snapshot_from_request(partner_request)
@@ -281,7 +292,12 @@ def build_matchmaking_report(
         primary_name=primary_request.name,
         partner_name=partner_request.name,
         compatibility=compatibility,
-        interpretation=_compose_matchmaking_interpretation(compatibility),
+        interpretation=_compose_matchmaking_interpretation(
+            compatibility,
+            primary_request.name,
+            partner_request.name,
+            runtime_config.get("interpretation", {}),
+        ),
     )
 
 
@@ -321,16 +337,26 @@ def _render_common_intro(name: str, birth_place: str) -> None:
     print(f"Birth locale recorded as {birth_place}")
 
 
+def _personalization_prefix(name: str, birth_place: str, interpretation_config: Dict[str, str]) -> str:
+    safe_name = name or interpretation_config.get("fallback_name", "the native")
+    safe_place = birth_place or interpretation_config.get("fallback_birth_place", "their recorded locale")
+    template = interpretation_config.get("personalized_prefix", "{name}, born in {birth_place},")
+    return template.format(name=safe_name, birth_place=safe_place)
+
+
 def _compose_horoscope_interpretation(
     karmic_epoch: str,
     weights: Dict[str, float],
     past_life_insights: List[PastLifeInsight],
     future_trajectories: List[FutureTrajectory],
     remedies: List[Dict],
+    name: str,
+    birth_place: str,
+    interpretation_config: Dict[str, str],
 ) -> str:
     """Blend the raw signals into a concise, manuscript-anchored summary."""
 
-    phrases: List[str] = []
+    phrases: List[str] = [_personalization_prefix(name, birth_place, interpretation_config)]
     if weights:
         top_weights = sorted(weights.items(), key=lambda item: item[1], reverse=True)[:2]
         weight_phrase = ", ".join(f"{name.replace('_', ' ')} ({score:.2f})" for name, score in top_weights)
@@ -353,39 +379,54 @@ def _compose_horoscope_interpretation(
         remedy_refs = ", ".join(remedy["id"] for remedy in remedies[:2])
         phrases.append(f"Remedy anchors: {remedy_refs} from the folios.")
 
+    gratitude = interpretation_config.get("gratitude_phrase")
+    if gratitude:
+        phrases.append(gratitude)
     phrases.append(karmic_epoch)
     return " ".join(phrases)
 
 
-def _compose_past_life_interpretation(insights: List[PastLifeInsight]) -> str:
+def _compose_past_life_interpretation(
+    insights: List[PastLifeInsight], name: str, birth_place: str, interpretation_config: Dict[str, str]
+) -> str:
     if not insights:
-        return "Past-life folios are silent; default remedies advised."
+        return f"{_personalization_prefix(name, birth_place, interpretation_config)} Past-life folios are silent; default remedies advised."
 
     top = max(insights, key=lambda insight: insight.confidence)
     return (
-        f"Primary past-life transmission ({top.sutra_reference}) emphasizes {top.narrative} "
-        f"with confidence {top.confidence:.2f}."
+        f"{_personalization_prefix(name, birth_place, interpretation_config)} Primary past-life transmission ({top.sutra_reference}) "
+        f"emphasizes {top.narrative} with confidence {top.confidence:.2f}."
     )
 
 
-def _compose_future_interpretation(trajectories: List[FutureTrajectory]) -> str:
+def _compose_future_interpretation(
+    trajectories: List[FutureTrajectory], name: str, birth_place: str, interpretation_config: Dict[str, str]
+) -> str:
     if not trajectories:
-        return "Future directives await fuller planetary transits; continue dharmic discipline."
+        return (
+            f"{_personalization_prefix(name, birth_place, interpretation_config)} Future directives await fuller planetary transits; "
+            "continue dharmic discipline."
+        )
 
     top = max(trajectories, key=lambda directive: directive.certainty)
     window = f" during {top.window}" if top.window else ""
     return (
-        f"Highest-certainty mandate from {top.sutra_reference}: {top.focus}{window} "
-        f"(certainty {top.certainty:.2f})."
+        f"{_personalization_prefix(name, birth_place, interpretation_config)} Highest-certainty mandate from {top.sutra_reference}: "
+        f"{top.focus}{window} (certainty {top.certainty:.2f})."
     )
 
 
-def _compose_matchmaking_interpretation(compatibility: MatchmakingCompatibility) -> str:
+def _compose_matchmaking_interpretation(
+    compatibility: MatchmakingCompatibility, name: str, partner_name: str, interpretation_config: Dict[str, str]
+) -> str:
     breakdown_sorted = sorted(compatibility.breakdown, key=lambda entry: entry.score, reverse=True)
     top_entry = breakdown_sorted[0] if breakdown_sorted else None
     highlight = compatibility.modern_highlights[0] if compatibility.modern_highlights else ""
 
-    parts = [f"Composite compatibility index: {compatibility.compatibility_index:.2f}%."]
+    prefix = interpretation_config.get("personalized_prefix", "{name}, born in {birth_place},").format(
+        name=name, birth_place=f"aligned with {partner_name}"
+    )
+    parts = [f"{prefix} Composite compatibility index: {compatibility.compatibility_index:.2f}%."]
     if top_entry:
         parts.append(
             f"Strongest folio ({top_entry.sutra_reference}): {top_entry.description.strip()} -> score {top_entry.score:.2f}."

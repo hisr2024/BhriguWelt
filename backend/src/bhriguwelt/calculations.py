@@ -4,9 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, time
+from functools import lru_cache
 from typing import Dict, List, Tuple
 
+from sklearn.linear_model import LogisticRegression
+
 from .astronomical_calculations import auto_snapshot_kwargs, derive_transit_snapshot, normalize_birth_datetime
+from .config import load_runtime_config
 
 
 @dataclass
@@ -195,13 +199,37 @@ class MatchmakingCompatibility:
     modern_highlights: List[str]
 
 
-def score_principles(snapshot: CelestialSnapshot, principles: List[Dict]) -> Dict[str, float]:
-    """Compute normalized weights for each principle based on the snapshot."""
+def score_principles(
+    snapshot: CelestialSnapshot, principles: List[Dict], runtime_config: Dict[str, object] | None = None
+) -> Dict[str, float]:
+    """Compute normalized weights for each principle based on the snapshot.
 
-    scores: Dict[str, float] = {}
+    A Bayesian posterior is blended with a lightweight ML scorer to highlight
+    which manuscript principles matter most for the supplied snapshot. When
+    multiple principles compete for the same conceptual weight, the conflict
+    resolution strategy prefers the earliest antiquity rank to stay faithful to
+    the manuscript lineage.
+    """
+
+    config = runtime_config or load_runtime_config()
+    scoring_config: Dict[str, object] = config.get("scoring", {})  # type: ignore[assignment]
+    conflict_config: Dict[str, object] = config.get("conflicts", {})  # type: ignore[assignment]
+    alpha = float(scoring_config.get("bayesian_alpha", 1.1))
+    beta = float(scoring_config.get("bayesian_beta", 1.05))
+    ml_floor = float(scoring_config.get("ml_weight_floor", 0.4))
+    max_modifier = float(scoring_config.get("max_modifier", 1.35))
+
+    resolved: Dict[str, Dict[str, object]] = {}
+    model = _logistic_model(
+        positive_bias=float(scoring_config.get("logistic_positive_bias", 0.2)),
+        negative_bias=float(scoring_config.get("logistic_negative_bias", -0.1)),
+        threshold=ml_floor,
+    )
+
     for principle in principles:
         if not _tradition_allows(principle, snapshot.tradition):
             continue
+
         pid = principle["id"]
         weights = principle.get("weights", {})
         modifier = 1.0
@@ -219,10 +247,16 @@ def score_principles(snapshot: CelestialSnapshot, principles: List[Dict]) -> Dic
         if pid == "BR-30" and snapshot.saturn_retrograde and 4 <= snapshot.mars_house <= 10:
             modifier += 0.2
 
-        for key, value in weights.items():
-            scores[key] = round(value * modifier, 2)
+        modifier = min(modifier, max_modifier)
+        antiquity_rank = _antiquity_rank(principle, conflict_config)
 
-    return scores
+        for key, value in weights.items():
+            posterior = _bayesian_weight(float(value), alpha, beta)
+            ml_score = _ml_weight_score(model, posterior, modifier)
+            combined = round(min(1.0, ((posterior + ml_score) / 2) * modifier), 2)
+            _record_weight(resolved, key, combined, antiquity_rank, pid, conflict_config)
+
+    return {key: float(entry["score"]) for key, entry in resolved.items()}
 
 
 def derive_karmic_epoch(snapshot: CelestialSnapshot) -> str:
@@ -428,6 +462,72 @@ def evaluate_matchmaking(
         breakdown=breakdown,
         modern_highlights=modern_highlights,
     )
+
+
+def _bayesian_weight(raw_weight: float, alpha: float, beta: float) -> float:
+    posterior_alpha = alpha + raw_weight
+    posterior_beta = beta + (1 - raw_weight)
+    return round(posterior_alpha / (posterior_alpha + posterior_beta), 3)
+
+
+@lru_cache(maxsize=None)
+def _logistic_model(positive_bias: float, negative_bias: float, threshold: float) -> LogisticRegression:
+    """Train a tiny logistic regression to up-rank confident weights."""
+
+    model = LogisticRegression()
+    training_features = [
+        [threshold - 0.2, negative_bias],
+        [threshold, 0.0],
+        [0.75, positive_bias],
+        [0.9, positive_bias],
+    ]
+    labels = [0, 0, 1, 1]
+    model.fit(training_features, labels)
+    return model
+
+
+def _ml_weight_score(model: LogisticRegression, posterior: float, modifier: float) -> float:
+    probability = model.predict_proba([[posterior, modifier]])[0][1]
+    return round(float(probability), 3)
+
+
+def _record_weight(
+    resolved: Dict[str, Dict[str, object]],
+    key: str,
+    score: float,
+    antiquity_rank: int,
+    principle_id: str,
+    conflict_config: Dict[str, object],
+) -> None:
+    strategy = str(conflict_config.get("strategy", "antiquity"))
+    prefer_higher = bool(conflict_config.get("prefer_higher_weight", True))
+
+    existing = resolved.get(key)
+    if not existing:
+        resolved[key] = {"score": score, "rank": antiquity_rank, "principle_id": principle_id}
+        return
+
+    existing_rank = int(existing.get("rank", 999))
+    existing_score = float(existing.get("score", 0.0))
+
+    if strategy == "antiquity":
+        if antiquity_rank < existing_rank:
+            resolved[key] = {"score": score, "rank": antiquity_rank, "principle_id": principle_id}
+            return
+        if antiquity_rank == existing_rank and prefer_higher and score > existing_score:
+            resolved[key] = {"score": score, "rank": antiquity_rank, "principle_id": principle_id}
+        return
+
+    if prefer_higher and score > existing_score:
+        resolved[key] = {"score": score, "rank": antiquity_rank, "principle_id": principle_id}
+
+
+def _antiquity_rank(principle: Dict, conflict_config: Dict[str, object]) -> int:
+    if "antiquity_rank" in principle:
+        return int(principle["antiquity_rank"])
+    default_rank = int(conflict_config.get("default_rank", 99))
+    ranks = conflict_config.get("antiquity_ranks", {}) or {}
+    return int(ranks.get(principle.get("id"), default_rank))
 
 
 def _score_conditions(snapshot: CelestialSnapshot, conditions: Dict, base_value: float) -> float:
