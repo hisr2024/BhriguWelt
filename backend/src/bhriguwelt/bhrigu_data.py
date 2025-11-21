@@ -110,6 +110,119 @@ BHRIGU_CANON: Dict[str, Any] = {
                 "karmic_debts": 0.49,
             },
         },
+        {
+            "id": "BR-33",
+            "tradition": ["northern", "southern-grantha"],
+            "sutra_reference": "Northern Bhrigu bundle 5a",
+            "description": (
+                "When Ketu aspects the Ascendant while Jupiter guards the ninth house,"
+                " the northern recension highlights sudden manuscript discoveries and"
+                " breakthrough research allies from distant lands."
+            ),
+            "weights": {
+                "research_partners": 0.81,
+                "spiritual_detachment": 0.52,
+                "publication_success": 0.69,
+            },
+        },
+        {
+            "id": "BR-38",
+            "tradition": "western-grantha",
+            "sutra_reference": "Grantha copper 38c",
+            "description": (
+                "Venus in the eleventh with Rahu conjoining Mercury indicates digital"
+                " patronage networks and multilingual product releases blessed by Bhrigu."
+            ),
+            "weights": {
+                "network_effects": 0.77,
+                "language_mastery": 0.64,
+                "venture_success": 0.72,
+            },
+        },
+        {
+            "id": "BR-41",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Tanjore palm 41d",
+            "description": (
+                "Ketu in trine to Moon while Saturn retrogrades through a moksha bhava"
+                " yields vivid dream visitations from rishis and strong retreat leadership."
+            ),
+            "weights": {
+                "dream_recall": 0.83,
+                "retreat_facilitation": 0.71,
+                "moksha_drive": 0.78,
+            },
+        },
+        {
+            "id": "BR-46",
+            "tradition": "northern",
+            "sutra_reference": "Kashi folio 46b",
+            "description": (
+                "Mars in the third with exalted Sun grants bold communicators who champion"
+                " civic technology; Bhrigu prescribes hackathon-style seva."
+            ),
+            "weights": {
+                "public_speaking": 0.74,
+                "civic_tech": 0.79,
+                "courage": 0.68,
+            },
+        },
+        {
+            "id": "BR-52",
+            "tradition": "universal",
+            "sutra_reference": "Bharuch copper 52a",
+            "description": (
+                "Moon in an airy sign receiving Ketu's aspect promises strong data literacy"
+                " and karmic duty to steward open knowledge commons."
+            ),
+            "weights": {
+                "data_stewardship": 0.73,
+                "open_knowledge": 0.75,
+                "collaboration": 0.7,
+            },
+        },
+        {
+            "id": "BR-61",
+            "tradition": ["northern", "western-grantha"],
+            "sutra_reference": "Sharada bundle 61c",
+            "description": (
+                "Mercury and Venus exchanging signs with Saturn in upachaya bhavas signals"
+                " a karmic arc of teaching, mentoring, and standards writing."
+            ),
+            "weights": {
+                "mentorship": 0.82,
+                "standards_authorship": 0.73,
+                "teaching_call": 0.69,
+            },
+        },
+        {
+            "id": "BR-68",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha scroll 68f",
+            "description": (
+                "When Moon transits Magha with exalted Jupiter, Bhrigu assigns royal"
+                " restoration duties and digital heritage archiving in this age."
+            ),
+            "weights": {
+                "heritage_archives": 0.84,
+                "leadership": 0.66,
+                "ancestral_pride": 0.62,
+            },
+        },
+        {
+            "id": "BR-72",
+            "tradition": "universal",
+            "sutra_reference": "Composite oral 72",
+            "description": (
+                "Rahu in the seventh receiving Jupiter's aspect produces cross-cultural"
+                " alliances and long-term global collaborations when honored with sincerity."
+            ),
+            "weights": {
+                "global_collab": 0.76,
+                "marriage_endurance": 0.69,
+                "bridge_building": 0.71,
+            },
+        },
     ],
     "remedies": [
         {
@@ -149,6 +262,26 @@ BHRIGU_CANON: Dict[str, Any] = {
                 "Donate copper vessels to riverfront temples during Shukla Paksha to "
                 "harmonize retrograde Saturn lessons with compassionate service."
             ),
+        },
+        {
+            "id": "REM-28",
+            "tradition": "northern",
+            "sutra_reference": "Northern Bhrigu bundle 5a",
+            "description": (
+                "For researchers handling fragile manuscripts, Bhrigu prescribes sandal"
+                " paste offerings to Saraswati on Wednesdays before cataloguing."
+            ),
+            "personalize_for": ["research_partners", "standards_authorship"],
+        },
+        {
+            "id": "REM-31",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha scroll 68f",
+            "description": (
+                "When heritage projects arise, plant a neem sapling near ancestral land"
+                " and chant the Aditya Hridayam to stabilize leadership karma."
+            ),
+            "personalize_for": ["heritage_archives", "leadership"],
         },
     ],
     "past_life_engines": [
@@ -407,6 +540,35 @@ BHRIGU_CANON: Dict[str, Any] = {
                 "research-partnership": 0.06,
                 "multi-lingual": 0.05,
             },
+        },
+    ],
+    "transit_rules": [
+        {
+            "id": "TR-1",
+            "tradition": "universal",
+            "sutra_reference": "Gochar compendium 1a",
+            "planet": "Saturn",
+            "conditions": {"saturn_house": {"any_of": [10, 11]}, "tithi_delta": {"min": 0}},
+            "influence": "Sustained career pressure bringing structural acclaim when matched with charity.",
+            "certainty": 0.72,
+        },
+        {
+            "id": "TR-2",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha scroll 68f",
+            "planet": "Ketu",
+            "conditions": {"ketu_house": 12, "moon_element_shift": ["water", "ether"]},
+            "influence": "Dream-intensive retreat season; prioritize solitude and scriptural study.",
+            "certainty": 0.78,
+        },
+        {
+            "id": "TR-3",
+            "tradition": "northern",
+            "sutra_reference": "Northern Bhrigu bundle 5a",
+            "planet": "Mercury",
+            "conditions": {"mercury_house": {"any_of": [3, 6]}, "tithi_delta": {"max": 3}},
+            "influence": "Short journeys ignite research alliances and multilingual drafting sprints.",
+            "certainty": 0.69,
         },
     ],
 }

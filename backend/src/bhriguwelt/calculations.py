@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from datetime import date, datetime, time
 from typing import Dict, List, Tuple
 
+from .astronomical_calculations import auto_snapshot_kwargs, derive_transit_snapshot, normalize_birth_datetime
+
 
 @dataclass
 class CelestialSnapshot:
@@ -64,6 +66,30 @@ class CelestialSnapshot:
             saturn_retrograde=saturn_retrograde,
         )
 
+    @classmethod
+    def from_birth_details(
+        cls,
+        name: str,
+        birth_date: str,
+        birth_time: str,
+        birth_place: str,
+        tradition: str | None = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+        timezone_name: str | None = None,
+    ) -> "CelestialSnapshot":
+        """Create a snapshot by deriving lunar markers from the birth details."""
+
+        derived = auto_snapshot_kwargs(
+            birth_date=birth_date,
+            birth_time=birth_time,
+            birth_place=birth_place,
+            latitude=latitude,
+            longitude=longitude,
+            timezone_name=timezone_name,
+        )
+        return cls.from_strings(tradition=tradition or "universal", **derived)
+
 
 @dataclass
 class PastLifeInsight:
@@ -84,6 +110,16 @@ class FutureTrajectory:
     focus: str
     window: str
     certainty: float
+
+
+@dataclass
+class TransitDirective:
+    """Transit narrative combining natal and gochar observations."""
+
+    reference: str
+    influence: str
+    certainty: float
+    planet: str
 
 
 @dataclass
@@ -213,6 +249,51 @@ def evaluate_future_directives(snapshot: CelestialSnapshot, engines: List[Dict])
                 ),
                 window="Multi-year guidance",
                 certainty=0.55,
+            )
+        )
+
+    return sorted(directives, key=lambda directive: directive.certainty, reverse=True)
+
+
+def evaluate_transits(
+    snapshot: CelestialSnapshot, transit_details: Dict[str, object], transit_rules: List[Dict]
+) -> List[TransitDirective]:
+    """Blend natal snapshot with transit overlays to surface gochar guidance."""
+
+    directives: List[TransitDirective] = []
+    for rule in transit_rules:
+        if not _tradition_allows(rule, snapshot.tradition):
+            continue
+        conditions = rule.get("conditions", {})
+        matches = 0
+        total = 0
+        for key, expected in conditions.items():
+            total += 1
+            value = transit_details.get(key)
+            if isinstance(expected, dict):
+                min_val = expected.get("min")
+                max_val = expected.get("max")
+                any_of = expected.get("any_of")
+                if any_of is not None and value in any_of:
+                    matches += 1
+                    continue
+                if min_val is not None and value is not None and value >= min_val:
+                    matches += 1
+                    continue
+                if max_val is not None and value is not None and value <= max_val:
+                    matches += 1
+                    continue
+            elif value == expected or (isinstance(expected, (list, tuple, set)) and value in expected):
+                matches += 1
+        if total and matches / total < 0.5:
+            continue
+
+        directives.append(
+            TransitDirective(
+                reference=rule.get("sutra_reference", "Bhrigu gochar"),
+                influence=rule.get("influence", "Transit influence requires more data"),
+                certainty=round(float(rule.get("certainty", 0.65)) * (matches / max(total, 1)), 2),
+                planet=rule.get("planet", "mixed"),
             )
         )
 
