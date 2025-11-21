@@ -140,6 +140,19 @@ def evaluate_past_life(snapshot: CelestialSnapshot, engines: List[Dict]) -> List
             )
         )
 
+    if not insights:
+        insights.append(
+            PastLifeInsight(
+                engine_id="PL-DEFAULT",
+                sutra_reference="Bhrigu Samhita (default)",
+                narrative=(
+                    "No specific past-life folios matched the provided placements; "
+                    "defaulting to ancestral service and pilgrimage remedies."
+                ),
+                confidence=0.5,
+            )
+        )
+
     return sorted(insights, key=lambda insight: insight.confidence, reverse=True)
 
 
@@ -158,6 +171,20 @@ def evaluate_future_directives(snapshot: CelestialSnapshot, engines: List[Dict])
                 focus=engine["trajectory"].strip(),
                 window=engine.get("window", ""),
                 certainty=certainty,
+            )
+        )
+
+    if not directives:
+        directives.append(
+            FutureTrajectory(
+                engine_id="FUTURE-DEFAULT",
+                sutra_reference="Bhrigu Samhita (default)",
+                focus=(
+                    "Continue disciplined study, charity, and ancestral rituals while "
+                    "consulting a learned guru for personalized windows."
+                ),
+                window="Multi-year guidance",
+                certainty=0.55,
             )
         )
 
@@ -218,7 +245,20 @@ def evaluate_matchmaking(
             )
         )
 
-    compatibility_index = round((total_score / total_weight) * 100, 2) if total_weight else 0.0
+    if not breakdown:
+        breakdown.append(
+            MatchCriterionResult(
+                criterion_id="MM-DEFAULT",
+                sutra_reference="Bhrigu Samhita (default)",
+                description="Generic compatibility guidance while awaiting complete folios.",
+                score=0.0,
+                notes=(
+                    "Submit complete Panchanga fields for both partners to unlock manuscript-backed compatibility mapping."
+                ),
+            )
+        )
+
+    compatibility_index = round((total_score / total_weight) * 100, 2) if total_weight else 50.0
     return MatchmakingCompatibility(
         compatibility_index=compatibility_index,
         breakdown=breakdown,
