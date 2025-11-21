@@ -62,6 +62,7 @@ def test_build_transit_report_integration():
         birth_time="10:00",
         birth_place="Delhi",
         tradition="universal",
+        consent_for_date_predictions=True,
         lunar_tithi=0,
         moon_element="",
         mars_house=0,

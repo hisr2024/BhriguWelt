@@ -11,6 +11,7 @@ def _payload(**overrides):
         birth_date="1995-05-18",
         birth_time="14:45",
         birth_place="Varanasi",
+        consent_for_date_predictions=True,
         lunar_tithi=5,
         moon_element="water",
         mars_house=10,

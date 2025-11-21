@@ -147,6 +147,7 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "name": report.name,
             "trajectories": [_serialize_obj(item) for item in report.trajectories],
+            "transit_directives": [_serialize_obj(item) for item in report.transit_directives],
             "interpretation": report.interpretation,
         }
     if command == "matchmaking":
@@ -201,6 +202,7 @@ def _request_from_payload(payload: Dict[str, Any]) -> HoroscopeRequest:
             birth_place=payload["birth_place"],
             tradition=payload.get("tradition", "universal"),
             timezone=payload.get("timezone"),
+            consent_for_date_predictions=bool(payload.get("consent_for_date_predictions", False)),
             lunar_tithi=int(payload.get("lunar_tithi", 0)),
             moon_element=payload.get("moon_element", ""),
             mars_house=int(payload.get("mars_house", 0)),
