@@ -8,7 +8,7 @@
       "src": "frontend/next.config.js",
       "use": "@vercel/next",
       "config": {
-        "outputDirectory": "frontend/.next"
+        "outputDirectory": ".next"
       }
     }
   ],
