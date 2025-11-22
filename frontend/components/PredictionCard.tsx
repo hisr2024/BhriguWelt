@@ -5,11 +5,13 @@ import { useI18n } from "@/lib/i18n";
 import { ResultEngine } from "@/types/astro";
 import KundliCharts from "./KundliCharts";
 import { ChartHouse, DashaPeriod } from "@/types/astro";
+import FeedbackPrompt from "./FeedbackPrompt";
 
 interface Props {
   title: string;
   payload: unknown;
   engine: ResultEngine;
+  seekerName?: string;
 }
 
 type InsightSection = {
@@ -301,7 +303,7 @@ function buildSections(engine: ResultEngine, payload: unknown): InsightSection[]
   }
 }
 
-export default function PredictionCard({ title, payload, engine }: Props) {
+export default function PredictionCard({ title, payload, engine, seekerName }: Props) {
   const { t } = useI18n();
   const sections = buildSections(engine, payload);
   const horoscopePayload = engine === "horoscope" && typeof payload === "object" ? (payload as HoroscopePayload) : null;
@@ -333,6 +335,7 @@ export default function PredictionCard({ title, payload, engine }: Props) {
           dashas={horoscopePayload.dashas}
         />
       )}
+      {payload && <FeedbackPrompt engine={engine} seekerName={seekerName} />}
     </section>
   );
 }

@@ -33,6 +33,17 @@ the validation rules and response shapes enforced by the CLI/API handlers.
 - Body: `birth_date` (YYYY-MM-DD), `birth_time` (HH:MM, 24h), `birth_place`
 - Returns Śaka date, lunar month/phase, and conversion factors.
 
+## Accuracy feedback
+- `POST /feedback`
+- Body: `engine` (`horoscope`, `past-life`, `future`, `matchmaking`, `calendar`, or `transits`), `rating` (1-5), optional
+  `seeker_name`, optional `notes`
+- Persists a record for quarterly review and returns the stored entry.
+
+## Quarterly reviews
+- `GET /feedback/quarterly`
+- Returns `{ quarters: [{ label, average_rating, submissions, promoters, recent_notes: [...] }] }` to power dashboards and
+  council reviews.
+
 ## Error cases
 - Missing required fields → HTTP 400 with message
 - Out-of-range lunar tithi/houses or unsupported moon element → HTTP 400 with validation message

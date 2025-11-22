@@ -1,4 +1,5 @@
 import { BirthDetails, CalendarDetails, PredictionEngine } from "@/types/astro";
+import { FeedbackRequest, QuarterlySummaryResponse } from "@/types/feedback";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 const FALLBACK_RESPONSES: Record<string, unknown> = {
@@ -158,6 +159,29 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
       "Surya Siddhanta translation by Bapu Deva Sastri (Calcutta, 1860)",
     ],
   },
+  "/feedback/quarterly": {
+    quarters: [
+      {
+        label: "2024 Q2",
+        average_rating: 4.6,
+        submissions: 18,
+        promoters: 15,
+        recent_notes: [
+          { seeker_name: "Asha", rating: 5, notes: "Remedies were precise and actionable", created_at: "2024-05-14" },
+          { seeker_name: "Kabir", rating: 4, notes: "Charts matched my lived timeline", created_at: "2024-04-28" },
+        ],
+      },
+      {
+        label: "2024 Q1",
+        average_rating: 4.3,
+        submissions: 11,
+        promoters: 8,
+        recent_notes: [
+          { seeker_name: "Meera", rating: 5, notes: "Future focus areas aligned with my mentors", created_at: "2024-02-10" },
+        ],
+      },
+    ],
+  },
 };
 
 type FetchOptions<T> = {
@@ -191,6 +215,26 @@ function mapCalendarDetails(input: CalendarDetails) {
     birth_time: input.birthTime,
     birth_place: input.birthPlace.trim(),
   };
+}
+
+async function getJson<TResponse>(path: string, fallbackKey?: string) {
+  let response: Response;
+  try {
+    response = await fetch(`${BACKEND_URL}${path}`);
+  } catch (networkError) {
+    if (fallbackKey && FALLBACK_RESPONSES[fallbackKey]) {
+      console.warn(`Using offline Bhrigu fallback for ${path}`, networkError);
+      return FALLBACK_RESPONSES[fallbackKey] as TResponse;
+    }
+    throw networkError;
+  }
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Request to ${path} failed`);
+  }
+
+  return (await response.json()) as TResponse;
 }
 
 async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
@@ -258,4 +302,20 @@ export async function requestMatchmaking(
 
 export async function requestCalendar(details: CalendarDetails) {
   return postJson({ path: "/calendar", body: mapCalendarDetails(details) });
+}
+
+export async function submitAccuracyFeedback(feedback: FeedbackRequest) {
+  return postJson({
+    path: "/feedback",
+    body: {
+      engine: feedback.engine,
+      rating: feedback.rating,
+      seeker_name: feedback.seekerName,
+      notes: feedback.notes?.trim(),
+    },
+  });
+}
+
+export async function fetchQuarterlyReviews() {
+  return getJson<QuarterlySummaryResponse>("/feedback/quarterly", "/feedback/quarterly");
 }
