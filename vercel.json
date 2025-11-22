@@ -12,7 +12,7 @@
       }
     }
   ],
-  "installCommand": "npm install --workspaces --include-workspace-root=false",
+  "installCommand": "npm install --workspaces",
   "buildCommand": "cd frontend && npm run build",
   "routes": [
     {
