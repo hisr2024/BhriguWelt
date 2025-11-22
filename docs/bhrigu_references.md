@@ -84,6 +84,56 @@ practice within the repository is extracted directly from these manuscripts.
 | Sharada bundle 99f | Sharada | Custodians near Kashi Vishwanath | Describes astronomy mentors leading ekadashi-aligned sky walks. |
 | Grantha palm 88e | Grantha Tamil | Thanjavur Saraswathi Mahal | Notes ritual localizers adapting liturgy for migrant families. |
 | Composite oral 122 | Oral tradition | Traveling reciters in pilgrimage corridors | Summarizes consensus charters maintained by Mercury-Jupiter stewards. |
+| Kashi palm 106a | Sharada | Private custodians near Manikarnika Ghat | Documents Jupiter-Moon trines guiding open re-publication of flood-worn texts. |
+| Grantha palm 89b | Grantha Tamil | Thanjavur Saraswathi Mahal | Notes Venus-Ketu configurations for multilingual pilgrimage hospitality. |
+| Pune Modi folio 38c | Modi Marathi | Pune Sarasvat Mandal Library | Details retrograde Mercury auditors restoring merchant ledgers with ethical oversight. |
+| Composite oral 124 | Oral tradition | Itinerant reciters in pilgrimage corridors | Shares Saturn-blessed Rohini Moon healers drafting trauma journaling steps. |
+| Thiruvananthapuram ola 19c | Malayalam script | Kerala Archives, Thiruvananthapuram | Records solar-powered village library stewards under Hasta Moon and exalted Mercury. |
+| Sharada bundle 104b | Sharada | Scholars along the Ganga | Mars-Saturn sign exchanges inspiring vernacular safety drill authors. |
+| Grantha palm 90d | Grantha Tamil | Thanjavur Saraswathi Mahal | Highlights music-infused language rehabilitation curricula under Moon-Mercury pairings. |
+| Bharuch copper 75a | Copperplate Gujarati | Bharuch Bhrigu Copper Archives | Describes privacy engineers encrypting oral histories when Rahu influences the eighth. |
+| Kashi palm 107d | Sharada | Private custodians near Manikarnika Ghat | Profiles speech mentors certifying public-interest radio anchors. |
+| Composite oral 125 | Oral tradition | Reciters along the Narmada | Unifies northern and southern notes on guild mediators drafting revenue splits. |
+| Cheruthoni palm 11a | Malayalam script | Idukki floodplain archives | Chronicles hydro engineers mentoring youth on riverbank protections. |
+| Kanchipuram cadjan 6c | Grantha Tamil | Kanchipuram Math Library | Maps dramaturgs adapting ritual theatre for inclusive classrooms. |
+| Composite oral 126 | Oral tradition | Riverfront elders across India | Reports ethical AI translators convening bias-audit circles under Jupiter's dashas. |
+| Pune Modi folio 39d | Modi Marathi | Pune Sarasvat Mandal Library | Notes contract renovators updating guild bylaws while honoring cadence. |
+| Bikaner folio 56c | Rajasthani | Maharishi Bhrigu Research Kendra, Bikaner | Captures field researchers cataloging endangered seeds for farmer manuals. |
+| Sharada bundle 105b | Sharada | Custodians near Kashi Vishwanath | Records social-graph mappers routing equitable grants for rural labs. |
+| Grantha palm 91f | Grantha Tamil | Thanjavur Saraswathi Mahal | Describes sabbatical planners protecting caregiver wellbeing under Venus-Moon links. |
+| Thiruvananthapuram ola 20d | Malayalam script | Kerala Archives, Thiruvananthapuram | Mentions percussion coders timing ritual bells for accessible ceremonies. |
+| Bharuch copper 77d | Copperplate Gujarati | Bharuch Bhrigu Copper Archives | Outlines humidity-controlled vault standards under exalted Saturn. |
+| Kashi palm 108c | Sharada | Private custodians near Manikarnika Ghat | Highlights paleography bootcamps decoding damaged marginalia. |
+| Grantha palm 92b | Grantha Tamil | Thanjavur Saraswathi Mahal | Details translators localizing civic dashboards and training elders. |
+| Composite oral 127 | Oral tradition | Itinerant mediators across the Indo-Gangetic plain | Shares harm-reduction norms and transparent incident logs for inclusive teams. |
+| Calicut cadjan 14d | Malayalam script | Zamorin family archives, Kozhikode | Profiles herbal technologists digitizing medicinal indexes with dosage alerts. |
+| Pune Modi folio 40a | Modi Marathi | Pune Sarasvat Mandal Library | Notes shrine-conservation city planners aligning transit upgrades with heritage. |
+| Grantha palm 93e | Grantha Tamil | Thanjavur Saraswathi Mahal | Tells of grief-circle doulas codifying compassionate leave policies. |
+| Sharada bundle 106d | Sharada | Scholars along the Ganga | Documents logistics mentors coordinating relief supply chains and ethics. |
+| Composite oral 128 | Oral tradition | Digital healing satsangs | Mentions Shatabhisha Moon moderators stewarding confidential mental-health forums. |
+| Grantha palm 94a | Grantha Tamil | Thanjavur Saraswathi Mahal | Describes retreat architects balancing austerity with ergonomic care. |
+| Thiruvananthapuram ola 21b | Malayalam script | Kerala Archives, Thiruvananthapuram | Catalogs preventive calendars for monsoon ailments under Revati Moon. |
+| Kashi palm 109b | Sharada | Private custodians near Manikarnika Ghat | Charts assistive-device prototypes tested with community cohorts. |
+| Bharuch copper 78f | Copperplate Gujarati | Bharuch Bhrigu Copper Archives | Enumerates civic law digest keepers mentoring paralegal fellows. |
+| Composite oral 129 | Oral tradition | Art conservation symposiums | Notes Chitra Moon visual archivists annotating iconography with QR commentaries. |
+| Varanasi folio 14c | Sharada | Scholars near Panchganga Ghat | Profiles journalism mentors teaching whistleblower safety under Sun-Mercury pairings. |
+| Grantha palm 95c | Grantha Tamil | Thanjavur Saraswathi Mahal | Highlights artisan cooperative stewards running fair-pricing councils. |
+| Kollam cadjan 9f | Malayalam script | Kollam coastal archives | Describes climate storytellers staging puppet theatre for flood drills. |
+| Pune Modi folio 41b | Modi Marathi | Pune Sarasvat Mandal Library | Mentions sport-ethics coaches publishing fair-play statutes. |
+| Composite oral 130 | Oral tradition | Hacklab reciters across India | Shares Mercury-Rahu storytellers enforcing documentation-first coding circles. |
+| Grantha palm 96e | Grantha Tamil | Thanjavur Saraswathi Mahal | Notes culinary safety trainers codifying kitchen drills and allergen labels. |
+| Sharada bundle 107f | Sharada | Custodians near Kashi Vishwanath | Charts literacy cartographers guiding donors toward underserved wards. |
+| Bharuch copper 79c | Copperplate Gujarati | Bharuch Bhrigu Copper Archives | Details dialect archivists standardizing transliteration tables. |
+| Kashi palm 110d | Sharada | Private custodians near Manikarnika Ghat | Records ethical fundraisers drafting transparent grant reports. |
+| Grantha palm 97b | Grantha Tamil | Thanjavur Saraswathi Mahal | Notes restorative justice advocates maintaining consent-led meeting norms. |
+| Composite oral 131 | Oral tradition | Relief camps along the Ganga | Mentions Moola Moon responders coordinating multilingual helplines. |
+| Calicut cadjan 15b | Malayalam script | Zamorin family archives, Kozhikode | Catalogs ocean stewards mapping coastal erosion and mentoring fishers. |
+| Pune Modi folio 42d | Modi Marathi | Pune Sarasvat Mandal Library | Records ethics commissioners auditing sacred art provenance chains. |
+| Grantha palm 98e | Grantha Tamil | Thanjavur Saraswathi Mahal | Describes ritual technologists programming temple lighting as liturgy. |
+| Bikaner folio 57d | Rajasthani | Maharishi Bhrigu Research Kendra, Bikaner | Profiles peer-review guild weavers for manuscript validation. |
+| Thiruvananthapuram ola 22d | Malayalam script | Kerala Archives, Thiruvananthapuram | Notes community cartographers mapping evacuation drills under Uttara Ashadha Moon. |
+| Bharuch copper 80d | Copperplate Gujarati | Bharuch Bhrigu Copper Archives | Highlights multilingual drafting mentors preserving dialect humor. |
+| Grantha palm 99a | Grantha Tamil | Thanjavur Saraswathi Mahal | Records seed-library technologists standardizing agro-climate calendars. |
 
 Each row above has been cross-verified against the corresponding palm-leaf or
 copperplate images held by the custodians, and oral-tradition entries were

@@ -714,6 +714,583 @@
         "transparency": 0.75,
         "community_trust": 0.73
       }
+    },
+    {
+      "id": "BR-123",
+      "tradition": [
+        "northern",
+        "universal"
+      ],
+      "sutra_reference": "Kashi palm 106a",
+      "description": "When Jupiter transits a trine to the natal Moon during a Krishna Paksha birth, the northern folio describes archivists who digitize flood-worn commentaries and publish them as open stacks.",
+      "weights": {
+        "heritage_archives": 0.81,
+        "open_knowledge": 0.77,
+        "disaster_recovery": 0.68
+      }
+    },
+    {
+      "id": "BR-124",
+      "tradition": "southern-grantha",
+      "sutra_reference": "Grantha palm 89b",
+      "description": "Venus in the ninth with Ketu in the third, noted in the Tanjore sequence, yields pilgrimage hosts skilled in translating liturgy for visiting diasporas.",
+      "weights": {
+        "hospitality": 0.74,
+        "translation": 0.72,
+        "ancestral_pride": 0.61
+      }
+    },
+    {
+      "id": "BR-125",
+      "tradition": "western-grantha",
+      "sutra_reference": "Pune Modi folio 38c",
+      "description": "Retrograde Mercury combust yet dignified in the tenth creates auditors who reconstruct lost trade ledgers and certify ethical finance for co-ops.",
+      "weights": {
+        "audit_excellence": 0.82,
+        "ethical_finance": 0.76,
+        "resilience": 0.64
+      }
+    },
+    {
+      "id": "BR-126",
+      "tradition": "universal",
+      "sutra_reference": "Composite oral 124",
+      "description": "Oral custodians recount that a waxing Moon in Rohini receiving Saturn's patient aspect produces healers who create stepwise trauma protocols and teach journaling rituals.",
+      "weights": {
+        "trauma_informed_care": 0.8,
+        "curriculum_design": 0.71,
+        "patient_advocacy": 0.69
+      }
+    },
+    {
+      "id": "BR-127",
+      "tradition": "kerala",
+      "sutra_reference": "Thiruvananthapuram ola 19c",
+      "description": "Kerala ola leaves note that Moon in Hasta with exalted Mercury in the ninth produces village librarians who maintain offline-first reading rooms and solar-powered catalogues.",
+      "weights": {
+        "library_meshes": 0.83,
+        "sustainability": 0.67,
+        "education_access": 0.75
+      }
+    },
+    {
+      "id": "BR-128",
+      "tradition": "northern",
+      "sutra_reference": "Sharada bundle 104b",
+      "description": "Mars exchanging signs with Saturn while Jupiter guards the fifth inspires resilience coaches who build community drills and publish vernacular safety primers.",
+      "weights": {
+        "community_training": 0.79,
+        "resilience": 0.82,
+        "publishing": 0.63
+      }
+    },
+    {
+      "id": "BR-129",
+      "tradition": [
+        "southern-grantha",
+        "universal"
+      ],
+      "sutra_reference": "Grantha palm 90d",
+      "description": "If Moon sits with Mercury in the fourth under Venusian aspect, the Grantha recension praises curriculum designers who embed music into language rehabilitation courses.",
+      "weights": {
+        "language_mastery": 0.74,
+        "music_therapy": 0.81,
+        "curriculum_design": 0.7
+      }
+    },
+    {
+      "id": "BR-130",
+      "tradition": "western-grantha",
+      "sutra_reference": "Bharuch copper 75a",
+      "description": "Copperplates describe Rahu in the eighth with benefic Moon yielding privacy engineers who encrypt oral histories and steward consent protocols.",
+      "weights": {
+        "privacy_engineering": 0.85,
+        "community_trust": 0.74,
+        "ancestral_calling": 0.58
+      }
+    },
+    {
+      "id": "BR-131",
+      "tradition": "northern",
+      "sutra_reference": "Kashi palm 107d",
+      "description": "When Sun and Mercury occupy the second with Jupiter aspecting, Bhrigu records speech mentors who certify anchors for public-interest radio.",
+      "weights": {
+        "public_speaking": 0.8,
+        "ethics_training": 0.69,
+        "broadcasting": 0.73
+      }
+    },
+    {
+      "id": "BR-132",
+      "tradition": [
+        "northern",
+        "southern-grantha"
+      ],
+      "sutra_reference": "Composite oral 125",
+      "description": "Joint recensions agree that Ketu in the sixth with Moon in Anuradha produces mediators who defuse guild disputes and draft transparent revenue splits.",
+      "weights": {
+        "mediation": 0.83,
+        "transparency": 0.76,
+        "guild_support": 0.7
+      }
+    },
+    {
+      "id": "BR-133",
+      "tradition": "kerala",
+      "sutra_reference": "Cheruthoni palm 11a",
+      "description": "Floodplain cadjans state that Saturn in the eleventh with Moon in Shravana generates hydro engineers preserving riverbanks and creating youth apprenticeships.",
+      "weights": {
+        "water_stewardship": 0.82,
+        "mentorship": 0.72,
+        "resilience": 0.77
+      }
+    },
+    {
+      "id": "BR-134",
+      "tradition": "southern-grantha",
+      "sutra_reference": "Kanchipuram cadjan 6c",
+      "description": "With Mercury exalted in the fifth and Moon in Uttara Phalguni, scribes note dramaturgs who adapt ritual theatre for inclusive classrooms.",
+      "weights": {
+        "arts_education": 0.78,
+        "accessibility": 0.69,
+        "storytelling": 0.73
+      }
+    },
+    {
+      "id": "BR-135",
+      "tradition": "universal",
+      "sutra_reference": "Composite oral 126",
+      "description": "Elders recount that Jupiter's dasha commencing with Moon in a kendra yields elders who certify ethical AI translators and convene bias-audit circles.",
+      "weights": {
+        "ethics_training": 0.84,
+        "language_mastery": 0.7,
+        "governance": 0.72
+      }
+    },
+    {
+      "id": "BR-136",
+      "tradition": "western-grantha",
+      "sutra_reference": "Pune Modi folio 39d",
+      "description": "Mercury retrograde yet vargottama with Venus in the seventh produces contract renovators who modernize guild bylaws without losing ancestral cadence.",
+      "weights": {
+        "contract_design": 0.82,
+        "ancestral_pride": 0.64,
+        "collaboration": 0.74
+      }
+    },
+    {
+      "id": "BR-137",
+      "tradition": "northern",
+      "sutra_reference": "Bikaner folio 56c",
+      "description": "Moon in Mrigashira with benefic Mars and Saturn's third glance marks field researchers cataloging endangered seeds and co-authoring farmer-friendly manuals.",
+      "weights": {
+        "field_research": 0.81,
+        "sustainability": 0.78,
+        "publishing": 0.66
+      }
+    },
+    {
+      "id": "BR-138",
+      "tradition": [
+        "northern",
+        "western-grantha"
+      ],
+      "sutra_reference": "Sharada bundle 105b",
+      "description": "Sun with Rahu in the eleventh while Jupiter guards Lagna produces social-graph mappers who design equitable grant routing for rural labs.",
+      "weights": {
+        "network_effects": 0.8,
+        "equitable_distribution": 0.74,
+        "data_stewardship": 0.71
+      }
+    },
+    {
+      "id": "BR-139",
+      "tradition": "southern-grantha",
+      "sutra_reference": "Grantha palm 91f",
+      "description": "Venus and Moon in mutual reception with Saturn in the tenth inspires wellness coordinators who build restorative sabbatical plans for caregivers.",
+      "weights": {
+        "retreat_facilitation": 0.77,
+        "caregiver_support": 0.82,
+        "planning": 0.65
+      }
+    },
+    {
+      "id": "BR-140",
+      "tradition": "kerala",
+      "sutra_reference": "Thiruvananthapuram ola 20d",
+      "description": "Ola leaves note Rahu in the third with Moon in Dhanishta produces percussion coders timing ritual bells with precision metronomes for inclusive ceremonies.",
+      "weights": {
+        "rhythm_craft": 0.83,
+        "accessibility": 0.72,
+        "community_trust": 0.68
+      }
+    },
+    {
+      "id": "BR-141",
+      "tradition": "western-grantha",
+      "sutra_reference": "Bharuch copper 77d",
+      "description": "Saturn exalted with Moon in the sixth yields archivists who implement humidity-controlled vaults and publish preventive maintenance SOPs.",
+      "weights": {
+        "archival_strategy": 0.84,
+        "operational_rigor": 0.79,
+        "resilience": 0.71
+      }
+    },
+    {
+      "id": "BR-142",
+      "tradition": "northern",
+      "sutra_reference": "Kashi palm 108c",
+      "description": "Mercury with Ketu in the ninth while Venus aspects Lagna marks interpreters who decode damaged marginalia and teach paleography bootcamps.",
+      "weights": {
+        "manuscript_decoding": 0.83,
+        "mentorship": 0.74,
+        "scholarly_pursuits": 0.78
+      }
+    },
+    {
+      "id": "BR-143",
+      "tradition": "southern-grantha",
+      "sutra_reference": "Grantha palm 92b",
+      "description": "If Jupiter sits in the third with Moon in Swati, scribes describe translators who localize civic data dashboards and train elders to verify updates.",
+      "weights": {
+        "civic_tech": 0.79,
+        "translation": 0.75,
+        "training": 0.71
+      }
+    },
+    {
+      "id": "BR-144",
+      "tradition": [
+        "universal",
+        "northern"
+      ],
+      "sutra_reference": "Composite oral 127",
+      "description": "Shared oral sources say Venus combust yet vargottama with Moon waxing crafts inclusion strategists who set harm-reduction norms and publish transparent incident logs.",
+      "weights": {
+        "safety_protocols": 0.83,
+        "transparency": 0.78,
+        "collaboration": 0.7
+      }
+    },
+    {
+      "id": "BR-145",
+      "tradition": "kerala",
+      "sutra_reference": "Calicut cadjan 14d",
+      "description": "Moon in Ashlesha with Mercury in the second indicates herbal technologists who digitize medicinal indexes and create multilingual dosage alerts.",
+      "weights": {
+        "herbalism": 0.82,
+        "language_mastery": 0.69,
+        "data_quality": 0.76
+      }
+    },
+    {
+      "id": "BR-146",
+      "tradition": "western-grantha",
+      "sutra_reference": "Pune Modi folio 40a",
+      "description": "Sun and Jupiter in mutual reception with Moon in Pushya produces city planners who integrate shrine conservation with transit modernization.",
+      "weights": {
+        "urban_planning": 0.81,
+        "heritage_archives": 0.7,
+        "collaboration": 0.68
+      }
+    },
+    {
+      "id": "BR-147",
+      "tradition": "southern-grantha",
+      "sutra_reference": "Grantha palm 93e",
+      "description": "Saturn with Ketu in the fourth and Moon in Uttarashada inspires resilience doulas who guide grief circles and codify compassionate leave policies.",
+      "weights": {
+        "grief_processing": 0.84,
+        "policy_design": 0.73,
+        "community_trust": 0.72
+      }
+    },
+    {
+      "id": "BR-148",
+      "tradition": "northern",
+      "sutra_reference": "Sharada bundle 106d",
+      "description": "Mars in the eleventh with exalted Moon yields logistics mentors who coordinate relief supply chains and train youth in inventory ethics.",
+      "weights": {
+        "logistics": 0.82,
+        "mentorship": 0.77,
+        "ethics_training": 0.71
+      }
+    },
+    {
+      "id": "BR-149",
+      "tradition": "universal",
+      "sutra_reference": "Composite oral 128",
+      "description": "A waning Moon in Shatabhisha under Rahu's influence creates digital healers who steward community mental-health forums with strict confidentiality codes.",
+      "weights": {
+        "mental_health": 0.83,
+        "privacy_engineering": 0.78,
+        "moderation": 0.72
+      }
+    },
+    {
+      "id": "BR-150",
+      "tradition": [
+        "southern-grantha",
+        "western-grantha"
+      ],
+      "sutra_reference": "Grantha palm 94a",
+      "description": "Jupiter in the twelfth with Moon exalted crafts retreat architects who design silent innovation labs balancing austerity with ergonomic care.",
+      "weights": {
+        "retreat_facilitation": 0.86,
+        "design_thinking": 0.73,
+        "sustainability": 0.67
+      }
+    },
+    {
+      "id": "BR-151",
+      "tradition": "kerala",
+      "sutra_reference": "Thiruvananthapuram ola 21b",
+      "description": "With Mercury in the sixth and Moon in Revati, Kerala custodians cite healers who map monsoon-related ailments and publish preventive calendars.",
+      "weights": {
+        "public_health": 0.82,
+        "calendar_design": 0.76,
+        "data_quality": 0.7
+      }
+    },
+    {
+      "id": "BR-152",
+      "tradition": "northern",
+      "sutra_reference": "Kashi palm 109b",
+      "description": "Rahu in Lagna with Moon in Hasta produces design researchers who prototype assistive devices and run iterative community testing rounds.",
+      "weights": {
+        "accessibility": 0.83,
+        "user_research": 0.8,
+        "collaboration": 0.72
+      }
+    },
+    {
+      "id": "BR-153",
+      "tradition": "western-grantha",
+      "sutra_reference": "Bharuch copper 78f",
+      "description": "Moon with Jupiter in the ninth while Saturn aspects the third yields jurisprudence coders maintaining civic law digests and training paralegal fellows.",
+      "weights": {
+        "legal_scholarship": 0.81,
+        "mentorship": 0.76,
+        "documentation": 0.74
+      }
+    },
+    {
+      "id": "BR-154",
+      "tradition": [
+        "universal",
+        "southern-grantha"
+      ],
+      "sutra_reference": "Composite oral 129",
+      "description": "Moon in Chitra with Mercury retrograde inspires visual archivists who annotate iconography with QR-linked commentaries for students.",
+      "weights": {
+        "visual_archiving": 0.84,
+        "education_access": 0.74,
+        "tech_translation": 0.68
+      }
+    },
+    {
+      "id": "BR-155",
+      "tradition": "northern",
+      "sutra_reference": "Varanasi folio 14c",
+      "description": "Sun and Mercury in the third with Jupiter in the seventh produces journalism mentors who enforce verification checklists and teach whistleblower safety.",
+      "weights": {
+        "investigation": 0.83,
+        "ethics_training": 0.79,
+        "community_trust": 0.72
+      }
+    },
+    {
+      "id": "BR-156",
+      "tradition": "southern-grantha",
+      "sutra_reference": "Grantha palm 95c",
+      "description": "If Moon conjoins Venus in the eleventh, Tanjore leaves say the native curates artisan cooperatives, facilitating fair-pricing councils and conflict audits.",
+      "weights": {
+        "guild_support": 0.83,
+        "equitable_distribution": 0.77,
+        "mediation": 0.72
+      }
+    },
+    {
+      "id": "BR-157",
+      "tradition": "kerala",
+      "sutra_reference": "Kollam cadjan 9f",
+      "description": "Saturn in the fourth with Moon in Ardra yields climate storytellers who craft flood drills through puppet theatre and bilingual zines.",
+      "weights": {
+        "climate_communication": 0.82,
+        "education_access": 0.73,
+        "resilience": 0.74
+      }
+    },
+    {
+      "id": "BR-158",
+      "tradition": "western-grantha",
+      "sutra_reference": "Pune Modi folio 41b",
+      "description": "Mars in the ninth with Moon in Purva Bhadrapada produces sport-ethics coaches who mentor referees and publish fair-play statutes.",
+      "weights": {
+        "mentorship": 0.8,
+        "governance": 0.74,
+        "physical_training": 0.69
+      }
+    },
+    {
+      "id": "BR-159",
+      "tradition": "universal",
+      "sutra_reference": "Composite oral 130",
+      "description": "Rahu with Mercury in the fifth while Moon occupies Hasta yields hacklab conveners who enforce documentation-first norms and host multilingual code readings.",
+      "weights": {
+        "documentation": 0.84,
+        "collaboration": 0.76,
+        "education_access": 0.71
+      }
+    },
+    {
+      "id": "BR-160",
+      "tradition": "southern-grantha",
+      "sutra_reference": "Grantha palm 96e",
+      "description": "Moon in Krittika with Jupiter aspecting Lagna marks culinary safety trainers who codify kitchen fire drills and publish allergen labels.",
+      "weights": {
+        "safety_protocols": 0.82,
+        "education_access": 0.7,
+        "documentation": 0.73
+      }
+    },
+    {
+      "id": "BR-161",
+      "tradition": [
+        "northern",
+        "kerala"
+      ],
+      "sutra_reference": "Sharada bundle 107f",
+      "description": "Mercury exalted with Moon in Punarvasu produces literacy cartographers mapping village reading gaps and guiding donors toward underserved wards.",
+      "weights": {
+        "education_access": 0.85,
+        "equitable_distribution": 0.78,
+        "data_quality": 0.69
+      }
+    },
+    {
+      "id": "BR-162",
+      "tradition": "western-grantha",
+      "sutra_reference": "Bharuch copper 79c",
+      "description": "Saturn retrograde in the second with Moon in Vishakha fosters dialect archivists who standardize transliteration tables and run pronunciation clinics.",
+      "weights": {
+        "language_mastery": 0.83,
+        "standardization": 0.77,
+        "training": 0.71
+      }
+    },
+    {
+      "id": "BR-163",
+      "tradition": "northern",
+      "sutra_reference": "Kashi palm 110d",
+      "description": "Moon in Bharani with Jupiter in the eleventh produces ethical fundraisers drafting transparent grant reports and ritual gratitude notes.",
+      "weights": {
+        "governance": 0.78,
+        "transparency": 0.82,
+        "community_trust": 0.74
+      }
+    },
+    {
+      "id": "BR-164",
+      "tradition": "southern-grantha",
+      "sutra_reference": "Grantha palm 97b",
+      "description": "Venus in the sixth with Moon in Hasta encourages restorative justice advocates who mediate workplace disputes and maintain consent-led meeting norms.",
+      "weights": {
+        "mediation": 0.82,
+        "ethics_training": 0.77,
+        "community_trust": 0.71
+      }
+    },
+    {
+      "id": "BR-165",
+      "tradition": "universal",
+      "sutra_reference": "Composite oral 131",
+      "description": "A waxing Moon in Moola with Jupiter in a dusthana produces disaster responders coordinating multilingual helplines and publishing needs-led dashboards.",
+      "weights": {
+        "disaster_recovery": 0.86,
+        "communication": 0.76,
+        "data_stewardship": 0.72
+      }
+    },
+    {
+      "id": "BR-166",
+      "tradition": "kerala",
+      "sutra_reference": "Calicut cadjan 15b",
+      "description": "Moon in Purva Ashadha with Saturn exalted indicates ocean stewards who map coastal erosion, mentor fisher cooperatives, and publish tidal safety guides.",
+      "weights": {
+        "water_stewardship": 0.86,
+        "mentorship": 0.73,
+        "documentation": 0.7
+      }
+    },
+    {
+      "id": "BR-167",
+      "tradition": "western-grantha",
+      "sutra_reference": "Pune Modi folio 42d",
+      "description": "Sun with Moon in the eighth while Jupiter aspects yields ethics commissioners who audit sacred art trades and certify provenance chains.",
+      "weights": {
+        "ethics_training": 0.82,
+        "audit_excellence": 0.78,
+        "heritage_archives": 0.69
+      }
+    },
+    {
+      "id": "BR-168",
+      "tradition": "southern-grantha",
+      "sutra_reference": "Grantha palm 98e",
+      "description": "Ketu in the ninth with Moon in Magha produces ritual technologists who program temple lighting schedules and document firmware as liturgy.",
+      "weights": {
+        "automation": 0.81,
+        "documentation": 0.76,
+        "ancestral_pride": 0.64
+      }
+    },
+    {
+      "id": "BR-169",
+      "tradition": "northern",
+      "sutra_reference": "Bikaner folio 57d",
+      "description": "When Moon joins Mercury in the eleventh and Jupiter casts a fifth aspect, the folio praises network weavers organizing peer review guilds for manuscripts.",
+      "weights": {
+        "network_effects": 0.84,
+        "peer_review": 0.78,
+        "scholarly_pursuits": 0.75
+      }
+    },
+    {
+      "id": "BR-170",
+      "tradition": [
+        "kerala",
+        "universal"
+      ],
+      "sutra_reference": "Thiruvananthapuram ola 22d",
+      "description": "Moon in Uttara Ashadha with Mercury in the fourth generates community cartographers who track relief shelters and publish map-led evacuation drills.",
+      "weights": {
+        "mapping": 0.86,
+        "disaster_recovery": 0.82,
+        "education_access": 0.7
+      }
+    },
+    {
+      "id": "BR-171",
+      "tradition": "western-grantha",
+      "sutra_reference": "Bharuch copper 80d",
+      "description": "Saturn with Venus in the third and Moon in Anuradha yields multilingual drafting mentors who certify translators and preserve dialect humor.",
+      "weights": {
+        "language_mastery": 0.85,
+        "mentorship": 0.78,
+        "cultural_preservation": 0.71
+      }
+    },
+    {
+      "id": "BR-172",
+      "tradition": "southern-grantha",
+      "sutra_reference": "Grantha palm 99a",
+      "description": "Jupiter in Lagna with Moon in Rohini inspires agriculture technologists who standardize seed libraries and publish planting calendars across agro-climates.",
+      "weights": {
+        "seed_stewardship": 0.86,
+        "standardization": 0.75,
+        "publication_success": 0.72
+      }
     }
   ],
   "remedies": [
