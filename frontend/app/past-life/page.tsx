@@ -6,16 +6,14 @@ export default function PastLifePage() {
     <div className="stack">
       <div className="hero">
         <p className="eyebrow">Past-life • Folio referenced</p>
-        <h1>Surface reincarnation arcs without losing manuscript rigor.</h1>
+        <h1>Surface reincarnation arcs with manuscript rigor.</h1>
         <p className="muted" style={{ maxWidth: "760px" }}>
-          Invite seekers to explore their prior epochs and karmic lessons in story form that drops neatly into carousels, chatbots, or
-          push notifications without technical clutter.
+          Invite seekers to explore prior epochs and karmic lessons in story form without technical clutter.
         </p>
         <div className="hero-actions">
           <Link href="/" className="button-link" style={{ background: "rgba(255,255,255,0.08)" }}>
             Back to studio hub
           </Link>
-          <span className="badge">Citations travel with the payload</span>
         </div>
       </div>
 
@@ -40,7 +38,7 @@ export default function PastLifePage() {
           <ul className="kudos-list">
             <li>
               <span className="badge">Scroll friendly</span>
-              <span>Looks sharp inside mobile app webviews and Instagram-friendly landing pages.</span>
+              <span>Looks sharp inside mobile app webviews and landing pages.</span>
             </li>
             <li>
               <span className="badge">Shareable stories</span>
@@ -48,7 +46,7 @@ export default function PastLifePage() {
             </li>
             <li>
               <span className="badge">Same validation</span>
-              <span>Tithi, elements, and houses are enforced here too, so backend parity never drifts.</span>
+              <span>Tithi, elements, and houses are enforced here too.</span>
             </li>
           </ul>
         </div>

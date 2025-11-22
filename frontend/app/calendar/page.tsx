@@ -8,14 +8,12 @@ export default function CalendarPage() {
         <p className="eyebrow">Śaka calendar • Conversion lab</p>
         <h1>Always anchor onboarding to the Hindu calendar and IST.</h1>
         <p className="muted" style={{ maxWidth: "760px" }}>
-          Convert Gregorian birth details into Śaka-aligned payloads before calling any engine. Perfect for mobile form flows
-          and international audiences.
+          Convert Gregorian birth details into Śaka-aligned payloads before calling any engine.
         </p>
         <div className="hero-actions">
           <Link href="/" className="button-link" style={{ background: "rgba(255,255,255,0.08)" }}>
             Back to studio hub
           </Link>
-          <span className="badge">IST-referenced outputs</span>
         </div>
       </div>
 
@@ -44,7 +42,7 @@ export default function CalendarPage() {
             </li>
             <li>
               <span className="badge">UX friendly</span>
-              <span>Minimal inputs, high clarity; drop it into any onboarding step.</span>
+              <span>Minimal inputs, high clarity for any onboarding step.</span>
             </li>
           </ul>
         </div>
