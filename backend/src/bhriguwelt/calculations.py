@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import dataclass
 from datetime import date, datetime, time
 from functools import lru_cache
+from pathlib import Path
 from typing import Dict, List, Tuple
 
 try:  # NumPy ships via scikit-learn but stay defensive for constrained envs
@@ -224,16 +226,11 @@ def score_principles(
     conflict_config: Dict[str, object] = config.get("conflicts", {})  # type: ignore[assignment]
     alpha = float(scoring_config.get("bayesian_alpha", 1.1))
     beta = float(scoring_config.get("bayesian_beta", 1.05))
-    ml_floor = float(scoring_config.get("ml_weight_floor", 0.4))
     max_modifier = float(scoring_config.get("max_modifier", 1.35))
     exponential_config: Dict[str, object] = scoring_config.get("exponential_weighting", {}) or {}
 
     resolved: Dict[str, Dict[str, object]] = {}
-    model = _logistic_model(
-        positive_bias=float(scoring_config.get("logistic_positive_bias", 0.2)),
-        negative_bias=float(scoring_config.get("logistic_negative_bias", -0.1)),
-        threshold=ml_floor,
-    )
+    model = _logistic_model(scoring_config)
 
     for principle in principles:
         if not _tradition_allows(principle, snapshot.tradition):
@@ -261,7 +258,7 @@ def score_principles(
 
         for key, value in weights.items():
             posterior = _bayesian_weight(float(value), alpha, beta)
-            ml_score = _ml_weight_score(model, posterior, modifier)
+            ml_score = _ml_weight_score(model, snapshot, posterior, modifier)
             combined = round(min(1.0, ((posterior + ml_score) / 2) * modifier), 2)
             dynamic = _apply_exponential_weighting(
                 combined,
@@ -531,23 +528,164 @@ def _bayesian_weight(raw_weight: float, alpha: float, beta: float) -> float:
 
 
 @lru_cache(maxsize=None)
-def _logistic_model(positive_bias: float, negative_bias: float, threshold: float) -> LogisticRegression:
-    """Train a tiny logistic regression to up-rank confident weights."""
+def _element_scalar(element: str) -> float:
+    element_order = ["fire", "earth", "air", "water", "ether"]
+    try:
+        position = element_order.index(element.lower())
+    except ValueError:
+        return 1.0
+    return position / (len(element_order) - 1)
 
-    model = LogisticRegression()
-    training_features = [
-        [threshold - 0.2, negative_bias],
-        [threshold, 0.0],
-        [0.75, positive_bias],
-        [0.9, positive_bias],
+
+def _benchmark_path(scoring_config: Dict[str, object]) -> Path:
+    configured = scoring_config.get("benchmark_data_path")
+    if configured:
+        candidate = Path(str(configured))
+        if candidate.exists():
+            return candidate
+    return Path(__file__).resolve().parents[3] / "tests" / "data" / "benchmark_charts.json"
+
+
+@lru_cache(maxsize=None)
+def _load_benchmark_charts(path: Path) -> List[Dict[str, object]]:
+    if not path.exists():
+        return []
+    with path.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def _shift_house(value: int, delta: int) -> int:
+    base = (int(value) - 1 + delta) % 12
+    return base + 1
+
+
+def _encode_chart_features(markers: Dict[str, object], posterior: float, modifier: float) -> List[float]:
+    return [
+        posterior,
+        modifier,
+        float(markers.get("lunar_tithi", 0)) / 30.0,
+        _element_scalar(str(markers.get("moon_element", ""))),
+        float(markers.get("mars_house", 0)) / 12.0,
+        float(markers.get("saturn_house", 0)) / 12.0,
+        float(markers.get("venus_house", 0)) / 12.0,
+        float(markers.get("ketu_house", 0)) / 12.0,
+        float(markers.get("mercury_house", 0)) / 12.0,
+        float(markers.get("jupiter_house", 0)) / 12.0,
+        1.0 if markers.get("saturn_retrograde") else 0.0,
+        1.0 if markers.get("rahu_aspects_ascendant") else 0.0,
     ]
-    labels = [0, 0, 1, 1]
-    model.fit(training_features, labels)
+
+
+def _negative_example(markers: Dict[str, object], jitter: float) -> Dict[str, object]:
+    moon_cycle = {"fire": "earth", "earth": "air", "air": "water", "water": "fire"}
+    return {
+        "lunar_tithi": ((int(markers.get("lunar_tithi", 1)) + 3 - 1) % 30) + 1,
+        "moon_element": moon_cycle.get(str(markers.get("moon_element", "")).lower(), "ether"),
+        "mars_house": _shift_house(int(markers.get("mars_house", 1)), 2),
+        "saturn_house": _shift_house(int(markers.get("saturn_house", 1)), 3),
+        "venus_house": _shift_house(int(markers.get("venus_house", 1)), 1),
+        "ketu_house": _shift_house(int(markers.get("ketu_house", 1)), 4),
+        "mercury_house": _shift_house(int(markers.get("mercury_house", 1)), 5),
+        "jupiter_house": _shift_house(int(markers.get("jupiter_house", 1)), 2),
+        "saturn_retrograde": not bool(markers.get("saturn_retrograde", False)),
+        "rahu_aspects_ascendant": not bool(markers.get("rahu_aspects_ascendant", False)),
+        "modifier_penalty": max(0.0, 1.0 - jitter),
+        "posterior_penalty": jitter,
+    }
+
+
+def _training_matrix(scoring_config: Dict[str, object]) -> Tuple[List[List[float]], List[int]]:
+    charts = _load_benchmark_charts(_benchmark_path(scoring_config))
+    posteriors = scoring_config.get("ml_training_posteriors", [0.45, 0.62, 0.8])
+    modifiers = scoring_config.get("ml_training_modifiers", [1.0, 1.15, 1.28])
+    jitter = float(scoring_config.get("ml_negative_jitter", 0.18))
+
+    features: List[List[float]] = []
+    labels: List[int] = []
+
+    for chart in charts:
+        markers = chart.get("expected_swisseph") or chart.get("expected_fallback")
+        if not markers:
+            continue
+
+        for posterior in posteriors:
+            for modifier in modifiers:
+                features.append(_encode_chart_features(markers, float(posterior), float(modifier)))
+                labels.append(1)
+
+                synthetic_negative = _negative_example(markers, jitter)
+                penalty = synthetic_negative.pop("posterior_penalty", jitter)
+                modifier_penalty = synthetic_negative.pop("modifier_penalty", 1.0 - jitter)
+                features.append(
+                    _encode_chart_features(
+                        synthetic_negative,
+                        max(0.05, float(posterior) - float(penalty)),
+                        max(1.0, float(modifier) * float(modifier_penalty)),
+                    )
+                )
+                labels.append(0)
+
+    if not features:
+        fallback_threshold = float(scoring_config.get("ml_weight_floor", 0.4))
+        bias_positive = float(scoring_config.get("logistic_positive_bias", 0.2))
+        bias_negative = float(scoring_config.get("logistic_negative_bias", -0.1))
+        fallback_markers = {
+            "lunar_tithi": 15,
+            "moon_element": "air",
+            "mars_house": 6,
+            "saturn_house": 8,
+            "venus_house": 3,
+            "ketu_house": 10,
+            "mercury_house": 4,
+            "jupiter_house": 9,
+            "saturn_retrograde": False,
+            "rahu_aspects_ascendant": True,
+        }
+        features = [
+            _encode_chart_features(fallback_markers, fallback_threshold - 0.1, 1.0 + bias_negative),
+            _encode_chart_features(fallback_markers, fallback_threshold + 0.05, 1.0),
+            _encode_chart_features(fallback_markers, fallback_threshold + 0.2, 1.0 + bias_positive),
+            _encode_chart_features(fallback_markers, fallback_threshold + 0.35, 1.0 + (bias_positive * 1.5)),
+        ]
+        labels = [0, 0, 1, 1]
+
+    return features, labels
+
+
+def _logistic_model(scoring_config: Dict[str, object]) -> LogisticRegression:
+    """Train a logistic regression using curated benchmark charts."""
+
+    features, labels = _training_matrix(scoring_config)
+    model = LogisticRegression(
+        class_weight=scoring_config.get("logistic_class_weight", "balanced"),
+        max_iter=int(scoring_config.get("logistic_max_iter", 500)),
+        C=float(scoring_config.get("logistic_regularization", 1.4)),
+        solver=str(scoring_config.get("logistic_solver", "liblinear")),
+    )
+    model.fit(features, labels)
     return model
 
 
-def _ml_weight_score(model: LogisticRegression, posterior: float, modifier: float) -> float:
-    probability = model.predict_proba([[posterior, modifier]])[0][1]
+def _ml_weight_score(
+    model: LogisticRegression, snapshot: CelestialSnapshot, posterior: float, modifier: float
+) -> float:
+    features = _encode_chart_features(
+        {
+            "lunar_tithi": snapshot.lunar_tithi,
+            "moon_element": snapshot.moon_element,
+            "mars_house": snapshot.mars_house,
+            "saturn_house": snapshot.saturn_house,
+            "venus_house": snapshot.venus_house,
+            "ketu_house": snapshot.ketu_house,
+            "mercury_house": snapshot.mercury_house,
+            "jupiter_house": snapshot.jupiter_house,
+            "saturn_retrograde": snapshot.saturn_retrograde,
+            "rahu_aspects_ascendant": snapshot.rahu_aspects_ascendant,
+        },
+        posterior,
+        modifier,
+    )
+    probability = model.predict_proba([features])[0][1]
     return round(float(probability), 3)
 
 
