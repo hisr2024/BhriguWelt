@@ -13,7 +13,7 @@ from typing import Any, Dict, Tuple
 
 from .data_loader import load_bhrigu_data, persist_bhrigu_data
 from .calendar_conversion import convert_birth_details
-from .feedback import quarterly_reviews, record_feedback, serialize_entry
+from .telemetry import capture_exception, init_telemetry
 from .horoscope import (
     HoroscopeRequest,
     build_future_report,
@@ -24,6 +24,8 @@ from .horoscope import (
 )
 
 _JSON_HEADER = ("Content-Type", "application/json; charset=utf-8")
+
+init_telemetry()
 
 
 class RateLimiter:
@@ -204,7 +206,10 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         except ValueError as exc:
             self.send_error(HTTPStatus.BAD_REQUEST, str(exc))
             return
-        self.cache.set(cache_key, response)
+        except Exception as exc:  # pragma: no cover - defensive catch for telemetry
+            capture_exception(exc, {"command": command, "path": self.path})
+            self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, "Unexpected server error")
+            return
         self._send_json(response)
 
     def _read_json(self) -> Dict[str, Any]:
