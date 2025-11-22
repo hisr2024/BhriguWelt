@@ -25,8 +25,9 @@ references to manuscript folios.
   instance of the Python API before running `npm run dev`, `npm run build`, or
   `npm run start`.
 - **Documentation** (`docs/`): reference notes that enumerate the manuscript
-  citations backing each rule embedded in the backend data files, plus targeted
-  guides (for example the Hindu calendar conversion explainer).
+  citations backing each rule embedded in the backend data files, targeted
+  guides (for example the Hindu calendar conversion explainer), and a prompt
+  library for shaping the UI/UX roadmap (`docs/ui_improvement_prompts.md`).
 
 ## Repository layout
 
@@ -45,8 +46,14 @@ references to manuscript folios.
 │   │   └── horoscope.py
 │   └── tests/
 ├── docs/
+│   ├── accuracy_guide.md
+│   ├── api_reference.md
+│   ├── backup_and_recovery.md
 │   ├── bhrigu_references.md
-│   └── hindu_calendar_conversion.md
+│   ├── deployment.md
+│   ├── hindu_calendar_conversion.md
+│   ├── openapi.yaml
+│   └── ui_improvement_prompts.md
 └── frontend/
     ├── public/
     └── src/
