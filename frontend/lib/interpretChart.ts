@@ -15,6 +15,13 @@ const SIGN_ELEMENTS: Record<string, "Fire" | "Earth" | "Air" | "Water"> = {
   Pisces: "Water",
 };
 
+export type ElementBalance = {
+  fire: number;
+  earth: number;
+  air: number;
+  water: number;
+};
+
 const SIGN_TONES: Record<string, string> = {
   Aries: "initiative and courage",
   Taurus: "steadiness and sensual appreciation",
@@ -78,35 +85,42 @@ function describeRahuKetu(chart: NatalChart, isMinor?: boolean) {
   return `Rahu in ${rahu.sign} (house ${rahu.house}) seeks new experiences, while Ketu in ${ketu.sign} (house ${ketu.house}) releases what feels over-familiar. ${tone}`;
 }
 
+export function getElementBalance(chart: NatalChart): ElementBalance {
+  const counts: Record<keyof ElementBalance, number> = {
+    fire: 0,
+    earth: 0,
+    air: 0,
+    water: 0,
+  };
+
+  chart.chart.planets.forEach((planet) => {
+    const element = SIGN_ELEMENTS[planet.sign];
+    if (element === "Fire") counts.fire += 1;
+    if (element === "Earth") counts.earth += 1;
+    if (element === "Air") counts.air += 1;
+    if (element === "Water") counts.water += 1;
+  });
+
+  return counts;
+}
+
 function describeElementBalance(chart: NatalChart) {
-  const counts: Record<"Fire" | "Earth" | "Air" | "Water", number> = {
-    Fire: 0,
-    Earth: 0,
-    Air: 0,
-    Water: 0,
+  const counts = getElementBalance(chart);
+
+  const dominantElement = (Object.entries(counts) as [keyof ElementBalance, number][]) // preserve key typing
+    .sort(([, a], [, b]) => b - a)[0][0];
+
+  const elementMeaning: Record<keyof ElementBalance, string> = {
+    fire: "Drive and enthusiasm gain traction with mindful pacing.",
+    earth: "Practical steadiness deepens when paired with adaptability.",
+    air: "Curiosity and communication thrive when grounded in lived experience.",
+    water: "Empathy and intuition flourish with clear emotional boundaries.",
   };
 
-  const register = (sign: string | undefined) => {
-    if (!sign) return;
-    const element = SIGN_ELEMENTS[sign];
-    if (element) counts[element] += 1;
-  };
+  const tallyLine = `- Fire: ${counts.fire}, Earth: ${counts.earth}, Air: ${counts.air}, Water: ${counts.water}`;
+  const dominantLine = `- Dominant element: ${dominantElement[0].toUpperCase()}${dominantElement.slice(1)} — ${elementMeaning[dominantElement]}`;
 
-  register(chart.chart.ascendant.sign);
-  chart.chart.planets.forEach((planet) => register(planet.sign));
-
-  const dominant = Object.entries(counts).sort(([, a], [, b]) => b - a)[0][0];
-  const balanceLine = `Elements tally — Fire: ${counts.Fire}, Earth: ${counts.Earth}, Air: ${counts.Air}, Water: ${counts.Water}.`;
-  const tone =
-    dominant === "Fire"
-      ? "Drive and enthusiasm benefit from pacing and reflection."
-      : dominant === "Earth"
-        ? "Practical steadiness thrives alongside flexibility."
-        : dominant === "Air"
-          ? "Ideas and connections expand when grounded in lived experience."
-          : "Sensitivity and empathy flourish with clear boundaries.";
-
-  return `${balanceLine} Most active tone: ${dominant}. ${tone}`;
+  return `${tallyLine}\n${dominantLine}`;
 }
 
 function describeStrengthsChallenges(chart: NatalChart, isMinor?: boolean, userQuestion?: string) {
