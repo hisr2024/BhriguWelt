@@ -22,6 +22,14 @@ type ParsedBirthDetails = {
   time: { hour: number; minute: number; label: string };
 };
 
+type ValidatedBirthDetails = {
+  name: string;
+  dateOfBirth: string;
+  timeOfBirth: string;
+  placeOfBirth: string;
+  parsed: ParsedBirthDetails;
+};
+
 function parseBirthDate(dateOfBirth: string) {
   const trimmed = dateOfBirth.trim();
   const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -67,6 +75,13 @@ function placeSeed(place: string) {
     .trim()
     .split("")
     .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+}
+
+function normalizeDateLabel(year: number, month: number, day: number) {
+  const normalizedMonth = month.toString().padStart(2, "0");
+  const normalizedDay = day.toString().padStart(2, "0");
+  const normalizedYear = year.toString().padStart(4, "0");
+  return `${normalizedYear}-${normalizedMonth}-${normalizedDay}`;
 }
 
 function deriveTimeZone(place: string) {
@@ -152,6 +167,50 @@ function buildMetadata(
   };
 }
 
+export function validateBirthDetails(input: {
+  name: string;
+  dateOfBirth: string;
+  timeOfBirth: string;
+  placeOfBirth: string;
+}): ValidatedBirthDetails {
+  if (!input) {
+    throw new Error("Birth details are required.");
+  }
+
+  const name = input.name?.trim();
+  if (!name) {
+    throw new Error("Name is required and cannot be empty.");
+  }
+
+  const placeOfBirth = input.placeOfBirth?.trim();
+  if (!placeOfBirth) {
+    throw new Error("Place of birth is required and cannot be empty.");
+  }
+
+  if (!input.dateOfBirth) {
+    throw new Error("Date of birth is required.");
+  }
+  const parsedDate = parseBirthDate(input.dateOfBirth);
+  const dateLabel = normalizeDateLabel(parsedDate.year, parsedDate.month, parsedDate.day);
+  const parsedDateNormalized = { ...parsedDate, label: dateLabel };
+
+  if (!input.timeOfBirth) {
+    throw new Error("Time of birth is required.");
+  }
+  const parsedTime = parseBirthTime(input.timeOfBirth);
+
+  return {
+    name,
+    placeOfBirth,
+    dateOfBirth: dateLabel,
+    timeOfBirth: parsedTime.label,
+    parsed: {
+      date: parsedDateNormalized,
+      time: parsedTime,
+    },
+  };
+}
+
 /**
  * Build a structured natal chart using deterministic placeholder logic.
  * TODO: Replace placeholder calculations with real ephemeris-based math and time zone derivation.
@@ -162,25 +221,24 @@ export async function generateNatalChart(input: {
   timeOfBirth: string;
   placeOfBirth: string;
 }): Promise<NatalChart> {
-  const parsedDate = parseBirthDate(input.dateOfBirth);
-  const parsedTime = parseBirthTime(input.timeOfBirth);
-  const parsed: ParsedBirthDetails = { date: parsedDate, time: parsedTime };
+  const validated = validateBirthDetails(input);
+  const { parsed } = validated;
 
-  const { normalized, timezone } = normalizeDateTime(parsed, input.placeOfBirth);
+  const { normalized, timezone } = normalizeDateTime(parsed, validated.placeOfBirth);
   const baseSeed =
-    parsedDate.year * 10000 +
-    parsedDate.month * 100 +
-    parsedDate.day +
-    parsedTime.hour * 60 +
-    parsedTime.minute +
-    placeSeed(input.placeOfBirth);
+    parsed.date.year * 10000 +
+    parsed.date.month * 100 +
+    parsed.date.day +
+    parsed.time.hour * 60 +
+    parsed.time.minute +
+    placeSeed(validated.placeOfBirth);
 
   const { signIndex: ascIndex, ascendant } = buildAscendant(baseSeed);
   const houses = buildHouses(ascIndex, ascendant.degree);
   const planets = buildPlanets(baseSeed, ascIndex);
 
-  const metadata = buildMetadata(parsed, input.placeOfBirth, timezone, normalized);
-  metadata.name = input.name.trim();
+  const metadata = buildMetadata(parsed, validated.placeOfBirth, timezone, normalized);
+  metadata.name = validated.name;
 
   return {
     metadata,
