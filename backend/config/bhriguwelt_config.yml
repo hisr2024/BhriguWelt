@@ -5,6 +5,12 @@ scoring:
   max_modifier: 1.4
   logistic_positive_bias: 0.25
   logistic_negative_bias: -0.15
+  exponential_weighting:
+    enabled: true
+    curve: 1.2
+    ceiling: 0.25
+    anchor: 0.58
+    stability_bonus: 0.05
 conflicts:
   strategy: antiquity
   prefer_higher_weight: true
@@ -22,3 +28,11 @@ interpretation:
   fallback_birth_place: "their recorded locale"
   gratitude_phrase: "the folios honor your lineage."
   remedy_prefix: "Prescribed for {name}:"
+  epithet_threshold: 0.6
+  epithets:
+    past_life_clarity: "bearing lucid ancestral memory ({score:.2f})"
+    career_command: "the chart-holder of decisive leadership ({score:.2f})"
+    wealth_activation: "guardian of dormant treasuries ({score:.2f})"
+    spiritual_detachment: "pilgrim of inner austerity ({score:.2f})"
+    matchmaking_insight: "mediator of harmonious matches ({score:.2f})"
+    resilience: "architect of patient rebuilding ({score:.2f})"

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from datetime import date, datetime, time
 from functools import lru_cache
@@ -220,6 +221,7 @@ def score_principles(
     beta = float(scoring_config.get("bayesian_beta", 1.05))
     ml_floor = float(scoring_config.get("ml_weight_floor", 0.4))
     max_modifier = float(scoring_config.get("max_modifier", 1.35))
+    exponential_config: Dict[str, object] = scoring_config.get("exponential_weighting", {}) or {}
 
     resolved: Dict[str, Dict[str, object]] = {}
     model = _logistic_model(
@@ -256,7 +258,14 @@ def score_principles(
             posterior = _bayesian_weight(float(value), alpha, beta)
             ml_score = _ml_weight_score(model, posterior, modifier)
             combined = round(min(1.0, ((posterior + ml_score) / 2) * modifier), 2)
-            _record_weight(resolved, key, combined, antiquity_rank, pid, conflict_config)
+            dynamic = _apply_exponential_weighting(
+                combined,
+                posterior=posterior,
+                ml_score=ml_score,
+                modifier=modifier,
+                config=exponential_config,
+            )
+            _record_weight(resolved, key, dynamic, antiquity_rank, pid, conflict_config)
 
     return {key: float(entry["score"]) for key, entry in resolved.items()}
 
@@ -539,6 +548,36 @@ def _logistic_model(positive_bias: float, negative_bias: float, threshold: float
 def _ml_weight_score(model: LogisticRegression, posterior: float, modifier: float) -> float:
     probability = model.predict_proba([[posterior, modifier]])[0][1]
     return round(float(probability), 3)
+
+
+def _apply_exponential_weighting(
+    combined: float, posterior: float, ml_score: float, modifier: float, config: Dict[str, object]
+) -> float:
+    """Optionally amplify confident weights with an exponential curve.
+
+    The exponential boost kicks in only when a principle already scores above
+    the configured anchor; this prevents runaway values while still rewarding
+    corroborated manuscript and ML signals.
+    """
+
+    if not config or not bool(config.get("enabled", False)):
+        return combined
+
+    curve = float(config.get("curve", 1.12))
+    ceiling = float(config.get("ceiling", 0.25))
+    anchor = float(config.get("anchor", 0.55))
+    stability_bonus = float(config.get("stability_bonus", 0.03))
+    prefer_higher = bool(config.get("prefer_higher", True))
+
+    headroom = max(combined - anchor, 0)
+    exponential = math.pow(curve, headroom * modifier) - 1
+    capped = min(ceiling, exponential)
+    adjusted = combined + capped
+
+    if prefer_higher and combined >= ml_score:
+        adjusted += min(ceiling - capped, stability_bonus * headroom)
+
+    return round(min(1.0, adjusted), 2)
 
 
 def _record_weight(
