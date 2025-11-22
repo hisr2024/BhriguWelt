@@ -210,6 +210,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             capture_exception(exc, {"command": command, "path": self.path})
             self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, "Unexpected server error")
             return
+        self.cache.set(cache_key, response)
         self._send_json(response)
 
     def _read_json(self) -> Dict[str, Any]:

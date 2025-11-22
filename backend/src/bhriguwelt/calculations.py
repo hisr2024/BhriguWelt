@@ -8,14 +8,17 @@ from dataclasses import dataclass
 from datetime import date, datetime, time
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 try:  # NumPy ships via scikit-learn but stay defensive for constrained envs
     import numpy as np
 except Exception:  # pragma: no cover - runtime environments may omit NumPy
     np = None
 
-from sklearn.linear_model import LogisticRegression
+try:  # pragma: no cover - optional dependency for ML weighting
+    from sklearn.linear_model import LogisticRegression
+except Exception:  # pragma: no cover - offline or sandboxed environments
+    LogisticRegression = None  # type: ignore[assignment]
 
 from .astronomical_calculations import auto_snapshot_kwargs, derive_transit_snapshot, normalize_birth_datetime
 from .config import load_runtime_config
@@ -652,10 +655,29 @@ def _training_matrix(scoring_config: Dict[str, object]) -> Tuple[List[List[float
     return features, labels
 
 
-def _logistic_model(scoring_config: Dict[str, object]) -> LogisticRegression:
-    """Train a logistic regression using curated benchmark charts."""
+def _logistic_model(scoring_config: Dict[str, object]) -> Any:
+    """Train a logistic regression using curated benchmark charts.
+
+    The primary implementation relies on scikit-learn, but offline
+    environments (or minimal CI sandboxes) may lack the dependency. In those
+    cases a deterministic fallback model is returned so the ML weighting
+    branch still exercises meaningful logic during testing.
+    """
+
+    # Backwards compatibility: older tests called this helper with individual
+    # bias values instead of a configuration mapping. Detect that pattern and
+    # normalize into the modern config structure so callers don't break.
+    if not isinstance(scoring_config, dict):  # pragma: no cover - legacy path
+        positive_bias = float(scoring_config or 0.0)
+        scoring_config = {
+            "logistic_positive_bias": positive_bias,
+        }
 
     features, labels = _training_matrix(scoring_config)
+
+    if LogisticRegression is None:
+        return _train_fallback_model(features, labels, scoring_config)
+
     model = LogisticRegression(
         class_weight=scoring_config.get("logistic_class_weight", "balanced"),
         max_iter=int(scoring_config.get("logistic_max_iter", 500)),
@@ -666,8 +688,60 @@ def _logistic_model(scoring_config: Dict[str, object]) -> LogisticRegression:
     return model
 
 
+class _FallbackLogistic:
+    """Lightweight deterministic logistic substitute.
+
+    The fallback mirrors the scikit-learn interface expected by
+    :func:`_ml_weight_score` while avoiding heavyweight numeric dependencies.
+    It computes a simple separating hyperplane using mean differences between
+    positive and negative training samples, honoring any configured bias
+    nudges. The goal isn't statistical perfection; it's to keep ML-aware
+    scoring paths active when scikit-learn is unavailable.
+    """
+
+    def __init__(self, weights: List[float], intercept: float = 0.0) -> None:
+        self.weights = weights
+        self.intercept = intercept
+
+    def predict_proba(self, samples: List[List[float]]):  # type: ignore[override]
+        results = []
+        for sample in samples:
+            margin = self.intercept
+            margin += sum(w * float(x) for w, x in zip(self.weights, sample))
+            probability = 1 / (1 + math.exp(-margin))
+            results.append([1 - probability, probability])
+        return results
+
+
+def _train_fallback_model(
+    features: List[List[float]], labels: List[int], scoring_config: Dict[str, object]
+) -> _FallbackLogistic:
+    positive_samples = [vector for vector, label in zip(features, labels) if label == 1]
+    negative_samples = [vector for vector, label in zip(features, labels) if label == 0]
+
+    def _mean_vector(collection: List[List[float]]) -> List[float]:
+        if not collection:
+            return [0.0 for _ in range(len(features[0]) if features else 0)]
+        length = len(collection)
+        summed = [0.0 for _ in range(len(collection[0]))]
+        for vector in collection:
+            for index, value in enumerate(vector):
+                summed[index] += float(value)
+        return [value / length for value in summed]
+
+    positive_mean = _mean_vector(positive_samples)
+    negative_mean = _mean_vector(negative_samples)
+
+    weights = [p - n for p, n in zip(positive_mean, negative_mean)]
+    intercept = float(scoring_config.get("logistic_positive_bias", 0.0))
+    intercept += float(scoring_config.get("logistic_negative_bias", 0.0))
+    intercept += float(scoring_config.get("logistic_bias", 0.0))
+
+    return _FallbackLogistic(weights, intercept=intercept)
+
+
 def _ml_weight_score(
-    model: LogisticRegression, snapshot: CelestialSnapshot, posterior: float, modifier: float
+    model: Any, snapshot: CelestialSnapshot, posterior: float, modifier: float
 ) -> float:
     features = _encode_chart_features(
         {

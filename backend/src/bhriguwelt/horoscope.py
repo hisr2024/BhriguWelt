@@ -24,6 +24,7 @@ from .calculations import (
 )
 from .config import load_runtime_config
 from .data_loader import load_bhrigu_data
+from .kundli_generator import generate_kundli
 
 __all__ = [
     "HoroscopeRequest",
