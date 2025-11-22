@@ -10,7 +10,14 @@ type ChatRequestPayload = {
   context?: ChatContext;
 };
 
-function sanitizeForLog(payload: ChatRequestPayload | undefined) {
+type ChatLogDetails = {
+  hasBirthDetails: boolean;
+  hasChart: boolean;
+  hasMessage: boolean;
+  error?: string;
+};
+
+function sanitizeForLog(payload: ChatRequestPayload | undefined): ChatLogDetails {
   const hasBirthDetails = Boolean(payload?.context?.birthDetails);
   return {
     hasBirthDetails,
