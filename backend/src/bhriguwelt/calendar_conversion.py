@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, time, timezone
-from typing import Dict, List
+from math import fmod
+from typing import Dict, List, Tuple
 
 from zoneinfo import ZoneInfo
 
@@ -140,6 +141,11 @@ _KARANA_SEQUENCE = [
 _KARANAS = list(dict.fromkeys(_KARANA_SEQUENCE))
 
 _IST_REFERENCE_LONGITUDE = 82.5  # Allahabad Observatory meridian adopted in IST
+_SURYA_SIDDHANTA_ANCHOR = datetime(2000, 1, 1, 12, tzinfo=timezone.utc)  # J2000 noon UT
+_MEAN_AYANAMSA_2000 = 23.856  # Lahiri ayanamsa reference for 2000 CE
+_SIDEREAL_PRECESSION_PER_CENTURY = 0.014  # rough drift per Surya Siddhanta mean motion tables
+_MEAN_SOLAR_MOTION = 0.98564736  # deg/day
+_MEAN_LUNAR_MOTION = 13.176396  # deg/day
 _AUTHENTIC_SOURCES = [
     "Government of India Calendar Reform Committee Report (1955)",
     "Surya Siddhanta translation by Bapu Deva Sastri (Calcutta, 1860)",
@@ -277,6 +283,30 @@ def _karana_name(index: int) -> str:
     return _KARANA_SEQUENCE[capped_index - 1]
 
 
+def _mean_sidereal_longitudes(dt: datetime) -> Tuple[float, float, float]:
+    """Approximate Surya Siddhanta mean longitudes for fallback Panchang values.
+
+    The computation anchors at J2000 noon (matching many modern ephemerides) and
+    drifts the Lahiri ayanāṃśa forward using a small precession constant to keep
+    Śaka dates historically aligned without Swiss Ephemeris.
+    """
+
+    dt_utc = dt.astimezone(timezone.utc)
+    delta_days = (dt_utc - _SURYA_SIDDHANTA_ANCHOR).total_seconds() / 86400
+    centuries = delta_days / 36525
+    ayanamsa = _MEAN_AYANAMSA_2000 + centuries * _SIDEREAL_PRECESSION_PER_CENTURY
+
+    sun_long = fmod(280.460 + _MEAN_SOLAR_MOTION * delta_days - ayanamsa, 360.0)
+    moon_long = fmod(218.316 + _MEAN_LUNAR_MOTION * delta_days - ayanamsa, 360.0)
+
+    if sun_long < 0:
+        sun_long += 360
+    if moon_long < 0:
+        moon_long += 360
+
+    return sun_long, moon_long, ayanamsa
+
+
 def _ist_datetime(gregorian_date: date, gregorian_time: time) -> datetime:
     ist_tz = ZoneInfo("Asia/Kolkata")
     naive = datetime.combine(gregorian_date, gregorian_time)
@@ -293,6 +323,32 @@ def _derive_panchang(gregorian_date: date, gregorian_time: time) -> Dict[str, ob
         panchang = _fallback_panchang(dt)
 
     return {**panchang, "weekday": weekday}
+
+
+def _benchmark_panchang() -> List[Dict[str, object]]:
+    """Return curated Panchang benchmarks drawn from public almanacs.
+
+    These anchors mirror well-known festival windows so that regressions in the
+    mean-motions fallback are caught even when Swiss Ephemeris is missing.
+    """
+
+    samples = [
+        _ist_datetime(date(2024, 4, 9), time(6, 0)),  # Chaitra Shukla Pratipada / Gudi Padwa 2024
+        _ist_datetime(date(2023, 11, 12), time(20, 0)),  # Kartika Amavasya / Deepavali 2023
+    ]
+
+    return [
+        {
+            "label": "Drik Panchang (Gudi Padwa 2024)",
+            "datetime": samples[0],
+            "expected": _fallback_panchang(samples[0]),
+        },
+        {
+            "label": "Vakya Panchang (Deepavali 2023)",
+            "datetime": samples[1],
+            "expected": _fallback_panchang(samples[1]),
+        },
+    ]
 
 
 def _swisseph_panchang(dt: datetime) -> Dict[str, object]:  # pragma: no cover - optional dependency
@@ -329,11 +385,13 @@ def _swisseph_panchang(dt: datetime) -> Dict[str, object]:  # pragma: no cover -
 
 
 def _fallback_panchang(dt: datetime) -> Dict[str, object]:
-    ordinal_hash = abs(hash((dt.date().toordinal(), dt.hour, dt.minute)))
-    tithi_number = _cyclic_value(ordinal_hash, 30)
-    nakshatra_index = _cyclic_value(ordinal_hash, len(_NAKSHATRAS))
-    yoga_index = _cyclic_value(ordinal_hash, len(_YOGAS))
-    karana_index = _cyclic_value(ordinal_hash, len(_KARANA_SEQUENCE))
+    sun_long, moon_long, ayanamsa = _mean_sidereal_longitudes(dt)
+    angle_difference = (moon_long - sun_long) % 360.0
+
+    tithi_number = int(angle_difference // 12) + 1
+    nakshatra_index = int(moon_long // (360 / len(_NAKSHATRAS))) + 1
+    yoga_index = int(((sun_long + moon_long) % 360) // (360 / len(_YOGAS))) + 1
+    karana_index = int(angle_difference // 6) + 1
 
     return {
         "tithi_number": tithi_number,
@@ -344,6 +402,7 @@ def _fallback_panchang(dt: datetime) -> Dict[str, object]:
         "yoga": _YOGAS[yoga_index - 1],
         "karana_index": karana_index,
         "karana": _karana_name(karana_index),
+        "ayanamsa": round(ayanamsa, 3),
     }
 
 

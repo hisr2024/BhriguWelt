@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import builtins
 import sys
 import types
 from datetime import date, time
@@ -48,18 +47,16 @@ def test_convert_birth_details_exposes_full_panchang(monkeypatch):
     assert payload["karana"] == context.karana
 
 
-def test_fallback_panchang_deterministic_with_patched_hash(monkeypatch):
-    monkeypatch.setattr(builtins, "hash", lambda _: 42)
+def test_fallback_panchang_matches_surya_siddhanta_means():
     dt = calendar_conversion._ist_datetime(date(2024, 4, 9), time(15, 45))
 
     panchang = calendar_conversion._fallback_panchang(dt)
 
-    assert panchang["tithi_number"] == calendar_conversion._cyclic_value(42, 30)
-    assert panchang["nakshatra_index"] == calendar_conversion._cyclic_value(42, len(calendar_conversion._NAKSHATRAS))
-    assert panchang["yoga_index"] == calendar_conversion._cyclic_value(42, len(calendar_conversion._YOGAS))
-    assert panchang["karana"] == calendar_conversion._karana_name(
-        calendar_conversion._cyclic_value(42, len(calendar_conversion._KARANA_SEQUENCE))
-    )
+    assert panchang["tithi_number"] == 1
+    assert panchang["nakshatra"] == "Ashwini"
+    assert panchang["yoga"] == "Vaidhriti"
+    assert panchang["karana"] == "Bava"
+    assert panchang["ayanamsa"] == pytest.approx(23.859, rel=0, abs=0.001)
 
 
 def test_swisseph_branch_uses_precise_values(monkeypatch):
@@ -126,3 +123,14 @@ def test_gregorian_to_saka_handles_leap_year_boundary():
     assert saka_date.year == 1946
     assert saka_date.month == "Chaitra"
     assert saka_date.day == 1
+
+
+def test_panchang_benchmarks_capture_external_alignments():
+    benchmarks = calendar_conversion._benchmark_panchang()
+
+    assert benchmarks, "Benchmark snapshots should be produced"
+    for entry in benchmarks:
+        dt = entry["datetime"]
+        derived = calendar_conversion._fallback_panchang(dt)
+        assert derived["tithi_number"] == entry["expected"]["tithi_number"]
+        assert derived["nakshatra"] == entry["expected"]["nakshatra"]

@@ -8,6 +8,7 @@ extensions still receive consistent payloads.
 from __future__ import annotations
 
 from datetime import datetime, timezone, timedelta
+from math import fmod, pi, sin
 from typing import Dict, Tuple
 import importlib.util
 from zoneinfo import ZoneInfo
@@ -47,6 +48,11 @@ def _fallback_cycle(value: int, modulus: int, offset: int = 0) -> int:
     return ((value + offset) % modulus) or modulus
 
 
+def _mean_longitude(base_longitude: float, mean_motion: float, delta_days: float) -> float:
+    value = fmod(base_longitude + mean_motion * delta_days, 360.0)
+    return value + 360 if value < 0 else value
+
+
 def derive_lunar_details(dt: datetime, latitude: float | None = None, longitude: float | None = None) -> Dict[str, int | bool]:
     """Compute Panchanga-aligned hints for use in CelestialSnapshot defaults.
 
@@ -60,19 +66,29 @@ def derive_lunar_details(dt: datetime, latitude: float | None = None, longitude:
     if has_swisseph():
         return _swisseph_lunar_details(dt, latitude=latitude, longitude=longitude)
 
-    ordinal_hash = hash((dt.date().toordinal(), dt.hour, dt.minute, round(latitude or 0), round(longitude or 0)))
-    base_cycle = abs(ordinal_hash)
-    lunar_tithi = _fallback_cycle(base_cycle, 30)
-    moon_element_index = _fallback_cycle(base_cycle, 5)
-    moon_element = ["water", "fire", "air", "earth", "ether"][moon_element_index - 1]
-    mars_house = _fallback_cycle(base_cycle, 12, offset=2)
-    saturn_house = _fallback_cycle(base_cycle, 12, offset=4)
-    venus_house = _fallback_cycle(base_cycle, 12, offset=6)
-    ketu_house = _fallback_cycle(base_cycle, 12, offset=8)
-    mercury_house = _fallback_cycle(base_cycle, 12, offset=3)
-    jupiter_house = _fallback_cycle(base_cycle, 12, offset=5)
-    saturn_retrograde = base_cycle % 2 == 0
-    rahu_aspects_ascendant = base_cycle % 3 == 0
+    delta_days = (dt.astimezone(timezone.utc) - datetime(2000, 1, 1, 12, tzinfo=timezone.utc)).total_seconds() / 86400
+    sun_long = _mean_longitude(280.460, 0.98564736, delta_days)
+    moon_long = _mean_longitude(218.316, 13.176396, delta_days)
+    lunar_tithi = int(((moon_long - sun_long) % 360) // 12) + 1
+    moon_element = _element_from_longitude(moon_long)
+
+    mars_long = _mean_longitude(355.433, 0.524039, delta_days)
+    saturn_long = _mean_longitude(50.077, 0.033459, delta_days)
+    venus_long = _mean_longitude(181.979, 1.602130, delta_days)
+    ketu_long = _mean_longitude(204.0, -0.0529538, delta_days)  # retrograde node
+    mercury_long = _mean_longitude(252.250, 4.092334, delta_days)
+    jupiter_long = _mean_longitude(34.351, 0.083092, delta_days)
+
+    mars_house = int(mars_long // 30) + 1
+    saturn_house = int(saturn_long // 30) + 1
+    venus_house = int(venus_long // 30) + 1
+    ketu_house = int(ketu_long // 30) + 1
+    mercury_house = int(mercury_long // 30) + 1
+    jupiter_house = int(jupiter_long // 30) + 1
+
+    saturn_phase = sin(2 * pi * (delta_days / 378.09))
+    saturn_retrograde = saturn_phase < 0
+    rahu_aspects_ascendant = (ketu_long % 60) < 20
 
     return {
         "lunar_tithi": lunar_tithi,
