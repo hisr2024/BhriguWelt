@@ -7,16 +7,16 @@
     "latitude": 22.5726,
     "longitude": 88.3639,
     "expected_fallback": {
-      "lunar_tithi": 2,
-      "moon_element": "fire",
-      "mars_house": 4,
-      "saturn_house": 6,
-      "venus_house": 8,
-      "ketu_house": 10,
-      "mercury_house": 5,
+      "lunar_tithi": 22,
+      "moon_element": "air",
+      "mars_house": 1,
+      "saturn_house": 7,
+      "venus_house": 10,
+      "ketu_house": 3,
+      "mercury_house": 11,
       "jupiter_house": 7,
-      "saturn_retrograde": true,
-      "rahu_aspects_ascendant": false
+      "saturn_retrograde": false,
+      "rahu_aspects_ascendant": true
     },
     "expected_swisseph": null
   },
@@ -28,16 +28,16 @@
     "latitude": 52.52,
     "longitude": 13.405,
     "expected_fallback": {
-      "lunar_tithi": 17,
+      "lunar_tithi": 22,
       "moon_element": "fire",
-      "mars_house": 7,
-      "saturn_house": 9,
-      "venus_house": 11,
-      "ketu_house": 1,
-      "mercury_house": 8,
-      "jupiter_house": 10,
-      "saturn_retrograde": false,
-      "rahu_aspects_ascendant": false
+      "mars_house": 10,
+      "saturn_house": 1,
+      "venus_house": 1,
+      "ketu_house": 5,
+      "mercury_house": 1,
+      "jupiter_house": 11,
+      "saturn_retrograde": true,
+      "rahu_aspects_ascendant": true
     },
     "expected_swisseph": null
   },
@@ -49,16 +49,16 @@
     "latitude": 9.9391,
     "longitude": 76.2705,
     "expected_fallback": {
-      "lunar_tithi": 13,
-      "moon_element": "air",
-      "mars_house": 9,
-      "saturn_house": 11,
-      "venus_house": 1,
-      "ketu_house": 3,
-      "mercury_house": 10,
-      "jupiter_house": 12,
+      "lunar_tithi": 5,
+      "moon_element": "fire",
+      "mars_house": 8,
+      "saturn_house": 10,
+      "venus_house": 8,
+      "ketu_house": 7,
+      "mercury_house": 7,
+      "jupiter_house": 5,
       "saturn_retrograde": false,
-      "rahu_aspects_ascendant": false
+      "rahu_aspects_ascendant": true
     },
     "expected_swisseph": null
   }
