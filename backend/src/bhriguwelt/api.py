@@ -13,6 +13,7 @@ from typing import Any, Dict, Tuple
 
 from .data_loader import load_bhrigu_data, persist_bhrigu_data
 from .calendar_conversion import convert_birth_details
+from .feedback import quarterly_reviews, record_feedback, serialize_entry
 from .horoscope import (
     HoroscopeRequest,
     build_future_report,
@@ -88,6 +89,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
 
     routes: Dict[Tuple[str, str], str] = {
         ("GET", "/health"): "_handle_health",
+        ("GET", "/feedback/quarterly"): "_handle_feedback_quarterly",
         ("POST", "/horoscope"): "_handle_horoscope",
         ("POST", "/past-life"): "_handle_past_life",
         ("POST", "/future"): "_handle_future",
@@ -131,6 +133,24 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     # Individual endpoint handlers -------------------------------------------------
     def _handle_health(self) -> None:
         self._send_json({"status": "ok", "source": "Bhrigu Samhita"})
+
+    def _handle_feedback(self) -> None:
+        payload = self._read_json()
+        try:
+            entry = record_feedback(
+                engine=payload.get("engine", ""),
+                rating=int(payload.get("rating", 0)),
+                seeker_name=payload.get("seeker_name"),
+                notes=payload.get("notes", ""),
+            )
+        except ValueError as exc:
+            self.send_error(HTTPStatus.BAD_REQUEST, str(exc))
+            return
+        self._send_json(serialize_entry(entry), status=HTTPStatus.CREATED)
+
+    def _handle_feedback_quarterly(self) -> None:
+        summary = quarterly_reviews()
+        self._send_json({"quarters": summary})
 
     def _handle_horoscope(self) -> None:
         payload = self._read_json()
@@ -258,6 +278,8 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "partner_name": report.partner_name,
             "compatibility": {
                 "compatibility_index": compatibility.compatibility_index,
+                "long_term_index": compatibility.long_term_index,
+                "short_term_index": compatibility.short_term_index,
                 "breakdown": [_serialize_obj(entry) for entry in compatibility.breakdown],
                 "modern_highlights": compatibility.modern_highlights,
             },

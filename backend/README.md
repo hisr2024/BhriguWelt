@@ -230,6 +230,10 @@ changes. Two layouts are supported so Nixpacks always installs Python and `pip`:
   relocate the dataset, and `SENTRY_DSN` when telemetry is enabled). The start
   script reads these values automatically and exports `PYTHONPATH=src` before
   launching.
+- Accuracy feedback and quarterly rollups are stored in SQLite under
+  `data/feedback.db` by default. Override the location with
+  `BHRIGU_FEEDBACK_DB=/tmp/feedback.db` when running tests or staging
+  deployments.
 - Backend GitHub Action (`Backend CI`) installs dependencies and runs
   `PYTHONPATH=src pytest` on pushes/PRs touching backend assets.
 - Endpoint request/response formats are documented in `../docs/api_reference.md`.

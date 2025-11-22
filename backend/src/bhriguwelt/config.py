@@ -14,6 +14,13 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "max_modifier": 1.35,
         "logistic_positive_bias": 0.2,
         "logistic_negative_bias": -0.1,
+        "exponential_weighting": {
+            "enabled": True,
+            "curve": 1.18,
+            "ceiling": 0.22,
+            "anchor": 0.55,
+            "stability_bonus": 0.04,
+        },
     },
     "conflicts": {
         "strategy": "antiquity",
@@ -27,6 +34,15 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "fallback_birth_place": "the recorded locale",
         "gratitude_phrase": "Bhrigu folios acknowledge your lineage.",
         "remedy_prefix": "Prescribed for {name}:",
+        "epithet_threshold": 0.62,
+        "epithets": {
+            "past_life_clarity": "bearing lucid ancestral memory ({score:.2f})",
+            "career_command": "the chart-holder of decisive leadership ({score:.2f})",
+            "wealth_activation": "guardian of dormant treasuries ({score:.2f})",
+            "spiritual_detachment": "pilgrim of inner austerity ({score:.2f})",
+            "matchmaking_insight": "mediator of harmonious matches ({score:.2f})",
+            "resilience": "architect of patient rebuilding ({score:.2f})",
+        },
     },
 }
 

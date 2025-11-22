@@ -195,7 +195,7 @@ def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
     past_life_insights = evaluate_past_life(snapshot, past_life_engines)
     future_trajectories = evaluate_future_directives(snapshot, future_engines)
 
-    remedies = _personalize_remedies(remedies, weights)
+    remedies = _personalize_remedies(remedies, weights, snapshot, runtime_config)
 
     kundli = generate_kundli(snapshot, weights, timezone_name=request.timezone)
 
@@ -352,11 +352,35 @@ def _render_common_intro(name: str, birth_place: str) -> None:
     print(f"Birth locale recorded as {birth_place}")
 
 
-def _personalization_prefix(name: str, birth_place: str, interpretation_config: Dict[str, str]) -> str:
+def _dominant_epithet(weights: Dict[str, float] | None, interpretation_config: Dict[str, object]) -> str | None:
+    if not weights:
+        return None
+
+    epithets = interpretation_config.get("epithets", {}) or {}
+    if not epithets:
+        return None
+
+    threshold = float(interpretation_config.get("epithet_threshold", 0.65))
+    candidate = max(weights.items(), key=lambda item: item[1])
+    template = epithets.get(candidate[0])
+    if not template or candidate[1] < threshold:
+        return None
+
+    try:
+        return str(template).format(score=candidate[1])
+    except (KeyError, ValueError):
+        return None
+
+
+def _personalization_prefix(
+    name: str, birth_place: str, interpretation_config: Dict[str, object], weights: Dict[str, float] | None = None
+) -> str:
     safe_name = name or interpretation_config.get("fallback_name", "the native")
     safe_place = birth_place or interpretation_config.get("fallback_birth_place", "their recorded locale")
-    template = interpretation_config.get("personalized_prefix", "{name}, born in {birth_place},")
-    return template.format(name=safe_name, birth_place=safe_place)
+    template = str(interpretation_config.get("personalized_prefix", "{name}, born in {birth_place},"))
+    epithet = _dominant_epithet(weights, interpretation_config)
+    prefix = template.format(name=safe_name, birth_place=safe_place)
+    return f"{prefix} {epithet}" if epithet else prefix
 
 
 def _compose_horoscope_interpretation(
@@ -367,11 +391,11 @@ def _compose_horoscope_interpretation(
     remedies: List[Dict],
     name: str,
     birth_place: str,
-    interpretation_config: Dict[str, str],
+    interpretation_config: Dict[str, object],
 ) -> str:
     """Blend the raw signals into a concise, manuscript-anchored summary."""
 
-    phrases: List[str] = [_personalization_prefix(name, birth_place, interpretation_config)]
+    phrases: List[str] = [_personalization_prefix(name, birth_place, interpretation_config, weights)]
     if weights:
         top_weights = sorted(weights.items(), key=lambda item: item[1], reverse=True)[:2]
         weight_phrase = ", ".join(f"{name.replace('_', ' ')} ({score:.2f})" for name, score in top_weights)
@@ -393,6 +417,9 @@ def _compose_horoscope_interpretation(
     if remedies:
         remedy_refs = ", ".join(remedy["id"] for remedy in remedies[:2])
         phrases.append(f"Remedy anchors: {remedy_refs} from the folios.")
+        remedy_disclaimer = interpretation_config.get("remedy_disclaimer")
+        if remedy_disclaimer:
+            phrases.append(remedy_disclaimer)
 
     gratitude = interpretation_config.get("gratitude_phrase")
     if gratitude:
@@ -402,14 +429,17 @@ def _compose_horoscope_interpretation(
 
 
 def _compose_past_life_interpretation(
-    insights: List[PastLifeInsight], name: str, birth_place: str, interpretation_config: Dict[str, str]
+    insights: List[PastLifeInsight], name: str, birth_place: str, interpretation_config: Dict[str, object]
 ) -> str:
     if not insights:
-        return f"{_personalization_prefix(name, birth_place, interpretation_config)} Past-life folios are silent; default remedies advised."
+        return (
+            f"{_personalization_prefix(name, birth_place, interpretation_config, None)} "
+            "Past-life folios are silent; default remedies advised."
+        )
 
     top = max(insights, key=lambda insight: insight.confidence)
     return (
-        f"{_personalization_prefix(name, birth_place, interpretation_config)} Primary past-life transmission ({top.sutra_reference}) "
+        f"{_personalization_prefix(name, birth_place, interpretation_config, None)} Primary past-life transmission ({top.sutra_reference}) "
         f"emphasizes {top.narrative} with confidence {top.confidence:.2f}."
     )
 
@@ -440,7 +470,7 @@ def _compose_future_interpretation(
 
 
 def _compose_matchmaking_interpretation(
-    compatibility: MatchmakingCompatibility, name: str, partner_name: str, interpretation_config: Dict[str, str]
+    compatibility: MatchmakingCompatibility, name: str, partner_name: str, interpretation_config: Dict[str, object]
 ) -> str:
     breakdown_sorted = sorted(compatibility.breakdown, key=lambda entry: entry.score, reverse=True)
     top_entry = breakdown_sorted[0] if breakdown_sorted else None
@@ -459,20 +489,72 @@ def _compose_matchmaking_interpretation(
     return " ".join(parts)
 
 
-def _personalize_remedies(remedies: List[Dict], weights: Dict[str, float]) -> List[Dict]:
-    if not weights:
+def _matches_remedy_rule(value, rule) -> bool:
+    if isinstance(rule, dict):
+        equals = rule.get("equals")
+        if equals is not None and value != equals:
+            return False
+        any_of = rule.get("any_of")
+        if any_of is not None and value not in any_of:
+            return False
+        minimum = rule.get("min")
+        if minimum is not None and value < minimum:
+            return False
+        maximum = rule.get("max")
+        if maximum is not None and value > maximum:
+            return False
+        return True
+
+    return value == rule
+
+
+def _score_remedy_conditions(snapshot: CelestialSnapshot, conditions: Dict, base_value: float) -> float:
+    if not conditions:
+        return round(base_value, 2)
+
+    matches = 0
+    total = 0
+    for field, rule in conditions.items():
+        total += 1
+        value = getattr(snapshot, field, None)
+        if _matches_remedy_rule(value, rule):
+            matches += 1
+
+    ratio = matches / total if total else 1
+    return round(base_value * ratio, 2)
+
+
+def _personalize_remedies(
+    remedies: List[Dict], weights: Dict[str, float], snapshot: CelestialSnapshot, runtime_config: Dict[str, object]
+) -> List[Dict]:
+    if not remedies:
+        return []
+
+    remedy_config = runtime_config.get("remedies", {}) if runtime_config else {}
+    relevance_floor = float(remedy_config.get("relevance_floor", 0.45))
+
+    scored: List[Dict] = []
+    for remedy in remedies:
+        base_relevance = float(remedy.get("base_relevance", 0.5))
+        condition_score = _score_remedy_conditions(snapshot, remedy.get("conditions") or {}, base_relevance)
+        targets = remedy.get("personalize_for") or []
+        matched_targets = [target for target in targets if weights.get(target, 0) >= 0.6]
+        target_bonus = max((weights.get(target, 0.0) for target in matched_targets), default=0.0)
+        relevance = round(min(1.0, condition_score + target_bonus / 2), 2)
+
+        if relevance < relevance_floor:
+            continue
+
+        enriched = dict(remedy)
+        enriched["relevance"] = relevance
+        if matched_targets:
+            enriched["matched_targets"] = matched_targets
+        scored.append(enriched)
+
+    if not scored:
         return remedies
 
-    prioritized: List[Dict] = []
-    for remedy in remedies:
-        targets = remedy.get("personalize_for") or []
-        if not targets:
-            prioritized.append(remedy)
-            continue
-        if any(weights.get(target, 0) >= 0.6 for target in targets):
-            prioritized.append(remedy)
-
-    return prioritized or remedies
+    return sorted(scored, key=lambda entry: entry.get("relevance", 0.0), reverse=True)
 
 
 def _compose_transit_interpretation(directives: List[TransitDirective], transit_dt: datetime) -> str:
@@ -644,7 +726,19 @@ def _render_horoscope(report: HoroscopeReport, birth_place: str) -> None:
 
     print("\nRemedies:")
     for remedy in report.remedies:
-        print(f"  [{remedy['id']}] {remedy['description'].strip()} ({remedy['sutra_reference']})")
+        extras: List[str] = []
+        if "relevance" in remedy:
+            extras.append(f"relevance {remedy['relevance']}")
+        if remedy.get("matched_targets"):
+            targets = ", ".join(target.replace("_", " ") for target in remedy["matched_targets"])
+            extras.append(f"personalized for {targets}")
+        extra_text = f" [{' | '.join(extras)}]" if extras else ""
+        print(f"  [{remedy['id']}] {remedy['description'].strip()} ({remedy['sutra_reference']}){extra_text}")
+
+    interpretation_config = load_runtime_config().get("interpretation", {})
+    disclaimer = interpretation_config.get("remedy_disclaimer")
+    if disclaimer:
+        print(f"\nNote: {disclaimer}")
 
 
 def _render_past_life(report: PastLifeReport, birth_place: str) -> None:
