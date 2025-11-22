@@ -118,6 +118,57 @@ practice within the repository is extracted directly from these manuscripts.
 | Composite oral 129 | Oral tradition | Art conservation symposiums | Notes Chitra Moon visual archivists annotating iconography with QR commentaries. |
 | Varanasi folio 14c | Sharada | Scholars near Panchganga Ghat | Profiles journalism mentors teaching whistleblower safety under Sun-Mercury pairings. |
 | Grantha palm 95c | Grantha Tamil | Thanjavur Saraswathi Mahal | Highlights artisan cooperative stewards running fair-pricing councils. |
+| Kashi palm 110b | Sharada | Private custodians near Manikarnika Ghat | Chronicles seventh-house stellium counselors drafting consent rituals. |
+| Grantha palm 100c | Grantha Tamil | Thanjavur Saraswathi Mahal | Notes Venus-led hosts refitting community halls for accessible ceremonies. |
+| Pune Modi folio 43a | Modi Marathi | Pune Sarasvat Mandal Library | Details retrograde Saturn treaty restorers renegotiating inheritance charters. |
+| Composite oral 130 | Oral tradition | Riverfront reciters | Records interfaith chaplains translating vows across traditions. |
+| Thiruvananthapuram ola 22f | Malayalam script | Kerala Archives, Thiruvananthapuram | Highlights maritime counselors designing safety plans for seafarer couples. |
+| Bikaner folio 58b | Rajasthani | Maharishi Bhrigu Research Kendra, Bikaner | Notes land-linked matchmakers resolving dowry disputes through home visits. |
+| Grantha palm 101d | Grantha Tamil | Thanjavur Saraswathi Mahal | Documents arts-law mediators protecting performers' contracts. |
+| Bharuch copper 81c | Copperplate Gujarati | Bharuch Bhrigu Copper Archives | Profiles burnout-aware trainers guiding partnership de-escalation. |
+| Kashi palm 111a | Sharada | Private custodians near Manikarnika Ghat | Shares restorative justice scribes archiving guild agreements. |
+| Composite oral 131 | Oral tradition | Itinerant mediators along the Narmada | Captures global partnership scouts syncing collaborators across zones. |
+| Kanchipuram cadjan 7b | Grantha Tamil | Kanchipuram Math Library | Chronicles donors sponsoring gurukula scholarships through vow renewal. |
+| Pune Modi folio 43d | Modi Marathi | Pune Sarasvat Mandal Library | Observes negotiators correcting power imbalances prior to contracts. |
+| Calicut cadjan 16c | Malayalam script | Zamorin family archives, Kozhikode | Describes zero-waste wedding planners integrating eco-rituals. |
+| Sharada bundle 107c | Sharada | Scholars along the Ganga | Details speech therapists restoring vow articulation in intercaste settings. |
+| Grantha palm 102a | Grantha Tamil | Thanjavur Saraswathi Mahal | Highlights co-living covenant drafters stabilizing extended families. |
+| Bharuch copper 82b | Copperplate Gujarati | Bharuch Bhrigu Copper Archives | Notes multilingual relationship podcasters normalizing shared calendars. |
+| Kashi palm 112d | Sharada | Private custodians near Manikarnika Ghat | Describes counselors promoting silent retreats and dream exchange. |
+| Thiruvananthapuram ola 23b | Malayalam script | Kerala Archives, Thiruvananthapuram | Profiles fiduciary advisors building transparent household budgets. |
+| Grantha palm 102f | Grantha Tamil | Thanjavur Saraswathi Mahal | Records co-founders rotating leadership through equitable deeds. |
+| Pune Modi folio 44b | Modi Marathi | Pune Sarasvat Mandal Library | Highlights design jurists arbitrating creative intellectual property. |
+| Bikaner folio 59c | Rajasthani | Maharishi Bhrigu Research Kendra, Bikaner | Notes social graph cartographers aligning peer networks for couples. |
+| Composite oral 132 | Oral tradition | Riverbank consensus councils | Summarizes accountability circles following breaches of trust. |
+| Grantha palm 103c | Grantha Tamil | Thanjavur Saraswathi Mahal | Mentions vow commentators hosting study salons for partners. |
+| Bharuch copper 82f | Copperplate Gujarati | Bharuch Bhrigu Copper Archives | Profiles reconciliation strategists scripting apology sequences. |
+| Kashi palm 113a | Sharada | Private custodians near Manikarnika Ghat | Documents compliance coaches teaching contract hygiene. |
+| Cheruthoni palm 12c | Malayalam script | Idukki floodplain archives | Chronicles flood-relief spouses coordinating mutual aid kitchens. |
+| Grantha palm 103f | Grantha Tamil | Thanjavur Saraswathi Mahal | Notes civic celebrants officiating inclusive ceremonies. |
+| Pune Modi folio 44f | Modi Marathi | Pune Sarasvat Mandal Library | Describes privacy advocates negotiating data-sharing clauses. |
+| Sharada bundle 108b | Sharada | Scholars near Panchganga Ghat | Records correspondents de-escalating conflicts through letters. |
+| Grantha palm 104b | Grantha Tamil | Thanjavur Saraswathi Mahal | Highlights craft therapists using textile repair for reconciliation. |
+| Thiruvananthapuram ola 23f | Malayalam script | Kerala Archives, Thiruvananthapuram | Notes reef-monitoring couples leading conservation pilgrimages. |
+| Bharuch copper 83a | Copperplate Gujarati | Bharuch Bhrigu Copper Archives | Profiles grant-writing duos funding cooperative housing. |
+| Kashi palm 113f | Sharada | Private custodians near Manikarnika Ghat | Describes revisionist historians reconciling family narratives. |
+| Grantha palm 104f | Grantha Tamil | Thanjavur Saraswathi Mahal | Chronicles contract localizers simplifying legal language for couples. |
+| Pune Modi folio 45c | Modi Marathi | Pune Sarasvat Mandal Library | Notes reproductive health advocates drafting dignified childbirth protocols. |
+| Bikaner folio 60a | Rajasthani | Maharishi Bhrigu Research Kendra, Bikaner | Lists accountability anchors publishing household dashboards. |
+| Calicut cadjan 17a | Malayalam script | Zamorin family archives, Kozhikode | Records language coaches teaching nonviolent communication. |
+| Grantha palm 105b | Grantha Tamil | Thanjavur Saraswathi Mahal | Highlights ombuds mediators issuing annual transparency letters. |
+| Bharuch copper 83e | Copperplate Gujarati | Bharuch Bhrigu Copper Archives | Shares caregiving protocol designers aligning partner schedules. |
+| Kashi palm 114c | Sharada | Private custodians near Manikarnika Ghat | Profiles adoption advocates teaching open communication charters. |
+| Grantha palm 105f | Grantha Tamil | Thanjavur Saraswathi Mahal | Describes logistics advisors coordinating collaborative travel plans. |
+| Pune Modi folio 45f | Modi Marathi | Pune Sarasvat Mandal Library | Mentions grief facilitators pacing mourning rituals for couples. |
+| Sharada bundle 109a | Sharada | Scholars near Kashi Vishwanath | Notes curriculum designers using storytelling for partnership workshops. |
+| Grantha palm 106a | Grantha Tamil | Thanjavur Saraswathi Mahal | Records digital archivists preserving partnership case studies. |
+| Bharuch copper 84b | Copperplate Gujarati | Bharuch Bhrigu Copper Archives | Outlines hospitality scholars codifying feast safety standards. |
+| Kashi palm 115b | Sharada | Private custodians near Manikarnika Ghat | Documents town criers broadcasting mediation outcomes. |
+| Grantha palm 106d | Grantha Tamil | Thanjavur Saraswathi Mahal | Lists operations mentors teaching equitable workload distribution. |
+| Pune Modi folio 46a | Modi Marathi | Pune Sarasvat Mandal Library | Chronicles conflict cartographers diagramming disagreements. |
+| Bikaner folio 60f | Rajasthani | Maharishi Bhrigu Research Kendra, Bikaner | Highlights alliance brokers drafting multilingual MOUs. |
+| Grantha palm 107b | Grantha Tamil | Thanjavur Saraswathi Mahal | Describes rhythm therapists using synchronized drumming for couples. |
+| Bharuch copper 84f | Copperplate Gujarati | Bharuch Bhrigu Copper Archives | Profiles legacy planners crafting wills with oral-history addenda. |
 | Kollam cadjan 9f | Malayalam script | Kollam coastal archives | Describes climate storytellers staging puppet theatre for flood drills. |
 | Pune Modi folio 41b | Modi Marathi | Pune Sarasvat Mandal Library | Mentions sport-ethics coaches publishing fair-play statutes. |
 | Composite oral 130 | Oral tradition | Hacklab reciters across India | Shares Mercury-Rahu storytellers enforcing documentation-first coding circles. |
