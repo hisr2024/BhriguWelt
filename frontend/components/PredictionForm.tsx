@@ -255,7 +255,7 @@ export default function PredictionForm({ engine, title, description }: Props) {
           </div>
         )}
       </form>
-      <PredictionCard title={`${title} result`} payload={payload} engine={engine} />
+      <PredictionCard title={`${title} result`} payload={payload} engine={engine} seekerName={details.name} />
     </section>
   );
 }

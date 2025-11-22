@@ -115,6 +115,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MatchmakingResponse'
+  /feedback:
+    post:
+      summary: Store an accuracy rating from the seeker
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+      responses:
+        "201":
+          description: Feedback persisted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackEntry'
+  /feedback/quarterly:
+    get:
+      summary: Retrieve quarterly accuracy rollups
+      responses:
+        "200":
+          description: Quarterly averages and highlighted notes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuarterlySummary'
 components:
   schemas:
     HoroscopeRequest:
@@ -248,3 +274,68 @@ components:
               type: array
               items:
                 type: string
+    FeedbackRequest:
+      type: object
+      required:
+        - engine
+        - rating
+      properties:
+        engine:
+          type: string
+          enum: [horoscope, past-life, future, matchmaking, calendar, transits]
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        seeker_name:
+          type: string
+        notes:
+          type: string
+    FeedbackEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        engine:
+          type: string
+        rating:
+          type: integer
+        seeker_name:
+          type: string
+        notes:
+          type: string
+        created_at:
+          type: string
+    FeedbackNote:
+      type: object
+      properties:
+        seeker_name:
+          type: string
+        rating:
+          type: integer
+        notes:
+          type: string
+        created_at:
+          type: string
+    QuarterlyReview:
+      type: object
+      properties:
+        label:
+          type: string
+        average_rating:
+          type: number
+        submissions:
+          type: integer
+        promoters:
+          type: integer
+        recent_notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeedbackNote'
+    QuarterlySummary:
+      type: object
+      properties:
+        quarters:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuarterlyReview'
