@@ -1,9 +1,12 @@
 export const heroCopy = {
   heroBody:
-    "Concise English and Hindi interpretations grounded in Bhrigu Samhita folios—ready to read without extra framing.",
-  navigationBody: "Jump straight to horoscope, past-life, future, matchmaking, or calendar from the main shell or the cards below.",
-  deployBody: "Point NEXT_PUBLIC_BACKEND_URL at your backend host and the same guidance appears on web and mobile clients.",
-  accessibilityBody: "High contrast, keyboard friendly navigation, and clear labels tuned for every age group.",
+    "Concise English and Hindi interpretations grounded in Bhrigu Samhita folios—ready to read, export as PDF, and share.",
+  navigationBody:
+    "Jump straight to horoscope, past-life, future, matchmaking, or calendar engines and keep every flow consistent.",
+  bilingualBody:
+    "Outputs land in plain English and Hindi with export-ready prose so families and teams can save a PDF without extra styling.",
+  accuracyBody:
+    "Each engine mirrors backend fields to keep guidance accurate and citation-friendly across web and mobile clients.",
 };
 
 export const helperCopy = {

@@ -131,14 +131,14 @@ function Shell({ children }: Props) {
 
           <aside className="context-dock" aria-label="Context dock">
             <div className="dock-card">
-              <h4>Current cosmic state</h4>
+              <h4>Engine highlights</h4>
               <p className="muted" style={{ margin: "0 0 0.5rem" }}>
-                Serenity-first readings with gradients backed by solid fallbacks. Focus rings stay visible on the near-black canvas.
+                Each flow returns accurate English and Hindi guidance you can export as PDF, keeping families and teams aligned.
               </p>
               <div className="pill-row" aria-label="Live states">
-                <span className="pill">High contrast</span>
-                <span className="pill">Motion softened</span>
-                <span className="pill">44px targets</span>
+                <span className="pill">Bilingual</span>
+                <span className="pill">PDF ready</span>
+                <span className="pill">Precision tuned</span>
               </div>
             </div>
 

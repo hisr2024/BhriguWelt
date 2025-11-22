@@ -28,8 +28,8 @@ export default function CalendarPage() {
         </div>
         <div className="card">
           <div className="section-heading">
-            <p className="eyebrow">Why it matters</p>
-            <h2>Accuracy across devices</h2>
+            <p className="eyebrow">Engine alignment</p>
+            <h2>Accurate conversions</h2>
           </div>
           <ul className="kudos-list">
             <li>

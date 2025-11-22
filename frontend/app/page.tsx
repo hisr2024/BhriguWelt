@@ -60,7 +60,7 @@ const compatibilityFactors = [
 
 export default function HomePage() {
   const { t } = useI18n();
-  const { heroBody, navigationBody, deployBody, accessibilityBody } = heroCopy;
+  const { heroBody, navigationBody, bilingualBody, accuracyBody } = heroCopy;
 
   return (
     <div className="cosmic-dashboard">
@@ -91,21 +91,21 @@ export default function HomePage() {
       <section className="flow-grid" aria-label="Experience pillars">
         <div className="flow-card luminous">
           <span className="halo" aria-hidden />
-          <p className="eyebrow">Navigation</p>
+          <p className="eyebrow">Engines</p>
           <h3>{t("home.grid.navigation.title", "Every ritual has its own page")}</h3>
           <p>{t("home.grid.navigation.body", navigationBody)}</p>
         </div>
         <div className="flow-card luminous">
           <span className="halo" aria-hidden />
-          <p className="eyebrow">Deploy-ready</p>
-          <h3>{t("home.grid.deploy.title", "Render API, Vercel UI, native next")}</h3>
-          <p>{t("home.grid.deploy.body", deployBody)}</p>
+          <p className="eyebrow">Bilingual delivery</p>
+          <h3>{t("home.grid.bilingual.title", "English + Hindi, PDF-ready")}</h3>
+          <p>{t("home.grid.bilingual.body", bilingualBody)}</p>
         </div>
         <div className="flow-card luminous">
           <span className="halo" aria-hidden />
-          <p className="eyebrow">Accessibility</p>
-          <h3>{t("home.grid.accessibility.title", "Screen-reader friendly interactions")}</h3>
-          <p>{t("home.grid.accessibility.body", accessibilityBody)}</p>
+          <p className="eyebrow">Accuracy</p>
+          <h3>{t("home.grid.accuracy.title", "Engine-tuned interpretations")}</h3>
+          <p>{t("home.grid.accuracy.body", accuracyBody)}</p>
         </div>
       </section>
 
@@ -113,13 +113,13 @@ export default function HomePage() {
         <div className="section-heading">
           <p className="eyebrow">Birth Details</p>
           <h2>Direct entry for clean readings</h2>
-          <p>Collect only what the folios need and leave room for interpretation.</p>
+          <p>Collect essentials so the engines return precise English and Hindi interpretations.</p>
         </div>
         <div className="flow-grid">
           <div className="flow-card">
-            <p className="eyebrow">Journey status</p>
-            <h3>Calm validation</h3>
-            <p className="microcopy">Inline checks keep focus on the story instead of the interface.</p>
+            <p className="eyebrow">Download options</p>
+            <h3>PDF-ready guidance</h3>
+            <p className="microcopy">Save bilingual interpretations straight from the app for sharing with family or clients.</p>
           </div>
           <div className="flow-card highlight">
             <PredictionForm
@@ -196,7 +196,7 @@ export default function HomePage() {
               <h4>{insight.title}</h4>
               <p className="microcopy">{insight.body}</p>
               <div className="insight-why">
-                <strong>Why this matters</strong>
+                <strong>Source note</strong>
                 <p className="microcopy">{insight.why}</p>
               </div>
             </div>
