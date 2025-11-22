@@ -7,6 +7,11 @@ from datetime import date, datetime, time
 from functools import lru_cache
 from typing import Dict, List, Tuple
 
+try:  # NumPy ships via scikit-learn but stay defensive for constrained envs
+    import numpy as np
+except Exception:  # pragma: no cover - runtime environments may omit NumPy
+    np = None
+
 from sklearn.linear_model import LogisticRegression
 
 from .astronomical_calculations import auto_snapshot_kwargs, derive_transit_snapshot, normalize_birth_datetime
@@ -445,7 +450,7 @@ def evaluate_matchmaking(
             if partial_score:
                 notes.append(rule.get("label", ""))
 
-        ratio = (earned / possible) if possible else 1.0
+        ratio = _safe_ratio(earned, possible)
         criterion_score = round(base_weight * ratio, 2)
         total_score += criterion_score
         total_weight += base_weight
@@ -498,13 +503,9 @@ def evaluate_matchmaking(
             )
         )
 
-    compatibility_index = round((total_score / total_weight) * 100, 2) if total_weight else 50.0
-    long_term_index = (
-        round((long_term_score / long_term_weight) * 100, 2) if long_term_weight else compatibility_index
-    )
-    short_term_index = (
-        round((short_term_score / short_term_weight) * 100, 2) if short_term_weight else compatibility_index
-    )
+    compatibility_index = round(_safe_ratio(total_score, total_weight) * 100, 2) if total_weight else 50.0
+    long_term_index = round(_safe_ratio(long_term_score, long_term_weight) * 100, 2) if long_term_weight else compatibility_index
+    short_term_index = round(_safe_ratio(short_term_score, short_term_weight) * 100, 2) if short_term_weight else compatibility_index
     return MatchmakingCompatibility(
         compatibility_index=compatibility_index,
         long_term_index=long_term_index,
@@ -586,16 +587,38 @@ def _score_conditions(snapshot: CelestialSnapshot, conditions: Dict, base_value:
     if not conditions:
         return round(base_value, 2)
 
-    matches = 0
-    total = 0
-    for field, rule in conditions.items():
-        total += 1
-        value = getattr(snapshot, field)
-        if _matches_rule(value, rule):
-            matches += 1
-
-    ratio = matches / total if total else 1
+    ratio = _condition_ratio(snapshot, conditions)
     return round(base_value * ratio, 2)
+
+
+def _condition_ratio(snapshot: CelestialSnapshot, conditions: Dict) -> float:
+    """Return match ratio using a NumPy fast-path when available."""
+
+    results: List[bool] = []
+    for field, rule in conditions.items():
+        try:
+            value = getattr(snapshot, field)
+        except AttributeError as exc:
+            raise ValueError(f"Snapshot missing field required by rule: {field}") from exc
+        results.append(_matches_rule(value, rule))
+
+    if not results:
+        return 1.0
+
+    if np is not None:
+        array = np.fromiter((1.0 if match else 0.0 for match in results), dtype=float)
+        return float(array.mean())
+
+    matches = sum(1 for match in results if match)
+    return matches / len(results)
+
+
+def _safe_ratio(numerator: float, denominator: float) -> float:
+    if denominator == 0:
+        return 1.0
+    if np is not None:
+        return float(np.divide(numerator, denominator))
+    return numerator / denominator
 
 
 def _matches_rule(value, rule) -> bool:

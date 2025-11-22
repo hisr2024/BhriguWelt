@@ -10,6 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Dict, Tuple
 
 from .calendar_conversion import convert_birth_details
+from .telemetry import capture_exception, init_telemetry
 from .horoscope import (
     HoroscopeRequest,
     build_future_report,
@@ -20,6 +21,8 @@ from .horoscope import (
 )
 
 _JSON_HEADER = ("Content-Type", "application/json; charset=utf-8")
+
+init_telemetry()
 
 
 class BhriguAPIHandler(BaseHTTPRequestHandler):
@@ -91,6 +94,10 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             response = handle_command(command, payload)
         except ValueError as exc:
             self.send_error(HTTPStatus.BAD_REQUEST, str(exc))
+            return
+        except Exception as exc:  # pragma: no cover - defensive catch for telemetry
+            capture_exception(exc, {"command": command, "path": self.path})
+            self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, "Unexpected server error")
             return
         self._send_json(response)
 

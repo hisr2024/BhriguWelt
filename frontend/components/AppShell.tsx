@@ -74,7 +74,7 @@ function Shell({ children }: Props) {
           </div>
         </div>
       </header>
-      <main id="main" className="page-wrapper">
+      <main id="main" className="page-wrapper" tabIndex={-1}>
         {children}
       </main>
       <footer className="footer" aria-label="Footer">

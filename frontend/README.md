@@ -65,6 +65,10 @@ key so `npm run dev` and `npm run build` compile against the right host.
 | `npm run type-check`  | Runs the TypeScript compiler without emitting files to catch regressions.   |
 | `npm run test:e2e`    | Runs Playwright smoke tests (install `@playwright/test` before running).    |
 
+- E2E coverage now includes accessibility smoke checks for the skip link, main
+  navigation landmark, and language toggle labels so screen readers stay in
+  parity with visual navigation.
+
 ## Environment and CI
 
 - Copy `.env.example` to `.env.local` (or `.env`) and set `NEXT_PUBLIC_BACKEND_URL`
