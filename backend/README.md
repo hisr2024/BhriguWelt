@@ -120,10 +120,34 @@ Supported routes:
 - `POST /future`
 - `POST /matchmaking`
 - `POST /calendar` (Gregorian → Śaka conversion with IST reference)
+- `POST /transits` (transit directives for an existing natal chart)
+- `GET /manuscript` (retrieve the currently loaded Bhrigu corpus)
+- `POST /manuscript` (persist an updated corpus to disk for offline use)
 
 Every route is powered by the same request/response dataclasses, so backend
 consumers, CLI tooling, and HTTP integrations all stay in sync even when new
 manuscript folios are added.
+
+#### Admin & offline manuscript updates
+
+- The API supports `GET /manuscript` to fetch the in-use corpus and `POST
+  /manuscript` to persist an updated payload (YAML when available, JSON as a
+  fallback). Payloads must include a `principles` list and optional `metadata`
+  mapping.
+- Set `BHRIGUWELT_DATA_PATH` to point the backend at a writable file for local
+  testing or ephemeral environments; it defaults to
+  `backend/data/bhrigu_samhita_principles.yml`.
+- Successful updates invalidate the response cache so subsequent horoscope
+  calls reflect the new folios immediately.
+
+#### Rate limiting & caching
+
+- The zero-dependency HTTP server now ships with an in-memory rate limiter
+  (default: 60 requests per minute per client IP) that returns `429` when the
+  window is exceeded.
+- Idempotent requests are cached in-memory for a short TTL to reduce repeated
+  computation across the same payloads. The cache clears automatically when
+  manuscript data is updated.
 
 ### Testing & deployment
 

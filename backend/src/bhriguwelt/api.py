@@ -7,8 +7,11 @@ import os
 from dataclasses import asdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from threading import Lock
+from time import monotonic
 from typing import Any, Dict, Tuple
 
+from .data_loader import load_bhrigu_data, persist_bhrigu_data
 from .calendar_conversion import convert_birth_details
 from .horoscope import (
     HoroscopeRequest,
@@ -22,6 +25,64 @@ from .horoscope import (
 _JSON_HEADER = ("Content-Type", "application/json; charset=utf-8")
 
 
+class RateLimiter:
+    """Thread-safe, in-memory token bucket for per-client throttling."""
+
+    def __init__(self, max_requests: int = 60, window_seconds: int = 60) -> None:
+        self.max_requests = max_requests
+        self.window = window_seconds
+        self._lock = Lock()
+        self._tokens: Dict[str, tuple[int, float]] = {}
+
+    def allow(self, key: str) -> bool:
+        now = monotonic()
+        with self._lock:
+            count, reset = self._tokens.get(key, (0, now + self.window))
+            if now > reset:
+                count, reset = 0, now + self.window
+            count += 1
+            self._tokens[key] = (count, reset)
+            return count <= self.max_requests
+
+    def reset(self) -> None:
+        with self._lock:
+            self._tokens.clear()
+
+
+class ResponseCache:
+    """Small in-memory cache for idempotent API responses."""
+
+    def __init__(self, ttl_seconds: int = 120, max_entries: int = 256) -> None:
+        self.ttl = ttl_seconds
+        self.max_entries = max_entries
+        self._lock = Lock()
+        self._store: Dict[str, tuple[float, Dict[str, Any]]] = {}
+
+    def get(self, key: str) -> Dict[str, Any] | None:
+        now = monotonic()
+        with self._lock:
+            entry = self._store.get(key)
+            if not entry:
+                return None
+            expires_at, payload = entry
+            if now > expires_at:
+                self._store.pop(key, None)
+                return None
+            return payload
+
+    def set(self, key: str, payload: Dict[str, Any]) -> None:
+        expires_at = monotonic() + self.ttl
+        with self._lock:
+            if len(self._store) >= self.max_entries:
+                oldest = next(iter(self._store.keys()))
+                self._store.pop(oldest, None)
+            self._store[key] = (expires_at, payload)
+
+    def clear(self) -> None:
+        with self._lock:
+            self._store.clear()
+
+
 class BhriguAPIHandler(BaseHTTPRequestHandler):
     """HTTP handler serving JSON endpoints for native + partner insights."""
 
@@ -33,7 +94,12 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/matchmaking"): "_handle_matchmaking",
         ("POST", "/calendar"): "_handle_calendar",
         ("POST", "/transits"): "_handle_transits",
+        ("GET", "/manuscript"): "_handle_get_manuscript",
+        ("POST", "/manuscript"): "_handle_update_manuscript",
     }
+
+    rate_limiter = RateLimiter()
+    cache = ResponseCache()
 
     def do_GET(self) -> None:  # pragma: no cover - exercised via route map
         self._dispatch("GET")
@@ -50,6 +116,11 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         return
 
     def _dispatch(self, method: str) -> None:
+        client_id = self.client_address[0]
+        if not self.rate_limiter.allow(client_id):
+            self.send_error(HTTPStatus.TOO_MANY_REQUESTS, "Rate limit exceeded; try again later")
+            return
+
         handler_name = self.routes.get((method, self.path))
         if not handler_name:
             self.send_error(HTTPStatus.NOT_FOUND, "Route not defined in Bhrigu Samhita server")
@@ -85,13 +156,35 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         payload = self._read_json()
         self._respond_with_command("transits", payload)
 
+    def _handle_get_manuscript(self) -> None:
+        corpus = load_bhrigu_data()
+        self._send_json(corpus)
+
+    def _handle_update_manuscript(self) -> None:
+        payload = self._read_json()
+        try:
+            updated = persist_bhrigu_data(payload)
+        except ValueError as exc:
+            self.send_error(HTTPStatus.BAD_REQUEST, str(exc))
+            return
+
+        self.cache.clear()
+        self._send_json({"message": "Manuscript updated", "principles": len(updated.get("principles", []))})
+
     # Utility helpers --------------------------------------------------------------
     def _respond_with_command(self, command: str, payload: Dict[str, Any]) -> None:
+        cache_key = self._cache_key(command, payload)
+        cached = self.cache.get(cache_key)
+        if cached is not None:
+            self._send_json(cached)
+            return
+
         try:
             response = handle_command(command, payload)
         except ValueError as exc:
             self.send_error(HTTPStatus.BAD_REQUEST, str(exc))
             return
+        self.cache.set(cache_key, response)
         self._send_json(response)
 
     def _read_json(self) -> Dict[str, Any]:
@@ -116,6 +209,10 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
+    def _cache_key(self, command: str, payload: Dict[str, Any]) -> str:
+        serialized = json.dumps(payload or {}, sort_keys=True, ensure_ascii=False)
+        return f"{command}:{serialized}"
 
     def send_error(  # type: ignore[override]
         self, code: int, message: str | None = None, explain: str | None = None
