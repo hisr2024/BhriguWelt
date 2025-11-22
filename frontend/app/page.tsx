@@ -4,6 +4,7 @@ import Link from "next/link";
 import CalendarForm from "@/components/CalendarForm";
 import MatchmakingForm from "@/components/MatchmakingForm";
 import PredictionForm from "@/components/PredictionForm";
+import QuarterlyReviewPanel from "@/components/QuarterlyReviewPanel";
 import { heroCopy } from "@/lib/copy";
 import { useI18n } from "@/lib/i18n";
 
@@ -134,6 +135,8 @@ export default function HomePage() {
           <MatchmakingForm />
         </div>
       </section>
+
+      <QuarterlyReviewPanel />
 
       <section className="card-grid pathways">
         <div className="card">
