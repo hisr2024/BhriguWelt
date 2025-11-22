@@ -5,6 +5,12 @@ scoring:
   max_modifier: 1.4
   logistic_positive_bias: 0.25
   logistic_negative_bias: -0.15
+  benchmark_data_path: backend/tests/data/benchmark_charts.json
+  ml_trained_parameters:
+    coefficients: [0.18, 0.1268, -0.1, -0.25, -0.166667, 0.083333, -0.083333, -0.0, 0.25, 0.166667, -0.333333, -1.0]
+    intercept: 0.2
+    trainer: fallback
+    samples: 54
   exponential_weighting:
     enabled: true
     curve: 1.2

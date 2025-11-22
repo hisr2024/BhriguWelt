@@ -546,7 +546,12 @@ def _benchmark_path(scoring_config: Dict[str, object]) -> Path:
         candidate = Path(str(configured))
         if candidate.exists():
             return candidate
-    return Path(__file__).resolve().parents[3] / "tests" / "data" / "benchmark_charts.json"
+    package_root = Path(__file__).resolve().parents[2]
+    bundled = package_root / "tests" / "data" / "benchmark_charts.json"
+    if bundled.exists():
+        return bundled
+    project_root = Path(__file__).resolve().parents[3]
+    return project_root / "tests" / "data" / "benchmark_charts.json"
 
 
 @lru_cache(maxsize=None)
@@ -674,18 +679,29 @@ def _logistic_model(scoring_config: Dict[str, object]) -> Any:
         }
 
     features, labels = _training_matrix(scoring_config)
+    trained_parameters: Dict[str, object] | None = scoring_config.get("ml_trained_parameters")  # type: ignore[assignment]
 
-    if LogisticRegression is None:
-        return _train_fallback_model(features, labels, scoring_config)
+    if LogisticRegression is not None:
+        try:
+            model = LogisticRegression(
+                class_weight=scoring_config.get("logistic_class_weight", "balanced"),
+                max_iter=int(scoring_config.get("logistic_max_iter", 500)),
+                C=float(scoring_config.get("logistic_regularization", 1.4)),
+                solver=str(scoring_config.get("logistic_solver", "liblinear")),
+            )
+            model.fit(features, labels)
+            return model
+        except Exception:  # pragma: no cover - fall back to static coefficients
+            model = None
 
-    model = LogisticRegression(
-        class_weight=scoring_config.get("logistic_class_weight", "balanced"),
-        max_iter=int(scoring_config.get("logistic_max_iter", 500)),
-        C=float(scoring_config.get("logistic_regularization", 1.4)),
-        solver=str(scoring_config.get("logistic_solver", "liblinear")),
-    )
-    model.fit(features, labels)
-    return model
+    if trained_parameters:
+        raw_weights = trained_parameters.get("coefficients") or trained_parameters.get("weights")
+        weights = [float(value) for value in raw_weights or []]
+        intercept = float(trained_parameters.get("intercept", 0.0))
+        if weights:
+            return _FallbackLogistic(weights, intercept=intercept)
+
+    return _train_fallback_model(features, labels, scoring_config)
 
 
 class _FallbackLogistic:
