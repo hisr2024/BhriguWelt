@@ -1659,6 +1659,72 @@ _RAW_CORPUS = r"""
             },
             "narrative": "They return with an artistic mandate to digitize endangered songs, pairing studio craft with archival rigor for diaspora listeners.",
             "confidence": 0.82
+        },
+        {
+            "id": "PL-84",
+            "tradition": [
+                "northern",
+                "southern-grantha"
+            ],
+            "sutra_reference": "Shared Bhrigu folio 84b",
+            "description": "Air-ruled Moons with Mercury guarding the third while Saturn steadies the second recall scribes who traveled to reconcile warring courts.",
+            "conditions": {
+                "moon_element": {
+                    "any_of": [
+                        "air"
+                    ]
+                },
+                "mercury_house": {
+                    "equals": 3
+                },
+                "saturn_house": {
+                    "equals": 2
+                }
+            },
+            "narrative": "The folio notes itinerant diplomat-scribes who ferried treaties across kingdoms; the native resumes that bridge-building through restorative justice clinics.",
+            "confidence": 0.74
+        },
+        {
+            "id": "PL-92",
+            "tradition": "western-grantha",
+            "sutra_reference": "Western grantha fragment 92a",
+            "description": "Ketu in the eighth with a retrograde Saturn glancing at a fire Moon shows investigators who probed hidden archives after upheavals.",
+            "conditions": {
+                "ketu_house": {
+                    "equals": 8
+                },
+                "saturn_retrograde": {
+                    "equals": true
+                },
+                "moon_element": {
+                    "any_of": [
+                        "fire"
+                    ]
+                }
+            },
+            "narrative": "They reincarnate with forensic instincts to audit power structures and safeguard whistleblowers, wielding mantras that cool hidden fears.",
+            "confidence": 0.8
+        },
+        {
+            "id": "PL-97",
+            "tradition": "universal",
+            "sutra_reference": "Composite oral 97",
+            "description": "Etheric Moons with Jupiter in the fourth and Venus in the tenth indicate teachers who cultivated sanctuary schools for displaced pilgrims.",
+            "conditions": {
+                "moon_element": {
+                    "any_of": [
+                        "ether"
+                    ]
+                },
+                "jupiter_house": {
+                    "equals": 4
+                },
+                "venus_house": {
+                    "equals": 10
+                }
+            },
+            "narrative": "The transmission honors caretakers who offered boarding, song, and scripture to the uprooted; the native now builds healing campuses blending pedagogy and social work.",
+            "confidence": 0.77
         }
     ],
     "future_engines": [
@@ -1735,6 +1801,79 @@ _RAW_CORPUS = r"""
             "trajectory": "Expect invitations to lead silence retreats, curate dream circles, and mentor seekers on detachment disciplines.",
             "window": "Years 24-48",
             "certainty": 0.74
+        },
+        {
+            "id": "FU-63",
+            "tradition": "northern",
+            "sutra_reference": "Kashi palm 63f",
+            "description": "Retrograde Saturn in a kendra alongside Ketu in dharma houses signals rebuilding mandates activated during Saturn return windows.",
+            "conditions": {
+                "saturn_retrograde": {
+                    "equals": true
+                },
+                "saturn_house": {
+                    "any_of": [
+                        4,
+                        10
+                    ]
+                },
+                "ketu_house": {
+                    "any_of": [
+                        9,
+                        12
+                    ]
+                }
+            },
+            "trajectory": "Expect restoration roles for heritage districts and compliance labs once Saturn circles back, with funding tied to karmic restitution projects.",
+            "window": "Saturn return epochs",
+            "certainty": 0.78
+        },
+        {
+            "id": "FU-72",
+            "tradition": [
+                "universal",
+                "western-grantha"
+            ],
+            "sutra_reference": "Composite techno folio 72b",
+            "description": "Ether Moons with Mercury in the third and Jupiter in the eleventh activate distributed research guilds across oceans.",
+            "conditions": {
+                "moon_element": {
+                    "any_of": [
+                        "ether"
+                    ]
+                },
+                "mercury_house": {
+                    "equals": 3
+                },
+                "jupiter_house": {
+                    "equals": 11
+                }
+            },
+            "trajectory": "Multi-continent innovation residencies appear, inviting the native to steward open-source translations and citizen science cohorts.",
+            "window": "Years 22-44",
+            "certainty": 0.76
+        },
+        {
+            "id": "FU-88",
+            "tradition": "southern-grantha",
+            "sutra_reference": "Grantha palm 88c",
+            "description": "When Venus commands the tenth and Mars cohabits the fourth with an earth Moon, the Grantha palm urges agrarian tech pilots.",
+            "conditions": {
+                "venus_house": {
+                    "equals": 10
+                },
+                "mars_house": {
+                    "equals": 4
+                },
+                "moon_element": {
+                    "any_of": [
+                        "earth"
+                    ]
+                }
+            },
+            "trajectory": "Expect chances to convert ancestral lands into regenerative farm labs and apprenticeship centers partnering with village councils.",
+            "window": "Years 30-55",
+            "certainty": 0.79
         }
     ],
     "matchmaking_criteria": [
@@ -1962,6 +2101,54 @@ _RAW_CORPUS = r"""
             },
             "influence": "Short journeys ignite research alliances and multilingual drafting sprints.",
             "certainty": 0.69
+        },
+        {
+            "id": "TR-4",
+            "tradition": [
+                "southern-grantha",
+                "universal"
+            ],
+            "sutra_reference": "Grantha gochar leaf 12c",
+            "planet": "Saturn",
+            "conditions": {
+                "saturn_house": {
+                    "any_of": [
+                        8,
+                        12
+                    ]
+                },
+                "tithi_delta": {
+                    "max": 2
+                },
+                "saturn_retrograde": {
+                    "equals": true
+                }
+            },
+            "influence": "Shadow work season: halt overextension, rebuild boundaries, and commit to ancestor offerings before taking new roles.",
+            "certainty": 0.77
+        },
+        {
+            "id": "TR-5",
+            "tradition": "western-grantha",
+            "sutra_reference": "Western grantha gochar 5f",
+            "planet": "Ketu",
+            "conditions": {
+                "ketu_house": {
+                    "any_of": [
+                        3,
+                        6
+                    ]
+                },
+                "moon_element_shift": [
+                    "air",
+                    "fire"
+                ],
+                "rahu_aspects_ascendant": {
+                    "equals": true
+                }
+            },
+            "influence": "Sudden detours and investigative travel; seek mentors before signing documents and use ritual pauses to avoid burnout.",
+            "certainty": 0.73
         }
     ]
 }
