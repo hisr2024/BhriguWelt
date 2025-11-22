@@ -161,6 +161,8 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "partner_name": report.partner_name,
             "compatibility": {
                 "compatibility_index": compatibility.compatibility_index,
+                "long_term_index": compatibility.long_term_index,
+                "short_term_index": compatibility.short_term_index,
                 "breakdown": [_serialize_obj(entry) for entry in compatibility.breakdown],
                 "modern_highlights": compatibility.modern_highlights,
             },

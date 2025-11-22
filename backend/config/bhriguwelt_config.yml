@@ -5,6 +5,12 @@ scoring:
   max_modifier: 1.4
   logistic_positive_bias: 0.25
   logistic_negative_bias: -0.15
+  exponential_weighting:
+    enabled: true
+    curve: 1.2
+    ceiling: 0.25
+    anchor: 0.58
+    stability_bonus: 0.05
 conflicts:
   strategy: antiquity
   prefer_higher_weight: true
