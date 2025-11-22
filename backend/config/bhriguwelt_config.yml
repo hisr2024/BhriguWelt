@@ -28,11 +28,7 @@ interpretation:
   fallback_birth_place: "their recorded locale"
   gratitude_phrase: "the folios honor your lineage."
   remedy_prefix: "Prescribed for {name}:"
-  epithet_threshold: 0.6
-  epithets:
-    past_life_clarity: "bearing lucid ancestral memory ({score:.2f})"
-    career_command: "the chart-holder of decisive leadership ({score:.2f})"
-    wealth_activation: "guardian of dormant treasuries ({score:.2f})"
-    spiritual_detachment: "pilgrim of inner austerity ({score:.2f})"
-    matchmaking_insight: "mediator of harmonious matches ({score:.2f})"
-    resilience: "architect of patient rebuilding ({score:.2f})"
+  remedy_disclaimer: "Remedies are textual transmissions; validate with a qualified practitioner before acting."
+
+remedies:
+  relevance_floor: 0.48
