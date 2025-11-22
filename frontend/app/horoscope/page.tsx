@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import PredictionForm from "@/components/PredictionForm";
+import HoroscopeForm from "@/components/HoroscopeForm";
 import { helperCopy } from "@/lib/copy";
 import { useI18n } from "@/lib/i18n";
 
@@ -30,13 +30,12 @@ export default function HoroscopePage() {
           <div className="section-heading">
             <p className="eyebrow">Live experience</p>
             <h2>Holistic horoscope</h2>
-            <p>Blend karmic epoch, remedies, past lives, and future trajectories for a single seeker in clear narrative form.</p>
+            <p>
+              Minimal, futuristic Bharat-first intake: name, date, time, and place. A clean gradient shell routes seekers to the
+              chart API and tees up the chat handoff.
+            </p>
           </div>
-          <PredictionForm
-            engine="horoscope"
-            title="Holistic horoscope"
-            description="Perfect for hero modals, waitlist flows, and concierge-style chat handoffs."
-          />
+          <HoroscopeForm />
         </div>
         <div className="card">
           <div className="section-heading">

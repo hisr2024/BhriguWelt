@@ -1449,3 +1449,103 @@ button:disabled {
     scroll-behavior: auto !important;
   }
 }
+
+.horoscope-intake {
+  position: relative;
+  overflow: hidden;
+  padding: 2rem;
+  border-radius: 1.5rem;
+  background: radial-gradient(120% 120% at 12% 16%, rgba(34, 211, 238, 0.12), transparent),
+    radial-gradient(160% 140% at 82% 12%, rgba(168, 85, 247, 0.12), transparent),
+    rgba(10, 14, 28, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+}
+
+.holo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.holo-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.5rem;
+}
+
+.pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  list-style: none;
+}
+
+.holo-panel {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+}
+
+.holo-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.holo-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.holo-field input {
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.holo-inline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.holo-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.success-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.holo-preview {
+  margin-top: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.holo-preview pre {
+  margin: 0.5rem 0 0;
+  background: #0b1224;
+  color: #cdd5f7;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
