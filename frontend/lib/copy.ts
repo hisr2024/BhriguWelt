@@ -1,9 +1,9 @@
 export const heroCopy = {
   heroBody:
-    "Offer luminous, mobile-first flows that carry the gravity of Bhrigu Samhita wisdom. Narratives arrive in clear English and Hindi so every seeker understands without decoding JSON.",
-  navigationBody: "Jump straight to horoscope, past-life, future, matchmaking, or calendar from the navigation shell or the cards below.",
-  deployBody: "Point NEXT_PUBLIC_BACKEND_URL at your backend host and the same story-rich guidance lights up on Android and iOS.",
-  accessibilityBody: "High contrast, keyboard friendly nav, and ARIA-labelled forms tuned for elders and youth alike.",
+    "Concise English and Hindi interpretations grounded in Bhrigu Samhita folios—ready to read without extra framing.",
+  navigationBody: "Jump straight to horoscope, past-life, future, matchmaking, or calendar from the main shell or the cards below.",
+  deployBody: "Point NEXT_PUBLIC_BACKEND_URL at your backend host and the same guidance appears on web and mobile clients.",
+  accessibilityBody: "High contrast, keyboard friendly navigation, and clear labels tuned for every age group.",
 };
 
 export const helperCopy = {

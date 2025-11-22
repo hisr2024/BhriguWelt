@@ -68,17 +68,8 @@ export default function HomePage() {
         <div className="hero-grid">
           <div className="hero-copy">
             <p className="eyebrow">{t("hero.eyebrow", "Bhrigu Samhita studio")}</p>
-            <h1>{t("hero.title", "A sacred-yet-modern cosmic dashboard")}</h1>
+            <h1>{t("hero.title", "Interpretations without clutter")}</h1>
             <p className="muted hero-lede">{t("hero.body", heroBody)}</p>
-            <div className="progress-row" aria-label="Experience accents">
-              <span className="progress-chip">Near-black canvas</span>
-              <span className="progress-chip">Glassy surfaces</span>
-              <span className="progress-chip">Breathing motion</span>
-              <span className="progress-chip">WCAG contrast</span>
-            </div>
-            <div className="progress-meter" aria-hidden>
-              <span />
-            </div>
             <div className="hero-actions">
               <Link href="/horoscope" className="button-link">
                 {t("hero.cta.horoscope", "Explore horoscope")}
@@ -86,25 +77,13 @@ export default function HomePage() {
               <Link href="/matchmaking" className="ghost-button">
                 {t("hero.cta.matchmaking", "Modern matchmaking")}
               </Link>
-              <span className="badge">Cosmic rail • Context dock • Motion toggle</span>
             </div>
           </div>
 
           <div className="glass-card" aria-label="Birth intake preview">
             <p className="eyebrow">Birth intake</p>
-            <h3 style={{ margin: "0 0 0.4rem" }}>Minimal, tap-friendly fields</h3>
-            <p className="microcopy">
-              Two-column on desktop, single column on mobile. Timezone hints sit in the context dock while inline validation keeps flow calm.
-            </p>
-            <div className="progress-row" style={{ marginTop: "0.75rem" }}>
-              <span className="pill">Date & time</span>
-              <span className="pill">Location</span>
-              <span className="pill">Timezone autodetect</span>
-            </div>
-            <div className="progress-meter" style={{ marginTop: "0.75rem" }} aria-hidden>
-              <span />
-            </div>
-            <p className="microcopy">Segmented progress indicator glows softly as each detail completes.</p>
+            <h3 style={{ margin: "0 0 0.4rem" }}>Essentials only</h3>
+            <p className="microcopy">Date, time, and location capture the chart for direct English and Hindi readings.</p>
           </div>
         </div>
       </section>
@@ -133,32 +112,20 @@ export default function HomePage() {
       <section className="cosmic-panel" id="birth-details">
         <div className="section-heading">
           <p className="eyebrow">Birth Details</p>
-          <h2>Frictionless entry with sacred cues</h2>
-          <p>
-            Cards for date, time, and location sit beside timezone hints; a subtle night map can sit behind location search while inline validation keeps the seeker steady.
-          </p>
+          <h2>Direct entry for clean readings</h2>
+          <p>Collect only what the folios need and leave room for interpretation.</p>
         </div>
         <div className="flow-grid">
           <div className="flow-card">
             <p className="eyebrow">Journey status</p>
-            <h3>Progressive validation</h3>
-            <p className="microcopy">
-              Completeness chips illuminate as the seeker finishes each field. Tap-friendly hit areas stay above 44px with visible focus rings.
-            </p>
-            <div className="progress-row" style={{ marginTop: "0.5rem" }}>
-              <span className="progress-chip">Inline checks</span>
-              <span className="progress-chip">Context dock tips</span>
-              <span className="progress-chip">Save-state indicator</span>
-            </div>
-            <div className="progress-meter" style={{ marginTop: "0.5rem" }} aria-hidden>
-              <span />
-            </div>
+            <h3>Calm validation</h3>
+            <p className="microcopy">Inline checks keep focus on the story instead of the interface.</p>
           </div>
           <div className="flow-card highlight">
             <PredictionForm
               engine="horoscope"
               title={t("pages.horoscope.title", "Holistic horoscope")}
-              description="Two-column desktop form with a calm single-column mobile layout and inline validation."
+              description="Desktop or mobile layouts stay simple so the interpretation can breathe."
             />
           </div>
         </div>
@@ -167,23 +134,15 @@ export default function HomePage() {
       <section className="cosmic-panel" id="calendar-conversion">
         <div className="section-heading">
           <p className="eyebrow">Bharat Calendar Conversion</p>
-          <h2>Gregorian ↔ Śaka with contextual wisdom</h2>
-          <p>
-            Toggle between calendar views, scrub the slim tithi slider, and hover tooltips for sacred metadata. Solid color fallbacks sit beneath gradients.
-          </p>
+          <h2>Gregorian ↔ Śaka</h2>
+          <p>Convert quickly before sending any request to the engines.</p>
         </div>
         <div className="flow-grid">
           <div className="flow-card">
             <p className="eyebrow">Timeline slider</p>
-            <h3>Slim controls with calm glow</h3>
-            <p className="microcopy">Drag to browse tithi and nakshatra; zoom controls shift between day, week, and month.</p>
+            <h3>Quick glance</h3>
+            <p className="microcopy">Reference tithi and nakshatra without extra ornamentation.</p>
             <input type="range" min="1" max="30" defaultValue="12" aria-label="Tithi slider" style={{ width: "100%" }} />
-            <div className="progress-row" style={{ marginTop: "0.5rem" }}>
-              <span className="pill">Gregorian</span>
-              <span className="pill">Śaka</span>
-              <span className="pill">Tooltip ready</span>
-            </div>
-            <p className="microcopy">Motion reduction softens easing for sensitive seekers.</p>
           </div>
           <div className="flow-card highlight">
             <CalendarForm />
@@ -194,10 +153,8 @@ export default function HomePage() {
       <section className="cosmic-panel" id="chart-houses">
         <div className="section-heading">
           <p className="eyebrow">Full Chart</p>
-          <h2>Radial chart with textual clarity</h2>
-          <p>
-            Crisp lines outline each house while a stacked list below keeps data legible. Hover highlights aspects; a floating switch can swap Rasi, Navamsa, or transit overlays.
-          </p>
+          <h2>Radial chart, clear labels</h2>
+          <p>House details stay readable beside the visual so the narrative stays primary.</p>
         </div>
         <div className="chart-stack">
           <div className="radial-chart" aria-hidden>
@@ -229,10 +186,8 @@ export default function HomePage() {
       <section className="cosmic-panel" id="insights">
         <div className="section-heading">
           <p className="eyebrow">Insights</p>
-          <h2>Prioritized cards with calm headers</h2>
-          <p>
-            A masonry-like grid stacks today, week, and month insights with a "Why this matters" footer for clarity. Filters can pivot by theme or horizon without ornamentation.
-          </p>
+          <h2>Interpretations at a glance</h2>
+          <p>Today, week, and month guidance sit in quiet cards with room for context.</p>
         </div>
         <div className="insight-stack">
           {insightCards.map((insight) => (
@@ -255,10 +210,8 @@ export default function HomePage() {
       <section className="cosmic-panel" id="timelines">
         <div className="section-heading">
           <p className="eyebrow">Timelines</p>
-          <h2>Scrollable anchor nodes with zoom</h2>
-          <p>
-            Glide across dashas and transits with anchor nodes and a mini-map. Event pills keep color minimal while tooltips hold depth.
-          </p>
+          <h2>Scrollable anchor nodes</h2>
+          <p>Dashas and transits stay legible; zoom only when you need to.</p>
         </div>
         <div className="timeline-shell">
           <div className="timeline-track" role="list">
@@ -279,9 +232,7 @@ export default function HomePage() {
         <div className="section-heading">
           <p className="eyebrow">Matchmaking</p>
           <h2>Side-by-side serenity</h2>
-          <p>
-            Compatibility dials sit beside factor breakdowns. Actions for Share, Save, and Consult stay understated while the layout holds sacred geometry cues.
-          </p>
+          <p>Compatibility scores and factors sit together without extra decoration.</p>
         </div>
         <div className="matchmaking-grid">
           <div className="flow-card">
@@ -289,9 +240,6 @@ export default function HomePage() {
               <div className="compatibility-meter" aria-hidden>
                 <span />
               </div>
-              <p className="muted" style={{ marginTop: "1rem" }}>
-                Composite compatibility dial with glow-backed meter.
-              </p>
             </div>
             <div className="compatibility-legend">
               {compatibilityFactors.map((factor) => (
@@ -311,7 +259,7 @@ export default function HomePage() {
         <div className="flow-card">
           <p className="eyebrow">Past-life explorer</p>
           <h3>Trace prior eras</h3>
-          <p>Surface cross-era narratives straight from the preserved folios in flowing prose.</p>
+          <p>Cross-era narratives stay concise and citation-backed.</p>
           <Link className="button-link" href="/past-life">
             Open past-life page
           </Link>
@@ -319,9 +267,7 @@ export default function HomePage() {
         <div className="flow-card">
           <p className="eyebrow">Future directives</p>
           <h3>Actionable steps</h3>
-          <p>
-            Chart the finance, devotion, and health moves Bhrigu prescribes for the next decade—written as guidance, not code.
-          </p>
+          <p>Finance, devotion, and health steps return as plain guidance.</p>
           <Link className="button-link" href="/future">
             Plan the future
           </Link>
@@ -329,9 +275,7 @@ export default function HomePage() {
         <div className="flow-card">
           <p className="eyebrow">Wisdom first</p>
           <h3>Readable insights across web and native</h3>
-          <p>
-            Each page mirrors the backend contracts yet presents results as human stories so Android, iOS, and browser clients stay aligned without exposing raw payloads.
-          </p>
+          <p>Each page mirrors backend contracts while keeping space for interpretation over UI chrome.</p>
           <Link className="button-link" href="/calendar">
             View calendar helper
           </Link>

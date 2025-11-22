@@ -13,15 +13,12 @@ export default function HoroscopePage() {
     <div className="stack">
       <div className="hero">
         <p className="eyebrow">Horoscope • Panchanga aligned</p>
-        <h1>{t("pages.horoscope.title", "Deep-dive consultations with the full Bhrigu Samhita stack.")}</h1>
-        <p className="muted" style={{ maxWidth: "760px" }}>
-          {t("form.helper", helperText)}
-        </p>
+        <h1>{t("pages.horoscope.title", "Bhrigu Samhita consultations without clutter.")}</h1>
+        <p className="muted" style={{ maxWidth: "760px" }}>{t("form.helper", helperText)}</p>
         <div className="hero-actions">
           <Link href="/" className="button-link" style={{ background: "rgba(255,255,255,0.08)" }}>
             Back to studio hub
           </Link>
-          <span className="badge">Validates tithi 1–30 & moon element options</span>
         </div>
       </div>
 
@@ -30,10 +27,7 @@ export default function HoroscopePage() {
           <div className="section-heading">
             <p className="eyebrow">Live experience</p>
             <h2>Holistic horoscope</h2>
-            <p>
-              Minimal, futuristic Bharat-first intake: name, date, time, and place. A clean gradient shell routes seekers to the
-              chart API and tees up the chat handoff.
-            </p>
+            <p>Enter name, date, time, and place for immediate English and Hindi readings.</p>
           </div>
           <HoroscopeForm />
         </div>
@@ -45,15 +39,15 @@ export default function HoroscopePage() {
           <ul className="kudos-list">
             <li>
               <span className="badge">Citations</span>
-              <span>Every output arrives as prose with folio references intact for English and Hindi readers.</span>
+              <span>Each output stays in prose with folio references.</span>
             </li>
             <li>
               <span className="badge">Mobile ready</span>
-              <span>Form grids collapse neatly for small screens and in-app webviews.</span>
+              <span>Form grids collapse neatly for small screens.</span>
             </li>
             <li>
               <span className="badge">API parity</span>
-              <span>Fields mirror the Python backend contracts while returning language-rich guidance instead of JSON blocks.</span>
+              <span>Fields mirror the backend while returning guidance instead of JSON.</span>
             </li>
           </ul>
         </div>
