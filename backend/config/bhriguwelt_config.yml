@@ -22,3 +22,7 @@ interpretation:
   fallback_birth_place: "their recorded locale"
   gratitude_phrase: "the folios honor your lineage."
   remedy_prefix: "Prescribed for {name}:"
+  remedy_disclaimer: "Remedies are textual transmissions; validate with a qualified practitioner before acting."
+
+remedies:
+  relevance_floor: 0.48

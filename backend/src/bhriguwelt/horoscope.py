@@ -195,7 +195,7 @@ def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
     past_life_insights = evaluate_past_life(snapshot, past_life_engines)
     future_trajectories = evaluate_future_directives(snapshot, future_engines)
 
-    remedies = _personalize_remedies(remedies, weights)
+    remedies = _personalize_remedies(remedies, weights, snapshot, runtime_config)
 
     kundli = generate_kundli(snapshot, weights, timezone_name=request.timezone)
 
@@ -393,6 +393,9 @@ def _compose_horoscope_interpretation(
     if remedies:
         remedy_refs = ", ".join(remedy["id"] for remedy in remedies[:2])
         phrases.append(f"Remedy anchors: {remedy_refs} from the folios.")
+        remedy_disclaimer = interpretation_config.get("remedy_disclaimer")
+        if remedy_disclaimer:
+            phrases.append(remedy_disclaimer)
 
     gratitude = interpretation_config.get("gratitude_phrase")
     if gratitude:
@@ -459,20 +462,72 @@ def _compose_matchmaking_interpretation(
     return " ".join(parts)
 
 
-def _personalize_remedies(remedies: List[Dict], weights: Dict[str, float]) -> List[Dict]:
-    if not weights:
+def _matches_remedy_rule(value, rule) -> bool:
+    if isinstance(rule, dict):
+        equals = rule.get("equals")
+        if equals is not None and value != equals:
+            return False
+        any_of = rule.get("any_of")
+        if any_of is not None and value not in any_of:
+            return False
+        minimum = rule.get("min")
+        if minimum is not None and value < minimum:
+            return False
+        maximum = rule.get("max")
+        if maximum is not None and value > maximum:
+            return False
+        return True
+
+    return value == rule
+
+
+def _score_remedy_conditions(snapshot: CelestialSnapshot, conditions: Dict, base_value: float) -> float:
+    if not conditions:
+        return round(base_value, 2)
+
+    matches = 0
+    total = 0
+    for field, rule in conditions.items():
+        total += 1
+        value = getattr(snapshot, field, None)
+        if _matches_remedy_rule(value, rule):
+            matches += 1
+
+    ratio = matches / total if total else 1
+    return round(base_value * ratio, 2)
+
+
+def _personalize_remedies(
+    remedies: List[Dict], weights: Dict[str, float], snapshot: CelestialSnapshot, runtime_config: Dict[str, object]
+) -> List[Dict]:
+    if not remedies:
+        return []
+
+    remedy_config = runtime_config.get("remedies", {}) if runtime_config else {}
+    relevance_floor = float(remedy_config.get("relevance_floor", 0.45))
+
+    scored: List[Dict] = []
+    for remedy in remedies:
+        base_relevance = float(remedy.get("base_relevance", 0.5))
+        condition_score = _score_remedy_conditions(snapshot, remedy.get("conditions") or {}, base_relevance)
+        targets = remedy.get("personalize_for") or []
+        matched_targets = [target for target in targets if weights.get(target, 0) >= 0.6]
+        target_bonus = max((weights.get(target, 0.0) for target in matched_targets), default=0.0)
+        relevance = round(min(1.0, condition_score + target_bonus / 2), 2)
+
+        if relevance < relevance_floor:
+            continue
+
+        enriched = dict(remedy)
+        enriched["relevance"] = relevance
+        if matched_targets:
+            enriched["matched_targets"] = matched_targets
+        scored.append(enriched)
+
+    if not scored:
         return remedies
 
-    prioritized: List[Dict] = []
-    for remedy in remedies:
-        targets = remedy.get("personalize_for") or []
-        if not targets:
-            prioritized.append(remedy)
-            continue
-        if any(weights.get(target, 0) >= 0.6 for target in targets):
-            prioritized.append(remedy)
-
-    return prioritized or remedies
+    return sorted(scored, key=lambda entry: entry.get("relevance", 0.0), reverse=True)
 
 
 def _compose_transit_interpretation(directives: List[TransitDirective], transit_dt: datetime) -> str:
@@ -644,7 +699,19 @@ def _render_horoscope(report: HoroscopeReport, birth_place: str) -> None:
 
     print("\nRemedies:")
     for remedy in report.remedies:
-        print(f"  [{remedy['id']}] {remedy['description'].strip()} ({remedy['sutra_reference']})")
+        extras: List[str] = []
+        if "relevance" in remedy:
+            extras.append(f"relevance {remedy['relevance']}")
+        if remedy.get("matched_targets"):
+            targets = ", ".join(target.replace("_", " ") for target in remedy["matched_targets"])
+            extras.append(f"personalized for {targets}")
+        extra_text = f" [{' | '.join(extras)}]" if extras else ""
+        print(f"  [{remedy['id']}] {remedy['description'].strip()} ({remedy['sutra_reference']}){extra_text}")
+
+    interpretation_config = load_runtime_config().get("interpretation", {})
+    disclaimer = interpretation_config.get("remedy_disclaimer")
+    if disclaimer:
+        print(f"\nNote: {disclaimer}")
 
 
 def _render_past_life(report: PastLifeReport, birth_place: str) -> None:

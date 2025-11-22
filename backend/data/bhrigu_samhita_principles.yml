@@ -1337,6 +1337,75 @@
         "heritage_archives",
         "leadership"
       ]
+    },
+    {
+      "id": "REM-42",
+      "tradition": "universal",
+      "sutra_reference": "Bikaner folio 77a",
+      "description": "With Mars channeling duty through the tenth house and Saturn grounding resources, Bhrigu prescribes feeding masoor dal to workers on Tuesdays to temper ambition with service.",
+      "conditions": {
+        "mars_house": {
+          "any_of": [
+            10
+          ]
+        },
+        "saturn_house": {
+          "any_of": [
+            2
+          ]
+        }
+      },
+      "personalize_for": [
+        "career_command",
+        "infrastructural_success"
+      ],
+      "base_relevance": 0.72
+    },
+    {
+      "id": "REM-44",
+      "tradition": "universal",
+      "sutra_reference": "Grantha palm 91c",
+      "description": "For watery Moons seeking moksha while Ketu occupies the twelfth, offer rice and camphor at river confluences on new-moon nights while reciting the Mahamrityunjaya mantra.",
+      "conditions": {
+        "moon_element": {
+          "any_of": [
+            "water"
+          ]
+        },
+        "ketu_house": {
+          "any_of": [
+            12
+          ]
+        }
+      },
+      "personalize_for": [
+        "past_life_clarity",
+        "moksha_calling"
+      ],
+      "base_relevance": 0.69
+    },
+    {
+      "id": "REM-47",
+      "tradition": "northern",
+      "sutra_reference": "Kashi palm 104b",
+      "description": "When Mercury and Jupiter fortify the fifth house, Bhrigu instructs gifting fresh notebooks to students on Wednesdays to keep intellect aligned with dharma.",
+      "conditions": {
+        "mercury_house": {
+          "any_of": [
+            5
+          ]
+        },
+        "jupiter_house": {
+          "any_of": [
+            5
+          ]
+        }
+      },
+      "personalize_for": [
+        "scholarly_pursuits",
+        "standards_authorship"
+      ],
+      "base_relevance": 0.67
     }
   ],
   "past_life_engines": [
