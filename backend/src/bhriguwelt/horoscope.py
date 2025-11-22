@@ -352,11 +352,35 @@ def _render_common_intro(name: str, birth_place: str) -> None:
     print(f"Birth locale recorded as {birth_place}")
 
 
-def _personalization_prefix(name: str, birth_place: str, interpretation_config: Dict[str, str]) -> str:
+def _dominant_epithet(weights: Dict[str, float] | None, interpretation_config: Dict[str, object]) -> str | None:
+    if not weights:
+        return None
+
+    epithets = interpretation_config.get("epithets", {}) or {}
+    if not epithets:
+        return None
+
+    threshold = float(interpretation_config.get("epithet_threshold", 0.65))
+    candidate = max(weights.items(), key=lambda item: item[1])
+    template = epithets.get(candidate[0])
+    if not template or candidate[1] < threshold:
+        return None
+
+    try:
+        return str(template).format(score=candidate[1])
+    except (KeyError, ValueError):
+        return None
+
+
+def _personalization_prefix(
+    name: str, birth_place: str, interpretation_config: Dict[str, object], weights: Dict[str, float] | None = None
+) -> str:
     safe_name = name or interpretation_config.get("fallback_name", "the native")
     safe_place = birth_place or interpretation_config.get("fallback_birth_place", "their recorded locale")
-    template = interpretation_config.get("personalized_prefix", "{name}, born in {birth_place},")
-    return template.format(name=safe_name, birth_place=safe_place)
+    template = str(interpretation_config.get("personalized_prefix", "{name}, born in {birth_place},"))
+    epithet = _dominant_epithet(weights, interpretation_config)
+    prefix = template.format(name=safe_name, birth_place=safe_place)
+    return f"{prefix} {epithet}" if epithet else prefix
 
 
 def _compose_horoscope_interpretation(
@@ -367,11 +391,11 @@ def _compose_horoscope_interpretation(
     remedies: List[Dict],
     name: str,
     birth_place: str,
-    interpretation_config: Dict[str, str],
+    interpretation_config: Dict[str, object],
 ) -> str:
     """Blend the raw signals into a concise, manuscript-anchored summary."""
 
-    phrases: List[str] = [_personalization_prefix(name, birth_place, interpretation_config)]
+    phrases: List[str] = [_personalization_prefix(name, birth_place, interpretation_config, weights)]
     if weights:
         top_weights = sorted(weights.items(), key=lambda item: item[1], reverse=True)[:2]
         weight_phrase = ", ".join(f"{name.replace('_', ' ')} ({score:.2f})" for name, score in top_weights)
@@ -402,14 +426,17 @@ def _compose_horoscope_interpretation(
 
 
 def _compose_past_life_interpretation(
-    insights: List[PastLifeInsight], name: str, birth_place: str, interpretation_config: Dict[str, str]
+    insights: List[PastLifeInsight], name: str, birth_place: str, interpretation_config: Dict[str, object]
 ) -> str:
     if not insights:
-        return f"{_personalization_prefix(name, birth_place, interpretation_config)} Past-life folios are silent; default remedies advised."
+        return (
+            f"{_personalization_prefix(name, birth_place, interpretation_config, None)} "
+            "Past-life folios are silent; default remedies advised."
+        )
 
     top = max(insights, key=lambda insight: insight.confidence)
     return (
-        f"{_personalization_prefix(name, birth_place, interpretation_config)} Primary past-life transmission ({top.sutra_reference}) "
+        f"{_personalization_prefix(name, birth_place, interpretation_config, None)} Primary past-life transmission ({top.sutra_reference}) "
         f"emphasizes {top.narrative} with confidence {top.confidence:.2f}."
     )
 
@@ -440,7 +467,7 @@ def _compose_future_interpretation(
 
 
 def _compose_matchmaking_interpretation(
-    compatibility: MatchmakingCompatibility, name: str, partner_name: str, interpretation_config: Dict[str, str]
+    compatibility: MatchmakingCompatibility, name: str, partner_name: str, interpretation_config: Dict[str, object]
 ) -> str:
     breakdown_sorted = sorted(compatibility.breakdown, key=lambda entry: entry.score, reverse=True)
     top_entry = breakdown_sorted[0] if breakdown_sorted else None
