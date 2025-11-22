@@ -1,4 +1,7 @@
-swisseph>=2.10.3
+# The PyPI package is published under the `pyswisseph` name while exposing the
+# `swisseph` module import. Using the canonical package name ensures installs
+# succeed on modern Python versions.
+pyswisseph>=2.10.3
 pytz>=2024.1
 geopy>=2.4.1
 timezonefinder>=6.4.1
