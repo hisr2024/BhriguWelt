@@ -17,6 +17,15 @@ const navLinks = [
   { href: "/calendar", key: "nav.calendar", fallback: "Śaka calendar" },
 ];
 
+const flowLinks = [
+  { href: "#birth-details", label: "Birth details", meta: "Date • Time • Location", glyph: "◎" },
+  { href: "#calendar-conversion", label: "Bharat calendar", meta: "Śaka ready", glyph: "↔" },
+  { href: "#chart-houses", label: "12 houses", meta: "Radial grid", glyph: "◯" },
+  { href: "#insights", label: "Insights", meta: "Today • Week • Month", glyph: "✧" },
+  { href: "#timelines", label: "Timelines", meta: "Dashas + transits", glyph: "➜" },
+  { href: "#matchmaking", label: "Matchmaking", meta: "Compatibility", glyph: "∞" },
+];
+
 function LanguageToggle() {
   const { lang, setLang } = useI18n();
   return (
@@ -43,6 +52,17 @@ function LanguageToggle() {
 
 function Shell({ children }: Props) {
   const { t } = useI18n();
+  const dockDates = [
+    { label: "Next transit", value: "Guru → Kumbha", meta: "2 days" },
+    { label: "Śaka tithi", value: "Dwadashi", meta: "Moonlit teal" },
+    { label: "Remedy", value: "Sandal dhup", meta: "Today" },
+  ];
+
+  const quickActions = [
+    { label: "Share", desc: "Send a calm PDF" },
+    { label: "Save", desc: "Bookmark seeker" },
+    { label: "Consult", desc: "Schedule guide" },
+  ];
 
   return (
     <>
@@ -75,7 +95,83 @@ function Shell({ children }: Props) {
         </div>
       </header>
       <main id="main" className="page-wrapper" tabIndex={-1}>
-        {children}
+        <div className="shell-grid">
+          <aside className="nav-rail" aria-label="Journey navigation">
+            <p className="rail-label">
+              <span aria-hidden>☼</span> Core flows
+            </p>
+            {flowLinks.map((flow) => (
+              <Link key={flow.href} href={flow.href} className="rail-link">
+                <span className="rail-icon" aria-hidden>
+                  {flow.glyph}
+                </span>
+                <span className="rail-meta">
+                  <strong>{flow.label}</strong>
+                  <small>{flow.meta}</small>
+                </span>
+              </Link>
+            ))}
+            <p className="rail-label">
+              <span aria-hidden>✦</span> Quick jumps
+            </p>
+            {navLinks.map((link) => (
+              <Link key={link.href} href={link.href} className="rail-link">
+                <span className="rail-icon" aria-hidden>
+                  ↗
+                </span>
+                <span className="rail-meta">
+                  <strong>{t(link.key, link.fallback)}</strong>
+                  <small>Page</small>
+                </span>
+              </Link>
+            ))}
+          </aside>
+
+          <div className="content-area">{children}</div>
+
+          <aside className="context-dock" aria-label="Context dock">
+            <div className="dock-card">
+              <h4>Current cosmic state</h4>
+              <p className="muted" style={{ margin: "0 0 0.5rem" }}>
+                Serenity-first readings with gradients backed by solid fallbacks. Focus rings stay visible on the near-black canvas.
+              </p>
+              <div className="pill-row" aria-label="Live states">
+                <span className="pill">High contrast</span>
+                <span className="pill">Motion softened</span>
+                <span className="pill">44px targets</span>
+              </div>
+            </div>
+
+            <div className="dock-card" aria-label="Key dates">
+              <h4>Key dates</h4>
+              <ul className="dock-list">
+                {dockDates.map((date) => (
+                  <li key={date.label}>
+                    <div>
+                      <strong>{date.label}</strong>
+                      <p className="muted">{date.value}</p>
+                    </div>
+                    <span className="pill">{date.meta}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="dock-card" aria-label="Quick actions">
+              <h4>Quick actions</h4>
+              <div className="quick-actions">
+                {quickActions.map((action) => (
+                  <button key={action.label} type="button" className="ghost-button" style={{ width: "100%" }}>
+                    <div className="quick-meta">
+                      <span>{action.label}</span>
+                      <small>{action.desc}</small>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </aside>
+        </div>
       </main>
       <footer className="footer" aria-label="Footer">
         <div>
