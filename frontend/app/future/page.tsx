@@ -32,21 +32,21 @@ export default function FuturePage() {
         </div>
         <div className="card">
           <div className="section-heading">
-            <p className="eyebrow">Delivery ideas</p>
-            <h2>Design for every age group</h2>
+            <p className="eyebrow">Engine focus</p>
+            <h2>Guidance you can share</h2>
           </div>
           <ul className="kudos-list">
             <li>
-              <span className="badge">Youthful energy</span>
-              <span>Use playful counters when needed, but keep text readable.</span>
+              <span className="badge">Bilingual</span>
+              <span>English and Hindi outputs keep families and teams aligned.</span>
             </li>
             <li>
-              <span className="badge">Professionals</span>
-              <span>Human-readable outputs for clean dashboards.</span>
+              <span className="badge">PDF ready</span>
+              <span>Export interpretations as PDFs for timelines or notifications.</span>
             </li>
             <li>
-              <span className="badge">Family</span>
-              <span>Readable copy and spacious layouts for tablets and web.</span>
+              <span className="badge">Accurate</span>
+              <span>Field-level alignment keeps remedies and recommendations precise.</span>
             </li>
           </ul>
         </div>

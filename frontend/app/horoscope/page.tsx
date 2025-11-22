@@ -33,21 +33,21 @@ export default function HoroscopePage() {
         </div>
         <div className="card">
           <div className="section-heading">
-            <p className="eyebrow">What you get</p>
-            <h2>Modern UX, manuscript strict</h2>
+            <p className="eyebrow">How the engine helps</p>
+            <h2>Accurate, shareable readings</h2>
           </div>
           <ul className="kudos-list">
             <li>
-              <span className="badge">Citations</span>
-              <span>Each output stays in prose with folio references.</span>
+              <span className="badge">Bilingual</span>
+              <span>Every interpretation arrives in clear English and Hindi prose.</span>
             </li>
             <li>
-              <span className="badge">Mobile ready</span>
-              <span>Form grids collapse neatly for small screens.</span>
+              <span className="badge">PDF export</span>
+              <span>Save guidance as a PDF without extra formatting steps.</span>
             </li>
             <li>
-              <span className="badge">API parity</span>
-              <span>Fields mirror the backend while returning guidance instead of JSON.</span>
+              <span className="badge">Precision</span>
+              <span>Field mapping mirrors the backend so responses stay citation-friendly.</span>
             </li>
           </ul>
         </div>

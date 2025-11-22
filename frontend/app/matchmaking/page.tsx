@@ -28,8 +28,8 @@ export default function MatchmakingPage() {
         </div>
         <div className="card">
           <div className="section-heading">
-            <p className="eyebrow">Best for</p>
-            <h2>Dating, weddings, co-founder fits</h2>
+            <p className="eyebrow">Engine focus</p>
+            <h2>Balanced matches</h2>
           </div>
           <ul className="kudos-list">
             <li>
