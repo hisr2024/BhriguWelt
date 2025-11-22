@@ -381,7 +381,7 @@ def evaluate_transits(
         total = 0
         for key, expected in conditions.items():
             total += 1
-            value = transit_details.get(key)
+            value = transit_details.get(key, getattr(snapshot, key, None))
             if isinstance(expected, dict):
                 min_val = expected.get("min")
                 max_val = expected.get("max")

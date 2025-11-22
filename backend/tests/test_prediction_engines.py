@@ -105,6 +105,7 @@ def test_interpretations_flow_into_reports():
         birth_date="1990-05-18",
         birth_time="04:30",
         birth_place="Varanasi",
+        consent_for_date_predictions=True,
         lunar_tithi=5,
         moon_element="water",
         mars_house=10,

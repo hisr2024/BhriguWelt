@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Dict, List, Sequence
 
 from .astronomical_calculations import derive_transit_snapshot, normalize_birth_datetime
@@ -80,6 +81,7 @@ class HoroscopeRequest:
     birth_place: str
     tradition: str = "universal"
     timezone: str | None = None
+    consent_for_date_predictions: bool = False
     lunar_tithi: int = 0
     moon_element: str = ""
     mars_house: int = 0
@@ -147,6 +149,7 @@ class FutureReport:
 
     name: str
     trajectories: List[FutureTrajectory]
+    transit_directives: List[TransitDirective]
     interpretation: str
 
 
@@ -236,21 +239,33 @@ def build_past_life_report(request: HoroscopeRequest) -> PastLifeReport:
 
 
 def build_future_report(request: HoroscopeRequest) -> FutureReport:
-    runtime_config = load_runtime_config()
+    if not request.consent_for_date_predictions:
+        raise ValueError("User consent required for date-based predictions")
+
     bhrigu_data = load_bhrigu_data()
     snapshot = _snapshot_from_request(request)
     future_engines = _filter_by_tradition(bhrigu_data.get("future_engines", []), request.tradition)
+    transit_rules = _filter_by_tradition(bhrigu_data.get("transit_rules", []), request.tradition)
     trajectories = evaluate_future_directives(snapshot, future_engines)
+    now = datetime.utcnow()
+    transit_dt = normalize_birth_datetime(
+        now.date().isoformat(), now.time().isoformat(timespec="minutes"), timezone_name=request.timezone
+    )
+    natal_dt = normalize_birth_datetime(request.birth_date, request.birth_time, timezone_name=request.timezone)
+    transit_details = derive_transit_snapshot(natal_dt, transit_dt)
+    transit_directives = evaluate_transits(snapshot, transit_details, transit_rules)
     return FutureReport(
         name=request.name,
         trajectories=trajectories,
-        interpretation=_compose_future_interpretation(
-            trajectories, request.name, request.birth_place, runtime_config.get("interpretation", {})
-        ),
+        transit_directives=transit_directives,
+        interpretation=_compose_future_interpretation(trajectories, transit_directives),
     )
 
 
 def build_transit_report(request: HoroscopeRequest, transit_payload: Dict[str, str]) -> TransitReport:
+    if not request.consent_for_date_predictions:
+        raise ValueError("User consent required for date-based predictions")
+
     bhrigu_data = load_bhrigu_data()
     snapshot = _snapshot_from_request(request)
     transit_rules = _filter_by_tradition(bhrigu_data.get("transit_rules", []), request.tradition)
@@ -400,20 +415,28 @@ def _compose_past_life_interpretation(
 
 
 def _compose_future_interpretation(
-    trajectories: List[FutureTrajectory], name: str, birth_place: str, interpretation_config: Dict[str, str]
+    trajectories: List[FutureTrajectory], transit_directives: List[TransitDirective]
 ) -> str:
-    if not trajectories:
-        return (
-            f"{_personalization_prefix(name, birth_place, interpretation_config)} Future directives await fuller planetary transits; "
-            "continue dharmic discipline."
+    if not trajectories and not transit_directives:
+        return "Future directives await fuller planetary transits; continue dharmic discipline."
+
+    phrases: List[str] = []
+    if trajectories:
+        top = max(trajectories, key=lambda directive: directive.certainty)
+        window = f" during {top.window}" if top.window else ""
+        phrases.append(
+            f"Highest-certainty mandate from {top.sutra_reference}: {top.focus}{window} "
+            f"(certainty {top.certainty:.2f})."
         )
 
-    top = max(trajectories, key=lambda directive: directive.certainty)
-    window = f" during {top.window}" if top.window else ""
-    return (
-        f"{_personalization_prefix(name, birth_place, interpretation_config)} Highest-certainty mandate from {top.sutra_reference}: "
-        f"{top.focus}{window} (certainty {top.certainty:.2f})."
-    )
+    if transit_directives:
+        top_transit = transit_directives[0]
+        phrases.append(
+            f"Current transit emphasis via {top_transit.planet}: {top_transit.influence} "
+            f"(certainty {top_transit.certainty:.2f}) per {top_transit.reference}."
+        )
+
+    return " ".join(phrases)
 
 
 def _compose_matchmaking_interpretation(
@@ -559,6 +582,12 @@ def _add_common_arguments(parser: argparse.ArgumentParser, prefix: str = "") -> 
         action="store_true",
         help="Mark Saturn retrograde for resilience and restoration sutras",
     )
+    parser.add_argument(
+        f"--{opt}consent-date-predictions",
+        dest=f"{dest}consent_for_date_predictions",
+        action="store_true",
+        help="Explicit consent for date-sensitive forecasts and transits",
+    )
 
 
 def _request_from_namespace(namespace: argparse.Namespace, prefix: str = "") -> HoroscopeRequest:
@@ -579,6 +608,7 @@ def _request_from_namespace(namespace: argparse.Namespace, prefix: str = "") -> 
         mercury_house=getattr(namespace, f"{dest}mercury_house"),
         jupiter_house=getattr(namespace, f"{dest}jupiter_house"),
         saturn_retrograde=getattr(namespace, f"{dest}saturn_retrograde"),
+        consent_for_date_predictions=getattr(namespace, f"{dest}consent_for_date_predictions"),
     )
 
 
@@ -635,10 +665,17 @@ def _render_future(report: FutureReport, birth_place: str) -> None:
     print(f"Interpretation: {report.interpretation}")
     if not report.trajectories:
         print("Future sutras are dormant for this configuration.")
-        return
-    print("Future directives:")
-    for directive in report.trajectories:
-        print(f"  [{directive.engine_id}] {directive.focus} | Window {directive.window} | Certainty {directive.certainty}")
+    else:
+        print("Future directives:")
+        for directive in report.trajectories:
+            print(f"  [{directive.engine_id}] {directive.focus} | Window {directive.window} | Certainty {directive.certainty}")
+    if report.transit_directives:
+        print("\nTransit overlays:")
+        for directive in report.transit_directives:
+            print(
+                f"  [{directive.reference}] {directive.planet} transit -> {directive.influence} "
+                f"(Certainty {directive.certainty})"
+            )
 
 
 def _render_matchmaking(report: MatchmakingReport) -> None:
