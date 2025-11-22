@@ -80,7 +80,10 @@ export default function BhriguChat({ chart }: Props) {
 
       const nextChart = data.chart || currentChart;
       const nextContext = data.context || context;
-      const mergedContext = nextContext ? { ...nextContext } : context ? { ...context } : undefined;
+      const mergedContext =
+        nextContext || context
+          ? { ...(context ?? {}), ...(nextContext ?? {}) }
+          : undefined;
 
       if (nextChart) {
         setCurrentChart(nextChart);
