@@ -41,6 +41,12 @@ def load_bhrigu_data(path: Path | None = None) -> Dict[str, Any]:
         with _DATA_PATH.open("r", encoding="utf-8") as handle:
             return yaml.safe_load(handle)
 
+    if _DATA_PATH.exists():
+        import json
+
+        with _DATA_PATH.open("r", encoding="utf-8") as handle:
+            return json.load(handle)
+
     return deepcopy(_default_bhrigu_data())
 
 

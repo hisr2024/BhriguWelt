@@ -1,10 +1,4 @@
-from bhriguwelt.calculations import (
-    CelestialSnapshot,
-    _bayesian_weight,
-    _logistic_model,
-    _ml_weight_score,
-    score_principles,
-)
+from bhriguwelt.calculations import CelestialSnapshot, _bayesian_weight, _logistic_model, _ml_weight_score, score_principles
 from bhriguwelt.horoscope import HoroscopeRequest, build_prediction
 
 
@@ -48,11 +42,12 @@ def test_antiquity_rank_overrides_heavier_weight():
         {"id": "OLD", "weights": {"insight": 0.4}, "tradition": "universal", "antiquity_rank": 5},
     ]
 
-    scores = score_principles(_snapshot(), principles, runtime_config)
+    snapshot = _snapshot()
+    scores = score_principles(snapshot, principles, runtime_config)
 
-    model = _logistic_model(0.0, 0.0, 0.5)
+    model = _logistic_model(runtime_config["scoring"])
     posterior = _bayesian_weight(0.4, 1.0, 1.0)
-    ml_score = _ml_weight_score(model, posterior, 1.0)
+    ml_score = _ml_weight_score(model, snapshot, posterior, 1.0)
     expected = round(min(1.0, ((posterior + ml_score) / 2)), 2)
 
     assert scores["insight"] == expected

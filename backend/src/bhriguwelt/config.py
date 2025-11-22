@@ -42,6 +42,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "fallback_birth_place": "the recorded locale",
         "gratitude_phrase": "Bhrigu folios acknowledge your lineage.",
         "remedy_prefix": "Prescribed for {name}:",
+        "remedy_disclaimer": "Remedies are textual transmissions; validate with a qualified practitioner before acting.",
         "epithet_threshold": 0.62,
         "epithets": {
             "past_life_clarity": "bearing lucid ancestral memory ({score:.2f})",
