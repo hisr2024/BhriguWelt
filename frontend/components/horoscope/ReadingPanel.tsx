@@ -6,6 +6,7 @@ type Props = {
   interpretation: Interpretation;
   hasNarrative: boolean;
   fallbackNarrative: string;
+  timeframes: { label: string; summary: string; progress: number }[];
   onAskBhrigu: () => void;
   onDownloadPdf: () => void;
 };
@@ -16,6 +17,7 @@ export default function ReadingPanel({
   interpretation,
   hasNarrative,
   fallbackNarrative,
+  timeframes,
   onAskBhrigu,
   onDownloadPdf,
 }: Props) {
@@ -88,6 +90,20 @@ export default function ReadingPanel({
                 <li>Send to chat</li>
                 <li>Bilingual ready</li>
               </ul>
+              <div className="progress-rail" aria-label="Timeframe linkage">
+                {timeframes.map((timeframe) => (
+                  <div key={timeframe.label} className="progress-step progress-step--active">
+                    <div className="progress-step__head">
+                      <span className="pill">{timeframe.label}</span>
+                      <strong>{Math.round(timeframe.progress)}% linked</strong>
+                    </div>
+                    <p className="microcopy">{timeframe.summary}</p>
+                    <div className="progress-meter" role="img" aria-label={`${timeframe.label} ${timeframe.progress}% linked`}>
+                      <span className="progress-meter__bar" style={{ width: `${timeframe.progress}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </aside>
           </div>
         </div>

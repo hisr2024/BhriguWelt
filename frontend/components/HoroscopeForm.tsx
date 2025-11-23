@@ -37,6 +37,12 @@ type ProgressStep = {
   status: "pending" | "active" | "complete";
 };
 
+type TimeframeLink = {
+  label: string;
+  summary: string;
+  progress: number;
+};
+
 export default function HoroscopeForm() {
   const [form, setForm] = useState<FormState>(defaultForm);
   const [chart, setChart] = useState<ChartResponse | null>(null);
@@ -122,6 +128,22 @@ export default function HoroscopeForm() {
 
     return steps;
   }, [chart, hasNarrative, houseFoundation, isComplete, loading]);
+
+  const timeframeLinks = useMemo<TimeframeLink[]>(() => {
+    return timeframeAnchors.map((anchor) => {
+      const hasFoundation = Boolean(chart && houseFoundation?.length);
+      const progress = !chart ? 0 : hasNarrative ? 90 : hasFoundation ? 65 : 40;
+      const summary = hasFoundation
+        ? `${anchor.label} guidance tied to house ${anchor.houseIndex} (${anchor.sign || "—"}) • ${anchor.focus}`
+        : `${anchor.label} guidance waits for chart foundation`;
+
+      return {
+        label: anchor.label,
+        summary,
+        progress,
+      } satisfies TimeframeLink;
+    });
+  }, [chart, hasNarrative, houseFoundation?.length, timeframeAnchors]);
 
   const handleChange = (field: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -267,6 +289,7 @@ export default function HoroscopeForm() {
           endpoint={endpoint}
           error={error}
           isComplete={isComplete}
+          progressSteps={progressSteps}
           onChange={handleChange}
           onSubmit={handleSubmit}
           onAskBhrigu={handleAskBhrigu}
@@ -279,6 +302,7 @@ export default function HoroscopeForm() {
           interpretation={interpretation}
           hasNarrative={hasNarrative}
           fallbackNarrative={fallbackNarrative}
+          timeframes={timeframeLinks}
           onAskBhrigu={handleAskBhrigu}
           onDownloadPdf={handleDownloadPdf}
         />
