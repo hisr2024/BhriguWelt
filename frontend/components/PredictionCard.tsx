@@ -1,11 +1,13 @@
 'use client';
 
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { ResultEngine } from "@/types/astro";
 import KundliCharts from "./KundliCharts";
 import { ChartHouse, DashaPeriod } from "@/types/astro";
 import FeedbackPrompt from "./FeedbackPrompt";
+import { HOUSE_FOCUSES } from "@/lib/houseGrid";
+import ProgressIndicator, { ProgressStep } from "./ProgressIndicator";
 
 interface Props {
   title: string;
@@ -19,6 +21,19 @@ type InsightSection = {
   english: string;
   hindi?: string;
   bullets?: string[];
+};
+
+type TimeframeAnchor = {
+  label: string;
+  houseIndex: number;
+  focus: string;
+  sign?: string;
+};
+
+type ChecklistItem = {
+  id: string;
+  label: string;
+  done: boolean;
 };
 
 type HoroscopePayload = {
@@ -50,6 +65,13 @@ type FuturePayload = {
   trajectories?: { focus?: string; window?: string; certainty?: number }[];
 };
 
+type SynastryOverlay = {
+  label?: string;
+  theme?: string;
+  alignment?: number;
+  tags?: string[];
+};
+
 type MatchmakingPayload = {
   primary_name?: string;
   partner_name?: string;
@@ -59,6 +81,13 @@ type MatchmakingPayload = {
     compatibility_index?: number;
     breakdown?: { description?: string; notes?: string }[];
     modern_highlights?: string[];
+  };
+  modern_preferences?: string[];
+  charts?: {
+    primary_rashi_chart?: ChartHouse[];
+    partner_rashi_chart?: ChartHouse[];
+    shared_score?: number;
+    synastry_overlay?: SynastryOverlay[];
   };
 };
 
@@ -75,15 +104,23 @@ type CalendarPayload = {
   };
 };
 
-function renderSection(section: InsightSection, index: number) {
+function condense(text: string, detailLevel: "beginner" | "advanced") {
+  if (detailLevel === "advanced") return text;
+  if (text.length <= 160) return text;
+  return `${text.slice(0, 157).trimEnd()}...`;
+}
+
+function renderSection(section: InsightSection, index: number, detailLevel: "beginner" | "advanced") {
+  const bulletList = section.bullets || [];
+  const trimmedBullets = detailLevel === "advanced" ? bulletList : bulletList.slice(0, 3);
   return (
     <article key={index} className="insight-block">
       <h4>{section.heading}</h4>
-      <p>{section.english}</p>
-      {section.hindi && <p className="muted">{section.hindi}</p>}
-      {section.bullets && section.bullets.length > 0 && (
+      <p>{condense(section.english, detailLevel)}</p>
+      {section.hindi && <p className="muted">{condense(section.hindi, detailLevel)}</p>}
+      {trimmedBullets.length > 0 && (
         <ul>
-          {section.bullets.map((bullet, bulletIndex) => (
+          {trimmedBullets.map((bullet, bulletIndex) => (
             <li key={bulletIndex}>{bullet}</li>
           ))}
         </ul>
@@ -170,26 +207,65 @@ function interpretHoroscope(payload: HoroscopePayload): InsightSection[] {
       bullets,
     });
   }
+  const timeframeAnchors = deriveTimeframeAnchorsFromChart(payload.bhava_chart || payload.rashi_chart);
+  const summary = renderTimeframeSummary(timeframeAnchors);
+  if (summary) {
+    sections.push({
+      heading: "Timeframe linkage",
+      english: summary,
+      hindi: "दैनिक, साप्ताहिक, मासिक और वार्षिक मार्ग वही १२ घरों से जुड़े रहते हैं।",
+    });
+  }
   return sections;
 }
 
 function interpretPastLife(payload: PastLifePayload): InsightSection[] {
   const sections: InsightSection[] = [];
-  if (payload.interpretation) {
+  const insights = payload.insights ?? [];
+  const [past, present, ...echoes] = insights;
+  const pastLine = past?.narrative || payload.interpretation;
+
+  if (pastLine) {
     sections.push({
-      heading: payload.name ? `${payload.name} की यात्रा` : "Past-life journey",
-      english: payload.interpretation,
-      hindi: payload.interpretation_hi,
+      heading: "Past influences",
+      english: `${pastLine}${past?.sutra_reference ? ` — ${past.sutra_reference}` : ""}`,
+      hindi: payload.interpretation_hi ? `पूर्व प्रभाव: ${payload.interpretation_hi}` : undefined,
     });
   }
-  if (payload.insights?.length) {
-    const entries = payload.insights.map((item) => `${item.narrative}${item.sutra_reference ? ` — ${item.sutra_reference}` : ""}`);
+
+  const presentLine = present?.narrative || (payload.interpretation ? `Current lessons extend from this arc: ${payload.interpretation}` : undefined);
+  if (presentLine) {
     sections.push({
-      heading: "Archived echoes",
-      english: entries.join(" "),
-      hindi: "भृगु पांडुलिपि से प्राप्त संकेत।",
+      heading: "Current lessons",
+      english: `${presentLine}${present?.sutra_reference ? ` — ${present.sutra_reference}` : ""}`,
+      hindi: payload.interpretation_hi ? `वर्तमान सीख: ${payload.interpretation_hi}` : undefined,
+      bullets: echoes.length
+        ? echoes.slice(0, 2).map((item) => `${item.narrative ?? ""}${item.sutra_reference ? ` — ${item.sutra_reference}` : ""}`)
+        : undefined,
     });
   }
+
+  const futureLines = echoes.length
+    ? echoes.map((item) => `${item.narrative ?? ""}${item.sutra_reference ? ` — ${item.sutra_reference}` : ""}`)
+    : payload.interpretation
+    ? ["Future echoes reshape this vow into soft guidance."]
+    : [];
+
+  if (futureLines.length) {
+    sections.push({
+      heading: "Future echoes",
+      english: futureLines.join(" "),
+      hindi: payload.interpretation_hi ? `आने वाली प्रतिध्वनियाँ: ${payload.interpretation_hi}` : undefined,
+    });
+  }
+
+  if (!sections.length && payload.name) {
+    sections.push({
+      heading: "Past-life journey",
+      english: `${payload.name}'s arc will appear once the manuscript insights load.`,
+    });
+  }
+
   return sections;
 }
 
@@ -236,6 +312,7 @@ function interpretMatchmaking(payload: MatchmakingPayload): InsightSection[] {
       bullets.push(`${item.description}${item.notes ? ` — ${item.notes}` : ""}`);
     });
     payload.compatibility.modern_highlights?.forEach((item) => bullets.push(item));
+    payload.modern_preferences?.forEach((tag) => bullets.push(`Modern filter: ${tag}`));
     sections.push({
       heading: "Compatibility notes",
       english: "Blended from guna balance and lived priorities.",
@@ -264,6 +341,31 @@ function interpretCalendar(payload: CalendarPayload): InsightSection[] {
     });
   }
   return sections;
+}
+
+function deriveTimeframeAnchorsFromChart(houses?: ChartHouse[]): TimeframeAnchor[] {
+  const anchors = [
+    { label: "Daily", houseIndex: 1 },
+    { label: "Weekly", houseIndex: 3 },
+    { label: "Monthly", houseIndex: 6 },
+    { label: "Yearly", houseIndex: 10 },
+  ];
+
+  return anchors.map((anchor) => {
+    const house = houses?.find((entry) => entry.index === anchor.houseIndex);
+    return {
+      ...anchor,
+      focus: HOUSE_FOCUSES[anchor.houseIndex - 1],
+      sign: house?.sign,
+    } satisfies TimeframeAnchor;
+  });
+}
+
+function renderTimeframeSummary(anchors: TimeframeAnchor[]) {
+  const cards = anchors
+    .map((anchor) => `House ${anchor.houseIndex} (${anchor.focus})${anchor.sign ? ` in ${anchor.sign}` : ""}`)
+    .join(" · ");
+  return cards ? `Daily to yearly flow stays anchored to ${cards}.` : "";
 }
 
 function interpretFallback(payload: Record<string, unknown>): InsightSection[] {
@@ -305,8 +407,24 @@ function buildSections(engine: ResultEngine, payload: unknown): InsightSection[]
 
 export default function PredictionCard({ title, payload, engine, seekerName }: Props) {
   const { t } = useI18n();
+  const [detailLevel, setDetailLevel] = React.useState<"beginner" | "advanced">("beginner");
   const sections = buildSections(engine, payload);
   const horoscopePayload = engine === "horoscope" && typeof payload === "object" ? (payload as HoroscopePayload) : null;
+  const matchmakingPayload = engine === "matchmaking" && typeof payload === "object" ? (payload as MatchmakingPayload) : null;
+  const compatibilityOverlay =
+    matchmakingPayload?.charts?.synastry_overlay?.length
+      ? {
+          primaryLabel: matchmakingPayload.primary_name ?? "Primary chart",
+          partnerLabel: matchmakingPayload.partner_name ?? "Partner chart",
+          harmonyIndex:
+            matchmakingPayload.compatibility?.compatibility_index ?? matchmakingPayload.charts?.shared_score ?? undefined,
+          sharedThemes: (matchmakingPayload.charts.synastry_overlay || []).map((entry) => ({
+            label: entry.label || entry.theme || "Shared focus",
+            alignment: typeof entry.alignment === "number" ? Math.round(entry.alignment) : undefined,
+            tags: entry.tags,
+          })),
+        }
+      : undefined;
 
   if (!payload || !sections.length) {
     return (
@@ -327,12 +445,38 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
         <h3>{title}</h3>
         <p className="muted">{t("results.helperRaw", "Narratives are ready to share—no JSON needed.")}</p>
       </div>
-      <div className="insight-grid">{sections.map(renderSection)}</div>
+      <div className="section-actions" style={{ marginBottom: "1rem" }}>
+        <p className="eyebrow" style={{ marginBottom: "0.35rem" }}>
+          Depth toggle
+        </p>
+        <div role="group" aria-label="Detail level" className="button-row">
+          {(["beginner", "advanced"] as const).map((level) => (
+            <button
+              key={level}
+              type="button"
+              className={detailLevel === level ? "primary" : "secondary"}
+              aria-pressed={detailLevel === level}
+              onClick={() => setDetailLevel(level)}
+            >
+              {level === "beginner" ? "Beginner view" : "Advanced view"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="insight-grid">{sections.map((section, index) => renderSection(section, index, detailLevel))}</div>
       {horoscopePayload && (
         <KundliCharts
           rashiChart={horoscopePayload.rashi_chart}
           bhavaChart={horoscopePayload.bhava_chart}
           dashas={horoscopePayload.dashas}
+          detailLevel={detailLevel}
+        />
+      )}
+      {matchmakingPayload?.charts && (
+        <KundliCharts
+          rashiChart={matchmakingPayload.charts.primary_rashi_chart}
+          partnerChart={matchmakingPayload.charts.partner_rashi_chart}
+          compatibilityOverlay={compatibilityOverlay}
         />
       )}
       {payload && <FeedbackPrompt engine={engine} seekerName={seekerName} />}

@@ -106,6 +106,32 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
       },
     ],
   },
+  "/future-progress": {
+    karmic_resolution: 62,
+    milestones: [
+      {
+        house: 4,
+        label: "Roots and rituals",
+        completion: 72,
+        planet: "Moon",
+        icon: "☾",
+      },
+      {
+        house: 9,
+        label: "Dharma studies",
+        completion: 48,
+        planet: "Jupiter",
+        icon: "♃",
+      },
+      {
+        house: 7,
+        label: "Partnership seva",
+        completion: 35,
+        planet: "Venus",
+        icon: "♀",
+      },
+    ],
+  },
   "/matchmaking": {
     primary_name: "Fallback seeker",
     partner_name: "Partner seeker",
@@ -132,6 +158,43 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
       modern_highlights: [
         "Remote-first goals match Bhrigu's guidance for distributed seva.",
         "Research-partnership tag aligns with archival scribe combinations.",
+      ],
+    },
+    modern_preferences: ["remote-first", "research-partnership"],
+    charts: {
+      primary_rashi_chart: [
+        { index: 1, sign: "Aries", occupants: ["Asc"], bhrigu_notes: ["Fire dashas favor initiative"] },
+        { index: 2, sign: "Taurus", occupants: ["Venus"], bhrigu_notes: ["Steady values" ] },
+        { index: 3, sign: "Gemini", occupants: ["Mercury"], bhrigu_notes: [] },
+        { index: 4, sign: "Cancer", occupants: ["Moon"], bhrigu_notes: [] },
+        { index: 5, sign: "Leo", occupants: ["Sun"], bhrigu_notes: [] },
+        { index: 6, sign: "Virgo", occupants: ["Saturn"], bhrigu_notes: [] },
+        { index: 7, sign: "Libra", occupants: ["Mars"], bhrigu_notes: [] },
+        { index: 8, sign: "Scorpio", occupants: ["Ketu"], bhrigu_notes: [] },
+        { index: 9, sign: "Sagittarius", occupants: ["Jupiter"], bhrigu_notes: [] },
+        { index: 10, sign: "Capricorn", occupants: ["Rahu"], bhrigu_notes: [] },
+        { index: 11, sign: "Aquarius", occupants: ["—"], bhrigu_notes: [] },
+        { index: 12, sign: "Pisces", occupants: ["—"], bhrigu_notes: [] },
+      ],
+      partner_rashi_chart: [
+        { index: 1, sign: "Libra", occupants: ["Asc"], bhrigu_notes: ["Air dashas favor partnerships"] },
+        { index: 2, sign: "Scorpio", occupants: ["Venus"], bhrigu_notes: ["Depth in research"] },
+        { index: 3, sign: "Sagittarius", occupants: ["Mercury"], bhrigu_notes: [] },
+        { index: 4, sign: "Capricorn", occupants: ["Moon"], bhrigu_notes: [] },
+        { index: 5, sign: "Aquarius", occupants: ["Sun"], bhrigu_notes: [] },
+        { index: 6, sign: "Pisces", occupants: ["Saturn"], bhrigu_notes: [] },
+        { index: 7, sign: "Aries", occupants: ["Mars"], bhrigu_notes: [] },
+        { index: 8, sign: "Taurus", occupants: ["Ketu"], bhrigu_notes: [] },
+        { index: 9, sign: "Gemini", occupants: ["Jupiter"], bhrigu_notes: [] },
+        { index: 10, sign: "Cancer", occupants: ["Rahu"], bhrigu_notes: [] },
+        { index: 11, sign: "Leo", occupants: ["—"], bhrigu_notes: [] },
+        { index: 12, sign: "Virgo", occupants: ["—"], bhrigu_notes: [] },
+      ],
+      shared_score: 88,
+      synastry_overlay: [
+        { label: "Creative flow", alignment: 82, tags: ["remote-first"] },
+        { label: "Research stamina", alignment: 91, tags: ["research-partnership", "learning"] },
+        { label: "Travel cadence", alignment: 76, tags: ["purposeful travel"] },
       ],
     },
   },
@@ -187,6 +250,17 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
 type FetchOptions<T> = {
   path: string;
   body: T;
+};
+
+export type FutureProgressResponse = {
+  karmic_resolution: number;
+  milestones: {
+    house: number;
+    label: string;
+    completion: number;
+    planet: string;
+    icon?: string;
+  }[];
 };
 
 function mapBirthDetails(input: BirthDetails) {
@@ -279,6 +353,10 @@ async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
 export async function requestPrediction(engine: PredictionEngine, details: BirthDetails) {
   const path = `/${engine}`;
   return postJson({ path, body: mapBirthDetails(details) });
+}
+
+export async function getFutureProgress() {
+  return getJson<FutureProgressResponse>("/future-progress", "/future-progress");
 }
 
 export async function requestMatchmaking(

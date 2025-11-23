@@ -1,5 +1,6 @@
 'use client';
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 const GLOSSARY = [
@@ -23,20 +24,59 @@ const GLOSSARY = [
 const JOURNEY_STEPS = [
   {
     title: "Birth input",
-    detail: "Share name, date, time, and place. We pre-check formats and timezones.",
+    detail: "Share name, date, time, and place with timezone hints and guardrails.",
   },
   {
-    title: "Chart generation",
-    detail: "See Śaka conversion, house wheel, and signatures with soft motion.",
+    title: "Chart",
+    detail: "See Śaka conversion, house wheels, and signatures with soft motion.",
   },
   {
     title: "Interpretations",
     detail: "Tap cards for bite-sized readings; expand for deeper context when ready.",
   },
   {
-    title: "Timelines & remedies",
+    title: "Horoscopes",
+    detail: "Switch between daily, weekly, and Śaka-ready calendar helpers.",
+  },
+  {
+    title: "Past-Life",
+    detail: "Walk through karmic arcs and narrative breadcrumbs for lessons learned.",
+  },
+  {
+    title: "Future",
     detail: "Scroll the orbit timeline for dasha, transit, and remedy prompts.",
   },
+  {
+    title: "Matchmaking",
+    detail: "Blend guna scoring with lifestyle filters and ritual suggestions.",
+  },
+];
+
+const GUIDED_TOURS = [
+  {
+    title: "Tooltip & glossary tour",
+    copy: "Highlights input hints, glossary toggles, and the new persistent rail.",
+    action: "Preview form guidance",
+    href: "/experience#birth",
+  },
+  {
+    title: "Chart exploration",
+    copy: "Shows hover states, house tap feedback, and interpretation breadcrumbs.",
+    action: "Jump to charts",
+    href: "/experience#chart",
+  },
+  {
+    title: "Timeline coaching",
+    copy: "Walks through future and matchmaking flows with thumb-friendly chips.",
+    action: "Open journeys",
+    href: "/future",
+  },
+];
+
+const BREADCRUMB_NOTES = [
+  "Tap the highlighted dot to return to your starting point.",
+  "Breadcrumbs mirror the persistent rail on every page.",
+  "Completed steps will pulse once before dimming.",
 ];
 
 const BEGINNER_TIPS = [
