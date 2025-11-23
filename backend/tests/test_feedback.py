@@ -26,10 +26,17 @@ def feedback(monkeypatch, tmp_path):
 
 
 def test_record_feedback_persists_rating(feedback):
-    entry = feedback.record_feedback(engine="horoscope", rating=5, seeker_name="Asha", notes="Beautifully precise")
+    entry = feedback.record_feedback(
+        engine="horoscope",
+        rating=5,
+        seeker_name="Asha",
+        notes="Beautifully precise",
+        inputs={"engine": "horoscope", "tradition": "vedic"},
+    )
     assert entry.id == 1
     assert entry.engine == "horoscope"
     assert entry.notes == "Beautifully precise"
+    assert entry.inputs == {"engine": "horoscope", "tradition": "vedic"}
 
 
 def test_quarterly_reviews_roll_up_counts(feedback):

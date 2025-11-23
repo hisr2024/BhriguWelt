@@ -13,6 +13,7 @@ from typing import Any, Dict, Tuple
 
 from .data_loader import load_bhrigu_data, persist_bhrigu_data
 from .calendar_conversion import convert_birth_details
+from .feedback import record_feedback, quarterly_reviews, serialize_entry
 from .telemetry import capture_exception, init_telemetry
 from .horoscope import (
     HoroscopeRequest,
@@ -91,6 +92,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
 
     routes: Dict[Tuple[str, str], str] = {
         ("GET", "/health"): "_handle_health",
+        ("POST", "/feedback"): "_handle_feedback",
         ("GET", "/feedback/quarterly"): "_handle_feedback_quarterly",
         ("POST", "/horoscope"): "_handle_horoscope",
         ("POST", "/past-life"): "_handle_past_life",
@@ -144,6 +146,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
                 rating=int(payload.get("rating", 0)),
                 seeker_name=payload.get("seeker_name"),
                 notes=payload.get("notes", ""),
+                inputs=payload.get("inputs"),
             )
         except ValueError as exc:
             self.send_error(HTTPStatus.BAD_REQUEST, str(exc))
