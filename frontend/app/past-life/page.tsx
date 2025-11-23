@@ -2,6 +2,24 @@ import Link from "next/link";
 import PredictionForm from "@/components/PredictionForm";
 
 export default function PastLifePage() {
+  const chapters = [
+    {
+      title: "Past influences",
+      description: "Healing work along sacred rivers; vows to serve carry into this birth.",
+      cue: "Unlocks once the natal chart is ready.",
+    },
+    {
+      title: "Current lessons",
+      description: "Partnership karma asks for shared study, reflective journaling, and breath-led rituals.",
+      cue: "Guided narration adapts to your moon element.",
+    },
+    {
+      title: "Future echoes",
+      description: "Service-forward leadership surfaces as an echo of earlier vows—stories end with actionable remedies.",
+      cue: "Cards fade in sequentially for screen readers and storytellers alike.",
+    },
+  ];
+
   return (
     <div className="stack">
       <div className="hero">
@@ -16,6 +34,31 @@ export default function PastLifePage() {
           </Link>
         </div>
       </div>
+
+      <section className="story-rail" aria-label="Past-life arc">
+        <div className="story-rail__intro">
+          <p className="pill">Unlock sequence</p>
+          <h2>Stories unfurl after chart generation</h2>
+          <p className="muted">
+            Each chapter unlocks only when birth details are validated. Screen readers narrate the arcs in order while soft
+            animations respect quiet reading.
+          </p>
+        </div>
+        <div className="story-rail__grid" role="list">
+          {chapters.map((chapter, index) => (
+            <article key={chapter.title} className="story-rail__card" role="listitem" aria-label={chapter.title}>
+              <div className="story-rail__orbit" aria-hidden>
+                <span className="story-rail__planet" />
+                <span className="story-rail__planet story-rail__planet--shadow" />
+              </div>
+              <p className="pill">{index + 1}</p>
+              <h3>{chapter.title}</h3>
+              <p>{chapter.description}</p>
+              <p className="microcopy">{chapter.cue}</p>
+            </article>
+          ))}
+        </div>
+      </section>
 
       <section className="card-grid">
         <div className="card highlight">

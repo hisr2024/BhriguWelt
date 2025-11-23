@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import BirthInputForm from "@/components/BirthInputForm";
 import CalendarForm from "@/components/CalendarForm";
 import MatchmakingForm from "@/components/MatchmakingForm";
 import PredictionForm from "@/components/PredictionForm";
 import QuarterlyReviewPanel from "@/components/QuarterlyReviewPanel";
+import Timeline from "@/components/Timeline";
 import { heroCopy } from "@/lib/copy";
 import { useI18n } from "@/lib/i18n";
 import { ChartHouse, DashaPeriod } from "@/types/astro";
@@ -63,6 +65,30 @@ const timelineNotes = [
   { label: "Dasha", value: "Venus → Sun", detail: "harmonising", tone: "sunrise" },
   { label: "Transit", value: "Saturn review", detail: "slow and steady", tone: "sand" },
   { label: "Remedy", value: "Sandal dhup", detail: "light daily", tone: "lotus" },
+];
+
+const journeyTimeline = [
+  {
+    title: "Dawn: Venusian glow",
+    window: "2024 Q3 - Q4",
+    houseAnchor: "House 5 • Joy",
+    detail: "Creative cycles brighten; save art-forward remedies to daily reminders.",
+    icon: "🌅",
+  },
+  {
+    title: "Midday: Saturn review",
+    window: "2025 Q1 - Q2",
+    houseAnchor: "House 10 • Karma",
+    detail: "Career recalibration connected to bhava overlays—drag to fast-forward milestones.",
+    icon: "🪐",
+  },
+  {
+    title: "Evening: Lunar reflection",
+    window: "2025 Q3 - Q4",
+    houseAnchor: "House 12 • Rest",
+    detail: "Retreat prompts and mantra streaks sync with the natal moon element you captured.",
+    icon: "🌔",
+  },
 ];
 
 const DEMO_CHART: ChartHouse[] = [
@@ -262,12 +288,20 @@ export default function HomePage() {
           <h2>{t("hero.title", "Horoscope without noise")}</h2>
           <p className="muted">{t("home.grid.navigation.body", navigationBody)}</p>
         </div>
-        <div className="panel__content">
-          <div className="card softly">
+        <div className="panel__content panel__content--stacked">
+          <div className="card softly cosmic-backdrop">
             <p className="microcopy">Save bilingual interpretations and export PDFs straight from the quiet interface.</p>
             <p className="microcopy">Only the essentials stay on screen: name, date, time, and place.</p>
+            <ul className="soft-list">
+              <li>Timezone auto-detect with friendly validation prompts.</li>
+              <li>Śaka calendar preview that updates as you type.</li>
+              <li>Mini 12-house chart with elemental glow for each segment.</li>
+            </ul>
           </div>
           <div className="card highlight">
+            <BirthInputForm />
+          </div>
+          <div className="card">
             <PredictionForm
               engine="horoscope"
               title={t("pages.horoscope.title", "Holistic horoscope")}
@@ -300,6 +334,21 @@ export default function HomePage() {
             <CalendarForm />
           </div>
         </div>
+      </section>
+
+      <section className="panel softly" id="future-timeline">
+        <div className="section-heading">
+          <p className="eyebrow">Timeline</p>
+          <h2>Future phases anchored to houses</h2>
+          <p className="muted">
+            Swipe through glowing milestones that map to the twelve-house foundation. Tooltips and local reminders keep seekers
+            on track without feeling overwhelmed.
+          </p>
+        </div>
+        <Timeline events={journeyTimeline} accent="amber" />
+        <p className="microcopy" aria-live="polite">
+          Drag horizontally to fast-forward through years; badges note which natal placements fuel each milestone.
+        </p>
       </section>
 
       <section className="panel" id="matchmaking">
