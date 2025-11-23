@@ -13,8 +13,14 @@ export default function HoroscopePage() {
     <div className="stack">
       <div className="hero">
         <p className="eyebrow">Horoscope • Panchanga aligned</p>
-        <h1>{t("pages.horoscope.title", "Bhrigu Samhita consultations without clutter.")}</h1>
-        <p className="muted" style={{ maxWidth: "760px" }}>{t("form.helper", helperText)}</p>
+        <h1>{t("pages.horoscope.title", "Holistic horoscope with only four essentials.")}</h1>
+        <p className="muted" style={{ maxWidth: "760px" }}>
+          {t(
+            "form.helper",
+            helperText ??
+              "Name, date of birth, time of birth, and place of birth are all that is needed for a calm, Bhrigu-first reading."
+          )}
+        </p>
         <div className="hero-actions">
           <Link href="/" className="button-link" style={{ background: "rgba(255,255,255,0.08)" }}>
             Back to studio hub
@@ -27,27 +33,27 @@ export default function HoroscopePage() {
           <div className="section-heading">
             <p className="eyebrow">Live experience</p>
             <h2>Holistic horoscope</h2>
-            <p>Enter name, date, time, and place for immediate English and Hindi readings.</p>
+            <p>Enter name, date, time, and place for a Bhrigu-anchored reading with generous white space.</p>
           </div>
           <HoroscopeForm />
         </div>
         <div className="card">
           <div className="section-heading">
-            <p className="eyebrow">How the engine helps</p>
+            <p className="eyebrow">Core flows</p>
             <h2>Accurate, shareable readings</h2>
           </div>
           <ul className="kudos-list">
             <li>
-              <span className="badge">Bilingual</span>
-              <span>Every interpretation arrives in clear English and Hindi prose.</span>
+              <span className="badge">Primary inputs</span>
+              <span>Name, date of birth, time of birth, and place of birth stay front and center.</span>
             </li>
             <li>
-              <span className="badge">PDF export</span>
-              <span>Save guidance as a PDF without extra formatting steps.</span>
+              <span className="badge">Holistic interpretation</span>
+              <span>Outputs render in English and Hindi with a reading canvas built for long-form clarity.</span>
             </li>
             <li>
-              <span className="badge">Precision</span>
-              <span>Field mapping mirrors the backend so responses stay citation-friendly.</span>
+              <span className="badge">Download ready</span>
+              <span>Save the interpretation as a PDF from the reading panel without engine jargon.</span>
             </li>
           </ul>
         </div>
