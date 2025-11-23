@@ -271,6 +271,7 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "name": report.name,
             "trajectories": [_serialize_obj(item) for item in report.trajectories],
             "transit_directives": [_serialize_obj(item) for item in report.transit_directives],
+            "progression_directives": [_serialize_obj(item) for item in report.progression_directives],
             "interpretation": report.interpretation,
         }
     if command == "matchmaking":

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Sequence
 
-from .astronomical_calculations import derive_transit_snapshot, normalize_birth_datetime
+from .astronomical_calculations import derive_progressed_snapshot, derive_transit_snapshot, normalize_birth_datetime
 from .calendar_conversion import HinduCalendarContext, convert_birth_details
 from .calculations import (
     CelestialSnapshot,
@@ -151,6 +151,7 @@ class FutureReport:
     name: str
     trajectories: List[FutureTrajectory]
     transit_directives: List[TransitDirective]
+    progression_directives: List[TransitDirective]
     interpretation: str
 
 
@@ -255,11 +256,14 @@ def build_future_report(request: HoroscopeRequest) -> FutureReport:
     natal_dt = normalize_birth_datetime(request.birth_date, request.birth_time, timezone_name=request.timezone)
     transit_details = derive_transit_snapshot(natal_dt, transit_dt)
     transit_directives = evaluate_transits(snapshot, transit_details, transit_rules)
+    progression_details = derive_progressed_snapshot(natal_dt, transit_dt)
+    progression_directives = evaluate_transits(snapshot, progression_details, transit_rules)
     return FutureReport(
         name=request.name,
         trajectories=trajectories,
         transit_directives=transit_directives,
-        interpretation=_compose_future_interpretation(trajectories, transit_directives),
+        progression_directives=progression_directives,
+        interpretation=_compose_future_interpretation(trajectories, transit_directives, progression_directives),
     )
 
 
@@ -446,9 +450,11 @@ def _compose_past_life_interpretation(
 
 
 def _compose_future_interpretation(
-    trajectories: List[FutureTrajectory], transit_directives: List[TransitDirective]
+    trajectories: List[FutureTrajectory],
+    transit_directives: List[TransitDirective],
+    progression_directives: List[TransitDirective],
 ) -> str:
-    if not trajectories and not transit_directives:
+    if not trajectories and not transit_directives and not progression_directives:
         return "Future directives await fuller planetary transits; continue dharmic discipline."
 
     phrases: List[str] = []
@@ -465,6 +471,13 @@ def _compose_future_interpretation(
         phrases.append(
             f"Current transit emphasis via {top_transit.planet}: {top_transit.influence} "
             f"(certainty {top_transit.certainty:.2f}) per {top_transit.reference}."
+        )
+
+    if progression_directives:
+        top_progression = progression_directives[0]
+        phrases.append(
+            f"Secondary progression spotlight ({top_progression.planet}): {top_progression.influence} "
+            f"(certainty {top_progression.certainty:.2f}) via {top_progression.reference}."
         )
 
     return " ".join(phrases)
@@ -771,6 +784,13 @@ def _render_future(report: FutureReport, birth_place: str) -> None:
                 f"  [{directive.reference}] {directive.planet} transit -> {directive.influence} "
                 f"(Certainty {directive.certainty})"
             )
+    if report.progression_directives:
+        print("\nSecondary progressions:")
+        for directive in report.progression_directives:
+            print(
+                f"  [{directive.reference}] {directive.planet} progression -> {directive.influence} "
+                f"(Certainty {directive.certainty})"
+            )
 
 
 def _render_matchmaking(report: MatchmakingReport) -> None:
@@ -804,6 +824,7 @@ def _render_calendar(context: HinduCalendarContext) -> None:
     )
     print(f"Conversion factor (Gregorian minus Śaka): {context.conversion_factor_years} years")
     print(f"Indian Standard Time reference longitude: {context.ist_reference_longitude}°E")
+    print(f"Ephemeris source: {context.ephemeris_source}")
     print("Authentic Indian sources consulted:")
     for source in context.sources:
         print(f"  - {source}")

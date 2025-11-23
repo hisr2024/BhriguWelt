@@ -34,6 +34,7 @@ __all__ = [
     "geocode_location",
     "auto_snapshot_kwargs",
     "derive_transit_snapshot",
+    "derive_progressed_snapshot",
     "normalize_birth_datetime",
 ]
 
@@ -160,6 +161,30 @@ def derive_transit_snapshot(
         "jupiter_house": transit_details["jupiter_house"],
         "saturn_retrograde": transit_details["saturn_retrograde"],
         "rahu_aspects_ascendant": transit_details["rahu_aspects_ascendant"],
+    }
+
+
+def derive_progressed_snapshot(
+    natal_dt: datetime,
+    reference_dt: datetime,
+    latitude: float | None = None,
+    longitude: float | None = None,
+) -> Dict[str, int | bool | float]:
+    """Return a secondary-progression style snapshot using day-for-year logic.
+
+    The progression date advances one sidereal day for every solar year lived
+    since birth, mirroring the common "day-for-year" rule in predictive
+    astrology. The resulting lunar and planetary houses rely on the same
+    ephemeris pipeline as transit calculations, so Swiss Ephemeris precision is
+    applied automatically when available.
+    """
+
+    lived_years = max(0.0, (reference_dt - natal_dt).days / 365.25)
+    progressed_dt = natal_dt + timedelta(days=lived_years)
+    progressed_details = derive_lunar_details(progressed_dt, latitude=latitude, longitude=longitude)
+    return {
+        **progressed_details,
+        "progressed_age_years": round(lived_years, 2),
     }
 
 
