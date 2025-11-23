@@ -546,13 +546,14 @@ def _personalize_remedies(
 
     remedy_config = runtime_config.get("remedies", {}) if runtime_config else {}
     relevance_floor = float(remedy_config.get("relevance_floor", 0.45))
+    target_threshold = float(remedy_config.get("target_threshold", 0.5))
 
     scored: List[Dict] = []
     for remedy in remedies:
         base_relevance = float(remedy.get("base_relevance", 0.5))
         condition_score = _score_remedy_conditions(snapshot, remedy.get("conditions") or {}, base_relevance)
         targets = remedy.get("personalize_for") or []
-        matched_targets = [target for target in targets if weights.get(target, 0) >= 0.6]
+        matched_targets = [target for target in targets if weights.get(target, 0) >= target_threshold]
         target_bonus = max((weights.get(target, 0.0) for target in matched_targets), default=0.0)
         relevance = round(min(1.0, condition_score + target_bonus / 2), 2)
 

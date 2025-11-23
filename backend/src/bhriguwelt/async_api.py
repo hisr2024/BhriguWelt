@@ -8,7 +8,12 @@ import os
 from http import HTTPStatus
 from typing import Any, Dict
 
-from aiohttp import web
+try:  # pragma: no cover - optional dependency for async HTTP serving
+    from aiohttp import web
+except Exception as exc:  # pragma: no cover - optional dependency
+    raise ImportError(
+        "aiohttp is required for the async API server; install it from PyPI when network access is available."
+    ) from exc
 
 from .api import ResponseCache, RateLimiter, handle_command
 from .data_loader import load_bhrigu_data, persist_bhrigu_data
@@ -162,7 +167,7 @@ def create_app() -> web.Application:
     app.router.add_route("GET", "/manuscript", manuscript_get)
     app.router.add_route("POST", "/manuscript", manuscript_update)
     app.router.add_route("POST", "/ml/retrain", ml_retrain)
-    app.router.add_route("OPTIONS", "{tail:.*}", handle_options)
+    app.router.add_route("OPTIONS", "/{tail:.*}", handle_options)
     return app
 
 

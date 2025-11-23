@@ -563,6 +563,32 @@ _RAW_CORPUS = r"""
         "heritage_archives",
         "leadership"
       ]
+    },
+    {
+      "id": "REM-42",
+      "tradition": "universal",
+      "sutra_reference": "Bikaner folio 47a",
+      "description": "Immerse a copper Ketu yantra in flowing water on Amavasya while reciting the Aditya Hridayam to steady ancestral archives and activate infrastructural vows recorded by Bhrigu.",
+      "base_relevance": 0.6,
+      "conditions": {
+        "ketu_house": {
+          "equals": 12
+        },
+        "moon_element": {
+          "any_of": [
+            "water",
+            "ether"
+          ]
+        },
+        "mars_house": {
+          "equals": 10
+        }
+      },
+      "personalize_for": [
+        "wealth_activation",
+        "career_command",
+        "heritage_archives"
+      ]
     }
   ],
   "past_life_engines": [

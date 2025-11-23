@@ -1,7 +1,7 @@
-# The PyPI package is published under the `pyswisseph` name while exposing the
-# `swisseph` module import. Using the canonical package name ensures installs
-# succeed on modern Python versions.
-pyswisseph>=2.10.3
+# Swiss Ephemeris is optional; install `pyswisseph` manually for high-precision
+# astronomy when network access to PyPI is available. The fallback logic keeps
+# tests deterministic when the binary wheel cannot be fetched in restricted
+# environments.
 pytz>=2024.1
 geopy>=2.4.1
 timezonefinder>=6.4.1

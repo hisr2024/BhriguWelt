@@ -36,6 +36,11 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 export PYTHONPATH=src  # keep set for CLI, API, and tests
+
+> **Optional Swiss Ephemeris:** For full astronomical precision, install
+> `pyswisseph` separately when PyPI access is available. The package is not in
+> `requirements.txt` so test environments without binary wheels can rely on the
+> deterministic pure-Python fallbacks baked into the calculation engine.
 ```
 
 ### CLI usage
