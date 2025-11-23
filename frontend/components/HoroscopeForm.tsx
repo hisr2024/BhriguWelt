@@ -12,7 +12,7 @@ type FormState = {
   placeOfBirth: string;
 };
 
-type ChartResponse = Record<string, unknown>;
+type ChartResponse = NatalChart | Record<string, unknown>;
 
 type Interpretation = {
   english?: string;
