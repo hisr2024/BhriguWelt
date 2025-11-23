@@ -6,7 +6,8 @@ matchmaking, and Śaka calendar conversion). It is designed to deploy directly t
 Vercel while consuming the Python backend hosted on Render (or any HTTPS URL you
 provide via an environment variable). The UI is intentionally bold—glassmorphic
 panels, gradients, and multi-page navigation that stay legible for seekers of
-every age.
+every age. Language support now spans English, Hindi, Spanish, and Tamil with
+preferences persisted per visitor.
 
 ## Getting started
 
@@ -73,12 +74,14 @@ key so `npm run dev` and `npm run build` compile against the right host.
 
 - Copy `.env.example` to `.env.local` (or `.env`) and set `NEXT_PUBLIC_BACKEND_URL`
   to your Render/Railway/local backend before running the app. Optional telemetry
-  hooks use `NEXT_PUBLIC_SENTRY_DSN` when you install `@sentry/nextjs`.
+  hooks use `NEXT_PUBLIC_SENTRY_DSN` plus `NEXT_PUBLIC_SENTRY_ENVIRONMENT` and
+  sampling controls for traces/profiles.
 - Optional client telemetry is controlled by `NEXT_PUBLIC_SENTRY_DSN`; when set
   and paired with `@sentry/nextjs`, errors surface in your Sentry project. When
   unset, telemetry helpers no-op to preserve the zero-dependency runtime.
-- The Hindi/English toggle persists the selected language in `localStorage` so
-  multilingual users keep their preference across visits.
+- Choose the default locale with `NEXT_PUBLIC_DEFAULT_LANGUAGE` (supported: en,
+  hi, es, ta). The multilingual toggle persists the selected language in
+  `localStorage` so visitors keep their preference across visits.
 - GitHub Actions (`Frontend CI`) runs `npm install`, `npm run lint`, and
   `npm run type-check` with Node 18 on pushes and pull requests that touch the
   frontend.

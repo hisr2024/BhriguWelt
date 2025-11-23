@@ -2,11 +2,13 @@
 All notable changes to this project will be documented here.
 
 ## [Unreleased]
-- Add production telemetry and localization flows.
-- Align governance metadata (license notice, conduct contact) and documentation
-  so merge conflicts in the public PR history stay resolved going forward.
-- Expand Bhrigu Samhita corpus with tradition-aware entries, Panchang context,
-  and integrity scaffolding for manuscript-backed predictions.
+- Add production-ready Sentry hooks plus client bootstrapping alongside a
+  multilingual toggle that now supports English, Hindi, Spanish, and Tamil with
+  persisted defaults.
+- Align governance metadata (license notice, conduct contact) across README and
+  contributing docs to prevent recurring merge conflicts.
+- Expand the Bhrigu Samhita corpus with tradition-aware entries, Panchang
+  contexts, and checksum-backed integrity scaffolding for predictions.
 
 ## [2025-11-20]
 - Published an OpenAPI snapshot, backup helper script, and Dependabot config to
