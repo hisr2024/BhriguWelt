@@ -24,3 +24,9 @@ labels: enhancement
 ## Additional Context
 
 <!-- Mockups, references, or links. -->
+
+## Collaboration Checklist
+- [ ] I reviewed `CONTRIBUTING.md` to align with style/testing expectations.
+- [ ] I noted which backend endpoints (Render/Railway) or frontend flows (Vercel)
+      the feature touches.
+- [ ] I can help add docs/tests or pair with a maintainer to land the change.
