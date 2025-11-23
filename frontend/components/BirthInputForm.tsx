@@ -61,6 +61,7 @@ export default function BirthInputForm() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [validations, setValidations] = useState<ValidationState>({});
   const [locationStatus, setLocationStatus] = useState("Waiting for map suggestions…");
+  const [assistiveMode, setAssistiveMode] = useState(false);
   const { triggerSubmitFeedback } = useImmersiveFeedback();
   const placeInputRef = useRef<HTMLInputElement | null>(null);
   const autocompleteRef = useRef<GoogleMapsAutocomplete | null>(null);
@@ -82,6 +83,29 @@ export default function BirthInputForm() {
         .map(([, , label]) => label),
     [details.birthDate, details.birthPlace, details.birthTime],
   );
+
+  const completionScore = useMemo(() => {
+    let score = 0;
+    if (details.birthDate) score += 30;
+    if (details.birthTime) score += 30;
+    if (details.birthPlace) score += 30;
+    if (!hasValidationIssues) score += 10;
+    return Math.min(100, score);
+  }, [details.birthDate, details.birthPlace, details.birthTime, hasValidationIssues]);
+
+  const smartSuggestions = useMemo(() => {
+    const hints: string[] = [];
+    if (validations.dob) hints.push(validations.dob);
+    if (validations.tob) hints.push(validations.tob);
+    if (validations.pob) hints.push(validations.pob);
+    if (!hints.length && missingFields.length) {
+      hints.push(`Add ${missingFields.join(", ")} for higher precision.`);
+    }
+    if (!hints.length && completionScore < 100) {
+      hints.push("Double-check timezone or map pick to push confidence to 100%.");
+    }
+    return hints;
+  }, [completionScore, missingFields, validations.dob, validations.pob, validations.tob]);
 
   const validate = (payload: BirthForm): ValidationState => {
     const feedback: ValidationState = {};
@@ -238,6 +262,12 @@ export default function BirthInputForm() {
     document.body.appendChild(script);
   }, []);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--font-scale", assistiveMode ? "1.08" : "1");
+    return () => root.style.setProperty("--font-scale", "1");
+  }, [assistiveMode]);
+
   const liveGrid = houseGrid.length ? houseGrid : deriveHouseGrid(details);
 
   return (
@@ -250,6 +280,21 @@ export default function BirthInputForm() {
           respond in real time. Start with essentials; unfold Panchanga extras when you are ready.
         </p>
         <p className="microcopy" aria-live="polite">{confidenceLabel}</p>
+        <div className="assistive-row" role="group" aria-label="Accessibility controls">
+          <button
+            type="button"
+            className={`assistive-chip ${assistiveMode ? "assistive-chip--active" : ""}`}
+            onClick={() => setAssistiveMode((prev) => !prev)}
+          >
+            {assistiveMode ? "Comfort font + voice prompts on" : "Enable comfort font & guided hints"}
+          </button>
+          <div className="confidence-meter" role="img" aria-label={`Confidence ${completionScore}%`}>
+            <div className="confidence-meter__track">
+              <div className="confidence-meter__bar" style={{ width: `${completionScore}%` }} />
+            </div>
+            <p className="microcopy">Auto-Śaka conversion and map checks raise accuracy.</p>
+          </div>
+        </div>
       </header>
 
       <form className="birth-input__form" onSubmit={handleSubmit} aria-busy={loading}>
@@ -257,6 +302,16 @@ export default function BirthInputForm() {
           <div className="inline-banner inline-banner--error" role="alert">
             <strong>Missing essentials.</strong>
             <p className="microcopy">Add {missingFields.join(", ")} to boost accuracy.</p>
+          </div>
+        ) : null}
+        {smartSuggestions.length ? (
+          <div className="inline-banner inline-banner--info" role="status">
+            <strong>Smart suggestions</strong>
+            <ul className="suggestion-list">
+              {smartSuggestions.map((tip) => (
+                <li key={tip}>{tip}</li>
+              ))}
+            </ul>
           </div>
         ) : null}
         <div className="field-row">
