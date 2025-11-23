@@ -14,6 +14,7 @@ from typing import Any, Dict, Tuple
 from .data_loader import load_bhrigu_data, persist_bhrigu_data
 from .calendar_conversion import convert_birth_details
 from .feedback import record_feedback, quarterly_reviews, serialize_entry
+from .ml_service import get_ml_health, record_model_load, retrain_feedback_model
 from .telemetry import capture_exception, init_telemetry
 from .horoscope import (
     HoroscopeRequest,
@@ -25,8 +26,10 @@ from .horoscope import (
 )
 
 _JSON_HEADER = ("Content-Type", "application/json; charset=utf-8")
+_ADMIN_TOKEN = os.environ.get("BHRIGUWELT_ADMIN_TOKEN")
 
 init_telemetry()
+record_model_load()
 
 
 class RateLimiter:
@@ -102,6 +105,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/transits"): "_handle_transits",
         ("GET", "/manuscript"): "_handle_get_manuscript",
         ("POST", "/manuscript"): "_handle_update_manuscript",
+        ("POST", "/ml/retrain"): "_handle_ml_retrain",
     }
 
     rate_limiter = RateLimiter()
@@ -136,7 +140,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
 
     # Individual endpoint handlers -------------------------------------------------
     def _handle_health(self) -> None:
-        self._send_json({"status": "ok", "source": "Bhrigu Samhita"})
+        self._send_json({"status": "ok", "source": "Bhrigu Samhita", "ml": get_ml_health()})
 
     def _handle_feedback(self) -> None:
         payload = self._read_json()
@@ -180,6 +184,34 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     def _handle_transits(self) -> None:
         payload = self._read_json()
         self._respond_with_command("transits", payload)
+
+    def _handle_ml_retrain(self) -> None:
+        if not self._is_admin():
+            self.send_error(HTTPStatus.FORBIDDEN, "Admin token required for retraining")
+            return
+
+        payload = self._read_json()
+        limit = payload.get("limit")
+        limit_value = None
+        if limit is not None:
+            try:
+                limit_value = int(limit)
+            except (TypeError, ValueError):
+                self.send_error(HTTPStatus.BAD_REQUEST, "limit must be an integer")
+                return
+
+        try:
+            result = retrain_feedback_model(limit=limit_value)
+        except ValueError as exc:
+            self.send_error(HTTPStatus.BAD_REQUEST, str(exc))
+            return
+        except Exception as exc:  # pragma: no cover - defensive telemetry
+            capture_exception(exc, {"path": self.path})
+            self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, "Retraining failed")
+            return
+
+        self.cache.clear()
+        self._send_json({"message": "Retraining complete", "metrics": result}, status=HTTPStatus.ACCEPTED)
 
     def _handle_get_manuscript(self) -> None:
         corpus = load_bhrigu_data()
@@ -237,7 +269,12 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     def _add_cors_headers(self) -> None:
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Admin-Token")
+
+    def _is_admin(self) -> bool:
+        if not _ADMIN_TOKEN:
+            return False
+        return self.headers.get("X-Admin-Token") == _ADMIN_TOKEN
 
     def _cache_key(self, command: str, payload: Dict[str, Any]) -> str:
         serialized = json.dumps(payload or {}, sort_keys=True, ensure_ascii=False)
