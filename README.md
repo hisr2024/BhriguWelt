@@ -1,5 +1,13 @@
 # BhriguWelt Astrology Platform
 
+![Backend CI](https://github.com/BhriguWelt/BhriguWelt/actions/workflows/backend.yml/badge.svg)
+![Frontend CI](https://github.com/BhriguWelt/BhriguWelt/actions/workflows/frontend.yml/badge.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+
+![Homepage preview](docs/media/homepage-preview.svg)
+
+[Demo video (loom placeholder)](https://example.com/bhriguwelt-demo.mp4)
+
 BhriguWelt is a full-stack scaffold for delivering astrology experiences whose
 entire knowledge base is sourced from the **Bhrigu Samhita** corpus. The
 repository is organized for teams that need a clean separation between backend
