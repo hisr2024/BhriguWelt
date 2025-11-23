@@ -1,7 +1,32 @@
 import Link from "next/link";
+import Timeline from "@/components/Timeline";
 import PredictionForm from "@/components/PredictionForm";
 
 export default function FuturePage() {
+  const events = [
+    {
+      title: "Transit glow",
+      window: "Next 6 months",
+      houseAnchor: "House 4 • Roots",
+      detail: "Home rituals and study sprints anchor this phase; hover for remedy prompts.",
+      icon: "🏡",
+    },
+    {
+      title: "Dasha shift",
+      window: "2025",
+      houseAnchor: "House 9 • Dharma",
+      detail: "Scholarship streaks, pilgrimages, and mentorship checklists surface automatically.",
+      icon: "📜",
+    },
+    {
+      title: "Partnership bloom",
+      window: "2026",
+      houseAnchor: "House 7 • Partnerships",
+      detail: "Shared service and travel markers light up; progress bars show karma resolution.",
+      icon: "🤝",
+    },
+  ];
+
   return (
     <div className="stack">
       <div className="hero">
@@ -16,6 +41,16 @@ export default function FuturePage() {
           </Link>
         </div>
       </div>
+
+      <section className="panel softly" aria-label="Future timeline overlay">
+        <div className="section-heading">
+          <p className="eyebrow">Timeline</p>
+          <h2>Scroll through phases</h2>
+          <p className="muted">Interactive milestones stay linked to the foundational twelve houses.</p>
+        </div>
+        <Timeline events={events} accent="pink" />
+        <div className="microcopy">Drag to fast-forward; haptic cues pulse when major shifts approach.</div>
+      </section>
 
       <section className="card-grid">
         <div className="card highlight">
