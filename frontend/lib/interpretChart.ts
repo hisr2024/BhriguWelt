@@ -45,6 +45,7 @@ type AspectDefinition = {
   baseOrb: number;
   category: AspectCategory;
   keywords: string;
+  precisionWeight?: number;
 };
 
 type AspectHit = {
@@ -60,12 +61,19 @@ const ASPECT_DEFINITIONS: AspectDefinition[] = [
   { name: "Trine", angle: 120, baseOrb: 7, category: "major", keywords: "flow and easy resonance" },
   { name: "Square", angle: 90, baseOrb: 6, category: "major", keywords: "friction that sharpens growth" },
   { name: "Sextile", angle: 60, baseOrb: 5, category: "harmonic", keywords: "opportunities sparked by curiosity" },
-  { name: "Quincunx", angle: 150, baseOrb: 3, category: "harmonic", keywords: "adjustments that demand creativity" },
-  { name: "Quintile", angle: 72, baseOrb: 2.5, category: "micro", keywords: "creative talent with a precise craft" },
-  { name: "Biquintile", angle: 144, baseOrb: 2.5, category: "micro", keywords: "refined artistry expressed collaboratively" },
-  { name: "Septile", angle: 51.43, baseOrb: 1.8, category: "micro", keywords: "intuitive leaps and mystical timing" },
-  { name: "Biseptile", angle: 102.86, baseOrb: 1.6, category: "micro", keywords: "threshold decisions that reroute paths" },
-  { name: "Triseptile", angle: 154.29, baseOrb: 1.4, category: "micro", keywords: "subtle course corrections guided by faith" },
+  { name: "Quincunx", angle: 150, baseOrb: 3.4, category: "harmonic", keywords: "adjustments that demand creativity" },
+  { name: "Semi-Square", angle: 45, baseOrb: 3.1, category: "harmonic", keywords: "minor friction that keeps momentum honest" },
+  { name: "Sesquiquadrate", angle: 135, baseOrb: 3.1, category: "harmonic", keywords: "course corrections sparked by tension" },
+  { name: "Semi-Sextile", angle: 30, baseOrb: 2.6, category: "micro", keywords: "small openings requiring attentive follow-through" },
+  { name: "Quintile", angle: 72, baseOrb: 2.6, category: "micro", keywords: "creative talent with a precise craft", precisionWeight: 1.05 },
+  { name: "Biquintile", angle: 144, baseOrb: 2.6, category: "micro", keywords: "refined artistry expressed collaboratively", precisionWeight: 1.05 },
+  { name: "Semi-Quintile (Decile)", angle: 36, baseOrb: 2.1, category: "micro", keywords: "delicate inspiration that thrives on practice", precisionWeight: 0.95 },
+  { name: "Tredecile", angle: 108, baseOrb: 1.9, category: "micro", keywords: "inventive pattern-making across unlikely domains" },
+  { name: "Septile", angle: 51.43, baseOrb: 1.9, category: "micro", keywords: "intuitive leaps and mystical timing", precisionWeight: 0.95 },
+  { name: "Biseptile", angle: 102.86, baseOrb: 1.7, category: "micro", keywords: "threshold decisions that reroute paths" },
+  { name: "Triseptile", angle: 154.29, baseOrb: 1.5, category: "micro", keywords: "subtle course corrections guided by faith" },
+  { name: "Novile", angle: 40, baseOrb: 1.4, category: "micro", keywords: "quiet devotion and contemplative focus" },
+  { name: "Binovile", angle: 80, baseOrb: 1.4, category: "micro", keywords: "steady, meditative progress through repetition" },
 ];
 
 function formatHeading(title: string) {
@@ -121,12 +129,26 @@ function planetLongitude(planet: Planet): number {
   return ((signIndex >= 0 ? signIndex : 0) * 30 + planet.degree) % 360;
 }
 
+type SpeedBand = "luminary" | "personal" | "social" | "node";
+
+function planetSpeedBand(planet: Planet): SpeedBand {
+  if (["Sun", "Moon"].includes(planet.name)) return "luminary";
+  if (["Mercury", "Venus", "Mars"].includes(planet.name)) return "personal";
+  if (["Jupiter", "Saturn"].includes(planet.name)) return "social";
+  return "node";
+}
+
 function orbAllowance(aspect: AspectDefinition, a: Planet, b: Planet): number {
   const luminaryBonus = ["Sun", "Moon"].some((name) => name === a.name || name === b.name) ? 1 : 0;
-  const retrogradeTightening = a.retrograde || b.retrograde ? -0.2 : 0;
+  const retrogradeTightening = a.retrograde || b.retrograde ? -0.4 : 0;
   const categoryModifier = aspect.category === "micro" ? -0.4 : aspect.category === "harmonic" ? -0.2 : 0;
-  const computed = aspect.baseOrb + luminaryBonus + retrogradeTightening + categoryModifier;
-  return Math.max(0.5, Math.round(computed * 10) / 10);
+
+  const bandTightening: Record<SpeedBand, number> = { luminary: 1.08, personal: 0.98, social: 0.9, node: 0.88 };
+  const bandFactor = Math.min(bandTightening[planetSpeedBand(a)], bandTightening[planetSpeedBand(b)]);
+  const precision = aspect.precisionWeight ?? 1;
+
+  const computed = (aspect.baseOrb + luminaryBonus + retrogradeTightening + categoryModifier) * precision * bandFactor;
+  return Math.max(0.5, Number(computed.toFixed(2)));
 }
 
 function angularDifference(a: number, b: number) {
