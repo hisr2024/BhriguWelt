@@ -278,9 +278,9 @@ GitHub Actions guardrails ship with the repo:
 
 ## Repository hygiene
 
-- Set GitHub topics such as `astrology`, `python`, `nextjs`, and
-  `bhrigu-samhita` on the repository for discoverability after pushing your
-  changes.
+- Set GitHub topics (`astrology`, `python`, `nextjs`, and `bhrigu-samhita`) in
+  the repository settings so new practitioners can discover and fork the
+  project as soon as you push changes.
 - Use the GitHub Projects board or wiki (enabled in this repo) to track the
   roadmap for UI/i18n expansions and deployment milestones.
 

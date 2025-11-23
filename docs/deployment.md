@@ -79,10 +79,26 @@ Python + `pip` available:
 1. In Vercel, create a new project and point it at the same GitHub repository.
 2. When prompted for the project root, choose `frontend/`.
 3. Add the environment variable `NEXT_PUBLIC_BACKEND_URL` and set it to the
-   Render URL created above.
+   Render or Railway URL created above so server components and client fetches
+   share the same base host.
 4. Deploy using Node 18+ (matches local development). Vercel automatically
    installs dependencies and runs `npm run build`. Preview deployments get
    unique URLs, perfect for QA.
+
+## Post-deploy API integration checks
+
+1. Confirm the backend health endpoint responds over HTTPS:
+
+   ```bash
+   curl https://<your-render-or-railway-host>/health
+   ```
+
+2. Visit the Vercel deployment URL and open the browser Network tab. Submit a
+   horoscope or past-life request; the network trace should show fetches against
+   the Render/Railway domain you set in `NEXT_PUBLIC_BACKEND_URL`.
+3. If the frontend falls back to demo data, double-check the Vercel environment
+   variable and redeploy. Successful requests return the same JSON structure as
+   local `PYTHONPATH=src pytest` fixtures.
 
 ## Mobile apps
 
