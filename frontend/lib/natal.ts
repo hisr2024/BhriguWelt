@@ -128,7 +128,7 @@ export function validateBirthDetails(input: {
 }
 
 /**
- * Build a structured natal chart using real ephemeris calculations via the backend utilities.
+ * TODO: Replace placeholder calculations with real ephemeris-based math and time zone derivation.
  */
 export async function generateNatalChart(input: {
   name: string;
@@ -177,6 +177,7 @@ import json
 import math
 import sys
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from bhriguwelt.astronomical_calculations import geocode_location, normalize_birth_datetime, has_swisseph
 from bhriguwelt.calendar_conversion import convert_birth_details
@@ -224,12 +225,23 @@ def build_chart(payload: dict) -> dict:
     birth_time = payload.get("timeOfBirth")
 
     latitude, longitude, tz_name = geocode_location(place)
-    tz_label = tz_name or "UTC"
     dt_utc = normalize_birth_datetime(birth_date, birth_time, timezone_name=tz_name)
+    local_dt = dt_utc.astimezone(ZoneInfo(tz_name)) if tz_name else dt_utc
+    offset_hours = (local_dt.utcoffset().total_seconds() / 3600.0) if local_dt.utcoffset() else 0.0
+    tz_label = f"{tz_name} (UTC{offset_hours:+.1f})" if tz_name else "UTC (UTC+0)"
     ut_dt = dt_utc.astimezone(timezone.utc)
 
     bharat = convert_birth_details(birth_date, birth_time, place)
-    bharat_label = f"{bharat.saka_date.day} {bharat.saka_date.month} {bharat.saka_date.year} Śaka | Tithi {bharat.tithi_number} ({bharat.tithi_name}), Nakshatra {bharat.nakshatra}"
+    bharat_label = " ".join(
+        [
+            f"{bharat.saka_date.day} {bharat.saka_date.month} {bharat.saka_date.year} Śaka",
+            f"Tithi {bharat.tithi_number} ({bharat.tithi_name})",
+            f"Nakshatra {bharat.nakshatra}",
+            f"Yoga {bharat.yoga}",
+            f"Karana {bharat.karana}",
+            f"Weekday {bharat.weekday}",
+        ]
+    )
 
     if not has_swisseph():
         raise RuntimeError(
