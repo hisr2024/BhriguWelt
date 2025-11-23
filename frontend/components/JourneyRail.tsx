@@ -4,14 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-type JourneyStep = {
+export type JourneyStep = {
   label: string;
   href: string;
   description: string;
   matchers?: string[];
 };
 
-const STEPS: JourneyStep[] = [
+export const JOURNEY_STEPS: JourneyStep[] = [
   {
     label: "Birth Input",
     href: "/experience#birth",
@@ -82,7 +82,7 @@ export default function JourneyRail() {
   const normalizedPath = normalizePath(pathname || "/");
 
   const activeIndex = useMemo(() => {
-    return STEPS.findIndex((step) => {
+    return JOURNEY_STEPS.findIndex((step) => {
       const url = new URL(step.href, "http://placeholder.local");
       const stepPath = normalizePath(url.pathname);
       const matchesPath = normalizedPath === stepPath || normalizedPath.startsWith(stepPath);
@@ -95,7 +95,7 @@ export default function JourneyRail() {
   const resolvedIndex = activeIndex === -1 ? 0 : activeIndex;
 
   useEffect(() => {
-    const currentLabel = STEPS[resolvedIndex]?.label;
+    const currentLabel = JOURNEY_STEPS[resolvedIndex]?.label;
     if (!currentLabel || typeof window === "undefined") return;
     setCompletedSteps((prev) => {
       if (prev.includes(currentLabel)) return prev;
@@ -106,7 +106,7 @@ export default function JourneyRail() {
   }, [resolvedIndex]);
 
   const completedCount = Math.max(completedSteps.length, resolvedIndex + 1);
-  const progressPercent = Math.round((completedCount / STEPS.length) * 100);
+  const progressPercent = Math.round((completedCount / JOURNEY_STEPS.length) * 100);
 
   const toggleCollapsed = () => {
     const next = !collapsed;
@@ -140,7 +140,7 @@ export default function JourneyRail() {
           </div>
 
           <ol className="journey-rail__list" aria-label="Experience steps">
-            {STEPS.map((step, index) => {
+            {JOURNEY_STEPS.map((step, index) => {
               const isActive = index === resolvedIndex;
               const isComplete = completedSteps.includes(step.label) || index < resolvedIndex;
               return (

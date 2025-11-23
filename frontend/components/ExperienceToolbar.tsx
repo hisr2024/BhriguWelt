@@ -65,6 +65,8 @@ export default function ExperienceToolbar() {
   const [soundscape, setSoundscape] = useState(() => readStoredPreferences().soundscape);
   const [haptics, setHaptics] = useState(() => readStoredPreferences().haptics);
   const [microAnimations, setMicroAnimations] = useState(() => readStoredPreferences().microAnimations);
+  const [gestureControls, setGestureControls] = useState(false);
+  const [soundscapeLevel, setSoundscapeLevel] = useState(70);
   const speechSupported = typeof window !== "undefined" && Boolean(window.speechSynthesis);
 
   const persistPreferences = useCallback(
@@ -163,6 +165,10 @@ export default function ExperienceToolbar() {
     document.body.dataset.animations = microAnimations ? "on" : "off";
   }, [microAnimations]);
 
+  useEffect(() => {
+    document.body.dataset.gestures = gestureControls ? "on" : "off";
+  }, [gestureControls]);
+
   return (
     <section className="experience-toolbar" aria-label="Accessibility and preference toggles">
       <div className="experience-toolbar__controls">
@@ -207,6 +213,14 @@ export default function ExperienceToolbar() {
           />
           <span>Micro-animations</span>
         </label>
+        <label className="toggle">
+          <input
+            type="checkbox"
+            checked={gestureControls}
+            onChange={(event) => setGestureControls(event.target.checked)}
+          />
+          <span>Gesture controls</span>
+        </label>
         <div className="font-scale" aria-label="Adjust font size">
           <button type="button" onClick={() => updateScale(fontScale - 0.1)}>
             A-
@@ -231,8 +245,38 @@ export default function ExperienceToolbar() {
           </button>
         </div>
       </div>
+      <div className="experience-toolbar__actions" role="group" aria-label="Immersive feedback controls">
+        <label className="assistive-slider" htmlFor="soundscape-level">
+          Soundscape level
+          <input
+            id="soundscape-level"
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            value={soundscapeLevel}
+            onChange={(event) => {
+              const value = Number(event.target.value);
+              setSoundscapeLevel(value);
+              if (soundscape) {
+                playTone(300 + value * 0.8, 80);
+              }
+            }}
+          />
+        </label>
+        <button
+          type="button"
+          className="ghost-button small"
+          onClick={() => {
+            if (soundscape) playTone(540, 160);
+            if (haptics && navigator.vibrate) navigator.vibrate([10, 30, 10]);
+          }}
+        >
+          Test sound & haptics
+        </button>
+      </div>
       <p className="muted experience-toolbar__hint">
-        Toggle immersion on or off to suit your focus—contrast, voice, soundscapes, subtle animations, and haptics all respect the setting.
+        Toggle immersion on or off to suit your focus—contrast, voice, soundscapes, subtle animations, haptics, and gesture prompts all respect the setting.
       </p>
     </section>
   );

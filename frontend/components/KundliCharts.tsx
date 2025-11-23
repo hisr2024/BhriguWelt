@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { areMicroAnimationsAllowed } from "@/lib/immersive";
 import { ChartHouse, DashaPeriod } from "@/types/astro";
@@ -29,6 +29,11 @@ interface Props {
 
 type DetailLevel = "concise" | "advanced";
 type LayerKey = "foundation" | "interpretations" | "horoscope" | "past-future" | "matchmaking";
+type D3Lite = {
+  select: (...args: any[]) => any;
+  zoom: (...args: any[]) => any;
+  zoomIdentity: any;
+};
 
 export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas = [], compatibilityOverlay }: Props) {
   const [animateCharts, setAnimateCharts] = useState(false);
@@ -36,6 +41,10 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
   const [activeDetail, setActiveDetail] = useState<InterpretationDetail | null>(null);
   const [interpretationLayer, setInterpretationLayer] = useState<LayerKey>("foundation");
   const [journeyAnchor, setJourneyAnchor] = useState<string | null>(null);
+  const [d3Ready, setD3Ready] = useState(false);
+  const [constellationHint, setConstellationHint] = useState("Pinch or scroll to zoom constellations");
+  const constellationRef = useRef<SVGSVGElement | null>(null);
+  const zoomHandleRef = useRef<{ zoom: any; svg: any } | null>(null);
 
   useEffect(() => {
     const refresh = () => setAnimateCharts(areMicroAnimationsAllowed());
@@ -47,6 +56,24 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
     observer.observe(document.body, { attributes: true, attributeFilter: ["data-animations"] });
 
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if ((window as typeof window & { d3?: D3Lite }).d3) {
+      setD3Ready(true);
+      return;
+    }
+
+    const scriptId = "d3-cdn-script";
+    if (document.getElementById(scriptId)) return;
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.src = "https://d3js.org/d3.v7.min.js";
+    script.async = true;
+    script.onload = () => setD3Ready(true);
+    script.onerror = () => setConstellationHint("D3 failed to load; retry or check connectivity.");
+    document.body.appendChild(script);
   }, []);
 
   const readyLabel = useMemo(() => (rashiChart.length || bhavaChart.length ? "Chart ready" : "Awaiting birth details"), [
@@ -121,6 +148,79 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
     ],
     [bhavaChart.length, compatibilityOverlay, dashas.length, rashiChart.length],
   );
+
+  const constellationNodes = useMemo(
+    () =>
+      (rashiChart.length ? rashiChart : bhavaChart).map((house, index) => {
+        const angle = ((house.index - 3) * Math.PI) / 6; // start top
+        const radius = 110 + (index % 2 === 0 ? 12 : -8);
+        return {
+          ...house,
+          x: 180 + radius * Math.cos(angle),
+          y: 140 + radius * Math.sin(angle),
+        };
+      }),
+    [bhavaChart, rashiChart],
+  );
+
+  useEffect(() => {
+    if (!d3Ready || !constellationRef.current) return;
+    const d3 = (window as typeof window & { d3?: D3Lite }).d3;
+    if (!d3) return;
+
+    const svg = d3.select(constellationRef.current);
+    svg.selectAll("*").remove();
+    const layer = svg.append("g").attr("class", "constellation-layer");
+
+    layer
+      .selectAll("line")
+      .data(constellationNodes)
+      .enter()
+      .append("line")
+      .attr("x1", (d: any) => d.x)
+      .attr("y1", (d: any) => d.y)
+      .attr("x2", (d: any, i: number, arr: any[]) => arr[(i + 1) % arr.length].x)
+      .attr("y2", (d: any, i: number, arr: any[]) => arr[(i + 1) % arr.length].y)
+      .attr("class", "constellation-line");
+
+    const nodes = layer
+      .selectAll("circle")
+      .data(constellationNodes)
+      .enter()
+      .append("circle")
+      .attr("cx", (d: any) => d.x)
+      .attr("cy", (d: any) => d.y)
+      .attr("r", 8)
+      .attr("class", "constellation-node")
+      .on("click", (_event: unknown, d: ChartHouse) => {
+        const detail = buildHouseDetail(d);
+        setActiveDetail(detail);
+        setInterpretationLayer("interpretations");
+      });
+
+    nodes.append("title").text((d: any) => `${d.sign} • House ${d.index} • ${d.occupants.join(", ") || "Empty"}`);
+
+    layer
+      .selectAll("text")
+      .data(constellationNodes)
+      .enter()
+      .append("text")
+      .attr("x", (d: any) => d.x + 12)
+      .attr("y", (d: any) => d.y + 4)
+      .text((d: any) => d.sign)
+      .attr("class", "constellation-label");
+
+    const zoom = d3
+      .zoom()
+      .scaleExtent([0.8, 3])
+      .on("zoom", (event: { transform: unknown }) => {
+        layer.attr("transform", event.transform);
+        setConstellationHint("Zoomed—drag to pan, tap a node to anchor interpretations");
+      });
+
+    svg.call(zoom);
+    zoomHandleRef.current = { zoom, svg };
+  }, [constellationNodes, d3Ready]);
 
   const buildHouseDetail = (house: ChartHouse, occupant?: string): InterpretationDetail => {
     const occupantLabel = occupant || (house.occupants.length ? house.occupants.join(", ") : "Empty house");
@@ -251,6 +351,59 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
     );
   };
 
+  const renderConstellationLayer = () => (
+    <div className="kundli-card">
+      <header className="section-heading">
+        <p className="eyebrow">Interactive constellations</p>
+        <h4>Zoom & pan the sky</h4>
+        <p className="muted">Click houses or planets on the canvas to reveal layered interpretations.</p>
+      </header>
+      <div className="constellation-actions">
+        <div className="button-row" role="group" aria-label="Zoom controls">
+          <button
+            type="button"
+            className="ghost-button small"
+            onClick={() => zoomHandleRef.current?.svg?.transition?.().call?.(zoomHandleRef.current.zoom.scaleBy, 1.2)}
+          >
+            Zoom in
+          </button>
+          <button
+            type="button"
+            className="ghost-button small"
+            onClick={() => zoomHandleRef.current?.svg?.transition?.().call?.(zoomHandleRef.current.zoom.scaleBy, 0.8)}
+          >
+            Zoom out
+          </button>
+          <button
+            type="button"
+            className="ghost-button small"
+            onClick={() =>
+              zoomHandleRef.current?.svg?.transition?.().call?.(
+                zoomHandleRef.current.zoom.transform,
+                (window as typeof window & { d3?: D3Lite }).d3?.zoomIdentity ?? { k: 1, x: 0, y: 0 },
+              )
+            }
+          >
+            Reset view
+          </button>
+        </div>
+        <p className="microcopy" aria-live="polite">
+          {d3Ready ? constellationHint : "Loading D3.js for zoomable constellations…"}
+        </p>
+      </div>
+      <div className="constellation-map" role="img" aria-label="Zoomable constellation map">
+        <svg ref={constellationRef} viewBox="0 0 360 280">
+          <defs>
+            <linearGradient id="starGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#f9d9b5" />
+              <stop offset="100%" stopColor="#9ad3e8" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+    </div>
+  );
+
   const renderChart = (label: string, houses: ChartHouse[], animate: boolean) => {
     const size = 320;
     const center = size / 2;
@@ -285,7 +438,14 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
                 const textX = center + (radius - 32) * Math.cos(toRadians(midAngle));
                 const textY = center + (radius - 32) * Math.sin(toRadians(midAngle));
                 return (
-                  <g key={house.index}>
+                  <g
+                    key={house.index}
+                    className="house-hit"
+                    onClick={() => {
+                      setActiveDetail(buildHouseDetail(house));
+                      setInterpretationLayer("interpretations");
+                    }}
+                  >
                     <line x1={center} y1={center} x2={x1} y2={y1} className="kundli-spoke" />
                     {house.index === 12 && <line x1={center} y1={center} x2={x2} y2={y2} className="kundli-spoke" />}
                     <text x={textX} y={textY} textAnchor="middle" className="kundli-label">
@@ -317,7 +477,14 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
                   const textX = center + (radius - 32) * Math.cos(toRadians(midAngle));
                   const textY = center + (radius - 32) * Math.sin(toRadians(midAngle));
                   return (
-                    <g key={house.index}>
+                    <g
+                      key={house.index}
+                      className="house-hit"
+                      onClick={() => {
+                        setActiveDetail(buildHouseDetail(house));
+                        setInterpretationLayer("interpretations");
+                      }}
+                    >
                       <line x1={center} y1={center} x2={x1} y2={y1} className="kundli-spoke" />
                       {house.index === 12 && <line x1={center} y1={center} x2={x2} y2={y2} className="kundli-spoke" />}
                       <text x={textX} y={textY} textAnchor="middle" className="kundli-label">
@@ -388,6 +555,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
   return (
     <div className="kundli-grid">
       {renderInterpretationLayers()}
+      {renderConstellationLayer()}
       <div className="kundli-card">
         <header className="section-heading">
           <p className="eyebrow">Detail mode</p>

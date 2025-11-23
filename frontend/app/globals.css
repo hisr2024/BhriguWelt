@@ -676,6 +676,53 @@ body[data-animations="off"] .prediction-card__body {
   opacity: 0.9;
 }
 
+.house-hit {
+  cursor: pointer;
+}
+
+.constellation-map {
+  border: 1px dashed #e5ddce;
+  border-radius: 14px;
+  padding: 0.5rem;
+  background: linear-gradient(135deg, #fdfbf6, #eff5f3);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+}
+
+.constellation-layer {
+  transition: transform 0.3s ease;
+}
+
+.constellation-line {
+  stroke: rgba(31, 42, 51, 0.18);
+  stroke-width: 1.4px;
+}
+
+.constellation-node {
+  fill: url(#starGradient);
+  stroke: #1f2a33;
+  stroke-width: 1px;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.1));
+  cursor: pointer;
+}
+
+.constellation-node:hover,
+.constellation-node:focus {
+  fill: #f7c59f;
+}
+
+.constellation-label {
+  font-size: 0.75rem;
+  fill: #2e3a44;
+  font-weight: 700;
+}
+
+.constellation-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
 .kundli-card:not(.kundli-card--animated) .kundli-planet,
 body[data-animations="off"] .kundli-planet {
   display: none !important;
@@ -842,6 +889,145 @@ body[data-animations="off"] .kundli-planet {
 
 .journey-rail__step[open] {
   box-shadow: var(--card-shadow);
+}
+
+.wizard-rail {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 16px;
+  border: 1px solid #e5ddce;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(236, 243, 243, 0.95));
+  box-shadow: var(--card-shadow);
+}
+
+.wizard-rail__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.wizard-rail__progress {
+  min-width: 180px;
+  background: #f2e7d9;
+  border-radius: 999px;
+  height: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.wizard-rail__progress-bar {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #d97757, #86e3ce);
+}
+
+.wizard-rail__progress-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-top: 0.2rem;
+}
+
+.wizard-rail__steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wizard-rail__step {
+  border: 1px solid #e7dcc7;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.wizard-rail__step.is-active {
+  border-color: #d97757;
+}
+
+.wizard-rail__step.is-complete .wizard-rail__step-label {
+  color: #1f2a33;
+}
+
+.wizard-rail__step-link {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.wizard-rail__step-label {
+  font-weight: 700;
+}
+
+.wizard-rail__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.map-picker {
+  margin: 1rem 0;
+  padding: 0.85rem;
+  border: 1px solid #e5ddce;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fdfbf6, #eef3f2);
+}
+
+.map-picker__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.map-picker__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.map-picker__canvas {
+  margin-top: 0.5rem;
+  border-radius: 12px;
+  border: 1px dashed #d9cbb5;
+  min-height: 180px;
+  background: radial-gradient(circle at 20% 20%, rgba(150, 200, 220, 0.2), transparent 40%),
+    radial-gradient(circle at 70% 60%, rgba(250, 200, 170, 0.2), transparent 40%),
+    #fff;
+}
+
+.map-picker__canvas p {
+  padding: 0.5rem;
+}
+
+.map-picker__footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.saka-highlight {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  border: 1px solid #e6d7c2;
+  background: linear-gradient(135deg, #fffaf2, #f3f7f5);
+  align-items: center;
+}
+
+.experience-toolbar__actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 /* Orbit timeline */
