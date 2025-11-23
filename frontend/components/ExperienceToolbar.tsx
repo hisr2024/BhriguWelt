@@ -143,7 +143,7 @@ export default function ExperienceToolbar() {
           <input
             type="checkbox"
             checked={highContrast}
-            onChange={(event) => setHighContrast(event.target.checked)}
+            onChange={(event) => toggleContrast(event.target.checked)}
           />
           <span>High contrast</span>
         </label>
@@ -151,7 +151,8 @@ export default function ExperienceToolbar() {
           <input
             type="checkbox"
             checked={voiceOver}
-            onChange={(event) => setVoiceOver(event.target.checked)}
+            onChange={(event) => toggleVoice(event.target.checked)}
+            aria-describedby={speechSupported ? undefined : "voice-unsupported"}
           />
           <span>Voice-over cues</span>
         </label>
@@ -180,11 +181,25 @@ export default function ExperienceToolbar() {
           <span>Micro-animations</span>
         </label>
         <div className="font-scale" aria-label="Adjust font size">
-          <button type="button" onClick={() => setFontScale((value) => Math.max(0.9, value - 0.1))}>
+          <button type="button" onClick={() => updateScale(fontScale - 0.1)}>
             A-
           </button>
-          <span>{Math.round(fontScale * 100)}%</span>
-          <button type="button" onClick={() => setFontScale((value) => Math.min(1.2, value + 0.1))}>
+          <label className="font-scale__slider">
+            <span className="sr-only">Font size slider</span>
+            <input
+              type="range"
+              min="0.9"
+              max="1.2"
+              step="0.05"
+              value={fontScale}
+              onChange={(event) => updateScale(Number(event.target.value))}
+              aria-valuemin={0.9}
+              aria-valuemax={1.2}
+              aria-valuenow={fontScale}
+            />
+          </label>
+          <span aria-live="polite">{Math.round(fontScale * 100)}%</span>
+          <button type="button" onClick={() => updateScale(fontScale + 0.1)}>
             A+
           </button>
         </div>

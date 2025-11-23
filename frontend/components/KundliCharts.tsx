@@ -4,10 +4,19 @@ import { useEffect, useState } from "react";
 import { areMicroAnimationsAllowed } from "@/lib/immersive";
 import { ChartHouse, DashaPeriod } from "@/types/astro";
 
+interface CompatibilityOverlay {
+  primaryLabel: string;
+  partnerLabel: string;
+  harmonyIndex?: number;
+  sharedThemes: { label: string; alignment?: number; tags?: string[] }[];
+}
+
 interface Props {
   rashiChart?: ChartHouse[];
   bhavaChart?: ChartHouse[];
+  partnerChart?: ChartHouse[];
   dashas?: DashaPeriod[];
+  compatibilityOverlay?: CompatibilityOverlay;
 }
 
 function renderChart(label: string, houses: ChartHouse[], animate: boolean) {
@@ -17,11 +26,23 @@ function renderChart(label: string, houses: ChartHouse[], animate: boolean) {
   const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
   const overlays = houses[0]?.bhrigu_notes || [];
 
+  const buildHouseDetail = (house: ChartHouse, occupant?: string): InterpretationDetail => {
+    const occupantLabel = occupant || (house.occupants.length ? house.occupants.join(", ") : "Empty house");
+    return {
+      label: occupant ? `${occupant} in house ${house.index}` : `House ${house.index}`,
+      summary: `${house.sign} focus with ${occupantLabel.toLowerCase()} influencing this span of life.`,
+      highlight: occupant || house.sign,
+      notes: detailLevel === "advanced" ? house.bhrigu_notes : undefined,
+    };
+  };
+
+  const isActiveHouse = (house: ChartHouse) => activeDetail?.label.includes(`house ${house.index}`);
+
   return (
     <div className={`kundli-card ${animate ? "kundli-card--animated" : ""}`}>
       <header className="section-heading">
         <p className="eyebrow">{label}</p>
-        <h4>{houses.length ? "Bhava alignment" : "Awaiting birth details"}</h4>
+        <h4>{houses.length ? readyLabel : "Awaiting birth details"}</h4>
       </header>
       {houses.length > 0 ? (
         <div className="kundli-visual">
@@ -67,7 +88,7 @@ function renderChart(label: string, houses: ChartHouse[], animate: boolean) {
       ) : (
         <p className="muted">Charts render after the API responds.</p>
       )}
-      {overlays.length > 0 && (
+      {overlays.length > 0 && detailLevel === "advanced" && (
         <ul className="kudos-list" style={{ marginTop: "0.75rem" }}>
           {overlays.map((note) => (
             <li key={note}>{note}</li>
@@ -120,6 +141,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
           <p className="muted">Dasha cycles appear alongside the predictions.</p>
         )}
       </div>
+      {compatibilityOverlay && renderCompatibilityOverlay(compatibilityOverlay)}
     </div>
   );
 }

@@ -19,6 +19,10 @@
 - Frontend: use TypeScript, functional React components, and Next.js conventions.
 - Avoid adding try/except around imports per repo guidance.
 
+## Design tools
+- Ideation happens in **Figma** for flows, wireframes, and UI mocks.
+- Attach Figma links or screenshots to PRs when altering core layouts so reviewers can trace visual intent.
+
 ## Running tests
 - Backend: `cd backend && PYTHONPATH=src pytest`
 - Frontend lint: `cd frontend && npm run lint`

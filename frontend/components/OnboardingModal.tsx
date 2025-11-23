@@ -1,5 +1,6 @@
 'use client';
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 const GLOSSARY = [
@@ -23,19 +24,73 @@ const GLOSSARY = [
 const JOURNEY_STEPS = [
   {
     title: "Birth input",
-    detail: "Share name, date, time, and place. We pre-check formats and timezones.",
+    detail: "Share name, date, time, and place with timezone hints and guardrails.",
   },
   {
-    title: "Chart generation",
-    detail: "See Śaka conversion, house wheel, and signatures with soft motion.",
+    title: "Chart",
+    detail: "See Śaka conversion, house wheels, and signatures with soft motion.",
   },
   {
     title: "Interpretations",
     detail: "Tap cards for bite-sized readings; expand for deeper context when ready.",
   },
   {
-    title: "Timelines & remedies",
+    title: "Horoscopes",
+    detail: "Switch between daily, weekly, and Śaka-ready calendar helpers.",
+  },
+  {
+    title: "Past-Life",
+    detail: "Walk through karmic arcs and narrative breadcrumbs for lessons learned.",
+  },
+  {
+    title: "Future",
     detail: "Scroll the orbit timeline for dasha, transit, and remedy prompts.",
+  },
+  {
+    title: "Matchmaking",
+    detail: "Blend guna scoring with lifestyle filters and ritual suggestions.",
+  },
+];
+
+const GUIDED_TOURS = [
+  {
+    title: "Tooltip & glossary tour",
+    copy: "Highlights input hints, glossary toggles, and the new persistent rail.",
+    action: "Preview form guidance",
+    href: "/experience#birth",
+  },
+  {
+    title: "Chart exploration",
+    copy: "Shows hover states, house tap feedback, and interpretation breadcrumbs.",
+    action: "Jump to charts",
+    href: "/experience#chart",
+  },
+  {
+    title: "Timeline coaching",
+    copy: "Walks through future and matchmaking flows with thumb-friendly chips.",
+    action: "Open journeys",
+    href: "/future",
+  },
+];
+
+const BREADCRUMB_NOTES = [
+  "Tap the highlighted dot to return to your starting point.",
+  "Breadcrumbs mirror the persistent rail on every page.",
+  "Completed steps will pulse once before dimming.",
+];
+
+const BEGINNER_TIPS = [
+  {
+    label: "Look for info dots",
+    copy: "Tap the ℹ️ dots beside form labels to see a one-line meaning without leaving the screen.",
+  },
+  {
+    label: "Color tells state",
+    copy: "Aqua is calm/ready, amber means action needed. The same palette is used across cards and charts.",
+  },
+  {
+    label: "Swipe on mobile",
+    copy: "Cards and the timeline respond to left/right swipes so you can move with your thumb.",
   },
 ];
 
@@ -44,10 +99,19 @@ export default function OnboardingModal() {
   const [step, setStep] = useState(0);
   const [voice, setVoice] = useState(false);
   const [haptics, setHaptics] = useState(false);
+  const [beginnerMode, setBeginnerMode] = useState(true);
 
   useEffect(() => {
     const seen = typeof window !== "undefined" ? localStorage.getItem("bhrigu-onboarded") : null;
     if (!seen) setOpen(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const savedBeginner = localStorage.getItem("bhrigu-beginner-mode");
+    if (savedBeginner) {
+      setBeginnerMode(savedBeginner === "true");
+    }
   }, []);
 
   useEffect(() => {
@@ -63,6 +127,11 @@ export default function OnboardingModal() {
   }, [open, step, voice]);
 
   const progressPercent = useMemo(() => Math.round(((step + 1) / JOURNEY_STEPS.length) * 100), [step]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("bhrigu-beginner-mode", beginnerMode ? "true" : "false");
+  }, [beginnerMode]);
 
   const closeModal = () => {
     setOpen(false);
@@ -102,6 +171,20 @@ export default function OnboardingModal() {
         </header>
 
         <div className="onboard-body">
+          <div className="beginner-toggle">
+            <label className="toggle">
+              <input
+                type="checkbox"
+                checked={beginnerMode}
+                onChange={(event) => setBeginnerMode(event.target.checked)}
+              />
+              <span>Beginner tooltips</span>
+            </label>
+            <p className="microcopy">
+              Keep helper tips pinned to cards, timeline pills, and glossary badges while you explore.
+            </p>
+          </div>
+
           <div className="journey-steps" aria-live="polite">
             {JOURNEY_STEPS.map((item, index) => (
               <button
@@ -118,6 +201,25 @@ export default function OnboardingModal() {
                 </div>
               </button>
             ))}
+          </div>
+
+          <div className="beginner-tips" aria-label="Beginner tips list">
+            <div className="beginner-tips__heading">
+              <p className="eyebrow">Quick tooltips</p>
+              <p className="muted">Short notes mirror the helper UI you will see across the app.</p>
+            </div>
+            <div className="beginner-tips__list" role="list">
+              {BEGINNER_TIPS.map((tip) => (
+                <div
+                  key={tip.label}
+                  className={`beginner-tip ${beginnerMode ? "is-active" : "is-muted"}`}
+                  role="note"
+                >
+                  <p className="badge">{tip.label}</p>
+                  <p className="muted">{tip.copy}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="glossary">
