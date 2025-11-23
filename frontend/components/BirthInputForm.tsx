@@ -62,6 +62,9 @@ export default function BirthInputForm() {
   const [validations, setValidations] = useState<ValidationState>({});
   const [locationStatus, setLocationStatus] = useState("Waiting for map suggestions…");
   const [assistiveMode, setAssistiveMode] = useState(false);
+  const [voiceGuidance, setVoiceGuidance] = useState(false);
+  const [fontScale, setFontScale] = useState(1);
+  const [mapPreview, setMapPreview] = useState<string | null>(null);
   const { triggerSubmitFeedback } = useImmersiveFeedback();
   const placeInputRef = useRef<HTMLInputElement | null>(null);
   const autocompleteRef = useRef<GoogleMapsAutocomplete | null>(null);
@@ -92,6 +95,12 @@ export default function BirthInputForm() {
     if (!hasValidationIssues) score += 10;
     return Math.min(100, score);
   }, [details.birthDate, details.birthPlace, details.birthTime, hasValidationIssues]);
+
+  const placeSuggestion = useMemo(() => {
+    if (!details.birthPlace) return null;
+    if (!details.birthPlace.includes(",")) return "Add a city and country (e.g., Jaipur, Bharat) for map confidence.";
+    return null;
+  }, [details.birthPlace]);
 
   const smartSuggestions = useMemo(() => {
     const hints: string[] = [];
@@ -206,6 +215,16 @@ export default function BirthInputForm() {
   }, [details.birthDate]);
 
   useEffect(() => {
+    if (smartSuggestions.length) {
+      speak(smartSuggestions[0]);
+    }
+  }, [smartSuggestions]);
+
+  useEffect(() => {
+    speak(locationStatus);
+  }, [locationStatus]);
+
+  useEffect(() => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey || !placeInputRef.current || autocompleteRef.current) return;
 
@@ -227,6 +246,7 @@ export default function BirthInputForm() {
         if (coords) {
           const lat = coords.lat();
           const lng = coords.lng();
+          setMapPreview(`${lat.toFixed(3)}, ${lng.toFixed(3)}`);
           const timestamp = Math.floor(Date.now() / 1000);
           setLocationStatus("Detecting timezone from map position…");
           fetch(
@@ -237,6 +257,7 @@ export default function BirthInputForm() {
               if (payload.timeZoneId) {
                 setDetails((prev) => ({ ...prev, timezone: payload.timeZoneId ?? prev.timezone }));
                 setLocationStatus(`Timezone auto-set to ${payload.timeZoneId}`);
+                speak(`Timezone auto-set to ${payload.timeZoneId}`);
               } else {
                 setLocationStatus("Map lookup active; timezone unchanged");
               }
@@ -245,6 +266,7 @@ export default function BirthInputForm() {
         }
       });
       setLocationStatus("Map suggestions ready. Pick a result to auto-fill.");
+      speak("Map suggestions ready. Pick a result to auto-fill.");
     };
 
     if (window.google?.maps?.places) {
@@ -264,9 +286,19 @@ export default function BirthInputForm() {
 
   useEffect(() => {
     const root = document.documentElement;
-    root.style.setProperty("--font-scale", assistiveMode ? "1.08" : "1");
+    const activeScale = assistiveMode ? Math.max(fontScale, 1.08) : fontScale;
+    root.style.setProperty("--font-scale", activeScale.toString());
     return () => root.style.setProperty("--font-scale", "1");
-  }, [assistiveMode]);
+  }, [assistiveMode, fontScale]);
+
+  const speak = (text: string) => {
+    if (!voiceGuidance) return;
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-IN";
+    window.speechSynthesis.speak(utterance);
+  };
 
   const liveGrid = houseGrid.length ? houseGrid : deriveHouseGrid(details);
 
@@ -288,6 +320,25 @@ export default function BirthInputForm() {
           >
             {assistiveMode ? "Comfort font + voice prompts on" : "Enable comfort font & guided hints"}
           </button>
+          <button
+            type="button"
+            className={`assistive-chip ${voiceGuidance ? "assistive-chip--active" : ""}`}
+            onClick={() => setVoiceGuidance((prev) => !prev)}
+          >
+            {voiceGuidance ? "Voice guidance active" : "Play voice guidance"}
+          </button>
+          <label className="assistive-slider" htmlFor="font-scale-slider">
+            Font size
+            <input
+              id="font-scale-slider"
+              type="range"
+              min={0.94}
+              max={1.2}
+              step={0.02}
+              value={fontScale}
+              onChange={(event) => setFontScale(Number(event.target.value))}
+            />
+          </label>
           <div className="confidence-meter" role="img" aria-label={`Confidence ${completionScore}%`}>
             <div className="confidence-meter__track">
               <div className="confidence-meter__bar" style={{ width: `${completionScore}%` }} />
@@ -361,9 +412,15 @@ export default function BirthInputForm() {
               aria-describedby={validations.pob ? "birth-pob-hint" : "birth-place-hint"}
               required
             />
-              <p className="microcopy" id={validations.pob ? "birth-pob-hint" : "birth-place-hint"} role="status">
-                {validations.pob || locationStatus || "Try adding city and country (e.g., Jaipur, Bharat)."}
+            <p className="microcopy" id={validations.pob ? "birth-pob-hint" : "birth-place-hint"} role="status">
+              {validations.pob || locationStatus || "Try adding city and country (e.g., Jaipur, Bharat)."}
+            </p>
+            {placeSuggestion ? <p className="microcopy">{placeSuggestion}</p> : null}
+            {mapPreview ? (
+              <p className="microcopy" aria-live="polite">
+                Map anchor: {mapPreview} (double tap to refine on mobile gestures)
               </p>
+            ) : null}
           </div>
           <div className="field">
             <label htmlFor="birth-timezone">Timezone</label>
