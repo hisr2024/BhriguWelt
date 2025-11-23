@@ -681,6 +681,13 @@ def _logistic_model(scoring_config: Dict[str, object]) -> Any:
     features, labels = _training_matrix(scoring_config)
     trained_parameters: Dict[str, object] | None = scoring_config.get("ml_trained_parameters")  # type: ignore[assignment]
 
+    if trained_parameters:
+        raw_weights = trained_parameters.get("coefficients") or trained_parameters.get("weights")
+        weights = [float(value) for value in raw_weights or []]
+        intercept = float(trained_parameters.get("intercept", 0.0))
+        if weights:
+            return _FallbackLogistic(weights, intercept=intercept)
+
     if LogisticRegression is not None:
         try:
             model = LogisticRegression(
@@ -693,13 +700,6 @@ def _logistic_model(scoring_config: Dict[str, object]) -> Any:
             return model
         except Exception:  # pragma: no cover - fall back to static coefficients
             model = None
-
-    if trained_parameters:
-        raw_weights = trained_parameters.get("coefficients") or trained_parameters.get("weights")
-        weights = [float(value) for value in raw_weights or []]
-        intercept = float(trained_parameters.get("intercept", 0.0))
-        if weights:
-            return _FallbackLogistic(weights, intercept=intercept)
 
     return _train_fallback_model(features, labels, scoring_config)
 
