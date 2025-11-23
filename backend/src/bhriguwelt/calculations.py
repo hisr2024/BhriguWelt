@@ -24,6 +24,13 @@ except Exception:  # pragma: no cover - offline or sandboxed environments
 from .astronomical_calculations import auto_snapshot_kwargs, derive_transit_snapshot, normalize_birth_datetime
 from .config import load_runtime_config
 
+_DISABLE_ML_WEIGHTING = os.environ.get("BHRIGUWELT_DISABLE_ML_WEIGHTING", "").lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+
 
 @dataclass
 class CelestialSnapshot:
@@ -767,9 +774,15 @@ def _logistic_model(scoring_config: Dict[str, object]) -> Any:
     features, labels = _training_matrix(scoring_config)
     trained_parameters: Dict[str, object] | None = scoring_config.get("ml_trained_parameters")  # type: ignore[assignment]
 
-    pretrained = _parameters_to_model(trained_parameters)
-    if pretrained:
-        return pretrained
+    if _DISABLE_ML_WEIGHTING:
+        trained_parameters = None
+
+    if trained_parameters:
+        raw_weights = trained_parameters.get("coefficients") or trained_parameters.get("weights")
+        weights = [float(value) for value in raw_weights or []]
+        intercept = float(trained_parameters.get("intercept", 0.0))
+        if weights:
+            return _FallbackLogistic(weights, intercept=intercept)
 
     if LogisticRegression is not None:
         try:

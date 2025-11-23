@@ -1,9 +1,12 @@
 """Utilities for feature extraction and ML training on user feedback."""
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+import json
+import logging
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Tuple
+from tempfile import TemporaryDirectory
+from typing import Any, Dict, Tuple
 
 import joblib
 import numpy as np
@@ -16,73 +19,14 @@ from sklearn.pipeline import Pipeline
 
 from .feedback import load_feedback_dataframe
 
+logger = logging.getLogger(__name__)
+
 _MODEL_DIR = Path(__file__).resolve().parents[1] / "models"
-_DEFAULT_MODEL_PATH = _MODEL_DIR / "feedback_rating_model.joblib"
+_DEFAULT_MODEL_PATH = _MODEL_DIR / "feedback_promoter_model.joblib"
+_DEFAULT_METADATA_PATH = _MODEL_DIR / "feedback_promoter_model.json"
 
 
-@dataclass
-class TrainingSummary:
-    model_path: str
-    samples: int
-    feature_count: int
-    mae: float
-    r2: float
-
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
-
-
-def _coerce_float(value: Any) -> float | None:
-    if isinstance(value, bool):
-        return 1.0 if value else 0.0
-    if isinstance(value, (int, float, np.number)):
-        return float(value)
-    try:
-        if isinstance(value, str) and value.strip():
-            return float(value)
-    except ValueError:
-        return None
-    return None
-
-
-def _encode_principle_weights(inputs: Dict[str, Any]) -> Dict[str, float]:
-    features: Dict[str, float] = {}
-    weights = inputs.get("weights") or inputs.get("principle_weights")
-    if isinstance(weights, dict):
-        for name, value in weights.items():
-            coerced = _coerce_float(value)
-            if coerced is not None:
-                features[f"weight.{name}"] = coerced
-    return features
-
-
-def _encode_chart_markers(inputs: Dict[str, Any]) -> Dict[str, float]:
-    features: Dict[str, float] = {}
-    markers = inputs.get("chart_markers") or inputs.get("placements") or inputs.get("chart")
-    if isinstance(markers, dict):
-        items = markers.items()
-    elif isinstance(markers, list):
-        # Expected list of marker dicts like {"planet": "mars", "house": 3}
-        items = []
-        for marker in markers:
-            if not isinstance(marker, dict):
-                continue
-            planet = marker.get("planet") or marker.get("name")
-            house = _coerce_float(marker.get("house") or marker.get("position"))
-            if planet and house is not None:
-                features[f"chart.{planet}.house"] = house
-        return features
-    else:
-        items = []
-
-    for planet, value in items:
-        coerced = _coerce_float(value)
-        if coerced is not None:
-            features[f"chart.{planet}"] = coerced
-    return features
-
-
-def _flatten_numeric_signals(inputs: Dict[str, Any]) -> Dict[str, float]:
+def _extract_numeric_inputs(inputs: Dict[str, Any] | None) -> Dict[str, float]:
     numeric: Dict[str, float] = {}
     for key, value in inputs.items():
         if key in {"weights", "principle_weights", "chart_markers", "placements", "chart"}:
@@ -148,14 +92,27 @@ def train_feedback_model(
     feedback_frame: pd.DataFrame | None = None,
     *,
     model_path: Path | None = None,
-    n_estimators: int = 200,
-    max_depth: int | None = None,
-    test_size: float = 0.2,
-    random_state: int = 42,
-) -> TrainingSummary:
-    """Train a regression model to predict feedback ratings from request context."""
+    metadata_path: Path | None = None,
+    limit: int | None = None,
+) -> Dict[str, Any]:
+    """Train a simple classifier that predicts promoter feedback (4-5 ratings).
 
-    frame = feedback_frame if feedback_frame is not None else load_feedback_dataframe()
+    Parameters
+    ----------
+    feedback_frame:
+        Optional DataFrame to train on. If omitted, feedback is loaded from the
+        persistent SQLite database.
+    model_path:
+        Optional destination for the serialized model. Defaults to
+        ``backend/models/feedback_promoter_model.joblib``.
+    metadata_path:
+        Optional destination for the training metadata. Defaults to a JSON
+        manifest co-located with the serialized model.
+    limit:
+        Optional cap on the amount of feedback to train on, ordered by recency.
+    """
+
+    frame = feedback_frame if feedback_frame is not None else load_feedback_dataframe(limit=limit)
     if frame.empty:
         raise ValueError("Cannot train ML model without feedback entries")
 
@@ -171,19 +128,39 @@ def train_feedback_model(
     r2 = float(r2_score(test_y, predictions)) if len(test_y) > 1 else 1.0
 
     destination = model_path or _DEFAULT_MODEL_PATH
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(pipeline, destination)
+    metadata_destination = metadata_path or _DEFAULT_METADATA_PATH
 
-    vectorizer: DictVectorizer = pipeline.named_steps["vectorizer"]
-    feature_count = len(vectorizer.feature_names_)
+    previous_metadata = load_model_metadata(metadata_destination)
+    previous_features = set(previous_metadata.get("feature_names", []))
+    feature_names = list(features.columns)
+    new_features = sorted(set(feature_names) - previous_features)
+    dropped_features = sorted(previous_features - set(feature_names))
 
-    return TrainingSummary(
-        model_path=str(destination),
-        samples=int(len(frame)),
-        feature_count=int(feature_count),
-        mae=mae,
-        r2=r2,
+    metadata = {
+        "model_path": str(destination),
+        "metadata_path": str(metadata_destination),
+        "samples": int(len(frame)),
+        "feature_count": int(features.shape[1]),
+        "promoter_rate": float(target.mean()),
+        "accuracy": float(score),
+        "trained_at": datetime.utcnow().isoformat() + "Z",
+        "feature_names": feature_names,
+        "new_feature_count": len(new_features),
+        "dropped_feature_count": len(dropped_features),
+    }
+
+    _atomic_store_artifacts(pipeline, metadata, destination, metadata_destination)
+    logger.info(
+        "Trained feedback model",
+        extra={
+            "accuracy": metadata["accuracy"],
+            "samples": metadata["samples"],
+            "new_features": metadata["new_feature_count"],
+            "dropped_features": metadata["dropped_feature_count"],
+        },
     )
+
+    return metadata
 
 
 def load_trained_model(model_path: Path | None = None):
@@ -195,10 +172,45 @@ def load_trained_model(model_path: Path | None = None):
     return joblib.load(path)
 
 
+def load_model_metadata(metadata_path: Path | None = None) -> Dict[str, Any]:
+    """Load JSON metadata associated with the trained model if present."""
+
+    path = metadata_path or _DEFAULT_METADATA_PATH
+    if not path.exists():
+        return {}
+    with path.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def load_model_artifacts(
+    model_path: Path | None = None, metadata_path: Path | None = None
+) -> Tuple[Any, Dict[str, Any]]:
+    """Load the trained model alongside its metadata."""
+
+    model = load_trained_model(model_path=model_path)
+    metadata = load_model_metadata(metadata_path=metadata_path)
+    return model, metadata
+
+
+def _atomic_store_artifacts(
+    model: Any, metadata: Dict[str, Any], model_path: Path, metadata_path: Path
+) -> None:
+    model_path.parent.mkdir(parents=True, exist_ok=True)
+    with TemporaryDirectory(prefix="ml_artifacts_", dir=model_path.parent) as tmp_dir:
+        tmp_model = Path(tmp_dir) / model_path.name
+        tmp_metadata = Path(tmp_dir) / metadata_path.name
+        joblib.dump(model, tmp_model)
+        tmp_metadata.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+        tmp_model.replace(model_path)
+        tmp_metadata.replace(metadata_path)
+
+
 __all__ = [
     "TrainingSummary",
     "encode_feedback_features",
     "train_feedback_model",
     "load_trained_model",
+    "load_model_metadata",
+    "load_model_artifacts",
     "load_feedback_dataframe",
 ]
