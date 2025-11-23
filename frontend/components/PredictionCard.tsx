@@ -75,15 +75,23 @@ type CalendarPayload = {
   };
 };
 
-function renderSection(section: InsightSection, index: number) {
+function condense(text: string, detailLevel: "beginner" | "advanced") {
+  if (detailLevel === "advanced") return text;
+  if (text.length <= 160) return text;
+  return `${text.slice(0, 157).trimEnd()}...`;
+}
+
+function renderSection(section: InsightSection, index: number, detailLevel: "beginner" | "advanced") {
+  const bulletList = section.bullets || [];
+  const trimmedBullets = detailLevel === "advanced" ? bulletList : bulletList.slice(0, 3);
   return (
     <article key={index} className="insight-block">
       <h4>{section.heading}</h4>
-      <p>{section.english}</p>
-      {section.hindi && <p className="muted">{section.hindi}</p>}
-      {section.bullets && section.bullets.length > 0 && (
+      <p>{condense(section.english, detailLevel)}</p>
+      {section.hindi && <p className="muted">{condense(section.hindi, detailLevel)}</p>}
+      {trimmedBullets.length > 0 && (
         <ul>
-          {section.bullets.map((bullet, bulletIndex) => (
+          {trimmedBullets.map((bullet, bulletIndex) => (
             <li key={bulletIndex}>{bullet}</li>
           ))}
         </ul>
@@ -305,6 +313,7 @@ function buildSections(engine: ResultEngine, payload: unknown): InsightSection[]
 
 export default function PredictionCard({ title, payload, engine, seekerName }: Props) {
   const { t } = useI18n();
+  const [detailLevel, setDetailLevel] = React.useState<"beginner" | "advanced">("beginner");
   const sections = buildSections(engine, payload);
   const horoscopePayload = engine === "horoscope" && typeof payload === "object" ? (payload as HoroscopePayload) : null;
 
@@ -327,12 +336,31 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
         <h3>{title}</h3>
         <p className="muted">{t("results.helperRaw", "Narratives are ready to share—no JSON needed.")}</p>
       </div>
-      <div className="insight-grid">{sections.map(renderSection)}</div>
+      <div className="section-actions" style={{ marginBottom: "1rem" }}>
+        <p className="eyebrow" style={{ marginBottom: "0.35rem" }}>
+          Depth toggle
+        </p>
+        <div role="group" aria-label="Detail level" className="button-row">
+          {(["beginner", "advanced"] as const).map((level) => (
+            <button
+              key={level}
+              type="button"
+              className={detailLevel === level ? "primary" : "secondary"}
+              aria-pressed={detailLevel === level}
+              onClick={() => setDetailLevel(level)}
+            >
+              {level === "beginner" ? "Beginner view" : "Advanced view"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="insight-grid">{sections.map((section, index) => renderSection(section, index, detailLevel))}</div>
       {horoscopePayload && (
         <KundliCharts
           rashiChart={horoscopePayload.rashi_chart}
           bhavaChart={horoscopePayload.bhava_chart}
           dashas={horoscopePayload.dashas}
+          detailLevel={detailLevel}
         />
       )}
       {payload && <FeedbackPrompt engine={engine} seekerName={seekerName} />}
