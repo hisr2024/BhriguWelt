@@ -12,6 +12,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@sentry/nextjs": "file:vendor/sentry-nextjs",
     "next": "16.0.3",
     "react": "18.2.0",
     "react-dom": "18.2.0"
