@@ -1,7 +1,10 @@
 import { interpretChart } from "@/lib/interpretChart";
+import { NatalChart } from "@/types/natal";
 import { ChartResponse, FormState, Interpretation } from "./types";
 
-export function isNatalChart(payload: ChartResponse): payload is ChartResponse & { chart: unknown } {
+export function isNatalChart(
+  payload: ChartResponse,
+): payload is NatalChart {
   if (!payload || typeof payload !== "object") return false;
   const maybeChart = (payload as { chart?: unknown }).chart;
   return Boolean(

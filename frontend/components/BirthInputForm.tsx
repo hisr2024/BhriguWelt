@@ -60,7 +60,10 @@ export default function BirthInputForm() {
   const [error, setError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [validations, setValidations] = useState<ValidationState>({});
+  const [locationStatus, setLocationStatus] = useState("Waiting for map suggestions…");
   const { triggerSubmitFeedback } = useImmersiveFeedback();
+  const placeInputRef = useRef<HTMLInputElement | null>(null);
+  const autocompleteRef = useRef<GoogleMapsAutocomplete | null>(null);
 
   const isComplete = useMemo(() => details.birthDate && details.birthTime && details.birthPlace, [details]);
   const hasValidationIssues = useMemo(() => Boolean(Object.keys(validations).length), [validations]);
@@ -68,6 +71,17 @@ export default function BirthInputForm() {
     isComplete && !hasValidationIssues
       ? "Chart confidence: High"
       : "Chart confidence: Provide all birth details for higher accuracy";
+  const missingFields = useMemo(
+    () =>
+      ([
+        ["dob", details.birthDate, "date of birth"],
+        ["tob", details.birthTime, "time of birth"],
+        ["pob", details.birthPlace, "place of birth"],
+      ] as const)
+        .filter(([, value]) => !value)
+        .map(([, , label]) => label),
+    [details.birthDate, details.birthPlace, details.birthTime],
+  );
 
   const validate = (payload: BirthForm): ValidationState => {
     const feedback: ValidationState = {};
@@ -292,9 +306,9 @@ export default function BirthInputForm() {
               aria-describedby={validations.pob ? "birth-pob-hint" : "birth-place-hint"}
               required
             />
-            <p className="microcopy" id={validations.pob ? "birth-pob-hint" : "birth-place-hint"} role="status">
-              {validations.pob || "Try adding city and country (e.g., Jaipur, Bharat)."}
-            </p>
+              <p className="microcopy" id={validations.pob ? "birth-pob-hint" : "birth-place-hint"} role="status">
+                {validations.pob || locationStatus || "Try adding city and country (e.g., Jaipur, Bharat)."}
+              </p>
           </div>
           <div className="field">
             <label htmlFor="birth-timezone">Timezone</label>

@@ -65,6 +65,7 @@ export default function ExperienceToolbar() {
   const [soundscape, setSoundscape] = useState(() => readStoredPreferences().soundscape);
   const [haptics, setHaptics] = useState(() => readStoredPreferences().haptics);
   const [microAnimations, setMicroAnimations] = useState(() => readStoredPreferences().microAnimations);
+  const speechSupported = typeof window !== "undefined" && Boolean(window.speechSynthesis);
 
   const persistPreferences = useCallback(
     (prefs: Partial<StoredPreferences>) => {
@@ -110,6 +111,32 @@ export default function ExperienceToolbar() {
       }
     },
     [persistPreferences, soundscape],
+  );
+
+  const updateScale = useCallback((next: number) => {
+    const clamped = Math.min(1.2, Math.max(0.9, next));
+    setFontScale(Number(clamped.toFixed(2)));
+  }, []);
+
+  const toggleContrast = useCallback(
+    (next: boolean) => {
+      setHighContrast(next);
+      if (soundscape && next) {
+        playTone(280, 120);
+      }
+    },
+    [soundscape],
+  );
+
+  const toggleVoice = useCallback(
+    (next: boolean) => {
+      if (!speechSupported) return;
+      setVoiceOver(next);
+      if (soundscape && next) {
+        playTone(640, 140);
+      }
+    },
+    [soundscape, speechSupported],
   );
 
   useEffect(() => {
