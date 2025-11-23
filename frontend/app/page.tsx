@@ -6,6 +6,7 @@ import CalendarForm from "@/components/CalendarForm";
 import MatchmakingForm from "@/components/MatchmakingForm";
 import PredictionForm from "@/components/PredictionForm";
 import QuarterlyReviewPanel from "@/components/QuarterlyReviewPanel";
+import Timeline from "@/components/Timeline";
 import { heroCopy } from "@/lib/copy";
 import { useI18n } from "@/lib/i18n";
 import { AetherBeltSection } from "./sections/AetherBeltSection";
@@ -40,12 +41,20 @@ export default function HomePage() {
           <h2>{t("hero.title", "Horoscope without noise")}</h2>
           <p className="muted">{t("home.grid.navigation.body", navigationBody)}</p>
         </div>
-        <div className="panel__content">
-          <div className="card softly">
+        <div className="panel__content panel__content--stacked">
+          <div className="card softly cosmic-backdrop">
             <p className="microcopy">Save bilingual interpretations and export PDFs straight from the quiet interface.</p>
             <p className="microcopy">Only the essentials stay on screen: name, date, time, and place.</p>
+            <ul className="soft-list">
+              <li>Timezone auto-detect with friendly validation prompts.</li>
+              <li>Śaka calendar preview that updates as you type.</li>
+              <li>Mini 12-house chart with elemental glow for each segment.</li>
+            </ul>
           </div>
           <div className="card highlight">
+            <BirthInputForm />
+          </div>
+          <div className="card">
             <PredictionForm
               engine="horoscope"
               title={t("pages.horoscope.title", "Holistic horoscope")}
@@ -78,6 +87,21 @@ export default function HomePage() {
             <CalendarForm />
           </div>
         </div>
+      </section>
+
+      <section className="panel softly" id="future-timeline">
+        <div className="section-heading">
+          <p className="eyebrow">Timeline</p>
+          <h2>Future phases anchored to houses</h2>
+          <p className="muted">
+            Swipe through glowing milestones that map to the twelve-house foundation. Tooltips and local reminders keep seekers
+            on track without feeling overwhelmed.
+          </p>
+        </div>
+        <Timeline events={journeyTimeline} accent="amber" />
+        <p className="microcopy" aria-live="polite">
+          Drag horizontally to fast-forward through years; badges note which natal placements fuel each milestone.
+        </p>
       </section>
 
       <section className="panel" id="matchmaking">
