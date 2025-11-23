@@ -1,4 +1,5 @@
-import React, { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { KeyboardEvent, TouchEvent } from "react";
 
 type TimelineEvent = {
   title: string;
@@ -19,60 +20,93 @@ type TimelineProps = {
 
 export default function Timeline({ events, accent = "aqua" }: TimelineProps) {
   const accentClass = useMemo(() => `timeline timeline--${accent}`, [accent]);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [dragging, setDragging] = useState(false);
-  const dragStartX = useRef(0);
-  const dragScrollLeft = useRef(0);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const touchStartX = useRef<number | null>(null);
+  const touchDeltaX = useRef(0);
 
-  const houses = useMemo(() => Array.from({ length: 12 }, (_, index) => index + 1), []);
-  const activeHouses = useMemo(() => {
-    return new Set(
-      events
-        .map((event) => {
-          if (event.houseIndex) return event.houseIndex;
-          const match = event.houseAnchor.match(/(\d+)/);
-          return match ? Number(match[1]) : undefined;
-        })
-        .filter(Boolean) as number[],
-    );
-  }, [events]);
+  const clampIndex = useCallback(
+    (nextIndex: number) => {
+      if (!events.length) return 0;
+      return Math.min(events.length - 1, Math.max(0, nextIndex));
+    },
+    [events.length],
+  );
 
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!scrollRef.current) return;
-    setDragging(true);
-    dragStartX.current = event.clientX;
-    dragScrollLeft.current = scrollRef.current.scrollLeft;
-    scrollRef.current.setPointerCapture(event.pointerId);
+  useEffect(() => {
+    setActiveIndex((index) => clampIndex(index));
+  }, [clampIndex]);
+
+  const goNext = useCallback(() => {
+    setActiveIndex((index) => clampIndex(index + 1));
+  }, [clampIndex]);
+
+  const goPrev = useCallback(() => {
+    setActiveIndex((index) => clampIndex(index - 1));
+  }, [clampIndex]);
+
+  const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    touchStartX.current = event.touches[0].clientX;
+    touchDeltaX.current = 0;
   };
 
-  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragging || !scrollRef.current) return;
-    event.preventDefault();
-    const delta = event.clientX - dragStartX.current;
-    scrollRef.current.scrollLeft = dragScrollLeft.current - delta;
+  const handleTouchMove = (event: TouchEvent<HTMLDivElement>) => {
+    if (touchStartX.current === null) return;
+    touchDeltaX.current = event.touches[0].clientX - touchStartX.current;
   };
 
-  const handlePointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!scrollRef.current) return;
-    setDragging(false);
-    if (scrollRef.current.hasPointerCapture(event.pointerId)) {
-      scrollRef.current.releasePointerCapture(event.pointerId);
+  const handleTouchEnd = () => {
+    if (touchStartX.current === null) return;
+    if (Math.abs(touchDeltaX.current) > 48) {
+      if (touchDeltaX.current < 0) {
+        goNext();
+      } else {
+        goPrev();
+      }
+    }
+    touchStartX.current = null;
+    touchDeltaX.current = 0;
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      goNext();
+    }
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      goPrev();
     }
   };
 
-  const parseHouseIndex = (event: TimelineEvent) => {
-    if (event.houseIndex) return event.houseIndex;
-    const match = event.houseAnchor.match(/(\d+)/);
-    return match ? Number(match[1]) : undefined;
-  };
-
   return (
-    <div className="timeline-shell">
-      <div className="timeline__house-band" aria-label="Twelve-house anchors with overlay links">
-        {houses.map((house) => (
-          <div key={house} className={`timeline__house ${activeHouses.has(house) ? "active" : ""}`}>
-            <span className="timeline__house-index">House {house}</span>
-            <span className="timeline__house-rail" />
+    <div
+      className={accentClass}
+      role="list"
+      aria-label="Future timeline anchored to houses"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+    >
+      {events.map((event, index) => (
+        <article
+          key={event.title}
+          className={`timeline__node ${index === activeIndex ? "timeline__node--active" : ""}`}
+          role="listitem"
+          aria-current={index === activeIndex ? "true" : undefined}
+        >
+          <div className="timeline__orb" aria-hidden>
+            <span className="timeline__pulse" />
+            <span className="timeline__icon" role="img" aria-label={event.title}>
+              {event.icon || "✶"}
+            </span>
+          </div>
+          <div className="timeline__meta">
+            <p className="pill">{event.houseAnchor}</p>
+            <h4>{event.title}</h4>
+            <p className="muted">{event.detail}</p>
+            <p className="microcopy">{event.window}</p>
           </div>
         ))}
       </div>

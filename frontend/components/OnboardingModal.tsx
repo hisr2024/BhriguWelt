@@ -79,17 +79,39 @@ const BREADCRUMB_NOTES = [
   "Completed steps will pulse once before dimming.",
 ];
 
+const BEGINNER_TIPS = [
+  {
+    label: "Look for info dots",
+    copy: "Tap the ℹ️ dots beside form labels to see a one-line meaning without leaving the screen.",
+  },
+  {
+    label: "Color tells state",
+    copy: "Aqua is calm/ready, amber means action needed. The same palette is used across cards and charts.",
+  },
+  {
+    label: "Swipe on mobile",
+    copy: "Cards and the timeline respond to left/right swipes so you can move with your thumb.",
+  },
+];
+
 export default function OnboardingModal() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [voice, setVoice] = useState(false);
   const [haptics, setHaptics] = useState(false);
-  const [tour, setTour] = useState(0);
-  const [crumbHint, setCrumbHint] = useState(0);
+  const [beginnerMode, setBeginnerMode] = useState(true);
 
   useEffect(() => {
     const seen = typeof window !== "undefined" ? localStorage.getItem("bhrigu-onboarded") : null;
     if (!seen) setOpen(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const savedBeginner = localStorage.getItem("bhrigu-beginner-mode");
+    if (savedBeginner) {
+      setBeginnerMode(savedBeginner === "true");
+    }
   }, []);
 
   useEffect(() => {
@@ -105,6 +127,11 @@ export default function OnboardingModal() {
   }, [open, step, voice]);
 
   const progressPercent = useMemo(() => Math.round(((step + 1) / JOURNEY_STEPS.length) * 100), [step]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("bhrigu-beginner-mode", beginnerMode ? "true" : "false");
+  }, [beginnerMode]);
 
   const closeModal = () => {
     setOpen(false);
@@ -144,6 +171,20 @@ export default function OnboardingModal() {
         </header>
 
         <div className="onboard-body">
+          <div className="beginner-toggle">
+            <label className="toggle">
+              <input
+                type="checkbox"
+                checked={beginnerMode}
+                onChange={(event) => setBeginnerMode(event.target.checked)}
+              />
+              <span>Beginner tooltips</span>
+            </label>
+            <p className="microcopy">
+              Keep helper tips pinned to cards, timeline pills, and glossary badges while you explore.
+            </p>
+          </div>
+
           <div className="journey-steps" aria-live="polite">
             {JOURNEY_STEPS.map((item, index) => (
               <button
@@ -162,56 +203,24 @@ export default function OnboardingModal() {
             ))}
           </div>
 
-          <div className="breadcrumb-rail" aria-label="Breadcrumbs for the wizard">
-            {JOURNEY_STEPS.map((item, index) => (
-              <button
-                key={`${item.title}-crumb`}
-                type="button"
-                className={`breadcrumb-chip ${index === step ? "is-active" : ""} ${index < step ? "is-complete" : ""}`}
-                onClick={() => {
-                  setStep(index);
-                  setCrumbHint((hint) => (hint + 1) % BREADCRUMB_NOTES.length);
-                }}
-                aria-current={index === step}
-              >
-                <span className="pill" aria-hidden>
-                  {index + 1}
-                </span>
-                <span>{item.title}</span>
-              </button>
-            ))}
-            <p className="microcopy" aria-live="polite">
-              {BREADCRUMB_NOTES[crumbHint]}
-            </p>
-          </div>
-
-          <div className="tour-grid" aria-label="Guided tours">
-            {GUIDED_TOURS.map((item, index) => (
-              <article
-                key={item.title}
-                className={`tour-card ${tour === index ? "is-active" : ""}`}
-                aria-pressed={tour === index}
-              >
-                <div>
-                  <p className="eyebrow">{index + 1}. Tour</p>
-                  <h4>{item.title}</h4>
-                  <p className="muted">{item.copy}</p>
+          <div className="beginner-tips" aria-label="Beginner tips list">
+            <div className="beginner-tips__heading">
+              <p className="eyebrow">Quick tooltips</p>
+              <p className="muted">Short notes mirror the helper UI you will see across the app.</p>
+            </div>
+            <div className="beginner-tips__list" role="list">
+              {BEGINNER_TIPS.map((tip) => (
+                <div
+                  key={tip.label}
+                  className={`beginner-tip ${beginnerMode ? "is-active" : "is-muted"}`}
+                  role="note"
+                >
+                  <p className="badge">{tip.label}</p>
+                  <p className="muted">{tip.copy}</p>
                 </div>
-                <div className="tour-card__actions">
-                  <button type="button" className="ghost-button" onClick={() => setTour(index)}>
-                    Focus
-                  </button>
-                  <Link className="button-link" href={item.href} onClick={closeModal}>
-                    {item.action}
-                  </Link>
-                </div>
-              </article>
-            ))}
+              ))}
+            </div>
           </div>
-
-          <p className="microcopy" aria-live="polite">
-            {GUIDED_TOURS[tour].copy}
-          </p>
 
           <div className="glossary">
             <div className="glossary__heading">
