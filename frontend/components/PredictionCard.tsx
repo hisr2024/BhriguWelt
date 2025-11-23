@@ -1,11 +1,13 @@
 'use client';
 
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { ResultEngine } from "@/types/astro";
 import KundliCharts from "./KundliCharts";
 import { ChartHouse, DashaPeriod } from "@/types/astro";
 import FeedbackPrompt from "./FeedbackPrompt";
+import { HOUSE_FOCUSES } from "@/lib/houseGrid";
+import ProgressIndicator, { ProgressStep } from "./ProgressIndicator";
 
 interface Props {
   title: string;
@@ -19,6 +21,19 @@ type InsightSection = {
   english: string;
   hindi?: string;
   bullets?: string[];
+};
+
+type TimeframeAnchor = {
+  label: string;
+  houseIndex: number;
+  focus: string;
+  sign?: string;
+};
+
+type ChecklistItem = {
+  id: string;
+  label: string;
+  done: boolean;
 };
 
 type HoroscopePayload = {
@@ -170,26 +185,65 @@ function interpretHoroscope(payload: HoroscopePayload): InsightSection[] {
       bullets,
     });
   }
+  const timeframeAnchors = deriveTimeframeAnchorsFromChart(payload.bhava_chart || payload.rashi_chart);
+  const summary = renderTimeframeSummary(timeframeAnchors);
+  if (summary) {
+    sections.push({
+      heading: "Timeframe linkage",
+      english: summary,
+      hindi: "दैनिक, साप्ताहिक, मासिक और वार्षिक मार्ग वही १२ घरों से जुड़े रहते हैं।",
+    });
+  }
   return sections;
 }
 
 function interpretPastLife(payload: PastLifePayload): InsightSection[] {
   const sections: InsightSection[] = [];
-  if (payload.interpretation) {
+  const insights = payload.insights ?? [];
+  const [past, present, ...echoes] = insights;
+  const pastLine = past?.narrative || payload.interpretation;
+
+  if (pastLine) {
     sections.push({
-      heading: payload.name ? `${payload.name} की यात्रा` : "Past-life journey",
-      english: payload.interpretation,
-      hindi: payload.interpretation_hi,
+      heading: "Past influences",
+      english: `${pastLine}${past?.sutra_reference ? ` — ${past.sutra_reference}` : ""}`,
+      hindi: payload.interpretation_hi ? `पूर्व प्रभाव: ${payload.interpretation_hi}` : undefined,
     });
   }
-  if (payload.insights?.length) {
-    const entries = payload.insights.map((item) => `${item.narrative}${item.sutra_reference ? ` — ${item.sutra_reference}` : ""}`);
+
+  const presentLine = present?.narrative || (payload.interpretation ? `Current lessons extend from this arc: ${payload.interpretation}` : undefined);
+  if (presentLine) {
     sections.push({
-      heading: "Archived echoes",
-      english: entries.join(" "),
-      hindi: "भृगु पांडुलिपि से प्राप्त संकेत।",
+      heading: "Current lessons",
+      english: `${presentLine}${present?.sutra_reference ? ` — ${present.sutra_reference}` : ""}`,
+      hindi: payload.interpretation_hi ? `वर्तमान सीख: ${payload.interpretation_hi}` : undefined,
+      bullets: echoes.length
+        ? echoes.slice(0, 2).map((item) => `${item.narrative ?? ""}${item.sutra_reference ? ` — ${item.sutra_reference}` : ""}`)
+        : undefined,
     });
   }
+
+  const futureLines = echoes.length
+    ? echoes.map((item) => `${item.narrative ?? ""}${item.sutra_reference ? ` — ${item.sutra_reference}` : ""}`)
+    : payload.interpretation
+    ? ["Future echoes reshape this vow into soft guidance."]
+    : [];
+
+  if (futureLines.length) {
+    sections.push({
+      heading: "Future echoes",
+      english: futureLines.join(" "),
+      hindi: payload.interpretation_hi ? `आने वाली प्रतिध्वनियाँ: ${payload.interpretation_hi}` : undefined,
+    });
+  }
+
+  if (!sections.length && payload.name) {
+    sections.push({
+      heading: "Past-life journey",
+      english: `${payload.name}'s arc will appear once the manuscript insights load.`,
+    });
+  }
+
   return sections;
 }
 
@@ -266,6 +320,31 @@ function interpretCalendar(payload: CalendarPayload): InsightSection[] {
   return sections;
 }
 
+function deriveTimeframeAnchorsFromChart(houses?: ChartHouse[]): TimeframeAnchor[] {
+  const anchors = [
+    { label: "Daily", houseIndex: 1 },
+    { label: "Weekly", houseIndex: 3 },
+    { label: "Monthly", houseIndex: 6 },
+    { label: "Yearly", houseIndex: 10 },
+  ];
+
+  return anchors.map((anchor) => {
+    const house = houses?.find((entry) => entry.index === anchor.houseIndex);
+    return {
+      ...anchor,
+      focus: HOUSE_FOCUSES[anchor.houseIndex - 1],
+      sign: house?.sign,
+    } satisfies TimeframeAnchor;
+  });
+}
+
+function renderTimeframeSummary(anchors: TimeframeAnchor[]) {
+  const cards = anchors
+    .map((anchor) => `House ${anchor.houseIndex} (${anchor.focus})${anchor.sign ? ` in ${anchor.sign}` : ""}`)
+    .join(" · ");
+  return cards ? `Daily to yearly flow stays anchored to ${cards}.` : "";
+}
+
 function interpretFallback(payload: Record<string, unknown>): InsightSection[] {
   const entries = Object.entries(payload).map(([key, value]) => `${key.replace(/_/g, " ")}: ${String(value)}`);
   return [
@@ -305,8 +384,84 @@ function buildSections(engine: ResultEngine, payload: unknown): InsightSection[]
 
 export default function PredictionCard({ title, payload, engine, seekerName }: Props) {
   const { t } = useI18n();
-  const sections = buildSections(engine, payload);
-  const horoscopePayload = engine === "horoscope" && typeof payload === "object" ? (payload as HoroscopePayload) : null;
+  const horoscopePayload = useMemo(
+    () => (engine === "horoscope" && typeof payload === "object" ? (payload as HoroscopePayload) : null),
+    [engine, payload]
+  );
+  const sections = useMemo(() => buildSections(engine, payload), [engine, payload]);
+  const timeframeAnchors = useMemo(() => {
+    if (!horoscopePayload) return [] as TimeframeAnchor[];
+    return deriveTimeframeAnchorsFromChart(horoscopePayload.bhava_chart || horoscopePayload.rashi_chart);
+  }, [horoscopePayload]);
+  const checklistSeed = useMemo<ChecklistItem[]>(() => {
+    const items: string[] = [];
+    horoscopePayload?.remedies?.forEach((item) => {
+      if (item.description) items.push(item.description);
+    });
+    horoscopePayload?.principles?.forEach((item) => {
+      if (item.description) items.push(`Reflect on ${item.description}`);
+    });
+    if (timeframeAnchors.length) {
+      timeframeAnchors.forEach((anchor) => {
+        items.push(
+          `${anchor.label} cadence: revisit House ${anchor.houseIndex} (${anchor.focus}${anchor.sign ? `, ${anchor.sign}` : ""}).`
+        );
+      });
+    }
+    if (!items.length) {
+      items.push("Perform this remedy today.", "Share the reading with your guide.");
+    }
+    return items.map((label, index) => ({ id: `${engine}-${title}-${index}`, label, done: false }));
+  }, [engine, horoscopePayload?.principles, horoscopePayload?.remedies, timeframeAnchors, title]);
+  const storageKey = useMemo(() => `prediction-checklist-${engine}-${title.replace(/\s+/g, "-").toLowerCase()}`, [engine, title]);
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = localStorage.getItem(storageKey);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as ChecklistItem[];
+        setChecklist(parsed);
+        return;
+      } catch {
+        // If parsing fails, fall back to seed.
+      }
+    }
+    setChecklist(checklistSeed);
+  }, [checklistSeed, storageKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!checklist.length) return;
+    localStorage.setItem(storageKey, JSON.stringify(checklist));
+  }, [checklist, storageKey]);
+
+  const toggleChecklistItem = (id: string) => {
+    setChecklist((current) => current.map((item) => (item.id === id ? { ...item, done: !item.done } : item)));
+  };
+
+  const progressSteps = useMemo<ProgressStep[]>(() => {
+    const hasPayload = Boolean(payload);
+    const hasAnchors = timeframeAnchors.some((anchor) => anchor.sign);
+    return [
+      {
+        title: "Birth details received",
+        description: "Name, date, time, place inform the reading.",
+        status: hasPayload ? "complete" : "active",
+      },
+      {
+        title: "12-house linkage",
+        description: "Daily, weekly, monthly, yearly tied to the natal chart.",
+        status: hasAnchors ? "complete" : hasPayload ? "active" : "pending",
+      },
+      {
+        title: "Action plan saved",
+        description: "Reminders persist locally for practice.",
+        status: checklist.length ? "complete" : hasPayload ? "active" : "pending",
+      },
+    ];
+  }, [checklist.length, payload, timeframeAnchors]);
 
   if (!payload || !sections.length) {
     return (
@@ -327,7 +482,45 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
         <h3>{title}</h3>
         <p className="muted">{t("results.helperRaw", "Narratives are ready to share—no JSON needed.")}</p>
       </div>
+      <ProgressIndicator steps={progressSteps} label="Prediction progress" />
       <div className="insight-grid">{sections.map(renderSection)}</div>
+      {timeframeAnchors.length ? (
+        <div className="insight-grid" aria-label="Timeframes tied to houses" role="list">
+          {timeframeAnchors.map((anchor) => (
+            <article key={anchor.label} className="insight-block" role="listitem">
+              <p className="eyebrow">{anchor.label}</p>
+              <h4>
+                House {anchor.houseIndex}: {anchor.focus}
+              </h4>
+              <p className="muted">{anchor.sign ? `${anchor.sign} base` : "Awaiting chart foundation"}</p>
+              <p className="microcopy">Interpretations stay anchored to the natal twelve-house chart.</p>
+            </article>
+          ))}
+        </div>
+      ) : null}
+      {checklist.length ? (
+        <div className="insight-grid" aria-label="Actionable reminders" role="list">
+          <article className="insight-block" role="listitem">
+            <h4>Reminders</h4>
+            <ul className="checklist">
+              {checklist.map((item) => (
+                <li key={item.id}>
+                  <label className="checklist__item">
+                    <input
+                      type="checkbox"
+                      checked={item.done}
+                      onChange={() => toggleChecklistItem(item.id)}
+                      aria-label={item.label}
+                    />
+                    <span className={item.done ? "muted" : ""}>{item.label}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+            <p className="microcopy">Progress stays locally so you can return to it anytime.</p>
+          </article>
+        </div>
+      ) : null}
       {horoscopePayload && (
         <KundliCharts
           rashiChart={horoscopePayload.rashi_chart}

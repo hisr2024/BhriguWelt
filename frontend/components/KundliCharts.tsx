@@ -68,9 +68,61 @@ function renderChart(label: string, houses: ChartHouse[]) {
   );
 }
 
+function renderMiniPreview(houses: ChartHouse[]) {
+  const wheel = houses.length
+    ? houses
+    : Array.from({ length: 12 }, (_, index) => ({ index: index + 1, sign: "", occupants: [] as string[] }));
+  const size = 220;
+  const center = size / 2;
+  const radius = 94;
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+
+  return (
+    <div className="kundli-mini" aria-label="Mini 12-house preview">
+      <svg width={size} height={size} role="img" aria-hidden={!houses.length}>
+        <defs>
+          <linearGradient id="mini-orbit" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#68c6c1" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="#d97757" stopOpacity="0.6" />
+          </linearGradient>
+        </defs>
+        <circle cx={center} cy={center} r={radius} className="kundli-mini__ring" />
+        {wheel.map((house) => {
+          const startAngle = (house.index - 1) * 30 - 90;
+          const midAngle = startAngle + 15;
+          const x = center + radius * Math.cos(toRadians(midAngle));
+          const y = center + radius * Math.sin(toRadians(midAngle));
+          const occupant = house.occupants.join(", ") || "—";
+          return (
+            <g key={house.index}>
+              <line x1={center} y1={center} x2={x} y2={y} className="kundli-mini__spoke" />
+              <circle cx={x} cy={y} r={12} className="kundli-mini__node" />
+              <text x={x} y={y + 18} className="kundli-mini__text" textAnchor="middle">
+                {house.index}
+                <tspan x={x} dy="1.1em" className="kundli-mini__sign">
+                  {house.sign || "House"}
+                </tspan>
+                <tspan x={x} dy="1.1em" className="kundli-mini__occupant">
+                  {occupant}
+                </tspan>
+              </text>
+            </g>
+          );
+        })}
+        <circle cx={center} cy={center} r={28} className="kundli-mini__core" />
+      </svg>
+      <p className="microcopy" aria-live="polite">
+        {houses.length ? "Preview of all 12 houses" : "Mini chart awakens after inputs"}
+      </p>
+    </div>
+  );
+}
+
 export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas = [] }: Props) {
+  const previewHouses = rashiChart.length ? rashiChart : bhavaChart;
   return (
     <div className="kundli-grid">
+      {renderMiniPreview(previewHouses)}
       {renderChart("Rāśi chart", rashiChart)}
       {renderChart("Bhava chart", bhavaChart)}
       <div className="kundli-card">

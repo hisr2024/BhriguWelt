@@ -1168,6 +1168,27 @@ textarea:focus {
   }
 }
 
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes drift {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(6px, -8px, 0);
+  }
+}
+
 .panel__content--stacked {
   display: grid;
   gap: 16px;
@@ -1554,6 +1575,55 @@ textarea:focus {
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(255, 255, 255, 0.02);
+}
+
+.kundli-mini {
+  display: grid;
+  justify-items: center;
+  padding: 12px;
+  border-radius: 16px;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.kundli-mini__ring {
+  fill: none;
+  stroke: url(#mini-orbit);
+  stroke-width: 2;
+}
+
+.kundli-mini__spoke {
+  stroke: rgba(0, 0, 0, 0.08);
+  stroke-width: 1.4;
+}
+
+.kundli-mini__node {
+  fill: #fff;
+  stroke: #68c6c1;
+  stroke-width: 2;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.08));
+}
+
+.kundli-mini__text {
+  font-size: 10px;
+  fill: #1f2a33;
+}
+
+.kundli-mini__sign {
+  font-size: 9px;
+  fill: #355c7d;
+  letter-spacing: 0.04em;
+}
+
+.kundli-mini__occupant {
+  font-size: 8px;
+  fill: #6b4f4f;
+}
+
+.kundli-mini__core {
+  fill: rgba(217, 119, 87, 0.18);
+  stroke: rgba(104, 198, 193, 0.45);
+  stroke-width: 2;
 }
 
 @keyframes fadeInUp {
