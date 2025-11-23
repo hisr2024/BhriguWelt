@@ -44,7 +44,9 @@ export default function HomePage() {
         </div>
         <div className="panel__content panel__content--stacked">
           <div className="card softly cosmic-backdrop">
-            <p className="microcopy">Save bilingual interpretations and export PDFs straight from the quiet interface.</p>
+            <p className="microcopy">
+              Save bilingual interpretations and export PDFs straight from the quiet interface.
+            </p>
             <p className="microcopy">Only the essentials stay on screen: name, date, time, and place.</p>
             <ul className="soft-list">
               <li>Timezone auto-detect with friendly validation prompts.</li>
