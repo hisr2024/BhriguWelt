@@ -196,7 +196,7 @@ export default function BirthInputForm() {
             .then((response) => response.json())
             .then((payload: { timeZoneId?: string; status?: string }) => {
               if (payload.timeZoneId) {
-                setDetails((prev) => ({ ...prev, timezone: payload.timeZoneId }));
+                setDetails((prev) => ({ ...prev, timezone: payload.timeZoneId ?? prev.timezone }));
                 setLocationStatus(`Timezone auto-set to ${payload.timeZoneId}`);
               } else {
                 setLocationStatus("Map lookup active; timezone unchanged");
