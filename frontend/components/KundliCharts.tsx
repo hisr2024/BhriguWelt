@@ -28,14 +28,14 @@ interface Props {
 }
 
 type DetailLevel = "concise" | "advanced";
+type LayerKey = "foundation" | "interpretations" | "horoscope" | "past-future" | "matchmaking";
 
 export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas = [], compatibilityOverlay }: Props) {
   const [animateCharts, setAnimateCharts] = useState(false);
   const [detailLevel, setDetailLevel] = useState<DetailLevel>("concise");
   const [activeDetail, setActiveDetail] = useState<InterpretationDetail | null>(null);
-  const [interpretationLayer, setInterpretationLayer] = useState<
-    "foundation" | "interpretations" | "horoscope" | "past-future" | "matchmaking"
-  >("foundation");
+  const [interpretationLayer, setInterpretationLayer] = useState<LayerKey>("foundation");
+  const [journeyAnchor, setJourneyAnchor] = useState<string | null>(null);
 
   useEffect(() => {
     const refresh = () => setAnimateCharts(areMicroAnimationsAllowed());
@@ -87,6 +87,40 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
         complete: Boolean(compatibilityOverlay),
       },
     ], [activeDetail, bhavaChart.length, compatibilityOverlay, dashas.length, detailLevel, rashiChart.length, readyLabel]);
+
+  const horoscopeFlows = useMemo<{ label: string; progress: number; anchor: LayerKey; description: string }[]>(
+    () => [
+      { label: "Daily", progress: 70, anchor: "foundation", description: "Derived from current house rulers." },
+      { label: "Weekly", progress: 55, anchor: "interpretations", description: "Combines ruler strength + dashas." },
+      { label: "Monthly", progress: 40, anchor: "horoscope", description: "Links to transit overlays." },
+      { label: "Yearly", progress: 25, anchor: "past-future", description: "Future arc nodes for the rail." },
+    ],
+    [],
+  );
+
+  const narrativeArcs = useMemo(
+    () => [
+      {
+        title: "Past-life unlock",
+        body: "Story cards stay locked until the core chart renders, then glide in with soft cosmic art.",
+        status: rashiChart.length && bhavaChart.length ? "Unlocked" : "Locked",
+      },
+      {
+        title: "Future timeline",
+        body: "Glowing milestones line up against the same spokes for continuity between houses and predictions.",
+        status: dashas.length ? "Anchored" : "Preparing",
+      },
+      {
+        title: "Matchmaking overlay",
+        body:
+          compatibilityOverlay?.sharedThemes?.length
+            ? "Duo-chart overlay ready with harmony and shared themes."
+            : "Add partner data to activate energy merging animations.",
+        status: compatibilityOverlay ? "Ready" : "Waiting",
+      },
+    ],
+    [bhavaChart.length, compatibilityOverlay, dashas.length, rashiChart.length],
+  );
 
   const buildHouseDetail = (house: ChartHouse, occupant?: string): InterpretationDetail => {
     const occupantLabel = occupant || (house.occupants.length ? house.occupants.join(", ") : "Empty house");
@@ -412,6 +446,35 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
       {renderChart("Bhava chart", bhavaChart, animateCharts)}
       <div className="kundli-card">
         <header className="section-heading">
+          <p className="eyebrow">Horoscope linkage</p>
+          <h4>Daily → yearly flows</h4>
+          <p className="muted">Tap a flow to jump to the right chart layer; progress bars show how much is unlocked.</p>
+        </header>
+        <div className="horoscope-flow" role="list">
+          {horoscopeFlows.map((flow) => (
+            <button
+              key={flow.label}
+              className={`flow-chip ${journeyAnchor === flow.label ? "flow-chip--active" : ""}`}
+              role="listitem"
+              onClick={() => {
+                setJourneyAnchor(flow.label);
+                setInterpretationLayer(flow.anchor);
+              }}
+            >
+              <div className="flow-chip__meta">
+                <span className="pill">{flow.label}</span>
+                <p className="muted">{flow.description}</p>
+              </div>
+              <div className="compatibility-meter" role="img" aria-label={`${flow.label} ${flow.progress}% anchored`}>
+                <div className="compatibility-meter__bar" style={{ width: `${flow.progress}%` }} />
+                <div className="compatibility-meter__label">{flow.progress}% linked to chart</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="kundli-card">
+        <header className="section-heading">
           <p className="eyebrow">Vimshottari</p>
           <h4>Dasha timeline</h4>
         </header>
@@ -432,6 +495,36 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
         ) : (
           <p className="muted">Dasha cycles appear alongside the predictions.</p>
         )}
+      </div>
+      <div className="kundli-card">
+        <header className="section-heading">
+          <p className="eyebrow">Story overlays</p>
+          <h4>Past life → future → matchmaking</h4>
+          <p className="muted">Narratives unlock sequentially and stay visually anchored to the kundli spokes.</p>
+        </header>
+        <ul className="kudos-list">
+          {narrativeArcs.map((arc) => (
+            <li key={arc.title}>
+              <strong>{arc.title}</strong> • {arc.status}
+              <p className="muted">{arc.body}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="kundli-card">
+        <header className="section-heading">
+          <p className="eyebrow">Immersive cues</p>
+          <h4>Soundscapes, haptics, gestures</h4>
+          <p className="muted">
+            Micro-animations respect reduced-motion; toggle sound or haptics in the header to pair cosmic tones with wheel
+            interactions.
+          </p>
+        </header>
+        <ul className="kudos-list">
+          <li>Subtle haptics fire on submit and when unlocking new layers.</li>
+          <li>Sound cues (540hz tones) accompany taps when immersive mode is active.</li>
+          <li>Horizontal drag, double tap, and keyboard focus all reveal the same layered interpretations.</li>
+        </ul>
       </div>
       {compatibilityOverlay ? renderCompatibilityOverlay(compatibilityOverlay) : null}
     </div>
