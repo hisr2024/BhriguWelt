@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 
 import CalendarForm from "@/components/CalendarForm";
+import BirthInputForm from "@/components/BirthInputForm";
 import MatchmakingForm from "@/components/MatchmakingForm";
 import PredictionForm from "@/components/PredictionForm";
 import QuarterlyReviewPanel from "@/components/QuarterlyReviewPanel";
@@ -13,7 +14,7 @@ import { AetherBeltSection } from "./sections/AetherBeltSection";
 import { HeroSection } from "./sections/HeroSection";
 import { JourneyRail } from "./sections/JourneyRail";
 import { RitualGrid } from "./sections/RitualGrid";
-import { DEMO_CHART, DEMO_DASHAS, timelineNotes } from "./sections/sectionData";
+import { DEMO_CHART, DEMO_DASHAS, journeyTimeline, timelineNotes } from "./sections/sectionData";
 
 const KundliCharts = dynamic(() => import("@/components/KundliCharts"), {
   ssr: false,
@@ -145,15 +146,21 @@ export default function HomePage() {
         <div className="micro-interactions" aria-label="Micro-interactions and tooltips">
           <div>
             <h4>Micro-interactions</h4>
-            <p className="muted">Subtle pulses on the wheel, fade-in legends, and swipe-to-reveal overlays modernise the neon theme.</p>
+            <p className="muted">
+              Subtle pulses on the wheel, fade-in legends, and swipe-to-reveal overlays modernise the neon theme.
+            </p>
           </div>
           <div>
             <h4>Progressive disclosure</h4>
-            <p className="muted">Expandable overlays keep newcomers from feeling overwhelmed while still rewarding deep dives.</p>
+            <p className="muted">
+              Expandable overlays keep newcomers from feeling overwhelmed while still rewarding deep dives.
+            </p>
           </div>
           <div>
             <h4>Icons for planets</h4>
-            <p className="muted">Element glyphs sit atop each card—fire, earth, air, and water cues sit beside the sign badges.</p>
+            <p className="muted">
+              Element glyphs sit atop each card—fire, earth, air, and water cues sit beside the sign badges.
+            </p>
           </div>
         </div>
       </section>
@@ -185,10 +192,6 @@ export default function HomePage() {
         </div>
         <QuarterlyReviewPanel />
       </section>
-    </div>
-  );
-}
-
     </div>
   );
 }

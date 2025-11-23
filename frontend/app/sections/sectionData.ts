@@ -45,6 +45,49 @@ export const timelineNotes = [
   { label: "Remedy", value: "Sandal dhup", detail: "light daily", tone: "lotus" },
 ];
 
+export const journeyTimeline = [
+  {
+    title: "Career pivot rituals",
+    window: "Q4 2024",
+    houseAnchor: "10th house",
+    detail: "Lay foundations for new leadership roles with steady Saturn remedies and early mornings.",
+    planet: "♄",
+    progress: 32,
+    progressLabel: "Consistency",
+    houseIndex: 10,
+  },
+  {
+    title: "Relationship grounding",
+    window: "Q1 2025",
+    houseAnchor: "7th house",
+    detail: "Invite calm conversations and shared rituals while Venus remains in a friendly sign.",
+    planet: "♀",
+    progress: 58,
+    progressLabel: "Balance",
+    houseIndex: 7,
+  },
+  {
+    title: "Learning and dharma",
+    window: "Q2 2025",
+    houseAnchor: "9th house",
+    detail: "Choose a study track; Jupiter aspects support travel, teachers, and gentle discipline.",
+    planet: "♃",
+    progress: 76,
+    progressLabel: "Insight",
+    houseIndex: 9,
+  },
+  {
+    title: "Home sanctuary",
+    window: "Q3 2025",
+    houseAnchor: "4th house",
+    detail: "Create soothing routines at home, adding water element cures and moon-focused fasts.",
+    planet: "☾",
+    progress: 44,
+    progressLabel: "Ease",
+    houseIndex: 4,
+  },
+];
+
 export const DEMO_CHART: ChartHouse[] = [
   { index: 1, sign: "Aries", occupants: ["Sun"], bhrigu_notes: ["Vitality and initiative rising."] },
   { index: 2, sign: "Taurus", occupants: ["Moon"], bhrigu_notes: ["Steady voice anchors resources."] },
