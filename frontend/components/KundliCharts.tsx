@@ -2,13 +2,22 @@
 
 import { ChartHouse, DashaPeriod } from "@/types/astro";
 
+interface CompatibilityOverlay {
+  primaryLabel: string;
+  partnerLabel: string;
+  harmonyIndex?: number;
+  sharedThemes: { label: string; alignment?: number; tags?: string[] }[];
+}
+
 interface Props {
   rashiChart?: ChartHouse[];
   bhavaChart?: ChartHouse[];
+  partnerChart?: ChartHouse[];
   dashas?: DashaPeriod[];
+  compatibilityOverlay?: CompatibilityOverlay;
 }
 
-function renderChart(label: string, houses: ChartHouse[]) {
+function renderChart(label: string, houses: ChartHouse[], readyLabel = "Bhava alignment") {
   const size = 320;
   const center = size / 2;
   const radius = 135;
@@ -19,7 +28,7 @@ function renderChart(label: string, houses: ChartHouse[]) {
     <div className="kundli-card">
       <header className="section-heading">
         <p className="eyebrow">{label}</p>
-        <h4>{houses.length ? "Bhava alignment" : "Awaiting birth details"}</h4>
+        <h4>{houses.length ? readyLabel : "Awaiting birth details"}</h4>
       </header>
       {houses.length > 0 ? (
         <svg width={size} height={size} role="img" aria-label={`${label} twelve-house wheel`}>
@@ -68,11 +77,71 @@ function renderChart(label: string, houses: ChartHouse[]) {
   );
 }
 
-export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas = [] }: Props) {
+function renderCompatibilityOverlay(overlay: CompatibilityOverlay) {
+  const { primaryLabel, partnerLabel, harmonyIndex, sharedThemes } = overlay;
+  return (
+    <div className="kundli-card compatibility-card">
+      <header className="section-heading">
+        <p className="eyebrow">Compatibility overlay</p>
+        <h4>{harmonyIndex ? `Harmony ${Math.round(harmonyIndex)} / 100` : "Energy Venn"}</h4>
+      </header>
+      <div className="energy-venn" role="img" aria-label="Compatibility energy Venn diagram">
+        <div className="energy-orb orb-primary">
+          <p className="eyebrow">{primaryLabel}</p>
+          <strong>Source chart</strong>
+          <span className="muted">Elemental drive</span>
+        </div>
+        <div className="energy-orb orb-partner">
+          <p className="eyebrow">{partnerLabel}</p>
+          <strong>Partner chart</strong>
+          <span className="muted">Reciprocal flow</span>
+        </div>
+        <div className="energy-orb orb-shared">
+          <p className="eyebrow">Shared energy</p>
+          <div className="alignment-list">
+            {sharedThemes.map((theme, index) => (
+              <div key={`${theme.label}-${index}`} className="alignment-row">
+                <div>
+                  <strong>{theme.label}</strong>
+                  {theme.tags && theme.tags.length > 0 && (
+                    <div className="alignment-tags">
+                      {theme.tags.map((tag) => (
+                        <span className="tag-chip" key={tag}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {typeof theme.alignment === "number" && (
+                  <div className="alignment-bar" aria-label={`${theme.label} alignment ${Math.round(theme.alignment)}%`}>
+                    <span style={{ width: `${Math.min(100, Math.max(theme.alignment, 0))}%` }} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <p className="muted" style={{ marginTop: "0.5rem" }}>
+        Modern filters and manuscript overlays blend here so both charts contribute before recommendations appear.
+      </p>
+    </div>
+  );
+}
+
+export default function KundliCharts({
+  rashiChart = [],
+  bhavaChart = [],
+  partnerChart = [],
+  dashas = [],
+  compatibilityOverlay,
+}: Props) {
+  const hasPartnerChart = partnerChart.length > 0;
   return (
     <div className="kundli-grid">
       {renderChart("Rāśi chart", rashiChart)}
-      {renderChart("Bhava chart", bhavaChart)}
+      {hasPartnerChart ? renderChart("Partner rāśi chart", partnerChart, "Partner alignment") : renderChart("Bhava chart", bhavaChart)}
       <div className="kundli-card">
         <header className="section-heading">
           <p className="eyebrow">Vimshottari</p>
@@ -96,6 +165,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
           <p className="muted">Dasha cycles appear alongside the predictions.</p>
         )}
       </div>
+      {compatibilityOverlay && renderCompatibilityOverlay(compatibilityOverlay)}
     </div>
   );
 }
