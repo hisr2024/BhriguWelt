@@ -29,9 +29,11 @@ interface Props {
   engine: PredictionEngine;
   title: string;
   description: string;
+  onRequestStart?: () => void;
+  onResult?: (payload: unknown) => void;
 }
 
-export default function PredictionForm({ engine, title, description }: Props) {
+export default function PredictionForm({ engine, title, description, onRequestStart, onResult }: Props) {
   const { t } = useI18n();
   const [details, setDetails] = useState<BirthDetails>(defaultDetails);
   const [loading, setLoading] = useState(false);
@@ -49,10 +51,12 @@ export default function PredictionForm({ engine, title, description }: Props) {
     event.preventDefault();
     setError(null);
     setPayload(null);
+    onRequestStart?.();
     setLoading(true);
     try {
       const response = await requestPrediction(engine, details);
       setPayload(response);
+      onResult?.(response);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to fetch prediction";
       setError(message);

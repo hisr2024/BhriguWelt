@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { requestCalendar } from "@/lib/api";
 import { deriveHouseGrid, HouseSummary } from "@/lib/houseGrid";
@@ -19,6 +19,27 @@ type ValidationState = {
   pob?: string;
 };
 
+type GoogleMapsAutocomplete = {
+  addListener: (eventName: string, handler: () => void) => void;
+  getPlace: () => {
+    formatted_address?: string;
+    name?: string;
+    geometry?: { location?: { lat: () => number; lng: () => number } };
+  };
+};
+
+declare global {
+  interface Window {
+    google?: {
+      maps?: {
+        places?: {
+          Autocomplete: new (input: HTMLInputElement, options?: unknown) => GoogleMapsAutocomplete;
+        };
+      };
+    };
+  }
+}
+
 const INITIAL_DETAILS: BirthForm = {
   birthDate: "",
   birthTime: "",
@@ -33,10 +54,18 @@ export default function BirthInputForm() {
   const [details, setDetails] = useState<BirthForm>(INITIAL_DETAILS);
   const [houseGrid, setHouseGrid] = useState<HouseSummary[]>([]);
   const [sakaLabel, setSakaLabel] = useState<string>("Awaiting Bharat conversion");
+  const [sakaParts, setSakaParts] = useState<{ year?: number; month?: string; day?: number }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [validations, setValidations] = useState<ValidationState>({});
+  const [locationStatus, setLocationStatus] = useState<string>(
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+      ? "Start typing and select from the map-powered list."
+      : "Type a city; map suggestions appear when an API key is configured.",
+  );
+  const placeInputRef = useRef<HTMLInputElement | null>(null);
+  const autocompleteRef = useRef<GoogleMapsAutocomplete | null>(null);
 
   const isComplete = useMemo(() => details.birthDate && details.birthTime && details.birthPlace, [details]);
 
@@ -78,6 +107,7 @@ export default function BirthInputForm() {
           ? `Śaka ${sakaValue.year} ${sakaValue.month ?? ""} ${sakaValue.day ?? ""}`.trim()
           : "Śaka conversion ready",
       );
+      setSakaParts((prev) => ({ ...prev, ...sakaValue }));
       setHouseGrid(deriveHouseGrid(details, sakaValue.month, sakaValue.day));
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to compute Bharat calendar";
@@ -99,6 +129,99 @@ export default function BirthInputForm() {
 
     return () => clearTimeout(id);
   }, [details, isComplete]);
+
+  useEffect(() => {
+    if (!details.birthDate) {
+      setSakaLabel("Awaiting Bharat conversion");
+      setSakaParts({});
+      return;
+    }
+
+    try {
+      const formatter = new Intl.DateTimeFormat("en-IN-u-ca-indian", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+      const parts = formatter.formatToParts(new Date(details.birthDate));
+      const sakaDraft = parts.reduce<Record<string, string>>((acc, part) => {
+        if (part.type === "year" || part.type === "month" || part.type === "day") {
+          acc[part.type] = part.value;
+        }
+        return acc;
+      }, {});
+      const parsed = {
+        year: sakaDraft.year ? Number(sakaDraft.year) : undefined,
+        month: sakaDraft.month,
+        day: sakaDraft.day ? Number(sakaDraft.day) : undefined,
+      };
+      setSakaParts(parsed);
+      setSakaLabel(
+        parsed.year ? `Śaka ${parsed.year} ${parsed.month ?? ""} ${parsed.day ?? ""}`.trim() : "Śaka conversion ready",
+      );
+    } catch (err) {
+      console.error(err);
+      setSakaLabel("Śaka conversion ready");
+      setSakaParts({});
+    }
+  }, [details.birthDate]);
+
+  useEffect(() => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey || !placeInputRef.current || autocompleteRef.current) return;
+
+    const initAutocomplete = () => {
+      if (!placeInputRef.current || !window.google?.maps?.places?.Autocomplete) return;
+      const autocomplete = new window.google.maps.places.Autocomplete(placeInputRef.current, {
+        fields: ["formatted_address", "geometry", "name"],
+        types: ["(cities)"],
+      });
+      autocompleteRef.current = autocomplete;
+      autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        const label = place.formatted_address || place.name;
+        if (label) {
+          setDetails((prev) => ({ ...prev, birthPlace: label }));
+        }
+
+        const coords = place.geometry?.location;
+        if (coords) {
+          const lat = coords.lat();
+          const lng = coords.lng();
+          const timestamp = Math.floor(Date.now() / 1000);
+          setLocationStatus("Detecting timezone from map position…");
+          fetch(
+            `https://maps.googleapis.com/maps/api/timezone/json?location=${lat},${lng}&timestamp=${timestamp}&key=${apiKey}`,
+          )
+            .then((response) => response.json())
+            .then((payload: { timeZoneId?: string; status?: string }) => {
+              if (payload.timeZoneId) {
+                setDetails((prev) => ({ ...prev, timezone: payload.timeZoneId ?? prev.timezone }));
+                setLocationStatus(`Timezone auto-set to ${payload.timeZoneId}`);
+              } else {
+                setLocationStatus("Map lookup active; timezone unchanged");
+              }
+            })
+            .catch(() => setLocationStatus("Map suggestions ready; timezone fallback in use."));
+        }
+      });
+      setLocationStatus("Map suggestions ready. Pick a result to auto-fill.");
+    };
+
+    if (window.google?.maps?.places) {
+      initAutocomplete();
+      return;
+    }
+
+    const scriptId = "google-places-script";
+    if (document.getElementById(scriptId)) return;
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`;
+    script.async = true;
+    script.onload = initAutocomplete;
+    document.body.appendChild(script);
+  }, []);
 
   const liveGrid = houseGrid.length ? houseGrid : deriveHouseGrid(details);
 
@@ -155,13 +278,14 @@ export default function BirthInputForm() {
               type="text"
               placeholder="Jaipur, Bharat"
               value={details.birthPlace}
+              ref={placeInputRef}
               onChange={(event) => setDetails({ ...details, birthPlace: event.target.value })}
               aria-invalid={Boolean(validations.pob)}
               aria-describedby={validations.pob ? "birth-pob-hint" : "birth-place-hint"}
               required
             />
             <p className="microcopy" id={validations.pob ? "birth-pob-hint" : "birth-place-hint"} role="status">
-              {validations.pob || "Maps and timezone suggestions will trigger automatically soon."}
+              {validations.pob || locationStatus}
             </p>
           </div>
           <div className="field">
@@ -206,6 +330,21 @@ export default function BirthInputForm() {
           <div className="action-notes" aria-live="polite">
             <p className="microcopy">{sakaLabel}</p>
             {error ? <p className="microcopy error">{error}</p> : null}
+          </div>
+        </div>
+
+        <div className="field-row field-row--split">
+          <div className="field">
+            <label htmlFor="saka-year">Śaka year</label>
+            <input id="saka-year" type="text" value={sakaParts.year ?? ""} readOnly aria-readonly />
+          </div>
+          <div className="field">
+            <label htmlFor="saka-month">Śaka month</label>
+            <input id="saka-month" type="text" value={sakaParts.month ?? ""} readOnly aria-readonly />
+          </div>
+          <div className="field">
+            <label htmlFor="saka-day">Śaka day</label>
+            <input id="saka-day" type="text" value={sakaParts.day ?? ""} readOnly aria-readonly />
           </div>
         </div>
       </form>

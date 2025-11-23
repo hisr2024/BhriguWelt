@@ -1,0 +1,27 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        language_version: python3
+        files: ^backend/
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      - id: mypy
+        additional_dependencies: []
+        args: ["--config-file", "backend/mypy.ini"]
+        files: ^backend/
+        pass_filenames: true
+  - repo: local
+    hooks:
+      - id: frontend-lint
+        name: frontend lint (eslint)
+        entry: npm run lint --prefix frontend
+        language: system
+        pass_filenames: false
+      - id: frontend-type-check
+        name: frontend type-check (tsc)
+        entry: npm run type-check --prefix frontend
+        language: system
+        pass_filenames: false

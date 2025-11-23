@@ -106,6 +106,32 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
       },
     ],
   },
+  "/future-progress": {
+    karmic_resolution: 62,
+    milestones: [
+      {
+        house: 4,
+        label: "Roots and rituals",
+        completion: 72,
+        planet: "Moon",
+        icon: "☾",
+      },
+      {
+        house: 9,
+        label: "Dharma studies",
+        completion: 48,
+        planet: "Jupiter",
+        icon: "♃",
+      },
+      {
+        house: 7,
+        label: "Partnership seva",
+        completion: 35,
+        planet: "Venus",
+        icon: "♀",
+      },
+    ],
+  },
   "/matchmaking": {
     primary_name: "Fallback seeker",
     partner_name: "Partner seeker",
@@ -187,6 +213,17 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
 type FetchOptions<T> = {
   path: string;
   body: T;
+};
+
+export type FutureProgressResponse = {
+  karmic_resolution: number;
+  milestones: {
+    house: number;
+    label: string;
+    completion: number;
+    planet: string;
+    icon?: string;
+  }[];
 };
 
 function mapBirthDetails(input: BirthDetails) {
@@ -279,6 +316,10 @@ async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
 export async function requestPrediction(engine: PredictionEngine, details: BirthDetails) {
   const path = `/${engine}`;
   return postJson({ path, body: mapBirthDetails(details) });
+}
+
+export async function getFutureProgress() {
+  return getJson<FutureProgressResponse>("/future-progress", "/future-progress");
 }
 
 export async function requestMatchmaking(
