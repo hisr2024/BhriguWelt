@@ -1,12 +1,24 @@
 'use client';
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import CalendarForm from "@/components/CalendarForm";
 import MatchmakingForm from "@/components/MatchmakingForm";
 import PredictionForm from "@/components/PredictionForm";
 import QuarterlyReviewPanel from "@/components/QuarterlyReviewPanel";
 import { heroCopy } from "@/lib/copy";
 import { useI18n } from "@/lib/i18n";
+import { ChartHouse, DashaPeriod } from "@/types/astro";
+
+const KundliCharts = dynamic(() => import("@/components/KundliCharts"), {
+  ssr: false,
+  loading: () => <div className="card softly">Drawing kundli wheel…</div>,
+});
+
+const BhriguChat = dynamic(() => import("@/components/BhriguChat"), {
+  ssr: false,
+  loading: () => <div className="card softly">Activating Bhrigu chat…</div>,
+});
 
 const rhythmTracks = [
   {
@@ -51,6 +63,27 @@ const timelineNotes = [
   { label: "Dasha", value: "Venus → Sun", detail: "harmonising", tone: "sunrise" },
   { label: "Transit", value: "Saturn review", detail: "slow and steady", tone: "sand" },
   { label: "Remedy", value: "Sandal dhup", detail: "light daily", tone: "lotus" },
+];
+
+const DEMO_CHART: ChartHouse[] = [
+  { index: 1, sign: "Aries", occupants: ["Sun"], bhrigu_notes: ["Vitality and initiative rising."] },
+  { index: 2, sign: "Taurus", occupants: ["Moon"], bhrigu_notes: ["Steady voice anchors resources."] },
+  { index: 3, sign: "Gemini", occupants: ["Mars"], bhrigu_notes: ["Curious courage fuels siblings."] },
+  { index: 4, sign: "Cancer", occupants: ["Mercury"], bhrigu_notes: ["Home conversations feel tender."] },
+  { index: 5, sign: "Leo", occupants: ["Jupiter"], bhrigu_notes: ["Joy and teaching glow."], },
+  { index: 6, sign: "Virgo", occupants: ["Saturn"], bhrigu_notes: ["Discipline refines health."] },
+  { index: 7, sign: "Libra", occupants: ["Venus"], bhrigu_notes: ["Partnerships feel balanced."], },
+  { index: 8, sign: "Scorpio", occupants: ["Ketu"], bhrigu_notes: ["Mystery inspires transformation."], },
+  { index: 9, sign: "Sagittarius", occupants: ["Rahu"], bhrigu_notes: ["Travel and dharma stretch horizons."], },
+  { index: 10, sign: "Capricorn", occupants: ["—"], bhrigu_notes: ["Career asks for patient structure."], },
+  { index: 11, sign: "Aquarius", occupants: ["—"], bhrigu_notes: ["Allies gather around shared ideals."], },
+  { index: 12, sign: "Pisces", occupants: ["—"], bhrigu_notes: ["Rest nurtures intuition."], },
+];
+
+const DEMO_DASHAS: DashaPeriod[] = [
+  { lord: "Venus", start: "2024-01", end: "2026-06", anchor_rule: "Lean into artful collaboration." },
+  { lord: "Sun", start: "2026-06", end: "2027-11", anchor_rule: "Claim leadership with warmth." },
+  { lord: "Moon", start: "2027-11", end: "2029-02", anchor_rule: "Rest and listen to the tides." },
 ];
 
 export default function HomePage() {
@@ -183,6 +216,46 @@ export default function HomePage() {
         ))}
       </section>
 
+      <section className="journey-rail" aria-label="Guided Jyotish journey">
+        <div className="section-heading">
+          <p className="eyebrow">Story-like flow</p>
+          <h2>Birth input → chart → interpretations → timelines</h2>
+          <p className="muted">Gentle animations, tooltips, and glossary entries keep new users confident.</p>
+        </div>
+        <div className="journey-rail__steps">
+          <details className="journey-rail__step" open>
+            <summary>
+              <span className="pill">1</span>
+              <div>
+                <strong>Gather inputs</strong>
+                <p className="microcopy">Form hints explain tithi, nakshatra, and bhava in plain language.</p>
+              </div>
+            </summary>
+            <p className="muted">Auto-validations and timezone nudges keep the data precise.</p>
+          </details>
+          <details className="journey-rail__step">
+            <summary>
+              <span className="pill">2</span>
+              <div>
+                <strong>Render chart wheels</strong>
+                <p className="microcopy">Kundli wheels glow softly; hover or tap to reveal micro-interpretations.</p>
+              </div>
+            </summary>
+            <p className="muted">Graphics are lazy-loaded for performance and mobile friendliness.</p>
+          </details>
+          <details className="journey-rail__step">
+            <summary>
+              <span className="pill">3</span>
+              <div>
+                <strong>Explore timelines</strong>
+                <p className="microcopy">Horizontal nodes expand to show dasha, transit, and remedy prompts.</p>
+              </div>
+            </summary>
+            <p className="muted">Progress indicators and badges show what data powered each insight.</p>
+          </details>
+        </div>
+      </section>
+
       <section className="panel" id="birth-details">
         <div className="section-heading">
           <p className="eyebrow">Birth details</p>
@@ -246,6 +319,50 @@ export default function HomePage() {
           </div>
           <div className="card highlight">
             <MatchmakingForm />
+          </div>
+        </div>
+      </section>
+
+      <section className="panel softly" id="visualization">
+        <div className="section-heading">
+          <p className="eyebrow">Data visualisation</p>
+          <h2>Kundli wheels and immersive overlays</h2>
+          <p className="muted">
+            Graphical rāśi and bhava wheels replace text-only outputs. Hover or tap planets to expand their stories.
+          </p>
+        </div>
+        <KundliCharts rashiChart={DEMO_CHART} bhavaChart={DEMO_CHART} dashas={DEMO_DASHAS} />
+        <div className="micro-interactions" aria-label="Micro-interactions and tooltips">
+          <div>
+            <h4>Micro-interactions</h4>
+            <p className="muted">Subtle pulses on the wheel, fade-in legends, and swipe-to-reveal overlays modernise the neon theme.</p>
+          </div>
+          <div>
+            <h4>Progressive disclosure</h4>
+            <p className="muted">Expandable overlays keep newcomers from feeling overwhelmed while still rewarding deep dives.</p>
+          </div>
+          <div>
+            <h4>Icons for planets</h4>
+            <p className="muted">Element glyphs sit atop each card—fire, earth, air, and water cues sit beside the sign badges.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="panel" id="assist">
+        <div className="section-heading">
+          <p className="eyebrow">Ask anything</p>
+          <h2>Chat with the Bhrigu guide</h2>
+          <p className="muted">
+            Real-time feedback loop keeps seekers heard. Ask clarifying questions and capture their notes instantly.
+          </p>
+        </div>
+        <div className="panel__content">
+          <div className="card softly">
+            <p className="microcopy">Supports mobile voice dictation, swipe to dismiss, and large tap targets.</p>
+            <p className="microcopy">Responses thread alongside glossary hints for absolute beginners.</p>
+          </div>
+          <div className="card highlight">
+            <BhriguChat />
           </div>
         </div>
       </section>

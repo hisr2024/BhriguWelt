@@ -3,6 +3,8 @@
 import Link from "next/link";
 import Providers from "@/app/providers";
 import { useI18n } from "@/lib/i18n";
+import OnboardingModal from "./OnboardingModal";
+import ExperienceToolbar from "./ExperienceToolbar";
 
 type Props = {
   children: React.ReactNode;
@@ -50,6 +52,8 @@ function Shell({ children }: Props) {
         {t("nav.skip", "Skip to content")}
       </a>
 
+      <OnboardingModal />
+
       <header className="topbar" aria-label="Site header">
         <Link href="/" className="brand" aria-label={t("nav.home", "Home")}>
           <span className="brand-mark" aria-hidden />
@@ -71,6 +75,8 @@ function Shell({ children }: Props) {
           </Link>
         </div>
       </header>
+
+      <ExperienceToolbar />
 
       <main id="main" className="page-shell" tabIndex={-1}>
         {children}

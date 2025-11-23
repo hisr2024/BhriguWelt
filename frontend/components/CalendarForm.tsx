@@ -13,6 +13,8 @@ type HouseSummary = {
   sign: string;
   focus: string;
   tooltip: string;
+  element: string;
+  glyph: string;
 };
 
 const HOUSE_FOCUSES = [
@@ -45,6 +47,42 @@ const ZODIAC_SIGNS = [
   "Pisces",
 ];
 
+const SIGN_ELEMENTS: Record<string, { element: string; glyph: string }> = {
+  Aries: { element: "Fire", glyph: "🔥" },
+  Taurus: { element: "Earth", glyph: "🌱" },
+  Gemini: { element: "Air", glyph: "🌬️" },
+  Cancer: { element: "Water", glyph: "💧" },
+  Leo: { element: "Fire", glyph: "☀️" },
+  Virgo: { element: "Earth", glyph: "🪴" },
+  Libra: { element: "Air", glyph: "🪽" },
+  Scorpio: { element: "Water", glyph: "🌊" },
+  Sagittarius: { element: "Fire", glyph: "🔥" },
+  Capricorn: { element: "Earth", glyph: "⛰️" },
+  Aquarius: { element: "Air", glyph: "💨" },
+  Pisces: { element: "Water", glyph: "🐚" },
+};
+
+const TRANSIT_ORBITS = [
+  {
+    label: "Transit",
+    title: "Saturn review",
+    detail: "Slow-and-steady recalibration through partnerships.",
+    action: "Open overlay",
+  },
+  {
+    label: "Progression",
+    title: "Venus return",
+    detail: "Creative bloom—note houses 5 and 10 for collaborations.",
+    action: "See art prompts",
+  },
+  {
+    label: "Remedy",
+    title: "Sandal dhup",
+    detail: "Light daily near sunrise; pair with moon-soothing mantra.",
+    action: "Add to ritual list",
+  },
+];
+
 function deriveHouseGrid(details: CalendarDetails, sakaMonth?: string, sakaDay?: number) {
   const dateSeed = details.birthDate ? Date.parse(details.birthDate) : Date.now();
   const [hours, minutes] = details.birthTime.split(":").map((value) => Number(value) || 0);
@@ -64,6 +102,8 @@ function deriveHouseGrid(details: CalendarDetails, sakaMonth?: string, sakaDay?:
       focus,
       sign,
       tooltip,
+      element: SIGN_ELEMENTS[sign]?.element || "Space",
+      glyph: SIGN_ELEMENTS[sign]?.glyph || "✶",
     } satisfies HouseSummary;
   });
 }
@@ -160,6 +200,9 @@ export default function CalendarForm() {
               value={details.birthDate}
               onChange={(event) => setDetails({ ...details, birthDate: event.target.value })}
             />
+            <p className="microcopy" id="calendar-birth-date-hint">
+              Auto-detects timezone from your device; gentle prompts fire if format slips.
+            </p>
           </div>
           <div>
             <label htmlFor="calendar-birth-time">{t("form.birthTime", "Birth time (HH:MM)")}</label>
@@ -170,6 +213,7 @@ export default function CalendarForm() {
               value={details.birthTime}
               onChange={(event) => setDetails({ ...details, birthTime: event.target.value })}
             />
+            <p className="microcopy">We surface am/pm warnings so beginners avoid mistakes.</p>
           </div>
           <div>
             <label htmlFor="calendar-birth-place">{t("form.birthPlace", "Birth place")}</label>
@@ -179,6 +223,7 @@ export default function CalendarForm() {
               value={details.birthPlace}
               onChange={(event) => setDetails({ ...details, birthPlace: event.target.value })}
             />
+            <p className="microcopy">Use the city or nearest landmark—house overlays adapt dynamically.</p>
           </div>
         </div>
         <div className="form-actions">
@@ -197,6 +242,11 @@ export default function CalendarForm() {
           <span className="badge" aria-live="polite">
             {autoTriggered ? "Live conversion applied" : "Auto converts when details are filled"}
           </span>
+        </div>
+        <div className="definition-row" aria-label="Helpful glossary chips">
+          <span className="pill ghost">Tithi = lunar day</span>
+          <span className="pill ghost">Nakshatra = star mansion</span>
+          <span className="pill ghost">Bhava = life house</span>
         </div>
         {error && (
           <div className="error-banner" role="alert" aria-live="assertive" tabIndex={-1} ref={errorRef}>
@@ -237,14 +287,36 @@ export default function CalendarForm() {
                   <span className="badge">House {house.index}</span>
                   <span className="house-sign">{house.sign}</span>
                 </div>
-                <p className="house-focus">{house.focus}</p>
-                <p className="muted" title={house.tooltip}>
-                  {house.tooltip}
+                <p className="house-element">
+                  <span role="img" aria-label={house.element}>
+                    {house.glyph}
+                  </span>{" "}
+                  {house.element}
                 </p>
+                <p className="house-focus">{house.focus}</p>
+                <details className="cosmic-disclosure">
+                  <summary>Expand details</summary>
+                  <p className="muted" title={house.tooltip}>
+                    {house.tooltip}
+                  </p>
+                  <p className="microcopy">Tap any badge for a quick tooltip. Long-press on mobile adds a soft vibration.</p>
+                </details>
               </div>
             </article>
           ))}
         </div>
+      </div>
+      <div className="orbit-timeline" aria-label="Transits, progressions, and remedies timeline">
+        {TRANSIT_ORBITS.map((orbit) => (
+          <article key={orbit.title} className="orbit-timeline__card">
+            <div className="orbit-timeline__meta">
+              <span className="pill">{orbit.label}</span>
+              <h4>{orbit.title}</h4>
+            </div>
+            <p className="muted">{orbit.detail}</p>
+            <button type="button" className="ghost-button small">{orbit.action}</button>
+          </article>
+        ))}
       </div>
       <PredictionCard title="Calendar context" payload={payload} engine="calendar" />
     </section>
