@@ -31,3 +31,9 @@ The prompts below capture targeted experience upgrades across the charting flow.
 
 ## 10. Immersive Experience
 "Improve the emotional experience by adding cosmic soundscapes, soft haptic feedback, micro-animations, and interactive constellations that react to user actions. Maintain a balance between mysticism and modern UX minimalism."
+
+## Implementation notes
+- Frontend homepage split into `app/sections/*` for easier iteration.
+- Async Python API available via `python -m bhriguwelt.async_api` using aiohttp with caching + rate limits.
+- Pre-commit configured to run Black, mypy (backend), and Next.js lint/type-checks.
+
