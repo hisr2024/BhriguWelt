@@ -65,6 +65,13 @@ type FuturePayload = {
   trajectories?: { focus?: string; window?: string; certainty?: number }[];
 };
 
+type SynastryOverlay = {
+  label?: string;
+  theme?: string;
+  alignment?: number;
+  tags?: string[];
+};
+
 type MatchmakingPayload = {
   primary_name?: string;
   partner_name?: string;
@@ -74,6 +81,13 @@ type MatchmakingPayload = {
     compatibility_index?: number;
     breakdown?: { description?: string; notes?: string }[];
     modern_highlights?: string[];
+  };
+  modern_preferences?: string[];
+  charts?: {
+    primary_rashi_chart?: ChartHouse[];
+    partner_rashi_chart?: ChartHouse[];
+    shared_score?: number;
+    synastry_overlay?: SynastryOverlay[];
   };
 };
 
@@ -298,6 +312,7 @@ function interpretMatchmaking(payload: MatchmakingPayload): InsightSection[] {
       bullets.push(`${item.description}${item.notes ? ` — ${item.notes}` : ""}`);
     });
     payload.compatibility.modern_highlights?.forEach((item) => bullets.push(item));
+    payload.modern_preferences?.forEach((tag) => bullets.push(`Modern filter: ${tag}`));
     sections.push({
       heading: "Compatibility notes",
       english: "Blended from guna balance and lived priorities.",
@@ -395,6 +410,21 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
   const [detailLevel, setDetailLevel] = React.useState<"beginner" | "advanced">("beginner");
   const sections = buildSections(engine, payload);
   const horoscopePayload = engine === "horoscope" && typeof payload === "object" ? (payload as HoroscopePayload) : null;
+  const matchmakingPayload = engine === "matchmaking" && typeof payload === "object" ? (payload as MatchmakingPayload) : null;
+  const compatibilityOverlay =
+    matchmakingPayload?.charts?.synastry_overlay?.length
+      ? {
+          primaryLabel: matchmakingPayload.primary_name ?? "Primary chart",
+          partnerLabel: matchmakingPayload.partner_name ?? "Partner chart",
+          harmonyIndex:
+            matchmakingPayload.compatibility?.compatibility_index ?? matchmakingPayload.charts?.shared_score ?? undefined,
+          sharedThemes: (matchmakingPayload.charts.synastry_overlay || []).map((entry) => ({
+            label: entry.label || entry.theme || "Shared focus",
+            alignment: typeof entry.alignment === "number" ? Math.round(entry.alignment) : undefined,
+            tags: entry.tags,
+          })),
+        }
+      : undefined;
 
   if (!payload || !sections.length) {
     return (
@@ -440,6 +470,13 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
           bhavaChart={horoscopePayload.bhava_chart}
           dashas={horoscopePayload.dashas}
           detailLevel={detailLevel}
+        />
+      )}
+      {matchmakingPayload?.charts && (
+        <KundliCharts
+          rashiChart={matchmakingPayload.charts.primary_rashi_chart}
+          partnerChart={matchmakingPayload.charts.partner_rashi_chart}
+          compatibilityOverlay={compatibilityOverlay}
         />
       )}
       {payload && <FeedbackPrompt engine={engine} seekerName={seekerName} />}

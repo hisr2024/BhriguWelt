@@ -1147,6 +1147,114 @@ textarea:focus {
   margin-top: 0.5rem;
 }
 
+.alignment-preview {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(219, 161, 101, 0.08), rgba(127, 191, 180, 0.08));
+  border: 1px dashed #e2d6c2;
+}
+
+.alignment-tags {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(219, 161, 101, 0.12);
+  color: #2f3740;
+  font-weight: 600;
+  border: 1px solid rgba(219, 161, 101, 0.35);
+  animation: pulseAlign 1.8s ease-in-out infinite;
+}
+
+@keyframes pulseAlign {
+  0% {
+    box-shadow: 0 0 0 0 rgba(219, 161, 101, 0.3);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(219, 161, 101, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(219, 161, 101, 0);
+  }
+}
+
+.alignment-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.alignment-bar {
+  flex: 1;
+  height: 8px;
+  background: #f0eadf;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.alignment-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #dba165, #7fbfb4);
+  border-radius: 999px;
+}
+
+.compatibility-card {
+  background: linear-gradient(145deg, #fdfbf7 0%, #f2f6f2 100%);
+  border: 1px solid #e6d9c7;
+}
+
+.energy-venn {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  align-items: center;
+}
+
+.energy-orb {
+  position: relative;
+  padding: 1rem;
+  border-radius: 18px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #eadfce;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.05);
+}
+
+.orb-primary {
+  background: radial-gradient(circle at 30% 30%, rgba(219, 161, 101, 0.16), transparent 60%), #fff;
+}
+
+.orb-partner {
+  background: radial-gradient(circle at 70% 30%, rgba(127, 191, 180, 0.16), transparent 60%), #fff;
+}
+
+.orb-shared {
+  background: radial-gradient(circle at 50% 40%, rgba(187, 163, 232, 0.18), transparent 70%), #fff;
+  grid-column: span 2;
+}
+
+.alignment-list {
+  display: grid;
+  gap: 0.65rem;
+  text-align: left;
+}
+
+@media (max-width: 720px) {
+  .orb-shared {
+    grid-column: span 1;
+  }
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
