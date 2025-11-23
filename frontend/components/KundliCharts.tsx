@@ -33,6 +33,9 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
   const [animateCharts, setAnimateCharts] = useState(false);
   const [detailLevel, setDetailLevel] = useState<DetailLevel>("concise");
   const [activeDetail, setActiveDetail] = useState<InterpretationDetail | null>(null);
+  const [interpretationLayer, setInterpretationLayer] = useState<
+    "foundation" | "interpretations" | "horoscope" | "past-future" | "matchmaking"
+  >("foundation");
 
   useEffect(() => {
     const refresh = () => setAnimateCharts(areMicroAnimationsAllowed());
@@ -50,6 +53,40 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
     bhavaChart.length,
     rashiChart.length,
   ]);
+
+  const journeySteps = useMemo(
+    () => [
+      {
+        key: "foundation",
+        label: "Foundation",
+        description: readyLabel,
+        complete: Boolean(rashiChart.length && bhavaChart.length),
+      },
+      {
+        key: "interpretations",
+        label: "Layered interpretations",
+        description: "Tap a house to reveal stacked meanings",
+        complete: Boolean(activeDetail),
+      },
+      {
+        key: "horoscope",
+        label: "Horoscope linkage",
+        description: dashas.length ? "Dashas linked to wheel" : "Waiting for dasha data",
+        complete: Boolean(dashas.length),
+      },
+      {
+        key: "past-future",
+        label: "Past & future story",
+        description: "Overlay karmic arcs on the wheel",
+        complete: detailLevel === "advanced",
+      },
+      {
+        key: "matchmaking",
+        label: "Compatibility",
+        description: compatibilityOverlay ? "Overlay ready" : "Add partner chart to unlock",
+        complete: Boolean(compatibilityOverlay),
+      },
+    ], [activeDetail, bhavaChart.length, compatibilityOverlay, dashas.length, detailLevel, rashiChart.length, readyLabel]);
 
   const buildHouseDetail = (house: ChartHouse, occupant?: string): InterpretationDetail => {
     const occupantLabel = occupant || (house.occupants.length ? house.occupants.join(", ") : "Empty house");
@@ -83,6 +120,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
           onClick={(event) => {
             event.stopPropagation();
             handleFocus();
+            setInterpretationLayer("interpretations");
           }}
           onMouseEnter={handleFocus}
           onFocus={handleFocus}
@@ -94,6 +132,89 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
         </tspan>
       );
     });
+  };
+
+  const renderInterpretationLayers = () => {
+    const layers: { key: typeof interpretationLayer; title: string; body: string; cta?: string }[] = [
+      {
+        key: "foundation",
+        title: "Foundation wheel",
+        body: readyLabel,
+        cta: "Start with house numbers and signs",
+      },
+      {
+        key: "interpretations",
+        title: "Layered interpretations",
+        body: activeDetail?.summary || "Tap any house to unlock concise and advanced notes.",
+        cta: activeDetail?.highlight,
+      },
+      {
+        key: "horoscope",
+        title: "Horoscope linkage",
+        body: dashas.length
+          ? "Daily, weekly, and yearly predictions stay tethered to this wheel."
+          : "Add dashas to watch predictions animate around the wheel.",
+        cta: dashas.length ? "View active dasha overlay" : undefined,
+      },
+      {
+        key: "past-future",
+        title: "Past & future story arcs",
+        body:
+          "Past-life reveals unlock after the core chart renders; future nodes glow along the same spokes for continuity.",
+        cta: "Scroll timeline for deep dives",
+      },
+      {
+        key: "matchmaking",
+        title: "Compatibility overlays",
+        body: compatibilityOverlay
+          ? `${compatibilityOverlay.primaryLabel} × ${compatibilityOverlay.partnerLabel} overlay ready.`
+          : "Add a partner chart to animate duo-chart overlays and energy merging.",
+        cta: compatibilityOverlay ? "View harmony index" : undefined,
+      },
+    ];
+
+    return (
+      <div className="kundli-card kundli-card--layers" aria-live="polite">
+        <header className="section-heading">
+          <p className="eyebrow">Interpretation rail</p>
+          <h4>Cosmic layers</h4>
+          <p className="muted">Move from raw houses → stories → relationships in a single rail.</p>
+        </header>
+        <div className="kundli-layer-rail" role="tablist" aria-label="Interpretation layers">
+          {layers.map((layer) => {
+            const isActive = interpretationLayer === layer.key;
+            return (
+              <button
+                key={layer.key}
+                className={`layer-chip ${isActive ? "layer-chip--active" : ""}`}
+                onClick={() => setInterpretationLayer(layer.key)}
+                role="tab"
+                aria-selected={isActive}
+                type="button"
+              >
+                <span className="layer-chip__label">{layer.title}</span>
+                <span className="layer-chip__cta">{layer.cta || "Open"}</span>
+              </button>
+            );
+          })}
+        </div>
+        {layers
+          .filter((layer) => layer.key === interpretationLayer)
+          .map((layer) => (
+            <div key={layer.key} className="layer-panel" role="tabpanel">
+              <p className="eyebrow">{layer.title}</p>
+              <p className="muted">{layer.body}</p>
+              {activeDetail?.notes?.length && interpretationLayer === "interpretations" ? (
+                <ul className="kudos-list">
+                  {activeDetail.notes.map((note) => (
+                    <li key={note}>{note}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ))}
+      </div>
+    );
   };
 
   const renderChart = (label: string, houses: ChartHouse[], animate: boolean) => {
@@ -232,6 +353,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
 
   return (
     <div className="kundli-grid">
+      {renderInterpretationLayers()}
       <div className="kundli-card">
         <header className="section-heading">
           <p className="eyebrow">Detail mode</p>
@@ -273,6 +395,17 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
               </ul>
             </div>
           ) : null}
+        </div>
+        <div className="kundli-journey" aria-label="Prediction progress">
+          {journeySteps.map((step) => (
+            <div key={step.key} className="journey-step">
+              <div className={`journey-dot ${step.complete ? "journey-dot--complete" : ""}`} aria-hidden />
+              <div>
+                <p className="eyebrow">{step.label}</p>
+                <p className="muted">{step.description}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
       {renderChart("Rāśi chart", rashiChart, animateCharts)}

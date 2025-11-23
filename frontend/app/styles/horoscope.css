@@ -100,6 +100,11 @@
   border-color: #f2c4c4;
 }
 
+.inline-banner--info {
+  background: #eef3ff;
+  border-color: #c6d5ff;
+}
+
 .banner-actions {
   display: flex;
   gap: 0.5rem;
@@ -191,6 +196,55 @@
   gap: 1rem;
 }
 
+.kundli-card--layers {
+  background: linear-gradient(145deg, #fffdf8 0%, #fff7eb 100%);
+  border: 1px solid #eddcc4;
+  position: relative;
+  overflow: hidden;
+}
+
+.kundli-layer-rail {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.layer-chip {
+  border: 1px solid #e3d7c6;
+  background: #fff;
+  border-radius: 12px;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  display: grid;
+  gap: 0.15rem;
+  align-items: start;
+  min-width: 180px;
+  text-align: left;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.04);
+}
+
+.layer-chip--active {
+  border-color: #d97757;
+  box-shadow: 0 12px 28px rgba(217, 119, 87, 0.12);
+  background: radial-gradient(circle at 10% 20%, rgba(217, 119, 87, 0.1), transparent 45%), #fff;
+}
+
+.layer-chip__label {
+  font-weight: 700;
+}
+
+.layer-chip__cta {
+  font-size: 12px;
+  color: #5c666d;
+}
+
+.layer-panel {
+  border: 1px dashed #e5ddce;
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: #fff;
+}
+
 .kundli-card {
   border: 1px solid #eadfce;
   border-radius: 14px;
@@ -249,6 +303,35 @@
   margin: 0;
   display: grid;
   gap: 0.5rem;
+}
+
+.kundli-journey {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+  border-top: 1px dashed #e5ddce;
+  padding-top: 0.75rem;
+}
+
+.journey-step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.journey-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #d97757;
+  background: #fff;
+}
+
+.journey-dot--complete {
+  background: linear-gradient(135deg, #d97757, #e5b769);
+  box-shadow: 0 0 0 6px rgba(217, 119, 87, 0.15);
+  border-color: transparent;
 }
 
 .dasha-row {
