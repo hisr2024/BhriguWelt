@@ -183,6 +183,7 @@ class HinduCalendarContext:
     tithi_name: str
     tithi_number: int
     weekday: str
+    ephemeris_source: str
 
     def as_payload(self) -> Dict[str, object]:
         return {
@@ -208,6 +209,7 @@ class HinduCalendarContext:
             "tithi_name": self.tithi_name,
             "tithi_number": self.tithi_number,
             "weekday": self.weekday,
+            "ephemeris_source": self.ephemeris_source,
         }
 
 
@@ -219,6 +221,7 @@ def convert_birth_details(birth_date: str, birth_time: str, birth_place: str) ->
     saka_date = _gregorian_to_saka(parsed_date)
     conversion_factor = parsed_date.year - saka_date.year
     panchang = _derive_panchang(parsed_date, parsed_time)
+    ephemeris_source = "Swiss Ephemeris" if has_swisseph() else "Mean motions fallback"
     return HinduCalendarContext(
         birth_date=parsed_date,
         birth_time=parsed_time,
@@ -236,6 +239,7 @@ def convert_birth_details(birth_date: str, birth_time: str, birth_place: str) ->
         tithi_name=panchang["tithi_name"],
         tithi_number=panchang["tithi_number"],
         weekday=panchang["weekday"],
+        ephemeris_source=ephemeris_source,
     )
 
 
