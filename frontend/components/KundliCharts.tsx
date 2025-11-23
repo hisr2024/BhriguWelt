@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { ChartHouse, DashaPeriod } from "@/types/astro";
 
 interface Props {
@@ -130,7 +130,7 @@ function renderChart(
             const occupantLabel = house.occupants.join(", ");
             const houseDetail = buildHouseDetail(house);
             const handleClick = () => onSelect(houseDetail);
-            const handleKey = (event: React.KeyboardEvent<SVGGElement>) => {
+            const handleKey = (event: KeyboardEvent<SVGGElement>) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
                 handleClick();
@@ -146,7 +146,9 @@ function renderChart(
                 onClick={handleClick}
                 onKeyDown={handleKey}
                 onMouseEnter={() => onPeek(houseDetail)}
+                onFocus={() => onPeek(houseDetail)}
                 onMouseLeave={() => onPeek(null)}
+                onBlur={() => onPeek(null)}
                 className={isActiveHouse(house) ? "kundli-house active" : "kundli-house"}
               >
                 <line x1={center} y1={center} x2={x1} y2={y1} className="kundli-spoke" />
@@ -163,6 +165,7 @@ function renderChart(
                         x={textX}
                         dy={occupantIndex === 0 ? "1.1em" : "1em"}
                         className="kundli-occupants"
+                        title={buildHouseDetail(house, occupant).summary}
                         onClick={(event) => {
                           event.stopPropagation();
                           const occupantDetail = buildHouseDetail(house, occupant);
@@ -173,7 +176,16 @@ function renderChart(
                           const occupantDetail = buildHouseDetail(house, occupant);
                           onPeek(occupantDetail);
                         }}
+                        onFocus={(event) => {
+                          event.stopPropagation();
+                          const occupantDetail = buildHouseDetail(house, occupant);
+                          onPeek(occupantDetail);
+                        }}
                         onMouseLeave={(event) => {
+                          event.stopPropagation();
+                          onPeek(null);
+                        }}
+                        onBlur={(event) => {
                           event.stopPropagation();
                           onPeek(null);
                         }}
@@ -216,6 +228,7 @@ export default function KundliCharts({
   const [activeDetail, setActiveDetail] = useState<InterpretationDetail | null>(null);
   const [peekDetail, setPeekDetail] = useState<InterpretationDetail | null>(null);
   const [cosmicExplorerOpen, setCosmicExplorerOpen] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const explorerRef = useRef<SVGSVGElement | null>(null);
   const explorerLayerRef = useRef<SVGGElement | null>(null);
 
@@ -333,6 +346,20 @@ export default function KundliCharts({
                             summary: `Quick sense: ${node.label} radiates at intensity ${(node.intensity * 10).toFixed(1)}.`,
                           })
                         }
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setActiveDetail({
+                              label: node.label,
+                              summary: `Planetary energy concentrated near ${node.label}.`,
+                              highlight: "Energy pulse",
+                              notes:
+                                detailLevel === "advanced"
+                                  ? ["Zoom captures D3-style transforms for closer reading.", "Use panning to follow overlapping rays."]
+                                  : undefined,
+                            });
+                          }
+                        }}
                         onMouseLeave={() => setPeekDetail(null)}
                       />
                       <text x={cx} y={cy - 16} textAnchor="middle" className="kundli-label">
@@ -363,6 +390,9 @@ export default function KundliCharts({
                   <li key={note}>{note}</li>
                 ))}
               </ul>
+              <button className="secondary" type="button" onClick={() => setShowDetailModal(true)}>
+                Open advanced layer
+              </button>
             </div>
           )}
           {activeDetail && (
@@ -372,6 +402,37 @@ export default function KundliCharts({
               </button>
             </div>
           )}
+        </div>
+      )}
+      {showDetailModal && activeDetail && detailLevel === "advanced" && (
+        <div className="modal-backdrop" role="presentation" onClick={() => setShowDetailModal(false)}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="advanced-layer-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="section-heading">
+              <p className="eyebrow">Advanced layer</p>
+              <h4 id="advanced-layer-title">{activeDetail.label}</h4>
+            </div>
+            <p>{activeDetail.summary}</p>
+            {activeDetail.notes?.length ? (
+              <ul className="kudos-list">
+                {activeDetail.notes.map((note) => (
+                  <li key={note}>{note}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted">No extra citations were provided for this selection.</p>
+            )}
+            <div className="section-actions" style={{ marginTop: "1rem" }}>
+              <button className="secondary" type="button" onClick={() => setShowDetailModal(false)}>
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
