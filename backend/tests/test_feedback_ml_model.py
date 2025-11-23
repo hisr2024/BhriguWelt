@@ -62,9 +62,9 @@ def test_train_feedback_model_writes_artifact(isolated_feedback_db: Path):
     )
 
     model_path = isolated_feedback_db / "feedback_model.joblib"
-    summary = train_feedback_model(model_path=model_path)
+    summary = train_feedback_model(model_path=model_path, n_estimators=20, test_size=0)
 
     assert model_path.exists()
-    assert summary["samples"] == 4
-    assert summary["feature_count"] >= 1
-    assert 0.0 <= summary["accuracy"] <= 1.0
+    assert summary.samples == 4
+    assert summary.feature_count >= 1
+    assert summary.mae >= 0.0

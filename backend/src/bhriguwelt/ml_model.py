@@ -1,4 +1,4 @@
-"""Lightweight utilities for training ML refinements from user feedback."""
+"""Utilities for feature extraction and ML training on user feedback."""
 from __future__ import annotations
 
 import json
@@ -9,11 +9,13 @@ from tempfile import TemporaryDirectory
 from typing import Any, Dict, Tuple
 
 import joblib
+import numpy as np
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
+from sklearn.feature_extraction import DictVectorizer
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 
 from .feedback import load_feedback_dataframe
 
@@ -26,51 +28,64 @@ _DEFAULT_METADATA_PATH = _MODEL_DIR / "feedback_promoter_model.json"
 
 def _extract_numeric_inputs(inputs: Dict[str, Any] | None) -> Dict[str, float]:
     numeric: Dict[str, float] = {}
-    if not inputs:
-        return numeric
-
     for key, value in inputs.items():
-        if isinstance(value, bool):
-            numeric[key] = 1.0 if value else 0.0
-        elif isinstance(value, (int, float)):
-            numeric[key] = float(value)
-        elif isinstance(value, dict):
+        if key in {"weights", "principle_weights", "chart_markers", "placements", "chart"}:
+            continue
+        if isinstance(value, dict):
             for sub_key, sub_value in value.items():
-                if isinstance(sub_value, bool):
-                    numeric[f"{key}.{sub_key}"] = 1.0 if sub_value else 0.0
-                elif isinstance(sub_value, (int, float)):
-                    numeric[f"{key}.{sub_key}"] = float(sub_value)
+                coerced = _coerce_float(sub_value)
+                if coerced is not None:
+                    numeric[f"{key}.{sub_key}"] = coerced
+        elif isinstance(value, list):
+            numeric[f"{key}.count"] = float(len(value))
+        else:
+            coerced = _coerce_float(value)
+            if coerced is not None:
+                numeric[key] = coerced
     return numeric
 
 
-def _feature_frame(feedback_frame: pd.DataFrame) -> pd.DataFrame:
-    feature_rows: list[Dict[str, float]] = []
-    for inputs in feedback_frame.get("inputs", []):
-        feature_rows.append(_extract_numeric_inputs(inputs))
+def encode_feedback_features(engine: str, inputs: Dict[str, Any] | None) -> Dict[str, Any]:
+    payload = inputs if isinstance(inputs, dict) else {}
+    features: Dict[str, Any] = {"engine": engine or payload.get("engine", "")}
+    features.update(_encode_principle_weights(payload))
+    features.update(_encode_chart_markers(payload))
+    features.update(_flatten_numeric_signals(payload))
+    return features
 
-    base_features = pd.DataFrame(feature_rows)
-    engine_dummies = pd.get_dummies(feedback_frame["engine"], prefix="engine", dtype=float)
 
-    if base_features.empty:
-        base_features["bias"] = 1.0
-
-    combined = pd.concat([engine_dummies.reset_index(drop=True), base_features.reset_index(drop=True)], axis=1)
-    return combined.fillna(0.0)
+def _prepare_feature_rows(feedback_frame: pd.DataFrame) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for _, row in feedback_frame.iterrows():
+        rows.append(encode_feedback_features(row.get("engine", ""), row.get("inputs")))
+    return rows
 
 
 def _split_training_data(
-    features: pd.DataFrame, target: pd.Series
-) -> Tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series]:
-    if len(features) < 4:
-        return features, target, features, target
+    features: List[Dict[str, Any]], target: Iterable[float], test_size: float, random_state: int
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[float], List[float]]:
+    if len(features) < 4 or test_size <= 0:
+        return features, features, list(target), list(target)
 
-    return train_test_split(
+    train_rows, test_rows, train_y, test_y = train_test_split(
         features,
-        target,
-        test_size=0.25,
-        random_state=42,
-        stratify=target if target.nunique() > 1 else None,
+        list(target),
+        test_size=test_size,
+        random_state=random_state,
+        stratify=None,
     )
+    return train_rows, test_rows, train_y, test_y
+
+
+def _build_pipeline(n_estimators: int, max_depth: int | None, random_state: int) -> Pipeline:
+    vectorizer = DictVectorizer(sparse=True)
+    model = RandomForestRegressor(
+        n_estimators=n_estimators,
+        max_depth=max_depth,
+        random_state=random_state,
+        n_jobs=-1,
+    )
+    return Pipeline([("vectorizer", vectorizer), ("model", model)])
 
 
 def train_feedback_model(
@@ -101,29 +116,16 @@ def train_feedback_model(
     if frame.empty:
         raise ValueError("Cannot train ML model without feedback entries")
 
-    target = (frame["rating"] >= 4).astype(int)
-    if target.nunique() < 2:
-        raise ValueError("Training requires both positive and negative feedback ratings")
+    target = frame["rating"].astype(float)
+    feature_rows = _prepare_feature_rows(frame)
+    pipeline = _build_pipeline(n_estimators, max_depth, random_state)
 
-    features = _feature_frame(frame)
+    train_rows, test_rows, train_y, test_y = _split_training_data(feature_rows, target, test_size, random_state)
+    pipeline.fit(train_rows, train_y)
 
-    pipeline = Pipeline(
-        [
-            ("scale", StandardScaler(with_mean=False)),
-            (
-                "model",
-                LogisticRegression(
-                    max_iter=500,
-                    class_weight="balanced",
-                    solver="liblinear",
-                ),
-            ),
-        ]
-    )
-
-    train_x, test_x, train_y, test_y = _split_training_data(features, target)
-    pipeline.fit(train_x, train_y)
-    score = pipeline.score(test_x, test_y)
+    predictions = pipeline.predict(test_rows) if test_rows else []
+    mae = float(mean_absolute_error(test_y, predictions)) if len(test_y) else 0.0
+    r2 = float(r2_score(test_y, predictions)) if len(test_y) > 1 else 1.0
 
     destination = model_path or _DEFAULT_MODEL_PATH
     metadata_destination = metadata_path or _DEFAULT_METADATA_PATH
@@ -204,6 +206,8 @@ def _atomic_store_artifacts(
 
 
 __all__ = [
+    "TrainingSummary",
+    "encode_feedback_features",
     "train_feedback_model",
     "load_trained_model",
     "load_model_metadata",

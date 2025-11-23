@@ -145,12 +145,15 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     def _handle_feedback(self) -> None:
         payload = self._read_json()
         try:
+            context = payload.get("prediction_request") or payload.get("inputs") or payload.get("context")
+            if isinstance(context, dict):
+                context.setdefault("engine", payload.get("engine"))
             entry = record_feedback(
                 engine=payload.get("engine", ""),
                 rating=int(payload.get("rating", 0)),
                 seeker_name=payload.get("seeker_name"),
                 notes=payload.get("notes", ""),
-                inputs=payload.get("inputs"),
+                inputs=context,
             )
         except ValueError as exc:
             self.send_error(HTTPStatus.BAD_REQUEST, str(exc))
