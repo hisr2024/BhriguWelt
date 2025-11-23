@@ -17,6 +17,31 @@ export default function MatchmakingPage() {
         </div>
       </div>
 
+      <section className="panel softly" aria-label="Compatibility primer">
+        <div className="section-heading">
+          <p className="eyebrow">Charts first</p>
+          <h2>Two charts, one calm overlay</h2>
+          <p className="muted">
+            Generate both charts before computing aura overlays. Duo-chart comparisons highlight Venus–Mars synergies and
+            lifestyle tags in color-coded auras.
+          </p>
+        </div>
+        <div className="duo-chart-hint" role="list">
+          <div className="duo-chart-hint__card" role="listitem">
+            <span className="pill">Aura</span>
+            <p>Layered cosmic energies blend into a Venn-style glow for quick reads.</p>
+          </div>
+          <div className="duo-chart-hint__card" role="listitem">
+            <span className="pill">Validation</span>
+            <p>Form hints enforce date, time, place, and tags before compatibility renders.</p>
+          </div>
+          <div className="duo-chart-hint__card" role="listitem">
+            <span className="pill">Share</span>
+            <p>Export duo overlays as cards or send via chat without leaving the flow.</p>
+          </div>
+        </div>
+      </section>
+
       <section className="card-grid">
         <div className="card highlight">
           <div className="section-heading">
