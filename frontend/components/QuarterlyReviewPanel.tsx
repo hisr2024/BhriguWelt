@@ -7,6 +7,9 @@ import { QuarterlyReview } from "@/types/feedback";
 export default function QuarterlyReviewPanel() {
   const [reviews, setReviews] = useState<QuarterlyReview[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [liveNote, setLiveNote] = useState("");
+  const [liveRating, setLiveRating] = useState("5");
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -28,6 +31,68 @@ export default function QuarterlyReviewPanel() {
         <h3>Accuracy council rollups</h3>
         <p className="muted">Track how seekers score the folios each quarter.</p>
       </header>
+      <form
+        className="feedback-inline"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const note = {
+            seeker_name: "You",
+            rating: Number(liveRating),
+            notes: liveNote || "Quick pulse captured.",
+            created_at: new Date().toISOString(),
+          };
+          setReviews((prev) =>
+            prev.length
+              ? prev.map((review, index) =>
+                  index === 0
+                    ? {
+                        ...review,
+                        submissions: review.submissions + 1,
+                        recent_notes: [note, ...review.recent_notes].slice(0, 4),
+                      }
+                    : review,
+                )
+              : [
+                  {
+                    label: "This quarter",
+                    average_rating: Number(liveRating),
+                    promoters: 1,
+                    submissions: 1,
+                    recent_notes: [note],
+                  },
+                ],
+          );
+          setLiveNote("");
+          setSubmitted(true);
+        }}
+      >
+        <label className="sr-only" htmlFor="live-rating">
+          Quick rating
+        </label>
+        <select
+          id="live-rating"
+          value={liveRating}
+          onChange={(event) => setLiveRating(event.target.value)}
+          aria-label="Quick rating"
+        >
+          {[5, 4, 3, 2, 1].map((value) => (
+            <option key={value} value={value}>{`${value} / 5`}</option>
+          ))}
+        </select>
+        <label className="sr-only" htmlFor="live-note">
+          Quick note
+        </label>
+        <input
+          id="live-note"
+          value={liveNote}
+          onChange={(event) => setLiveNote(event.target.value)}
+          placeholder="Share what felt accurate or unclear"
+        />
+        <button type="submit" className="button-link small">
+          Send feedback
+        </button>
+        {submitted && <span className="badge">Saved live</span>}
+      </form>
       {error && (
         <div className="error-banner" role="alert">
           {error}

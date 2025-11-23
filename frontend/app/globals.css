@@ -8,19 +8,40 @@
   color: #1f2a33;
   background-color: #f7f4ec;
   letter-spacing: 0.01em;
+  --font-scale: 1;
+  --card-shadow: 0 20px 60px rgba(0, 0, 0, 0.06);
+  --orb-gradient: radial-gradient(circle at 20% 20%, rgba(249, 166, 117, 0.2), transparent 40%),
+    radial-gradient(circle at 80% 0%, rgba(104, 198, 193, 0.2), transparent 32%);
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  font-size: calc(16px * var(--font-scale));
+}
+
 body {
   margin: 0;
   min-height: 100vh;
-  background: linear-gradient(180deg, #f7f4ec 0%, #eef2ec 40%, #e7e4db 100%);
+  background: linear-gradient(180deg, #f7f4ec 0%, #eef2ec 40%, #e7e4db 100%), var(--orb-gradient);
   color: #1f2a33;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+body[data-contrast="high"] {
+  background: #0d1a1f;
+  color: #f6f8f9;
+}
+
+body[data-contrast="high"] .card,
+body[data-contrast="high"] .panel,
+body[data-contrast="high"] .serene-hero {
+  background: #0f222a;
+  color: #f6f8f9;
+  border-color: #1c3742;
 }
 
 .skip-link {
@@ -63,6 +84,7 @@ body {
   backdrop-filter: blur(16px);
   background: rgba(247, 244, 236, 0.9);
   border-bottom: 1px solid #e5ddce;
+  box-shadow: var(--card-shadow);
 }
 
 .topbar nav ul {
@@ -237,6 +259,311 @@ body {
 .sound-grid {
   display: grid;
   gap: 0.6rem;
+}
+
+/* Guided onboarding */
+.onboard-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 19, 26, 0.45);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.onboard-modal {
+  background: #0f1720;
+  color: #f4f7fb;
+  border-radius: 18px;
+  padding: 1.25rem;
+  max-width: 880px;
+  width: min(96vw, 900px);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.36);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  gap: 1rem;
+}
+
+.onboard-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.onboard-body {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 1rem;
+}
+
+.journey-steps {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.journey-step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.65rem 0.75rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: inherit;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.journey-step.is-active {
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+.glossary {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.glossary__list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.glossary__item summary {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  cursor: pointer;
+}
+
+.onboard-footer {
+  display: grid;
+  gap: 0.5rem;
+  align-items: center;
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.progress {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress__bar {
+  height: 8px;
+  background: linear-gradient(90deg, #f5c49b, #86e3ce);
+  border-radius: 999px;
+}
+
+.progress__label {
+  position: absolute;
+  inset: 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #0f1720;
+  font-weight: 700;
+}
+
+.onboard-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.experience-toolbar {
+  margin: 0.5rem 1.25rem 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px dashed rgba(31, 42, 51, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.66);
+  display: grid;
+  gap: 0.4rem;
+}
+
+.experience-toolbar__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.experience-toolbar__hint {
+  margin: 0;
+}
+
+.font-scale button {
+  border: 1px solid #d9cbb5;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+}
+
+.font-scale span {
+  font-weight: 700;
+  min-width: 48px;
+  display: inline-block;
+  text-align: center;
+}
+
+.toggle {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* Journey rail */
+.journey-rail {
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid #e5ddce;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(236, 243, 243, 0.9));
+  box-shadow: var(--card-shadow);
+}
+
+.journey-rail__steps {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.journey-rail__step {
+  border-radius: 14px;
+  border: 1px solid #e7dcc7;
+  padding: 0.75rem;
+  background: #fff;
+}
+
+.journey-rail__step summary {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.journey-rail__step[open] {
+  box-shadow: var(--card-shadow);
+}
+
+/* Orbit timeline */
+.orbit-timeline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.orbit-timeline__card {
+  padding: 0.85rem;
+  border-radius: 14px;
+  border: 1px solid #e5ddce;
+  background: linear-gradient(135deg, #f7f0e8, #f1f6f6);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
+}
+
+.orbit-timeline__card:hover {
+  transform: translateY(-3px);
+}
+
+.orbit-timeline__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cosmic-disclosure summary {
+  cursor: pointer;
+  color: #2e3a44;
+}
+
+.cosmic-houses__card {
+  position: relative;
+  overflow: hidden;
+}
+
+.cosmic-houses__card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 20%, rgba(248, 187, 142, 0.12), transparent 35%);
+  pointer-events: none;
+}
+
+.house-element {
+  font-weight: 700;
+  margin: 0.2rem 0;
+}
+
+.micro-interactions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.micro-interactions div {
+  background: #fdfbf6;
+  padding: 0.75rem;
+  border-radius: 14px;
+  border: 1px solid #e5ddce;
+}
+
+.feedback-inline {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.feedback-inline input,
+.feedback-inline select {
+  border: 1px solid #e0d6c5;
+  border-radius: 12px;
+  padding: 0.55rem 0.75rem;
+}
+
+.feedback-inline button {
+  min-height: 44px;
+}
+
+.experience-toolbar button,
+.button-link,
+.ghost-button {
+  min-height: 44px;
+}
+
+.ghost-button.small,
+.button-link.small {
+  padding: 0.25rem 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .onboard-body {
+    grid-template-columns: 1fr;
+  }
+
+  .onboard-footer {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .journey-rail__step summary {
+    flex-direction: column;
+  }
+
+  .feedback-inline {
+    grid-template-columns: 1fr;
+  }
 }
 
 .audio-tile {
