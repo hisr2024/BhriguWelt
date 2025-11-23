@@ -30,6 +30,49 @@
   box-shadow: var(--card-shadow);
 }
 
+.journey-rail__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.5rem 0 1rem;
+}
+
+.assistive-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 14px;
+  border: 1px solid #e3d8c4;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.assistive-toggle input {
+  accent-color: #d97757;
+}
+
+.assistive-value {
+  font-weight: 700;
+}
+
+.assistive-chip {
+  border: 1px solid #e3d8c4;
+  background: #fff;
+  border-radius: 12px;
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  min-height: 42px;
+}
+
+.assistive-chip--active {
+  border-color: #d97757;
+  background: linear-gradient(135deg, rgba(217, 119, 87, 0.1), rgba(227, 183, 105, 0.08));
+  transform: translateY(-1px);
+}
+
 .journey-rail__steps {
   display: grid;
   gap: 0.5rem;
@@ -51,6 +94,140 @@
 
 .journey-rail__step[open] {
   box-shadow: var(--card-shadow);
+}
+
+.journey-rail__progress {
+  margin: 0.5rem 0 1rem;
+  background: #f8f3ea;
+  border: 1px solid #e7dcc7;
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+}
+
+.journey-rail__progress-bar {
+  height: 6px;
+  background: linear-gradient(90deg, #d97757, #e5b769);
+  border-radius: 14px;
+  transition: width 0.25s ease;
+}
+
+.journey-rail__progress .microcopy {
+  padding: 0.35rem 0.75rem 0.55rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.journey-rail__actions {
+  margin-top: 0.5rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.journey-rail__action-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.journey-rail__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.soundscape-card,
+.constellation-card {
+  border: 1px solid #e5ddce;
+  border-radius: 16px;
+  padding: 0.85rem;
+  background: #fffaf3;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.05);
+}
+
+.soundscape-card__header,
+.constellation-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.soundscape-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.soundscape-tile {
+  border: 1px solid #e3d8c4;
+  border-radius: 14px;
+  padding: 0.6rem;
+  display: grid;
+  gap: 0.35rem;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.soundscape-tile--active {
+  border-color: #d97757;
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, rgba(217, 119, 87, 0.08), rgba(229, 183, 105, 0.06));
+}
+
+.soundscape-tile input {
+  justify-self: flex-end;
+  width: 16px;
+  height: 16px;
+}
+
+.constellation-grid {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.constellation-node {
+  border: 1px solid #e3d8c4;
+  border-radius: 14px;
+  padding: 0.55rem 0.65rem;
+  background: linear-gradient(180deg, rgba(230, 244, 244, 0.7), rgba(255, 255, 255, 0.95));
+  transition: transform 0.2s ease;
+}
+
+.constellation-node summary {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  cursor: pointer;
+}
+
+.constellation-node[open] {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.05);
+}
+
+.constellation-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #d97757, #354b5e);
+  display: inline-block;
+  box-shadow: 0 0 12px rgba(217, 119, 87, 0.6);
+  animation: twinkle 2.4s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
 }
 
 /* Orbit timeline */
