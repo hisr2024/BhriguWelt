@@ -1,114 +1,167 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
-import { interpretChart } from "@/lib/interpretChart";
+import { HOUSE_FOCUSES } from "@/lib/houseGrid";
+import { useImmersiveFeedback } from "@/lib/immersive";
+import { theme } from "@/lib/theme";
 import { NatalChart } from "@/types/natal";
 
-type FormState = {
-  name: string;
-  dateOfBirth: string;
-  timeOfBirth: string;
-  placeOfBirth: string;
+import FormPanel from "./horoscope/FormPanel";
+import ReadingPanel from "./horoscope/ReadingPanel";
+import { ChartResponse, FormState, FormStatus, Interpretation } from "./horoscope/types";
+import { extractInterpretation, isNatalChart, postChart, sanitize } from "./horoscope/utils";
+
+const defaultForm: FormState = {
+  name: "",
+  dateOfBirth: "",
+  timeOfBirth: "",
+  placeOfBirth: "",
 };
 
-type ChartResponse = NatalChart | Record<string, unknown>;
-
-type Interpretation = {
-  english?: string;
-  hindi?: string;
-  raw?: string;
-  summary?: string;
+type ValidationState = {
+  dob?: string;
+  tob?: string;
+  pob?: string;
 };
 
-function isNatalChart(payload: ChartResponse): payload is NatalChart {
-  if (!payload || typeof payload !== "object") return false;
-  const maybeChart = (payload as NatalChart).chart;
-  return Boolean(
-    maybeChart &&
-    typeof maybeChart === "object" &&
-    Array.isArray((maybeChart as NatalChart["chart"]).planets) &&
-    Array.isArray((maybeChart as NatalChart["chart"]).houses) &&
-    (maybeChart as NatalChart["chart"]).ascendant
-  );
-}
+type HouseAnchor = {
+  house: number;
+  sign: string;
+  focus: string;
+};
 
-function extractInterpretation(payload: ChartResponse): Interpretation {
-  const raw = JSON.stringify(payload, null, 2);
-  const typedPayload = payload as {
-    interpretation?: unknown;
-    interpretation_hi?: unknown;
-    karmic_epoch?: unknown;
-  };
-  const english = typeof typedPayload.interpretation === "string" ? typedPayload.interpretation : undefined;
-  const hindi = typeof typedPayload.interpretation_hi === "string" ? typedPayload.interpretation_hi : undefined;
-  const summary = typeof typedPayload.karmic_epoch === "string" ? typedPayload.karmic_epoch : undefined;
-
-  if (english || hindi) {
-    return { english, hindi, raw, summary };
-  }
-
-  if (isNatalChart(payload)) {
-    return { english: interpretChart({ chart: payload }), raw, summary };
-  }
-
-  return { raw };
-}
-
-async function postChart(path: string, payload: FormState) {
-  const response = await fetch(path, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      name: payload.name.trim(),
-      birth_date: payload.dateOfBirth,
-      birth_time: payload.timeOfBirth,
-      birth_place: payload.placeOfBirth.trim(),
-    }),
-  });
-
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || `Request to ${path} failed`);
-  }
-
-  return (await response.json()) as ChartResponse;
-}
+type ProgressStep = {
+  title: string;
+  description: string;
+  status: "pending" | "active" | "complete";
+};
 
 export default function HoroscopeForm() {
-  const [form, setForm] = useState<FormState>({
-    name: "",
-    dateOfBirth: "",
-    timeOfBirth: "",
-    placeOfBirth: "",
-  });
+  const [form, setForm] = useState<FormState>(defaultForm);
   const [chart, setChart] = useState<ChartResponse | null>(null);
   const [interpretation, setInterpretation] = useState<Interpretation>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [endpoint, setEndpoint] = useState<string | null>(null);
-  const [status, setStatus] = useState<"idle" | "success">("idle");
+  const [status, setStatus] = useState<FormStatus>("idle");
+  const [validations, setValidations] = useState<ValidationState>({});
+
+  const { triggerSubmitFeedback } = useImmersiveFeedback();
 
   const isComplete = useMemo(() => Object.values(form).every(Boolean), [form]);
+  const missingFields = useMemo(
+    () =>
+      ([
+        ["dob", form.dateOfBirth, "date of birth"],
+        ["tob", form.timeOfBirth, "time of birth"],
+        ["pob", form.placeOfBirth, "place of birth"],
+      ] as const)
+        .filter(([, value]) => !value)
+        .map(([, , label]) => label),
+    [form.dateOfBirth, form.placeOfBirth, form.timeOfBirth],
+  );
+  const hasValidationIssues = useMemo(() => Boolean(Object.keys(validations).length), [validations]);
+  const confidenceLabel =
+    isComplete && !hasValidationIssues
+      ? "Chart confidence: High"
+      : "Chart confidence: Add or correct birth details for higher accuracy";
   const formattedChart = useMemo(() => (chart ? JSON.stringify(chart, null, 2) : ""), [chart]);
   const hasNarrative = Boolean(interpretation.english || interpretation.hindi);
   const fallbackNarrative = interpretation.raw || formattedChart;
+  const houseFoundation = useMemo<HouseAnchor[] | null>(() => {
+    if (!chart || !isNatalChart(chart)) return null;
+    const natalChart = chart as NatalChart;
+    return HOUSE_FOCUSES.map((focus, index) => {
+      const houseNumber = index + 1;
+      const house = natalChart.chart.houses.find((entry) => entry.number === houseNumber);
+      const sign = house?.sign || natalChart.chart.ascendant?.sign || "—";
+      return { house: houseNumber, sign, focus } satisfies HouseAnchor;
+    });
+  }, [chart]);
+  const timeframeAnchors = useMemo(() => {
+    const anchors = [
+      { label: "Daily", houseIndex: 1 },
+      { label: "Weekly", houseIndex: 3 },
+      { label: "Monthly", houseIndex: 6 },
+      { label: "Yearly", houseIndex: 10 },
+    ];
 
-  const sanitize = (value: string) =>
-    value
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+    return anchors.map((anchor) => {
+      const foundation = houseFoundation?.find((item) => item.house === anchor.houseIndex);
+      return {
+        ...anchor,
+        focus: foundation?.focus || HOUSE_FOCUSES[anchor.houseIndex - 1],
+        sign: foundation?.sign,
+      };
+    });
+  }, [houseFoundation]);
+  const progressSteps = useMemo<ProgressStep[]>(() => {
+    const steps: ProgressStep[] = [
+      {
+        title: "Birth details captured",
+        description: "Name, date, time, and place locked in.",
+        status: isComplete ? "complete" : "active",
+      },
+      {
+        title: "Chart generated",
+        description: "Planets and houses mapped in one view.",
+        status: chart ? "complete" : isComplete && loading ? "active" : "pending",
+      },
+      {
+        title: "12-house foundation",
+        description: "House lords and focuses paired to your ascendant.",
+        status: houseFoundation ? "complete" : chart ? "active" : "pending",
+      },
+      {
+        title: "Timeframe guidance",
+        description: "Daily to yearly pathways linked to the base chart.",
+        status: hasNarrative ? "complete" : chart ? "active" : "pending",
+      },
+    ];
+
+    return steps;
+  }, [chart, hasNarrative, houseFoundation, isComplete, loading]);
+
+  const handleChange = (field: keyof FormState, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const validate = (payload: FormState): ValidationState => {
+    const feedback: ValidationState = {};
+
+    if (payload.dateOfBirth) {
+      const year = Number(payload.dateOfBirth.split("-")[0]);
+      if (year < 1900 || year > 2100) {
+        feedback.dob = "Try a date within 1900-2100";
+      }
+    }
+
+    if (payload.timeOfBirth && !/^\d{2}:\d{2}$/.test(payload.timeOfBirth)) {
+      feedback.tob = "Use HH:MM in 24h format (e.g., 07:45)";
+    }
+
+    if (payload.placeOfBirth && payload.placeOfBirth.length < 3) {
+      feedback.pob = "Add at least 3 characters (city, country)";
+    }
+
+    return feedback;
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    triggerSubmitFeedback();
     setError(null);
     setStatus("idle");
     setChart(null);
     setEndpoint(null);
     setInterpretation({});
+
+    if (missingFields.length || Object.keys(validations).length) {
+      setError("Please fix the highlighted birth details.");
+      return;
+    }
+
     setLoading(true);
 
     const attempt = async (path: string) => {
@@ -172,10 +225,11 @@ export default function HoroscopeForm() {
         <head>
           <title>Holistic Horoscope</title>
           <style>
-            body { font-family: "Inter", system-ui, -apple-system, sans-serif; background: #04060f; color: #e8edff; margin: 0; padding: 32px; }
+            body { font-family: "Inter", system-ui, -apple-system, sans-serif; background: ${theme.gradients.backdrop}; color: ${theme.colors.text}; margin: 0; padding: 32px; }
             h1 { margin-top: 0; letter-spacing: 0.02em; }
-            .meta { color: #cbd5f5; margin-bottom: 24px; }
-            pre { white-space: pre-wrap; word-break: break-word; background: #0b1021; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 16px; color: #dbeafe; }
+            .meta { color: ${theme.colors.muted}; margin-bottom: 24px; }
+            pre { white-space: pre-wrap; word-break: break-word; background: ${theme.colors.canvasSurface}; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 16px; color: ${theme.colors.canvasText}; }
+            section { margin-bottom: 18px; }
           </style>
         </head>
         <body>
@@ -193,193 +247,41 @@ export default function HoroscopeForm() {
     printable.print();
   };
 
+  useEffect(() => {
+    setValidations(validate(form));
+  }, [form]);
+
+  useEffect(() => {
+    if (!missingFields.length && !Object.keys(validations).length) {
+      setError(null);
+    }
+  }, [missingFields, validations]);
+
   return (
     <section className="horo-board" aria-label="Horoscope creation">
       <div className="horo-layout">
-        <div className="horo-panel horo-panel--form">
-          <div className="panel-head">
-            <div>
-              <p className="pill">Essentials</p>
-              <h2>Input once.</h2>
-            </div>
-            <div className="status-chip" aria-live="polite">
-              {status === "success" ? "Reading ready" : "Awaiting details"}
-            </div>
-          </div>
+        <FormPanel
+          form={form}
+          status={status}
+          loading={loading}
+          endpoint={endpoint}
+          error={error}
+          isComplete={isComplete}
+          onChange={handleChange}
+          onSubmit={handleSubmit}
+          onAskBhrigu={handleAskBhrigu}
+          onDownloadPdf={handleDownloadPdf}
+        />
 
-          <form className="horo-form" onSubmit={handleSubmit} aria-busy={loading}>
-            <div className="field-row">
-              <div className="field">
-                <label htmlFor="horoscope-name">Full name</label>
-                <input
-                  id="horoscope-name"
-                  name="name"
-                  type="text"
-                  autoComplete="name"
-                  placeholder="Aarya Sen"
-                  value={form.name}
-                  onChange={(event) => setForm({ ...form, name: event.target.value })}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="field-row field-row--split">
-              <div className="field">
-                <label htmlFor="horoscope-dob">Date of birth</label>
-                <input
-                  id="horoscope-dob"
-                  name="dateOfBirth"
-                  type="date"
-                  value={form.dateOfBirth}
-                  onChange={(event) => setForm({ ...form, dateOfBirth: event.target.value })}
-                  required
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="horoscope-tob">Time of birth</label>
-                <input
-                  id="horoscope-tob"
-                  name="timeOfBirth"
-                  type="time"
-                  value={form.timeOfBirth}
-                  onChange={(event) => setForm({ ...form, timeOfBirth: event.target.value })}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="field-row">
-              <div className="field">
-                <label htmlFor="horoscope-pob">Place of birth</label>
-                <input
-                  id="horoscope-pob"
-                  name="placeOfBirth"
-                  type="text"
-                  autoComplete="address-level2"
-                  placeholder="Jaipur, Bharat"
-                  value={form.placeOfBirth}
-                  onChange={(event) => setForm({ ...form, placeOfBirth: event.target.value })}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="action-row">
-              <button type="submit" disabled={loading || !isComplete} aria-label="Generate horoscope">
-                {loading ? "Preparing your reading..." : "Generate reading"}
-              </button>
-              <div className="action-notes">{endpoint ? <p className="microcopy">Saved from: {endpoint}</p> : null}</div>
-            </div>
-
-            {error ? (
-              <div className="inline-banner inline-banner--error" role="alert">
-                <strong>Something went wrong.</strong>
-                <p className="microcopy">{error}</p>
-              </div>
-            ) : null}
-
-            {status === "success" ? (
-              <div className="inline-banner inline-banner--success" role="status">
-                <div>
-                  <strong>Reading captured.</strong>
-                </div>
-                <div className="banner-actions">
-                  <button type="button" className="ghost-button" onClick={handleAskBhrigu}>
-                    Ask in chat
-                  </button>
-                  <button type="button" className="ghost-button" onClick={handleDownloadPdf}>
-                    Download PDF
-                  </button>
-                </div>
-              </div>
-            ) : null}
-          </form>
-        </div>
-
-        <div className="horo-panel horo-panel--reading" aria-live="polite">
-          <div className="panel-head">
-            <div>
-              <p className="pill">Interpretation</p>
-              <h2>Reading canvas</h2>
-            </div>
-            {chart ? (
-              <div className="status-chip status-chip--ready">Ready to share</div>
-            ) : (
-              <div className="status-chip">Waiting for inputs</div>
-            )}
-          </div>
-
-          {chart ? (
-            <div className="reading-surface">
-              <div className="reading-toolbar">
-                <div>
-                  <strong>{form.name || "Reader"}</strong>
-                </div>
-                <div className="toolbar-actions">
-                  <button type="button" className="ghost-button" onClick={handleAskBhrigu}>
-                    Ask in chat
-                  </button>
-                  <button type="button" className="ghost-button" onClick={handleDownloadPdf}>
-                    Save PDF
-                  </button>
-                </div>
-              </div>
-
-              <div className="interpretation-grid">
-                <div className="interpretation-canvas">
-                  <div className="canvas-head">
-                    <div>
-                      <h3 className="canvas-title">Interpretation</h3>
-                    </div>
-                    {interpretation.summary ? <span className="pill">{interpretation.summary}</span> : null}
-                  </div>
-
-                  {hasNarrative ? (
-                    <>
-                      {interpretation.english ? (
-                        <section>
-                          <p className="microcopy">English</p>
-                          <pre aria-live="polite">{interpretation.english}</pre>
-                        </section>
-                      ) : null}
-                      {interpretation.hindi ? (
-                        <section>
-                          <p className="microcopy">हिंदी मार्गदर्शन</p>
-                          <pre aria-live="polite">{interpretation.hindi}</pre>
-                        </section>
-                      ) : null}
-                    </>
-                  ) : (
-                    <section>
-                      <p className="microcopy">Raw data</p>
-                      <pre aria-live="polite">{fallbackNarrative}</pre>
-                    </section>
-                  )}
-                </div>
-
-                <aside className="interpretation-notes">
-                  <h4>Share or download</h4>
-                  <ul>
-                    <li>Save PDF</li>
-                    <li>Send to chat</li>
-                    <li>Bilingual ready</li>
-                  </ul>
-                </aside>
-              </div>
-            </div>
-          ) : (
-            <div className="reading-placeholder">
-              <h3>Space reserved for the live reading</h3>
-              <p className="muted">Add details to unlock the interpretation.</p>
-              <ul>
-                <li>Reading panel activates after submission.</li>
-                <li>Then download as PDF or continue in chat.</li>
-                <li>English and Hindi blocks load together.</li>
-              </ul>
-            </div>
-          )}
-        </div>
+        <ReadingPanel
+          chart={chart}
+          form={form}
+          interpretation={interpretation}
+          hasNarrative={hasNarrative}
+          fallbackNarrative={fallbackNarrative}
+          onAskBhrigu={handleAskBhrigu}
+          onDownloadPdf={handleDownloadPdf}
+        />
       </div>
     </section>
   );

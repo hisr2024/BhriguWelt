@@ -4,8 +4,11 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { requestPrediction } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { captureClientError } from "@/lib/telemetry";
+import { useImmersiveFeedback } from "@/lib/immersive";
 import { BirthDetails, PredictionEngine } from "@/types/astro";
 import PredictionCard from "./PredictionCard";
+
+const MAX_RETRIES = 2;
 
 const defaultDetails: BirthDetails = {
   name: "",
@@ -29,15 +32,21 @@ interface Props {
   engine: PredictionEngine;
   title: string;
   description: string;
+  onRequestStart?: () => void;
+  onResult?: (payload: unknown) => void;
 }
 
-export default function PredictionForm({ engine, title, description }: Props) {
+export default function PredictionForm({ engine, title, description, onRequestStart, onResult }: Props) {
   const { t } = useI18n();
   const [details, setDetails] = useState<BirthDetails>(defaultDetails);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [payload, setPayload] = useState<unknown>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [retryAttempts, setRetryAttempts] = useState(0);
   const errorRef = useRef<HTMLDivElement | null>(null);
+  const lastSuccessfulPayloadRef = useRef<unknown>(null);
+  const { triggerSubmitFeedback } = useImmersiveFeedback();
 
   useEffect(() => {
     if (error && errorRef.current) {
@@ -47,15 +56,62 @@ export default function PredictionForm({ engine, title, description }: Props) {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    triggerSubmitFeedback();
     setError(null);
+    setInfo(null);
+    setRetryAttempts(0);
     setPayload(null);
+    onRequestStart?.();
     setLoading(true);
+    const isOffline = typeof navigator !== "undefined" && navigator && !navigator.onLine;
+
+    if (isOffline) {
+      setLoading(false);
+      setError("Offline detected. Reconnect or retry to refresh predictions.");
+      if (lastSuccessfulPayloadRef.current) {
+        setInfo("Showing last available guidance while offline.");
+        setPayload(lastSuccessfulPayloadRef.current);
+      }
+      return;
+    }
+
+    const requestWithRetry = async () => {
+      let attempt = 0;
+      let lastError: unknown;
+      while (attempt <= MAX_RETRIES) {
+        try {
+          const data = await requestPrediction(engine, details);
+          return { data, attempts: attempt };
+        } catch (err) {
+          lastError = err;
+          const message = err instanceof Error ? err.message : "";
+          const networkIssue = err instanceof TypeError || /network/i.test(message);
+          if (networkIssue && attempt < MAX_RETRIES) {
+            attempt += 1;
+            setRetryAttempts(attempt);
+            await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+            continue;
+          }
+          throw err;
+        }
+      }
+      throw lastError ?? new Error("Unable to fetch prediction");
+    };
+
     try {
-      const response = await requestPrediction(engine, details);
-      setPayload(response);
+      const { data, attempts } = await requestWithRetry();
+      setPayload(data);
+      lastSuccessfulPayloadRef.current = data;
+      if (attempts > 0) {
+        setInfo(`Completed after ${attempts + 1} attempts.`);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to fetch prediction";
       setError(message);
+      if (lastSuccessfulPayloadRef.current) {
+        setInfo("Showing last available guidance while we retry later.");
+        setPayload(lastSuccessfulPayloadRef.current);
+      }
       captureClientError(message, { engine, details });
     } finally {
       setLoading(false);
@@ -71,6 +127,14 @@ export default function PredictionForm({ engine, title, description }: Props) {
           <p className="muted" id={`${engine}-helper`}>
             {description || t("form.helper", "Complete every detail to keep remedies precise.")}
           </p>
+          {retryAttempts > 0 ? (
+            <p className="microcopy" aria-live="polite">
+              Retrying... attempt {retryAttempts + 1} of {MAX_RETRIES + 1}
+            </p>
+          ) : null}
+          {info ? (
+            <p className="microcopy" aria-live="polite">{info}</p>
+          ) : null}
         </header>
         <div className="form-grid">
           <div>

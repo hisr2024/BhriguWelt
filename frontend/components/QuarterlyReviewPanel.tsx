@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchQuarterlyReviews } from "@/lib/api";
 import { QuarterlyReview } from "@/types/feedback";
+import { useImmersiveFeedback } from "@/lib/immersive";
 
 export default function QuarterlyReviewPanel() {
   const [reviews, setReviews] = useState<QuarterlyReview[]>([]);
@@ -10,6 +11,7 @@ export default function QuarterlyReviewPanel() {
   const [liveNote, setLiveNote] = useState("");
   const [liveRating, setLiveRating] = useState("5");
   const [submitted, setSubmitted] = useState(false);
+  const { triggerSubmitFeedback } = useImmersiveFeedback();
 
   useEffect(() => {
     const load = async () => {
@@ -35,6 +37,7 @@ export default function QuarterlyReviewPanel() {
         className="feedback-inline"
         onSubmit={(event) => {
           event.preventDefault();
+          triggerSubmitFeedback();
           const note = {
             seeker_name: "You",
             rating: Number(liveRating),

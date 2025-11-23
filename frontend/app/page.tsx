@@ -51,7 +51,15 @@ export default function HomePage() {
               <li>Mini 12-house chart with elemental glow for each segment.</li>
             </ul>
           </div>
-          <div className="card highlight">
+          <div className="card highlight cosmic-form">
+            <div className="cosmic-form__sky" aria-hidden>
+              <span className="cosmic-star" />
+              <span className="cosmic-star delay" />
+              <span className="cosmic-star slow" />
+              <span className="cosmic-star" />
+              <span className="cosmic-star delay" />
+              <span className="cosmic-star slow" />
+            </div>
             <BirthInputForm />
           </div>
           <div className="card">
