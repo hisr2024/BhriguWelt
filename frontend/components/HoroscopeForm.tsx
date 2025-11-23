@@ -47,6 +47,13 @@ export default function HoroscopeForm() {
   const [status, setStatus] = useState<"idle" | "success">("idle");
 
   const isComplete = useMemo(() => Object.values(form).every(Boolean), [form]);
+  const formattedChart = useMemo(() => (chart ? JSON.stringify(chart, null, 2) : ""), [chart]);
+
+  const sanitize = (value: string) =>
+    value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -91,21 +98,62 @@ export default function HoroscopeForm() {
     }
   };
 
+  const handleDownloadPdf = () => {
+    if (!chart || typeof window === "undefined") return;
+    const printable = window.open("", "_blank", "noopener,noreferrer,width=900,height=1200");
+    if (!printable) return;
+
+    const safeChart = sanitize(formattedChart);
+    printable.document.write(`
+      <html>
+        <head>
+          <title>Holistic Horoscope</title>
+          <style>
+            body { font-family: "Inter", system-ui, -apple-system, sans-serif; background: #0b1021; color: #e8edff; margin: 0; padding: 32px; }
+            h1 { margin-top: 0; letter-spacing: 0.02em; }
+            .meta { color: #cbd5f5; margin-bottom: 24px; }
+            pre { white-space: pre-wrap; word-break: break-word; background: #0f1628; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 16px; color: #dbeafe; }
+          </style>
+        </head>
+        <body>
+          <h1>Holistic Horoscope</h1>
+          <p class="meta">Generated from name, date of birth, time of birth, and place of birth.</p>
+          <pre>${safeChart}</pre>
+        </body>
+      </html>
+    `);
+    printable.document.close();
+    printable.focus();
+    printable.print();
+  };
+
   return (
     <section className="horoscope-intake" aria-label="Horoscope intake">
       <div className="holo-grid">
         <div className="holo-copy">
-          <p className="eyebrow">Minimal cosmic intake</p>
-          <h2>Horoscope form tuned for calm focus</h2>
+          <p className="eyebrow">Holistic Bhrigu flow</p>
+          <h2>Keep the four pillars ready</h2>
           <p className="muted">
-            Name, birth date, birth time, and place. Clean lines, lots of whitespace, and a gentle Bharat-first gradient that
-            frames the inputs without crowding them.
+            Name, date of birth, time of birth, and place of birth stay visible at every step so the reading never loses the
+            seeker. The layout opens wide for interpretations while keeping controls lightweight.
           </p>
-          <ul className="pill-list">
-            <li className="pill">Śaka-aware</li>
-            <li className="pill">Whisper gradients</li>
-            <li className="pill">WCAG focus rings</li>
-          </ul>
+          <div className="flow-grid" role="list">
+            <div className="flow-card" role="listitem">
+              <p className="pill">Input</p>
+              <h3>Identify the seeker</h3>
+              <p className="muted">Capture the core birth details without secondary toggles or extra context.</p>
+            </div>
+            <div className="flow-card" role="listitem">
+              <p className="pill">Interpret</p>
+              <h3>Holistic horoscope</h3>
+              <p className="muted">Receive a clean English and Hindi interpretation on a spacious reading canvas.</p>
+            </div>
+            <div className="flow-card" role="listitem">
+              <p className="pill">Deliver</p>
+              <h3>Downloadable PDF</h3>
+              <p className="muted">Print or save the reading instantly—no engine jargon or delivery steps required.</p>
+            </div>
+          </div>
         </div>
 
         <div className="holo-panel">
@@ -169,7 +217,7 @@ export default function HoroscopeForm() {
                 {loading ? "Consulting Bhrigu..." : "Generate chart"}
               </button>
               <span className="badge" aria-live="polite">
-                {status === "success" ? "Chart cached for chat" : "We only need these four details"}
+                {status === "success" ? "Reading space ready" : "Only the four essentials are needed"}
               </span>
             </div>
 
@@ -177,7 +225,7 @@ export default function HoroscopeForm() {
               <div className="error-banner" role="alert">
                 {error}
                 <p className="microcopy" style={{ marginTop: "0.25rem" }}>
-                  Tried /api/chart then /api/bhrigu-chat. Check the backend URL or try again.
+                  Confirm the four primary inputs and try again. Connectivity hiccups reset automatically.
                 </p>
               </div>
             ) : null}
@@ -189,22 +237,46 @@ export default function HoroscopeForm() {
                     <p className="eyebrow">Chart stored</p>
                     <strong>{endpoint ?? "Local synthesis"}</strong>
                   </div>
-                  <button type="button" className="ghost-button" onClick={handleAskBhrigu}>
-                    Ask Bhrigu
-                  </button>
+                  <div className="canvas-actions">
+                    <button type="button" className="ghost-button" onClick={handleAskBhrigu}>
+                      Ask Bhrigu
+                    </button>
+                    <button type="button" className="ghost-button" onClick={handleDownloadPdf}>
+                      Download PDF
+                    </button>
+                  </div>
                 </div>
-                <p className="microcopy">Lightweight confirmation. Hand off to the chat rail without breaking focus.</p>
+                <p className="microcopy">Reading saved to the page. Share via chat or save the interpretation as a PDF.</p>
               </div>
             ) : null}
           </form>
 
           {chart ? (
-            <div className="holo-preview" aria-live="polite">
-              <div className="preview-header">
-                <p className="eyebrow">Chart snapshot</p>
-                <span className="pill">Minimal JSON</span>
+            <div className="interpretation-grid" aria-live="polite">
+              <div className="interpretation-canvas">
+                <div className="canvas-head">
+                  <div>
+                    <p className="eyebrow">Holistic interpretation</p>
+                    <h3 className="canvas-title">Wide reading space</h3>
+                  </div>
+                  <div className="canvas-actions">
+                    <button type="button" className="ghost-button" onClick={handleDownloadPdf}>
+                      Save as PDF
+                    </button>
+                  </div>
+                </div>
+                <p className="muted">English and Hindi guidance is displayed with comfortable line height for long-form reading.</p>
+                <pre>{formattedChart}</pre>
               </div>
-              <pre>{JSON.stringify(chart, null, 2)}</pre>
+
+              <div className="interpretation-notes">
+                <h4>Core highlights</h4>
+                <ul>
+                  <li>Clean text blocks keep each insight readable on wide screens.</li>
+                  <li>Use the PDF action to store the interpretation in your downloads folder.</li>
+                  <li>Primary inputs remain visible above for quick edits without leaving the canvas.</li>
+                </ul>
+              </div>
             </div>
           ) : null}
         </div>

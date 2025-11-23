@@ -1658,6 +1658,29 @@ button:disabled {
   gap: 0.75rem;
 }
 
+.flow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.flow-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  padding: 0.85rem 1rem;
+  box-shadow: 0 15px 32px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.flow-card h3 {
+  margin: 0.35rem 0 0.25rem;
+}
+
+.flow-card p {
+  margin: 0;
+}
+
 .holo-actions {
   display: flex;
   align-items: center;
@@ -1674,6 +1697,12 @@ button:disabled {
   flex-wrap: wrap;
 }
 
+.canvas-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .holo-preview {
   margin-top: 1rem;
   background: rgba(255, 255, 255, 0.02);
@@ -1688,4 +1717,71 @@ button:disabled {
   color: #cdd5f7;
   border-radius: 0.85rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.interpretation-grid {
+  margin-top: 1.25rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .interpretation-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.interpretation-canvas {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.1rem;
+  padding: 1rem;
+  box-shadow: 0 22px 40px rgba(0, 0, 0, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.canvas-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.canvas-title {
+  margin: 0.15rem 0 0;
+}
+
+.interpretation-canvas pre {
+  margin: 0.75rem 0 0;
+  background: #0b1224;
+  color: #dbeafe;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.7;
+}
+
+.interpretation-notes {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 15px 36px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.interpretation-notes h4 {
+  margin: 0 0 0.35rem;
+}
+
+.interpretation-notes ul {
+  padding-left: 1.1rem;
+  margin: 0;
+  color: #d5def9;
+  display: grid;
+  gap: 0.4rem;
+  line-height: 1.6;
 }
