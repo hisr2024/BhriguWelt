@@ -37,6 +37,37 @@ const SIGN_TONES: Record<string, string> = {
   Pisces: "empathy and imagination",
 };
 
+type AspectCategory = "major" | "harmonic" | "micro";
+
+type AspectDefinition = {
+  name: string;
+  angle: number;
+  baseOrb: number;
+  category: AspectCategory;
+  keywords: string;
+};
+
+type AspectHit = {
+  aspect: AspectDefinition;
+  orb: number;
+  tightness: number;
+  planets: [Planet, Planet];
+};
+
+const ASPECT_DEFINITIONS: AspectDefinition[] = [
+  { name: "Conjunction", angle: 0, baseOrb: 8, category: "major", keywords: "fusion and amplification" },
+  { name: "Opposition", angle: 180, baseOrb: 8, category: "major", keywords: "polarized awareness and calibration" },
+  { name: "Trine", angle: 120, baseOrb: 7, category: "major", keywords: "flow and easy resonance" },
+  { name: "Square", angle: 90, baseOrb: 6, category: "major", keywords: "friction that sharpens growth" },
+  { name: "Sextile", angle: 60, baseOrb: 5, category: "harmonic", keywords: "opportunities sparked by curiosity" },
+  { name: "Quincunx", angle: 150, baseOrb: 3, category: "harmonic", keywords: "adjustments that demand creativity" },
+  { name: "Quintile", angle: 72, baseOrb: 2.5, category: "micro", keywords: "creative talent with a precise craft" },
+  { name: "Biquintile", angle: 144, baseOrb: 2.5, category: "micro", keywords: "refined artistry expressed collaboratively" },
+  { name: "Septile", angle: 51.43, baseOrb: 1.8, category: "micro", keywords: "intuitive leaps and mystical timing" },
+  { name: "Biseptile", angle: 102.86, baseOrb: 1.6, category: "micro", keywords: "threshold decisions that reroute paths" },
+  { name: "Triseptile", angle: 154.29, baseOrb: 1.4, category: "micro", keywords: "subtle course corrections guided by faith" },
+];
+
 function formatHeading(title: string) {
   return `### ${title}`;
 }
@@ -69,6 +100,131 @@ function describePlanetaryHighlights(chart: NatalChart, isMinor?: boolean) {
   const saturn = highlight(findPlanet(chart, "Saturn"), "discipline shaped by respectful boundaries");
 
   return [sun, moon, mars, saturn].filter(Boolean).join(" ");
+}
+
+function planetLongitude(planet: Planet): number {
+  const signOrder = [
+    "Aries",
+    "Taurus",
+    "Gemini",
+    "Cancer",
+    "Leo",
+    "Virgo",
+    "Libra",
+    "Scorpio",
+    "Sagittarius",
+    "Capricorn",
+    "Aquarius",
+    "Pisces",
+  ];
+  const signIndex = signOrder.indexOf(planet.sign);
+  return ((signIndex >= 0 ? signIndex : 0) * 30 + planet.degree) % 360;
+}
+
+function orbAllowance(aspect: AspectDefinition, a: Planet, b: Planet): number {
+  const luminaryBonus = ["Sun", "Moon"].some((name) => name === a.name || name === b.name) ? 1 : 0;
+  const retrogradeTightening = a.retrograde || b.retrograde ? -0.2 : 0;
+  const categoryModifier = aspect.category === "micro" ? -0.4 : aspect.category === "harmonic" ? -0.2 : 0;
+  const computed = aspect.baseOrb + luminaryBonus + retrogradeTightening + categoryModifier;
+  return Math.max(0.5, Math.round(computed * 10) / 10);
+}
+
+function angularDifference(a: number, b: number) {
+  const diff = Math.abs(a - b) % 360;
+  return diff > 180 ? 360 - diff : diff;
+}
+
+function calculateAspects(planets: Planet[]): AspectHit[] {
+  const results: AspectHit[] = [];
+
+  for (let i = 0; i < planets.length; i += 1) {
+    for (let j = i + 1; j < planets.length; j += 1) {
+      const p1 = planets[i];
+      const p2 = planets[j];
+      const long1 = planetLongitude(p1);
+      const long2 = planetLongitude(p2);
+      const separation = angularDifference(long1, long2);
+
+      ASPECT_DEFINITIONS.forEach((aspect) => {
+        const allowedOrb = orbAllowance(aspect, p1, p2);
+        const delta = Math.abs(separation - aspect.angle);
+        if (delta <= allowedOrb) {
+          results.push({
+            aspect,
+            orb: Number(allowedOrb.toFixed(1)),
+            tightness: Number(delta.toFixed(2)),
+            planets: [p1, p2],
+          });
+        }
+      });
+    }
+  }
+
+  return results.sort((a, b) => {
+    if (a.aspect.category === b.aspect.category) return a.tightness - b.tightness;
+    const order: AspectCategory[] = ["major", "harmonic", "micro"];
+    return order.indexOf(a.aspect.category) - order.indexOf(b.aspect.category);
+  });
+}
+
+function describeAspectPatterns(chart: NatalChart) {
+  const aspects = calculateAspects(chart.chart.planets);
+
+  if (!aspects.length) {
+    return "No tight inter-planetary aspects found within configured orbs. The chart expresses its signatures more through houses and elements.";
+  }
+
+  const summaries = aspects.slice(0, 8).map((hit) => {
+    const [p1, p2] = hit.planets;
+    const retrogradeCue = p1.retrograde || p2.retrograde ? " (introspective motion)" : "";
+    return `- ${p1.name} ${hit.aspect.name.toLowerCase()} ${p2.name} (${hit.tightness}\u00b0 orb; ${hit.aspect.keywords}${retrogradeCue})`;
+  });
+
+  const microCount = aspects.filter((hit) => hit.aspect.category === "micro").length;
+  const harmonicCount = aspects.filter((hit) => hit.aspect.category === "harmonic").length;
+  const majorCount = aspects.filter((hit) => hit.aspect.category === "major").length;
+
+  const headline = `Major (${majorCount}), harmonic (${harmonicCount}), and micro (${microCount}) aspects weave the chart's dynamics.`;
+
+  return [headline, ...summaries].join("\n");
+}
+
+function describeHouseEmphasis(chart: NatalChart) {
+  const modalityBuckets: Record<"angular" | "succedent" | "cadent", Planet[]> = {
+    angular: [],
+    succedent: [],
+    cadent: [],
+  };
+
+  chart.chart.planets.forEach((planet) => {
+    const house = planet.house;
+    if ([1, 4, 7, 10].includes(house)) modalityBuckets.angular.push(planet);
+    else if ([2, 5, 8, 11].includes(house)) modalityBuckets.succedent.push(planet);
+    else modalityBuckets.cadent.push(planet);
+  });
+
+  const counts = {
+    angular: modalityBuckets.angular.length,
+    succedent: modalityBuckets.succedent.length,
+    cadent: modalityBuckets.cadent.length,
+  };
+
+  const dominant = (Object.entries(counts) as [keyof typeof counts, number][]).sort(([, a], [, b]) => b - a)[0][0];
+
+  const tone: Record<keyof typeof counts, string> = {
+    angular: "action orientation and visibility", 
+    succedent: "resource building and stabilization",
+    cadent: "adaptability, study, and reflective transitions",
+  };
+
+  const notes = [
+    `- Angular: ${counts.angular} (houses 1/4/7/10)`,
+    `- Succedent: ${counts.succedent} (houses 2/5/8/11)`,
+    `- Cadent: ${counts.cadent} (houses 3/6/9/12)`,
+    `- Dominant zone: ${dominant} — ${tone[dominant]}`,
+  ];
+
+  return notes.join("\n");
 }
 
 function describeRahuKetu(chart: NatalChart, isMinor?: boolean) {
@@ -176,7 +332,9 @@ export function interpretChart(params: { chart: NatalChart; userQuestion?: strin
     `${formatHeading("Ascendant & Core Identity")}\n${describeAscendant(chart, isMinor)}`,
     `${formatHeading("Planetary Highlights")}\n${describePlanetaryHighlights(chart, isMinor)}`,
     `${formatHeading("Rahu–Ketu Axis")}\n${describeRahuKetu(chart, isMinor)}`,
+    `${formatHeading("House Emphasis & Angularity")}\n${describeHouseEmphasis(chart)}`,
     `${formatHeading("Element Balance")}\n${describeElementBalance(chart)}`,
+    `${formatHeading("Aspect Dynamics")}\n${describeAspectPatterns(chart)}`,
     `${formatHeading("Strengths & Challenges")}\n${describeStrengthsChallenges(chart, isMinor, userQuestion)}`,
   ];
 
