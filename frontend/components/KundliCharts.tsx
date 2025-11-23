@@ -232,6 +232,21 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
     };
   };
 
+  const biteSizedInterpretations = useMemo(() => {
+    const source = rashiChart.length ? rashiChart : bhavaChart;
+    return source.flatMap((house) => {
+      const occupants = house.occupants.length ? house.occupants : ["House focus"];
+      return occupants.slice(0, 3).map((occupant) => {
+        const detail = buildHouseDetail(house, occupant === "House focus" ? undefined : occupant);
+        return {
+          label: detail.label,
+          summary: detail.summary,
+          focus: house.focus,
+        } as InterpretationDetail & { focus: string };
+      });
+    });
+  }, [bhavaChart, rashiChart]);
+
   const renderOccupants = (house: ChartHouse, textX: number) => {
     const occupants = house.occupants.length ? house.occupants : ["Empty house"];
 
@@ -347,6 +362,23 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
               ) : null}
             </div>
           ))}
+        <div className="bite-grid" aria-label="Bite-sized interpretations">
+          {biteSizedInterpretations.slice(0, 9).map((item) => (
+            <button
+              key={item.label}
+              className="bite-chip"
+              type="button"
+              onClick={() => {
+                setActiveDetail(item);
+                setInterpretationLayer("interpretations");
+              }}
+            >
+              <span className="pill">{item.label}</span>
+              <p className="microcopy">{item.summary}</p>
+              <p className="muted">{item.focus}</p>
+            </button>
+          ))}
+        </div>
       </div>
     );
   };

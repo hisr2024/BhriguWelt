@@ -2,6 +2,12 @@ import { FormEvent } from "react";
 
 import { FormState, FormStatus } from "./types";
 
+type ProgressStep = {
+  title: string;
+  description: string;
+  status: "pending" | "active" | "complete";
+};
+
 type Props = {
   form: FormState;
   status: FormStatus;
@@ -9,6 +15,7 @@ type Props = {
   endpoint: string | null;
   error: string | null;
   isComplete: boolean;
+  progressSteps: ProgressStep[];
   onChange: (field: keyof FormState, value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onAskBhrigu: () => void;
@@ -22,6 +29,7 @@ export default function FormPanel({
   endpoint,
   error,
   isComplete,
+  progressSteps,
   onChange,
   onSubmit,
   onAskBhrigu,
@@ -126,6 +134,24 @@ export default function FormPanel({
             </div>
           </div>
         ) : null}
+
+        <div className="progress-rail" aria-label="Horoscope generation progress">
+          {progressSteps.map((step) => (
+            <div key={step.title} className={`progress-step progress-step--${step.status}`}>
+              <div className="progress-step__head">
+                <span className="pill">{step.status === "complete" ? "Done" : step.status === "active" ? "Now" : "Next"}</span>
+                <strong>{step.title}</strong>
+              </div>
+              <p className="microcopy">{step.description}</p>
+              <div className="progress-meter" role="img" aria-label={`${step.title} ${step.status}`}>
+                <span
+                  className="progress-meter__bar"
+                  style={{ width: step.status === "complete" ? "100%" : step.status === "active" ? "65%" : "25%" }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
       </form>
     </div>
   );

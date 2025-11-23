@@ -61,6 +61,7 @@ export default function BirthInputForm() {
   const [houseGrid, setHouseGrid] = useState<HouseSummary[]>([]);
   const [sakaLabel, setSakaLabel] = useState<string>("Awaiting Bharat conversion");
   const [sakaParts, setSakaParts] = useState<{ year?: number; month?: string; day?: number }>({});
+  const [bharatPreview, setBharatPreview] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -70,6 +71,7 @@ export default function BirthInputForm() {
   const [voiceGuidance, setVoiceGuidance] = useState(false);
   const [fontScale, setFontScale] = useState(1);
   const [mapPreview, setMapPreview] = useState<string | null>(null);
+  const [resolvedPlace, setResolvedPlace] = useState<string | null>(null);
   const mapHandleRef = useRef<MapHandle>({ map: null, marker: null });
   const [gestureMode, setGestureMode] = useState(false);
   const [confidenceScore, setConfidenceScore] = useState(0);
@@ -152,6 +154,7 @@ export default function BirthInputForm() {
           const nextLng = event.latLng.lng();
           setDetails((prev) => ({ ...prev, birthPlace: `${nextLat.toFixed(3)}, ${nextLng.toFixed(3)}` }));
           updateMapFromCoords(nextLat, nextLng);
+          void resolvePlaceFromCoords(nextLat, nextLng);
         });
       } else if (mapHandleRef.current.map && (mapHandleRef.current.map as any).setCenter) {
         (mapHandleRef.current.map as any).setCenter({ lat, lng });
@@ -229,6 +232,7 @@ export default function BirthInputForm() {
     if (!details.birthDate) {
       setSakaLabel("Awaiting Bharat conversion");
       setSakaParts({});
+      setBharatPreview("");
       return;
     }
 
@@ -254,12 +258,47 @@ export default function BirthInputForm() {
       setSakaLabel(
         parsed.year ? `Śaka ${parsed.year} ${parsed.month ?? ""} ${parsed.day ?? ""}`.trim() : "Śaka conversion ready",
       );
+      const timeLabel = details.birthTime ? `at ${details.birthTime}` : "";
+      const tzLabel = details.timezone ? `(${details.timezone})` : "device timezone";
+      const placeLabel = resolvedPlace || details.birthPlace || "place pending";
+      setBharatPreview(
+        parsed.year
+          ? `Bharat calendar: Śaka ${parsed.day ?? ""} ${parsed.month ?? ""} ${parsed.year} ${timeLabel} ${tzLabel} • ${placeLabel}`.trim()
+          : "Śaka conversion ready after choosing date, time, and place.",
+      );
     } catch (err) {
       console.error(err);
       setSakaLabel("Śaka conversion ready");
       setSakaParts({});
+      setBharatPreview("");
     }
-  }, [details.birthDate]);
+  }, [details.birthDate, details.birthPlace, details.birthTime, details.timezone, resolvedPlace]);
+
+  const resolvePlaceFromCoords = useCallback(
+    async (lat: number, lng: number) => {
+      setLocationStatus("Calling Bharat geolocation service…");
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
+        );
+        const payload = (await response.json()) as { display_name?: string };
+        if (payload.display_name) {
+          setResolvedPlace(payload.display_name);
+          setDetails((prev) => ({ ...prev, birthPlace: payload.display_name }));
+          setLocationStatus("Map pin synced with Bharat geolocation.");
+          speak("Map pin synced with Bharat geolocation.");
+        } else {
+          setResolvedPlace(null);
+          setLocationStatus("Coordinates captured; unable to resolve address.");
+        }
+      } catch (err) {
+        console.error(err);
+        setResolvedPlace(null);
+        setLocationStatus("Geolocation lookup unavailable; using coordinates.");
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (smartSuggestions.length) {
@@ -519,6 +558,7 @@ export default function BirthInputForm() {
                       const { latitude, longitude } = position.coords;
                       setDetails((prev) => ({ ...prev, birthPlace: `${latitude.toFixed(3)}, ${longitude.toFixed(3)}` }));
                       updateMapFromCoords(latitude, longitude);
+                      void resolvePlaceFromCoords(latitude, longitude);
                     },
                     () => setLocationStatus("Unable to read device location; try typing the city."),
                   );
@@ -536,6 +576,7 @@ export default function BirthInputForm() {
           </div>
           <div className="map-picker__footer" aria-live="polite">
             <p className="microcopy">{mapPreview ? `Pinned at ${mapPreview}` : "Waiting for a pin"}</p>
+            {resolvedPlace ? <p className="microcopy">Resolved to: {resolvedPlace}</p> : null}
           </div>
         </div>
 
@@ -583,7 +624,8 @@ export default function BirthInputForm() {
             <h4>{sakaLabel}</h4>
             <p className="microcopy">
               {details.birthDate
-                ? `Derived from ${details.birthDate} with auto timezone ${details.timezone || "device default"}.`
+                ? bharatPreview ||
+                  `Derived from ${details.birthDate} with auto timezone ${details.timezone || "device default"}.`
                 : "Add a date and location to view Śaka year, month, and day."}
             </p>
           </div>
