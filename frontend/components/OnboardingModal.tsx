@@ -1,5 +1,6 @@
 'use client';
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 const GLOSSARY = [
@@ -23,20 +24,59 @@ const GLOSSARY = [
 const JOURNEY_STEPS = [
   {
     title: "Birth input",
-    detail: "Share name, date, time, and place. We pre-check formats and timezones.",
+    detail: "Share name, date, time, and place with timezone hints and guardrails.",
   },
   {
-    title: "Chart generation",
-    detail: "See Śaka conversion, house wheel, and signatures with soft motion.",
+    title: "Chart",
+    detail: "See Śaka conversion, house wheels, and signatures with soft motion.",
   },
   {
     title: "Interpretations",
     detail: "Tap cards for bite-sized readings; expand for deeper context when ready.",
   },
   {
-    title: "Timelines & remedies",
+    title: "Horoscopes",
+    detail: "Switch between daily, weekly, and Śaka-ready calendar helpers.",
+  },
+  {
+    title: "Past-Life",
+    detail: "Walk through karmic arcs and narrative breadcrumbs for lessons learned.",
+  },
+  {
+    title: "Future",
     detail: "Scroll the orbit timeline for dasha, transit, and remedy prompts.",
   },
+  {
+    title: "Matchmaking",
+    detail: "Blend guna scoring with lifestyle filters and ritual suggestions.",
+  },
+];
+
+const GUIDED_TOURS = [
+  {
+    title: "Tooltip & glossary tour",
+    copy: "Highlights input hints, glossary toggles, and the new persistent rail.",
+    action: "Preview form guidance",
+    href: "/experience#birth",
+  },
+  {
+    title: "Chart exploration",
+    copy: "Shows hover states, house tap feedback, and interpretation breadcrumbs.",
+    action: "Jump to charts",
+    href: "/experience#chart",
+  },
+  {
+    title: "Timeline coaching",
+    copy: "Walks through future and matchmaking flows with thumb-friendly chips.",
+    action: "Open journeys",
+    href: "/future",
+  },
+];
+
+const BREADCRUMB_NOTES = [
+  "Tap the highlighted dot to return to your starting point.",
+  "Breadcrumbs mirror the persistent rail on every page.",
+  "Completed steps will pulse once before dimming.",
 ];
 
 export default function OnboardingModal() {
@@ -44,6 +84,8 @@ export default function OnboardingModal() {
   const [step, setStep] = useState(0);
   const [voice, setVoice] = useState(false);
   const [haptics, setHaptics] = useState(false);
+  const [tour, setTour] = useState(0);
+  const [crumbHint, setCrumbHint] = useState(0);
 
   useEffect(() => {
     const seen = typeof window !== "undefined" ? localStorage.getItem("bhrigu-onboarded") : null;
@@ -119,6 +161,57 @@ export default function OnboardingModal() {
               </button>
             ))}
           </div>
+
+          <div className="breadcrumb-rail" aria-label="Breadcrumbs for the wizard">
+            {JOURNEY_STEPS.map((item, index) => (
+              <button
+                key={`${item.title}-crumb`}
+                type="button"
+                className={`breadcrumb-chip ${index === step ? "is-active" : ""} ${index < step ? "is-complete" : ""}`}
+                onClick={() => {
+                  setStep(index);
+                  setCrumbHint((hint) => (hint + 1) % BREADCRUMB_NOTES.length);
+                }}
+                aria-current={index === step}
+              >
+                <span className="pill" aria-hidden>
+                  {index + 1}
+                </span>
+                <span>{item.title}</span>
+              </button>
+            ))}
+            <p className="microcopy" aria-live="polite">
+              {BREADCRUMB_NOTES[crumbHint]}
+            </p>
+          </div>
+
+          <div className="tour-grid" aria-label="Guided tours">
+            {GUIDED_TOURS.map((item, index) => (
+              <article
+                key={item.title}
+                className={`tour-card ${tour === index ? "is-active" : ""}`}
+                aria-pressed={tour === index}
+              >
+                <div>
+                  <p className="eyebrow">{index + 1}. Tour</p>
+                  <h4>{item.title}</h4>
+                  <p className="muted">{item.copy}</p>
+                </div>
+                <div className="tour-card__actions">
+                  <button type="button" className="ghost-button" onClick={() => setTour(index)}>
+                    Focus
+                  </button>
+                  <Link className="button-link" href={item.href} onClick={closeModal}>
+                    {item.action}
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <p className="microcopy" aria-live="polite">
+            {GUIDED_TOURS[tour].copy}
+          </p>
 
           <div className="glossary">
             <div className="glossary__heading">

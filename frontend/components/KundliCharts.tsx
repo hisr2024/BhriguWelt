@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { ChartHouse, DashaPeriod } from "@/types/astro";
 
 interface CompatibilityOverlay {
@@ -24,6 +25,18 @@ function renderChart(label: string, houses: ChartHouse[], readyLabel = "Bhava al
   const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
   const overlays = houses[0]?.bhrigu_notes || [];
 
+  const buildHouseDetail = (house: ChartHouse, occupant?: string): InterpretationDetail => {
+    const occupantLabel = occupant || (house.occupants.length ? house.occupants.join(", ") : "Empty house");
+    return {
+      label: occupant ? `${occupant} in house ${house.index}` : `House ${house.index}`,
+      summary: `${house.sign} focus with ${occupantLabel.toLowerCase()} influencing this span of life.`,
+      highlight: occupant || house.sign,
+      notes: detailLevel === "advanced" ? house.bhrigu_notes : undefined,
+    };
+  };
+
+  const isActiveHouse = (house: ChartHouse) => activeDetail?.label.includes(`house ${house.index}`);
+
   return (
     <div className="kundli-card">
       <header className="section-heading">
@@ -44,8 +57,29 @@ function renderChart(label: string, houses: ChartHouse[], readyLabel = "Bhava al
             const textX = center + (radius - 32) * Math.cos(toRadians(midAngle));
             const textY = center + (radius - 32) * Math.sin(toRadians(midAngle));
             const occupantLabel = house.occupants.join(", ");
+            const houseDetail = buildHouseDetail(house);
+            const handleClick = () => onSelect(houseDetail);
+            const handleKey = (event: KeyboardEvent<SVGGElement>) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                handleClick();
+              }
+            };
+
             return (
-              <g key={house.index}>
+              <g
+                key={house.index}
+                tabIndex={0}
+                role="button"
+                aria-label={`House ${house.index} ${house.sign} ${occupantLabel || "empty"}`}
+                onClick={handleClick}
+                onKeyDown={handleKey}
+                onMouseEnter={() => onPeek(houseDetail)}
+                onFocus={() => onPeek(houseDetail)}
+                onMouseLeave={() => onPeek(null)}
+                onBlur={() => onPeek(null)}
+                className={isActiveHouse(house) ? "kundli-house active" : "kundli-house"}
+              >
                 <line x1={center} y1={center} x2={x1} y2={y1} className="kundli-spoke" />
                 {house.index === 12 && <line x1={center} y1={center} x2={x2} y2={y2} className="kundli-spoke" />}
                 <text x={textX} y={textY} textAnchor="middle" className="kundli-label">
@@ -53,9 +87,46 @@ function renderChart(label: string, houses: ChartHouse[], readyLabel = "Bhava al
                   <tspan x={textX} dy="1.1em" className="kundli-sign">
                     {house.sign}
                   </tspan>
-                  <tspan x={textX} dy="1.1em" className="kundli-occupants">
-                    {occupantLabel || "Empty"}
-                  </tspan>
+                  {house.occupants.length ? (
+                    house.occupants.map((occupant, occupantIndex) => (
+                      <tspan
+                        key={`${house.index}-${occupant}-${occupantIndex}`}
+                        x={textX}
+                        dy={occupantIndex === 0 ? "1.1em" : "1em"}
+                        className="kundli-occupants"
+                        title={buildHouseDetail(house, occupant).summary}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          const occupantDetail = buildHouseDetail(house, occupant);
+                          onSelect(occupantDetail);
+                        }}
+                        onMouseEnter={(event) => {
+                          event.stopPropagation();
+                          const occupantDetail = buildHouseDetail(house, occupant);
+                          onPeek(occupantDetail);
+                        }}
+                        onFocus={(event) => {
+                          event.stopPropagation();
+                          const occupantDetail = buildHouseDetail(house, occupant);
+                          onPeek(occupantDetail);
+                        }}
+                        onMouseLeave={(event) => {
+                          event.stopPropagation();
+                          onPeek(null);
+                        }}
+                        onBlur={(event) => {
+                          event.stopPropagation();
+                          onPeek(null);
+                        }}
+                      >
+                        {occupant}
+                      </tspan>
+                    ))
+                  ) : (
+                    <tspan x={textX} dy="1.1em" className="kundli-occupants">
+                      Empty
+                    </tspan>
+                  )}
                 </text>
               </g>
             );
@@ -66,7 +137,7 @@ function renderChart(label: string, houses: ChartHouse[], readyLabel = "Bhava al
       ) : (
         <p className="muted">Charts render after the API responds.</p>
       )}
-      {overlays.length > 0 && (
+      {overlays.length > 0 && detailLevel === "advanced" && (
         <ul className="kudos-list" style={{ marginTop: "0.75rem" }}>
           {overlays.map((note) => (
             <li key={note}>{note}</li>
