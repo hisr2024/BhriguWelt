@@ -22,7 +22,13 @@ function renderChart(label: string, houses: ChartHouse[]) {
         <h4>{houses.length ? "Bhava alignment" : "Awaiting birth details"}</h4>
       </header>
       {houses.length > 0 ? (
-        <svg width={size} height={size} role="img" aria-label={`${label} twelve-house wheel`}>
+        <svg
+          className="kundli-svg"
+          viewBox={`0 0 ${size} ${size}`}
+          role="img"
+          aria-label={`${label} twelve-house wheel`}
+          preserveAspectRatio="xMidYMid meet"
+        >
           <circle cx={center} cy={center} r={radius} className="kundli-ring" />
           {houses.map((house) => {
             const startAngle = (house.index - 1) * 30 - 90;
