@@ -59,15 +59,24 @@ export default function BirthInputForm() {
   const [error, setError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [validations, setValidations] = useState<ValidationState>({});
-  const [locationStatus, setLocationStatus] = useState<string>(
-    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-      ? "Start typing and select from the map-powered list."
-      : "Type a city; map suggestions appear when an API key is configured.",
+  const missingFields = useMemo(
+    () =>
+      ([
+        ["dob", details.birthDate, "date of birth"],
+        ["tob", details.birthTime, "time of birth"],
+        ["pob", details.birthPlace, "place of birth"],
+      ] as const)
+        .filter(([, value]) => !value)
+        .map(([, , label]) => label),
+    [details.birthDate, details.birthPlace, details.birthTime],
   );
-  const placeInputRef = useRef<HTMLInputElement | null>(null);
-  const autocompleteRef = useRef<GoogleMapsAutocomplete | null>(null);
 
   const isComplete = useMemo(() => details.birthDate && details.birthTime && details.birthPlace, [details]);
+  const hasValidationIssues = useMemo(() => Boolean(Object.keys(validations).length), [validations]);
+  const confidenceLabel =
+    isComplete && !hasValidationIssues
+      ? "Chart confidence: High"
+      : "Chart confidence: Provide all birth details for higher accuracy";
 
   const validate = (payload: BirthForm): ValidationState => {
     const feedback: ValidationState = {};
@@ -75,16 +84,16 @@ export default function BirthInputForm() {
     if (payload.birthDate) {
       const year = Number(payload.birthDate.split("-")[0]);
       if (year < 1900 || year > 2100) {
-        feedback.dob = "Try a date between 1900 and 2100";
+        feedback.dob = "Try a date within 1900-2100";
       }
     }
 
     if (payload.birthTime && !/^\d{2}:\d{2}$/.test(payload.birthTime)) {
-      feedback.tob = "Use HH:MM in 24h format";
+      feedback.tob = "Use HH:MM in 24h format (e.g., 07:45)";
     }
 
     if (payload.birthPlace && payload.birthPlace.length < 3) {
-      feedback.pob = "Add at least 3 characters for the place";
+      feedback.pob = "Add at least 3 characters (city, country)";
     }
 
     return feedback;
@@ -118,10 +127,9 @@ export default function BirthInputForm() {
   };
 
   useEffect(() => {
-    if (!isComplete) return;
     const feedback = validate(details);
     setValidations(feedback);
-    if (Object.keys(feedback).length) return;
+    if (!isComplete || Object.keys(feedback).length) return;
 
     const id = setTimeout(() => {
       void handleSubmit();
@@ -234,9 +242,16 @@ export default function BirthInputForm() {
           Enter date, time, and place and watch the Śaka calendar alignment, house energy meter, and timezone auto-detection
           respond in real time. Start with essentials; unfold Panchanga extras when you are ready.
         </p>
+        <p className="microcopy" aria-live="polite">{confidenceLabel}</p>
       </header>
 
       <form className="birth-input__form" onSubmit={handleSubmit} aria-busy={loading}>
+        {missingFields.length ? (
+          <div className="inline-banner inline-banner--error" role="alert">
+            <strong>Missing essentials.</strong>
+            <p className="microcopy">Add {missingFields.join(", ")} to boost accuracy.</p>
+          </div>
+        ) : null}
         <div className="field-row">
           <div className="field">
             <label htmlFor="birth-dob">Date of birth</label>
@@ -250,7 +265,7 @@ export default function BirthInputForm() {
               required
             />
             <p className="microcopy" id="birth-dob-hint" role="status">
-              {validations.dob || "Instant Śaka conversion once date is set."}
+              {validations.dob || "Try a date within 1900-2100 for best alignment."}
             </p>
           </div>
           <div className="field">
@@ -265,7 +280,7 @@ export default function BirthInputForm() {
               required
             />
             <p className="microcopy" id={validations.tob ? "birth-tob-hint" : "birth-time-hint"} role="status">
-              {validations.tob || "24h format preferred; timezone auto-detected as " + (details.timezone || "—")}
+              {validations.tob || "Use HH:MM (e.g., 07:45); timezone auto-detected as " + (details.timezone || "—")}
             </p>
           </div>
         </div>
@@ -285,7 +300,7 @@ export default function BirthInputForm() {
               required
             />
             <p className="microcopy" id={validations.pob ? "birth-pob-hint" : "birth-place-hint"} role="status">
-              {validations.pob || locationStatus}
+              {validations.pob || "Try adding city and country (e.g., Jaipur, Bharat)."}
             </p>
           </div>
           <div className="field">

@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { interpretChart } from "@/lib/interpretChart";
 import { HOUSE_FOCUSES } from "@/lib/houseGrid";
@@ -12,6 +12,12 @@ type FormState = {
   dateOfBirth: string;
   timeOfBirth: string;
   placeOfBirth: string;
+};
+
+type ValidationState = {
+  dob?: string;
+  tob?: string;
+  pob?: string;
 };
 
 type ChartResponse = NatalChart | Record<string, unknown>;
@@ -98,8 +104,25 @@ export default function HoroscopeForm() {
   const [error, setError] = useState<string | null>(null);
   const [endpoint, setEndpoint] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "success">("idle");
+  const [validations, setValidations] = useState<ValidationState>({});
 
   const isComplete = useMemo(() => Object.values(form).every(Boolean), [form]);
+  const missingFields = useMemo(
+    () =>
+      ([
+        ["dob", form.dateOfBirth, "date of birth"],
+        ["tob", form.timeOfBirth, "time of birth"],
+        ["pob", form.placeOfBirth, "place of birth"],
+      ] as const)
+        .filter(([, value]) => !value)
+        .map(([, , label]) => label),
+    [form.dateOfBirth, form.placeOfBirth, form.timeOfBirth],
+  );
+  const hasValidationIssues = useMemo(() => Boolean(Object.keys(validations).length), [validations]);
+  const confidenceLabel =
+    isComplete && !hasValidationIssues
+      ? "Chart confidence: High"
+      : "Chart confidence: Add or correct birth details for higher accuracy";
   const formattedChart = useMemo(() => (chart ? JSON.stringify(chart, null, 2) : ""), [chart]);
   const hasNarrative = Boolean(interpretation.english || interpretation.hindi);
   const fallbackNarrative = interpretation.raw || formattedChart;
@@ -162,13 +185,42 @@ export default function HoroscopeForm() {
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
 
+  const validate = (payload: FormState): ValidationState => {
+    const feedback: ValidationState = {};
+
+    if (payload.dateOfBirth) {
+      const year = Number(payload.dateOfBirth.split("-")[0]);
+      if (year < 1900 || year > 2100) {
+        feedback.dob = "Try a date within 1900-2100";
+      }
+    }
+
+    if (payload.timeOfBirth && !/^\d{2}:\d{2}$/.test(payload.timeOfBirth)) {
+      feedback.tob = "Use HH:MM in 24h format (e.g., 07:45)";
+    }
+
+    if (payload.placeOfBirth && payload.placeOfBirth.length < 3) {
+      feedback.pob = "Add at least 3 characters (city, country)";
+    }
+
+    return feedback;
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const validationFeedback = validate(form);
+    setValidations(validationFeedback);
     setError(null);
     setStatus("idle");
     setChart(null);
     setEndpoint(null);
     setInterpretation({});
+
+    if (missingFields.length || Object.keys(validationFeedback).length) {
+      setError("Please fix the highlighted birth details.");
+      return;
+    }
+
     setLoading(true);
 
     const attempt = async (path: string) => {
@@ -253,6 +305,16 @@ export default function HoroscopeForm() {
     printable.print();
   };
 
+  useEffect(() => {
+    setValidations(validate(form));
+  }, [form]);
+
+  useEffect(() => {
+    if (!missingFields.length && !Object.keys(validations).length) {
+      setError(null);
+    }
+  }, [missingFields, validations]);
+
   return (
     <section className="horo-board" aria-label="Horoscope creation">
       <div className="horo-layout">
@@ -265,9 +327,16 @@ export default function HoroscopeForm() {
             <div className="status-chip" aria-live="polite">
               {status === "success" ? "Reading ready" : "Awaiting details"}
             </div>
+            <p className="microcopy" aria-live="polite">{confidenceLabel}</p>
           </div>
 
           <form className="horo-form" onSubmit={handleSubmit} aria-busy={loading}>
+            {missingFields.length ? (
+              <div className="inline-banner inline-banner--error" role="alert">
+                <strong>Missing essentials.</strong>
+                <p className="microcopy">Add {missingFields.join(", ")} to boost accuracy.</p>
+              </div>
+            ) : null}
             <div className="field-row">
               <div className="field">
                 <label htmlFor="horoscope-name">Full name</label>
@@ -293,8 +362,13 @@ export default function HoroscopeForm() {
                   type="date"
                   value={form.dateOfBirth}
                   onChange={(event) => setForm({ ...form, dateOfBirth: event.target.value })}
+                  aria-invalid={Boolean(validations.dob)}
+                  aria-describedby="horoscope-dob-hint"
                   required
                 />
+                <p className="microcopy" id="horoscope-dob-hint" role="status">
+                  {validations.dob || "Try a date within 1900-2100 for best alignment."}
+                </p>
               </div>
               <div className="field">
                 <label htmlFor="horoscope-tob">Time of birth</label>
@@ -304,8 +378,13 @@ export default function HoroscopeForm() {
                   type="time"
                   value={form.timeOfBirth}
                   onChange={(event) => setForm({ ...form, timeOfBirth: event.target.value })}
+                  aria-invalid={Boolean(validations.tob)}
+                  aria-describedby="horoscope-tob-hint"
                   required
                 />
+                <p className="microcopy" id="horoscope-tob-hint" role="status">
+                  {validations.tob || "Use HH:MM (e.g., 07:45) in 24h format."}
+                </p>
               </div>
             </div>
 
@@ -320,8 +399,13 @@ export default function HoroscopeForm() {
                   placeholder="Jaipur, Bharat"
                   value={form.placeOfBirth}
                   onChange={(event) => setForm({ ...form, placeOfBirth: event.target.value })}
+                  aria-invalid={Boolean(validations.pob)}
+                  aria-describedby="horoscope-pob-hint"
                   required
                 />
+                <p className="microcopy" id="horoscope-pob-hint" role="status">
+                  {validations.pob || "Try adding city and country (e.g., Jaipur, Bharat)."}
+                </p>
               </div>
             </div>
 
