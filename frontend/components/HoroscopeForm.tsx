@@ -4,6 +4,7 @@ import { FormEvent, useMemo, useState } from "react";
 
 import { interpretChart } from "@/lib/interpretChart";
 import { NatalChart } from "@/types/natal";
+import { useImmersiveFeedback } from "@/lib/immersive";
 
 type FormState = {
   name: string;
@@ -90,6 +91,7 @@ export default function HoroscopeForm() {
   const [error, setError] = useState<string | null>(null);
   const [endpoint, setEndpoint] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "success">("idle");
+  const { triggerSubmitFeedback } = useImmersiveFeedback();
 
   const isComplete = useMemo(() => Object.values(form).every(Boolean), [form]);
   const formattedChart = useMemo(() => (chart ? JSON.stringify(chart, null, 2) : ""), [chart]);
@@ -104,6 +106,7 @@ export default function HoroscopeForm() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    triggerSubmitFeedback();
     setError(null);
     setStatus("idle");
     setChart(null);

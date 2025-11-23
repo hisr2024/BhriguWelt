@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { requestPrediction } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { captureClientError } from "@/lib/telemetry";
+import { useImmersiveFeedback } from "@/lib/immersive";
 import { BirthDetails, PredictionEngine } from "@/types/astro";
 import PredictionCard from "./PredictionCard";
 
@@ -38,6 +39,7 @@ export default function PredictionForm({ engine, title, description }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [payload, setPayload] = useState<unknown>(null);
   const errorRef = useRef<HTMLDivElement | null>(null);
+  const { triggerSubmitFeedback } = useImmersiveFeedback();
 
   useEffect(() => {
     if (error && errorRef.current) {
@@ -47,6 +49,7 @@ export default function PredictionForm({ engine, title, description }: Props) {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    triggerSubmitFeedback();
     setError(null);
     setPayload(null);
     setLoading(true);

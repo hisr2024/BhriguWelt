@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from "react";
+import { areMicroAnimationsAllowed } from "@/lib/immersive";
 import { ChartHouse, DashaPeriod } from "@/types/astro";
 
 interface Props {
@@ -8,7 +10,7 @@ interface Props {
   dashas?: DashaPeriod[];
 }
 
-function renderChart(label: string, houses: ChartHouse[]) {
+function renderChart(label: string, houses: ChartHouse[], animate: boolean) {
   const size = 320;
   const center = size / 2;
   const radius = 135;
@@ -16,44 +18,52 @@ function renderChart(label: string, houses: ChartHouse[]) {
   const overlays = houses[0]?.bhrigu_notes || [];
 
   return (
-    <div className="kundli-card">
+    <div className={`kundli-card ${animate ? "kundli-card--animated" : ""}`}>
       <header className="section-heading">
         <p className="eyebrow">{label}</p>
         <h4>{houses.length ? "Bhava alignment" : "Awaiting birth details"}</h4>
       </header>
       {houses.length > 0 ? (
-        <svg width={size} height={size} role="img" aria-label={`${label} twelve-house wheel`}>
-          <circle cx={center} cy={center} r={radius} className="kundli-ring" />
-          {houses.map((house) => {
-            const startAngle = (house.index - 1) * 30 - 90;
-            const endAngle = startAngle + 30;
-            const midAngle = startAngle + 15;
-            const x1 = center + radius * Math.cos(toRadians(startAngle));
-            const y1 = center + radius * Math.sin(toRadians(startAngle));
-            const x2 = center + radius * Math.cos(toRadians(endAngle));
-            const y2 = center + radius * Math.sin(toRadians(endAngle));
-            const textX = center + (radius - 32) * Math.cos(toRadians(midAngle));
-            const textY = center + (radius - 32) * Math.sin(toRadians(midAngle));
-            const occupantLabel = house.occupants.join(", ");
-            return (
-              <g key={house.index}>
-                <line x1={center} y1={center} x2={x1} y2={y1} className="kundli-spoke" />
-                {house.index === 12 && <line x1={center} y1={center} x2={x2} y2={y2} className="kundli-spoke" />}
-                <text x={textX} y={textY} textAnchor="middle" className="kundli-label">
-                  {house.index}
-                  <tspan x={textX} dy="1.1em" className="kundli-sign">
-                    {house.sign}
-                  </tspan>
-                  <tspan x={textX} dy="1.1em" className="kundli-occupants">
-                    {occupantLabel || "Empty"}
-                  </tspan>
-                </text>
-              </g>
-            );
-          })}
-          <circle cx={center} cy={center} r={48} className="kundli-core" />
-          <text x={center} y={center} textAnchor="middle" className="kundli-center">Bhrigu</text>
-        </svg>
+        <div className="kundli-visual">
+          <svg width={size} height={size} role="img" aria-label={`${label} twelve-house wheel`}>
+            <circle cx={center} cy={center} r={radius} className="kundli-ring" />
+            {houses.map((house) => {
+              const startAngle = (house.index - 1) * 30 - 90;
+              const endAngle = startAngle + 30;
+              const midAngle = startAngle + 15;
+              const x1 = center + radius * Math.cos(toRadians(startAngle));
+              const y1 = center + radius * Math.sin(toRadians(startAngle));
+              const x2 = center + radius * Math.cos(toRadians(endAngle));
+              const y2 = center + radius * Math.sin(toRadians(endAngle));
+              const textX = center + (radius - 32) * Math.cos(toRadians(midAngle));
+              const textY = center + (radius - 32) * Math.sin(toRadians(midAngle));
+              const occupantLabel = house.occupants.join(", ");
+              return (
+                <g key={house.index}>
+                  <line x1={center} y1={center} x2={x1} y2={y1} className="kundli-spoke" />
+                  {house.index === 12 && <line x1={center} y1={center} x2={x2} y2={y2} className="kundli-spoke" />}
+                  <text x={textX} y={textY} textAnchor="middle" className="kundli-label">
+                    {house.index}
+                    <tspan x={textX} dy="1.1em" className="kundli-sign">
+                      {house.sign}
+                    </tspan>
+                    <tspan x={textX} dy="1.1em" className="kundli-occupants">
+                      {occupantLabel || "Empty"}
+                    </tspan>
+                  </text>
+                </g>
+              );
+            })}
+            <circle cx={center} cy={center} r={48} className="kundli-core" />
+            <text x={center} y={center} textAnchor="middle" className="kundli-center">Bhrigu</text>
+          </svg>
+          {animate && (
+            <div className="kundli-orbits" aria-hidden="true">
+              <span className="kundli-planet kundli-planet--inner" />
+              <span className="kundli-planet kundli-planet--outer" />
+            </div>
+          )}
+        </div>
       ) : (
         <p className="muted">Charts render after the API responds.</p>
       )}
@@ -69,10 +79,24 @@ function renderChart(label: string, houses: ChartHouse[]) {
 }
 
 export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas = [] }: Props) {
+  const [animateCharts, setAnimateCharts] = useState(false);
+
+  useEffect(() => {
+    const refresh = () => setAnimateCharts(areMicroAnimationsAllowed());
+    refresh();
+
+    if (typeof document === "undefined" || typeof MutationObserver === "undefined") return;
+
+    const observer = new MutationObserver(refresh);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["data-animations"] });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="kundli-grid">
-      {renderChart("Rāśi chart", rashiChart)}
-      {renderChart("Bhava chart", bhavaChart)}
+      {renderChart("Rāśi chart", rashiChart, animateCharts)}
+      {renderChart("Bhava chart", bhavaChart, animateCharts)}
       <div className="kundli-card">
         <header className="section-heading">
           <p className="eyebrow">Vimshottari</p>

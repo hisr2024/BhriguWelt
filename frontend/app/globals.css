@@ -398,6 +398,163 @@ body[data-contrast="high"] .serene-hero {
   margin: 0;
 }
 
+/* Immersive motion controls */
+.prediction-card {
+  perspective: 1200px;
+}
+
+.prediction-card__body {
+  transform-style: preserve-3d;
+  transition: transform 0.9s ease, box-shadow 0.3s ease;
+}
+
+.prediction-card.is-flipped .prediction-card__body {
+  animation: cardFlip 0.9s ease;
+}
+
+.prediction-card--animated .prediction-card__body {
+  box-shadow: var(--card-shadow);
+}
+
+body[data-animations="off"] .prediction-card__body {
+  animation: none !important;
+  transition: none !important;
+}
+
+@keyframes cardFlip {
+  0% {
+    transform: rotateY(-92deg);
+    opacity: 0;
+  }
+  55% {
+    transform: rotateY(14deg);
+    opacity: 1;
+  }
+  100% {
+    transform: rotateY(0deg);
+  }
+}
+
+.kundli-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.kundli-card {
+  position: relative;
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid #e5ddce;
+  background: linear-gradient(165deg, #fdfbf6 0%, #f4f1eb 50%, #eef3f2 100%);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+.kundli-visual {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.kundli-ring {
+  fill: none;
+  stroke: #e6d7c2;
+  stroke-width: 2px;
+}
+
+.kundli-spoke {
+  stroke: rgba(31, 42, 51, 0.2);
+  stroke-width: 1px;
+}
+
+.kundli-label {
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.kundli-sign {
+  font-size: 0.8rem;
+  fill: #815a44;
+  font-weight: 600;
+}
+
+.kundli-occupants {
+  font-size: 0.7rem;
+  fill: #4c5b66;
+}
+
+.kundli-core {
+  fill: #1f2a33;
+  opacity: 0.95;
+}
+
+.kundli-center {
+  fill: #f7f4ec;
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.kundli-orbits {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.kundli-planet {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f5c49b, #86e3ce);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+  animation: orbitInner 12s linear infinite;
+}
+
+.kundli-planet--outer {
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(135deg, #93c5fd, #c084fc);
+  animation: orbitOuter 18s linear infinite;
+  opacity: 0.9;
+}
+
+.kundli-card:not(.kundli-card--animated) .kundli-planet,
+body[data-animations="off"] .kundli-planet {
+  display: none !important;
+  animation: none !important;
+}
+
+@keyframes orbitInner {
+  from {
+    transform: rotate(0deg) translateX(110px) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(110px) rotate(-360deg);
+  }
+}
+
+@keyframes orbitOuter {
+  from {
+    transform: rotate(0deg) translateX(148px) rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg) translateX(148px) rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prediction-card__body,
+  .kundli-planet {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 .font-scale button {
   border: 1px solid #d9cbb5;
   border-radius: 10px;

@@ -6,6 +6,7 @@ import { requestCalendar } from "@/lib/api";
 import { deriveHouseGrid, HouseSummary } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
 import { CalendarDetails } from "@/types/astro";
+import { useImmersiveFeedback } from "@/lib/immersive";
 
 type BirthForm = CalendarDetails & {
   lunarTithi: string;
@@ -37,6 +38,7 @@ export default function BirthInputForm() {
   const [error, setError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [validations, setValidations] = useState<ValidationState>({});
+  const { triggerSubmitFeedback } = useImmersiveFeedback();
 
   const isComplete = useMemo(() => details.birthDate && details.birthTime && details.birthPlace, [details]);
 
@@ -67,6 +69,8 @@ export default function BirthInputForm() {
     const feedback = validate(details);
     setValidations(feedback);
     if (Object.keys(feedback).length) return;
+
+    triggerSubmitFeedback();
 
     setLoading(true);
     try {

@@ -1,11 +1,12 @@
 'use client';
 
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { ResultEngine } from "@/types/astro";
 import KundliCharts from "./KundliCharts";
 import { ChartHouse, DashaPeriod } from "@/types/astro";
 import FeedbackPrompt from "./FeedbackPrompt";
+import { areMicroAnimationsAllowed } from "@/lib/immersive";
 
 interface Props {
   title: string;
@@ -305,12 +306,47 @@ function buildSections(engine: ResultEngine, payload: unknown): InsightSection[]
 
 export default function PredictionCard({ title, payload, engine, seekerName }: Props) {
   const { t } = useI18n();
-  const sections = buildSections(engine, payload);
+  const sections = useMemo(() => buildSections(engine, payload), [engine, payload]);
   const horoscopePayload = engine === "horoscope" && typeof payload === "object" ? (payload as HoroscopePayload) : null;
+  const [animationsEnabled, setAnimationsEnabled] = useState(false);
+  const [flipActive, setFlipActive] = useState(false);
+
+  useEffect(() => {
+    const refresh = () => setAnimationsEnabled(areMicroAnimationsAllowed());
+    refresh();
+
+    if (typeof document === "undefined" || typeof MutationObserver === "undefined") return;
+
+    const observer = new MutationObserver(refresh);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["data-animations"] });
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!payload || !animationsEnabled) {
+      setFlipActive(false);
+      return;
+    }
+
+    setFlipActive(true);
+    const timeout = window.setTimeout(() => setFlipActive(false), 900);
+    return () => window.clearTimeout(timeout);
+  }, [payload, animationsEnabled]);
+
+  const cardClassName = [
+    "results",
+    "card",
+    "prediction-card",
+    animationsEnabled ? "prediction-card--animated" : "",
+    flipActive ? "is-flipped" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   if (!payload || !sections.length) {
     return (
-      <section className="results card" aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
+      <section className={cardClassName} aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
         <div className="section-heading">
           <p className="eyebrow">Response</p>
           <h3>{title}</h3>
@@ -321,21 +357,23 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
   }
 
   return (
-    <section className="results card" aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
-      <div className="section-heading">
-        <p className="eyebrow">Response</p>
-        <h3>{title}</h3>
-        <p className="muted">{t("results.helperRaw", "Narratives are ready to share—no JSON needed.")}</p>
+    <section className={cardClassName} aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
+      <div className="prediction-card__body">
+        <div className="section-heading">
+          <p className="eyebrow">Response</p>
+          <h3>{title}</h3>
+          <p className="muted">{t("results.helperRaw", "Narratives are ready to share—no JSON needed.")}</p>
+        </div>
+        <div className="insight-grid">{sections.map(renderSection)}</div>
+        {horoscopePayload && (
+          <KundliCharts
+            rashiChart={horoscopePayload.rashi_chart}
+            bhavaChart={horoscopePayload.bhava_chart}
+            dashas={horoscopePayload.dashas}
+          />
+        )}
+        {payload && <FeedbackPrompt engine={engine} seekerName={seekerName} />}
       </div>
-      <div className="insight-grid">{sections.map(renderSection)}</div>
-      {horoscopePayload && (
-        <KundliCharts
-          rashiChart={horoscopePayload.rashi_chart}
-          bhavaChart={horoscopePayload.bhava_chart}
-          dashas={horoscopePayload.dashas}
-        />
-      )}
-      {payload && <FeedbackPrompt engine={engine} seekerName={seekerName} />}
     </section>
   );
 }
