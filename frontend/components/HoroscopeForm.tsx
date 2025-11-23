@@ -200,8 +200,7 @@ export default function HoroscopeForm() {
           <div className="panel-head">
             <div>
               <p className="pill">Essentials</p>
-              <h2>Input once. Use everywhere.</h2>
-              <p className="muted">Simple fields keep the four details aligned for a calm handoff to the reading panel.</p>
+              <h2>Input once.</h2>
             </div>
             <div className="status-chip" aria-live="polite">
               {status === "success" ? "Reading ready" : "Awaiting details"}
@@ -222,7 +221,6 @@ export default function HoroscopeForm() {
                   onChange={(event) => setForm({ ...form, name: event.target.value })}
                   required
                 />
-                <p className="microcopy">Name appears on the reading header.</p>
               </div>
             </div>
 
@@ -264,7 +262,6 @@ export default function HoroscopeForm() {
                   onChange={(event) => setForm({ ...form, placeOfBirth: event.target.value })}
                   required
                 />
-                <p className="microcopy">City or town is enough for a clear horoscope.</p>
               </div>
             </div>
 
@@ -272,10 +269,7 @@ export default function HoroscopeForm() {
               <button type="submit" disabled={loading || !isComplete} aria-label="Generate horoscope">
                 {loading ? "Preparing your reading..." : "Generate reading"}
               </button>
-              <div className="action-notes">
-                <p className="microcopy">No extra toggles. We only keep these four inputs for the session.</p>
-                {endpoint ? <p className="microcopy">Saved from: {endpoint}</p> : null}
-              </div>
+              <div className="action-notes">{endpoint ? <p className="microcopy">Saved from: {endpoint}</p> : null}</div>
             </div>
 
             {error ? (
@@ -289,7 +283,6 @@ export default function HoroscopeForm() {
               <div className="inline-banner inline-banner--success" role="status">
                 <div>
                   <strong>Reading captured.</strong>
-                  <p className="microcopy">Send it to chat or save as a PDF from the interpretation panel.</p>
                 </div>
                 <div className="banner-actions">
                   <button type="button" className="ghost-button" onClick={handleAskBhrigu}>
@@ -308,8 +301,7 @@ export default function HoroscopeForm() {
           <div className="panel-head">
             <div>
               <p className="pill">Interpretation</p>
-              <h2>Wide, readable canvas</h2>
-              <p className="muted">English and Hindi guidance sits on a calm background with generous spacing for long reads.</p>
+              <h2>Reading canvas</h2>
             </div>
             {chart ? (
               <div className="status-chip status-chip--ready">Ready to share</div>
@@ -322,7 +314,6 @@ export default function HoroscopeForm() {
             <div className="reading-surface">
               <div className="reading-toolbar">
                 <div>
-                  <p className="microcopy">Generated from your four essentials</p>
                   <strong>{form.name || "Reader"}</strong>
                 </div>
                 <div className="toolbar-actions">
@@ -339,8 +330,7 @@ export default function HoroscopeForm() {
                 <div className="interpretation-canvas">
                   <div className="canvas-head">
                     <div>
-                      <p className="microcopy">Live interpretation</p>
-                      <h3 className="canvas-title">Calm, printable language</h3>
+                      <h3 className="canvas-title">Interpretation</h3>
                     </div>
                     {interpretation.summary ? <span className="pill">{interpretation.summary}</span> : null}
                   </div>
@@ -362,7 +352,7 @@ export default function HoroscopeForm() {
                     </>
                   ) : (
                     <section>
-                      <p className="microcopy">Raw data (waiting for narrative)</p>
+                      <p className="microcopy">Raw data</p>
                       <pre aria-live="polite">{fallbackNarrative}</pre>
                     </section>
                   )}
@@ -371,24 +361,24 @@ export default function HoroscopeForm() {
                 <aside className="interpretation-notes">
                   <h4>Share or download</h4>
                   <ul>
-                    <li>Use Save PDF for a clean, bilingual download.</li>
-                    <li>Send directly to chat for live guidance follow-ups.</li>
-                    <li>Everything on this panel is ready for family-friendly reading.</li>
+                    <li>Save PDF</li>
+                    <li>Send to chat</li>
+                    <li>Bilingual ready</li>
                   </ul>
                 </aside>
               </div>
             </div>
-            ) : (
-              <div className="reading-placeholder">
-                <h3>Space reserved for the live reading</h3>
-                <p className="muted">Submit your four details and this area will fill with a clear, shareable interpretation.</p>
-                <ul>
-                  <li>We wait to render anything until the narrative is ready.</li>
-                  <li>Once ready, download as PDF or continue in chat from here.</li>
-                  <li>Bilingual guidance lands side by side for easy reading.</li>
-                </ul>
-              </div>
-            )}
+          ) : (
+            <div className="reading-placeholder">
+              <h3>Space reserved for the live reading</h3>
+              <p className="muted">Add details to unlock the interpretation.</p>
+              <ul>
+                <li>Reading panel activates after submission.</li>
+                <li>Then download as PDF or continue in chat.</li>
+                <li>English and Hindi blocks load together.</li>
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </section>
