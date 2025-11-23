@@ -1,9 +1,21 @@
+"use client";
+
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import Timeline from "@/components/Timeline";
 import PredictionForm from "@/components/PredictionForm";
 import { getFutureProgress, type FutureProgressResponse } from "@/lib/api";
+
+type FutureEvent = {
+  title: string;
+  window: string;
+  houseAnchor: string;
+  detail: string;
+  icon?: string;
+  planet?: string;
+  progressLabel?: string;
+};
 
 export default function FuturePage() {
   const [progressData, setProgressData] = useState<FutureProgressResponse | null>(null);
@@ -27,7 +39,7 @@ export default function FuturePage() {
     };
   }, []);
 
-  const events = useMemo(
+  const events = useMemo<FutureEvent[]>(
     () => [
       {
         title: "Transit glow",

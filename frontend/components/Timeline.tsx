@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { KeyboardEvent, TouchEvent } from "react";
+import type { KeyboardEvent, PointerEvent, TouchEvent } from "react";
 
 type TimelineEvent = {
   title: string;
@@ -23,6 +23,10 @@ export default function Timeline({ events, accent = "aqua" }: TimelineProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const touchStartX = useRef<number | null>(null);
   const touchDeltaX = useRef(0);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const dragStartX = useRef(0);
+  const scrollStartX = useRef(0);
+  const [dragging, setDragging] = useState(false);
 
   const clampIndex = useCallback(
     (nextIndex: number) => {
@@ -78,36 +82,65 @@ export default function Timeline({ events, accent = "aqua" }: TimelineProps) {
     }
   };
 
+  const parseHouseIndex = (event: TimelineEvent) => {
+    if (event.houseIndex) return event.houseIndex;
+    const match = event.houseAnchor.match(/(\d+)/);
+    return match ? Number(match[1]) : undefined;
+  };
+
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (!scrollRef.current) return;
+    setDragging(true);
+    dragStartX.current = event.clientX;
+    scrollStartX.current = scrollRef.current.scrollLeft;
+    scrollRef.current.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (!dragging || !scrollRef.current) return;
+    const delta = event.clientX - dragStartX.current;
+    scrollRef.current.scrollLeft = scrollStartX.current - delta;
+  };
+
+  const handlePointerEnd = (event: PointerEvent<HTMLDivElement>) => {
+    if (scrollRef.current?.hasPointerCapture(event.pointerId)) {
+      scrollRef.current.releasePointerCapture(event.pointerId);
+    }
+    setDragging(false);
+  };
+
   return (
-    <div
-      className={accentClass}
-      role="list"
-      aria-label="Future timeline anchored to houses"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      tabIndex={0}
-      onKeyDown={handleKeyDown}
-    >
-      {events.map((event, index) => (
-        <article
-          key={event.title}
-          className={`timeline__node ${index === activeIndex ? "timeline__node--active" : ""}`}
-          role="listitem"
-          aria-current={index === activeIndex ? "true" : undefined}
-        >
-          <div className="timeline__orb" aria-hidden>
-            <span className="timeline__pulse" />
-            <span className="timeline__icon" role="img" aria-label={event.title}>
-              {event.icon || "✶"}
-            </span>
-          </div>
-          <div className="timeline__meta">
-            <p className="pill">{event.houseAnchor}</p>
-            <h4>{event.title}</h4>
-            <p className="muted">{event.detail}</p>
-            <p className="microcopy">{event.window}</p>
-          </div>
+    <div className="timeline-shell">
+      <div
+        className={accentClass}
+        role="list"
+        aria-label="Future timeline anchored to houses"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+      >
+        {events.map((event, index) => (
+          <article
+            key={event.title}
+            className={`timeline__node ${index === activeIndex ? "timeline__node--active" : ""}`}
+            role="listitem"
+            aria-current={index === activeIndex ? "true" : undefined}
+          >
+            <div className="timeline__orb" aria-hidden="true">
+              <span className="timeline__pulse" />
+              <span className="timeline__icon" role="img" aria-label={event.title}>
+                {event.icon || "✶"}
+              </span>
+            </div>
+            <div className="timeline__meta">
+              <p className="pill">{event.houseAnchor}</p>
+              <h4>{event.title}</h4>
+              <p className="muted">{event.detail}</p>
+              <p className="microcopy">{event.window}</p>
+            </div>
+          </article>
         ))}
       </div>
 
@@ -130,7 +163,7 @@ export default function Timeline({ events, accent = "aqua" }: TimelineProps) {
 
           return (
             <article key={event.title} className="timeline__node" role="listitem">
-              <div className="timeline__orb" aria-hidden>
+              <div className="timeline__orb" aria-hidden="true">
                 <span className="timeline__pulse" />
                 <span className="timeline__icon" role="img" aria-label={event.title}>
                   {event.icon || event.planet || "✶"}
@@ -138,7 +171,7 @@ export default function Timeline({ events, accent = "aqua" }: TimelineProps) {
                 {event.planet && <span className="timeline__planet">{event.planet}</span>}
               </div>
 
-              <div className="timeline__linkage" aria-hidden>
+              <div className="timeline__linkage" aria-hidden="true">
                 <span className="timeline__link-line" />
                 <span className="timeline__link-node" />
                 {houseNumber ? <span className="timeline__link-label">House {houseNumber}</span> : null}

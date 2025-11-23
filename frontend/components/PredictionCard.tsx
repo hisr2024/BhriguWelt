@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from "react";
+import { HOUSE_FOCUSES } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
-import { ResultEngine } from "@/types/astro";
-import KundliCharts from "./KundliCharts";
-import { ChartHouse, DashaPeriod } from "@/types/astro";
-import FeedbackPrompt from "./FeedbackPrompt";
 import { areMicroAnimationsAllowed } from "@/lib/immersive";
+import { ChartHouse, DashaPeriod, ResultEngine } from "@/types/astro";
+import FeedbackPrompt from "./FeedbackPrompt";
+import KundliCharts from "./KundliCharts";
 
 interface Props {
   title: string;
@@ -21,6 +21,8 @@ type InsightSection = {
   hindi?: string;
   bullets?: string[];
 };
+
+const DEFAULT_DETAIL_LEVEL: "beginner" | "advanced" = "advanced";
 
 type TimeframeAnchor = {
   label: string;
@@ -109,7 +111,8 @@ function condense(text: string, detailLevel: "beginner" | "advanced") {
   return `${text.slice(0, 157).trimEnd()}...`;
 }
 
-function renderSection(section: InsightSection, index: number, detailLevel: "beginner" | "advanced") {
+function renderSection(section: InsightSection, index: number) {
+  const detailLevel = DEFAULT_DETAIL_LEVEL;
   const bulletList = section.bullets || [];
   const trimmedBullets = detailLevel === "advanced" ? bulletList : bulletList.slice(0, 3);
   return (

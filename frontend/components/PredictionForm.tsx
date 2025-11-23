@@ -45,6 +45,7 @@ export default function PredictionForm({ engine, title, description, onRequestSt
   const [info, setInfo] = useState<string | null>(null);
   const [retryAttempts, setRetryAttempts] = useState(0);
   const errorRef = useRef<HTMLDivElement | null>(null);
+  const lastSuccessfulPayloadRef = useRef<unknown>(null);
   const { triggerSubmitFeedback } = useImmersiveFeedback();
 
   useEffect(() => {

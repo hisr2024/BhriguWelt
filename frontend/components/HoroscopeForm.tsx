@@ -2,11 +2,15 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+import { HOUSE_FOCUSES } from "@/lib/houseGrid";
+import { useImmersiveFeedback } from "@/lib/immersive";
 import { theme } from "@/lib/theme";
+import { NatalChart } from "@/types/natal";
+
 import FormPanel from "./horoscope/FormPanel";
 import ReadingPanel from "./horoscope/ReadingPanel";
 import { ChartResponse, FormState, FormStatus, Interpretation } from "./horoscope/types";
-import { extractInterpretation, postChart, sanitize } from "./horoscope/utils";
+import { extractInterpretation, isNatalChart, postChart, sanitize } from "./horoscope/utils";
 
 const defaultForm: FormState = {
   name: "",
@@ -15,31 +19,10 @@ const defaultForm: FormState = {
   placeOfBirth: "",
 };
 
-import { interpretChart } from "@/lib/interpretChart";
-import { HOUSE_FOCUSES } from "@/lib/houseGrid";
-import { NatalChart } from "@/types/natal";
-import { useImmersiveFeedback } from "@/lib/immersive";
-
-type FormState = {
-  name: string;
-  dateOfBirth: string;
-  timeOfBirth: string;
-  placeOfBirth: string;
-};
-
 type ValidationState = {
   dob?: string;
   tob?: string;
   pob?: string;
-};
-
-type ChartResponse = NatalChart | Record<string, unknown>;
-
-type Interpretation = {
-  english?: string;
-  hindi?: string;
-  raw?: string;
-  summary?: string;
 };
 
 type HouseAnchor = {
@@ -48,61 +31,11 @@ type HouseAnchor = {
   focus: string;
 };
 
-function isNatalChart(payload: ChartResponse): payload is NatalChart {
-  if (!payload || typeof payload !== "object") return false;
-  const maybeChart = (payload as NatalChart).chart;
-  return Boolean(
-    maybeChart &&
-    typeof maybeChart === "object" &&
-    Array.isArray((maybeChart as NatalChart["chart"]).planets) &&
-    Array.isArray((maybeChart as NatalChart["chart"]).houses) &&
-    (maybeChart as NatalChart["chart"]).ascendant
-  );
-}
-
-function extractInterpretation(payload: ChartResponse): Interpretation {
-  const raw = JSON.stringify(payload, null, 2);
-  const typedPayload = payload as {
-    interpretation?: unknown;
-    interpretation_hi?: unknown;
-    karmic_epoch?: unknown;
-  };
-  const english = typeof typedPayload.interpretation === "string" ? typedPayload.interpretation : undefined;
-  const hindi = typeof typedPayload.interpretation_hi === "string" ? typedPayload.interpretation_hi : undefined;
-  const summary = typeof typedPayload.karmic_epoch === "string" ? typedPayload.karmic_epoch : undefined;
-
-  if (english || hindi) {
-    return { english, hindi, raw, summary };
-  }
-
-  if (isNatalChart(payload)) {
-    return { english: interpretChart({ chart: payload }), raw, summary };
-  }
-
-  return { raw };
-}
-
-async function postChart(path: string, payload: FormState) {
-  const response = await fetch(path, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      name: payload.name.trim(),
-      birth_date: payload.dateOfBirth,
-      birth_time: payload.timeOfBirth,
-      birth_place: payload.placeOfBirth.trim(),
-    }),
-  });
-
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || `Request to ${path} failed`);
-  }
-
-  return (await response.json()) as ChartResponse;
-}
+type ProgressStep = {
+  title: string;
+  description: string;
+  status: "pending" | "active" | "complete";
+};
 
 export default function HoroscopeForm() {
   const [form, setForm] = useState<FormState>(defaultForm);
@@ -112,6 +45,9 @@ export default function HoroscopeForm() {
   const [error, setError] = useState<string | null>(null);
   const [endpoint, setEndpoint] = useState<string | null>(null);
   const [status, setStatus] = useState<FormStatus>("idle");
+  const [validations, setValidations] = useState<ValidationState>({});
+
+  const { triggerSubmitFeedback } = useImmersiveFeedback();
 
   const isComplete = useMemo(() => Object.values(form).every(Boolean), [form]);
   const missingFields = useMemo(
@@ -135,10 +71,11 @@ export default function HoroscopeForm() {
   const fallbackNarrative = interpretation.raw || formattedChart;
   const houseFoundation = useMemo<HouseAnchor[] | null>(() => {
     if (!chart || !isNatalChart(chart)) return null;
+    const natalChart = chart as NatalChart;
     return HOUSE_FOCUSES.map((focus, index) => {
       const houseNumber = index + 1;
-      const house = chart.chart.houses.find((entry) => entry.number === houseNumber);
-      const sign = house?.sign || chart.chart.ascendant?.sign || "—";
+      const house = natalChart.chart.houses.find((entry) => entry.number === houseNumber);
+      const sign = house?.sign || natalChart.chart.ascendant?.sign || "—";
       return { house: houseNumber, sign, focus } satisfies HouseAnchor;
     });
   }, [chart]);
@@ -220,7 +157,7 @@ export default function HoroscopeForm() {
     setEndpoint(null);
     setInterpretation({});
 
-    if (missingFields.length || Object.keys(validationFeedback).length) {
+    if (missingFields.length || Object.keys(validations).length) {
       setError("Please fix the highlighted birth details.");
       return;
     }
