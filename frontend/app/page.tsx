@@ -10,9 +10,19 @@ import { useI18n } from "@/lib/i18n";
 
 const rhythmTracks = [
   {
-    title: "Morning tanpura loop",
-    src: "https://cdn.pixabay.com/download/audio/2022/10/23/audio_719f1f4f0d.mp3?filename=calm-meditation-11936.mp3",
-    description: "Soft drone to keep readings serene.",
+    title: "Himalayan dawn water",
+    src: "https://cdn.pixabay.com/download/audio/2021/09/14/audio_f4a0a9d4a9.mp3?filename=calm-river-ambience-loop-6455.mp3",
+    description: "Flowing water under faint temple bells and tanpura.",
+  },
+  {
+    title: "Forest wind and chimes",
+    src: "https://cdn.pixabay.com/download/audio/2022/08/26/audio_8bb3c5b7c1.mp3?filename=wind-chimes-11744.mp3",
+    description: "Soft breeze, leaves, and subtle metal chimes for steady focus.",
+  },
+  {
+    title: "Evening birds and altar",
+    src: "https://cdn.pixabay.com/download/audio/2023/07/24/audio_24a3fd0f6b.mp3?filename=ambient-calm-15149.mp3",
+    description: "Bird calls with distant temple bells, mixed at a gentle hush.",
   },
 ];
 
@@ -73,23 +83,90 @@ export default function HomePage() {
             <span className="pill">English + हिंदी</span>
             <span className="pill">PDF ready</span>
           </div>
+          <div className="geometry-breath">
+            <span className="pill ghost">Cosmic geometry kept light</span>
+            <span className="pill ghost">Pastel gradients, warm + cool</span>
+            <span className="pill ghost">Nature-led layouts</span>
+          </div>
         </div>
-        <div className="listening-card" aria-label="Soothing music">
-          <p className="eyebrow">Serene music</p>
-          <h3>Let the session breathe</h3>
-          <p className="muted">A gentle track plays by default. Adjust volume as you settle in.</p>
-          {rhythmTracks.map((track) => (
-            <div key={track.src} className="audio-tile">
-              <div>
-                <strong>{track.title}</strong>
-                <p className="microcopy">{track.description}</p>
-              </div>
-              <audio controls autoPlay loop preload="auto" aria-label={track.title}>
-                <source src={track.src} type="audio/mpeg" />
-                Your browser does not support the audio element.
-              </audio>
+        <div className="serene-hero__visuals">
+          <div
+            className="aether-visual"
+            role="img"
+            aria-label="Pastel mountains over a river at dawn with subtle geometry"
+          >
+            <span className="aether-aurora" aria-hidden />
+            <span className="aether-sun" aria-hidden />
+            <span className="aether-peak left" aria-hidden />
+            <span className="aether-peak right" aria-hidden />
+            <span className="aether-water" aria-hidden />
+            <span className="aether-geometry" aria-hidden />
+            <span className="aether-leaf" aria-hidden />
+            <span className="aether-leaf delay" aria-hidden />
+          </div>
+          <div className="listening-card" aria-label="Soothing music">
+            <p className="eyebrow">Serene music</p>
+            <h3>Let the session breathe</h3>
+            <p className="muted">Layer soft water, wind, chimes, and bells beneath your readings.</p>
+            <div className="sound-grid" role="list">
+              {rhythmTracks.map((track, index) => (
+                <div key={track.src} className="audio-tile" role="listitem">
+                  <div>
+                    <strong>{track.title}</strong>
+                    <p className="microcopy">{track.description}</p>
+                  </div>
+                  <audio controls autoPlay={index === 0} loop preload="auto" aria-label={track.title}>
+                    <source src={track.src} type="audio/mpeg" />
+                    Your browser does not support the audio element.
+                  </audio>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="aether-belt softly" aria-label="Calm visual system">
+        <div className="aether-belt__copy">
+          <p className="eyebrow">Nature as the altar</p>
+          <h2>Minimal, modern, timeless</h2>
+          <p className="muted">
+            Warm dawn light, gentle rivers, and geometric halos keep the interface sacred yet functional.
+            Smooth transitions and high-contrast typography stay readable at every step.
+          </p>
+          <div className="aether-points">
+            <div>
+              <strong>Subtle cosmic geometry</strong>
+              <p className="microcopy">Fine-line yantra hints and harmonic symmetry embedded as soft overlays.</p>
+            </div>
+            <div>
+              <strong>Pastel gradients</strong>
+              <p className="microcopy">Dawn-to-dusk hues balance cool mists and warm sand for clarity.</p>
+            </div>
+            <div>
+              <strong>Fluid motion</strong>
+              <p className="microcopy">Leaves and ripples drift slowly to signal calm without clutter.</p>
+            </div>
+          </div>
+        </div>
+        <div className="aether-belt__scene" aria-hidden>
+          <div className="aether-belt__panel">
+            <div className="aether-visual small">
+              <span className="aether-aurora" aria-hidden />
+              <span className="aether-sun" aria-hidden />
+              <span className="aether-peak left" aria-hidden />
+              <span className="aether-peak right" aria-hidden />
+              <span className="aether-water" aria-hidden />
+              <span className="aether-geometry" aria-hidden />
+              <span className="aether-leaf" aria-hidden />
+            </div>
+            <div className="aether-belt__legend">
+              <span className="pill">Mountains</span>
+              <span className="pill">River</span>
+              <span className="pill">Sky gradient</span>
+              <span className="pill">Yantra grid</span>
+            </div>
+          </div>
         </div>
       </section>
 
