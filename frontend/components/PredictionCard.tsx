@@ -175,21 +175,51 @@ function interpretHoroscope(payload: HoroscopePayload): InsightSection[] {
 
 function interpretPastLife(payload: PastLifePayload): InsightSection[] {
   const sections: InsightSection[] = [];
-  if (payload.interpretation) {
+  const insights = payload.insights ?? [];
+  const [past, present, ...echoes] = insights;
+  const pastLine = past?.narrative || payload.interpretation;
+
+  if (pastLine) {
     sections.push({
-      heading: payload.name ? `${payload.name} की यात्रा` : "Past-life journey",
-      english: payload.interpretation,
-      hindi: payload.interpretation_hi,
+      heading: "Past influences",
+      english: `${pastLine}${past?.sutra_reference ? ` — ${past.sutra_reference}` : ""}`,
+      hindi: payload.interpretation_hi ? `पूर्व प्रभाव: ${payload.interpretation_hi}` : undefined,
     });
   }
-  if (payload.insights?.length) {
-    const entries = payload.insights.map((item) => `${item.narrative}${item.sutra_reference ? ` — ${item.sutra_reference}` : ""}`);
+
+  const presentLine = present?.narrative || (payload.interpretation ? `Current lessons extend from this arc: ${payload.interpretation}` : undefined);
+  if (presentLine) {
     sections.push({
-      heading: "Archived echoes",
-      english: entries.join(" "),
-      hindi: "भृगु पांडुलिपि से प्राप्त संकेत।",
+      heading: "Current lessons",
+      english: `${presentLine}${present?.sutra_reference ? ` — ${present.sutra_reference}` : ""}`,
+      hindi: payload.interpretation_hi ? `वर्तमान सीख: ${payload.interpretation_hi}` : undefined,
+      bullets: echoes.length
+        ? echoes.slice(0, 2).map((item) => `${item.narrative ?? ""}${item.sutra_reference ? ` — ${item.sutra_reference}` : ""}`)
+        : undefined,
     });
   }
+
+  const futureLines = echoes.length
+    ? echoes.map((item) => `${item.narrative ?? ""}${item.sutra_reference ? ` — ${item.sutra_reference}` : ""}`)
+    : payload.interpretation
+    ? ["Future echoes reshape this vow into soft guidance."]
+    : [];
+
+  if (futureLines.length) {
+    sections.push({
+      heading: "Future echoes",
+      english: futureLines.join(" "),
+      hindi: payload.interpretation_hi ? `आने वाली प्रतिध्वनियाँ: ${payload.interpretation_hi}` : undefined,
+    });
+  }
+
+  if (!sections.length && payload.name) {
+    sections.push({
+      heading: "Past-life journey",
+      english: `${payload.name}'s arc will appear once the manuscript insights load.`,
+    });
+  }
+
   return sections;
 }
 
