@@ -62,6 +62,18 @@ def _timestamp(now: datetime | None = None) -> str:
     return (now or datetime.utcnow()).strftime("%Y-%m-%d %H:%M:%S")
 
 
+def _normalize_inputs_payload(engine: str, inputs: Dict[str, Any] | None) -> Dict[str, Any]:
+    normalized: Dict[str, Any] = {"engine": engine}
+    if inputs is None:
+        return normalized
+
+    if isinstance(inputs, dict):
+        normalized.update(inputs)
+    else:
+        normalized["raw"] = inputs
+    return normalized
+
+
 def _serialize_inputs(inputs: Dict[str, Any] | None) -> str:
     if inputs is None:
         return ""
@@ -97,7 +109,8 @@ def record_feedback(
     if not 1 <= int(rating) <= 5:
         raise ValueError("Rating must be between 1 and 5")
 
-    inputs_json = _serialize_inputs(inputs)
+    normalized_inputs = _normalize_inputs_payload(engine, inputs)
+    inputs_json = _serialize_inputs(normalized_inputs)
 
     with _connect() as connection:
         cursor = connection.execute(
