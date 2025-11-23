@@ -2,6 +2,9 @@
 
 import { FormEvent, useMemo, useState } from "react";
 
+import { interpretChart } from "@/lib/interpretChart";
+import { NatalChart } from "@/types/natal";
+
 type FormState = {
   name: string;
   dateOfBirth: string;
@@ -10,6 +13,47 @@ type FormState = {
 };
 
 type ChartResponse = Record<string, unknown>;
+
+type Interpretation = {
+  english?: string;
+  hindi?: string;
+  raw?: string;
+  summary?: string;
+};
+
+function isNatalChart(payload: ChartResponse): payload is NatalChart {
+  if (!payload || typeof payload !== "object") return false;
+  const maybeChart = (payload as NatalChart).chart;
+  return Boolean(
+    maybeChart &&
+    typeof maybeChart === "object" &&
+    Array.isArray((maybeChart as NatalChart["chart"]).planets) &&
+    Array.isArray((maybeChart as NatalChart["chart"]).houses) &&
+    (maybeChart as NatalChart["chart"]).ascendant
+  );
+}
+
+function extractInterpretation(payload: ChartResponse): Interpretation {
+  const raw = JSON.stringify(payload, null, 2);
+  const typedPayload = payload as {
+    interpretation?: unknown;
+    interpretation_hi?: unknown;
+    karmic_epoch?: unknown;
+  };
+  const english = typeof typedPayload.interpretation === "string" ? typedPayload.interpretation : undefined;
+  const hindi = typeof typedPayload.interpretation_hi === "string" ? typedPayload.interpretation_hi : undefined;
+  const summary = typeof typedPayload.karmic_epoch === "string" ? typedPayload.karmic_epoch : undefined;
+
+  if (english || hindi) {
+    return { english, hindi, raw, summary };
+  }
+
+  if (isNatalChart(payload)) {
+    return { english: interpretChart({ chart: payload }), raw, summary };
+  }
+
+  return { raw };
+}
 
 async function postChart(path: string, payload: FormState) {
   const response = await fetch(path, {
@@ -41,6 +85,7 @@ export default function HoroscopeForm() {
     placeOfBirth: "",
   });
   const [chart, setChart] = useState<ChartResponse | null>(null);
+  const [interpretation, setInterpretation] = useState<Interpretation>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [endpoint, setEndpoint] = useState<string | null>(null);
@@ -48,6 +93,8 @@ export default function HoroscopeForm() {
 
   const isComplete = useMemo(() => Object.values(form).every(Boolean), [form]);
   const formattedChart = useMemo(() => (chart ? JSON.stringify(chart, null, 2) : ""), [chart]);
+  const hasNarrative = Boolean(interpretation.english || interpretation.hindi);
+  const fallbackNarrative = interpretation.raw || formattedChart;
 
   const sanitize = (value: string) =>
     value
@@ -61,12 +108,14 @@ export default function HoroscopeForm() {
     setStatus("idle");
     setChart(null);
     setEndpoint(null);
+    setInterpretation({});
     setLoading(true);
 
     const attempt = async (path: string) => {
       const data = await postChart(path, form);
       setEndpoint(path);
       setChart(data);
+      setInterpretation(extractInterpretation(data));
       setStatus("success");
     };
 
@@ -103,7 +152,21 @@ export default function HoroscopeForm() {
     const printable = window.open("", "_blank", "noopener,noreferrer,width=900,height=1200");
     if (!printable) return;
 
-    const safeChart = sanitize(formattedChart);
+    const safeEnglish = interpretation.english ? sanitize(interpretation.english) : "";
+    const safeHindi = interpretation.hindi ? sanitize(interpretation.hindi) : "";
+    const safeChart = formattedChart ? sanitize(formattedChart) : "";
+    const safeSummary = interpretation.summary ? sanitize(interpretation.summary) : "";
+
+    const englishBlock =
+      safeEnglish &&
+      `<section><h2>Interpretation (English)</h2><pre>${safeEnglish}</pre></section>`;
+    const hindiBlock = safeHindi && `<section><h2>Interpretation (Hindi)</h2><pre>${safeHindi}</pre></section>`;
+    const summaryBlock = safeSummary && `<p class="meta">${safeSummary}</p>`;
+    const rawBlock =
+      !safeEnglish && !safeHindi && safeChart
+        ? `<section><h2>Raw chart details</h2><pre>${safeChart}</pre></section>`
+        : "";
+
     printable.document.write(`
       <html>
         <head>
@@ -118,7 +181,10 @@ export default function HoroscopeForm() {
         <body>
           <h1>Holistic Horoscope</h1>
           <p class="meta">Generated from name, date of birth, time of birth, and place of birth.</p>
-          <pre>${safeChart}</pre>
+          ${summaryBlock || ""}
+          ${englishBlock || ""}
+          ${hindiBlock || ""}
+          ${rawBlock || ""}
         </body>
       </html>
     `);
@@ -268,19 +334,61 @@ export default function HoroscopeForm() {
                   </button>
                 </div>
               </div>
-              <pre>{formattedChart}</pre>
+
+              <div className="interpretation-grid">
+                <div className="interpretation-canvas">
+                  <div className="canvas-head">
+                    <div>
+                      <p className="microcopy">Live interpretation</p>
+                      <h3 className="canvas-title">Calm, printable language</h3>
+                    </div>
+                    {interpretation.summary ? <span className="pill">{interpretation.summary}</span> : null}
+                  </div>
+
+                  {hasNarrative ? (
+                    <>
+                      {interpretation.english ? (
+                        <section>
+                          <p className="microcopy">English</p>
+                          <pre aria-live="polite">{interpretation.english}</pre>
+                        </section>
+                      ) : null}
+                      {interpretation.hindi ? (
+                        <section>
+                          <p className="microcopy">हिंदी मार्गदर्शन</p>
+                          <pre aria-live="polite">{interpretation.hindi}</pre>
+                        </section>
+                      ) : null}
+                    </>
+                  ) : (
+                    <section>
+                      <p className="microcopy">Raw data (waiting for narrative)</p>
+                      <pre aria-live="polite">{fallbackNarrative}</pre>
+                    </section>
+                  )}
+                </div>
+
+                <aside className="interpretation-notes">
+                  <h4>Share or download</h4>
+                  <ul>
+                    <li>Use Save PDF for a clean, bilingual download.</li>
+                    <li>Send directly to chat for live guidance follow-ups.</li>
+                    <li>Everything on this panel is ready for family-friendly reading.</li>
+                  </ul>
+                </aside>
+              </div>
             </div>
-          ) : (
-            <div className="reading-placeholder">
-              <h3>Nothing to interpret yet</h3>
-              <p className="muted">Fill the form on the left. The full reading will appear here with room to breathe.</p>
-              <ul>
-                <li>Keep only the four inputs handy.</li>
-                <li>View the interpretation in a print-friendly layout.</li>
-                <li>Download a PDF or send to chat from this panel.</li>
-              </ul>
-            </div>
-          )}
+            ) : (
+              <div className="reading-placeholder">
+                <h3>Space reserved for the live reading</h3>
+                <p className="muted">Submit your four details and this area will fill with a clear, shareable interpretation.</p>
+                <ul>
+                  <li>We wait to render anything until the narrative is ready.</li>
+                  <li>Once ready, download as PDF or continue in chat from here.</li>
+                  <li>Bilingual guidance lands side by side for easy reading.</li>
+                </ul>
+              </div>
+            )}
         </div>
       </div>
     </section>
