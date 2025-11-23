@@ -1,12 +1,13 @@
 """Feedback storage and quarterly review helpers for the Bhrigu API."""
 from __future__ import annotations
 
+import json
 import os
 import sqlite3
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, List
 
 _VALID_ENGINES = {"horoscope", "past-life", "future", "matchmaking", "calendar", "transits"}
 _DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "feedback.db"
@@ -20,6 +21,7 @@ class FeedbackEntry:
     seeker_name: str | None
     notes: str
     created_at: str
+    inputs: Dict[str, Any] | None
 
 
 def _db_path() -> Path:
@@ -45,10 +47,14 @@ def _ensure_schema(connection: sqlite3.Connection) -> None:
             seeker_name TEXT,
             rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
             notes TEXT,
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+            inputs_json TEXT DEFAULT ''
         )
         """
     )
+    columns = {row["name"] for row in connection.execute("PRAGMA table_info(feedback)")}
+    if "inputs_json" not in columns:
+        connection.execute("ALTER TABLE feedback ADD COLUMN inputs_json TEXT DEFAULT ''")
     connection.commit()
 
 
@@ -56,23 +62,56 @@ def _timestamp(now: datetime | None = None) -> str:
     return (now or datetime.utcnow()).strftime("%Y-%m-%d %H:%M:%S")
 
 
+def _serialize_inputs(inputs: Dict[str, Any] | None) -> str:
+    if inputs is None:
+        return ""
+    try:
+        return json.dumps(inputs, ensure_ascii=False)
+    except TypeError:
+        # Fall back to string coercion for non-serializable entries
+        sanitized = {key: str(value) for key, value in inputs.items()}
+        return json.dumps(sanitized, ensure_ascii=False)
+
+
+def _deserialize_inputs(raw: str | None) -> Dict[str, Any] | None:
+    if not raw:
+        return None
+    try:
+        parsed = json.loads(raw)
+        return parsed if isinstance(parsed, dict) else {"value": parsed}
+    except json.JSONDecodeError:
+        return None
+
+
 def record_feedback(
-    *, engine: str, rating: int, seeker_name: str | None = None, notes: str | None = None, created_at: datetime | None = None
+    *,
+    engine: str,
+    rating: int,
+    seeker_name: str | None = None,
+    notes: str | None = None,
+    created_at: datetime | None = None,
+    inputs: Dict[str, Any] | None = None,
 ) -> FeedbackEntry:
     if engine not in _VALID_ENGINES:
         raise ValueError(f"Unsupported engine for feedback: {engine}")
     if not 1 <= int(rating) <= 5:
         raise ValueError("Rating must be between 1 and 5")
 
+    inputs_json = _serialize_inputs(inputs)
+
     with _connect() as connection:
         cursor = connection.execute(
-            "INSERT INTO feedback (engine, seeker_name, rating, notes, created_at) VALUES (?, ?, ?, ?, ?)",
-            (engine, seeker_name, int(rating), (notes or "").strip(), _timestamp(created_at)),
+            """
+            INSERT INTO feedback (engine, seeker_name, rating, notes, created_at, inputs_json)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (engine, seeker_name, int(rating), (notes or "").strip(), _timestamp(created_at), inputs_json),
         )
         connection.commit()
         inserted_id = cursor.lastrowid
         row = connection.execute(
-            "SELECT id, engine, rating, seeker_name, notes, created_at FROM feedback WHERE id = ?", (inserted_id,)
+            "SELECT id, engine, rating, seeker_name, notes, created_at, inputs_json FROM feedback WHERE id = ?",
+            (inserted_id,),
         ).fetchone()
     assert row is not None  # pragma: no cover - ensured by preceding insert
     return FeedbackEntry(
@@ -82,6 +121,7 @@ def record_feedback(
         seeker_name=row["seeker_name"],
         notes=row["notes"],
         created_at=row["created_at"],
+        inputs=_deserialize_inputs(row["inputs_json"]),
     )
 
 
@@ -155,4 +195,31 @@ def serialize_entry(entry: FeedbackEntry) -> Dict[str, object]:
     return asdict(entry)
 
 
-__all__ = ["FeedbackEntry", "record_feedback", "quarterly_reviews", "serialize_entry"]
+def load_feedback_dataframe(limit: int | None = None):
+    """Load feedback (including inputs) into a pandas DataFrame for ML training.
+
+    Parameters
+    ----------
+    limit:
+        Optional maximum number of rows to load, ordered by recency.
+    """
+
+    import pandas as pd
+
+    query = "SELECT id, engine, rating, seeker_name, notes, created_at, inputs_json FROM feedback ORDER BY created_at DESC"
+    params: tuple[int] | None = None
+    if limit:
+        query = f"{query} LIMIT ?"
+        params = (int(limit),)
+
+    with _connect() as connection:
+        frame = pd.read_sql_query(query, connection, params=params)
+
+    if "inputs_json" in frame.columns:
+        frame["inputs"] = frame["inputs_json"].apply(_deserialize_inputs)
+        frame = frame.drop(columns=["inputs_json"])
+
+    return frame
+
+
+__all__ = ["FeedbackEntry", "record_feedback", "quarterly_reviews", "serialize_entry", "load_feedback_dataframe"]
