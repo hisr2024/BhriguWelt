@@ -1,21 +1,7 @@
-import { NatalChart, AstrologyMetadata, House, Planet } from "@/types/natal";
+import path from "path";
+import { spawnSync } from "child_process";
 
-const ZODIAC_SIGNS = [
-  "Aries",
-  "Taurus",
-  "Gemini",
-  "Cancer",
-  "Leo",
-  "Virgo",
-  "Libra",
-  "Scorpio",
-  "Sagittarius",
-  "Capricorn",
-  "Aquarius",
-  "Pisces",
-];
-
-const PLANET_NAMES = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Rahu", "Ketu"];
+import { NatalChart, AstrologyMetadata } from "@/types/natal";
 
 type ParsedBirthDetails = {
   date: { year: number; month: number; day: number; label: string };
@@ -70,13 +56,6 @@ function parseBirthTime(timeOfBirth: string) {
   };
 }
 
-function placeSeed(place: string) {
-  return place
-    .trim()
-    .split("")
-    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-}
-
 function normalizeDateLabel(year: number, month: number, day: number) {
   const normalizedMonth = month.toString().padStart(2, "0");
   const normalizedDay = day.toString().padStart(2, "0");
@@ -84,75 +63,12 @@ function normalizeDateLabel(year: number, month: number, day: number) {
   return `${normalizedYear}-${normalizedMonth}-${normalizedDay}`;
 }
 
-function deriveTimeZone(place: string) {
-  const seed = placeSeed(place);
-  const offsetSteps = (seed % 19) - 9; // range: -9..9 in 30 minute increments
-  const offsetMinutes = offsetSteps * 30;
-  const sign = offsetMinutes >= 0 ? "+" : "-";
-  const absMinutes = Math.abs(offsetMinutes);
-  const hours = Math.floor(absMinutes / 60)
-    .toString()
-    .padStart(2, "0");
-  const minutes = (absMinutes % 60).toString().padStart(2, "0");
-  const timezone = `UTC${sign}${hours}:${minutes}`;
-  return { timezone, offsetMinutes };
-}
-
-function normalizeDateTime(input: ParsedBirthDetails, place: string) {
-  const { timezone, offsetMinutes } = deriveTimeZone(place);
-  const utcMillis = Date.UTC(
-    input.date.year,
-    input.date.month - 1,
-    input.date.day,
-    input.time.hour,
-    input.time.minute
-  );
-  const adjustedMillis = utcMillis - offsetMinutes * 60 * 1000;
-  const normalized = new Date(adjustedMillis);
-  return { normalized, timezone };
-}
-
-function wrapIndex(value: number, modulus: number) {
-  return ((value % modulus) + modulus) % modulus;
-}
-
-function buildAscendant(seed: number) {
-  const signIndex = wrapIndex(seed, ZODIAC_SIGNS.length);
-  const degree = wrapIndex(seed * 13, 30) + 0.25;
-  return { signIndex, ascendant: { sign: ZODIAC_SIGNS[signIndex], degree: Math.round(degree * 100) / 100 } };
-}
-
-function buildHouses(ascendantIndex: number, baseDegree: number): House[] {
-  return Array.from({ length: 12 }, (_, idx) => {
-    const number = idx + 1;
-    const signIndex = wrapIndex(ascendantIndex + idx, ZODIAC_SIGNS.length);
-    const start_degree = wrapIndex(baseDegree + idx * 30, 360);
-    return { number, sign: ZODIAC_SIGNS[signIndex], start_degree: Math.round(start_degree * 100) / 100 };
-  });
-}
-
-function buildPlanets(seed: number, ascendantIndex: number): Planet[] {
-  return PLANET_NAMES.map((name, idx) => {
-    const signIndex = wrapIndex(seed + idx * 7, ZODIAC_SIGNS.length);
-    const house = wrapIndex(signIndex - ascendantIndex, 12) + 1;
-    const degree = wrapIndex(seed * (idx + 3), 30) + (idx % 3);
-    const retrograde = wrapIndex(seed + idx, 2) === 0;
-
-    return {
-      name,
-      sign: ZODIAC_SIGNS[signIndex],
-      house,
-      degree: Math.round(degree * 100) / 100,
-      retrograde,
-    };
-  });
-}
-
 function buildMetadata(
   parsed: ParsedBirthDetails,
   placeOfBirth: string,
   timezone: string,
-  normalizedDate: Date
+  normalizedDate: string,
+  bharatTraditional: string
 ): AstrologyMetadata {
   return {
     name: "",
@@ -161,8 +77,8 @@ function buildMetadata(
     place_of_birth: placeOfBirth.trim(),
     timezone,
     calendar: {
-      gregorian: normalizedDate.toISOString(),
-      bharat_traditional: "TODO",
+      gregorian: normalizedDate,
+      bharat_traditional: bharatTraditional,
     },
   };
 }
@@ -212,8 +128,7 @@ export function validateBirthDetails(input: {
 }
 
 /**
- * Build a structured natal chart using deterministic placeholder logic.
- * TODO: Replace placeholder calculations with real ephemeris-based math and time zone derivation.
+ * Build a structured natal chart using real ephemeris calculations via the backend utilities.
  */
 export async function generateNatalChart(input: {
   name: string;
@@ -224,28 +139,241 @@ export async function generateNatalChart(input: {
   const validated = validateBirthDetails(input);
   const { parsed } = validated;
 
-  const { normalized, timezone } = normalizeDateTime(parsed, validated.placeOfBirth);
-  const baseSeed =
-    parsed.date.year * 10000 +
-    parsed.date.month * 100 +
-    parsed.date.day +
-    parsed.time.hour * 60 +
-    parsed.time.minute +
-    placeSeed(validated.placeOfBirth);
+  const chart = await runEphemerisPipeline({
+    name: validated.name,
+    dateOfBirth: parsed.date.label,
+    timeOfBirth: parsed.time.label,
+    placeOfBirth: validated.placeOfBirth,
+  });
 
-  const { signIndex: ascIndex, ascendant } = buildAscendant(baseSeed);
-  const houses = buildHouses(ascIndex, ascendant.degree);
-  const planets = buildPlanets(baseSeed, ascIndex);
+  chart.metadata = buildMetadata(
+    parsed,
+    validated.placeOfBirth,
+    chart.metadata.timezone,
+    chart.metadata.calendar.gregorian,
+    chart.metadata.calendar.bharat_traditional
+  );
+  chart.metadata.name = validated.name;
 
-  const metadata = buildMetadata(parsed, validated.placeOfBirth, timezone, normalized);
-  metadata.name = validated.name;
+  return chart;
+}
 
-  return {
-    metadata,
-    chart: {
-      ascendant,
-      houses,
-      planets,
-    },
-  };
+function parseEphemerisOutput(output: string): NatalChart {
+  const parsed = JSON.parse(output) as NatalChart;
+
+  if (
+    !parsed?.chart?.ascendant?.sign ||
+    !parsed?.chart?.houses?.length ||
+    !parsed?.chart?.planets?.length
+  ) {
+    throw new Error("Ephemeris output missing required chart details");
+  }
+
+  return parsed;
+}
+
+const PYTHON_EPHEMERIS_SCRIPT = String.raw`
+import json
+import math
+import sys
+from datetime import datetime, timezone
+
+from bhriguwelt.astronomical_calculations import geocode_location, normalize_birth_datetime, has_swisseph, _mean_longitude
+from bhriguwelt.calendar_conversion import convert_birth_details
+
+ZODIAC_SIGNS = [
+    "Aries",
+    "Taurus",
+    "Gemini",
+    "Cancer",
+    "Leo",
+    "Virgo",
+    "Libra",
+    "Scorpio",
+    "Sagittarius",
+    "Capricorn",
+    "Aquarius",
+    "Pisces",
+]
+
+
+def sign_name(longitude: float) -> str:
+    return ZODIAC_SIGNS[int(math.floor((longitude % 360) / 30))]
+
+
+def degree_in_sign(longitude: float) -> float:
+    return (longitude % 30)
+
+
+def house_from_longitude(longitude: float, cusps: list[float]) -> int:
+    for idx, start in enumerate(cusps):
+        end = cusps[(idx + 1) % 12]
+        adjusted_longitude = longitude
+        if end < start:
+            end += 360
+            if adjusted_longitude < start:
+                adjusted_longitude += 360
+        if start <= adjusted_longitude < end:
+            return idx + 1
+    return 1
+
+
+def fallback_positions(ut_dt: datetime, longitude: float | None) -> tuple[float, list[float], dict[str, tuple[float, float]]]:
+    delta_days = (ut_dt - datetime(2000, 1, 1, 12, tzinfo=timezone.utc)).total_seconds() / 86400
+    asc_longitude = (_mean_longitude(0.0, 360 / 365.25, delta_days) + (longitude or 0.0)) % 360
+    cusps = [(asc_longitude + offset * 30) % 360 for offset in range(12)]
+    positions = {
+        "Sun": _mean_longitude(280.460, 0.98564736, delta_days),
+        "Moon": _mean_longitude(218.316, 13.176396, delta_days),
+        "Mercury": _mean_longitude(252.250, 4.092334, delta_days),
+        "Venus": _mean_longitude(181.979, 1.602130, delta_days),
+        "Mars": _mean_longitude(355.433, 0.524039, delta_days),
+        "Jupiter": _mean_longitude(34.351, 0.083092, delta_days),
+        "Saturn": _mean_longitude(50.077, 0.033459, delta_days),
+        "Rahu": _mean_longitude(204.0, -0.0529538, delta_days),
+    }
+    positions["Ketu"] = (positions["Rahu"] + 180) % 360
+    planetary_states = {name: (value, -0.052 if name in {"Rahu", "Ketu"} else 0.0) for name, value in positions.items()}
+    return asc_longitude, cusps, planetary_states
+
+
+def build_chart(payload: dict) -> dict:
+    place = payload.get("placeOfBirth", "")
+    birth_date = payload.get("dateOfBirth")
+    birth_time = payload.get("timeOfBirth")
+
+    latitude, longitude, tz_name = geocode_location(place)
+    tz_label = tz_name or "UTC"
+    dt_utc = normalize_birth_datetime(birth_date, birth_time, timezone_name=tz_name)
+    ut_dt = dt_utc.astimezone(timezone.utc)
+
+    bharat = convert_birth_details(birth_date, birth_time, place)
+    bharat_label = f"{bharat.saka_date.day} {bharat.saka_date.month} {bharat.saka_date.year} Śaka | Tithi {bharat.tithi_number} ({bharat.tithi_name}), Nakshatra {bharat.nakshatra}"
+
+    asc_longitude = 0.0
+    cusps: list[float] = []
+    planetary_states: dict[str, tuple[float, float]] = {}
+
+    if has_swisseph():
+        import swisseph as swe
+
+        swe.set_ephe_path(".")
+        swe.set_topo(longitude or 0.0, latitude or 0.0, 0)
+        jd = swe.julday(
+            ut_dt.year,
+            ut_dt.month,
+            ut_dt.day,
+            ut_dt.hour + ut_dt.minute / 60.0 + ut_dt.second / 3600.0,
+            swe.GREG_CAL,
+        )
+        cusps_raw, ascmc = swe.houses_ex(jd, latitude or 0.0, longitude or 0.0, b"P")
+        cusps = list(cusps_raw[:12])
+        asc_longitude = float(ascmc[0])
+
+        planet_codes = {
+            "Sun": swe.SUN,
+            "Moon": swe.MOON,
+            "Mercury": swe.MERCURY,
+            "Venus": swe.VENUS,
+            "Mars": swe.MARS,
+            "Jupiter": swe.JUPITER,
+            "Saturn": swe.SATURN,
+            "Rahu": swe.TRUE_NODE,
+        }
+
+        for name, code in planet_codes.items():
+            coords, _flags = swe.calc_ut(jd, code)
+            longitude_value = float(coords[0])
+            speed_long = float(coords[3]) if len(coords) > 3 else 0.0
+            planetary_states[name] = (longitude_value, speed_long)
+        rahu_longitude, rahu_speed = planetary_states.get("Rahu", (0.0, 0.0))
+        planetary_states["Ketu"] = ((rahu_longitude + 180.0) % 360, -rahu_speed)
+    else:
+        asc_longitude, cusps, planetary_states = fallback_positions(ut_dt, longitude)
+
+    ascendant = {
+        "sign": sign_name(asc_longitude),
+        "degree": round(degree_in_sign(asc_longitude), 2),
+    }
+
+    houses = [
+        {
+            "number": idx + 1,
+            "sign": sign_name(value),
+            "start_degree": round(value, 2),
+        }
+        for idx, value in enumerate(cusps)
+    ]
+
+    planets = []
+    for name in ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Rahu", "Ketu"]:
+        longitude_value, speed = planetary_states.get(name, (0.0, 0.0))
+        house_number = house_from_longitude(longitude_value, cusps)
+        planets.append(
+            {
+                "name": name,
+                "sign": sign_name(longitude_value),
+                "house": house_number,
+                "degree": round(degree_in_sign(longitude_value), 2),
+                "retrograde": speed < 0,
+            }
+        )
+
+    return {
+        "metadata": {
+            "name": payload.get("name", ""),
+            "date_of_birth": birth_date,
+            "time_of_birth": birth_time,
+            "place_of_birth": place,
+            "timezone": tz_label,
+            "calendar": {
+                "gregorian": ut_dt.isoformat(),
+                "bharat_traditional": bharat_label,
+            },
+        },
+        "chart": {
+            "ascendant": ascendant,
+            "houses": houses,
+            "planets": planets,
+        },
+    }
+
+
+def main():
+    try:
+        payload = json.loads(sys.stdin.read())
+        chart = build_chart(payload)
+        json.dump(chart, sys.stdout)
+    except Exception as exc:  # pragma: no cover - executed in a subprocess
+        sys.stderr.write(str(exc))
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
+`;
+
+async function runEphemerisPipeline(payload: {
+  name: string;
+  dateOfBirth: string;
+  timeOfBirth: string;
+  placeOfBirth: string;
+}): Promise<NatalChart> {
+  const pythonPath = path.join(process.cwd(), "backend", "src");
+  const result = spawnSync("python", ["-c", PYTHON_EPHEMERIS_SCRIPT], {
+    input: JSON.stringify(payload),
+    encoding: "utf-8",
+    env: { ...process.env, PYTHONPATH: pythonPath },
+  });
+
+  if (result.error) {
+    throw new Error(`Ephemeris execution failed: ${result.error.message}`);
+  }
+
+  if (result.status !== 0 || !result.stdout) {
+    const reason = result.stderr?.toString()?.trim() || "Unknown ephemeris error";
+    throw new Error(reason);
+  }
+
+  return parseEphemerisOutput(result.stdout.toString());
 }
