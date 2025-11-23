@@ -14,3 +14,15 @@ Telemetry events flow through `sentry-sdk` per `backend/src/bhriguwelt/telemetry
 
 ## How do I extend language support?
 Strings live in `frontend/lib/copy.ts`. Add additional scripts and right-to-left translations there, and mirror the changes in the i18n helper.
+
+## How do I enforce HTTPS everywhere?
+The Next.js frontend now ships with `middleware.ts` that redirects `http://` requests to `https://` using the
+`x-forwarded-proto` header. Keep `NEXT_PUBLIC_BACKEND_URL` set to an HTTPS origin to prevent mixed content warnings.
+
+## What tests should I run before merging?
+- **Backend:** `cd backend && pytest --maxfail=1 --disable-warnings --cov=src --cov-report=term-missing` to target the 80%+
+  coverage goal.
+- **Frontend:** `cd frontend && npm run lint && npm run type-check && npx playwright test` to cover lint, types, and
+  end-to-end flows.
+- **Pre-commit:** Install hooks with `pre-commit install` to automatically run Black, mypy, and Next.js lint/type checks on
+  every commit.

@@ -6,6 +6,11 @@ frontend deploys on Vercel. Native apps (Android/iOS) reuse the same HTTP
 contracts exposed by the backend. No hosted instances ship with the repository,
 so follow the steps below to publish your own endpoints before testing clients.
 
+> **HTTPS only:** Configure every public URL (backend and frontend) with TLS and
+> keep `NEXT_PUBLIC_BACKEND_URL` pointed to an HTTPS origin. The Next.js
+> `middleware.ts` automatically redirects `http://` traffic to `https://` when
+> reverse proxies forward the `x-forwarded-proto` header.
+
 ## Backend → Render
 
 ### Fast path (blueprint)

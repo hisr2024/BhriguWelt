@@ -3,14 +3,29 @@ updates:
   - package-ecosystem: "pip"
     directory: "/backend"
     schedule:
-      interval: "weekly"
+      interval: "daily"
     labels:
       - "dependencies"
       - "backend"
+    open-pull-requests-limit: 10
+    rebase-strategy: auto
+    security-updates: true
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
-      interval: "weekly"
+      interval: "daily"
     labels:
       - "dependencies"
       - "frontend"
+    open-pull-requests-limit: 10
+    rebase-strategy: auto
+    security-updates: true
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    labels:
+      - "dependencies"
+      - "ci"
+    open-pull-requests-limit: 10
+    rebase-strategy: auto

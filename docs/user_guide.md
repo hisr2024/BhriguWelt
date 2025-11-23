@@ -6,6 +6,8 @@ This guide walks seekers and practitioners through the core flows of the platfor
 - **Navigation:** The homepage anchors every form with clear anchors (horoscope, calendar, matchmaking).
 - **Language toggle:** Use the bilingual toggle in the toolbar to swap copy between English and Hindi without reloading.
 - **Accessibility:** Large tap targets, aria labels, and high-contrast type keep the interface usable on mobile.
+- **Onboarding tutorial:** Start from the homepage banner and follow the guided sequence (Horoscope → Past Life → Future →
+  Relationships). Each step shows inline progress and lets you resume later if you leave the page.
 
 ## Horoscope requests
 1. Open the **Horoscope** panel and enter name, birth date, birth time, and place.
@@ -23,3 +25,5 @@ This guide walks seekers and practitioners through the core flows of the platfor
 ## Chat and insights
 - The **Bhrigu chat** widget answers clarifying questions in real time.
 - Quarterly review summaries track feedback across cohorts so facilitators know which principles resonate.
+- Enable **notifications** (mobile web and desktop) to get reminders when new remedies, weekly timelines, or partner
+  compatibility reports are ready. Notifications respect HTTPS-only deployments and mirror your language preference.

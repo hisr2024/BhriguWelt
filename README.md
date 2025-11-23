@@ -67,6 +67,14 @@ references to manuscript folios.
     └── src/
 ```
 
+## Quality gates
+
+- **Pre-commit hooks:** Run `pre-commit install` to enable Black, mypy, and the Next.js lint/type-check hooks described in
+  `docs/ui_improvement_prompts.md` and `.pre-commit-config.yaml`.
+- **Backend coverage:** `cd backend && pytest --cov=src --cov-report=term-missing` to maintain the 80%+ target.
+- **Frontend health:** `cd frontend && npm run lint && npm run type-check && npx playwright test` before opening a PR. The
+  CI badges above mirror the same checks.
+
 ## Deployment readiness (Render + Vercel + Railway)
 
 No live instances are bundled with the repository; you must deploy the backend
