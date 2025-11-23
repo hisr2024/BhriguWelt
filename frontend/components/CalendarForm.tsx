@@ -7,6 +7,7 @@ import { deriveHouseGrid, HouseSummary } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
 import { captureClientError } from "@/lib/telemetry";
 import { CalendarDetails } from "@/types/astro";
+import { useImmersiveFeedback } from "@/lib/immersive";
 import PredictionCard from "./PredictionCard";
 
 const TRANSIT_ORBITS = [
@@ -45,6 +46,7 @@ export default function CalendarForm() {
   const [autoTriggered, setAutoTriggered] = useState(false);
   const errorRef = useRef<HTMLDivElement | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const { triggerSubmitFeedback } = useImmersiveFeedback();
 
   useEffect(() => {
     if (error && errorRef.current) {
@@ -54,6 +56,9 @@ export default function CalendarForm() {
 
   const handleSubmit = async (event?: FormEvent<HTMLFormElement>, source: "auto" | "manual" = "manual") => {
     event?.preventDefault();
+    if (source === "manual") {
+      triggerSubmitFeedback();
+    }
     setError(null);
     setPayload(null);
     setLoading(true);

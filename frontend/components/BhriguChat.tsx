@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ChatContext } from "@/types/chat";
 import { NatalChart } from "@/types/natal";
+import { useImmersiveFeedback } from "@/lib/immersive";
 
 type Message = {
   role: "user" | "bot";
@@ -35,6 +36,7 @@ export default function BhriguChat({ chart }: Props) {
   const [currentChart, setCurrentChart] = useState<NatalChart | undefined>(chart);
   const [isSending, setIsSending] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
+  const { triggerSubmitFeedback } = useImmersiveFeedback();
 
   useEffect(() => {
     if (chart) {
@@ -55,6 +57,8 @@ export default function BhriguChat({ chart }: Props) {
     const trimmed = input.trim();
 
     if (!trimmed || isSending) return;
+
+    triggerSubmitFeedback();
 
     const userMessage: Message = { role: "user", content: trimmed };
     setMessages((prev) => [...prev, userMessage]);

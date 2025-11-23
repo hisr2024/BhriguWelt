@@ -6,8 +6,7 @@ import { ResultEngine } from "@/types/astro";
 import KundliCharts from "./KundliCharts";
 import { ChartHouse, DashaPeriod } from "@/types/astro";
 import FeedbackPrompt from "./FeedbackPrompt";
-import { HOUSE_FOCUSES } from "@/lib/houseGrid";
-import ProgressIndicator, { ProgressStep } from "./ProgressIndicator";
+import { areMicroAnimationsAllowed } from "@/lib/immersive";
 
 interface Props {
   title: string;
@@ -407,28 +406,47 @@ function buildSections(engine: ResultEngine, payload: unknown): InsightSection[]
 
 export default function PredictionCard({ title, payload, engine, seekerName }: Props) {
   const { t } = useI18n();
-  const [detailLevel, setDetailLevel] = React.useState<"beginner" | "advanced">("beginner");
-  const sections = buildSections(engine, payload);
+  const sections = useMemo(() => buildSections(engine, payload), [engine, payload]);
   const horoscopePayload = engine === "horoscope" && typeof payload === "object" ? (payload as HoroscopePayload) : null;
-  const matchmakingPayload = engine === "matchmaking" && typeof payload === "object" ? (payload as MatchmakingPayload) : null;
-  const compatibilityOverlay =
-    matchmakingPayload?.charts?.synastry_overlay?.length
-      ? {
-          primaryLabel: matchmakingPayload.primary_name ?? "Primary chart",
-          partnerLabel: matchmakingPayload.partner_name ?? "Partner chart",
-          harmonyIndex:
-            matchmakingPayload.compatibility?.compatibility_index ?? matchmakingPayload.charts?.shared_score ?? undefined,
-          sharedThemes: (matchmakingPayload.charts.synastry_overlay || []).map((entry) => ({
-            label: entry.label || entry.theme || "Shared focus",
-            alignment: typeof entry.alignment === "number" ? Math.round(entry.alignment) : undefined,
-            tags: entry.tags,
-          })),
-        }
-      : undefined;
+  const [animationsEnabled, setAnimationsEnabled] = useState(false);
+  const [flipActive, setFlipActive] = useState(false);
+
+  useEffect(() => {
+    const refresh = () => setAnimationsEnabled(areMicroAnimationsAllowed());
+    refresh();
+
+    if (typeof document === "undefined" || typeof MutationObserver === "undefined") return;
+
+    const observer = new MutationObserver(refresh);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["data-animations"] });
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!payload || !animationsEnabled) {
+      setFlipActive(false);
+      return;
+    }
+
+    setFlipActive(true);
+    const timeout = window.setTimeout(() => setFlipActive(false), 900);
+    return () => window.clearTimeout(timeout);
+  }, [payload, animationsEnabled]);
+
+  const cardClassName = [
+    "results",
+    "card",
+    "prediction-card",
+    animationsEnabled ? "prediction-card--animated" : "",
+    flipActive ? "is-flipped" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   if (!payload || !sections.length) {
     return (
-      <section className="results card" aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
+      <section className={cardClassName} aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
         <div className="section-heading">
           <p className="eyebrow">Response</p>
           <h3>{title}</h3>
@@ -439,47 +457,23 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
   }
 
   return (
-    <section className="results card" aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
-      <div className="section-heading">
-        <p className="eyebrow">Response</p>
-        <h3>{title}</h3>
-        <p className="muted">{t("results.helperRaw", "Narratives are ready to share—no JSON needed.")}</p>
-      </div>
-      <div className="section-actions" style={{ marginBottom: "1rem" }}>
-        <p className="eyebrow" style={{ marginBottom: "0.35rem" }}>
-          Depth toggle
-        </p>
-        <div role="group" aria-label="Detail level" className="button-row">
-          {(["beginner", "advanced"] as const).map((level) => (
-            <button
-              key={level}
-              type="button"
-              className={detailLevel === level ? "primary" : "secondary"}
-              aria-pressed={detailLevel === level}
-              onClick={() => setDetailLevel(level)}
-            >
-              {level === "beginner" ? "Beginner view" : "Advanced view"}
-            </button>
-          ))}
+    <section className={cardClassName} aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
+      <div className="prediction-card__body">
+        <div className="section-heading">
+          <p className="eyebrow">Response</p>
+          <h3>{title}</h3>
+          <p className="muted">{t("results.helperRaw", "Narratives are ready to share—no JSON needed.")}</p>
         </div>
+        <div className="insight-grid">{sections.map(renderSection)}</div>
+        {horoscopePayload && (
+          <KundliCharts
+            rashiChart={horoscopePayload.rashi_chart}
+            bhavaChart={horoscopePayload.bhava_chart}
+            dashas={horoscopePayload.dashas}
+          />
+        )}
+        {payload && <FeedbackPrompt engine={engine} seekerName={seekerName} />}
       </div>
-      <div className="insight-grid">{sections.map((section, index) => renderSection(section, index, detailLevel))}</div>
-      {horoscopePayload && (
-        <KundliCharts
-          rashiChart={horoscopePayload.rashi_chart}
-          bhavaChart={horoscopePayload.bhava_chart}
-          dashas={horoscopePayload.dashas}
-          detailLevel={detailLevel}
-        />
-      )}
-      {matchmakingPayload?.charts && (
-        <KundliCharts
-          rashiChart={matchmakingPayload.charts.primary_rashi_chart}
-          partnerChart={matchmakingPayload.charts.partner_rashi_chart}
-          compatibilityOverlay={compatibilityOverlay}
-        />
-      )}
-      {payload && <FeedbackPrompt engine={engine} seekerName={seekerName} />}
     </section>
   );
 }

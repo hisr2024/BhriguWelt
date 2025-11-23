@@ -5,7 +5,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { interpretChart } from "@/lib/interpretChart";
 import { HOUSE_FOCUSES } from "@/lib/houseGrid";
 import { NatalChart } from "@/types/natal";
-import ProgressIndicator, { ProgressStep } from "./ProgressIndicator";
+import { useImmersiveFeedback } from "@/lib/immersive";
 
 type FormState = {
   name: string;
@@ -104,7 +104,7 @@ export default function HoroscopeForm() {
   const [error, setError] = useState<string | null>(null);
   const [endpoint, setEndpoint] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "success">("idle");
-  const [validations, setValidations] = useState<ValidationState>({});
+  const { triggerSubmitFeedback } = useImmersiveFeedback();
 
   const isComplete = useMemo(() => Object.values(form).every(Boolean), [form]);
   const missingFields = useMemo(
@@ -208,8 +208,7 @@ export default function HoroscopeForm() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const validationFeedback = validate(form);
-    setValidations(validationFeedback);
+    triggerSubmitFeedback();
     setError(null);
     setStatus("idle");
     setChart(null);

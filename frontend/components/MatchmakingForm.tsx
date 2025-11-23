@@ -5,6 +5,7 @@ import { requestMatchmaking } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { captureClientError } from "@/lib/telemetry";
 import { BirthDetails } from "@/types/astro";
+import { useImmersiveFeedback } from "@/lib/immersive";
 import PredictionCard from "./PredictionCard";
 
 const defaultDetails: BirthDetails = {
@@ -35,6 +36,7 @@ export default function MatchmakingForm() {
   const [payload, setPayload] = useState<unknown>(null);
   const [chartsReady, setChartsReady] = useState(false);
   const errorRef = useRef<HTMLDivElement | null>(null);
+  const { triggerSubmitFeedback } = useImmersiveFeedback();
 
   const hasBirthDetails = (details: BirthDetails) =>
     Boolean(details.name && details.birthDate && details.birthTime && details.birthPlace);
@@ -51,6 +53,7 @@ export default function MatchmakingForm() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    triggerSubmitFeedback();
     setError(null);
     setPayload(null);
     if (!chartsReady) {

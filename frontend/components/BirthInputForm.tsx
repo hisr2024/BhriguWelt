@@ -6,6 +6,7 @@ import { requestCalendar } from "@/lib/api";
 import { deriveHouseGrid, HouseSummary } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
 import { CalendarDetails } from "@/types/astro";
+import { useImmersiveFeedback } from "@/lib/immersive";
 
 type BirthForm = CalendarDetails & {
   lunarTithi: string;
@@ -59,17 +60,7 @@ export default function BirthInputForm() {
   const [error, setError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [validations, setValidations] = useState<ValidationState>({});
-  const missingFields = useMemo(
-    () =>
-      ([
-        ["dob", details.birthDate, "date of birth"],
-        ["tob", details.birthTime, "time of birth"],
-        ["pob", details.birthPlace, "place of birth"],
-      ] as const)
-        .filter(([, value]) => !value)
-        .map(([, , label]) => label),
-    [details.birthDate, details.birthPlace, details.birthTime],
-  );
+  const { triggerSubmitFeedback } = useImmersiveFeedback();
 
   const isComplete = useMemo(() => details.birthDate && details.birthTime && details.birthPlace, [details]);
   const hasValidationIssues = useMemo(() => Boolean(Object.keys(validations).length), [validations]);
@@ -105,6 +96,8 @@ export default function BirthInputForm() {
     const feedback = validate(details);
     setValidations(feedback);
     if (Object.keys(feedback).length) return;
+
+    triggerSubmitFeedback();
 
     setLoading(true);
     try {
