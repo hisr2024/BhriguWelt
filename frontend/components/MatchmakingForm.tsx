@@ -201,6 +201,37 @@ export default function MatchmakingForm() {
             {t("form.helper", "Compare two complete birth records plus lifestyle tags to align manuscript and modern signals.")}
           </p>
         </header>
+        <div className="duo-overlay" role="status" aria-live="polite">
+          <div className={`duo-overlay__orb ${hasBirthDetails(primary) ? "duo-overlay__orb--ready" : ""}`}>
+            <span className="duo-overlay__label">{primary.name || t("matchmaking.primary", "Primary chart")}</span>
+            <span className="duo-overlay__energy">Solar flow</span>
+          </div>
+          <div className="duo-overlay__merge">
+            <p className="microcopy">
+              {chartsReady
+                ? t(
+                    "matchmaking.overlayReady",
+                    "Dual charts locked. Compatibility overlays will blend guna and lifestyle energies.",
+                  )
+                : t("matchmaking.overlayLocked", "Enter both charts to unlock the layered aura preview.")}
+            </p>
+            <div className="duo-overlay__auras" aria-hidden>
+              <span
+                className={`duo-overlay__aura duo-overlay__aura--left ${hasBirthDetails(primary) ? "duo-overlay__aura--active" : ""}`}
+              />
+              <span
+                className={`duo-overlay__aura duo-overlay__aura--right ${hasBirthDetails(partner) ? "duo-overlay__aura--active" : ""}`}
+              />
+              <span
+                className={`duo-overlay__aura duo-overlay__aura--center ${chartsReady ? "duo-overlay__aura--active" : ""}`}
+              />
+            </div>
+          </div>
+          <div className={`duo-overlay__orb ${hasBirthDetails(partner) ? "duo-overlay__orb--ready" : ""}`}>
+            <span className="duo-overlay__label">{partner.name || t("matchmaking.partner", "Partner chart")}</span>
+            <span className="duo-overlay__energy">Lunar flow</span>
+          </div>
+        </div>
         {renderInputs(t("matchmaking.primary", "Primary"), primary, setPrimary)}
         {renderInputs(t("matchmaking.partner", "Partner"), partner, setPartner)}
         <div style={{ marginTop: "1rem" }}>

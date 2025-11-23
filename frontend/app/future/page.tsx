@@ -106,7 +106,10 @@ export default function FuturePage() {
         <div className="section-heading">
           <p className="eyebrow">Timeline</p>
           <h2>Scroll through phases</h2>
-          <p className="muted">Interactive milestones stay linked to the foundational twelve houses.</p>
+          <p className="muted">
+            Interactive milestones stay linked to the foundational twelve houses. A glowing house band mirrors every
+            milestone so seekers always know which anchor is powering the directive.
+          </p>
         </div>
         <div className="progress" aria-label="Karmic resolution progress">
           <div className="progress__bar" style={{ width: `${karmicResolution}%` }} />

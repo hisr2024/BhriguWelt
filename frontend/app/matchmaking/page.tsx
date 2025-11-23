@@ -6,9 +6,10 @@ export default function MatchmakingPage() {
     <div className="stack">
       <div className="hero">
         <p className="eyebrow">Matchmaking • Modern + classical</p>
-        <h1>Compatibility that respects guna and lifestyle tags.</h1>
+        <h1>Compatibility that layers dual charts into a glowing overlay.</h1>
         <p className="muted" style={{ maxWidth: "760px" }}>
-          Pair the manuscript lens with simple filters so every duo receives clear guidance.
+          Pair the manuscript lens with simple filters so every duo receives clear guidance. Two charts are required before
+          cosmic energies blend into the shared aura.
         </p>
         <div className="hero-actions">
           <Link href="/" className="button-link" style={{ background: "rgba(255,255,255,0.08)" }}>

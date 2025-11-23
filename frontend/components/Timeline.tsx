@@ -38,6 +38,21 @@ export default function Timeline({ events, accent = "aqua" }: TimelineProps) {
     [events.length],
   );
 
+  const houseBand = useMemo(() => Array.from({ length: 12 }, (_, index) => index + 1), []);
+
+  const parseHouseIndex = useCallback((event: TimelineEvent) => {
+    if (event.houseIndex) return event.houseIndex;
+    const match = event.houseAnchor.match(/(\d+)/);
+    return match ? Number(match[1]) : undefined;
+  }, []);
+
+  const activeHouses = useMemo(() => {
+    const indices = events
+      .map((event) => parseHouseIndex(event))
+      .filter((value): value is number => typeof value === "number");
+    return new Set(indices);
+  }, [events, parseHouseIndex]);
+
   useEffect(() => {
     setActiveIndex((index) => clampIndex(index));
   }, [clampIndex]);
@@ -82,12 +97,6 @@ export default function Timeline({ events, accent = "aqua" }: TimelineProps) {
       event.preventDefault();
       goPrev();
     }
-  };
-
-  const parseHouseIndex = (event: TimelineEvent) => {
-    if (event.houseIndex) return event.houseIndex;
-    const match = event.houseAnchor.match(/(\d+)/);
-    return match ? Number(match[1]) : undefined;
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -146,6 +155,21 @@ export default function Timeline({ events, accent = "aqua" }: TimelineProps) {
         ))}
       </div>
 
+      <div className="timeline__house-band" aria-hidden="true">
+        <div className="timeline__house-track">
+          {houseBand.map((house) => (
+            <div
+              key={house}
+              className={`timeline__house ${activeHouses.has(house) ? "timeline__house--active" : ""}`}
+              aria-hidden
+            >
+              <span className="timeline__house-index">House {house}</span>
+              <span className="timeline__house-glow" />
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div
         className={`${accentClass} ${dragging ? "timeline--dragging" : ""}`}
         role="list"
@@ -156,7 +180,7 @@ export default function Timeline({ events, accent = "aqua" }: TimelineProps) {
         onPointerUp={handlePointerEnd}
         onPointerLeave={handlePointerEnd}
       >
-        {events.map((event) => {
+        {events.map((event, index) => {
           const houseNumber = parseHouseIndex(event);
           const progressPercent =
             typeof event.progress === "number"
@@ -164,7 +188,11 @@ export default function Timeline({ events, accent = "aqua" }: TimelineProps) {
               : undefined;
 
           return (
-            <article key={event.title} className="timeline__node" role="listitem">
+            <article
+              key={event.title}
+              className={`timeline__node ${index === activeIndex ? "timeline__node--active" : ""}`}
+              role="listitem"
+            >
               <div className="timeline__orb" aria-hidden="true">
                 <span className="timeline__pulse" />
                 <span className="timeline__icon" role="img" aria-label={event.title}>
