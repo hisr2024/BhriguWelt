@@ -1785,3 +1785,250 @@ button:disabled {
   gap: 0.4rem;
   line-height: 1.6;
 }
+
+/* Horoscope refresh */
+.horo-shell {
+  display: grid;
+  gap: 2rem;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+}
+
+.horo-hero {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.04), rgba(34, 211, 238, 0.08));
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.28);
+}
+
+.horo-hero__copy h1 {
+  margin: 0.4rem 0 0.35rem;
+  letter-spacing: -0.01em;
+}
+
+.horo-hero__lede {
+  max-width: 760px;
+  margin: 0 0 0.75rem;
+}
+
+.horo-hero__pills {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0 1rem;
+}
+
+.horo-hero__steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+  align-self: center;
+}
+
+.step-card {
+  padding: 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.step-card h3 {
+  margin: 0.5rem 0 0.3rem;
+}
+
+.ghost-link {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+}
+
+.horo-board {
+  background: transparent;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+}
+
+.horo-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.horo-panel {
+  background: rgba(5, 8, 19, 0.8);
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 1.25rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.horo-panel--reading {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), rgba(34, 211, 238, 0.04));
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.panel-head h2 {
+  margin: 0.4rem 0 0.3rem;
+}
+
+.status-chip {
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5f5;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.status-chip--ready {
+  background: rgba(22, 163, 74, 0.18);
+  color: #c7f9cc;
+  border-color: rgba(22, 163, 74, 0.35);
+}
+
+.horo-form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field-row--split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.action-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.action-notes {
+  display: grid;
+  gap: 0.2rem;
+  color: #cbd5f5;
+}
+
+.inline-banner {
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.inline-banner--error {
+  background: rgba(248, 113, 113, 0.14);
+  border-color: rgba(248, 113, 113, 0.32);
+  color: #fecdd3;
+}
+
+.inline-banner--success {
+  background: rgba(34, 211, 238, 0.12);
+  border-color: rgba(34, 211, 238, 0.3);
+  color: #e0f2fe;
+}
+
+.banner-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.horo-panel--reading pre {
+  background: rgba(8, 12, 24, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  padding: 1rem;
+  color: #dbeafe;
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+
+.reading-surface {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.reading-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  border-radius: 0.9rem;
+  padding: 0.75rem 0.85rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.reading-placeholder {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  padding: 1rem;
+  border-radius: 1rem;
+}
+
+.reading-placeholder ul {
+  padding-left: 1.2rem;
+  color: #cbd5f5;
+  margin: 0.5rem 0 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+@media (max-width: 980px) {
+  .horo-hero,
+  .horo-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .action-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .reading-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

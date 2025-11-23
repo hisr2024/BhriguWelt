@@ -10,54 +10,50 @@ export default function HoroscopePage() {
   const helperText = helperCopy.horoscope;
 
   return (
-    <div className="stack">
-      <div className="hero">
-        <p className="eyebrow">Horoscope • Panchanga aligned</p>
-        <h1>{t("pages.horoscope.title", "Holistic horoscope with only four essentials.")}</h1>
-        <p className="muted" style={{ maxWidth: "760px" }}>
-          {t(
-            "form.helper",
-            helperText ??
-              "Name, date of birth, time of birth, and place of birth are all that is needed for a calm, Bhrigu-first reading."
-          )}
-        </p>
-        <div className="hero-actions">
-          <Link href="/" className="button-link" style={{ background: "rgba(255,255,255,0.08)" }}>
-            Back to studio hub
-          </Link>
+    <div className="horo-shell">
+      <header className="horo-hero">
+        <div className="horo-hero__copy">
+          <p className="eyebrow">Holistic horoscope • Ready for everyone</p>
+          <h1>{t("pages.horoscope.title", "Fresh, calm horoscope journey.")}</h1>
+          <p className="muted horo-hero__lede">
+            {t(
+              "form.helper",
+              helperText ??
+                "Bring only a name, date of birth, time of birth, and place of birth. The rest of the flow is distraction-free so the reading stays human and clear."
+            )}
+          </p>
+          <div className="horo-hero__pills">
+            <span className="pill">Name</span>
+            <span className="pill">Date</span>
+            <span className="pill">Time</span>
+            <span className="pill">Place</span>
+          </div>
+          <div className="hero-actions">
+            <Link href="/" className="button-link ghost-link">
+              Back to studio hub
+            </Link>
+          </div>
         </div>
-      </div>
+        <div className="horo-hero__steps" aria-label="Horoscope flow steps">
+          <div className="step-card">
+            <p className="pill">Step 1</p>
+            <h3>Enter the essentials</h3>
+            <p className="muted">A single, friendly form keeps the four inputs together for quick handover.</p>
+          </div>
+          <div className="step-card">
+            <p className="pill">Step 2</p>
+            <h3>View the reading</h3>
+            <p className="muted">The interpretation opens wide with generous spacing and bilingual guidance.</p>
+          </div>
+          <div className="step-card">
+            <p className="pill">Step 3</p>
+            <h3>Share or save</h3>
+            <p className="muted">Send to chat or download a clean PDF from the same screen.</p>
+          </div>
+        </div>
+      </header>
 
-      <section className="card-grid">
-        <div className="card highlight">
-          <div className="section-heading">
-            <p className="eyebrow">Live experience</p>
-            <h2>Holistic horoscope</h2>
-            <p>Enter name, date, time, and place for a Bhrigu-anchored reading with generous white space.</p>
-          </div>
-          <HoroscopeForm />
-        </div>
-        <div className="card">
-          <div className="section-heading">
-            <p className="eyebrow">Core flows</p>
-            <h2>Accurate, shareable readings</h2>
-          </div>
-          <ul className="kudos-list">
-            <li>
-              <span className="badge">Primary inputs</span>
-              <span>Name, date of birth, time of birth, and place of birth stay front and center.</span>
-            </li>
-            <li>
-              <span className="badge">Holistic interpretation</span>
-              <span>Outputs render in English and Hindi with a reading canvas built for long-form clarity.</span>
-            </li>
-            <li>
-              <span className="badge">Download ready</span>
-              <span>Save the interpretation as a PDF from the reading panel without engine jargon.</span>
-            </li>
-          </ul>
-        </div>
-      </section>
+      <HoroscopeForm />
     </div>
   );
 }
