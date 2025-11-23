@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { requestCalendar } from "@/lib/api";
 import { deriveHouseGrid, HouseSummary } from "@/lib/houseGrid";
@@ -18,6 +18,11 @@ type ValidationState = {
   dob?: string;
   tob?: string;
   pob?: string;
+};
+
+type MapHandle = {
+  map: unknown;
+  marker: unknown;
 };
 
 type GoogleMapsAutocomplete = {
@@ -65,16 +70,22 @@ export default function BirthInputForm() {
   const [voiceGuidance, setVoiceGuidance] = useState(false);
   const [fontScale, setFontScale] = useState(1);
   const [mapPreview, setMapPreview] = useState<string | null>(null);
+  const mapHandleRef = useRef<MapHandle>({ map: null, marker: null });
+  const [gestureMode, setGestureMode] = useState(false);
+  const [confidenceScore, setConfidenceScore] = useState(0);
   const { triggerSubmitFeedback } = useImmersiveFeedback();
   const placeInputRef = useRef<HTMLInputElement | null>(null);
+  const mapCanvasRef = useRef<HTMLDivElement | null>(null);
   const autocompleteRef = useRef<GoogleMapsAutocomplete | null>(null);
 
   const isComplete = useMemo(() => details.birthDate && details.birthTime && details.birthPlace, [details]);
   const hasValidationIssues = useMemo(() => Boolean(Object.keys(validations).length), [validations]);
   const confidenceLabel =
-    isComplete && !hasValidationIssues
+    confidenceScore >= 90
       ? "Chart confidence: High"
-      : "Chart confidence: Provide all birth details for higher accuracy";
+      : confidenceScore >= 60
+        ? "Chart confidence: Medium — tighten location or time"
+        : "Chart confidence: Provide all birth details for higher accuracy";
   const missingFields = useMemo(
     () =>
       ([
@@ -96,6 +107,12 @@ export default function BirthInputForm() {
     return Math.min(100, score);
   }, [details.birthDate, details.birthPlace, details.birthTime, hasValidationIssues]);
 
+  useEffect(() => {
+    const conversionBoost = sakaParts.year ? 5 : 0;
+    const mapBoost = mapPreview ? 5 : 0;
+    setConfidenceScore(Math.min(100, completionScore + conversionBoost + mapBoost));
+  }, [completionScore, mapPreview, sakaParts.day, sakaParts.month, sakaParts.year]);
+
   const placeSuggestion = useMemo(() => {
     if (!details.birthPlace) return null;
     if (!details.birthPlace.includes(",")) return "Add a city and country (e.g., Jaipur, Bharat) for map confidence.";
@@ -113,8 +130,38 @@ export default function BirthInputForm() {
     if (!hints.length && completionScore < 100) {
       hints.push("Double-check timezone or map pick to push confidence to 100%.");
     }
+    hints.push(`Confidence score now ${confidenceScore}% — higher scores unlock richer charts.`);
     return hints;
-  }, [completionScore, missingFields, validations.dob, validations.pob, validations.tob]);
+  }, [completionScore, confidenceScore, missingFields, validations.dob, validations.pob, validations.tob]);
+
+  const updateMapFromCoords = useCallback(
+    (lat: number, lng: number) => {
+      setMapPreview(`${lat.toFixed(3)}, ${lng.toFixed(3)}`);
+      const googleApi = (window as typeof window & { google?: any }).google;
+      if (!googleApi?.maps || !mapCanvasRef.current) return;
+      if (!mapHandleRef.current.map) {
+        const map = new googleApi.maps.Map(mapCanvasRef.current, {
+          center: { lat, lng },
+          zoom: 5,
+          disableDefaultUI: true,
+        });
+        const marker = new googleApi.maps.Marker({ position: { lat, lng }, map });
+        mapHandleRef.current = { map, marker };
+        map.addListener("click", (event: { latLng: { lat: () => number; lng: () => number } }) => {
+          const nextLat = event.latLng.lat();
+          const nextLng = event.latLng.lng();
+          setDetails((prev) => ({ ...prev, birthPlace: `${nextLat.toFixed(3)}, ${nextLng.toFixed(3)}` }));
+          updateMapFromCoords(nextLat, nextLng);
+        });
+      } else if (mapHandleRef.current.map && (mapHandleRef.current.map as any).setCenter) {
+        (mapHandleRef.current.map as any).setCenter({ lat, lng });
+        if (mapHandleRef.current.marker && (mapHandleRef.current.marker as any).setPosition) {
+          (mapHandleRef.current.marker as any).setPosition({ lat, lng });
+        }
+      }
+    },
+    [setDetails],
+  );
 
   const validate = (payload: BirthForm): ValidationState => {
     const feedback: ValidationState = {};
@@ -229,8 +276,8 @@ export default function BirthInputForm() {
     if (!apiKey || !placeInputRef.current || autocompleteRef.current) return;
 
     const initAutocomplete = () => {
-      if (!placeInputRef.current || !window.google?.maps?.places?.Autocomplete) return;
-      const autocomplete = new window.google.maps.places.Autocomplete(placeInputRef.current, {
+      if (!placeInputRef.current || !(window as typeof window & { google?: any }).google?.maps?.places?.Autocomplete) return;
+      const autocomplete = new (window as typeof window & { google?: any }).google.maps.places.Autocomplete(placeInputRef.current, {
         fields: ["formatted_address", "geometry", "name"],
         types: ["(cities)"],
       });
@@ -246,7 +293,7 @@ export default function BirthInputForm() {
         if (coords) {
           const lat = coords.lat();
           const lng = coords.lng();
-          setMapPreview(`${lat.toFixed(3)}, ${lng.toFixed(3)}`);
+          updateMapFromCoords(lat, lng);
           const timestamp = Math.floor(Date.now() / 1000);
           setLocationStatus("Detecting timezone from map position…");
           fetch(
@@ -267,6 +314,12 @@ export default function BirthInputForm() {
       });
       setLocationStatus("Map suggestions ready. Pick a result to auto-fill.");
       speak("Map suggestions ready. Pick a result to auto-fill.");
+
+      if (mapCanvasRef.current && !(mapHandleRef.current.map as any)) {
+        const starterLat = 20.5937;
+        const starterLng = 78.9629;
+        updateMapFromCoords(starterLat, starterLng);
+      }
     };
 
     if (window.google?.maps?.places) {
@@ -282,7 +335,7 @@ export default function BirthInputForm() {
     script.async = true;
     script.onload = initAutocomplete;
     document.body.appendChild(script);
-  }, []);
+  }, [updateMapFromCoords]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -290,6 +343,10 @@ export default function BirthInputForm() {
     root.style.setProperty("--font-scale", activeScale.toString());
     return () => root.style.setProperty("--font-scale", "1");
   }, [assistiveMode, fontScale]);
+
+  useEffect(() => {
+    document.body.dataset.gestures = gestureMode ? "on" : "off";
+  }, [gestureMode]);
 
   const speak = (text: string) => {
     if (!voiceGuidance) return;
@@ -327,6 +384,13 @@ export default function BirthInputForm() {
           >
             {voiceGuidance ? "Voice guidance active" : "Play voice guidance"}
           </button>
+          <button
+            type="button"
+            className={`assistive-chip ${gestureMode ? "assistive-chip--active" : ""}`}
+            onClick={() => setGestureMode((prev) => !prev)}
+          >
+            {gestureMode ? "Gesture prompts on" : "Enable gesture prompts"}
+          </button>
           <label className="assistive-slider" htmlFor="font-scale-slider">
             Font size
             <input
@@ -341,7 +405,7 @@ export default function BirthInputForm() {
           </label>
           <div className="confidence-meter" role="img" aria-label={`Confidence ${completionScore}%`}>
             <div className="confidence-meter__track">
-              <div className="confidence-meter__bar" style={{ width: `${completionScore}%` }} />
+              <div className="confidence-meter__bar" style={{ width: `${confidenceScore}%` }} />
             </div>
             <p className="microcopy">Auto-Śaka conversion and map checks raise accuracy.</p>
           </div>
@@ -429,6 +493,52 @@ export default function BirthInputForm() {
           </div>
         </div>
 
+        <div className="map-picker" role="region" aria-label="Map-based place selection">
+          <div className="map-picker__header">
+            <div>
+              <p className="eyebrow">Interactive map</p>
+              <h4>Pin the birthplace</h4>
+              <p className="microcopy">
+                Tap the map to drop a pin or use the autocomplete box. Coordinates feed the Śaka conversion and timezone lookup
+                with confidence scores.
+              </p>
+              <p className="microcopy" aria-live="polite">{locationStatus}</p>
+            </div>
+            <div className="map-picker__actions">
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => {
+                  if (!navigator.geolocation) {
+                    setLocationStatus("Geolocation unavailable on this device.");
+                    return;
+                  }
+                  setLocationStatus("Fetching device location…");
+                  navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                      const { latitude, longitude } = position.coords;
+                      setDetails((prev) => ({ ...prev, birthPlace: `${latitude.toFixed(3)}, ${longitude.toFixed(3)}` }));
+                      updateMapFromCoords(latitude, longitude);
+                    },
+                    () => setLocationStatus("Unable to read device location; try typing the city."),
+                  );
+                }}
+              >
+                Use current location
+              </button>
+              <button type="button" className="ghost-button" onClick={() => placeInputRef.current?.focus()}>
+                Focus search box
+              </button>
+            </div>
+          </div>
+          <div className="map-picker__canvas" ref={mapCanvasRef} role="presentation" aria-hidden={!mapPreview}>
+            {!mapPreview ? <p className="microcopy">Map will display after picking a city or tapping the button.</p> : null}
+          </div>
+          <div className="map-picker__footer" aria-live="polite">
+            <p className="microcopy">{mapPreview ? `Pinned at ${mapPreview}` : "Waiting for a pin"}</p>
+          </div>
+        </div>
+
         <details className="cosmic-disclosure" open={showAdvanced}>
           <summary onClick={() => setShowAdvanced((prev) => !prev)}>Advanced Panchanga inputs</summary>
           <div className="field-row field-row--split">
@@ -464,6 +574,24 @@ export default function BirthInputForm() {
           <div className="action-notes" aria-live="polite">
             <p className="microcopy">{sakaLabel}</p>
             {error ? <p className="microcopy error">{error}</p> : null}
+          </div>
+        </div>
+
+        <div className="saka-highlight" role="status" aria-live="polite">
+          <div>
+            <p className="eyebrow">Śaka calendar preview</p>
+            <h4>{sakaLabel}</h4>
+            <p className="microcopy">
+              {details.birthDate
+                ? `Derived from ${details.birthDate} with auto timezone ${details.timezone || "device default"}.`
+                : "Add a date and location to view Śaka year, month, and day."}
+            </p>
+          </div>
+          <div className="confidence-meter" role="img" aria-label={`Confidence ${confidenceScore}%`}>
+            <div className="confidence-meter__track">
+              <div className="confidence-meter__bar" style={{ width: `${confidenceScore}%` }} />
+            </div>
+            <p className="microcopy">Confidence recalculates as you adjust map, date, and time.</p>
           </div>
         </div>
 
