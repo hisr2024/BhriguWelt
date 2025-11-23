@@ -178,7 +178,7 @@ import math
 import sys
 from datetime import datetime, timezone
 
-from bhriguwelt.astronomical_calculations import geocode_location, normalize_birth_datetime, has_swisseph, _mean_longitude
+from bhriguwelt.astronomical_calculations import geocode_location, normalize_birth_datetime, has_swisseph
 from bhriguwelt.calendar_conversion import convert_birth_details
 
 ZODIAC_SIGNS = [
@@ -218,25 +218,6 @@ def house_from_longitude(longitude: float, cusps: list[float]) -> int:
     return 1
 
 
-def fallback_positions(ut_dt: datetime, longitude: float | None) -> tuple[float, list[float], dict[str, tuple[float, float]]]:
-    delta_days = (ut_dt - datetime(2000, 1, 1, 12, tzinfo=timezone.utc)).total_seconds() / 86400
-    asc_longitude = (_mean_longitude(0.0, 360 / 365.25, delta_days) + (longitude or 0.0)) % 360
-    cusps = [(asc_longitude + offset * 30) % 360 for offset in range(12)]
-    positions = {
-        "Sun": _mean_longitude(280.460, 0.98564736, delta_days),
-        "Moon": _mean_longitude(218.316, 13.176396, delta_days),
-        "Mercury": _mean_longitude(252.250, 4.092334, delta_days),
-        "Venus": _mean_longitude(181.979, 1.602130, delta_days),
-        "Mars": _mean_longitude(355.433, 0.524039, delta_days),
-        "Jupiter": _mean_longitude(34.351, 0.083092, delta_days),
-        "Saturn": _mean_longitude(50.077, 0.033459, delta_days),
-        "Rahu": _mean_longitude(204.0, -0.0529538, delta_days),
-    }
-    positions["Ketu"] = (positions["Rahu"] + 180) % 360
-    planetary_states = {name: (value, -0.052 if name in {"Rahu", "Ketu"} else 0.0) for name, value in positions.items()}
-    return asc_longitude, cusps, planetary_states
-
-
 def build_chart(payload: dict) -> dict:
     place = payload.get("placeOfBirth", "")
     birth_date = payload.get("dateOfBirth")
@@ -250,46 +231,45 @@ def build_chart(payload: dict) -> dict:
     bharat = convert_birth_details(birth_date, birth_time, place)
     bharat_label = f"{bharat.saka_date.day} {bharat.saka_date.month} {bharat.saka_date.year} Śaka | Tithi {bharat.tithi_number} ({bharat.tithi_name}), Nakshatra {bharat.nakshatra}"
 
-    asc_longitude = 0.0
-    cusps: list[float] = []
-    planetary_states: dict[str, tuple[float, float]] = {}
-
-    if has_swisseph():
-        import swisseph as swe
-
-        swe.set_ephe_path(".")
-        swe.set_topo(longitude or 0.0, latitude or 0.0, 0)
-        jd = swe.julday(
-            ut_dt.year,
-            ut_dt.month,
-            ut_dt.day,
-            ut_dt.hour + ut_dt.minute / 60.0 + ut_dt.second / 3600.0,
-            swe.GREG_CAL,
+    if not has_swisseph():
+        raise RuntimeError(
+            "Swiss Ephemeris is required for natal chart calculations; please install pyswisseph."
         )
-        cusps_raw, ascmc = swe.houses_ex(jd, latitude or 0.0, longitude or 0.0, b"P")
-        cusps = list(cusps_raw[:12])
-        asc_longitude = float(ascmc[0])
 
-        planet_codes = {
-            "Sun": swe.SUN,
-            "Moon": swe.MOON,
-            "Mercury": swe.MERCURY,
-            "Venus": swe.VENUS,
-            "Mars": swe.MARS,
-            "Jupiter": swe.JUPITER,
-            "Saturn": swe.SATURN,
-            "Rahu": swe.TRUE_NODE,
-        }
+    import swisseph as swe
 
-        for name, code in planet_codes.items():
-            coords, _flags = swe.calc_ut(jd, code)
-            longitude_value = float(coords[0])
-            speed_long = float(coords[3]) if len(coords) > 3 else 0.0
-            planetary_states[name] = (longitude_value, speed_long)
-        rahu_longitude, rahu_speed = planetary_states.get("Rahu", (0.0, 0.0))
-        planetary_states["Ketu"] = ((rahu_longitude + 180.0) % 360, -rahu_speed)
-    else:
-        asc_longitude, cusps, planetary_states = fallback_positions(ut_dt, longitude)
+    swe.set_ephe_path(".")
+    swe.set_topo(longitude or 0.0, latitude or 0.0, 0)
+    jd = swe.julday(
+        ut_dt.year,
+        ut_dt.month,
+        ut_dt.day,
+        ut_dt.hour + ut_dt.minute / 60.0 + ut_dt.second / 3600.0,
+        swe.GREG_CAL,
+    )
+    cusps_raw, ascmc = swe.houses_ex(jd, latitude or 0.0, longitude or 0.0, b"P")
+    cusps = list(cusps_raw[:12])
+    asc_longitude = float(ascmc[0])
+
+    planet_codes = {
+        "Sun": swe.SUN,
+        "Moon": swe.MOON,
+        "Mercury": swe.MERCURY,
+        "Venus": swe.VENUS,
+        "Mars": swe.MARS,
+        "Jupiter": swe.JUPITER,
+        "Saturn": swe.SATURN,
+        "Rahu": swe.TRUE_NODE,
+    }
+
+    planetary_states: dict[str, tuple[float, float]] = {}
+    for name, code in planet_codes.items():
+        coords, _flags = swe.calc_ut(jd, code)
+        longitude_value = float(coords[0])
+        speed_long = float(coords[3]) if len(coords) > 3 else 0.0
+        planetary_states[name] = (longitude_value, speed_long)
+    rahu_longitude, rahu_speed = planetary_states.get("Rahu", (0.0, 0.0))
+    planetary_states["Ketu"] = ((rahu_longitude + 180.0) % 360, -rahu_speed)
 
     ascendant = {
         "sign": sign_name(asc_longitude),
