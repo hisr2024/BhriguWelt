@@ -210,7 +210,7 @@ export default function BirthInputForm() {
       setHouseGrid(deriveHouseGrid(details, sakaValue.month, sakaValue.day));
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to compute Bharat calendar";
-      setError(message);
+      setError(`${message}. Friendly tip: double-check timezone or pick a nearby city; we auto-suggest once the pin locks.`);
     } finally {
       setLoading(false);
     }
