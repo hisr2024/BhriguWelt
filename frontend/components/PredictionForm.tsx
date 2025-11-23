@@ -31,9 +31,11 @@ interface Props {
   engine: PredictionEngine;
   title: string;
   description: string;
+  onRequestStart?: () => void;
+  onResult?: (payload: unknown) => void;
 }
 
-export default function PredictionForm({ engine, title, description }: Props) {
+export default function PredictionForm({ engine, title, description, onRequestStart, onResult }: Props) {
   const { t } = useI18n();
   const [details, setDetails] = useState<BirthDetails>(defaultDetails);
   const [loading, setLoading] = useState(false);
@@ -56,6 +58,7 @@ export default function PredictionForm({ engine, title, description }: Props) {
     setInfo(null);
     setRetryAttempts(0);
     setPayload(null);
+    onRequestStart?.();
     setLoading(true);
     const isOffline = typeof navigator !== "undefined" && navigator && !navigator.onLine;
 

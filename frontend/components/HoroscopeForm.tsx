@@ -3,7 +3,9 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { interpretChart } from "@/lib/interpretChart";
+import { HOUSE_FOCUSES } from "@/lib/houseGrid";
 import { NatalChart } from "@/types/natal";
+import ProgressIndicator, { ProgressStep } from "./ProgressIndicator";
 
 type FormState = {
   name: string;
@@ -25,6 +27,12 @@ type Interpretation = {
   hindi?: string;
   raw?: string;
   summary?: string;
+};
+
+type HouseAnchor = {
+  house: number;
+  sign: string;
+  focus: string;
 };
 
 function isNatalChart(payload: ChartResponse): payload is NatalChart {
@@ -118,6 +126,58 @@ export default function HoroscopeForm() {
   const formattedChart = useMemo(() => (chart ? JSON.stringify(chart, null, 2) : ""), [chart]);
   const hasNarrative = Boolean(interpretation.english || interpretation.hindi);
   const fallbackNarrative = interpretation.raw || formattedChart;
+  const houseFoundation = useMemo<HouseAnchor[] | null>(() => {
+    if (!chart || !isNatalChart(chart)) return null;
+    return HOUSE_FOCUSES.map((focus, index) => {
+      const houseNumber = index + 1;
+      const house = chart.chart.houses.find((entry) => entry.number === houseNumber);
+      const sign = house?.sign || chart.chart.ascendant?.sign || "—";
+      return { house: houseNumber, sign, focus } satisfies HouseAnchor;
+    });
+  }, [chart]);
+  const timeframeAnchors = useMemo(() => {
+    const anchors = [
+      { label: "Daily", houseIndex: 1 },
+      { label: "Weekly", houseIndex: 3 },
+      { label: "Monthly", houseIndex: 6 },
+      { label: "Yearly", houseIndex: 10 },
+    ];
+
+    return anchors.map((anchor) => {
+      const foundation = houseFoundation?.find((item) => item.house === anchor.houseIndex);
+      return {
+        ...anchor,
+        focus: foundation?.focus || HOUSE_FOCUSES[anchor.houseIndex - 1],
+        sign: foundation?.sign,
+      };
+    });
+  }, [houseFoundation]);
+  const progressSteps = useMemo<ProgressStep[]>(() => {
+    const steps: ProgressStep[] = [
+      {
+        title: "Birth details captured",
+        description: "Name, date, time, and place locked in.",
+        status: isComplete ? "complete" : "active",
+      },
+      {
+        title: "Chart generated",
+        description: "Planets and houses mapped in one view.",
+        status: chart ? "complete" : isComplete && loading ? "active" : "pending",
+      },
+      {
+        title: "12-house foundation",
+        description: "House lords and focuses paired to your ascendant.",
+        status: houseFoundation ? "complete" : chart ? "active" : "pending",
+      },
+      {
+        title: "Timeframe guidance",
+        description: "Daily to yearly pathways linked to the base chart.",
+        status: hasNarrative ? "complete" : chart ? "active" : "pending",
+      },
+    ];
+
+    return steps;
+  }, [chart, hasNarrative, houseFoundation, isComplete, loading]);
 
   const sanitize = (value: string) =>
     value
@@ -394,6 +454,8 @@ export default function HoroscopeForm() {
             )}
           </div>
 
+          <ProgressIndicator steps={progressSteps} label="Birth details to reading" />
+
           {chart ? (
             <div className="reading-surface">
               <div className="reading-toolbar">
@@ -409,6 +471,31 @@ export default function HoroscopeForm() {
                   </button>
                 </div>
               </div>
+
+              {houseFoundation ? (
+                <div className="interpretation-canvas">
+                  <div className="canvas-head">
+                    <div>
+                      <h3 className="canvas-title">Timeframe anchors</h3>
+                      <p className="microcopy">Daily to yearly readings reference the same 12-house base.</p>
+                    </div>
+                    <span className="pill">12-house chart</span>
+                  </div>
+
+                  <div className="timeframe-grid" role="list">
+                    {timeframeAnchors.map((anchor) => (
+                      <article key={anchor.label} className="insight-block" role="listitem">
+                        <p className="eyebrow">{anchor.label}</p>
+                        <h4>
+                          House {anchor.houseIndex}: {anchor.focus}
+                        </h4>
+                        <p className="muted">{anchor.sign ? `${anchor.sign} emphasis` : "Awaiting chart foundation"}</p>
+                        <p className="microcopy">Draws from the natal twelve-house map so each cadence stays coherent.</p>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
               <div className="interpretation-grid">
                 <div className="interpretation-canvas">

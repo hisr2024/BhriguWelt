@@ -33,7 +33,15 @@ export default function MatchmakingForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [payload, setPayload] = useState<unknown>(null);
+  const [chartsReady, setChartsReady] = useState(false);
   const errorRef = useRef<HTMLDivElement | null>(null);
+
+  const hasBirthDetails = (details: BirthDetails) =>
+    Boolean(details.name && details.birthDate && details.birthTime && details.birthPlace);
+
+  useEffect(() => {
+    setChartsReady(hasBirthDetails(primary) && hasBirthDetails(partner));
+  }, [primary, partner]);
 
   useEffect(() => {
     if (error && errorRef.current) {
@@ -45,6 +53,15 @@ export default function MatchmakingForm() {
     event.preventDefault();
     setError(null);
     setPayload(null);
+    if (!chartsReady) {
+      setError(
+        t(
+          "matchmaking.requireCharts",
+          "Please complete both profiles so we can generate each chart before calculating compatibility.",
+        ),
+      );
+      return;
+    }
     setLoading(true);
     try {
       const response = await requestMatchmaking(primary, partner, modernPreferences);
@@ -190,15 +207,42 @@ export default function MatchmakingForm() {
             onChange={(event) => setModernPreferences(event.target.value)}
             placeholder="remote-first, startup-ops, arts-collab"
           />
+          <div className="alignment-preview" aria-live="polite">
+            <p className="muted" style={{ marginBottom: "0.25rem" }}>
+              {t(
+                "matchmaking.alignments",
+                "Animated tags show how your modern filters will align with manuscript energies.",
+              )}
+            </p>
+            <div className="alignment-tags">
+              {modernPreferences
+                .split(",")
+                .map((tag) => tag.trim())
+                .filter(Boolean)
+                .map((tag, index) => (
+                  <span className="tag-chip" key={tag} style={{ animationDelay: `${index * 60}ms` }}>
+                    {tag}
+                  </span>
+                ))}
+            </div>
+          </div>
           <p className="muted" style={{ marginTop: "0.35rem" }}>
             {t("form.accessibility", "Tags are optional but help align manuscript guna scores with compatibility signals.")}
           </p>
         </div>
         <div className="form-actions">
-          <button type="submit" disabled={loading} aria-label={t("pages.matchmaking.title", "Compute compatibility")}> 
+          <button
+            type="submit"
+            disabled={loading || !chartsReady}
+            aria-label={t("pages.matchmaking.title", "Compute compatibility")}
+          >
             {loading ? t("form.loading", "Evaluating guna...") : t("pages.matchmaking.title", "Compute compatibility")}
           </button>
-          <span className="muted">{t("form.accessibility", "Compatibility indices blend sutra guidance with modern priorities.")}</span>
+          <span className="muted">
+            {chartsReady
+              ? t("form.accessibility", "Compatibility indices blend sutra guidance with modern priorities.")
+              : t("matchmaking.chartsFirst", "Enter both timelines so charts can be generated side-by-side.")}
+          </span>
         </div>
         {error && (
           <div className="error-banner" role="alert" aria-live="assertive" tabIndex={-1} ref={errorRef}>

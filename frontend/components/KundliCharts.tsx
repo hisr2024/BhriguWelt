@@ -1,25 +1,47 @@
 'use client';
 
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { ChartHouse, DashaPeriod } from "@/types/astro";
+
+interface CompatibilityOverlay {
+  primaryLabel: string;
+  partnerLabel: string;
+  harmonyIndex?: number;
+  sharedThemes: { label: string; alignment?: number; tags?: string[] }[];
+}
 
 interface Props {
   rashiChart?: ChartHouse[];
   bhavaChart?: ChartHouse[];
+  partnerChart?: ChartHouse[];
   dashas?: DashaPeriod[];
+  compatibilityOverlay?: CompatibilityOverlay;
 }
 
-function renderChart(label: string, houses: ChartHouse[]) {
+function renderChart(label: string, houses: ChartHouse[], readyLabel = "Bhava alignment") {
   const size = 320;
   const center = size / 2;
   const radius = 135;
   const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
   const overlays = houses[0]?.bhrigu_notes || [];
 
+  const buildHouseDetail = (house: ChartHouse, occupant?: string): InterpretationDetail => {
+    const occupantLabel = occupant || (house.occupants.length ? house.occupants.join(", ") : "Empty house");
+    return {
+      label: occupant ? `${occupant} in house ${house.index}` : `House ${house.index}`,
+      summary: `${house.sign} focus with ${occupantLabel.toLowerCase()} influencing this span of life.`,
+      highlight: occupant || house.sign,
+      notes: detailLevel === "advanced" ? house.bhrigu_notes : undefined,
+    };
+  };
+
+  const isActiveHouse = (house: ChartHouse) => activeDetail?.label.includes(`house ${house.index}`);
+
   return (
     <div className="kundli-card">
       <header className="section-heading">
         <p className="eyebrow">{label}</p>
-        <h4>{houses.length ? "Bhava alignment" : "Awaiting birth details"}</h4>
+        <h4>{houses.length ? readyLabel : "Awaiting birth details"}</h4>
       </header>
       {houses.length > 0 ? (
         <svg width={size} height={size} role="img" aria-label={`${label} twelve-house wheel`}>
@@ -35,8 +57,29 @@ function renderChart(label: string, houses: ChartHouse[]) {
             const textX = center + (radius - 32) * Math.cos(toRadians(midAngle));
             const textY = center + (radius - 32) * Math.sin(toRadians(midAngle));
             const occupantLabel = house.occupants.join(", ");
+            const houseDetail = buildHouseDetail(house);
+            const handleClick = () => onSelect(houseDetail);
+            const handleKey = (event: KeyboardEvent<SVGGElement>) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                handleClick();
+              }
+            };
+
             return (
-              <g key={house.index}>
+              <g
+                key={house.index}
+                tabIndex={0}
+                role="button"
+                aria-label={`House ${house.index} ${house.sign} ${occupantLabel || "empty"}`}
+                onClick={handleClick}
+                onKeyDown={handleKey}
+                onMouseEnter={() => onPeek(houseDetail)}
+                onFocus={() => onPeek(houseDetail)}
+                onMouseLeave={() => onPeek(null)}
+                onBlur={() => onPeek(null)}
+                className={isActiveHouse(house) ? "kundli-house active" : "kundli-house"}
+              >
                 <line x1={center} y1={center} x2={x1} y2={y1} className="kundli-spoke" />
                 {house.index === 12 && <line x1={center} y1={center} x2={x2} y2={y2} className="kundli-spoke" />}
                 <text x={textX} y={textY} textAnchor="middle" className="kundli-label">
@@ -44,9 +87,46 @@ function renderChart(label: string, houses: ChartHouse[]) {
                   <tspan x={textX} dy="1.1em" className="kundli-sign">
                     {house.sign}
                   </tspan>
-                  <tspan x={textX} dy="1.1em" className="kundli-occupants">
-                    {occupantLabel || "Empty"}
-                  </tspan>
+                  {house.occupants.length ? (
+                    house.occupants.map((occupant, occupantIndex) => (
+                      <tspan
+                        key={`${house.index}-${occupant}-${occupantIndex}`}
+                        x={textX}
+                        dy={occupantIndex === 0 ? "1.1em" : "1em"}
+                        className="kundli-occupants"
+                        title={buildHouseDetail(house, occupant).summary}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          const occupantDetail = buildHouseDetail(house, occupant);
+                          onSelect(occupantDetail);
+                        }}
+                        onMouseEnter={(event) => {
+                          event.stopPropagation();
+                          const occupantDetail = buildHouseDetail(house, occupant);
+                          onPeek(occupantDetail);
+                        }}
+                        onFocus={(event) => {
+                          event.stopPropagation();
+                          const occupantDetail = buildHouseDetail(house, occupant);
+                          onPeek(occupantDetail);
+                        }}
+                        onMouseLeave={(event) => {
+                          event.stopPropagation();
+                          onPeek(null);
+                        }}
+                        onBlur={(event) => {
+                          event.stopPropagation();
+                          onPeek(null);
+                        }}
+                      >
+                        {occupant}
+                      </tspan>
+                    ))
+                  ) : (
+                    <tspan x={textX} dy="1.1em" className="kundli-occupants">
+                      Empty
+                    </tspan>
+                  )}
                 </text>
               </g>
             );
@@ -57,7 +137,7 @@ function renderChart(label: string, houses: ChartHouse[]) {
       ) : (
         <p className="muted">Charts render after the API responds.</p>
       )}
-      {overlays.length > 0 && (
+      {overlays.length > 0 && detailLevel === "advanced" && (
         <ul className="kudos-list" style={{ marginTop: "0.75rem" }}>
           {overlays.map((note) => (
             <li key={note}>{note}</li>
@@ -68,11 +148,71 @@ function renderChart(label: string, houses: ChartHouse[]) {
   );
 }
 
-export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas = [] }: Props) {
+function renderCompatibilityOverlay(overlay: CompatibilityOverlay) {
+  const { primaryLabel, partnerLabel, harmonyIndex, sharedThemes } = overlay;
+  return (
+    <div className="kundli-card compatibility-card">
+      <header className="section-heading">
+        <p className="eyebrow">Compatibility overlay</p>
+        <h4>{harmonyIndex ? `Harmony ${Math.round(harmonyIndex)} / 100` : "Energy Venn"}</h4>
+      </header>
+      <div className="energy-venn" role="img" aria-label="Compatibility energy Venn diagram">
+        <div className="energy-orb orb-primary">
+          <p className="eyebrow">{primaryLabel}</p>
+          <strong>Source chart</strong>
+          <span className="muted">Elemental drive</span>
+        </div>
+        <div className="energy-orb orb-partner">
+          <p className="eyebrow">{partnerLabel}</p>
+          <strong>Partner chart</strong>
+          <span className="muted">Reciprocal flow</span>
+        </div>
+        <div className="energy-orb orb-shared">
+          <p className="eyebrow">Shared energy</p>
+          <div className="alignment-list">
+            {sharedThemes.map((theme, index) => (
+              <div key={`${theme.label}-${index}`} className="alignment-row">
+                <div>
+                  <strong>{theme.label}</strong>
+                  {theme.tags && theme.tags.length > 0 && (
+                    <div className="alignment-tags">
+                      {theme.tags.map((tag) => (
+                        <span className="tag-chip" key={tag}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {typeof theme.alignment === "number" && (
+                  <div className="alignment-bar" aria-label={`${theme.label} alignment ${Math.round(theme.alignment)}%`}>
+                    <span style={{ width: `${Math.min(100, Math.max(theme.alignment, 0))}%` }} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <p className="muted" style={{ marginTop: "0.5rem" }}>
+        Modern filters and manuscript overlays blend here so both charts contribute before recommendations appear.
+      </p>
+    </div>
+  );
+}
+
+export default function KundliCharts({
+  rashiChart = [],
+  bhavaChart = [],
+  partnerChart = [],
+  dashas = [],
+  compatibilityOverlay,
+}: Props) {
+  const hasPartnerChart = partnerChart.length > 0;
   return (
     <div className="kundli-grid">
       {renderChart("Rāśi chart", rashiChart)}
-      {renderChart("Bhava chart", bhavaChart)}
+      {hasPartnerChart ? renderChart("Partner rāśi chart", partnerChart, "Partner alignment") : renderChart("Bhava chart", bhavaChart)}
       <div className="kundli-card">
         <header className="section-heading">
           <p className="eyebrow">Vimshottari</p>
@@ -96,6 +236,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
           <p className="muted">Dasha cycles appear alongside the predictions.</p>
         )}
       </div>
+      {compatibilityOverlay && renderCompatibilityOverlay(compatibilityOverlay)}
     </div>
   );
 }
