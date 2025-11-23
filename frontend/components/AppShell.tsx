@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Providers from "@/app/providers";
 import { useI18n } from "@/lib/i18n";
+import { theme } from "@/lib/theme";
 import OnboardingModal from "./OnboardingModal";
 import ExperienceToolbar from "./ExperienceToolbar";
 
@@ -64,7 +65,7 @@ function Shell({ children }: Props) {
 
       <header className="topbar" aria-label="Site header">
         <Link href="/" className="brand" aria-label={t("nav.home", "Home")}>
-          <span className="brand-mark" aria-hidden />
+          <span className="brand-mark" style={{ background: theme.gradients.brand }} aria-hidden />
           BhriguWelt
         </Link>
         <div className="topbar__mobile">
