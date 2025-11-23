@@ -90,15 +90,23 @@ type CalendarPayload = {
   };
 };
 
-function renderSection(section: InsightSection, index: number) {
+function condense(text: string, detailLevel: "beginner" | "advanced") {
+  if (detailLevel === "advanced") return text;
+  if (text.length <= 160) return text;
+  return `${text.slice(0, 157).trimEnd()}...`;
+}
+
+function renderSection(section: InsightSection, index: number, detailLevel: "beginner" | "advanced") {
+  const bulletList = section.bullets || [];
+  const trimmedBullets = detailLevel === "advanced" ? bulletList : bulletList.slice(0, 3);
   return (
     <article key={index} className="insight-block">
       <h4>{section.heading}</h4>
-      <p>{section.english}</p>
-      {section.hindi && <p className="muted">{section.hindi}</p>}
-      {section.bullets && section.bullets.length > 0 && (
+      <p>{condense(section.english, detailLevel)}</p>
+      {section.hindi && <p className="muted">{condense(section.hindi, detailLevel)}</p>}
+      {trimmedBullets.length > 0 && (
         <ul>
-          {section.bullets.map((bullet, bulletIndex) => (
+          {trimmedBullets.map((bullet, bulletIndex) => (
             <li key={bulletIndex}>{bullet}</li>
           ))}
         </ul>
@@ -384,84 +392,9 @@ function buildSections(engine: ResultEngine, payload: unknown): InsightSection[]
 
 export default function PredictionCard({ title, payload, engine, seekerName }: Props) {
   const { t } = useI18n();
-  const horoscopePayload = useMemo(
-    () => (engine === "horoscope" && typeof payload === "object" ? (payload as HoroscopePayload) : null),
-    [engine, payload]
-  );
-  const sections = useMemo(() => buildSections(engine, payload), [engine, payload]);
-  const timeframeAnchors = useMemo(() => {
-    if (!horoscopePayload) return [] as TimeframeAnchor[];
-    return deriveTimeframeAnchorsFromChart(horoscopePayload.bhava_chart || horoscopePayload.rashi_chart);
-  }, [horoscopePayload]);
-  const checklistSeed = useMemo<ChecklistItem[]>(() => {
-    const items: string[] = [];
-    horoscopePayload?.remedies?.forEach((item) => {
-      if (item.description) items.push(item.description);
-    });
-    horoscopePayload?.principles?.forEach((item) => {
-      if (item.description) items.push(`Reflect on ${item.description}`);
-    });
-    if (timeframeAnchors.length) {
-      timeframeAnchors.forEach((anchor) => {
-        items.push(
-          `${anchor.label} cadence: revisit House ${anchor.houseIndex} (${anchor.focus}${anchor.sign ? `, ${anchor.sign}` : ""}).`
-        );
-      });
-    }
-    if (!items.length) {
-      items.push("Perform this remedy today.", "Share the reading with your guide.");
-    }
-    return items.map((label, index) => ({ id: `${engine}-${title}-${index}`, label, done: false }));
-  }, [engine, horoscopePayload?.principles, horoscopePayload?.remedies, timeframeAnchors, title]);
-  const storageKey = useMemo(() => `prediction-checklist-${engine}-${title.replace(/\s+/g, "-").toLowerCase()}`, [engine, title]);
-  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = localStorage.getItem(storageKey);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as ChecklistItem[];
-        setChecklist(parsed);
-        return;
-      } catch {
-        // If parsing fails, fall back to seed.
-      }
-    }
-    setChecklist(checklistSeed);
-  }, [checklistSeed, storageKey]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!checklist.length) return;
-    localStorage.setItem(storageKey, JSON.stringify(checklist));
-  }, [checklist, storageKey]);
-
-  const toggleChecklistItem = (id: string) => {
-    setChecklist((current) => current.map((item) => (item.id === id ? { ...item, done: !item.done } : item)));
-  };
-
-  const progressSteps = useMemo<ProgressStep[]>(() => {
-    const hasPayload = Boolean(payload);
-    const hasAnchors = timeframeAnchors.some((anchor) => anchor.sign);
-    return [
-      {
-        title: "Birth details received",
-        description: "Name, date, time, place inform the reading.",
-        status: hasPayload ? "complete" : "active",
-      },
-      {
-        title: "12-house linkage",
-        description: "Daily, weekly, monthly, yearly tied to the natal chart.",
-        status: hasAnchors ? "complete" : hasPayload ? "active" : "pending",
-      },
-      {
-        title: "Action plan saved",
-        description: "Reminders persist locally for practice.",
-        status: checklist.length ? "complete" : hasPayload ? "active" : "pending",
-      },
-    ];
-  }, [checklist.length, payload, timeframeAnchors]);
+  const [detailLevel, setDetailLevel] = React.useState<"beginner" | "advanced">("beginner");
+  const sections = buildSections(engine, payload);
+  const horoscopePayload = engine === "horoscope" && typeof payload === "object" ? (payload as HoroscopePayload) : null;
 
   if (!payload || !sections.length) {
     return (
@@ -482,50 +415,31 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
         <h3>{title}</h3>
         <p className="muted">{t("results.helperRaw", "Narratives are ready to share—no JSON needed.")}</p>
       </div>
-      <ProgressIndicator steps={progressSteps} label="Prediction progress" />
-      <div className="insight-grid">{sections.map(renderSection)}</div>
-      {timeframeAnchors.length ? (
-        <div className="insight-grid" aria-label="Timeframes tied to houses" role="list">
-          {timeframeAnchors.map((anchor) => (
-            <article key={anchor.label} className="insight-block" role="listitem">
-              <p className="eyebrow">{anchor.label}</p>
-              <h4>
-                House {anchor.houseIndex}: {anchor.focus}
-              </h4>
-              <p className="muted">{anchor.sign ? `${anchor.sign} base` : "Awaiting chart foundation"}</p>
-              <p className="microcopy">Interpretations stay anchored to the natal twelve-house chart.</p>
-            </article>
+      <div className="section-actions" style={{ marginBottom: "1rem" }}>
+        <p className="eyebrow" style={{ marginBottom: "0.35rem" }}>
+          Depth toggle
+        </p>
+        <div role="group" aria-label="Detail level" className="button-row">
+          {(["beginner", "advanced"] as const).map((level) => (
+            <button
+              key={level}
+              type="button"
+              className={detailLevel === level ? "primary" : "secondary"}
+              aria-pressed={detailLevel === level}
+              onClick={() => setDetailLevel(level)}
+            >
+              {level === "beginner" ? "Beginner view" : "Advanced view"}
+            </button>
           ))}
         </div>
-      ) : null}
-      {checklist.length ? (
-        <div className="insight-grid" aria-label="Actionable reminders" role="list">
-          <article className="insight-block" role="listitem">
-            <h4>Reminders</h4>
-            <ul className="checklist">
-              {checklist.map((item) => (
-                <li key={item.id}>
-                  <label className="checklist__item">
-                    <input
-                      type="checkbox"
-                      checked={item.done}
-                      onChange={() => toggleChecklistItem(item.id)}
-                      aria-label={item.label}
-                    />
-                    <span className={item.done ? "muted" : ""}>{item.label}</span>
-                  </label>
-                </li>
-              ))}
-            </ul>
-            <p className="microcopy">Progress stays locally so you can return to it anytime.</p>
-          </article>
-        </div>
-      ) : null}
+      </div>
+      <div className="insight-grid">{sections.map((section, index) => renderSection(section, index, detailLevel))}</div>
       {horoscopePayload && (
         <KundliCharts
           rashiChart={horoscopePayload.rashi_chart}
           bhavaChart={horoscopePayload.bhava_chart}
           dashas={horoscopePayload.dashas}
+          detailLevel={detailLevel}
         />
       )}
       {payload && <FeedbackPrompt engine={engine} seekerName={seekerName} />}
