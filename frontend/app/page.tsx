@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from "next/dynamic";
-import BirthInputForm from "@/components/BirthInputForm";
+
 import CalendarForm from "@/components/CalendarForm";
 import MatchmakingForm from "@/components/MatchmakingForm";
 import PredictionForm from "@/components/PredictionForm";
@@ -24,30 +24,6 @@ const BhriguChat = dynamic(() => import("@/components/BhriguChat"), {
   ssr: false,
   loading: () => <div className="card softly">Activating Bhrigu chat…</div>,
 });
-
-const journeyTimeline = [
-  {
-    title: "Dawn: Venusian glow",
-    window: "2024 Q3 - Q4",
-    houseAnchor: "House 5 • Joy",
-    detail: "Creative cycles brighten; save art-forward remedies to daily reminders.",
-    icon: "🌅",
-  },
-  {
-    title: "Midday: Saturn review",
-    window: "2025 Q1 - Q2",
-    houseAnchor: "House 10 • Karma",
-    detail: "Career recalibration connected to bhava overlays—drag to fast-forward milestones.",
-    icon: "🪐",
-  },
-  {
-    title: "Evening: Lunar reflection",
-    window: "2025 Q3 - Q4",
-    houseAnchor: "House 12 • Rest",
-    detail: "Retreat prompts and mantra streaks sync with the natal moon element you captured.",
-    icon: "🌔",
-  },
-];
 
 export default function HomePage() {
   const { t } = useI18n();
@@ -209,6 +185,10 @@ export default function HomePage() {
         </div>
         <QuarterlyReviewPanel />
       </section>
+    </div>
+  );
+}
+
     </div>
   );
 }
