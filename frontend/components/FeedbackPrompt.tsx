@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { submitAccuracyFeedback } from "@/lib/api";
 import { ResultEngine } from "@/types/astro";
+import { useImmersiveFeedback } from "@/lib/immersive";
 
 const ratingLabels: Record<number, string> = {
   1: "Way off",
@@ -22,6 +23,7 @@ export default function FeedbackPrompt({ engine, seekerName }: Props) {
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
+  const { triggerSubmitFeedback } = useImmersiveFeedback();
 
   const helper = useMemo(() => {
     if (!rating) return "Tell us how closely the guidance matched your reality.";
@@ -34,6 +36,8 @@ export default function FeedbackPrompt({ engine, seekerName }: Props) {
       setError("Please choose a rating to submit accuracy feedback.");
       return;
     }
+
+    triggerSubmitFeedback();
 
     setStatus("submitting");
     setError(null);

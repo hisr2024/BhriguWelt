@@ -1,6 +1,7 @@
 'use client';
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import Providers from "@/app/providers";
 import { useI18n } from "@/lib/i18n";
 import { theme } from "@/lib/theme";
@@ -46,6 +47,13 @@ function LanguageToggle() {
 
 function Shell({ children }: Props) {
   const { t } = useI18n();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const closeOnResize = () => setMenuOpen(false);
+    window.addEventListener("resize", closeOnResize);
+    return () => window.removeEventListener("resize", closeOnResize);
+  }, []);
 
   return (
     <>
@@ -60,11 +68,27 @@ function Shell({ children }: Props) {
           <span className="brand-mark" style={{ background: theme.gradients.brand }} aria-hidden />
           BhriguWelt
         </Link>
-        <nav aria-label="Main">
+        <div className="topbar__mobile">
+          <button
+            type="button"
+            className="nav-toggle"
+            aria-expanded={menuOpen}
+            aria-controls="primary-navigation"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {menuOpen ? "Close" : "Menu"}
+          </button>
+          <Link className="button-link soft" href="/matchmaking">
+            {t("nav.cta", "Start a session")}
+          </Link>
+        </div>
+        <nav id="primary-navigation" className={menuOpen ? "is-open" : ""} aria-label="Main">
           <ul>
             {navLinks.map((link) => (
               <li key={link.href}>
-                <Link href={link.href}>{t(link.key, link.fallback)}</Link>
+                <Link href={link.href} onClick={() => setMenuOpen(false)}>
+                  {t(link.key, link.fallback)}
+                </Link>
               </li>
             ))}
           </ul>
@@ -76,6 +100,21 @@ function Shell({ children }: Props) {
           </Link>
         </div>
       </header>
+
+      <div className="topbar__touch-row" role="group" aria-label="Quick jump for forms">
+        <Link className="touch-chip" href="/experience#birth">
+          Birth input
+        </Link>
+        <Link className="touch-chip" href="/experience#chart">
+          Chart
+        </Link>
+        <Link className="touch-chip" href="/horoscope">
+          Interpretations
+        </Link>
+        <Link className="touch-chip" href="/matchmaking">
+          Matchmaking
+        </Link>
+      </div>
 
       <ExperienceToolbar />
 
