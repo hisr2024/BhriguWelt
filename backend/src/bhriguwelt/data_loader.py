@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 from copy import deepcopy
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from .bhrigu_data import as_dict as _default_bhrigu_data
 
@@ -23,6 +25,53 @@ _DATA_PATH = Path(
 )
 
 
+def _compute_principle_checksum(principle: Dict[str, Any]) -> str:
+    material = {key: value for key, value in principle.items() if key != "integrity"}
+    canonical = json.dumps(material, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _validate_principles(principles: List[Dict[str, Any]]) -> None:
+    ids = set()
+    for principle in principles:
+        if not isinstance(principle, dict):
+            raise ValueError("Each principle must be a mapping")
+
+        identifier = principle.get("id")
+        if not identifier:
+            raise ValueError("Each principle requires an 'id'")
+        if identifier in ids:
+            raise ValueError(f"Duplicate principle id detected: {identifier}")
+        ids.add(identifier)
+
+        integrity = principle.setdefault("integrity", {})
+        if integrity and not isinstance(integrity, dict):
+            raise ValueError(f"Integrity block for {identifier} must be a mapping")
+
+        panchang_context = principle.get("panchang_context")
+        if panchang_context and not isinstance(panchang_context, dict):
+            raise ValueError(f"Panchang context for {identifier} must be a mapping")
+
+        checksum = _compute_principle_checksum(principle)
+        recorded_checksum = integrity.get("checksum")
+        if recorded_checksum and recorded_checksum != checksum:
+            raise ValueError(f"Checksum mismatch for {identifier}: expected {checksum}")
+
+        integrity.setdefault("sources", [])
+        integrity["checksum"] = checksum
+
+
+def _validate_and_enrich(payload: Dict[str, Any]) -> Dict[str, Any]:
+    if not isinstance(payload, dict):
+        raise ValueError("Bhrigu data payload must be a mapping")
+
+    principles = payload.get("principles")
+    if isinstance(principles, list):
+        _validate_principles(principles)
+
+    return payload
+
+
 def load_bhrigu_data(path: Path | None = None) -> Dict[str, Any]:
     """Return the parsed Bhrigu Samhita rule set as a dictionary.
 
@@ -32,22 +81,18 @@ def load_bhrigu_data(path: Path | None = None) -> Dict[str, Any]:
     """
 
     if path:
-        import json
-
         with path.open("r", encoding="utf-8") as handle:
-            return json.load(handle)
+            return _validate_and_enrich(json.load(handle))
 
     if yaml and _DATA_PATH.exists():
         with _DATA_PATH.open("r", encoding="utf-8") as handle:
-            return yaml.safe_load(handle)
+            return _validate_and_enrich(yaml.safe_load(handle))
 
     if _DATA_PATH.exists():
-        import json
-
         with _DATA_PATH.open("r", encoding="utf-8") as handle:
-            return json.load(handle)
+            return _validate_and_enrich(json.load(handle))
 
-    return deepcopy(_default_bhrigu_data())
+    return _validate_and_enrich(deepcopy(_default_bhrigu_data()))
 
 
 def persist_bhrigu_data(payload: Dict[str, Any], path: Path | None = None) -> Dict[str, Any]:
@@ -65,6 +110,8 @@ def persist_bhrigu_data(payload: Dict[str, Any], path: Path | None = None) -> Di
     principles = payload.get("principles")
     if not isinstance(principles, list) or not principles:
         raise ValueError("Payload must include a non-empty 'principles' list")
+
+    _validate_principles(principles)
 
     metadata = payload.get("metadata", {})
     if metadata and not isinstance(metadata, dict):

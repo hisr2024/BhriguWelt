@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Providers from "@/app/providers";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type Language } from "@/lib/i18n";
 import { theme } from "@/lib/theme";
 import OnboardingModal from "./OnboardingModal";
 import ExperienceToolbar from "./ExperienceToolbar";
@@ -22,26 +22,18 @@ const navLinks = [
 ];
 
 function LanguageToggle() {
-  const { lang, setLang } = useI18n();
+  const { lang, setLang, availableLanguages } = useI18n();
   return (
-    <div className="language-toggle" aria-label="Language toggle">
-      <button
-        type="button"
-        className={lang === "en" ? "active" : ""}
-        onClick={() => setLang("en")}
-        aria-pressed={lang === "en"}
-      >
-        EN
-      </button>
-      <button
-        type="button"
-        className={lang === "hi" ? "active" : ""}
-        onClick={() => setLang("hi")}
-        aria-pressed={lang === "hi"}
-      >
-        हिंदी
-      </button>
-    </div>
+    <label className="language-toggle" aria-label="Language toggle">
+      <span className="sr-only">Language</span>
+      <select value={lang} onChange={(event) => setLang(event.target.value as Language)}>
+        {availableLanguages.map((option) => (
+          <option key={option.code} value={option.code}>
+            {option.nativeLabel} ({option.label})
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 

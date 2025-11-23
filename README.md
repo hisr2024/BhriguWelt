@@ -261,6 +261,13 @@ GitHub Actions guardrails ship with the repo:
 - `SECURITY.md` describes how to report vulnerabilities privately (contact
   `security@bhriguwelt.com`).
 
+## Governance metadata
+
+- License: MIT (`LICENSE`). Preserve the copyright notice in derivative docs or
+  forks so merge histories remain conflict-free.
+- Conduct and security contact: `security@bhriguwelt.com` (matches
+  `CODE_OF_CONDUCT.md` and `SECURITY.md`).
+
 ## Repository hygiene
 
 - Set GitHub topics such as `astrology`, `python`, `nextjs`, and

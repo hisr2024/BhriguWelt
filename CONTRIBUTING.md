@@ -40,3 +40,9 @@
 ## Accessibility & i18n
 - Preserve semantic HTML, aria-labels, and focus states when changing UI.
 - Keep copy short and clear; plan for localization by avoiding hard-coded date/number formats where possible.
+
+## Governance metadata
+- License: MIT (`LICENSE`). Keep the copyright notice intact when copying docs or
+  code so merges stay clean across forks.
+- Code of Conduct + security contact: `security@bhriguwelt.com` (shared with
+  `CODE_OF_CONDUCT.md` and `SECURITY.md`).
