@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 
 import joblib
 import numpy as np
@@ -26,8 +26,35 @@ _DEFAULT_MODEL_PATH = _MODEL_DIR / "feedback_promoter_model.joblib"
 _DEFAULT_METADATA_PATH = _MODEL_DIR / "feedback_promoter_model.json"
 
 
+class TrainingSummary(dict):
+    def __init__(self, payload: Dict[str, Any]):
+        super().__init__(payload)
+
+    def __getattr__(self, item: str):  # pragma: no cover - passthrough to dict
+        try:
+            return self[item]
+        except KeyError as exc:  # pragma: no cover - mirror dict behavior
+            raise AttributeError(item) from exc
+
+
+def _coerce_float(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return 1.0 if value else 0.0
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
+
+
 def _extract_numeric_inputs(inputs: Dict[str, Any] | None) -> Dict[str, float]:
     numeric: Dict[str, float] = {}
+    if not inputs:
+        return numeric
+
     for key, value in inputs.items():
         if key in {"weights", "principle_weights", "chart_markers", "placements", "chart"}:
             continue
@@ -43,6 +70,31 @@ def _extract_numeric_inputs(inputs: Dict[str, Any] | None) -> Dict[str, float]:
             if coerced is not None:
                 numeric[key] = coerced
     return numeric
+
+
+def _encode_principle_weights(payload: Dict[str, Any]) -> Dict[str, float]:
+    weights = payload.get("weights") or payload.get("principle_weights") or {}
+    encoded: Dict[str, float] = {}
+    for key, value in weights.items():
+        coerced = _coerce_float(value)
+        if coerced is not None:
+            encoded[f"weight.{key}"] = coerced
+    return encoded
+
+
+def _encode_chart_markers(payload: Dict[str, Any]) -> Dict[str, float]:
+    encoded: Dict[str, float] = {}
+    for marker in payload.get("chart_markers", []) or []:
+        planet = marker.get("planet")
+        house = _coerce_float(marker.get("house"))
+        if planet and house is not None:
+            encoded[f"chart.{planet}.house"] = house
+    return encoded
+
+
+def _flatten_numeric_signals(payload: Dict[str, Any]) -> Dict[str, float]:
+    flattened = _extract_numeric_inputs(payload)
+    return flattened
 
 
 def encode_feedback_features(engine: str, inputs: Dict[str, Any] | None) -> Dict[str, Any]:
@@ -94,7 +146,11 @@ def train_feedback_model(
     model_path: Path | None = None,
     metadata_path: Path | None = None,
     limit: int | None = None,
-) -> Dict[str, Any]:
+    n_estimators: int = 50,
+    max_depth: int | None = None,
+    random_state: int = 42,
+    test_size: float = 0.2,
+) -> TrainingSummary:
     """Train a simple classifier that predicts promoter feedback (4-5 ratings).
 
     Parameters
@@ -123,40 +179,45 @@ def train_feedback_model(
     train_rows, test_rows, train_y, test_y = _split_training_data(feature_rows, target, test_size, random_state)
     pipeline.fit(train_rows, train_y)
 
-    predictions = pipeline.predict(test_rows) if test_rows else []
+    predictions = pipeline.predict(test_rows) if len(test_rows) else []
     mae = float(mean_absolute_error(test_y, predictions)) if len(test_y) else 0.0
     r2 = float(r2_score(test_y, predictions)) if len(test_y) > 1 else 1.0
+    accuracy = float(pipeline.score(train_rows, train_y)) if len(train_rows) else 0.0
 
     destination = model_path or _DEFAULT_MODEL_PATH
-    metadata_destination = metadata_path or _DEFAULT_METADATA_PATH
+    metadata_destination = metadata_path or destination.with_suffix(".json")
 
     previous_metadata = load_model_metadata(metadata_destination)
     previous_features = set(previous_metadata.get("feature_names", []))
-    feature_names = list(features.columns)
+    feature_names = list(pipeline.named_steps["vectorizer"].get_feature_names_out())
     new_features = sorted(set(feature_names) - previous_features)
     dropped_features = sorted(previous_features - set(feature_names))
 
-    metadata = {
-        "model_path": str(destination),
-        "metadata_path": str(metadata_destination),
-        "samples": int(len(frame)),
-        "feature_count": int(features.shape[1]),
-        "promoter_rate": float(target.mean()),
-        "accuracy": float(score),
-        "trained_at": datetime.utcnow().isoformat() + "Z",
-        "feature_names": feature_names,
-        "new_feature_count": len(new_features),
-        "dropped_feature_count": len(dropped_features),
-    }
+    metadata = TrainingSummary(
+        {
+            "model_path": str(destination),
+            "metadata_path": str(metadata_destination),
+            "samples": int(len(frame)),
+            "feature_count": len(feature_names),
+            "promoter_rate": float(target.mean()),
+            "accuracy": accuracy,
+            "mae": mae,
+            "r2": r2,
+            "trained_at": datetime.utcnow().isoformat() + "Z",
+            "feature_names": feature_names,
+            "new_feature_count": len(new_features),
+            "dropped_feature_count": len(dropped_features),
+        }
+    )
 
-    _atomic_store_artifacts(pipeline, metadata, destination, metadata_destination)
+    _atomic_store_artifacts(pipeline, dict(metadata), destination, metadata_destination)
     logger.info(
         "Trained feedback model",
         extra={
-            "accuracy": metadata["accuracy"],
-            "samples": metadata["samples"],
-            "new_features": metadata["new_feature_count"],
-            "dropped_features": metadata["dropped_feature_count"],
+            "accuracy": metadata.get("accuracy"),
+            "samples": metadata.get("samples"),
+            "new_features": metadata.get("new_feature_count"),
+            "dropped_features": metadata.get("dropped_feature_count"),
         },
     )
 
@@ -196,6 +257,7 @@ def _atomic_store_artifacts(
     model: Any, metadata: Dict[str, Any], model_path: Path, metadata_path: Path
 ) -> None:
     model_path.parent.mkdir(parents=True, exist_ok=True)
+    metadata_path.parent.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory(prefix="ml_artifacts_", dir=model_path.parent) as tmp_dir:
         tmp_model = Path(tmp_dir) / model_path.name
         tmp_metadata = Path(tmp_dir) / metadata_path.name
