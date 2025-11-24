@@ -241,7 +241,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
         return {
           label: detail.label,
           summary: detail.summary,
-          focus: house.focus,
+          focus: house.focus || house.sign,
         } as InterpretationDetail & { focus: string };
       });
     });
