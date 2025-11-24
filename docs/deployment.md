@@ -38,6 +38,13 @@ so follow the steps below to publish your own endpoints before testing clients.
 6. Deploy and watch the Render logs until you see `Serving on ('0.0.0.0', 8000)`.
 7. Verify with `curl https://<your-render-host>/health`; if it returns
    `{"status":"ok"}`, the backend is ready for Vercel and mobile traffic.
+8. Set `BHRIGUWELT_ADMIN_TOKEN` for production; requests to `/ml/retrain` must
+   include the matching `X-Admin-Token` header. If the variable is unset, the
+   retrain endpoint stays locked down by returning HTTP 403.
+9. Leave the default in-memory rate limiting (60 requests/min per IP) enabled
+   unless you front the service with a dedicated gateway; cached responses stay
+   fresh for 120 seconds and are invalidated automatically after retraining or
+   manuscript edits.
 
 ## Backend → Railway
 
@@ -99,6 +106,10 @@ Python + `pip` available:
 3. If the frontend falls back to demo data, double-check the Vercel environment
    variable and redeploy. Successful requests return the same JSON structure as
    local `PYTHONPATH=src pytest` fixtures.
+4. Confirm the backend enforces throttling by making two quick POSTs to
+   `/future` or `/health` from the same IP; the second call should return HTTP
+   429. Cached responses should update after 2-3 minutes or immediately after
+   invoking `/ml/retrain` or `/manuscript` with fresh content.
 
 ## Mobile apps
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import http.client
 import json
 import threading
+import time
 from contextlib import contextmanager
 from http.server import ThreadingHTTPServer
 
@@ -225,3 +226,45 @@ def test_rate_limiting_blocks_after_threshold():
             assert "rate" in (data.get("message") or "").lower()
     finally:
         api.BhriguAPIHandler.rate_limiter = original
+
+
+def test_rate_limiting_blocks_health_after_threshold():
+    original = api.BhriguAPIHandler.rate_limiter
+    api.BhriguAPIHandler.rate_limiter = api.RateLimiter(max_requests=1, window_seconds=60)
+
+    try:
+        with running_server() as address:
+            status, _, _ = _get("/health", address)
+            assert status == 200
+
+            status, data, _ = _get("/health", address)
+            assert status == 429
+            assert "rate" in (data.get("message") or "").lower()
+    finally:
+        api.BhriguAPIHandler.rate_limiter = original
+
+
+def test_response_cache_expires_between_requests(monkeypatch):
+    original_cache = api.BhriguAPIHandler.cache
+    api.BhriguAPIHandler.cache = api.ResponseCache(ttl_seconds=0.05, max_entries=4)
+    call_count = {"count": 0}
+
+    def fake_handle(command, payload):
+        call_count["count"] += 1
+        return {"command": command, "echo": payload.get("value"), "call": call_count["count"]}
+
+    monkeypatch.setattr(api, "handle_command", fake_handle)
+
+    try:
+        with running_server() as address:
+            status, data, _ = _post("/future", {"value": 1}, address)
+            assert status == 200
+            assert data.get("call") == 1
+
+            time.sleep(0.06)
+
+            status, data, _ = _post("/future", {"value": 1}, address)
+            assert status == 200
+            assert data.get("call") == 2, "Cache should expire after TTL"
+    finally:
+        api.BhriguAPIHandler.cache = original_cache

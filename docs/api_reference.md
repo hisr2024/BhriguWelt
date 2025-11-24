@@ -44,6 +44,21 @@ the validation rules and response shapes enforced by the CLI/API handlers.
 - Returns `{ quarters: [{ label, average_rating, submissions, promoters, recent_notes: [...] }] }` to power dashboards and
   council reviews.
 
+## Rate limiting and caching
+- Every client IP is limited to 60 requests per minute; exceeding the window
+  returns HTTP 429 with a JSON body `{ "message": "Rate limit exceeded; try
+  again later" }`.
+- Idempotent horoscope, past-life, future, matchmaking, calendar, and transits
+  calls reuse cached payloads for up to 120 seconds. Sending a different body or
+  invalidating the cache (see below) forces recomputation.
+
+## Cache invalidation and admin controls
+- Posting new manuscripts or retraining the ML feedback model clears cached
+  horoscope/future/past responses so users never see stale narratives.
+- `POST /ml/retrain` requires the header `X-Admin-Token: <BHRIGUWELT_ADMIN_TOKEN>`.
+  If no `BHRIGUWELT_ADMIN_TOKEN` is set, the endpoint returns HTTP 403 to
+  prevent accidental retraining.
+
 ## Error cases
 - Missing required fields → HTTP 400 with message
 - Out-of-range lunar tithi/houses or unsupported moon element → HTTP 400 with validation message

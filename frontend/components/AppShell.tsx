@@ -93,18 +93,18 @@ function Shell({ children }: Props) {
         </div>
       </header>
 
-      <div className="topbar__touch-row" role="group" aria-label="Quick jump for forms">
-        <Link className="touch-chip" href="/experience#birth">
-          Birth input
+      <div className="topbar__touch-row" role="group" aria-label={t("nav.quick.label", "Quick jump for forms")}>
+        <Link className="touch-chip" href="/experience#birth" aria-label={t("nav.quick.birth", "Birth input section")}>
+          {t("nav.quick.birth", "Birth input")}
         </Link>
-        <Link className="touch-chip" href="/experience#chart">
-          Chart
+        <Link className="touch-chip" href="/experience#chart" aria-label={t("nav.quick.chart", "Chart section")}>
+          {t("nav.quick.chart", "Chart")}
         </Link>
-        <Link className="touch-chip" href="/horoscope">
-          Interpretations
+        <Link className="touch-chip" href="/horoscope" aria-label={t("nav.quick.horoscope", "Interpretations section")}>
+          {t("nav.quick.horoscope", "Interpretations")}
         </Link>
-        <Link className="touch-chip" href="/matchmaking">
-          Matchmaking
+        <Link className="touch-chip" href="/matchmaking" aria-label={t("nav.quick.matchmaking", "Matchmaking section")}>
+          {t("nav.quick.matchmaking", "Matchmaking")}
         </Link>
       </div>
 
