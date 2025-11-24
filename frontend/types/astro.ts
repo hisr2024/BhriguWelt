@@ -19,6 +19,7 @@ export interface BirthDetails {
 export interface ChartHouse {
   index: number;
   sign: string;
+  focus?: string;
   occupants: string[];
   bhrigu_notes: string[];
 }
