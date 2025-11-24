@@ -284,7 +284,7 @@ export default function BirthInputForm() {
         const payload = (await response.json()) as { display_name?: string };
         if (payload.display_name) {
           setResolvedPlace(payload.display_name);
-          setDetails((prev) => ({ ...prev, birthPlace: payload.display_name }));
+          setDetails((prev) => ({ ...prev, birthPlace: payload.display_name ?? prev.birthPlace }));
           setLocationStatus("Map pin synced with Bharat geolocation.");
           speak("Map pin synced with Bharat geolocation.");
         } else {
