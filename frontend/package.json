@@ -14,12 +14,12 @@
   "dependencies": {
     "@sentry/nextjs": "file:vendor/sentry-nextjs",
     "next": "16.0.3",
-    "react": "18.2.0",
-    "react-dom": "19.2.0"
+    "react": "19.2.0",
+    "react-dom": "18.2.0"
   },
   "devDependencies": {
-    "@types/node": "24.10.1",
-    "@types/react": "19.2.6",
+    "@types/node": "20.17.9",
+    "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "eslint": "9.39.1",
     "eslint-config-next": "16.0.3",
