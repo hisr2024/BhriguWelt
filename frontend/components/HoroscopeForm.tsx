@@ -74,7 +74,7 @@ export default function HoroscopeForm() {
       : "Chart confidence: Add or correct birth details for higher accuracy";
   const formattedChart = useMemo(() => (chart ? JSON.stringify(chart, null, 2) : ""), [chart]);
   const hasNarrative = Boolean(interpretation.english || interpretation.hindi);
-  const fallbackNarrative = interpretation.raw || formattedChart;
+  const fallbackNarrative = interpretation.raw || formattedChart || "No interpretation available";
   const houseFoundation = useMemo<HouseAnchor[] | null>(() => {
     if (!chart || !isNatalChart(chart)) return null;
     const natalChart = chart as NatalChart;
@@ -186,27 +186,59 @@ export default function HoroscopeForm() {
 
     setLoading(true);
 
+    const requestPayload = {
+      name: form.name,
+      dateOfBirth: form.dateOfBirth,
+      timeOfBirth: form.timeOfBirth,
+      placeOfBirth: form.placeOfBirth,
+    } satisfies FormState;
+
     const attempt = async (path: string) => {
-      const data = await postChart(path, form);
-      setEndpoint(path);
-      setChart(data);
-      setInterpretation(extractInterpretation(data));
-      setStatus("success");
+      console.info("[HoroscopeForm] Submitting horoscope request", { path, payload: requestPayload });
+      try {
+        const data = await postChart(path, form);
+        const extracted = extractInterpretation(data);
+
+        setEndpoint(path);
+        setChart(data);
+        setInterpretation(extracted);
+        setStatus("success");
+
+        if (!extracted.english && !extracted.hindi) {
+          console.warn("[HoroscopeForm] No narrative returned; falling back to raw output", {
+            path,
+            payload: requestPayload,
+            response: data,
+          });
+          setError("Data processing failed to generate an interpretation. Showing available chart details.");
+        }
+      } catch (submissionError) {
+        console.error(`[HoroscopeForm] Submission to ${path} failed`, submissionError, {
+          payload: requestPayload,
+        });
+        throw submissionError;
+      }
     };
 
     try {
       try {
         await attempt("/api/chart");
       } catch (primaryError) {
+        console.error("[HoroscopeForm] Primary endpoint failed; attempting fallback", primaryError);
         try {
           await attempt("/api/bhrigu-chat");
-        } catch {
+        } catch (fallbackError) {
+          console.error("[HoroscopeForm] Fallback endpoint also failed", fallbackError);
           throw primaryError;
         }
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to generate chart";
-      setError(message);
+      const normalizedMessage = /Failed to fetch/i.test(message)
+        ? "Backend unreachable. Please check your connection and try again."
+        : `Data processing failed: ${message}`;
+      console.error("[HoroscopeForm] Submission aborted", err, { payload: requestPayload });
+      setError(normalizedMessage);
     } finally {
       setLoading(false);
     }
