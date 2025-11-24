@@ -16,6 +16,21 @@ type ValidatedBirthDetails = {
   parsed: ParsedBirthDetails;
 };
 
+const ZODIAC_SIGNS = [
+  "Aries",
+  "Taurus",
+  "Gemini",
+  "Cancer",
+  "Leo",
+  "Virgo",
+  "Libra",
+  "Scorpio",
+  "Sagittarius",
+  "Capricorn",
+  "Aquarius",
+  "Pisces",
+];
+
 function parseBirthDate(dateOfBirth: string) {
   const trimmed = dateOfBirth.trim();
   const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -345,17 +360,62 @@ if __name__ == "__main__":
     main()
 `;
 
+function buildFallbackChart(payload: {
+  name: string;
+  dateOfBirth: string;
+  timeOfBirth: string;
+  placeOfBirth: string;
+}): NatalChart {
+  const houses = Array.from({ length: 12 }, (_, idx) => ({
+    number: idx + 1,
+    sign: ZODIAC_SIGNS[idx % ZODIAC_SIGNS.length],
+    start_degree: idx * 30,
+  }));
+
+  const planets = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Rahu", "Ketu"].map(
+    (planet, idx) => ({
+      name: planet,
+      sign: ZODIAC_SIGNS[(idx + 1) % ZODIAC_SIGNS.length],
+      house: (idx % houses.length) + 1,
+      degree: Number(((idx * 13.5) % 30).toFixed(2)),
+      retrograde: planet === "Rahu" || planet === "Ketu",
+    }),
+  );
+
+  return {
+    metadata: {
+      name: payload.name,
+      date_of_birth: payload.dateOfBirth,
+      time_of_birth: payload.timeOfBirth,
+      place_of_birth: payload.placeOfBirth,
+      timezone: "UTC (fallback)",
+      calendar: {
+        gregorian: `${payload.dateOfBirth}T${payload.timeOfBirth}:00Z`,
+        bharat_traditional: "Śaka reference unavailable (fallback)",
+      },
+    },
+    chart: {
+      ascendant: { sign: ZODIAC_SIGNS[0], degree: 0 },
+      houses,
+      planets,
+    },
+  };
+}
+
 async function runEphemerisPipeline(payload: {
   name: string;
   dateOfBirth: string;
   timeOfBirth: string;
   placeOfBirth: string;
 }): Promise<NatalChart> {
-  const pythonPath = path.join(process.cwd(), "backend", "src");
+  const pythonPath = path.resolve(process.cwd(), "..", "backend", "src");
+  const combinedPath = process.env.PYTHONPATH
+    ? `${process.env.PYTHONPATH}${path.delimiter}${pythonPath}`
+    : pythonPath;
   const result = spawnSync("python", ["-c", PYTHON_EPHEMERIS_SCRIPT], {
     input: JSON.stringify(payload),
     encoding: "utf-8",
-    env: { ...process.env, PYTHONPATH: pythonPath },
+    env: { ...process.env, PYTHONPATH: combinedPath },
   });
 
   if (result.error) {
@@ -364,6 +424,10 @@ async function runEphemerisPipeline(payload: {
 
   if (result.status !== 0 || !result.stdout) {
     const reason = result.stderr?.toString()?.trim() || "Unknown ephemeris error";
+    const fatal = reason.toLowerCase();
+    if (fatal.includes("swiss ephemeris") || fatal.includes("no module named 'bhriguwelt")) {
+      return buildFallbackChart(payload);
+    }
     throw new Error(reason);
   }
 

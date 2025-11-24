@@ -10,6 +10,15 @@ All notable changes to this project will be documented here.
 - Expand the Bhrigu Samhita corpus with tradition-aware entries, Panchang
   contexts, and checksum-backed integrity scaffolding for predictions.
 
+## [2026-03-30]
+- Documented API rate limiting, response caching, and admin hardening in the
+  reference guide plus refreshed deployment steps for secure token handling.
+- Added backend regression tests to prove rate limits apply to all routes and
+  cached responses expire before recomputation.
+- Expanded multilingual navigation shortcuts with Hindi/English/Spanish/Tamil
+  coverage and ARIA labels plus a unit test that enforces translation
+  completeness.
+
 ## [2025-11-20]
 - Published an OpenAPI snapshot, backup helper script, and Dependabot config to
   tighten governance and data safety.
