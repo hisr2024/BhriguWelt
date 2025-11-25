@@ -17,6 +17,17 @@ const defaultForm: FormState = {
   dateOfBirth: "",
   timeOfBirth: "",
   placeOfBirth: "",
+  tradition: "universal",
+  lunarTithi: 0,
+  moonElement: "",
+  marsHouse: 0,
+  saturnHouse: 0,
+  venusHouse: 0,
+  rahuAspectsAscendant: false,
+  ketuHouse: 0,
+  mercuryHouse: 0,
+  jupiterHouse: 0,
+  saturnRetrograde: false,
 };
 
 type ValidationState = {
@@ -186,6 +197,9 @@ export default function HoroscopeForm() {
 
     setLoading(true);
 
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
+    const normalizedBackend = backendUrl ? backendUrl.replace(/\/$/, "") : null;
+
     const requestPayload = {
       name: form.name,
       dateOfBirth: form.dateOfBirth,
@@ -193,43 +207,86 @@ export default function HoroscopeForm() {
       placeOfBirth: form.placeOfBirth,
     } satisfies FormState;
 
-    const attempt = async (path: string) => {
-      console.info("[HoroscopeForm] Submitting horoscope request", { path, payload: requestPayload });
+    const handleSuccess = (data: ChartResponse, path: string) => {
+      const extracted = extractInterpretation(data);
+
+      setEndpoint(path);
+      setChart(data);
+      setInterpretation(extracted);
+      setStatus("success");
+
+      if (!extracted.english && !extracted.hindi) {
+        console.warn("[HoroscopeForm] No narrative returned; falling back to raw output", {
+          path,
+          payload: requestPayload,
+          response: data,
+        });
+        setError("Data processing failed to generate an interpretation. Showing available chart details.");
+      }
+    };
+
+    const attempt = async (path: string, baseUrl?: string) => {
+      const endpointPath = baseUrl ? `${baseUrl}${path}` : path;
+      console.info("[HoroscopeForm] Submitting horoscope request", {
+        path: endpointPath,
+        payload: requestPayload,
+      });
       try {
-        const data = await postChart(path, form);
-        const extracted = extractInterpretation(data);
-
-        setEndpoint(path);
-        setChart(data);
-        setInterpretation(extracted);
-        setStatus("success");
-
-        if (!extracted.english && !extracted.hindi) {
-          console.warn("[HoroscopeForm] No narrative returned; falling back to raw output", {
-            path,
-            payload: requestPayload,
-            response: data,
-          });
-          setError("Data processing failed to generate an interpretation. Showing available chart details.");
-        }
+        const data = await postChart(path, form, baseUrl || undefined);
+        handleSuccess(data, endpointPath);
       } catch (submissionError) {
-        console.error(`[HoroscopeForm] Submission to ${path} failed`, submissionError, {
+        console.error(`[HoroscopeForm] Submission to ${endpointPath} failed`, submissionError, {
           payload: requestPayload,
         });
         throw submissionError;
       }
     };
 
-    try {
+    const attemptBackend = async () => {
+      if (!normalizedBackend) return false;
+
       try {
-        await attempt("/api/chart");
-      } catch (primaryError) {
-        console.error("[HoroscopeForm] Primary endpoint failed; attempting fallback", primaryError);
+        const horoscopeResponse = await postChart("/horoscope", form, normalizedBackend);
+        let combinedResponse: ChartResponse = horoscopeResponse;
+
         try {
-          await attempt("/api/bhrigu-chat");
-        } catch (fallbackError) {
-          console.error("[HoroscopeForm] Fallback endpoint also failed", fallbackError);
-          throw primaryError;
+          const pastLifeResponse = await postChart("/past-life", form, normalizedBackend);
+          combinedResponse = {
+            ...(horoscopeResponse as Record<string, unknown>),
+            past_life_report: pastLifeResponse,
+            past_life_insights:
+              (horoscopeResponse as { past_life_insights?: unknown[] }).past_life_insights ||
+              (pastLifeResponse as { insights?: unknown[] }).insights,
+          } as ChartResponse;
+        } catch (pastLifeError) {
+          console.warn("[HoroscopeForm] Past-life endpoint unavailable; continuing with horoscope output", pastLifeError);
+        }
+
+        handleSuccess(combinedResponse, `${normalizedBackend}/horoscope`);
+        return true;
+      } catch (backendError) {
+        console.error("[HoroscopeForm] Backend endpoints failed", backendError, {
+          payload: requestPayload,
+          backend: normalizedBackend,
+        });
+        return false;
+      }
+    };
+
+    try {
+      const backendSucceeded = await attemptBackend();
+
+      if (!backendSucceeded) {
+        try {
+          await attempt("/api/chart");
+        } catch (primaryError) {
+          console.error("[HoroscopeForm] Primary endpoint failed; attempting fallback", primaryError);
+          try {
+            await attempt("/api/bhrigu-chat");
+          } catch (fallbackError) {
+            console.error("[HoroscopeForm] Fallback endpoint also failed", fallbackError);
+            throw primaryError;
+          }
         }
       }
     } catch (err) {
