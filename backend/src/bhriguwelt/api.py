@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import logging
 from dataclasses import asdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -30,6 +31,8 @@ _ADMIN_TOKEN = os.environ.get("BHRIGUWELT_ADMIN_TOKEN")
 
 init_telemetry()
 record_model_load()
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger("bhriguwelt.api")
 
 
 class RateLimiter:
@@ -140,7 +143,16 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
 
     # Individual endpoint handlers -------------------------------------------------
     def _handle_health(self) -> None:
-        self._send_json({"status": "ok", "source": "Bhrigu Samhita", "ml": get_ml_health()})
+        corpus = load_bhrigu_data()
+        principles_loaded = len(corpus.get("principles") or [])
+        self._send_json(
+            {
+                "status": "ok",
+                "source": "Bhrigu Samhita",
+                "ml": get_ml_health(),
+                "data": {"principles_loaded": principles_loaded},
+            }
+        )
 
     def _handle_feedback(self) -> None:
         payload = self._read_json()
@@ -242,10 +254,12 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         try:
             response = handle_command(command, payload)
         except ValueError as exc:
+            logger.warning("Validation error for %s: %s", command, exc, extra={"path": self.path})
             self.send_error(HTTPStatus.BAD_REQUEST, str(exc))
             return
         except Exception as exc:  # pragma: no cover - defensive catch for telemetry
             capture_exception(exc, {"command": command, "path": self.path})
+            logger.exception("Unexpected server error handling %s", command, extra={"path": self.path})
             self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, "Unexpected server error")
             return
         self.cache.set(cache_key, response)
@@ -286,6 +300,17 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     def send_error(  # type: ignore[override]
         self, code: int, message: str | None = None, explain: str | None = None
     ) -> None:
+        client_ip = self.client_address[0]
+        method = getattr(self, "command", "")
+        log_message = message or HTTPStatus(code).phrase
+        if code >= 500:
+            logger.error(
+                "Request failed with status %s: %s", code, log_message, extra={"path": self.path, "method": method, "client": client_ip}
+            )
+        else:
+            logger.warning(
+                "Request failed with status %s: %s", code, log_message, extra={"path": self.path, "method": method, "client": client_ip}
+            )
         content = json.dumps({"message": message or HTTPStatus(code).phrase}, ensure_ascii=False).encode("utf-8")
         self.send_response(code)
         self.send_header(*_JSON_HEADER)
@@ -412,11 +437,11 @@ def serve(host: str = "0.0.0.0", port: int = 8000) -> None:
     """Run the HTTP server until interrupted."""
 
     with ThreadingHTTPServer((host, port), BhriguAPIHandler) as server:
-        print(f"Bhrigu API listening on http://{host}:{port}")
+        logger.info("BhriguWelt API running on http://%s:%s", host, port)
         try:  # pragma: no cover - manual shutdown
             server.serve_forever()
         except KeyboardInterrupt:  # pragma: no cover - manual shutdown
-            print("Shutting down Bhrigu API")
+            logger.info("Shutting down Bhrigu API")
 
 
 __all__ = ["BhriguAPIHandler", "handle_command", "serve"]

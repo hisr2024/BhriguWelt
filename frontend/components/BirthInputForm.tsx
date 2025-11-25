@@ -7,6 +7,7 @@ import { deriveHouseGrid, HouseSummary } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
 import { CalendarDetails } from "@/types/astro";
 import { useImmersiveFeedback } from "@/lib/immersive";
+import BackendHealthNotice from "@/components/BackendHealthNotice";
 
 type BirthForm = CalendarDetails & {
   lunarTithi: string;
@@ -408,6 +409,7 @@ export default function BirthInputForm() {
           respond in real time. Start with essentials; unfold Panchanga extras when you are ready.
         </p>
         <p className="microcopy" aria-live="polite">{confidenceLabel}</p>
+        <BackendHealthNotice />
         <div className="assistive-row" role="group" aria-label="Accessibility controls">
           <button
             type="button"

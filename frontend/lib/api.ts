@@ -2,6 +2,12 @@ import { BirthDetails, CalendarDetails, PredictionEngine } from "@/types/astro";
 import { FeedbackRequest, QuarterlySummaryResponse } from "@/types/feedback";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+export type HealthResponse = {
+  status?: string;
+  source?: string;
+  ml?: unknown;
+  data?: { principles_loaded?: number };
+};
 const FALLBACK_RESPONSES: Record<string, unknown> = {
   "/horoscope": {
     name: "Fallback seeker",
@@ -404,4 +410,8 @@ export async function submitAccuracyFeedback(feedback: FeedbackRequest) {
 
 export async function fetchQuarterlyReviews() {
   return getJson<QuarterlySummaryResponse>("/feedback/quarterly", "/feedback/quarterly");
+}
+
+export async function checkBackendHealth() {
+  return getJson<HealthResponse>("/health");
 }

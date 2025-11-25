@@ -9,6 +9,7 @@ import { captureClientError } from "@/lib/telemetry";
 import { CalendarDetails } from "@/types/astro";
 import { useImmersiveFeedback } from "@/lib/immersive";
 import PredictionCard from "./PredictionCard";
+import BackendHealthNotice from "@/components/BackendHealthNotice";
 
 const TRANSIT_ORBITS = [
   {
@@ -116,6 +117,7 @@ export default function CalendarForm() {
               `${helperText} Type the details and the studio converts instantly—no extra clicks needed.`,
             )}
           </p>
+          <BackendHealthNotice />
         </header>
         <div className="form-grid">
           <div>

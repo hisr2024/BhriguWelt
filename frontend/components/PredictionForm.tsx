@@ -7,6 +7,7 @@ import { captureClientError } from "@/lib/telemetry";
 import { useImmersiveFeedback } from "@/lib/immersive";
 import { BirthDetails, PredictionEngine } from "@/types/astro";
 import PredictionCard from "./PredictionCard";
+import BackendHealthNotice from "@/components/BackendHealthNotice";
 
 const MAX_RETRIES = 2;
 
@@ -127,6 +128,7 @@ export default function PredictionForm({ engine, title, description, onRequestSt
           <p className="muted" id={`${engine}-helper`}>
             {description || t("form.helper", "Complete every detail to keep remedies precise.")}
           </p>
+          <BackendHealthNotice />
           {retryAttempts > 0 ? (
             <p className="microcopy" aria-live="polite">
               Retrying... attempt {retryAttempts + 1} of {MAX_RETRIES + 1}

@@ -29,5 +29,6 @@ except ImportError as e:
     exit(1)
 host = os.environ.get("HOST", "0.0.0.0")
 port = int(os.environ.get("RAILWAY_TCP_PORT") or os.environ.get("PORT", "8000"))
+print(f"BhriguWelt API running on http://{host}:{port}", flush=True)
 serve(host, port)
 PY
