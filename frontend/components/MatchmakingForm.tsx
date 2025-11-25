@@ -7,6 +7,7 @@ import { captureClientError } from "@/lib/telemetry";
 import { BirthDetails } from "@/types/astro";
 import { useImmersiveFeedback } from "@/lib/immersive";
 import PredictionCard from "./PredictionCard";
+import BackendHealthNotice from "@/components/BackendHealthNotice";
 
 const defaultDetails: BirthDetails = {
   name: "",
@@ -200,6 +201,7 @@ export default function MatchmakingForm() {
           <p className="muted" id="matchmaking-helper">
             {t("form.helper", "Compare two complete birth records plus lifestyle tags to align manuscript and modern signals.")}
           </p>
+          <BackendHealthNotice />
         </header>
         <div className="duo-overlay" role="status" aria-live="polite">
           <div className={`duo-overlay__orb ${hasBirthDetails(primary) ? "duo-overlay__orb--ready" : ""}`}>
