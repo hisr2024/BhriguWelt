@@ -247,6 +247,14 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
   },
 };
 
+export type FallbackPath = "/horoscope" | "/past-life";
+
+export function getFallbackSample(path: FallbackPath) {
+  const sample = FALLBACK_RESPONSES[path];
+  if (!sample || typeof sample !== "object") return null;
+  return sample as Record<string, unknown>;
+}
+
 type FetchOptions<T> = {
   path: string;
   body: T;
