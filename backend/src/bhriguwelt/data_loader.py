@@ -23,6 +23,12 @@ _DATA_PATH = Path(
         Path(__file__).resolve().parents[2] / "data" / "bhrigu_samhita_principles.yml",
     )
 )
+_DEFAULT_DATASET = _default_bhrigu_data()
+_EXPECTED_PRINCIPLE_CHECKSUMS = {
+    principle.get("id"): principle.get("integrity", {}).get("checksum")
+    for principle in _DEFAULT_DATASET.get("principles", [])
+    if isinstance(principle, dict) and principle.get("id")
+}
 
 
 def _compute_principle_checksum(principle: Dict[str, Any]) -> str:
@@ -53,6 +59,12 @@ def _validate_principles(principles: List[Dict[str, Any]]) -> None:
             raise ValueError(f"Panchang context for {identifier} must be a mapping")
 
         checksum = _compute_principle_checksum(principle)
+        expected_checksum = _EXPECTED_PRINCIPLE_CHECKSUMS.get(identifier)
+        if expected_checksum and checksum != expected_checksum:
+            raise ValueError(
+                f"Checksum mismatch for {identifier}: expected {expected_checksum}"
+            )
+
         recorded_checksum = integrity.get("checksum")
         if recorded_checksum and recorded_checksum != checksum:
             raise ValueError(f"Checksum mismatch for {identifier}: expected {checksum}")
@@ -85,14 +97,20 @@ def load_bhrigu_data(path: Path | None = None) -> Dict[str, Any]:
             return _validate_and_enrich(json.load(handle))
 
     if yaml and _DATA_PATH.exists():
-        with _DATA_PATH.open("r", encoding="utf-8") as handle:
-            return _validate_and_enrich(yaml.safe_load(handle))
+        try:
+            with _DATA_PATH.open("r", encoding="utf-8") as handle:
+                return _validate_and_enrich(yaml.safe_load(handle))
+        except Exception:  # pragma: no cover - defensive fallback
+            pass
 
     if _DATA_PATH.exists():
-        with _DATA_PATH.open("r", encoding="utf-8") as handle:
-            return _validate_and_enrich(json.load(handle))
+        try:
+            with _DATA_PATH.open("r", encoding="utf-8") as handle:
+                return _validate_and_enrich(json.load(handle))
+        except Exception:  # pragma: no cover - defensive fallback
+            pass
 
-    return _validate_and_enrich(deepcopy(_default_bhrigu_data()))
+    return _validate_and_enrich(deepcopy(_DEFAULT_DATASET))
 
 
 def persist_bhrigu_data(payload: Dict[str, Any], path: Path | None = None) -> Dict[str, Any]:
