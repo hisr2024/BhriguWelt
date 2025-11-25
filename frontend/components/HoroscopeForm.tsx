@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { HOUSE_FOCUSES } from "@/lib/houseGrid";
+import { getFallbackSample } from "@/lib/api";
 import { useImmersiveFeedback } from "@/lib/immersive";
 import { theme } from "@/lib/theme";
 import { NatalChart } from "@/types/natal";
@@ -54,6 +55,55 @@ type TimeframeLink = {
   progress: number;
 };
 
+const HOROSCOPE_PENDING_SUMMARY = "Based on your inputs, a full reading is pending backend connection.";
+const PAST_LIFE_GENERIC = "Past-life memories may involve healing or service roles.";
+
+function buildFallbackInterpretation(): Interpretation {
+  const horoscopeSample = getFallbackSample("/horoscope");
+  const pastLifeSample = getFallbackSample("/past-life");
+
+  const horoscopeInterpretation =
+    typeof (horoscopeSample as { interpretation?: unknown })?.interpretation === "string"
+      ? (horoscopeSample as { interpretation: string }).interpretation
+      : undefined;
+  const horoscopeInterpretationHindi =
+    typeof (horoscopeSample as { interpretation_hi?: unknown })?.interpretation_hi === "string"
+      ? (horoscopeSample as { interpretation_hi: string }).interpretation_hi
+      : undefined;
+  const horoscopeSummary =
+    typeof (horoscopeSample as { karmic_epoch?: unknown })?.karmic_epoch === "string"
+      ? (horoscopeSample as { karmic_epoch: string }).karmic_epoch
+      : undefined;
+
+  const pastLifeInsights = (sample?: Record<string, unknown>) => {
+    if (!sample) return undefined;
+    const typedSample = sample as { insights?: unknown[]; past_life_insights?: unknown[] };
+    const insights = Array.isArray(typedSample.insights)
+      ? typedSample.insights
+      : Array.isArray(typedSample.past_life_insights)
+        ? typedSample.past_life_insights
+        : undefined;
+
+    if (!insights?.length) return undefined;
+
+    const firstInsight = insights.find((entry) => typeof (entry as { narrative?: unknown }).narrative === "string");
+    return firstInsight ? (firstInsight as { narrative: string }).narrative : undefined;
+  };
+
+  const pastLifeNarrative = pastLifeInsights(pastLifeSample) || pastLifeInsights(horoscopeSample);
+
+  const englishBlocks = [HOROSCOPE_PENDING_SUMMARY];
+  if (horoscopeInterpretation) englishBlocks.push(horoscopeInterpretation);
+  if (pastLifeNarrative || PAST_LIFE_GENERIC) englishBlocks.push(`Past-life: ${pastLifeNarrative || PAST_LIFE_GENERIC}`);
+
+  return {
+    english: englishBlocks.join("\n\n"),
+    hindi: horoscopeInterpretationHindi,
+    raw: horoscopeSample ? JSON.stringify(horoscopeSample, null, 2) : undefined,
+    summary: horoscopeSummary || HOROSCOPE_PENDING_SUMMARY,
+  };
+}
+
 export default function HoroscopeForm() {
   const [form, setForm] = useState<FormState>(defaultForm);
   const [chart, setChart] = useState<ChartResponse | null>(null);
@@ -65,6 +115,9 @@ export default function HoroscopeForm() {
   const [validations, setValidations] = useState<ValidationState>({});
 
   const { triggerSubmitFeedback } = useImmersiveFeedback();
+
+  const fallbackInterpretation = useMemo(() => buildFallbackInterpretation(), []);
+  const fallbackChartSample = useMemo(() => getFallbackSample("/horoscope") as ChartResponse | null, []);
 
   const isComplete = useMemo(() => Object.values(form).every(Boolean), [form]);
   const missingFields = useMemo(
@@ -210,9 +263,18 @@ export default function HoroscopeForm() {
     const handleSuccess = (data: ChartResponse, path: string) => {
       const extracted = extractInterpretation(data);
 
+      const resolvedInterpretation =
+        extracted.english || extracted.hindi
+          ? extracted
+          : {
+              ...fallbackInterpretation,
+              raw: extracted.raw || fallbackInterpretation.raw,
+              summary: extracted.summary || fallbackInterpretation.summary,
+            };
+
       setEndpoint(path);
       setChart(data);
-      setInterpretation(extracted);
+      setInterpretation(resolvedInterpretation);
       setStatus("success");
 
       if (!extracted.english && !extracted.hindi) {
@@ -221,7 +283,9 @@ export default function HoroscopeForm() {
           payload: requestPayload,
           response: data,
         });
-        setError("Data processing failed to generate an interpretation. Showing available chart details.");
+        setError(
+          "Live response did not include a narrative. Showing a curated sample reading until the backend reconnects.",
+        );
       }
     };
 
@@ -296,6 +360,11 @@ export default function HoroscopeForm() {
         : `Data processing failed: ${message}`;
       console.error("[HoroscopeForm] Submission aborted", err, { payload: requestPayload });
       setError(normalizedMessage);
+      if (fallbackChartSample) {
+        setChart(fallbackChartSample);
+      }
+      setInterpretation(fallbackInterpretation);
+      setStatus("success");
     } finally {
       setLoading(false);
     }
