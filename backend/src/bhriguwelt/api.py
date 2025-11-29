@@ -28,7 +28,7 @@ from .horoscope import (
     build_prediction,
     _snapshot_from_request,
 )
-from .kundli_generator import generate_kundli
+from .kundli_generator import SIGNS, generate_kundli
 
 _JSON_HEADER = ("Content-Type", "application/json; charset=utf-8")
 _ADMIN_TOKEN = os.environ.get("BHRIGUWELT_ADMIN_TOKEN")
@@ -351,6 +351,8 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             response.setdefault("bhava_chart", [_serialize_obj(item) for item in kundli.get("bhava_chart", [])])
             response.setdefault("dashas", [_serialize_obj(item) for item in kundli.get("dashas", [])])
 
+        _ensure_visualization_payload(response)
+
         return response
     if command == "past-life":
         report = build_past_life_report(_request_from_payload(payload))
@@ -420,19 +422,23 @@ def _request_from_payload(payload: Dict[str, Any]) -> HoroscopeRequest:
         try:
             datetime.strptime(value, "%Y-%m-%d")
         except ValueError as exc:  # pragma: no cover - defensive against malformed dates
-            raise ValueError("Invalid birth date: use YYYY-MM-DD") from exc
+            raise ValueError(
+                "Invalid birth date: use YYYY-MM-DD (e.g., 1995-05-18) so planetary periods align"
+            ) from exc
         return value
 
     def _validate_birth_time(value: Any) -> str:
         if not isinstance(value, str) or not re.match(r"^(?:[01]\d|2[0-3]):[0-5]\d$", value):
-            raise ValueError("Invalid birth time: use 24h HH:MM")
+            raise ValueError("Invalid birth time: use 24h HH:MM (00–23 for hours, 00–59 for minutes)")
         return value
 
     def _validate_birth_place(value: Any) -> str:
         if not isinstance(value, str) or not value.strip():
             raise ValueError("Invalid birth place: include city and country (e.g., Jaipur, Bharat)")
         if "," not in value:
-            raise ValueError("Invalid birth place: include city and country (e.g., Jaipur, Bharat)")
+            raise ValueError(
+                "Invalid birth place: include city and country (e.g., Jaipur, Bharat) for accurate house mapping"
+            )
         return value
 
     try:
@@ -478,6 +484,40 @@ def _serialize_horoscope_report(report) -> Dict[str, Any]:
 
 def _serialize_obj(obj: Any) -> Dict[str, Any]:
     return asdict(obj)
+
+
+def _ensure_visualization_payload(response: Dict[str, Any]) -> None:
+    """Guarantee charts and dashas for UI parity even when generators fail."""
+
+    def _house_placeholder(index: int) -> Dict[str, Any]:
+        sign = SIGNS[(index - 1) % len(SIGNS)]
+        return {
+            "index": index,
+            "sign": sign,
+            "occupants": ["Pending calculation"],
+            "bhrigu_notes": ["Placeholder chart generated; verify birth details for precise mapping."],
+        }
+
+    for chart_key in ("rashi_chart", "bhava_chart"):
+        chart = response.get(chart_key)
+        if not isinstance(chart, list):
+            chart = []
+        filled_chart = list(chart[:12])
+        while len(filled_chart) < 12:
+            filled_chart.append(_house_placeholder(len(filled_chart) + 1))
+        response[chart_key] = filled_chart
+
+    dashas = response.get("dashas")
+    if not isinstance(dashas, list) or not dashas:
+        dashas = [
+            {
+                "lord": "Awaiting ephemeris",
+                "start": "TBD",
+                "end": "TBD",
+                "anchor_rule": "Dasha timings unavailable; confirm date, time, and location inputs.",
+            }
+        ]
+    response["dashas"] = dashas
 
 
 def serve(host: str = "0.0.0.0", port: int = 8000) -> None:

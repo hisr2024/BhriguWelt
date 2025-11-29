@@ -33,6 +33,13 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CalendarRequest'
+            examples:
+              valid:
+                summary: Valid calendar conversion
+                value:
+                  birth_date: "2024-03-21"
+                  birth_time: "05:30"
+                  birth_place: "Prayagraj, Bharat"
       responses:
         "200":
           description: Calendar conversion payload
@@ -40,6 +47,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CalendarResponse'
+              examples:
+                sample:
+                  summary: Successful conversion
+                  value:
+                    saka_date:
+                      year: 1946
+                      month: 1
+                      day: 1
+                    nakshatra: Revati
+                    conversion_factor_years: 78
   /horoscope:
     post:
       summary: Generate a full horoscope report
@@ -49,6 +66,21 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/HoroscopeRequest'
+            examples:
+              primary:
+                summary: Complete seeker payload
+                value:
+                  name: "Asha"
+                  birth_date: "1995-05-18"
+                  birth_time: "14:45"
+                  birth_place: "Varanasi, Bharat"
+                  lunar_tithi: 5
+                  moon_element: water
+                  mars_house: 10
+                  saturn_house: 2
+                  venus_house: 2
+                  rahu_aspects_ascendant: true
+                  consent_for_date_predictions: true
       responses:
         "200":
           description: Horoscope report
@@ -56,8 +88,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HoroscopeResponse'
+              examples:
+                charts:
+                  summary: Rich horoscope payload (charts + dashas)
+                  value:
+                    name: "Asha"
+                    karmic_epoch: "Moral Reset"
+                    weights:
+                      dharma: 0.78
+                      artha: 0.65
+                    principles:
+                      - sutra: 108
+                        folio: "B3"
+                        summary: "Strength from disciplined Saturn"
+                    remedies:
+                      - title: "Water fasting on Ekadashi"
+                        description: "Observe light fasting to calm lunar tides."
+                    past_life_insights:
+                      - theme: "Mentorship karma"
+                        score: 0.71
+                    future_trajectories:
+                      - headline: "Creative partnerships flourish"
+                        timeframe: "Q3 2024"
+                    interpretation: "Balance Mars intensity with Venusian compassion."
+                    rashi_chart:
+                      - index: 1
+                        sign: Aries
+                        occupants: ["Mars"]
+                        bhrigu_notes: ["Placeholder chart generated; verify birth details for precise mapping."]
+                    bhava_chart:
+                      - index: 1
+                        sign: Taurus
+                        occupants: ["—"]
+                        bhrigu_notes: []
+                    dashas:
+                      - lord: "Ketu"
+                        start: "1995-05-18"
+                        end: "2002-05-18"
+                        anchor_rule: "Aligned with natal snapshot"
         "400":
           description: Validation error
+          content:
+            application/json:
+              examples:
+                bad_time:
+                  summary: Time formatted incorrectly
+                  value:
+                    message: "Invalid birth time: use 24h HH:MM (00–23 for hours, 00–59 for minutes)"
   /past-life:
     post:
       summary: Summarize past-life insights
@@ -67,6 +144,20 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/HoroscopeRequest'
+            examples:
+              seeker:
+                summary: Same payload as /horoscope
+                value:
+                  name: "Asha"
+                  birth_date: "1995-05-18"
+                  birth_time: "14:45"
+                  birth_place: "Varanasi, Bharat"
+                  lunar_tithi: 5
+                  moon_element: water
+                  mars_house: 10
+                  saturn_house: 2
+                  venus_house: 2
+                  rahu_aspects_ascendant: true
       responses:
         "200":
           description: Past-life narrative
@@ -74,6 +165,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PastLifeResponse'
+              examples:
+                sample:
+                  summary: Insights mapped to karmic themes
+                  value:
+                    name: "Asha"
+                    insights:
+                      - theme: "Service"
+                        score: 0.64
+                        guidance: "Continue volunteer efforts in education."
+                    interpretation: "Past nurturing roles echo in current life."
   /future:
     post:
       summary: Generate future trajectories
@@ -83,6 +184,20 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/HoroscopeRequest'
+            examples:
+              seeker:
+                summary: Same payload as /horoscope
+                value:
+                  name: "Asha"
+                  birth_date: "1995-05-18"
+                  birth_time: "14:45"
+                  birth_place: "Varanasi, Bharat"
+                  lunar_tithi: 5
+                  moon_element: water
+                  mars_house: 10
+                  saturn_house: 2
+                  venus_house: 2
+                  rahu_aspects_ascendant: true
       responses:
         "200":
           description: Future directives

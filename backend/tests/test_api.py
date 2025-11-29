@@ -10,7 +10,7 @@ def _payload(**overrides):
         name="Asha",
         birth_date="1995-05-18",
         birth_time="14:45",
-        birth_place="Varanasi",
+        birth_place="Varanasi, Bharat",
         consent_for_date_predictions=True,
         lunar_tithi=5,
         moon_element="water",
@@ -72,3 +72,12 @@ def test_handle_command_calendar_returns_saka_payload():
     )
     assert response["saka_date"]["year"] == 1946
     assert response["conversion_factor_years"] == 78
+
+
+def test_ensure_visualization_payload_pads_missing_charts():
+    response = {"rashi_chart": [], "bhava_chart": None, "dashas": []}
+    api._ensure_visualization_payload(response)
+
+    assert len(response["rashi_chart"]) == 12
+    assert len(response["bhava_chart"]) == 12
+    assert response["dashas"], "Dashas should include a placeholder entry"
