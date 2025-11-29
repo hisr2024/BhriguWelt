@@ -37,6 +37,26 @@ references to manuscript folios.
   guides (for example the Hindu calendar conversion explainer), and a prompt
   library for shaping the UI/UX roadmap (`docs/ui_improvement_prompts.md`).
 
+## High-impact enhancements (chat + retention)
+
+- **Bhrigu Chat**: `/chat` endpoint (sync and async servers) keeps conversational
+  context via `session_id`, returns reflective replies, and attaches two
+  de-risked remedial suggestions (breathwork, seva, journaling). See the
+  expanded blueprint in `docs/bhrigu_chatbot_spec.md` for the persona, guardrails,
+  and interactive flow.
+- **Profiles + sessions**: `/profiles` and `/profiles/get` store birth details,
+  time zone, and metadata so seekers can return to the same session. Conversations
+  are persisted per `session_id` and can be listed via `GET /profiles`.
+- **Dasha alerts**: `/alerts` allows scheduling reminders for upcoming dashas and
+  important transitions. Alerts are stored per profile and exposed via `GET /alerts`
+  for calendar integrations.
+- **Admin analytics**: `/analytics` summarizes total profiles, sessions, alerts,
+  and the latest feedback cohorts to power a lightweight accuracy dashboard.
+
+These additions keep chart payloads consistent (kundli wheels are regenerated if
+missing) and let the frontend transition smoothly between form inputs, chart
+generation, chat clarifications, and dasha reminders.
+
 ## Repository layout
 
 ```
@@ -74,6 +94,18 @@ references to manuscript folios.
 - **Backend coverage:** `cd backend && pytest --cov=src --cov-report=term-missing` to maintain the 80%+ target.
 - **Frontend health:** `cd frontend && npm run lint && npm run type-check && npx playwright test` before opening a PR. The
   CI badges above mirror the same checks.
+
+### Local setup + smoke tests
+
+1. `cd backend && python -m pip install -r requirements.txt && python -m compileall src` to validate the Python package.
+2. `python -m bhriguwelt.api` (or `python -m bhriguwelt.async_api`) starts the HTTP server; `curl http://localhost:8000/health`
+   should return `{ "status": "ok" }`.
+3. Seed a profile and chat session:
+   ```bash
+   curl -X POST http://localhost:8000/profiles -d '{"user_id":"demo@example.com","full_name":"Demo Seeker","date_of_birth":"1990-01-01","time_of_birth":"06:15","place_of_birth":"Jaipur, India","timezone":"Asia/Kolkata"}' -H 'Content-Type: application/json'
+   curl -X POST http://localhost:8000/chat -d '{"user_id":"demo@example.com","session_id":"welcome","message":"How do I balance my career and relationships?"}' -H 'Content-Type: application/json'
+   ```
+4. Add a dasha alert with `/alerts` and fetch analytics with `/analytics` to verify persistence.
 
 ## Deployment readiness (Render + Vercel + Railway)
 
