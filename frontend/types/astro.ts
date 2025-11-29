@@ -3,6 +3,7 @@ export interface BirthDetails {
   birthDate: string;
   birthTime: string;
   birthPlace: string;
+  timezone?: string;
   tradition?: string;
   lunarTithi: string;
   moonElement: string;

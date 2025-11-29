@@ -2,9 +2,10 @@
 
 import dynamic from "next/dynamic";
 import React, { useEffect, useMemo, useState } from "react";
-import { HOUSE_FOCUSES } from "@/lib/houseGrid";
+import { HOUSE_FOCUSES, deriveChartHouses } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
 import { areMicroAnimationsAllowed } from "@/lib/immersive";
+import { loadBirthDetails } from "@/lib/birthStorage";
 import { ChartHouse, DashaPeriod, ResultEngine } from "@/types/astro";
 import FeedbackPrompt from "./FeedbackPrompt";
 
@@ -454,6 +455,20 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
   const horoscopePayload = engine === "horoscope" && typeof payload === "object" ? (payload as HoroscopePayload) : null;
   const [animationsEnabled, setAnimationsEnabled] = useState(false);
   const [flipActive, setFlipActive] = useState(false);
+  const [fallbackCharts, setFallbackCharts] = useState<{ rashi: ChartHouse[]; bhava: ChartHouse[] }>({
+    rashi: [],
+    bhava: [],
+  });
+
+  useEffect(() => {
+    const stored = loadBirthDetails();
+    if (!stored) return;
+    const base = { birthDate: stored.birthDate, birthTime: stored.birthTime, birthPlace: stored.birthPlace };
+    setFallbackCharts({
+      rashi: deriveChartHouses(base, { sakaMonth: stored.sakaMonth, sakaDay: stored.sakaDay }),
+      bhava: deriveChartHouses(base, { sakaMonth: stored.sakaMonth, sakaDay: stored.sakaDay, offset: 1 }),
+    });
+  }, []);
 
   useEffect(() => {
     const refresh = () => setAnimationsEnabled(areMicroAnimationsAllowed());
@@ -511,8 +526,8 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
         <div className="insight-grid">{sections.map(renderSection)}</div>
         {horoscopePayload && (
           <KundliCharts
-            rashiChart={horoscopePayload.rashi_chart}
-            bhavaChart={horoscopePayload.bhava_chart}
+            rashiChart={horoscopePayload.rashi_chart?.length ? horoscopePayload.rashi_chart : fallbackCharts.rashi}
+            bhavaChart={horoscopePayload.bhava_chart?.length ? horoscopePayload.bhava_chart : fallbackCharts.bhava}
             dashas={horoscopePayload.dashas}
           />
         )}
