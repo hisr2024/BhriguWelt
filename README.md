@@ -97,7 +97,9 @@ generation, chat clarifications, and dasha reminders.
 
 ### Local setup + smoke tests
 
-1. `cd backend && python -m pip install -r requirements.txt && python -m compileall src` to validate the Python package.
+1. Use Python 3.11 (the repo ships a `.tool-versions` pin for mise/pyenv) so `scikit-learn` installs from wheels instead of
+   failing to build on Python 3.13. Then run `cd backend && python -m pip install -r requirements.txt && python -m compileall src`
+   to validate the Python package.
 2. `python -m bhriguwelt.api` (or `python -m bhriguwelt.async_api`) starts the HTTP server; `curl http://localhost:8000/health`
    should return `{ "status": "ok" }`.
 3. Seed a profile and chat session:
