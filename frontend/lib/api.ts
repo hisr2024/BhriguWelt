@@ -447,13 +447,13 @@ export async function fetchQuarterlyReviews() {
   return getJson<QuarterlySummaryResponse>("/feedback/quarterly", "/feedback/quarterly");
 }
 
-export async function checkBackendHealth() {
+export async function checkBackendHealth(): Promise<HealthResponse> {
   try {
     const response = await fetchFromHosts("/health");
     const payload = (await response.json()) as HealthResponse;
     return {
       ...payload,
-      meta: { ...payload.meta, mode: "live", attempted_hosts: BACKEND_HOSTS },
+      meta: { ...payload.meta, mode: "live" as const, attempted_hosts: BACKEND_HOSTS },
     };
   } catch (error) {
     console.warn("Falling back to cached demo responses for health check", error);
