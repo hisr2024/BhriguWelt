@@ -5,6 +5,8 @@ from __future__ import annotations
 This module mirrors the YAML representation at
 backend/data/bhrigu_samhita_principles.yml so offline environments can still rely on the full corpus."""
 
+import json
+from pathlib import Path
 from typing import Any, Dict, List
 
 METADATA: Dict[str, Any] = {'compiled_by': 'BhriguWelt Research',
@@ -590,10 +592,15 @@ FUTURE_ENGINES: List[Dict[str, Any]] = [{'certainty': 0.84,
   'window': 'Years 30-55'}]
 
 def as_dict() -> Dict[str, Any]:
-    return {
-        'metadata': METADATA,
-        'principles': PRINCIPLES,
-        'remedies': REMEDIES,
-        'past_life_engines': PAST_LIFE_ENGINES,
-        'future_engines': FUTURE_ENGINES,
-    }
+    data_path = Path(__file__).resolve().parents[2] / "data" / "bhrigu_samhita_principles.yml"
+    try:
+        with data_path.open() as fp:
+            return json.load(fp)
+    except Exception:
+        return {
+            'metadata': METADATA,
+            'principles': PRINCIPLES,
+            'remedies': REMEDIES,
+            'past_life_engines': PAST_LIFE_ENGINES,
+            'future_engines': FUTURE_ENGINES,
+        }
