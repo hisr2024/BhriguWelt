@@ -19,6 +19,17 @@ from .api import ResponseCache, RateLimiter, handle_command
 from .data_loader import load_bhrigu_data, persist_bhrigu_data
 from .feedback import quarterly_reviews, record_feedback, serialize_entry
 from .ml_service import get_ml_health, retrain_feedback_model
+from .profiles import (
+    create_or_update_profile,
+    get_profile,
+    list_profiles,
+    fetch_session,
+    add_alert,
+    upcoming_alerts,
+    alerts_summary,
+    analytics_snapshot,
+)
+from .chatbot import generate_chat_reply
 
 _ADMIN_TOKEN = os.environ.get("BHRIGUWELT_ADMIN_TOKEN")
 
@@ -47,6 +58,46 @@ def _json_response(data: Dict[str, Any], status: int = HTTPStatus.OK) -> web.Res
 def create_app() -> web.Application:
     rate_limiter = RateLimiter()
     cache = ResponseCache()
+
+    def _merge_profile_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
+        profile_payload = payload.get("profile") if isinstance(payload.get("profile"), dict) else {}
+
+        def pick(key: str) -> Any:
+            return payload.get(key) or profile_payload.get(key)
+
+        return {
+            "user_id": pick("user_id"),
+            "full_name": pick("full_name"),
+            "date_of_birth": pick("date_of_birth"),
+            "time_of_birth": pick("time_of_birth"),
+            "place_of_birth": pick("place_of_birth"),
+            "timezone": pick("timezone"),
+            "metadata": pick("metadata"),
+        }
+
+    def _resolve_profile_sync(payload: Dict[str, Any], allow_update_only: bool = True):
+        merged = _merge_profile_payload(payload)
+        user_id = merged.get("user_id")
+        profile_id = payload.get("profile_id") or (payload.get("profile") or {}).get("profile_id")
+
+        profile = None
+        if profile_id:
+            profile = get_profile(profile_id=int(profile_id))
+        if not profile and user_id:
+            profile = get_profile(user_id=str(user_id))
+
+        if profile:
+            merged["user_id"] = profile.user_id or user_id
+            return create_or_update_profile(merged)
+
+        if allow_update_only and not any(value for key, value in merged.items() if key != "metadata"):
+            raise ValueError("Provide profile_id, user_id, or profile fields")
+
+        merged.setdefault("user_id", payload.get("session_id") or payload.get("session_key") or "guest")
+        return create_or_update_profile(merged)
+
+    async def resolve_profile(payload: Dict[str, Any], allow_update_only: bool = True):
+        return await asyncio.to_thread(_resolve_profile_sync, payload, allow_update_only)
 
     async def guard_rate_limit(request: web.Request) -> str | None:
         client = request.remote or "anonymous"
@@ -125,6 +176,89 @@ def create_app() -> web.Application:
         response = await handle_cached_command("transits", payload)
         return _json_response(response)
 
+    async def chat(request: web.Request) -> web.Response:
+        await guard_rate_limit(request)
+        payload = await request.json()
+        message = payload.get("message") or payload.get("query")
+        if not message:
+            return _json_response({"message": "message is required for chat"}, status=HTTPStatus.BAD_REQUEST)
+        try:
+            profile = await resolve_profile(payload, allow_update_only=False)
+        except ValueError as exc:
+            return _json_response({"message": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+        reply = await asyncio.to_thread(generate_chat_reply, profile=profile, session_key=str(payload.get("session_id") or payload.get("session_key") or "default"), message=str(message))
+        response = {"profile_id": profile.id, "user_id": profile.user_id, **reply}
+        return _json_response(response)
+
+    async def profiles_create(request: web.Request) -> web.Response:
+        await guard_rate_limit(request)
+        payload = await request.json()
+        try:
+            profile = await resolve_profile(payload, allow_update_only=False)
+        except ValueError as exc:
+            return _json_response({"message": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+        return _json_response(profile.to_dict(), status=HTTPStatus.CREATED)
+
+    async def profiles_get(request: web.Request) -> web.Response:
+        await guard_rate_limit(request)
+        payload = await request.json()
+        profile_id = payload.get("profile_id")
+        user_id = payload.get("user_id")
+        if not profile_id and not user_id:
+            return _json_response({"message": "profile_id or user_id required"}, status=HTTPStatus.BAD_REQUEST)
+        profile = await asyncio.to_thread(get_profile, profile_id=int(profile_id)) if profile_id else await asyncio.to_thread(get_profile, user_id=str(user_id))
+        if not profile:
+            return _json_response({"message": "Profile not found"}, status=HTTPStatus.NOT_FOUND)
+        alerts = [alert.to_dict() for alert in await asyncio.to_thread(upcoming_alerts, profile_id=profile.id)]
+        session_id = payload.get("session_id") or "default"
+        session = await asyncio.to_thread(fetch_session, profile.id, str(session_id))
+        return _json_response({"profile": profile.to_dict(), "alerts": alerts, "session": session.to_dict() if session else None})
+
+    async def profiles_list(request: web.Request) -> web.Response:  # pylint: disable=unused-argument
+        await guard_rate_limit(request)
+        profiles = [profile.to_dict() for profile in await asyncio.to_thread(list_profiles)]
+        return _json_response({"profiles": profiles})
+
+    async def alerts_create(request: web.Request) -> web.Response:
+        await guard_rate_limit(request)
+        payload = await request.json()
+        profile_id = payload.get("profile_id")
+        user_id = payload.get("user_id")
+        label = payload.get("label")
+        event_time = payload.get("event_time")
+        if not label or not event_time:
+            return _json_response({"message": "label and event_time are required"}, status=HTTPStatus.BAD_REQUEST)
+        profile = None
+        if profile_id:
+            profile = await asyncio.to_thread(get_profile, profile_id=int(profile_id))
+        elif user_id:
+            profile = await asyncio.to_thread(get_profile, user_id=str(user_id))
+        if not profile:
+            return _json_response({"message": "Profile required to attach alerts"}, status=HTTPStatus.NOT_FOUND)
+        alert = await asyncio.to_thread(
+            add_alert,
+            profile_id=profile.id,
+            label=str(label),
+            event_time=str(event_time),
+            notes=payload.get("notes"),
+        )
+        upcoming = [item.to_dict() for item in await asyncio.to_thread(upcoming_alerts, profile_id=profile.id)]
+        return _json_response({"alert": alert.to_dict(), "upcoming": upcoming}, status=HTTPStatus.CREATED)
+
+    async def alerts_list(request: web.Request) -> web.Response:
+        await guard_rate_limit(request)
+        profile_id = request.query.get("profile_id")
+        if profile_id:
+            alerts = [alert.to_dict() for alert in await asyncio.to_thread(upcoming_alerts, profile_id=int(profile_id))]
+        else:
+            alerts = await asyncio.to_thread(alerts_summary)
+        return _json_response({"alerts": alerts})
+
+    async def analytics(_: web.Request) -> web.Response:
+        snapshot = await asyncio.to_thread(analytics_snapshot)
+        snapshot["feedback_quarterly"] = await asyncio.to_thread(quarterly_reviews, 4)
+        return _json_response(snapshot)
+
     async def manuscript_get(request: web.Request) -> web.Response:  # pylint: disable=unused-argument
         await guard_rate_limit(request)
         corpus = await asyncio.to_thread(load_bhrigu_data)
@@ -164,6 +298,13 @@ def create_app() -> web.Application:
     app.router.add_route("POST", "/matchmaking", matchmaking)
     app.router.add_route("POST", "/calendar", calendar)
     app.router.add_route("POST", "/transits", transits)
+    app.router.add_route("POST", "/chat", chat)
+    app.router.add_route("POST", "/profiles", profiles_create)
+    app.router.add_route("POST", "/profiles/get", profiles_get)
+    app.router.add_route("GET", "/profiles", profiles_list)
+    app.router.add_route("POST", "/alerts", alerts_create)
+    app.router.add_route("GET", "/alerts", alerts_list)
+    app.router.add_route("GET", "/analytics", analytics)
     app.router.add_route("GET", "/manuscript", manuscript_get)
     app.router.add_route("POST", "/manuscript", manuscript_update)
     app.router.add_route("POST", "/ml/retrain", ml_retrain)

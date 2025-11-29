@@ -13,12 +13,24 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Lock
 from time import monotonic
 from typing import Any, Dict, Tuple
+from urllib.parse import urlparse, parse_qs
 
 from .data_loader import load_bhrigu_data, persist_bhrigu_data
 from .calendar_conversion import convert_birth_details
 from .feedback import record_feedback, quarterly_reviews, serialize_entry
 from .ml_service import get_ml_health, record_model_load, retrain_feedback_model
 from .telemetry import capture_exception, init_telemetry
+from .profiles import (
+    create_or_update_profile,
+    get_profile,
+    list_profiles,
+    fetch_session,
+    add_alert,
+    upcoming_alerts,
+    alerts_summary,
+    analytics_snapshot,
+)
+from .chatbot import generate_chat_reply
 from .horoscope import (
     HoroscopeRequest,
     build_future_report,
@@ -110,6 +122,13 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/matchmaking"): "_handle_matchmaking",
         ("POST", "/calendar"): "_handle_calendar",
         ("POST", "/transits"): "_handle_transits",
+        ("POST", "/chat"): "_handle_chat",
+        ("POST", "/profiles"): "_handle_profiles",
+        ("POST", "/profiles/get"): "_handle_profile_get",
+        ("GET", "/profiles"): "_handle_profile_list",
+        ("POST", "/alerts"): "_handle_alert_create",
+        ("GET", "/alerts"): "_handle_alerts_list",
+        ("GET", "/analytics"): "_handle_analytics",
         ("GET", "/manuscript"): "_handle_get_manuscript",
         ("POST", "/manuscript"): "_handle_update_manuscript",
         ("POST", "/ml/retrain"): "_handle_ml_retrain",
@@ -204,6 +223,90 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         payload = self._read_json()
         self._respond_with_command("transits", payload)
 
+    def _handle_chat(self) -> None:
+        payload = self._read_json()
+        message = payload.get("message") or payload.get("query")
+        if not message:
+            self.send_error(HTTPStatus.BAD_REQUEST, "message is required for chat")
+            return
+        try:
+            profile = self._resolve_profile(payload)
+        except ValueError as exc:
+            self.send_error(HTTPStatus.BAD_REQUEST, str(exc))
+            return
+
+        session_key = payload.get("session_id") or payload.get("session_key") or "default"
+        reply = generate_chat_reply(profile=profile, session_key=str(session_key), message=str(message))
+        response = {
+            "profile_id": profile.id,
+            "user_id": profile.user_id,
+            **reply,
+        }
+        self._send_json(response)
+
+    def _handle_profiles(self) -> None:
+        payload = self._read_json()
+        try:
+            profile = self._resolve_profile(payload, allow_update_only=False)
+        except ValueError as exc:
+            self.send_error(HTTPStatus.BAD_REQUEST, str(exc))
+            return
+        self._send_json(profile.to_dict(), status=HTTPStatus.CREATED)
+
+    def _handle_profile_get(self) -> None:
+        payload = self._read_json()
+        profile_id = payload.get("profile_id")
+        user_id = payload.get("user_id")
+        if not profile_id and not user_id:
+            self.send_error(HTTPStatus.BAD_REQUEST, "profile_id or user_id required")
+            return
+        profile = get_profile(profile_id=int(profile_id)) if profile_id else get_profile(user_id=str(user_id))
+        if not profile:
+            self.send_error(HTTPStatus.NOT_FOUND, "Profile not found")
+            return
+        alerts = [alert.to_dict() for alert in upcoming_alerts(profile_id=profile.id)]
+        session_id = payload.get("session_id") or "default"
+        session = fetch_session(profile.id, str(session_id))
+        self._send_json({"profile": profile.to_dict(), "alerts": alerts, "session": session.to_dict() if session else None})
+
+    def _handle_profile_list(self) -> None:
+        profiles = [profile.to_dict() for profile in list_profiles()]
+        self._send_json({"profiles": profiles})
+
+    def _handle_alert_create(self) -> None:
+        payload = self._read_json()
+        profile_id = payload.get("profile_id")
+        user_id = payload.get("user_id")
+        label = payload.get("label")
+        event_time = payload.get("event_time")
+        if not label or not event_time:
+            self.send_error(HTTPStatus.BAD_REQUEST, "label and event_time are required")
+            return
+        profile = None
+        if profile_id:
+            profile = get_profile(profile_id=int(profile_id))
+        elif user_id:
+            profile = get_profile(user_id=str(user_id))
+        if not profile:
+            self.send_error(HTTPStatus.NOT_FOUND, "Profile required to attach alerts")
+            return
+        alert = add_alert(profile_id=profile.id, label=str(label), event_time=str(event_time), notes=payload.get("notes"))
+        upcoming = [item.to_dict() for item in upcoming_alerts(profile_id=profile.id)]
+        self._send_json({"alert": alert.to_dict(), "upcoming": upcoming}, status=HTTPStatus.CREATED)
+
+    def _handle_alerts_list(self) -> None:
+        profile_id = self._query_param("profile_id")
+        if profile_id:
+            alerts = [alert.to_dict() for alert in upcoming_alerts(profile_id=int(profile_id))]
+        else:
+            alerts = alerts_summary()
+        self._send_json({"alerts": alerts})
+
+    def _handle_analytics(self) -> None:
+        summary = analytics_snapshot()
+        summary["feedback_quarterly"] = quarterly_reviews(limit=4)
+        self._send_json(summary)
+
     def _handle_ml_retrain(self) -> None:
         if not self._is_admin():
             self.send_error(HTTPStatus.FORBIDDEN, "Admin token required for retraining")
@@ -296,6 +399,42 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Admin-Token")
+
+    def _resolve_profile(self, payload: Dict[str, Any], allow_update_only: bool = True):
+        profile_payload = payload.get("profile") if isinstance(payload.get("profile"), dict) else {}
+        user_id = payload.get("user_id") or profile_payload.get("user_id")
+        profile_id = payload.get("profile_id") or profile_payload.get("profile_id")
+
+        base_payload = {
+            "user_id": user_id,
+            "full_name": payload.get("full_name") or profile_payload.get("full_name"),
+            "date_of_birth": payload.get("date_of_birth") or profile_payload.get("date_of_birth"),
+            "time_of_birth": payload.get("time_of_birth") or profile_payload.get("time_of_birth"),
+            "place_of_birth": payload.get("place_of_birth") or profile_payload.get("place_of_birth"),
+            "timezone": payload.get("timezone") or profile_payload.get("timezone"),
+            "metadata": payload.get("metadata") or profile_payload.get("metadata"),
+        }
+
+        profile = None
+        if profile_id:
+            profile = get_profile(profile_id=int(profile_id))
+        if not profile and user_id:
+            profile = get_profile(user_id=str(user_id))
+
+        if profile:
+            base_payload["user_id"] = profile.user_id or user_id
+            return create_or_update_profile(base_payload)
+
+        if allow_update_only and not any(value for key, value in base_payload.items() if key != "metadata"):
+            raise ValueError("Provide profile_id, user_id, or profile fields")
+
+        base_payload.setdefault("user_id", payload.get("session_id") or payload.get("session_key") or "guest")
+        return create_or_update_profile(base_payload)
+
+    def _query_param(self, key: str) -> str | None:
+        parsed = urlparse(self.path)
+        values = parse_qs(parsed.query).get(key)
+        return values[0] if values else None
 
     def _is_admin(self) -> bool:
         if not _ADMIN_TOKEN:
