@@ -34,8 +34,10 @@ references to manuscript folios.
   `npm run start`.
 - **Documentation** (`docs/`): reference notes that enumerate the manuscript
   citations backing each rule embedded in the backend data files, targeted
-  guides (for example the Hindu calendar conversion explainer), and a prompt
-  library for shaping the UI/UX roadmap (`docs/ui_improvement_prompts.md`).
+  guides (for example the Hindu calendar conversion explainer), onboarding
+  for new contributors (`docs/developer-onboarding.md`), OpenAPI examples
+  (`docs/openapi-examples.md`), and a prompt library for shaping the UI/UX
+  roadmap (`docs/ui_improvement_prompts.md`).
 
 ## High-impact enhancements (chat + retention)
 
@@ -79,8 +81,10 @@ generation, chat clarifications, and dasha reminders.
 │   ├── backup_and_recovery.md
 │   ├── bhrigu_references.md
 │   ├── deployment.md
+│   ├── developer-onboarding.md
 │   ├── hindu_calendar_conversion.md
 │   ├── openapi.yaml
+│   ├── openapi-examples.md
 │   └── ui_improvement_prompts.md
 └── frontend/
     ├── public/
