@@ -15,7 +15,7 @@ except Exception as exc:  # pragma: no cover - optional dependency
         "aiohttp is required for the async API server; install it from PyPI when network access is available."
     ) from exc
 
-from .api import ResponseCache, RateLimiter, handle_command
+from .api import RateLimiter, handle_command
 from .data_loader import load_bhrigu_data, persist_bhrigu_data
 from .feedback import quarterly_reviews, record_feedback, serialize_entry
 from .ml_service import get_ml_health, retrain_feedback_model
@@ -37,6 +37,40 @@ _ADMIN_TOKEN = os.environ.get("BHRIGUWELT_ADMIN_TOKEN")
 def _cache_key(command: str, payload: Dict[str, Any]) -> str:
     serialized = json.dumps(payload or {}, sort_keys=True, ensure_ascii=False)
     return f"{command}:{serialized}"
+
+
+class AsyncResponseCache:
+    """Async-friendly TTL cache to avoid blocking the event loop."""
+
+    def __init__(self, ttl_seconds: int = 120, max_entries: int = 256) -> None:
+        self.ttl = ttl_seconds
+        self.max_entries = max_entries
+        self._store: Dict[str, tuple[float, Dict[str, Any]]] = {}
+        self._lock = asyncio.Lock()
+
+    async def get(self, key: str) -> Dict[str, Any] | None:
+        now = asyncio.get_event_loop().time()
+        async with self._lock:
+            entry = self._store.get(key)
+            if not entry:
+                return None
+            expires_at, payload = entry
+            if now > expires_at:
+                self._store.pop(key, None)
+                return None
+            return payload
+
+    async def set(self, key: str, payload: Dict[str, Any]) -> None:
+        expires_at = asyncio.get_event_loop().time() + self.ttl
+        async with self._lock:
+            if len(self._store) >= self.max_entries:
+                oldest = next(iter(self._store.keys()))
+                self._store.pop(oldest, None)
+            self._store[key] = (expires_at, payload)
+
+    async def clear(self) -> None:
+        async with self._lock:
+            self._store.clear()
 
 
 def _add_cors_headers(response: web.Response) -> web.Response:
@@ -93,11 +127,11 @@ def create_app() -> web.Application:
 
     async def handle_cached_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         key = _cache_key(command, payload)
-        cached = await cache.get_async(key)
+        cached = await cache.get(key)
         if cached is not None:
             return cached
         response = await asyncio.to_thread(handle_command, command, payload)
-        await cache.set_async(key, response)
+        await cache.set(key, response)
         return response
 
     async def health(_: web.Request) -> web.Response:
@@ -266,10 +300,8 @@ def create_app() -> web.Application:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
         updated = await asyncio.to_thread(persist_bhrigu_data, payload)
-        cache.clear()
-        reply = _json_response({"message": "Manuscript updated", "principles": len(updated.get("principles", []))})
-        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
-        return reply
+        await cache.clear()
+        return _json_response({"message": "Manuscript updated", "principles": len(updated.get("principles", []))})
 
     async def ml_retrain(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
@@ -282,10 +314,8 @@ def create_app() -> web.Application:
         if limit is not None:
             limit_value = int(limit)
         metrics = await asyncio.to_thread(retrain_feedback_model, limit_value)
-        cache.clear()
-        reply = _json_response({"message": "Retraining complete", "metrics": metrics}, status=HTTPStatus.ACCEPTED)
-        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
-        return reply
+        await cache.clear()
+        return _json_response({"message": "Retraining complete", "metrics": metrics}, status=HTTPStatus.ACCEPTED)
 
     async def handle_options(_: web.Request) -> web.Response:
         return _json_response({}, status=HTTPStatus.NO_CONTENT)

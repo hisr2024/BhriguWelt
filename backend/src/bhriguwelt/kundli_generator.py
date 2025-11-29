@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List
 
-from .astronomical_calculations import geocode_location, has_swisseph, normalize_birth_datetime
+from .astronomical_calculations import _clamp_latlon, geocode_location, has_swisseph, normalize_birth_datetime
 from .calculations import CelestialSnapshot
 
 SIGNS = [
@@ -90,7 +90,8 @@ def _swisseph_occupants(snapshot: CelestialSnapshot, tz_name: str | None) -> Dic
             timezone_name=tz_name,
         )
         latitude, longitude, _ = geocode_location(snapshot.birth_place)
-        swe.set_topo(longitude or 0.0, latitude or 0.0)
+        clamped_lat, clamped_lon = _clamp_latlon(latitude, longitude)
+        swe.set_topo(clamped_lon, clamped_lat, 0)
         julian_day = swe.julday(
             birth_dt.year,
             birth_dt.month,
@@ -112,7 +113,7 @@ def _swisseph_occupants(snapshot: CelestialSnapshot, tz_name: str | None) -> Dic
             "Ketu": swe.MEAN_NODE,
         }
 
-        ascendant = int((swe.houses_ex(julian_day, latitude or 0.0, longitude or 0.0, b"P"))[0][0] // 30) + 1
+        ascendant = int((swe.houses_ex(julian_day, clamped_lat, clamped_lon, b"P"))[0][0] // 30) + 1
         occupants[ascendant].append("Asc")
 
         for planet_name, code in planet_codes.items():

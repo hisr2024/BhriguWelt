@@ -40,3 +40,8 @@ def test_request_from_payload_rejects_bad_birth_time():
 def test_request_from_payload_requires_city_and_country():
     with pytest.raises(ValueError, match="city and country"):
         api.handle_command("horoscope", _payload(birth_place="Varanasi"))
+
+
+def test_request_rejects_non_iso_birth_date():
+    with pytest.raises(ValueError, match="YYYY-MM-DD"):
+        api.handle_command("horoscope", _payload(birth_date="18-05-1995"))

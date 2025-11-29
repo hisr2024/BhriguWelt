@@ -500,6 +500,20 @@ def _compose_matchmaking_interpretation(
         )
     if highlight:
         parts.append(f"Modern alignment: {highlight}.")
+    if compatibility.synastry_overlays:
+        overlay = compatibility.synastry_overlays[0]
+        parts.append(
+            f"Synastry overlay {overlay.area}: {overlay.alignment:.0f}% harmony ({overlay.notes})."
+        )
+    if compatibility.alignment_percentages:
+        parts.append(
+            "Alignment mix E/S/C: "
+            f"{compatibility.alignment_percentages.get('emotional', 0):.0f}% / "
+            f"{compatibility.alignment_percentages.get('spiritual', 0):.0f}% / "
+            f"{compatibility.alignment_percentages.get('communication', 0):.0f}%."
+        )
+    if compatibility.shared_life_paths:
+        parts.append(compatibility.shared_life_paths[0])
     return " ".join(parts)
 
 
@@ -812,6 +826,22 @@ def _render_matchmaking(report: MatchmakingReport) -> None:
         print("\nModern alignment notes:")
         for note in report.compatibility.modern_highlights:
             print(f"  - {note}")
+    if report.compatibility.synastry_overlays:
+        print("\nSynastry overlays:")
+        for overlay in report.compatibility.synastry_overlays:
+            print(
+                f"  - {overlay.area}: {overlay.alignment}% ({overlay.primary_marker} ↔ {overlay.partner_marker}) — {overlay.notes}"
+            )
+    if report.compatibility.alignment_percentages:
+        ap = report.compatibility.alignment_percentages
+        print(
+            "\nAlignment percentages (emotional / spiritual / communication): "
+            f"{ap.get('emotional', 0)}% / {ap.get('spiritual', 0)}% / {ap.get('communication', 0)}%"
+        )
+    if report.compatibility.shared_life_paths:
+        print("\nShared life path insights:")
+        for line in report.compatibility.shared_life_paths:
+            print(f"  - {line}")
 
 
 def _render_calendar(context: HinduCalendarContext) -> None:

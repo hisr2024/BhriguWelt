@@ -237,9 +237,20 @@ class MatchmakingCompatibility:
     short_term_index: float
     breakdown: List[MatchCriterionResult]
     modern_highlights: List[str]
-    synastry_overlays: List[SynastryOverlay]
+    synastry_overlays: List["SynastryOverlay"]
     alignment_percentages: Dict[str, float]
-    shared_life_paths: List[LifePathInsight]
+    shared_life_paths: List[str]
+
+
+@dataclass
+class SynastryOverlay:
+    """Surface level harmonics between the primary and partner charts."""
+
+    area: str
+    primary_marker: str
+    partner_marker: str
+    alignment: float
+    notes: str
 
 
 def score_principles(
@@ -614,6 +625,11 @@ def evaluate_matchmaking(
     compatibility_index = round(_safe_ratio(total_score, total_weight) * 100, 2) if total_weight else 50.0
     long_term_index = round(_safe_ratio(long_term_score, long_term_weight) * 100, 2) if long_term_weight else compatibility_index
     short_term_index = round(_safe_ratio(short_term_score, short_term_weight) * 100, 2) if short_term_weight else compatibility_index
+
+    synastry_overlays = _build_synastry_overlays(primary, partner)
+    alignment_percentages = _alignment_percentages(primary, partner, compatibility_index)
+    shared_life_paths = _shared_life_path_insights(primary, partner)
+
     return MatchmakingCompatibility(
         compatibility_index=compatibility_index,
         long_term_index=long_term_index,
@@ -624,6 +640,84 @@ def evaluate_matchmaking(
         alignment_percentages=alignment_percentages,
         shared_life_paths=shared_life_paths,
     )
+
+
+def _build_synastry_overlays(primary: CelestialSnapshot, partner: CelestialSnapshot) -> List[SynastryOverlay]:
+    overlays: List[SynastryOverlay] = []
+
+    emotional_alignment = 1 - abs(_element_scalar(primary.moon_element) - _element_scalar(partner.moon_element))
+    overlays.append(
+        SynastryOverlay(
+            area="Moon element resonance",
+            primary_marker=primary.moon_element,
+            partner_marker=partner.moon_element,
+            alignment=round(max(0.0, emotional_alignment) * 100, 2),
+            notes="Closer elemental balance signals intuitive understanding of moods and needs.",
+        )
+    )
+
+    mars_venus_distance = abs(primary.mars_house - partner.venus_house)
+    overlays.append(
+        SynastryOverlay(
+            area="Mars↔Venus overlay",
+            primary_marker=f"Mars in house {primary.mars_house}",
+            partner_marker=f"Venus in house {partner.venus_house}",
+            alignment=round(max(0.0, 1 - mars_venus_distance / 12) * 100, 2),
+            notes="House proximity between Mars and Venus describes magnetism and shared drive.",
+        )
+    )
+
+    mercury_gap = abs(primary.mercury_house - partner.mercury_house)
+    overlays.append(
+        SynastryOverlay(
+            area="Mercury dialogue",
+            primary_marker=f"Mercury house {primary.mercury_house}",
+            partner_marker=f"Mercury house {partner.mercury_house}",
+            alignment=round(max(0.0, 1 - mercury_gap / 12) * 100, 2),
+            notes="Closer Mercury houses map to quicker alignment on plans, emails, and shared study.",
+        )
+    )
+
+    return overlays
+
+
+def _alignment_percentages(
+    primary: CelestialSnapshot, partner: CelestialSnapshot, compatibility_index: float
+) -> Dict[str, float]:
+    def _clamp(value: float) -> float:
+        return round(max(0.0, min(value, 100.0)), 2)
+
+    emotional = _clamp((1 - abs(primary.lunar_tithi - partner.lunar_tithi) / 30) * 100)
+    spiritual = _clamp((1 - abs(primary.jupiter_house - partner.jupiter_house) / 12) * 100)
+    communication = _clamp((1 - abs(primary.mercury_house - partner.mercury_house) / 12) * 100)
+    momentum_bias = compatibility_index / 100
+
+    return {
+        "emotional": _clamp(emotional * momentum_bias + 10),
+        "spiritual": _clamp(spiritual * momentum_bias + 5),
+        "communication": _clamp(communication * momentum_bias + 7),
+    }
+
+
+def _shared_life_path_insights(primary: CelestialSnapshot, partner: CelestialSnapshot) -> List[str]:
+    insights: List[str] = []
+    if primary.lunar_tithi == partner.lunar_tithi:
+        insights.append(
+            f"Both seekers share lunar tithi {primary.lunar_tithi}, hinting at mirrored karmic homework and pacing."
+        )
+    if abs(primary.jupiter_house - partner.jupiter_house) <= 1:
+        insights.append(
+            "Jupiter placements cluster in adjacent houses, suggesting parallel teaching/mentorship roles across decades."
+        )
+    if abs(primary.venus_house - partner.venus_house) <= 2:
+        insights.append(
+            "Venus houses sit within two steps of each other, supporting creative collaboration and shared aesthetic projects."
+        )
+    if not insights:
+        insights.append(
+            "Life path overlap emerges as folios expand—record shared milestones so future matchmaking runs can calibrate."
+        )
+    return insights
 
 
 def _bayesian_weight(raw_weight: float, alpha: float, beta: float) -> float:

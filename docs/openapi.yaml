@@ -81,6 +81,13 @@ paths:
                   venus_house: 2
                   rahu_aspects_ascendant: true
                   consent_for_date_predictions: true
+              invalid:
+                summary: Missing separator in place field
+                value:
+                  name: "Asha"
+                  birth_date: "1995-05-18"
+                  birth_time: "1445"
+                  birth_place: "Varanasi"  # city,country is required for mapping
       responses:
         "200":
           description: Horoscope report
@@ -126,6 +133,34 @@ paths:
                         start: "1995-05-18"
                         end: "2002-05-18"
                         anchor_rule: "Aligned with natal snapshot"
+                placeholder:
+                  summary: Placeholder charts returned when ephemeris data is missing
+                  value:
+                    name: "Asha"
+                    karmic_epoch: "Awaiting calculation"
+                    weights: {}
+                    principles: []
+                    remedies: []
+                    past_life_insights: []
+                    future_trajectories: []
+                    interpretation: "Charts generated with placeholders."
+                    rashi_chart:
+                      - index: 1
+                        sign: Aries
+                        occupants: ["Pending calculation"]
+                        bhrigu_notes:
+                          - "Placeholder chart generated; verify birth details for precise mapping."
+                    bhava_chart:
+                      - index: 1
+                        sign: Taurus
+                        occupants: ["Pending calculation"]
+                        bhrigu_notes:
+                          - "Visualization placeholder"
+                    dashas:
+                      - lord: "Awaiting ephemeris"
+                        start: "TBD"
+                        end: "TBD"
+                        anchor_rule: "Dasha timings unavailable; confirm date, time, and location inputs."
         "400":
           description: Validation error
           content:
@@ -135,6 +170,10 @@ paths:
                   summary: Time formatted incorrectly
                   value:
                     message: "Invalid birth time: use 24h HH:MM (00–23 for hours, 00–59 for minutes)"
+                missing_country:
+                  summary: City and country required for accurate mapping
+                  value:
+                    message: "Invalid birth place: include city and country (e.g., Jaipur, Bharat) for accurate house mapping"
   /past-life:
     post:
       summary: Summarize past-life insights
@@ -205,6 +244,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FutureResponse'
+              examples:
+                directives:
+                  summary: Combined trajectories and transit overlays
+                  value:
+                    name: "Asha"
+                    trajectories:
+                      - headline: "Creative partnerships flourish"
+                        timeframe: "Q3 2024"
+                        certainty: 0.72
+                        sutra_reference: "BR-18"
+                    transit_directives:
+                      - influence: "Rahu amplifies research output"
+                        certainty: 0.64
+                        planet: "Rahu"
+                        reference: "BR-TRANSIT-1"
+                    progression_directives:
+                      - influence: "Saturn progression encourages discipline"
+                        certainty: 0.58
+                        planet: "Saturn"
+                        reference: "BR-TRANSIT-2"
+                    interpretation: "Balance creative urges with Saturnian structure."
   /matchmaking:
     post:
       summary: Modern matchmaking guidance
@@ -230,6 +290,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MatchmakingResponse'
+              examples:
+                overlays:
+                  summary: Compatibility plus synastry overlays
+                  value:
+                    primary_name: "Asha"
+                    partner_name: "Kiran"
+                    compatibility:
+                      compatibility_index: 72.5
+                      long_term_index: 75.1
+                      short_term_index: 68.0
+                      breakdown:
+                        - criterion_id: "MM-01"
+                          description: "Mutual support per folio 18"
+                          score: 0.82
+                          sutra_reference: "BR-18"
+                          notes: "Venus and Mars mutual reception"
+                      modern_highlights:
+                        - "MM-01 aligns with remote-first per BR-18 (+0.10)"
+                      synastry_overlays:
+                        - area: "Moon element resonance"
+                          primary_marker: "water"
+                          partner_marker: "earth"
+                          alignment: 84.0
+                          notes: "Closer elemental balance signals intuitive understanding of moods and needs."
+                      alignment_percentages:
+                        emotional: 84.0
+                        spiritual: 76.0
+                        communication: 71.0
+                      shared_life_paths:
+                        - "Venus houses sit within two steps of each other, supporting creative collaboration and shared aesthetic projects."
+                    interpretation: "Composite compatibility index: 72.50%. Synastry overlay Moon element resonance: 84% harmony (Closer elemental balance signals intuitive understanding of moods and needs.)."
   /feedback:
     post:
       summary: Store an accuracy rating from the seeker
