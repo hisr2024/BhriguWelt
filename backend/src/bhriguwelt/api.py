@@ -598,7 +598,7 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
                 "modern_highlights": compatibility.modern_highlights,
                 "synastry_overlays": [_serialize_obj(entry) for entry in compatibility.synastry_overlays],
                 "alignment_percentages": compatibility.alignment_percentages,
-                "shared_life_paths": compatibility.shared_life_paths,
+                "shared_life_paths": [_serialize_obj(entry) for entry in compatibility.shared_life_paths],
             },
             "interpretation": report.interpretation,
         }

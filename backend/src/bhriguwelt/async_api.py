@@ -15,7 +15,7 @@ except Exception as exc:  # pragma: no cover - optional dependency
         "aiohttp is required for the async API server; install it from PyPI when network access is available."
     ) from exc
 
-from .api import RateLimiter, handle_command
+from .api import RateLimiter, ResponseCache, handle_command
 from .data_loader import load_bhrigu_data, persist_bhrigu_data
 from .feedback import quarterly_reviews, record_feedback, serialize_entry
 from .ml_service import get_ml_health, retrain_feedback_model
@@ -37,40 +37,6 @@ _ADMIN_TOKEN = os.environ.get("BHRIGUWELT_ADMIN_TOKEN")
 def _cache_key(command: str, payload: Dict[str, Any]) -> str:
     serialized = json.dumps(payload or {}, sort_keys=True, ensure_ascii=False)
     return f"{command}:{serialized}"
-
-
-class AsyncResponseCache:
-    """Async-friendly TTL cache to avoid blocking the event loop."""
-
-    def __init__(self, ttl_seconds: int = 120, max_entries: int = 256) -> None:
-        self.ttl = ttl_seconds
-        self.max_entries = max_entries
-        self._store: Dict[str, tuple[float, Dict[str, Any]]] = {}
-        self._lock = asyncio.Lock()
-
-    async def get(self, key: str) -> Dict[str, Any] | None:
-        now = asyncio.get_event_loop().time()
-        async with self._lock:
-            entry = self._store.get(key)
-            if not entry:
-                return None
-            expires_at, payload = entry
-            if now > expires_at:
-                self._store.pop(key, None)
-                return None
-            return payload
-
-    async def set(self, key: str, payload: Dict[str, Any]) -> None:
-        expires_at = asyncio.get_event_loop().time() + self.ttl
-        async with self._lock:
-            if len(self._store) >= self.max_entries:
-                oldest = next(iter(self._store.keys()))
-                self._store.pop(oldest, None)
-            self._store[key] = (expires_at, payload)
-
-    async def clear(self) -> None:
-        async with self._lock:
-            self._store.clear()
 
 
 def _add_cors_headers(response: web.Response) -> web.Response:
@@ -96,13 +62,17 @@ class AsyncResponseCache(ResponseCache):
         super().__init__(*args, **kwargs)
         self._async_lock = asyncio.Lock()
 
-    async def get_async(self, key: str) -> Dict[str, Any] | None:
+    async def get(self, key: str) -> Dict[str, Any] | None:  # type: ignore[override]
         async with self._async_lock:
-            return self.get(key)
+            return super().get(key)
 
-    async def set_async(self, key: str, payload: Dict[str, Any]) -> None:
+    async def set(self, key: str, payload: Dict[str, Any]) -> None:  # type: ignore[override]
         async with self._async_lock:
-            self.set(key, payload)
+            super().set(key, payload)
+
+    async def clear(self) -> None:  # type: ignore[override]
+        async with self._async_lock:
+            super().clear()
 
 
 def create_app() -> web.Application:

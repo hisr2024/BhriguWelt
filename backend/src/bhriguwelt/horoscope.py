@@ -505,16 +505,18 @@ def _compose_matchmaking_interpretation(
         parts.append(
             f"Synastry overlay {overlay.area}: {overlay.alignment:.0f}% harmony ({overlay.notes})."
         )
-    if compatibility.alignment_percentages:
-        parts.append(
-            "Alignment mix E/S/C: "
-            f"{compatibility.alignment_percentages.get('emotional', 0):.0f}% / "
-            f"{compatibility.alignment_percentages.get('spiritual', 0):.0f}% / "
-            f"{compatibility.alignment_percentages.get('communication', 0):.0f}%."
-        )
-    if compatibility.shared_life_paths:
-        parts.append(compatibility.shared_life_paths[0])
-    return " ".join(parts)
+        if compatibility.alignment_percentages:
+            parts.append(
+                "Alignment mix E/S/C: "
+                f"{compatibility.alignment_percentages.get('emotional', 0):.0f}% / "
+                f"{compatibility.alignment_percentages.get('spiritual', 0):.0f}% / "
+                f"{compatibility.alignment_percentages.get('communication', 0):.0f}%."
+            )
+        if compatibility.shared_life_paths:
+            path = compatibility.shared_life_paths[0]
+            resonance = f" ({path.resonance:.0f}% resonance)" if path.resonance else ""
+            parts.append(f"Shared path — {path.theme}:{resonance} {path.guidance}")
+        return " ".join(parts)
 
 
 def _matches_remedy_rule(value, rule) -> bool:

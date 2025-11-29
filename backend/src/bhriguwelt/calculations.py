@@ -210,16 +210,6 @@ class MatchCriterionResult:
 
 
 @dataclass
-class SynastryOverlay:
-    """Lightweight visualization payload showing where charts overlap."""
-
-    anchor: str
-    partner: str
-    alignment: float
-    commentary: str
-
-
-@dataclass
 class LifePathInsight:
     """Shared life path markers derived from core sutras."""
 
@@ -239,7 +229,7 @@ class MatchmakingCompatibility:
     modern_highlights: List[str]
     synastry_overlays: List["SynastryOverlay"]
     alignment_percentages: Dict[str, float]
-    shared_life_paths: List[str]
+    shared_life_paths: List[LifePathInsight]
 
 
 @dataclass
@@ -575,53 +565,6 @@ def evaluate_matchmaking(
     saturn_alignment = _circular_alignment(primary.saturn_house, partner.saturn_house)
     dharma_alignment = _circular_alignment(primary.jupiter_house, partner.jupiter_house)
 
-    synastry_overlays = [
-        SynastryOverlay(
-            anchor="Moon element",
-            partner=partner.moon_element,
-            alignment=moon_alignment,
-            commentary="Elemental resonance shapes emotional rapport",
-        ),
-        SynastryOverlay(
-            anchor="Mars to Venus houses",
-            partner=f"House {partner.venus_house}",
-            alignment=mars_venus_alignment,
-            commentary="Action and affection find a shared cadence",
-        ),
-        SynastryOverlay(
-            anchor="Saturn discipline",
-            partner=f"House {partner.saturn_house}",
-            alignment=saturn_alignment,
-            commentary="Duty cycles remain synchronized for steadiness",
-        ),
-    ]
-
-    shared_life_paths = [
-        LifePathInsight(
-            theme="Dharma and purpose",
-            resonance=dharma_alignment,
-            guidance="Shared Jupiter houses indicate aligned life teachings and gurus.",
-        ),
-        LifePathInsight(
-            theme="Commitment and timing",
-            resonance=saturn_alignment,
-            guidance="Saturn overlays show where patience is mutually learned.",
-        ),
-        LifePathInsight(
-            theme="Emotional safety",
-            resonance=moon_alignment,
-            guidance="Moon resonance highlights how the pair soothes one another.",
-        ),
-    ]
-
-    overlay_average = _safe_ratio(sum(item.alignment for item in synastry_overlays), len(synastry_overlays))
-    alignment_percentages = {
-        "emotional": round(moon_alignment * 100, 2),
-        "creative": round(mars_venus_alignment * 100, 2),
-        "structural": round(saturn_alignment * 100, 2),
-        "overall_overlay": round(overlay_average * 100, 2),
-    }
-
     compatibility_index = round(_safe_ratio(total_score, total_weight) * 100, 2) if total_weight else 50.0
     long_term_index = round(_safe_ratio(long_term_score, long_term_weight) * 100, 2) if long_term_weight else compatibility_index
     short_term_index = round(_safe_ratio(short_term_score, short_term_weight) * 100, 2) if short_term_weight else compatibility_index
@@ -629,6 +572,10 @@ def evaluate_matchmaking(
     synastry_overlays = _build_synastry_overlays(primary, partner)
     alignment_percentages = _alignment_percentages(primary, partner, compatibility_index)
     shared_life_paths = _shared_life_path_insights(primary, partner)
+
+    if synastry_overlays:
+        average_overlay = _safe_ratio(sum(item.alignment for item in synastry_overlays), len(synastry_overlays))
+        alignment_percentages["overall_overlay"] = round(average_overlay, 2)
 
     return MatchmakingCompatibility(
         compatibility_index=compatibility_index,
@@ -699,24 +646,49 @@ def _alignment_percentages(
     }
 
 
-def _shared_life_path_insights(primary: CelestialSnapshot, partner: CelestialSnapshot) -> List[str]:
-    insights: List[str] = []
+def _shared_life_path_insights(primary: CelestialSnapshot, partner: CelestialSnapshot) -> List[LifePathInsight]:
+    insights: List[LifePathInsight] = []
+
     if primary.lunar_tithi == partner.lunar_tithi:
         insights.append(
-            f"Both seekers share lunar tithi {primary.lunar_tithi}, hinting at mirrored karmic homework and pacing."
+            LifePathInsight(
+                theme="Emotional cadence",
+                resonance=100.0,
+                guidance=f"Both seekers share lunar tithi {primary.lunar_tithi}, hinting at mirrored karmic homework and pacing.",
+            )
         )
-    if abs(primary.jupiter_house - partner.jupiter_house) <= 1:
+
+    jupiter_gap = abs(primary.jupiter_house - partner.jupiter_house)
+    jupiter_resonance = round(max(0.0, 1 - jupiter_gap / 12) * 100, 2)
+    if jupiter_resonance:
         insights.append(
-            "Jupiter placements cluster in adjacent houses, suggesting parallel teaching/mentorship roles across decades."
+            LifePathInsight(
+                theme="Dharma and purpose",
+                resonance=jupiter_resonance,
+                guidance="Jupiter placements cluster, suggesting parallel teaching and mentorship roles across decades.",
+            )
         )
-    if abs(primary.venus_house - partner.venus_house) <= 2:
+
+    venus_gap = abs(primary.venus_house - partner.venus_house)
+    venus_resonance = round(max(0.0, 1 - venus_gap / 12) * 100, 2)
+    if venus_resonance:
         insights.append(
-            "Venus houses sit within two steps of each other, supporting creative collaboration and shared aesthetic projects."
+            LifePathInsight(
+                theme="Creative collaboration",
+                resonance=venus_resonance,
+                guidance="Venus houses sit within two steps of each other, supporting creative partnership and shared aesthetics.",
+            )
         )
+
     if not insights:
         insights.append(
-            "Life path overlap emerges as folios expand—record shared milestones so future matchmaking runs can calibrate."
+            LifePathInsight(
+                theme="Evolving folios",
+                resonance=42.0,
+                guidance="Life path overlap will surface as folios expand—record shared milestones to calibrate future matchmaking runs.",
+            )
         )
+
     return insights
 
 
