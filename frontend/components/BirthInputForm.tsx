@@ -21,9 +21,17 @@ type ValidationState = {
   pob?: string;
 };
 
+type GoogleLatLng = { lat: () => number; lng: () => number };
+type GoogleMapInstance = {
+  addListener: (eventName: string, handler: (event: { latLng: GoogleLatLng }) => void) => void;
+  setCenter: (coords: { lat: number; lng: number }) => void;
+};
+type GoogleMarkerInstance = {
+  setPosition: (coords: { lat: number; lng: number }) => void;
+};
 type MapHandle = {
-  map: unknown;
-  marker: unknown;
+  map: GoogleMapInstance | null;
+  marker: GoogleMarkerInstance | null;
 };
 
 type GoogleMapsAutocomplete = {
@@ -31,19 +39,27 @@ type GoogleMapsAutocomplete = {
   getPlace: () => {
     formatted_address?: string;
     name?: string;
-    geometry?: { location?: { lat: () => number; lng: () => number } };
+    geometry?: { location?: GoogleLatLng };
+  };
+};
+
+type GoogleMapsApi = {
+  Map: new (
+    canvas: HTMLDivElement,
+    options: { center: { lat: number; lng: number }; zoom: number; disableDefaultUI: boolean },
+  ) => GoogleMapInstance;
+  Marker: new (options: { position: { lat: number; lng: number }; map: GoogleMapInstance }) => GoogleMarkerInstance;
+  places?: {
+    Autocomplete: new (
+      input: HTMLInputElement,
+      options?: { fields?: Array<"formatted_address" | "geometry" | "name">; types?: string[] },
+    ) => GoogleMapsAutocomplete;
   };
 };
 
 declare global {
   interface Window {
-    google?: {
-      maps?: {
-        places?: {
-          Autocomplete: new (input: HTMLInputElement, options?: unknown) => GoogleMapsAutocomplete;
-        };
-      };
-    };
+    google?: { maps?: GoogleMapsApi };
   }
 }
 
@@ -143,7 +159,7 @@ export default function BirthInputForm() {
   const updateMapFromCoords = useCallback(
     (lat: number, lng: number) => {
       setMapPreview(`${lat.toFixed(3)}, ${lng.toFixed(3)}`);
-      const googleApi = (window as typeof window & { google?: any }).google;
+      const googleApi = (window as typeof window & { google?: { maps?: GoogleMapsApi } }).google;
       if (!googleApi?.maps || !mapCanvasRef.current) return;
       if (!mapHandleRef.current.map) {
         const map = new googleApi.maps.Map(mapCanvasRef.current, {
@@ -153,17 +169,17 @@ export default function BirthInputForm() {
         });
         const marker = new googleApi.maps.Marker({ position: { lat, lng }, map });
         mapHandleRef.current = { map, marker };
-        map.addListener("click", (event: { latLng: { lat: () => number; lng: () => number } }) => {
+        map.addListener("click", (event: { latLng: GoogleLatLng }) => {
           const nextLat = event.latLng.lat();
           const nextLng = event.latLng.lng();
           setDetails((prev) => ({ ...prev, birthPlace: `${nextLat.toFixed(3)}, ${nextLng.toFixed(3)}` }));
           updateMapFromCoords(nextLat, nextLng);
           void resolvePlaceFromCoords(nextLat, nextLng);
         });
-      } else if (mapHandleRef.current.map && (mapHandleRef.current.map as any).setCenter) {
-        (mapHandleRef.current.map as any).setCenter({ lat, lng });
-        if (mapHandleRef.current.marker && (mapHandleRef.current.marker as any).setPosition) {
-          (mapHandleRef.current.marker as any).setPosition({ lat, lng });
+      } else if (mapHandleRef.current.map) {
+        mapHandleRef.current.map.setCenter({ lat, lng });
+        if (mapHandleRef.current.marker) {
+          mapHandleRef.current.marker.setPosition({ lat, lng });
         }
       }
     },
@@ -319,8 +335,9 @@ export default function BirthInputForm() {
     if (!apiKey || !placeInputRef.current || autocompleteRef.current) return;
 
     const initAutocomplete = () => {
-      if (!placeInputRef.current || !(window as typeof window & { google?: any }).google?.maps?.places?.Autocomplete) return;
-      const autocomplete = new (window as typeof window & { google?: any }).google.maps.places.Autocomplete(placeInputRef.current, {
+      const googleApi = (window as typeof window & { google?: { maps?: GoogleMapsApi } }).google;
+      if (!placeInputRef.current || !googleApi?.maps?.places?.Autocomplete) return;
+      const autocomplete = new googleApi.maps.places.Autocomplete(placeInputRef.current, {
         fields: ["formatted_address", "geometry", "name"],
         types: ["(cities)"],
       });
@@ -358,7 +375,7 @@ export default function BirthInputForm() {
       setLocationStatus("Map suggestions ready. Pick a result to auto-fill.");
       speak("Map suggestions ready. Pick a result to auto-fill.");
 
-      if (mapCanvasRef.current && !(mapHandleRef.current.map as any)) {
+      if (mapCanvasRef.current && !mapHandleRef.current.map) {
         const starterLat = 20.5937;
         const starterLng = 78.9629;
         updateMapFromCoords(starterLat, starterLng);

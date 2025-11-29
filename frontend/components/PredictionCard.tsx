@@ -32,12 +32,6 @@ type TimeframeAnchor = {
   sign?: string;
 };
 
-type ChecklistItem = {
-  id: string;
-  label: string;
-  done: boolean;
-};
-
 type HoroscopePayload = {
   name?: string;
   karmic_epoch?: string;

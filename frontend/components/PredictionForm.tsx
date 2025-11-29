@@ -102,6 +102,7 @@ export default function PredictionForm({ engine, title, description, onRequestSt
     try {
       const { data, attempts } = await requestWithRetry();
       setPayload(data);
+      onResult?.(data);
       lastSuccessfulPayloadRef.current = data;
       if (attempts > 0) {
         setInfo(`Completed after ${attempts + 1} attempts.`);
