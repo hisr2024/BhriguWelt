@@ -1,4 +1,4 @@
-import { CalendarDetails } from "@/types/astro";
+import { CalendarDetails, ChartHouse } from "@/types/astro";
 
 export const HOUSE_FOCUSES = [
   "Self & vitality",
@@ -61,7 +61,7 @@ export function deriveHouseGrid(details: CalendarDetails, sakaMonth?: string, sa
   const placeSeed = details.birthPlace.length;
   const offset = Math.abs(Math.round(dateSeed / 86400000 + timeSeed + placeSeed + (sakaDay || 0))) % 12;
 
-  return HOUSE_FOCUSES.map((focus, index) => {
+  return HOUSE_FOCUSES.slice(0, 12).map((focus, index) => {
     const signIndex = (index + offset) % ZODIAC_SIGNS.length;
     const sign = ZODIAC_SIGNS[signIndex];
     const tooltip =
@@ -76,5 +76,30 @@ export function deriveHouseGrid(details: CalendarDetails, sakaMonth?: string, sa
       element: SIGN_ELEMENTS[sign]?.element || "Space",
       glyph: SIGN_ELEMENTS[sign]?.glyph || "✶",
     } satisfies HouseSummary;
+  });
+}
+
+export function deriveChartHouses(
+  details: CalendarDetails,
+  options?: { sakaMonth?: string; sakaDay?: number; offset?: number }
+): ChartHouse[] {
+  const { sakaMonth, sakaDay, offset = 0 } = options || {};
+  const houses = deriveHouseGrid(details, sakaMonth, sakaDay);
+
+  return houses.map((house) => {
+    const rotatedIndex = ((house.index + offset - 1 + 12) % 12) + 1;
+    const rotatedSign = ZODIAC_SIGNS[(ZODIAC_SIGNS.indexOf(house.sign) + offset) % ZODIAC_SIGNS.length] || house.sign;
+    const occupantLabel = house.focus || rotatedSign;
+
+    return {
+      index: rotatedIndex,
+      sign: rotatedSign,
+      focus: house.focus,
+      occupants: [occupantLabel],
+      bhrigu_notes: [
+        `${rotatedSign} focus anchored by ${house.focus || "core house emphasis"}.`,
+        house.tooltip,
+      ],
+    } satisfies ChartHouse;
   });
 }
