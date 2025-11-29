@@ -18,6 +18,8 @@ export type HealthResponse = {
   data?: { principles_loaded?: number };
   meta?: { mode?: "live" | "demo"; attempted_hosts?: string[] };
 };
+
+type DetailedError = Error & { hint?: string; status?: number };
 const FALLBACK_RESPONSES: Record<string, unknown> = {
   "/horoscope": {
     name: "Fallback seeker",
@@ -310,6 +312,50 @@ async function fetchFromHosts(path: string, init?: RequestInit) {
   throw new Error(errorMessage);
 }
 
+function normalizeBackendError(message: string, status: number): DetailedError {
+  try {
+    const parsed = JSON.parse(message);
+    if (parsed?.message) {
+      const error = new Error(parsed.message) as DetailedError;
+      error.hint = parsed.details?.hint;
+      error.status = status;
+      return error;
+    }
+  } catch {
+    // fall through to plain text handling
+  }
+  const error = new Error(message || `Backend responded with ${status}`) as DetailedError;
+  error.status = status;
+  return error;
+}
+
+async function postWithRichErrors<TResponse>(path: string, body: Record<string, unknown>) {
+  let lastError: DetailedError | Error | null = null;
+  for (const host of BACKEND_HOSTS.length ? BACKEND_HOSTS : ["http://localhost:8000"]) {
+    const url = `${host}${path}`;
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        lastError = normalizeBackendError(text, response.status);
+        continue;
+      }
+
+      return (await response.json()) as TResponse;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+    }
+  }
+
+  if (lastError) throw lastError;
+  throw new Error(`Unable to reach backend for ${path}`);
+}
+
 function fallbackHealth(): HealthResponse {
   const horoscope = FALLBACK_RESPONSES["/horoscope"] as { principles?: unknown[] } | undefined;
   const principlesLoaded = Array.isArray(horoscope?.principles) ? horoscope.principles.length : undefined;
@@ -445,6 +491,47 @@ export async function submitAccuracyFeedback(feedback: FeedbackRequest) {
 
 export async function fetchQuarterlyReviews() {
   return getJson<QuarterlySummaryResponse>("/feedback/quarterly", "/feedback/quarterly");
+}
+
+export async function upsertProfile(
+  payload: {
+    user_id?: string;
+    full_name?: string;
+    date_of_birth?: string;
+    time_of_birth?: string;
+    place_of_birth?: string;
+    timezone?: string;
+    metadata?: Record<string, unknown>;
+  },
+  sessionKey?: string,
+) {
+  const basePayload = {
+    ...payload,
+    session_id: sessionKey,
+    profile: payload,
+  };
+  return postWithRichErrors<{ id: number; user_id: string }>("/profiles", basePayload);
+}
+
+export async function fetchProfileSession(userId: string, sessionKey: string) {
+  return postWithRichErrors<{
+    profile?: Record<string, unknown>;
+    alerts?: unknown[];
+    session?: { transcript?: { role?: string; content?: string; remedies?: unknown[] }[] };
+  }>("/profiles/get", {
+    user_id: userId,
+    session_id: sessionKey,
+  });
+}
+
+export async function sendChatMessage(payload: {
+  message: string;
+  user_id?: string;
+  profile_id?: number;
+  session_id?: string;
+  profile?: Record<string, unknown>;
+}) {
+  return postWithRichErrors<Record<string, unknown>>("/chat", payload);
 }
 
 export async function checkBackendHealth(): Promise<HealthResponse> {

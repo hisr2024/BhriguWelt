@@ -107,6 +107,17 @@ generation, chat clarifications, and dasha reminders.
    ```
 4. Add a dasha alert with `/alerts` and fetch analytics with `/analytics` to verify persistence.
 
+### Frontend + chat wiring
+
+1. `cd frontend && npm install && npm run dev` to boot the Next.js UI. Set `NEXT_PUBLIC_BACKEND_URL` (and an optional
+   `NEXT_PUBLIC_BACKEND_FALLBACK_URL`) so form submissions, kundli charts, and chat hand-offs target the Python API.
+2. Submit the horoscope form; successful responses dispatch a `bhrigu:chart-ready` event that auto-primes the chat dock with
+   the birth details you entered. Press “Open chat” to watch the view scroll into place.
+3. Conversations now persist via `/profiles` + `/chat`—the UI stores `user_id`, `profile_id`, and `session_key` in
+   `localStorage` and replays the transcript on reload. You can inspect the synced session with
+   `curl -X POST $NEXT_PUBLIC_BACKEND_URL/profiles/get -d '{"user_id":"<value from localStorage>","session_id":"default"}' -H 'Content-Type: application/json'`.
+4. Run `npm run lint && npm run type-check` before shipping UI changes; the same checks run in CI.
+
 ## Deployment readiness (Render + Vercel + Railway)
 
 No live instances are bundled with the repository; you must deploy the backend

@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { requestPrediction } from "@/lib/api";
+import { requestPrediction, upsertProfile } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { captureClientError } from "@/lib/telemetry";
 import { useImmersiveFeedback } from "@/lib/immersive";
@@ -11,6 +11,7 @@ import BackendHealthNotice from "@/components/BackendHealthNotice";
 import { loadBirthDetails, onBirthDetails } from "@/lib/birthStorage";
 import { DEFAULT_BIRTH_DETAILS } from "@/lib/birthDefaults";
 import { deriveHousePlacements, formatHouseNarrative, useSakaContext } from "@/lib/sakaContext";
+import { getProfileIdentifiers, persistProfileIdentifiers } from "@/lib/profileStorage";
 
 const MAX_RETRIES = 2;
 
@@ -98,6 +99,39 @@ export default function PredictionForm({ engine, title, description, onRequestSt
     return null;
   };
 
+  const syncProfile = async (payload: BirthDetails) => {
+    const identifiers = getProfileIdentifiers();
+    try {
+      const response = await upsertProfile(
+        {
+          user_id: identifiers.userId,
+          full_name: payload.name,
+          date_of_birth: payload.birthDate,
+          time_of_birth: payload.birthTime,
+          place_of_birth: payload.birthPlace,
+          metadata: { source: engine, lunar_tithi: payload.lunarTithi, moon_element: payload.moonElement },
+        },
+        identifiers.sessionKey,
+      );
+      persistProfileIdentifiers({
+        profileId: response.id,
+        userId: response.user_id,
+        sessionKey: identifiers.sessionKey,
+      });
+    } catch (profileError) {
+      console.warn("Profile sync failed", profileError);
+    }
+  };
+
+  const emitFlowEvent = (phase: "start" | "complete" | "error", detail?: Record<string, unknown>) => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(
+      new CustomEvent("bhrigu:prediction-flow", {
+        detail: { engine, phase, ...detail },
+      }),
+    );
+  };
+
   const handleSubmit = async (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     triggerSubmitFeedback();
@@ -107,6 +141,7 @@ export default function PredictionForm({ engine, title, description, onRequestSt
     setPayload(null);
     onRequestStart?.();
     setLoading(true);
+    emitFlowEvent("start", { name: details.name, birthDate: details.birthDate });
     const isOffline = typeof navigator !== "undefined" && navigator && !navigator.onLine;
 
     const validationIssue = validateDetails(details);
@@ -153,18 +188,36 @@ export default function PredictionForm({ engine, title, description, onRequestSt
       const { data, attempts } = await requestWithRetry();
       setPayload(data);
       onResult?.(data);
+      void syncProfile(details);
+      const normalizedDetails = {
+        name: details.name,
+        dateOfBirth: details.birthDate,
+        timeOfBirth: details.birthTime,
+        placeOfBirth: details.birthPlace,
+      };
+      if (typeof window !== "undefined") {
+        const maybeChart = (data as { chart?: unknown }).chart;
+        window.dispatchEvent(
+          new CustomEvent("bhrigu:chart-ready", {
+            detail: { chart: maybeChart, details: normalizedDetails },
+          }),
+        );
+      }
       lastSuccessfulPayloadRef.current = data;
       if (attempts > 0) {
         setInfo(`Completed after ${attempts + 1} attempts.`);
       }
+      emitFlowEvent("complete", { name: details.name, payloadReady: Boolean(data) });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to fetch prediction";
-      setError(message);
+      const hint = err && typeof err === "object" && "hint" in err ? (err as { hint?: string }).hint : undefined;
+      setError(hint ? `${message} (${hint})` : message);
       if (lastSuccessfulPayloadRef.current) {
         setInfo("Showing last available guidance while we retry later.");
         setPayload(lastSuccessfulPayloadRef.current);
       }
       captureClientError(message, { engine, details });
+      emitFlowEvent("error", { message });
     } finally {
       setLoading(false);
     }
