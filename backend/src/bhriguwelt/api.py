@@ -248,7 +248,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         cache_key = self._cache_key(command, payload)
         cached = self.cache.get(cache_key)
         if cached is not None:
-            self._send_json(cached)
+            self._send_json(cached, headers={"X-Cache": "HIT"})
             return
 
         try:
@@ -263,7 +263,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, "Unexpected server error")
             return
         self.cache.set(cache_key, response)
-        self._send_json(response)
+        self._send_json(response, headers={"X-Cache": "MISS"})
 
     def _read_json(self) -> Dict[str, Any]:
         length = int(self.headers.get("Content-Length", 0))
@@ -274,11 +274,16 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.BAD_REQUEST, f"Malformed JSON: {exc}")
             return {}
 
-    def _send_json(self, data: Dict[str, Any], status: HTTPStatus = HTTPStatus.OK) -> None:
+    def _send_json(
+        self, data: Dict[str, Any], status: HTTPStatus = HTTPStatus.OK, headers: Dict[str, str] | None = None
+    ) -> None:
         encoded = json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header(*_JSON_HEADER)
         self._add_cors_headers()
+        if headers:
+            for header, value in headers.items():
+                self.send_header(header, value)
         self.send_header("Content-Length", str(len(encoded)))
         self.end_headers()
         self.wfile.write(encoded)

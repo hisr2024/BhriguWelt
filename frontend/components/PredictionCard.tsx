@@ -1,12 +1,12 @@
 'use client';
 
+import dynamic from "next/dynamic";
 import React, { useEffect, useMemo, useState } from "react";
 import { HOUSE_FOCUSES } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
 import { areMicroAnimationsAllowed } from "@/lib/immersive";
 import { ChartHouse, DashaPeriod, ResultEngine } from "@/types/astro";
 import FeedbackPrompt from "./FeedbackPrompt";
-import KundliCharts from "./KundliCharts";
 
 interface Props {
   title: string;
@@ -20,6 +20,7 @@ type InsightSection = {
   english: string;
   hindi?: string;
   bullets?: string[];
+  collapsible?: boolean;
 };
 
 const DEFAULT_DETAIL_LEVEL: "beginner" | "advanced" = "advanced";
@@ -105,6 +106,16 @@ type CalendarPayload = {
   };
 };
 
+const KundliCharts = dynamic(() => import("./KundliCharts"), {
+  ssr: false,
+  loading: () => (
+    <div className="panel softly prediction-card__chart-loading" role="status" aria-live="polite">
+      <p className="eyebrow">Chart render</p>
+      <p className="muted">Orbiting wheels will appear as soon as the houses load.</p>
+    </div>
+  ),
+});
+
 function condense(text: string, detailLevel: "beginner" | "advanced") {
   if (detailLevel === "advanced") return text;
   if (text.length <= 160) return text;
@@ -115,11 +126,15 @@ function renderSection(section: InsightSection, index: number) {
   const detailLevel = DEFAULT_DETAIL_LEVEL;
   const bulletList = section.bullets || [];
   const trimmedBullets = detailLevel === "advanced" ? bulletList : bulletList.slice(0, 3);
-  return (
-    <article key={index} className="insight-block">
-      <h4>{section.heading}</h4>
-      <p>{condense(section.english, detailLevel)}</p>
-      {section.hindi && <p className="muted">{condense(section.hindi, detailLevel)}</p>}
+  const englishCopy = condense(section.english, detailLevel);
+  const hindiCopy = section.hindi ? condense(section.hindi, detailLevel) : undefined;
+  const shouldCollapse = Boolean(
+    section.collapsible && ((section.english?.length ?? 0) > 180 || trimmedBullets.length > 3 || section.hindi),
+  );
+  const content = (
+    <div className="insight-content">
+      <p>{englishCopy}</p>
+      {hindiCopy ? <p className="muted">{hindiCopy}</p> : null}
       {trimmedBullets.length > 0 && (
         <ul>
           {trimmedBullets.map((bullet, bulletIndex) => (
@@ -127,6 +142,25 @@ function renderSection(section: InsightSection, index: number) {
           ))}
         </ul>
       )}
+    </div>
+  );
+
+  if (shouldCollapse) {
+    return (
+      <article key={index} className="insight-block">
+        <h4>{section.heading}</h4>
+        <details>
+          <summary className="insight-summary">Expand details</summary>
+          {content}
+        </details>
+      </article>
+    );
+  }
+
+  return (
+    <article key={index} className="insight-block">
+      <h4>{section.heading}</h4>
+      {content}
     </article>
   );
 }
@@ -171,6 +205,7 @@ function interpretHoroscope(payload: HoroscopePayload): InsightSection[] {
         .map((item) => `${item.description}${item.sutra_reference ? ` — ${item.sutra_reference}` : ""}`)
         .join(" "),
       hindi: "ये सूत्र आपके लिए अनुशासन और आशीर्वाद को स्थिर रखते हैं।",
+      collapsible: payload.principles.length > 2,
     });
   }
   if (payload.remedies?.length) {
@@ -180,6 +215,7 @@ function interpretHoroscope(payload: HoroscopePayload): InsightSection[] {
         .map((item) => `${item.description}${item.sutra_reference ? ` — ${item.sutra_reference}` : ""}`)
         .join(" "),
       hindi: "उपाय सरल और अनुकरणीय हैं—भोर की साधना से आरंभ करें।",
+      collapsible: payload.remedies.length > 1,
     });
   }
   if (payload.past_life_insights?.length) {
@@ -189,6 +225,7 @@ function interpretHoroscope(payload: HoroscopePayload): InsightSection[] {
         .map((item) => `${item.narrative}${item.sutra_reference ? ` — ${item.sutra_reference}` : ""}`)
         .join(" "),
       hindi: "पूर्व जन्म की कथाएँ वर्तमान जीवन के संस्कारों को दिशा देती हैं।",
+      collapsible: payload.past_life_insights.length > 2,
     });
   }
   if (payload.future_trajectories?.length) {
@@ -198,6 +235,7 @@ function interpretHoroscope(payload: HoroscopePayload): InsightSection[] {
         .map((item) => `${item.focus}${item.window ? ` (${item.window})` : ""}`)
         .join(" "),
       hindi: "आने वाले चरणों के लिए करुणा और संयम से कर्म करें।",
+      collapsible: payload.future_trajectories.length > 2,
     });
   }
   if (payload.dashas?.length) {
@@ -207,6 +245,7 @@ function interpretHoroscope(payload: HoroscopePayload): InsightSection[] {
       english: "Lifecycle windows blended with Bhrigu overlays.",
       hindi: "दशा क्रम भृगु सूत्रों के साथ संयोजित है।",
       bullets,
+      collapsible: payload.dashas.length > 3,
     });
   }
   const timeframeAnchors = deriveTimeframeAnchorsFromChart(payload.bhava_chart || payload.rashi_chart);
@@ -290,6 +329,7 @@ function interpretFuture(payload: FuturePayload): InsightSection[] {
       english: "Follow these dharmic steps with steadiness and gratitude.",
       hindi: "इन चरणों को धैर्य और कृतज्ञता से निभाएँ।",
       bullets,
+      collapsible: payload.trajectories.length > 2,
     });
   }
   return sections;
@@ -320,6 +360,7 @@ function interpretMatchmaking(payload: MatchmakingPayload): InsightSection[] {
       english: "Blended from guna balance and lived priorities.",
       hindi: "गुण और जीवनशैली दोनों का संतुलित सार।",
       bullets,
+      collapsible: bullets.length > 3,
     });
   }
   return sections;

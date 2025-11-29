@@ -81,7 +81,10 @@ export default function BirthInputForm() {
   const mapCanvasRef = useRef<HTMLDivElement | null>(null);
   const autocompleteRef = useRef<GoogleMapsAutocomplete | null>(null);
 
-  const isComplete = useMemo(() => details.birthDate && details.birthTime && details.birthPlace, [details]);
+  const isComplete = useMemo(
+    () => Boolean(details.birthDate && details.birthTime && details.birthPlace),
+    [details.birthDate, details.birthPlace, details.birthTime],
+  );
   const hasValidationIssues = useMemo(() => Boolean(Object.keys(validations).length), [validations]);
   const confidenceLabel =
     confidenceScore >= 90
@@ -397,7 +400,10 @@ export default function BirthInputForm() {
     window.speechSynthesis.speak(utterance);
   };
 
-  const liveGrid = houseGrid.length ? houseGrid : deriveHouseGrid(details);
+  const liveGrid = useMemo(
+    () => (houseGrid.length ? houseGrid : deriveHouseGrid(details)),
+    [details, houseGrid],
+  );
 
   return (
     <section className="birth-input" id="birth-details" aria-label="Birth details and Bharat conversion">
