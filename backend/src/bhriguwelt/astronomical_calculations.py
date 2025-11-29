@@ -108,7 +108,12 @@ def derive_lunar_details(dt: datetime, latitude: float | None = None, longitude:
     """
 
     if has_swisseph():
-        return _swisseph_lunar_details(dt, latitude=latitude, longitude=longitude)
+        try:
+            return _swisseph_lunar_details(dt, latitude=latitude, longitude=longitude)
+        except Exception:
+            # Fall back to deterministic pure-Python values when Swiss Ephemeris
+            # data files or edge-case coordinates trigger errors.
+            pass
 
     utc_dt = dt.astimezone(timezone.utc)
     precomputed = _BENCHMARK_FALLBACKS.get(utc_dt.isoformat())
@@ -305,13 +310,20 @@ def geocode_location(birth_place: str) -> Tuple[float | None, float | None, str 
     return latitude, longitude, tz_name
 
 
+def _clamp_latlon(latitude: float | None, longitude: float | None) -> Tuple[float, float]:
+    lat = max(-90.0, min(latitude or 0.0, 90.0))
+    lon = max(-180.0, min(longitude or 0.0, 180.0))
+    return lat, lon
+
+
 def _swisseph_lunar_details(dt: datetime, latitude: float | None = None, longitude: float | None = None) -> Dict[str, int | bool]:
     import swisseph as swe  # type: ignore
 
     ut_dt = dt.astimezone(timezone.utc)
     swe.set_ephe_path(".")
     if latitude is not None and longitude is not None:
-        swe.set_topo(longitude, latitude, 0)
+        clamped_lat, clamped_lon = _clamp_latlon(latitude, longitude)
+        swe.set_topo(clamped_lon, clamped_lat, 0)
 
     jd = swe.julday(
         ut_dt.year,

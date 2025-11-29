@@ -27,11 +27,16 @@
 - Backend: `cd backend && PYTHONPATH=src pytest`
 - Frontend lint: `cd frontend && npm run lint`
 - Frontend types: `cd frontend && npm run type-check`
+- When adding engines or validation rules, include negative-path tests (malformed
+  birth data, timezone mismatches, Swiss Ephemeris fallbacks) plus a positive
+  integration check that exercises the HTTP surface.
 
 ## Commit and PR process
 - Write descriptive commits.
 - Ensure CI is green.
 - Fill out the PR template and include Bhrigu Samhita references for new rules or datasets.
+- Regenerate `backend/requirements.txt` with `pip-compile backend/requirements.in --output-file backend/requirements.txt` when
+  adding/removing dependencies so reviewers get deterministic pins.
 
 ## Adding Bhrigu data
 - Extend `backend/data/bhrigu_samhita_principles.yml` or `bhrigu_data.py` and document the manuscript folios in `docs/bhrigu_references.md`.

@@ -37,11 +37,27 @@ source .venv/bin/activate
 pip install -r requirements.txt
 export PYTHONPATH=src  # keep set for CLI, API, and tests
 
+# Deterministic dependency refresh (requires pip-tools from requirements-dev.txt)
+pip-compile requirements.in --output-file requirements.txt
+
 > **Optional Swiss Ephemeris:** For full astronomical precision, install
-> `pyswisseph` separately when PyPI access is available. The package is not in
+> `pyswisseph` separately when PyPI access is available. The package is pinned
+> via `requirements.in` for repeatability but intentionally omitted from
 > `requirements.txt` so test environments without binary wheels can rely on the
 > deterministic pure-Python fallbacks baked into the calculation engine.
 ```
+
+### Environment variables
+
+- `PYTHONPATH=src` (required) keeps imports pointed at the local source tree.
+- `BHRIGUWELT_ADMIN_TOKEN` gates `/ml/retrain` in production; set it locally to
+  test the admin flow with `X-Admin-Token`.
+- `BHRIGU_ML_ENABLED=1` forces ML weighting during development; unset or `0`
+  keeps only Bayesian scoring active.
+- `BHRIGUWELT_DISABLE_ML_WEIGHTING=1` disables the ML branch entirely for quick
+  offline runs.
+- `BHRIGUWELT_DATA_PATH` overrides the default corpus path for sandbox
+  experiments.
 
 ### CLI usage
 
@@ -152,7 +168,9 @@ manuscript folios are added.
   window is exceeded.
 - Idempotent requests are cached in-memory for a short TTL to reduce repeated
   computation across the same payloads. The cache clears automatically when
-  manuscript data is updated.
+  manuscript data is updated. The `aiohttp`-powered async server mirrors this
+  behaviour with a non-blocking cache so event-loop latency stays low even on
+  bursty traffic.
 
 ### Testing & deployment
 

@@ -3,3 +3,4 @@ pytest-cov
 numpy
 mypy
 black
+pip-tools

@@ -24,7 +24,11 @@ so follow the steps below to publish your own endpoints before testing clients.
    - Build command: `python -m pip install -r requirements.txt`
    - Start command: `./start.sh` (exports `PYTHONPATH=src` before running the API)
    - Health check path: `/health`
-4. Deploy. Your live API URL will look like
+4. Add environment variables:
+   - `BHRIGUWELT_ADMIN_TOKEN` (required to unlock `/ml/retrain`)
+   - `PYTHONPATH=src`
+   - Optional: `BHRIGU_ML_ENABLED=1` to keep ML weighting active in production
+5. Deploy. Your live API URL will look like
    `https://bhriguwelt-backend.onrender.com`—copy this for the frontend and
    mobile clients.
 

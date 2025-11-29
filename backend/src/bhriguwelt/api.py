@@ -35,8 +35,32 @@ _ADMIN_TOKEN = os.environ.get("BHRIGUWELT_ADMIN_TOKEN")
 
 init_telemetry()
 record_model_load()
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+
+
+class _JsonFormatter(logging.Formatter):
+    """Render logs as JSON for structured ingestion."""
+
+    def format(self, record: logging.LogRecord) -> str:  # pragma: no cover - formatting only
+        payload = {
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "time": datetime.utcnow().isoformat() + "Z",
+        }
+        for key in ("path", "method", "client"):
+            value = getattr(record, key, None)
+            if value:
+                payload[key] = value
+        if record.exc_info:
+            payload["exception"] = self.formatException(record.exc_info)
+        return json.dumps(payload, ensure_ascii=False)
+
+
 logger = logging.getLogger("bhriguwelt.api")
+logger.setLevel(logging.INFO)
+logger.handlers.clear()
+handler = logging.StreamHandler()
+handler.setFormatter(_JsonFormatter())
+logger.addHandler(handler)
 
 
 class RateLimiter:
@@ -259,7 +283,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             response = handle_command(command, payload)
         except ValueError as exc:
             logger.warning("Validation error for %s: %s", command, exc, extra={"path": self.path})
-            self.send_error(HTTPStatus.BAD_REQUEST, str(exc))
+            self.send_error(HTTPStatus.BAD_REQUEST, str(exc), explain="Request body failed validation")
             return
         except Exception as exc:  # pragma: no cover - defensive catch for telemetry
             capture_exception(exc, {"command": command, "path": self.path})
@@ -312,15 +336,24 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         client_ip = self.client_address[0]
         method = getattr(self, "command", "")
         log_message = message or HTTPStatus(code).phrase
+        log_extra = {"path": self.path, "method": method, "client": client_ip}
         if code >= 500:
-            logger.error(
-                "Request failed with status %s: %s", code, log_message, extra={"path": self.path, "method": method, "client": client_ip}
-            )
+            logger.error("Request failed with status %s: %s", code, log_message, extra=log_extra)
         else:
-            logger.warning(
-                "Request failed with status %s: %s", code, log_message, extra={"path": self.path, "method": method, "client": client_ip}
-            )
-        content = json.dumps({"message": message or HTTPStatus(code).phrase}, ensure_ascii=False).encode("utf-8")
+            logger.warning("Request failed with status %s: %s", code, log_message, extra=log_extra)
+
+        content = json.dumps(
+            {
+                "message": message or HTTPStatus(code).phrase,
+                "details": {
+                    "path": self.path,
+                    "method": method,
+                    "client": client_ip,
+                    "hint": explain or "Review the request payload and headers for mistakes.",
+                },
+            },
+            ensure_ascii=False,
+        ).encode("utf-8")
         self.send_response(code)
         self.send_header(*_JSON_HEADER)
         self._add_cors_headers()
@@ -385,6 +418,9 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
                 "short_term_index": compatibility.short_term_index,
                 "breakdown": [_serialize_obj(entry) for entry in compatibility.breakdown],
                 "modern_highlights": compatibility.modern_highlights,
+                "synastry_overlays": [_serialize_obj(entry) for entry in compatibility.synastry_overlays],
+                "alignment_percentages": compatibility.alignment_percentages,
+                "shared_life_paths": compatibility.shared_life_paths,
             },
             "interpretation": report.interpretation,
         }
@@ -505,7 +541,20 @@ def _ensure_visualization_payload(response: Dict[str, Any]) -> None:
         filled_chart = list(chart[:12])
         while len(filled_chart) < 12:
             filled_chart.append(_house_placeholder(len(filled_chart) + 1))
-        response[chart_key] = filled_chart
+        normalized_chart: List[Dict[str, Any]] = []
+        for house in filled_chart:
+            occupants = house.get("occupants") if isinstance(house, dict) else None
+            normalized_chart.append(
+                {
+                    "index": house.get("index") if isinstance(house, dict) else len(normalized_chart) + 1,
+                    "sign": house.get("sign") if isinstance(house, dict) else SIGNS[len(normalized_chart) % len(SIGNS)],
+                    "occupants": occupants if occupants else ["Pending calculation"],
+                    "bhrigu_notes": house.get("bhrigu_notes", ["Visualization placeholder"]) if isinstance(house, dict) else [
+                        "Visualization placeholder"
+                    ],
+                }
+            )
+        response[chart_key] = normalized_chart
 
     dashas = response.get("dashas")
     if not isinstance(dashas, list) or not dashas:
@@ -517,7 +566,19 @@ def _ensure_visualization_payload(response: Dict[str, Any]) -> None:
                 "anchor_rule": "Dasha timings unavailable; confirm date, time, and location inputs.",
             }
         ]
-    response["dashas"] = dashas
+    normalized_dashas: List[Dict[str, Any]] = []
+    for entry in dashas:
+        normalized_dashas.append(
+            {
+                "lord": entry.get("lord", "Awaiting ephemeris") if isinstance(entry, dict) else str(entry),
+                "start": entry.get("start", "TBD") if isinstance(entry, dict) else "TBD",
+                "end": entry.get("end", "TBD") if isinstance(entry, dict) else "TBD",
+                "anchor_rule": entry.get("anchor_rule", "Aligned with natal snapshot")
+                if isinstance(entry, dict)
+                else "Aligned with natal snapshot",
+            }
+        )
+    response["dashas"] = normalized_dashas
 
 
 def serve(host: str = "0.0.0.0", port: int = 8000) -> None:

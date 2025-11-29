@@ -86,6 +86,15 @@ key so `npm run dev` and `npm run build` compile against the right host.
   `npm run type-check` with Node 18 on pushes and pull requests that touch the
   frontend.
 
+Quick troubleshooting tips:
+
+- If forms render demo copy, confirm `.env.local` exists and restart `npm run dev`
+  after updating `NEXT_PUBLIC_BACKEND_URL`.
+- Render/Railway self-signed certificates can block fetches during local dev;
+  export `NODE_TLS_REJECT_UNAUTHORIZED=0` temporarily when testing against those
+  hosts (never in production).
+- Clear Next.js cache between backend URL changes with `rm -rf .next`.
+
 ## Deployment to Vercel
 
 1. Push your changes to GitHub.
