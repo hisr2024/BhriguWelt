@@ -75,7 +75,7 @@ function buildFallbackInterpretation(): Interpretation {
       ? (horoscopeSample as { karmic_epoch: string }).karmic_epoch
       : undefined;
 
-  const pastLifeInsights = (sample?: Record<string, unknown>) => {
+  const pastLifeInsights = (sample?: Record<string, unknown> | null) => {
     if (!sample) return undefined;
     const typedSample = sample as { insights?: unknown[]; past_life_insights?: unknown[] };
     const insights = Array.isArray(typedSample.insights)
