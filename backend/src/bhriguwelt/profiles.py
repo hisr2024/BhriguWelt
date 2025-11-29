@@ -317,6 +317,54 @@ def add_alert(*, profile_id: int, label: str, event_time: str, notes: str | None
     )
 
 
+def schedule_dasha_alerts(profile_id: int, dashas: Sequence[Dict[str, Any]], *, limit: int = 5) -> List[Alert]:
+    """Persist upcoming dasha transitions as alerts for notification surfaces.
+
+    The scheduler is intentionally simple so it can run in sandboxed environments
+    where cron or task queues are unavailable. It deduplicates by label+time to
+    avoid spamming the same transition repeatedly.
+    """
+
+    scheduled: List[Alert] = []
+    normalized = [entry for entry in dashas if isinstance(entry, dict)]
+    upcoming = sorted(normalized, key=lambda item: item.get("start", ""))[:limit]
+
+    with _connect() as connection:
+        for entry in upcoming:
+            label = f"Dasha shift: {entry.get('lord', 'Planet')} begins"
+            event_time = str(entry.get("start"))
+            if not event_time:
+                continue
+            existing = connection.execute(
+                "SELECT id FROM alerts WHERE profile_id = ? AND label = ? AND event_time = ?",
+                (profile_id, label, event_time),
+            ).fetchone()
+            if existing:
+                continue
+            notes = entry.get("anchor_rule") or ""
+            now = _timestamp()
+            connection.execute(
+                """
+                INSERT INTO alerts (profile_id, label, event_time, notes, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (profile_id, label, event_time, notes, now),
+            )
+            connection.commit()
+            scheduled.append(
+                Alert(
+                    id=connection.execute("SELECT last_insert_rowid() as id").fetchone()["id"],
+                    profile_id=profile_id,
+                    label=label,
+                    event_time=event_time,
+                    notes=notes,
+                    created_at=now,
+                )
+            )
+
+    return scheduled
+
+
 def upcoming_alerts(*, profile_id: int, limit: int = 10) -> List[Alert]:
     with _connect() as connection:
         rows = connection.execute(

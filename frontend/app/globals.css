@@ -33,6 +33,22 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+body[data-theme="dark"] {
+  background: #0b1017;
+  color: #e9eff7;
+}
+
+body[data-theme="dark"] .card,
+body[data-theme="dark"] .panel,
+body[data-theme="dark"] .serene-hero,
+body[data-theme="dark"] .form-grid input,
+body[data-theme="dark"] .form-grid select,
+body[data-theme="dark"] .form-grid textarea {
+  background: #0f1725;
+  color: #e9eff7;
+  border-color: #1d2937;
+}
+
 body[data-contrast="high"] {
   background: #0d1a1f;
   color: #f6f8f9;

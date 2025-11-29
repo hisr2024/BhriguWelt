@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from "react";
+import { useThemeMode } from "@/lib/themeContext";
 
 const storageKey = "bhrigu-experience-preferences";
 
@@ -60,7 +61,9 @@ function playTone(frequency: number, duration = 140) {
 
 export default function ExperienceToolbar() {
   const [fontScale, setFontScale] = useState(1);
-  const [highContrast, setHighContrast] = useState(false);
+  const { mode, setMode } = useThemeMode();
+  const [highContrast, setHighContrast] = useState(mode === "high-contrast");
+  const [darkMode, setDarkMode] = useState(mode === "dark");
   const [voiceOver, setVoiceOver] = useState(false);
   const [soundscape, setSoundscape] = useState(() => readStoredPreferences().soundscape);
   const [haptics, setHaptics] = useState(() => readStoredPreferences().haptics);
@@ -123,11 +126,23 @@ export default function ExperienceToolbar() {
   const toggleContrast = useCallback(
     (next: boolean) => {
       setHighContrast(next);
+      setMode(next ? "high-contrast" : darkMode ? "dark" : "light");
       if (soundscape && next) {
         playTone(280, 120);
       }
     },
-    [soundscape],
+    [darkMode, setMode, soundscape],
+  );
+
+  const toggleDarkMode = useCallback(
+    (next: boolean) => {
+      setDarkMode(next);
+      setMode(next ? "dark" : highContrast ? "high-contrast" : "light");
+      if (soundscape && next) {
+        playTone(320, 120);
+      }
+    },
+    [highContrast, setMode, soundscape],
   );
 
   const toggleVoice = useCallback(
@@ -172,6 +187,10 @@ export default function ExperienceToolbar() {
   return (
     <section className="experience-toolbar" aria-label="Accessibility and preference toggles">
       <div className="experience-toolbar__controls">
+        <label className="toggle">
+          <input type="checkbox" checked={darkMode} onChange={(event) => toggleDarkMode(event.target.checked)} />
+          <span>Dark mode</span>
+        </label>
         <label className="toggle">
           <input
             type="checkbox"
