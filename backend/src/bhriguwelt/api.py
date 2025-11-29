@@ -549,7 +549,7 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
 
         if not _has_chart(response, "rashi_chart") or not _has_chart(response, "bhava_chart"):
             snapshot = _snapshot_from_request(request)
-            kundli = generate_kundli(snapshot, weights=report.weights)
+            kundli = generate_kundli(snapshot, weights=report.weights, timezone_name=request.timezone)
             response.setdefault("rashi_chart", [_serialize_obj(item) for item in kundli.get("rashi_chart", [])])
             response.setdefault("bhava_chart", [_serialize_obj(item) for item in kundli.get("bhava_chart", [])])
             response.setdefault("dashas", [_serialize_obj(item) for item in kundli.get("dashas", [])])
