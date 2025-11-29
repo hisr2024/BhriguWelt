@@ -44,25 +44,49 @@ def _json_response(data: Dict[str, Any], status: int = HTTPStatus.OK) -> web.Res
     return _add_cors_headers(response)
 
 
+class AsyncResponseCache(ResponseCache):
+    """Async wrapper around the in-memory cache used by the sync API."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._async_lock = asyncio.Lock()
+
+    async def get_async(self, key: str) -> Dict[str, Any] | None:
+        async with self._async_lock:
+            return self.get(key)
+
+    async def set_async(self, key: str, payload: Dict[str, Any]) -> None:
+        async with self._async_lock:
+            self.set(key, payload)
+
+
 def create_app() -> web.Application:
     rate_limiter = RateLimiter()
-    cache = ResponseCache()
+    cache = AsyncResponseCache()
 
-    async def guard_rate_limit(request: web.Request) -> str | None:
+    async def guard_rate_limit(request: web.Request) -> tuple[str, Dict[str, int]]:
         client = request.remote or "anonymous"
-        allowed = await asyncio.to_thread(rate_limiter.allow, client)
+        allowed, meta = await asyncio.to_thread(rate_limiter.allow, client, with_metadata=True)
+        meta_dict: Dict[str, int] = meta if isinstance(meta, dict) else {}
         if not allowed:
             response = _json_response({"message": "Rate limit exceeded; try again later"}, status=HTTPStatus.TOO_MANY_REQUESTS)
+            response.headers.update(
+                {
+                    "X-RateLimit-Limit": str(rate_limiter.max_requests),
+                    "X-RateLimit-Remaining": str(meta_dict.get("remaining", 0)),
+                    "Retry-After": str(meta_dict.get("reset_in", rate_limiter.window)),
+                }
+            )
             raise web.HTTPTooManyRequests(text=response.text, headers=response.headers)
-        return client
+        return client, meta_dict
 
     async def handle_cached_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         key = _cache_key(command, payload)
-        cached = cache.get(key)
+        cached = await cache.get_async(key)
         if cached is not None:
             return cached
         response = await asyncio.to_thread(handle_command, command, payload)
-        cache.set(key, response)
+        await cache.set_async(key, response)
         return response
 
     async def health(_: web.Request) -> web.Response:
@@ -90,55 +114,71 @@ def create_app() -> web.Application:
         return _json_response({"quarters": summary})
 
     async def horoscope(request: web.Request) -> web.Response:
-        await guard_rate_limit(request)
+        _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
         response = await handle_cached_command("horoscope", payload)
-        return _json_response(response)
+        reply = _json_response(response)
+        reply.headers.update({"X-Cache-Hits": str(cache.stats()["hits"]), "X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
 
     async def past_life(request: web.Request) -> web.Response:
-        await guard_rate_limit(request)
+        _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
         response = await handle_cached_command("past-life", payload)
-        return _json_response(response)
+        reply = _json_response(response)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
 
     async def future(request: web.Request) -> web.Response:
-        await guard_rate_limit(request)
+        _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
         response = await handle_cached_command("future", payload)
-        return _json_response(response)
+        reply = _json_response(response)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
 
     async def matchmaking(request: web.Request) -> web.Response:
-        await guard_rate_limit(request)
+        _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
         response = await handle_cached_command("matchmaking", payload)
-        return _json_response(response)
+        reply = _json_response(response)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
 
     async def calendar(request: web.Request) -> web.Response:
-        await guard_rate_limit(request)
+        _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
         response = await handle_cached_command("calendar", payload)
-        return _json_response(response)
+        reply = _json_response(response)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
 
     async def transits(request: web.Request) -> web.Response:
-        await guard_rate_limit(request)
+        _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
         response = await handle_cached_command("transits", payload)
-        return _json_response(response)
+        reply = _json_response(response)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
 
     async def manuscript_get(request: web.Request) -> web.Response:  # pylint: disable=unused-argument
-        await guard_rate_limit(request)
+        _, rate_meta = await guard_rate_limit(request)
         corpus = await asyncio.to_thread(load_bhrigu_data)
-        return _json_response(corpus)
+        reply = _json_response(corpus)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
 
     async def manuscript_update(request: web.Request) -> web.Response:
-        await guard_rate_limit(request)
+        _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
         updated = await asyncio.to_thread(persist_bhrigu_data, payload)
         cache.clear()
-        return _json_response({"message": "Manuscript updated", "principles": len(updated.get("principles", []))})
+        reply = _json_response({"message": "Manuscript updated", "principles": len(updated.get("principles", []))})
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
 
     async def ml_retrain(request: web.Request) -> web.Response:
-        await guard_rate_limit(request)
+        _, rate_meta = await guard_rate_limit(request)
         if not _ADMIN_TOKEN or request.headers.get("X-Admin-Token") != _ADMIN_TOKEN:
             return _json_response({"message": "Admin token required for retraining"}, status=HTTPStatus.FORBIDDEN)
 
@@ -149,7 +189,9 @@ def create_app() -> web.Application:
             limit_value = int(limit)
         metrics = await asyncio.to_thread(retrain_feedback_model, limit_value)
         cache.clear()
-        return _json_response({"message": "Retraining complete", "metrics": metrics}, status=HTTPStatus.ACCEPTED)
+        reply = _json_response({"message": "Retraining complete", "metrics": metrics}, status=HTTPStatus.ACCEPTED)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
 
     async def handle_options(_: web.Request) -> web.Response:
         return _json_response({}, status=HTTPStatus.NO_CONTENT)

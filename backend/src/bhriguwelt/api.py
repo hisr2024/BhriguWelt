@@ -35,8 +35,31 @@ _ADMIN_TOKEN = os.environ.get("BHRIGUWELT_ADMIN_TOKEN")
 
 init_telemetry()
 record_model_load()
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+class JsonLogFormatter(logging.Formatter):
+    """Emit structured JSON logs for easier ingestion by observability stacks."""
+
+    def format(self, record: logging.LogRecord) -> str:  # pragma: no cover - formatting only
+        payload: Dict[str, Any] = {
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "timestamp": self.formatTime(record, datefmt="%Y-%m-%dT%H:%M:%S%z"),
+        }
+        for key in ("path", "method", "client", "status_code"):
+            value = getattr(record, key, None)
+            if value is not None:
+                payload[key] = value
+        if record.exc_info:
+            payload["exception"] = self.formatException(record.exc_info)
+        return json.dumps(payload, ensure_ascii=False)
+
+
+_handler = logging.StreamHandler()
+_handler.setFormatter(JsonLogFormatter())
 logger = logging.getLogger("bhriguwelt.api")
+logger.setLevel(logging.INFO)
+logger.propagate = False
+logger.addHandler(_handler)
 
 
 class RateLimiter:
@@ -48,7 +71,7 @@ class RateLimiter:
         self._lock = Lock()
         self._tokens: Dict[str, tuple[int, float]] = {}
 
-    def allow(self, key: str) -> bool:
+    def allow(self, key: str, *, with_metadata: bool = False) -> bool | tuple[bool, Dict[str, int]]:
         now = monotonic()
         with self._lock:
             count, reset = self._tokens.get(key, (0, now + self.window))
@@ -56,7 +79,12 @@ class RateLimiter:
                 count, reset = 0, now + self.window
             count += 1
             self._tokens[key] = (count, reset)
-            return count <= self.max_requests
+            allowed = count <= self.max_requests
+            if not with_metadata:
+                return allowed
+            remaining = max(self.max_requests - count, 0)
+            metadata = {"remaining": remaining, "reset_in": max(int(reset - now), 0)}
+            return allowed, metadata
 
     def reset(self) -> None:
         with self._lock:
@@ -71,17 +99,22 @@ class ResponseCache:
         self.max_entries = max_entries
         self._lock = Lock()
         self._store: Dict[str, tuple[float, Dict[str, Any]]] = {}
+        self._hits = 0
+        self._misses = 0
 
     def get(self, key: str) -> Dict[str, Any] | None:
         now = monotonic()
         with self._lock:
             entry = self._store.get(key)
             if not entry:
+                self._misses += 1
                 return None
             expires_at, payload = entry
             if now > expires_at:
                 self._store.pop(key, None)
+                self._misses += 1
                 return None
+            self._hits += 1
             return payload
 
     def set(self, key: str, payload: Dict[str, Any]) -> None:
@@ -95,6 +128,10 @@ class ResponseCache:
     def clear(self) -> None:
         with self._lock:
             self._store.clear()
+
+    def stats(self) -> Dict[str, int]:
+        with self._lock:
+            return {"hits": self._hits, "misses": self._misses, "entries": len(self._store)}
 
 
 class BhriguAPIHandler(BaseHTTPRequestHandler):
@@ -134,8 +171,18 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
 
     def _dispatch(self, method: str) -> None:
         client_id = self.client_address[0]
-        if not self.rate_limiter.allow(client_id):
-            self.send_error(HTTPStatus.TOO_MANY_REQUESTS, "Rate limit exceeded; try again later")
+        allowed, meta = self.rate_limiter.allow(client_id, with_metadata=True)  # type: ignore[assignment]
+        rate_meta: Dict[str, int] = meta if isinstance(meta, dict) else {}
+        if not allowed:
+            self.send_error(
+                HTTPStatus.TOO_MANY_REQUESTS,
+                "Rate limit exceeded; try again later",
+                headers={
+                    "X-RateLimit-Limit": str(self.rate_limiter.max_requests),
+                    "X-RateLimit-Remaining": str(rate_meta.get("remaining", 0)),
+                    "Retry-After": str(rate_meta.get("reset_in", self.rate_limiter.window)),
+                },
+            )
             return
 
         handler_name = self.routes.get((method, self.path))
@@ -307,23 +354,44 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         return f"{command}:{serialized}"
 
     def send_error(  # type: ignore[override]
-        self, code: int, message: str | None = None, explain: str | None = None
+        self,
+        code: int,
+        message: str | None = None,
+        explain: str | None = None,
+        headers: Dict[str, str] | None = None,
     ) -> None:
         client_ip = self.client_address[0]
         method = getattr(self, "command", "")
         log_message = message or HTTPStatus(code).phrase
         if code >= 500:
             logger.error(
-                "Request failed with status %s: %s", code, log_message, extra={"path": self.path, "method": method, "client": client_ip}
+                "Request failed with status %s: %s",
+                code,
+                log_message,
+                extra={"path": self.path, "method": method, "client": client_ip, "status_code": code},
             )
         else:
             logger.warning(
-                "Request failed with status %s: %s", code, log_message, extra={"path": self.path, "method": method, "client": client_ip}
+                "Request failed with status %s: %s",
+                code,
+                log_message,
+                extra={"path": self.path, "method": method, "client": client_ip, "status_code": code},
             )
-        content = json.dumps({"message": message or HTTPStatus(code).phrase}, ensure_ascii=False).encode("utf-8")
+        content = json.dumps(
+            {
+                "message": message or HTTPStatus(code).phrase,
+                "path": self.path,
+                "status": code,
+                "detail": explain or log_message,
+            },
+            ensure_ascii=False,
+        ).encode("utf-8")
         self.send_response(code)
         self.send_header(*_JSON_HEADER)
         self._add_cors_headers()
+        if headers:
+            for header, value in headers.items():
+                self.send_header(header, value)
         self.send_header("Content-Length", str(len(content)))
         self.end_headers()
         self.wfile.write(content)
@@ -385,6 +453,9 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
                 "short_term_index": compatibility.short_term_index,
                 "breakdown": [_serialize_obj(entry) for entry in compatibility.breakdown],
                 "modern_highlights": compatibility.modern_highlights,
+                "synastry_overlays": [_serialize_obj(item) for item in compatibility.synastry_overlays],
+                "alignment_percentages": compatibility.alignment_percentages,
+                "shared_life_paths": [_serialize_obj(item) for item in compatibility.shared_life_paths],
             },
             "interpretation": report.interpretation,
         }
