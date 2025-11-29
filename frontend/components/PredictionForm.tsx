@@ -78,8 +78,8 @@ export default function PredictionForm({ engine, title, description, onRequestSt
     return null;
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
     triggerSubmitFeedback();
     setError(null);
     setInfo(null);
