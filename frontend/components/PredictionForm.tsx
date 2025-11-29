@@ -68,6 +68,8 @@ export default function PredictionForm({ engine, title, description, onRequestSt
       birthTime: sakaState.details?.birthTime || prev.birthTime,
       birthPlace: sakaState.details?.birthPlace || prev.birthPlace,
       ...placements,
+      lunarTithi: placements.lunarTithi ?? prev.lunarTithi,
+      moonElement: placements.moonElement ?? prev.moonElement,
     }));
     if (sakaHelper) {
       setInfo(`${sakaHelper} Applied to ${engine} request.`);

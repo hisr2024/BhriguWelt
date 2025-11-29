@@ -6,7 +6,7 @@ import { HOUSE_FOCUSES, deriveChartHouses } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
 import { areMicroAnimationsAllowed } from "@/lib/immersive";
 import { loadBirthDetails } from "@/lib/birthStorage";
-import { ChartHouse, DashaPeriod, ResultEngine } from "@/types/astro";
+import { CalendarDetails, ChartHouse, DashaPeriod, ResultEngine } from "@/types/astro";
 import FeedbackPrompt from "./FeedbackPrompt";
 
 interface Props {
@@ -456,8 +456,13 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
 
   useEffect(() => {
     const stored = loadBirthDetails();
-    if (!stored) return;
-    const base = { birthDate: stored.birthDate, birthTime: stored.birthTime, birthPlace: stored.birthPlace };
+    if (!stored?.birthDate || !stored?.birthTime || !stored?.birthPlace) return;
+
+    const base: CalendarDetails = {
+      birthDate: stored.birthDate,
+      birthTime: stored.birthTime,
+      birthPlace: stored.birthPlace,
+    };
     setFallbackCharts({
       rashi: deriveChartHouses(base, { sakaMonth: stored.sakaMonth, sakaDay: stored.sakaDay }),
       bhava: deriveChartHouses(base, { sakaMonth: stored.sakaMonth, sakaDay: stored.sakaDay, offset: 1 }),
