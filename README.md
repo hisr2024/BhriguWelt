@@ -97,7 +97,9 @@ generation, chat clarifications, and dasha reminders.
 
 ### Local setup + smoke tests
 
-1. `cd backend && python -m pip install -r requirements.txt && python -m compileall src` to validate the Python package.
+1. Use Python 3.11 (the repo ships a `.tool-versions` pin for mise/pyenv) so `scikit-learn` installs from wheels instead of
+   failing to build on Python 3.13. Then run `cd backend && python -m pip install -r requirements.txt && python -m compileall src`
+   to validate the Python package.
 2. `python -m bhriguwelt.api` (or `python -m bhriguwelt.async_api`) starts the HTTP server; `curl http://localhost:8000/health`
    should return `{ "status": "ok" }`.
 3. Seed a profile and chat session:
@@ -106,6 +108,17 @@ generation, chat clarifications, and dasha reminders.
    curl -X POST http://localhost:8000/chat -d '{"user_id":"demo@example.com","session_id":"welcome","message":"How do I balance my career and relationships?"}' -H 'Content-Type: application/json'
    ```
 4. Add a dasha alert with `/alerts` and fetch analytics with `/analytics` to verify persistence.
+
+### Frontend + chat wiring
+
+1. `cd frontend && npm install && npm run dev` to boot the Next.js UI. Set `NEXT_PUBLIC_BACKEND_URL` (and an optional
+   `NEXT_PUBLIC_BACKEND_FALLBACK_URL`) so form submissions, kundli charts, and chat hand-offs target the Python API.
+2. Submit the horoscope form; successful responses dispatch a `bhrigu:chart-ready` event that auto-primes the chat dock with
+   the birth details you entered. Press “Open chat” to watch the view scroll into place.
+3. Conversations now persist via `/profiles` + `/chat`—the UI stores `user_id`, `profile_id`, and `session_key` in
+   `localStorage` and replays the transcript on reload. You can inspect the synced session with
+   `curl -X POST $NEXT_PUBLIC_BACKEND_URL/profiles/get -d '{"user_id":"<value from localStorage>","session_id":"default"}' -H 'Content-Type: application/json'`.
+4. Run `npm run lint && npm run type-check` before shipping UI changes; the same checks run in CI.
 
 ## Deployment readiness (Render + Vercel + Railway)
 
