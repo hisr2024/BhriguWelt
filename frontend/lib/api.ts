@@ -2,11 +2,21 @@ import { BirthDetails, CalendarDetails, PredictionEngine } from "@/types/astro";
 import { FeedbackRequest, QuarterlySummaryResponse } from "@/types/feedback";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+const BACKEND_FALLBACK_URL = process.env.NEXT_PUBLIC_BACKEND_FALLBACK_URL || "";
+const BACKEND_HOSTS = Array.from(
+  new Set(
+    [BACKEND_URL, BACKEND_FALLBACK_URL]
+      .map((value) => value?.trim())
+      .filter(Boolean)
+      .map((value) => value.replace(/\/$/, "")),
+  ),
+);
 export type HealthResponse = {
   status?: string;
   source?: string;
   ml?: unknown;
   data?: { principles_loaded?: number };
+  meta?: { mode?: "live" | "demo"; attempted_hosts?: string[] };
 };
 const FALLBACK_RESPONSES: Record<string, unknown> = {
   "/horoscope": {
@@ -274,8 +284,42 @@ export type FutureProgressResponse = {
     completion: number;
     planet: string;
     icon?: string;
-  }[];
+}[];
 };
+
+async function fetchFromHosts(path: string, init?: RequestInit) {
+  const errors: string[] = [];
+  for (const host of BACKEND_HOSTS) {
+    const target = `${host}${path}`;
+    try {
+      const response = await fetch(target, init);
+      if (!response.ok) {
+        const message = await response.text();
+        errors.push(message || `${target} responded with ${response.status}`);
+        continue;
+      }
+      return response;
+    } catch (error) {
+      errors.push(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  const errorMessage = errors.length
+    ? errors.join(" | ")
+    : "No backend hosts configured. Set NEXT_PUBLIC_BACKEND_URL to your API endpoint.";
+  throw new Error(errorMessage);
+}
+
+function fallbackHealth(): HealthResponse {
+  const horoscope = FALLBACK_RESPONSES["/horoscope"] as { principles?: unknown[] } | undefined;
+  const principlesLoaded = Array.isArray(horoscope?.principles) ? horoscope.principles.length : undefined;
+  return {
+    status: "ok",
+    source: "Bhrigu Samhita (demo cache)",
+    data: principlesLoaded ? { principles_loaded: principlesLoaded } : undefined,
+    meta: { mode: "demo", attempted_hosts: BACKEND_HOSTS },
+  };
+}
 
 function mapBirthDetails(input: BirthDetails) {
   return {
@@ -308,7 +352,7 @@ function mapCalendarDetails(input: CalendarDetails) {
 async function getJson<TResponse>(path: string, fallbackKey?: string) {
   let response: Response;
   try {
-    response = await fetch(`${BACKEND_URL}${path}`);
+    response = await fetchFromHosts(path);
   } catch (networkError) {
     if (fallbackKey && FALLBACK_RESPONSES[fallbackKey]) {
       console.warn(`Using offline Bhrigu fallback for ${path}`, networkError);
@@ -317,18 +361,13 @@ async function getJson<TResponse>(path: string, fallbackKey?: string) {
     throw networkError;
   }
 
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || `Request to ${path} failed`);
-  }
-
   return (await response.json()) as TResponse;
 }
 
 async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
   let response: Response;
   try {
-    response = await fetch(`${BACKEND_URL}${path}`, {
+    response = await fetchFromHosts(path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -341,15 +380,11 @@ async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
     }
 
     const reason = networkError instanceof Error ? networkError.message : "Unknown error";
+    const hostList = BACKEND_HOSTS.join(", ") || BACKEND_URL;
     throw new Error(
-      `${reason}. Unable to reach the Bhrigu backend at ${BACKEND_URL}${path}. ` +
-        "Set NEXT_PUBLIC_BACKEND_URL to your deployed Python API to restore live predictions.",
+      `${reason}. Unable to reach the Bhrigu backend at ${hostList}${path}. ` +
+        "Set NEXT_PUBLIC_BACKEND_URL to your deployed Python API (or NEXT_PUBLIC_BACKEND_FALLBACK_URL for a backup) to restore live predictions.",
     );
-  }
-
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || `Request to ${path} failed`);
   }
 
   try {
@@ -413,5 +448,15 @@ export async function fetchQuarterlyReviews() {
 }
 
 export async function checkBackendHealth() {
-  return getJson<HealthResponse>("/health");
+  try {
+    const response = await fetchFromHosts("/health");
+    const payload = (await response.json()) as HealthResponse;
+    return {
+      ...payload,
+      meta: { ...payload.meta, mode: "live", attempted_hosts: BACKEND_HOSTS },
+    };
+  } catch (error) {
+    console.warn("Falling back to cached demo responses for health check", error);
+    return fallbackHealth();
+  }
 }
