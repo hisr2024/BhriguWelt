@@ -3,7 +3,12 @@ import { BirthDetails } from "@/types/astro";
 const STORAGE_KEY = "bhrigu.birthDetails";
 const EVENT_NAME = "bhrigu:birth-details";
 
-type StoredBirthDetails = BirthDetails & { timezone?: string; sakaMonth?: string; sakaDay?: number };
+type StoredBirthDetails = BirthDetails & {
+  timezone?: string;
+  sakaMonth?: string;
+  sakaDay?: number;
+  autoSubmit?: boolean;
+};
 
 type BirthDetailsListener = (details: StoredBirthDetails) => void;
 
@@ -14,7 +19,7 @@ export function saveBirthDetails(details: StoredBirthDetails, options?: { autoSu
   } catch (err) {
     console.warn("Unable to persist birth details", err);
   }
-  const payload = { ...details, autoSubmit: Boolean(options?.autoSubmit) } as StoredBirthDetails & { autoSubmit?: boolean };
+  const payload: StoredBirthDetails = { ...details, autoSubmit: Boolean(options?.autoSubmit) };
   window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: payload }));
 }
 
