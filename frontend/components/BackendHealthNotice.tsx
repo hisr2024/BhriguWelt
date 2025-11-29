@@ -26,8 +26,12 @@ export default function BackendHealthNotice({ className }: Props) {
       try {
         const response: HealthResponse = await checkBackendHealth();
         const principleCount = response?.data?.principles_loaded;
-        const message =
-          principleCount !== undefined
+        const hosts = response?.meta?.attempted_hosts?.filter(Boolean);
+        const isDemo = response?.meta?.mode === "demo";
+        const hostText = hosts?.length ? hosts.join(", ") : process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+        const message = isDemo
+          ? `Using built-in demo predictions until a backend responds (${hostText}).`
+          : principleCount !== undefined
             ? `Backend ready. Principles loaded: ${principleCount}.`
             : "Backend ready.";
         if (!active) return;
@@ -35,15 +39,13 @@ export default function BackendHealthNotice({ className }: Props) {
         setStatus("ok");
         setDetail(message);
       } catch (error) {
-        const reason = error instanceof Error ? error.message : "Unable to reach the API.";
-        const warning =
-          `Cannot reach the Bhrigu backend at ${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/health. ` +
-          "Live predictions may fall back to demo responses until the server is reachable.";
-        const message = `${warning} ${reason}`;
+        console.warn("Backend health check failed; switching to demo mode", error);
         if (!active) return;
-        cachedHealth = { status: "error", detail: message };
-        setStatus("error");
-        setDetail(message);
+        const fallbackDetail =
+          "Running in demo mode until the backend responds. Predictions remain available while connectivity is restored.";
+        cachedHealth = { status: "ok", detail: fallbackDetail };
+        setStatus("ok");
+        setDetail(fallbackDetail);
       }
     })();
 
