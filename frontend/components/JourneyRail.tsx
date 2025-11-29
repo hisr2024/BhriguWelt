@@ -64,6 +64,7 @@ export default function JourneyRail() {
   const pathname = usePathname();
   const [hash, setHash] = useState<string>("");
   const [collapsed, setCollapsed] = useState(false);
+  const [hasStoredCollapsed, setHasStoredCollapsed] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
 
   useEffect(() => {
@@ -71,13 +72,32 @@ export default function JourneyRail() {
     const stored = localStorage.getItem("bhrigu-journey-progress");
     const storedCollapsed = localStorage.getItem("bhrigu-journey-collapsed");
     if (stored) setCompletedSteps(JSON.parse(stored));
-    if (storedCollapsed) setCollapsed(storedCollapsed === "true");
+    if (storedCollapsed) {
+      setCollapsed(storedCollapsed === "true");
+      setHasStoredCollapsed(true);
+    } else if (window.matchMedia("(max-width: 768px)").matches) {
+      setCollapsed(true);
+    }
 
     const handleHashChange = () => setHash(window.location.hash || "");
     handleHashChange();
     window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
-  }, []);
+
+    const handleViewportChange = (event: MediaQueryListEvent | MediaQueryList) => {
+      if (!hasStoredCollapsed) {
+        setCollapsed(event.matches);
+      }
+    };
+
+    const media = window.matchMedia("(max-width: 768px)");
+    handleViewportChange(media);
+    media.addEventListener("change", handleViewportChange);
+
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+      media.removeEventListener("change", handleViewportChange);
+    };
+  }, [hasStoredCollapsed]);
 
   const normalizedPath = normalizePath(pathname || "/");
 
@@ -111,6 +131,7 @@ export default function JourneyRail() {
   const toggleCollapsed = () => {
     const next = !collapsed;
     setCollapsed(next);
+    setHasStoredCollapsed(true);
     if (typeof window !== "undefined") {
       localStorage.setItem("bhrigu-journey-collapsed", String(next));
     }

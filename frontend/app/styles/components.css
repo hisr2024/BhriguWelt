@@ -26,8 +26,8 @@
   padding: 1rem;
   border-radius: 16px;
   border: 1px solid #e5ddce;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(236, 243, 243, 0.9));
-  box-shadow: var(--card-shadow);
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.05);
 }
 
 .journey-rail__controls {
@@ -506,8 +506,8 @@
   border: 1px solid #eadfce;
   border-radius: 14px;
   padding: 1rem;
-  background: #fffdf8;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.04);
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.04);
 }
 
 .card.highlight {
@@ -524,8 +524,8 @@
   border: 1px solid #eadfce;
   border-radius: 18px;
   padding: 1.25rem;
-  background: #fffdf8;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.04);
+  background: #ffffff;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.04);
   display: grid;
   gap: 1rem;
 }
@@ -599,6 +599,13 @@
   color: #3a2f22;
   font-weight: 600;
   font-size: 0.85rem;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.pill:hover,
+.pill:focus-visible {
+  background: #e9dfcd;
+  transform: translateY(-1px);
 }
 
 .button-link,
@@ -609,7 +616,8 @@
   justify-content: center;
   gap: 0.4rem;
   border-radius: 10px;
-  padding: 0.6rem 1rem;
+  padding: 0.7rem 1.05rem;
+  min-height: 44px;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
