@@ -24,7 +24,9 @@ from .horoscope import (
     build_transit_report,
     build_past_life_report,
     build_prediction,
+    _snapshot_from_request,
 )
+from .kundli_generator import generate_kundli
 
 _JSON_HEADER = ("Content-Type", "application/json; charset=utf-8")
 _ADMIN_TOKEN = os.environ.get("BHRIGUWELT_ADMIN_TOKEN")
@@ -324,8 +326,25 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     """Process a JSON payload for the supplied command and return a response."""
 
     if command == "horoscope":
-        report = build_prediction(_request_from_payload(payload))
-        return _serialize_horoscope_report(report)
+        request = _request_from_payload(payload)
+        report = build_prediction(request)
+        response = _serialize_horoscope_report(report)
+
+        # Some hosted deployments previously omitted kundli charts from the
+        # serialized response. Regenerate them defensively so the frontend can
+        # always render the wheel instead of falling back to placeholder copy.
+        def _has_chart(data: Dict[str, Any], key: str) -> bool:
+            houses = data.get(key)
+            return isinstance(houses, list) and len(houses) >= 12
+
+        if not _has_chart(response, "rashi_chart") or not _has_chart(response, "bhava_chart"):
+            snapshot = _snapshot_from_request(request)
+            kundli = generate_kundli(snapshot, weights=report.weights)
+            response.setdefault("rashi_chart", [_serialize_obj(item) for item in kundli.get("rashi_chart", [])])
+            response.setdefault("bhava_chart", [_serialize_obj(item) for item in kundli.get("bhava_chart", [])])
+            response.setdefault("dashas", [_serialize_obj(item) for item in kundli.get("dashas", [])])
+
+        return response
     if command == "past-life":
         report = build_past_life_report(_request_from_payload(payload))
         return {

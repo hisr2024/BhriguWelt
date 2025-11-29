@@ -2,10 +2,11 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
-import { HOUSE_FOCUSES } from "@/lib/houseGrid";
+import { HOUSE_FOCUSES, deriveChartHouses } from "@/lib/houseGrid";
 import { getFallbackSample } from "@/lib/api";
 import { useImmersiveFeedback } from "@/lib/immersive";
 import { theme } from "@/lib/theme";
+import { CalendarDetails } from "@/types/astro";
 import { NatalChart } from "@/types/natal";
 
 import FormPanel from "./horoscope/FormPanel";
@@ -57,6 +58,35 @@ type TimeframeLink = {
 
 const HOROSCOPE_PENDING_SUMMARY = "Based on your inputs, a full reading is pending backend connection.";
 const PAST_LIFE_GENERIC = "Past-life memories may involve healing or service roles.";
+
+function buildCalendarDetails(form: FormState): CalendarDetails {
+  return {
+    birthDate: form.dateOfBirth || new Date().toISOString().slice(0, 10),
+    birthTime: form.timeOfBirth || "00:00",
+    birthPlace: form.placeOfBirth || "stated place",
+  } satisfies CalendarDetails;
+}
+
+function hydrateCharts(payload: ChartResponse, form: FormState): ChartResponse {
+  if (!payload || isNatalChart(payload)) return payload;
+
+  const typed = payload as { rashi_chart?: unknown; bhava_chart?: unknown; dashas?: unknown };
+  const hasRashi = Array.isArray(typed.rashi_chart) && typed.rashi_chart.length >= 12;
+  const hasBhava = Array.isArray(typed.bhava_chart) && typed.bhava_chart.length >= 12;
+
+  if (hasRashi && hasBhava) return payload;
+
+  const details = buildCalendarDetails(form);
+  const generatedRashi = deriveChartHouses(details);
+  const generatedBhava = deriveChartHouses(details, { offset: 1 });
+
+  return {
+    ...payload,
+    rashi_chart: hasRashi ? typed.rashi_chart : generatedRashi,
+    bhava_chart: hasBhava ? typed.bhava_chart : generatedBhava,
+    dashas: Array.isArray(typed.dashas) ? typed.dashas : [],
+  } as ChartResponse;
+}
 
 function buildFallbackInterpretation(): Interpretation {
   const horoscopeSample = getFallbackSample("/horoscope");
@@ -261,7 +291,8 @@ export default function HoroscopeForm() {
     } satisfies FormState;
 
     const handleSuccess = (data: ChartResponse, path: string) => {
-      const extracted = extractInterpretation(data);
+      const hydrated = hydrateCharts(data, form);
+      const extracted = extractInterpretation(hydrated);
 
       const resolvedInterpretation =
         extracted.english || extracted.hindi
@@ -273,7 +304,7 @@ export default function HoroscopeForm() {
             };
 
       setEndpoint(path);
-      setChart(data);
+      setChart(hydrated);
       setInterpretation(resolvedInterpretation);
       setStatus("success");
 
@@ -361,7 +392,7 @@ export default function HoroscopeForm() {
       console.error("[HoroscopeForm] Submission aborted", err, { payload: requestPayload });
       setError(normalizedMessage);
       if (fallbackChartSample) {
-        setChart(fallbackChartSample);
+        setChart(hydrateCharts(fallbackChartSample, form));
       }
       setInterpretation(fallbackInterpretation);
       setStatus("success");
