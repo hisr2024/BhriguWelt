@@ -4,7 +4,16 @@ import tseslint from "typescript-eslint";
 
 export default [
   {
-    ignores: ["node_modules", ".next", "dist", "eslint.config.mjs"],
+    ignores: [
+      "node_modules",
+      ".next",
+      "dist",
+      "eslint.config.mjs",
+      "tests/**/*",
+      "vendor/**/*",
+      "next.config.js",
+      "playwright.config.js",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

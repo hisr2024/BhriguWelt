@@ -29,11 +29,38 @@ interface Props {
 
 type DetailLevel = "concise" | "advanced";
 type LayerKey = "foundation" | "interpretations" | "horoscope" | "past-future" | "matchmaking";
-type D3Lite = {
-  select: (...args: any[]) => any;
-  zoom: (...args: any[]) => any;
-  zoomIdentity: any;
+type ZoomTransform = { toString: () => string };
+
+type D3Selection = {
+  selectAll: (selector: string) => D3Selection;
+  remove: () => void;
+  data: (data: PositionedHouse[]) => D3Selection;
+  enter: () => D3Selection;
+  append: (name: string) => D3Selection;
+  attr: (
+    name: string,
+    value: number | string | ((d: PositionedHouse, i: number, arr: PositionedHouse[]) => number | string),
+  ) => D3Selection;
+  text: (value: string | ((d: PositionedHouse) => string)) => D3Selection;
+  on: (event: string, handler: (event: unknown, d: PositionedHouse) => void) => D3Selection;
+  call: (fn: unknown, ...args: unknown[]) => void;
+  transition?: () => D3Selection;
 };
+
+type D3Zoom = {
+  scaleExtent: (extent: [number, number]) => D3Zoom;
+  on: (event: string, handler: (event: { transform: ZoomTransform }) => void) => D3Zoom;
+  scaleBy: (selection: D3Selection, factor: number) => void;
+  transform: (selection: D3Selection, transform: ZoomTransform | unknown) => void;
+};
+
+type D3Lite = {
+  select: (element: SVGSVGElement) => D3Selection;
+  zoom: () => D3Zoom;
+  zoomIdentity?: ZoomTransform;
+};
+
+type PositionedHouse = ChartHouse & { x: number; y: number };
 
 export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas = [], compatibilityOverlay }: Props) {
   const [animateCharts, setAnimateCharts] = useState(false);
@@ -44,7 +71,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
   const [d3Ready, setD3Ready] = useState(false);
   const [constellationHint, setConstellationHint] = useState("Pinch or scroll to zoom constellations");
   const constellationRef = useRef<SVGSVGElement | null>(null);
-  const zoomHandleRef = useRef<{ zoom: any; svg: any } | null>(null);
+  const zoomHandleRef = useRef<{ zoom: D3Zoom; svg: D3Selection } | null>(null);
 
   useEffect(() => {
     const refresh = () => setAnimateCharts(areMicroAnimationsAllowed());
@@ -149,7 +176,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
     [bhavaChart.length, compatibilityOverlay, dashas.length, rashiChart.length],
   );
 
-  const constellationNodes = useMemo(
+  const constellationNodes = useMemo<PositionedHouse[]>(
     () =>
       (rashiChart.length ? rashiChart : bhavaChart).map((house, index) => {
         const angle = ((house.index - 3) * Math.PI) / 6; // start top
@@ -177,10 +204,10 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
       .data(constellationNodes)
       .enter()
       .append("line")
-      .attr("x1", (d: any) => d.x)
-      .attr("y1", (d: any) => d.y)
-      .attr("x2", (d: any, i: number, arr: any[]) => arr[(i + 1) % arr.length].x)
-      .attr("y2", (d: any, i: number, arr: any[]) => arr[(i + 1) % arr.length].y)
+      .attr("x1", (d: PositionedHouse) => d.x)
+      .attr("y1", (d: PositionedHouse) => d.y)
+      .attr("x2", (d: PositionedHouse, i: number, arr: PositionedHouse[]) => arr[(i + 1) % arr.length].x)
+      .attr("y2", (d: PositionedHouse, i: number, arr: PositionedHouse[]) => arr[(i + 1) % arr.length].y)
       .attr("class", "constellation-line");
 
     const nodes = layer
@@ -188,8 +215,8 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
       .data(constellationNodes)
       .enter()
       .append("circle")
-      .attr("cx", (d: any) => d.x)
-      .attr("cy", (d: any) => d.y)
+      .attr("cx", (d: PositionedHouse) => d.x)
+      .attr("cy", (d: PositionedHouse) => d.y)
       .attr("r", 8)
       .attr("class", "constellation-node")
       .on("click", (_event: unknown, d: ChartHouse) => {
@@ -198,23 +225,23 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
         setInterpretationLayer("interpretations");
       });
 
-    nodes.append("title").text((d: any) => `${d.sign} • House ${d.index} • ${d.occupants.join(", ") || "Empty"}`);
+    nodes.append("title").text((d: PositionedHouse) => `${d.sign} • House ${d.index} • ${d.occupants.join(", ") || "Empty"}`);
 
     layer
       .selectAll("text")
       .data(constellationNodes)
       .enter()
       .append("text")
-      .attr("x", (d: any) => d.x + 12)
-      .attr("y", (d: any) => d.y + 4)
-      .text((d: any) => d.sign)
+      .attr("x", (d: PositionedHouse) => d.x + 12)
+      .attr("y", (d: PositionedHouse) => d.y + 4)
+      .text((d: PositionedHouse) => d.sign)
       .attr("class", "constellation-label");
 
     const zoom = d3
       .zoom()
       .scaleExtent([0.8, 3])
-      .on("zoom", (event: { transform: unknown }) => {
-        layer.attr("transform", event.transform);
+      .on("zoom", (event: { transform: ZoomTransform }) => {
+        layer.attr("transform", event.transform.toString());
         setConstellationHint("Zoomed—drag to pan, tap a node to anchor interpretations");
       });
 

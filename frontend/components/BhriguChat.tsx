@@ -96,7 +96,7 @@ export default function BhriguChat({ chart }: Props) {
       if (mergedContext || nextChart) {
         setContext({ ...(mergedContext || {}), lastChart: nextChart ?? mergedContext?.lastChart });
       }
-    } catch (error) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         {

@@ -161,11 +161,6 @@ export default function HoroscopeForm() {
         .map(([, , label]) => label),
     [form.dateOfBirth, form.placeOfBirth, form.timeOfBirth],
   );
-  const hasValidationIssues = useMemo(() => Boolean(Object.keys(validations).length), [validations]);
-  const confidenceLabel =
-    isComplete && !hasValidationIssues
-      ? "Chart confidence: High"
-      : "Chart confidence: Add or correct birth details for higher accuracy";
   const formattedChart = useMemo(() => (chart ? JSON.stringify(chart, null, 2) : ""), [chart]);
   const hasNarrative = Boolean(interpretation.english || interpretation.hindi);
   const fallbackNarrative = interpretation.raw || formattedChart || "No interpretation available";

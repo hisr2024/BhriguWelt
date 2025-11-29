@@ -76,7 +76,7 @@ export async function bhriguChatHandler(input: HandlerInput): Promise<HandlerRes
       name: birthDetails.name,
     });
     return { reply, chart: generatedChart, context: { ...context, lastChart: generatedChart } };
-  } catch (error) {
+  } catch {
     const reply =
       "I couldn’t process those birth details just yet. Could you double-check the format for name, date (YYYY-MM-DD), time (HH:mm), and place?";
     return { reply, context };

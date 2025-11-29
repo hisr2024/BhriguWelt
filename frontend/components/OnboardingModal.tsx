@@ -1,6 +1,5 @@
 'use client';
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 const GLOSSARY = [
@@ -50,33 +49,6 @@ const JOURNEY_STEPS = [
     title: "Matchmaking",
     detail: "Blend guna scoring with lifestyle filters and ritual suggestions.",
   },
-];
-
-const GUIDED_TOURS = [
-  {
-    title: "Tooltip & glossary tour",
-    copy: "Highlights input hints, glossary toggles, and the new persistent rail.",
-    action: "Preview form guidance",
-    href: "/experience#birth",
-  },
-  {
-    title: "Chart exploration",
-    copy: "Shows hover states, house tap feedback, and interpretation breadcrumbs.",
-    action: "Jump to charts",
-    href: "/experience#chart",
-  },
-  {
-    title: "Timeline coaching",
-    copy: "Walks through future and matchmaking flows with thumb-friendly chips.",
-    action: "Open journeys",
-    href: "/future",
-  },
-];
-
-const BREADCRUMB_NOTES = [
-  "Tap the highlighted dot to return to your starting point.",
-  "Breadcrumbs mirror the persistent rail on every page.",
-  "Completed steps will pulse once before dimming.",
 ];
 
 const BEGINNER_TIPS = [
