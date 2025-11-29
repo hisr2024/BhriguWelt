@@ -8,6 +8,7 @@ import { useImmersiveFeedback } from "@/lib/immersive";
 import { theme } from "@/lib/theme";
 import { CalendarDetails } from "@/types/astro";
 import { NatalChart } from "@/types/natal";
+import { deriveHousePlacements, formatHouseNarrative, useSakaContext } from "@/lib/sakaContext";
 
 import FormPanel from "./horoscope/FormPanel";
 import ReadingPanel from "./horoscope/ReadingPanel";
@@ -143,8 +144,10 @@ export default function HoroscopeForm() {
   const [endpoint, setEndpoint] = useState<string | null>(null);
   const [status, setStatus] = useState<FormStatus>("idle");
   const [validations, setValidations] = useState<ValidationState>({});
+  const [prefillNotice, setPrefillNotice] = useState<string | null>(null);
 
   const { triggerSubmitFeedback } = useImmersiveFeedback();
+  const { sakaState } = useSakaContext();
 
   const fallbackInterpretation = useMemo(() => buildFallbackInterpretation(), []);
   const fallbackChartSample = useMemo(() => getFallbackSample("/horoscope") as ChartResponse | null, []);
@@ -458,6 +461,35 @@ export default function HoroscopeForm() {
   }, [form]);
 
   useEffect(() => {
+    if (!sakaState.houseGrid?.length && !sakaState.details) return;
+    const placements = deriveHousePlacements(sakaState.houseGrid || [], sakaState.sakaDate?.day);
+    const normalize = (value?: string) => {
+      if (!value) return undefined;
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : undefined;
+    };
+    setForm((prev) => ({
+      ...prev,
+      dateOfBirth: sakaState.details?.birthDate || prev.dateOfBirth,
+      timeOfBirth: sakaState.details?.birthTime || prev.timeOfBirth,
+      placeOfBirth: sakaState.details?.birthPlace || prev.placeOfBirth,
+      lunarTithi: placements.lunarTithi ? Number(placements.lunarTithi) : prev.lunarTithi,
+      moonElement: placements.moonElement || prev.moonElement,
+      marsHouse: normalize(placements.marsHouse) ?? prev.marsHouse,
+      saturnHouse: normalize(placements.saturnHouse) ?? prev.saturnHouse,
+      venusHouse: normalize(placements.venusHouse) ?? prev.venusHouse,
+      ketuHouse: normalize(placements.ketuHouse) ?? prev.ketuHouse,
+      mercuryHouse: normalize(placements.mercuryHouse) ?? prev.mercuryHouse,
+      jupiterHouse: normalize(placements.jupiterHouse) ?? prev.jupiterHouse,
+      rahuAspectsAscendant:
+        placements.rahuAspectsAscendant !== undefined
+          ? placements.rahuAspectsAscendant
+          : prev.rahuAspectsAscendant,
+    }));
+    setPrefillNotice(formatHouseNarrative(sakaState.houseGrid, sakaState.sakaDate));
+  }, [sakaState.details?.birthDate, sakaState.details?.birthPlace, sakaState.details?.birthTime, sakaState.houseGrid, sakaState.sakaDate]);
+
+  useEffect(() => {
     if (!missingFields.length && !Object.keys(validations).length) {
       setError(null);
     }
@@ -474,6 +506,7 @@ export default function HoroscopeForm() {
           error={error}
           isComplete={isComplete}
           progressSteps={progressSteps}
+          prefillNotice={prefillNotice}
           onChange={handleChange}
           onSubmit={handleSubmit}
           onAskBhrigu={handleAskBhrigu}

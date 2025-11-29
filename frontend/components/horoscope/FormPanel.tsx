@@ -16,6 +16,7 @@ type Props = {
   error: string | null;
   isComplete: boolean;
   progressSteps: ProgressStep[];
+  prefillNotice?: string | null;
   onChange: (field: keyof FormState, value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onAskBhrigu: () => void;
@@ -30,6 +31,7 @@ export default function FormPanel({
   error,
   isComplete,
   progressSteps,
+  prefillNotice,
   onChange,
   onSubmit,
   onAskBhrigu,
@@ -46,6 +48,15 @@ export default function FormPanel({
           {status === "success" ? "Reading ready" : "Awaiting details"}
         </div>
       </div>
+
+      {prefillNotice ? (
+        <div className="inline-banner" role="status">
+          <div>
+            <strong>Śaka calendar applied</strong>
+            <p className="microcopy">{prefillNotice}</p>
+          </div>
+        </div>
+      ) : null}
 
       <form className="horo-form" onSubmit={onSubmit} aria-busy={loading}>
         <div className="field-row">

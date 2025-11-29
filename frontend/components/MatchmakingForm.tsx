@@ -10,6 +10,7 @@ import PredictionCard from "./PredictionCard";
 import BackendHealthNotice from "@/components/BackendHealthNotice";
 import { DEFAULT_BIRTH_DETAILS } from "@/lib/birthDefaults";
 import { loadBirthDetails, onBirthDetails } from "@/lib/birthStorage";
+import { deriveHousePlacements, formatHouseNarrative, useSakaContext } from "@/lib/sakaContext";
 
 export default function MatchmakingForm() {
   const { t } = useI18n();
@@ -20,8 +21,10 @@ export default function MatchmakingForm() {
   const [error, setError] = useState<string | null>(null);
   const [payload, setPayload] = useState<unknown>(null);
   const [chartsReady, setChartsReady] = useState(false);
+  const [prefillInfo, setPrefillInfo] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement | null>(null);
   const { triggerSubmitFeedback } = useImmersiveFeedback();
+  const { sakaState } = useSakaContext();
 
   const hasBirthDetails = (details: BirthDetails) =>
     Boolean(details.name && details.birthDate && details.birthTime && details.birthPlace);
@@ -64,6 +67,30 @@ export default function MatchmakingForm() {
       errorRef.current.focus();
     }
   }, [error]);
+
+  useEffect(() => {
+    if (!sakaState.houseGrid?.length && !sakaState.details) return;
+    const placements = deriveHousePlacements(sakaState.houseGrid || [], sakaState.sakaDate?.day);
+    setPrimary((prev) => ({
+      ...prev,
+      birthDate: sakaState.details?.birthDate || prev.birthDate,
+      birthTime: sakaState.details?.birthTime || prev.birthTime,
+      birthPlace: sakaState.details?.birthPlace || prev.birthPlace,
+      lunarTithi: placements.lunarTithi || prev.lunarTithi,
+      moonElement: placements.moonElement || prev.moonElement,
+      marsHouse: placements.marsHouse || prev.marsHouse,
+      saturnHouse: placements.saturnHouse || prev.saturnHouse,
+      venusHouse: placements.venusHouse || prev.venusHouse,
+      ketuHouse: placements.ketuHouse || prev.ketuHouse,
+      mercuryHouse: placements.mercuryHouse || prev.mercuryHouse,
+      jupiterHouse: placements.jupiterHouse || prev.jupiterHouse,
+      rahuAspectsAscendant:
+        placements.rahuAspectsAscendant !== undefined
+          ? placements.rahuAspectsAscendant
+          : prev.rahuAspectsAscendant,
+    }));
+    setPrefillInfo(formatHouseNarrative(sakaState.houseGrid, sakaState.sakaDate));
+  }, [sakaState.details?.birthDate, sakaState.details?.birthPlace, sakaState.details?.birthTime, sakaState.houseGrid, sakaState.sakaDate]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -221,6 +248,9 @@ export default function MatchmakingForm() {
             {t("form.helper", "Compare two complete birth records plus lifestyle tags to align manuscript and modern signals.")}
           </p>
           <BackendHealthNotice />
+          {prefillInfo ? (
+            <p className="microcopy" aria-live="polite">{prefillInfo}</p>
+          ) : null}
         </header>
         <div className="duo-overlay" role="status" aria-live="polite">
           <div className={`duo-overlay__orb ${hasBirthDetails(primary) ? "duo-overlay__orb--ready" : ""}`}>

@@ -1,13 +1,16 @@
 import { BirthDetails } from "@/types/astro";
+import { HouseSummary } from "./houseGrid";
 
 const STORAGE_KEY = "bhrigu.birthDetails";
 const EVENT_NAME = "bhrigu:birth-details";
 
-type StoredBirthDetails = BirthDetails & {
+type StoredBirthDetails = Partial<BirthDetails> & {
   timezone?: string;
   sakaMonth?: string;
   sakaDay?: number;
   autoSubmit?: boolean;
+  houseGrid?: HouseSummary[];
+  sakaLabel?: string;
 };
 
 type BirthDetailsListener = (details: StoredBirthDetails) => void;
