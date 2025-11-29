@@ -60,6 +60,11 @@ paths:
   /horoscope:
     post:
       summary: Generate a full horoscope report
+      description: |
+        Returns narrative text alongside structured chart data. The backend now
+        defends against missing ephemeris lookups by regenerating `rashi_chart`
+        and `bhava_chart` data so clients always receive 12-house arrays for
+        rendering Kundli wheels.
       requestBody:
         required: true
         content:
@@ -118,6 +123,7 @@ paths:
                       - headline: "Creative partnerships flourish"
                         timeframe: "Q3 2024"
                     interpretation: "Balance Mars intensity with Venusian compassion."
+                    interpretation_hi: "मार्स की ऊर्जा को करुणा से संतुलित करें।"
                     rashi_chart:
                       - index: 1
                         sign: Aries
@@ -137,7 +143,7 @@ paths:
                   summary: Placeholder charts returned when ephemeris data is missing
                   value:
                     name: "Asha"
-                    karmic_epoch: "Awaiting calculation"
+                    detail_level: "beginner"
                     weights: {}
                     principles: []
                     remedies: []

@@ -92,9 +92,16 @@ Python + `pip` available:
 3. Add the environment variable `NEXT_PUBLIC_BACKEND_URL` and set it to the
    Render or Railway URL created above so server components and client fetches
    share the same base host.
-4. Deploy using Node 18+ (matches local development). Vercel automatically
+4. (Optional) Add `NEXT_PUBLIC_BACKEND_FALLBACK_URL` to mirror a staging
+   backend. The horoscope form will retry against this host whenever the
+   primary URL returns a non-2xx response, keeping demos resilient.
+5. Deploy using Node 18+ (matches local development). Vercel automatically
    installs dependencies and runs `npm run build`. Preview deployments get
    unique URLs, perfect for QA.
+6. After the first successful deploy, enable **Deploy Hooks** in the Vercel
+   dashboard so backend retrains (`/ml/retrain`) or manuscript updates can
+   trigger a fresh frontend build. Wire the hook URL into your CI or a Render
+   cron job.
 
 ## Post-deploy API integration checks
 
@@ -108,8 +115,9 @@ Python + `pip` available:
    horoscope or past-life request; the network trace should show fetches against
    the Render/Railway domain you set in `NEXT_PUBLIC_BACKEND_URL`.
 3. If the frontend falls back to demo data, double-check the Vercel environment
-   variable and redeploy. Successful requests return the same JSON structure as
-   local `PYTHONPATH=src pytest` fixtures.
+   variable, confirm the backend URL is reachable over HTTPS, and redeploy.
+   Successful requests return the same JSON structure as local
+   `PYTHONPATH=src pytest` fixtures.
 4. Confirm the backend enforces throttling by making two quick POSTs to
    `/future` or `/health` from the same IP; the second call should return HTTP
    429. Cached responses should update after 2-3 minutes or immediately after
