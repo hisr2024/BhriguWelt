@@ -7,10 +7,11 @@ extensions still receive consistent payloads.
 
 from __future__ import annotations
 
+import importlib.util
+import logging
 from datetime import datetime, timezone, timedelta
 from math import fmod, pi, sin
 from typing import Dict, Tuple
-import importlib.util
 from zoneinfo import ZoneInfo
 
 try:  # pragma: no cover - optional dependency
@@ -37,6 +38,8 @@ __all__ = [
     "derive_progressed_snapshot",
     "normalize_birth_datetime",
 ]
+
+logger = logging.getLogger("bhriguwelt.astronomy")
 
 
 # Recorded fallbacks for curated benchmark charts. These keep offline

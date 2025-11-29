@@ -210,6 +210,25 @@ class MatchCriterionResult:
 
 
 @dataclass
+class SynastryOverlay:
+    """Lightweight visualization payload showing where charts overlap."""
+
+    anchor: str
+    partner: str
+    alignment: float
+    commentary: str
+
+
+@dataclass
+class LifePathInsight:
+    """Shared life path markers derived from core sutras."""
+
+    theme: str
+    resonance: float
+    guidance: str
+
+
+@dataclass
 class MatchmakingCompatibility:
     """Aggregate compatibility score plus detailed folio references."""
 
@@ -470,6 +489,18 @@ def evaluate_matchmaking(
     short_term_weight = 0.0
     modern_highlights: List[str] = []
 
+    def _circular_alignment(a: int, b: int) -> float:
+        distance = min(abs(a - b), 12 - abs(a - b))
+        return round(max(0.0, 1 - distance / 6), 2)
+
+    def _element_alignment(first: str, second: str) -> float:
+        if not first or not second:
+            return 0.5
+        if first == second:
+            return 1.0
+        cycle = {"fire": "air", "earth": "water", "air": "fire", "water": "earth", "ether": "ether"}
+        return 0.78 if cycle.get(first) == second else 0.42
+
     for criterion in criteria:
         if not _tradition_allows(criterion, primary.tradition):
             continue
@@ -538,6 +569,58 @@ def evaluate_matchmaking(
                 ),
             )
         )
+
+    moon_alignment = _element_alignment(primary.moon_element, partner.moon_element)
+    mars_venus_alignment = _circular_alignment(primary.mars_house, partner.venus_house)
+    saturn_alignment = _circular_alignment(primary.saturn_house, partner.saturn_house)
+    dharma_alignment = _circular_alignment(primary.jupiter_house, partner.jupiter_house)
+
+    synastry_overlays = [
+        SynastryOverlay(
+            anchor="Moon element",
+            partner=partner.moon_element,
+            alignment=moon_alignment,
+            commentary="Elemental resonance shapes emotional rapport",
+        ),
+        SynastryOverlay(
+            anchor="Mars to Venus houses",
+            partner=f"House {partner.venus_house}",
+            alignment=mars_venus_alignment,
+            commentary="Action and affection find a shared cadence",
+        ),
+        SynastryOverlay(
+            anchor="Saturn discipline",
+            partner=f"House {partner.saturn_house}",
+            alignment=saturn_alignment,
+            commentary="Duty cycles remain synchronized for steadiness",
+        ),
+    ]
+
+    shared_life_paths = [
+        LifePathInsight(
+            theme="Dharma and purpose",
+            resonance=dharma_alignment,
+            guidance="Shared Jupiter houses indicate aligned life teachings and gurus.",
+        ),
+        LifePathInsight(
+            theme="Commitment and timing",
+            resonance=saturn_alignment,
+            guidance="Saturn overlays show where patience is mutually learned.",
+        ),
+        LifePathInsight(
+            theme="Emotional safety",
+            resonance=moon_alignment,
+            guidance="Moon resonance highlights how the pair soothes one another.",
+        ),
+    ]
+
+    overlay_average = _safe_ratio(sum(item.alignment for item in synastry_overlays), len(synastry_overlays))
+    alignment_percentages = {
+        "emotional": round(moon_alignment * 100, 2),
+        "creative": round(mars_venus_alignment * 100, 2),
+        "structural": round(saturn_alignment * 100, 2),
+        "overall_overlay": round(overlay_average * 100, 2),
+    }
 
     compatibility_index = round(_safe_ratio(total_score, total_weight) * 100, 2) if total_weight else 50.0
     long_term_index = round(_safe_ratio(long_term_score, long_term_weight) * 100, 2) if long_term_weight else compatibility_index

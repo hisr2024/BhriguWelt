@@ -29,20 +29,22 @@ A serene, symbolic interpreter modeled on Bhrigu Samhita themes. The assistant s
 
 ## 3) API Flow (high-level)
 1. **Collect Birth Data:** validate name + DOB + time + place; enrich place via geocoding and timezone lookup.
-2. **Construct Profile Context:** derive symbolic anchors (elements/tattva emphasis, lunar/solar balance, guna tendencies) using deterministic rules.
-3. **Prompt Assembly:** combine system prompt + safety clauses + profile context + user question into model call.
-4. **Model Invocation:** call LLM with temperature tuned low for consistency; include guardrails for banned claims.
-5. **Post-processing:** enforce templates, add symbolism disclaimer, filter sensitive topics.
-6. **Response Delivery:** return structured payload (sections, bullets, tone markers) for UI rendering.
-7. **Logging & Feedback:** store anonymized usage metrics; capture thumbs-up/down for iterative tuning.
+2. **Construct Profile Context:** derive symbolic anchors (elements/tattva emphasis, lunar/solar balance, guna tendencies) using deterministic rules and stored user metadata.
+3. **Session Memory:** hydrate the conversation with the seeker’s prior turns and remedies so follow-ups feel continuous.
+4. **Prompt Assembly:** combine system prompt + safety clauses + profile context + user question into model call.
+5. **Model Invocation:** call LLM with temperature tuned low for consistency; include guardrails for banned claims.
+6. **Post-processing:** enforce templates, add symbolism disclaimer, filter sensitive topics, and attach 2–3 remedial suggestions (breathwork, journaling, seva) tailored to the query.
+7. **Response Delivery:** return structured payload (sections, bullets, tone markers) for UI rendering with a `session_id` that the frontend reuses.
+8. **Logging & Feedback:** store anonymized usage metrics, alerts, and remedial effectiveness ratings; capture thumbs-up/down for iterative tuning.
 
 ## 4) UI Design (chat-first, calm)
 - Layout: minimal chat bubbles on serene backdrop; soft gold/indigo accents; generous whitespace.
 - Input: floating pill bar with mic icon; helper text reminding symbolic nature.
 - Cards: optional stacked cards for "Karmic Flow," "Emotional Pattern," "Dharma Direction," "Complementary Energies." 
-- Disclaimers: persistent ribbon noting "Symbolic, reflective guidance — not deterministic." 
+- Disclaimers: persistent ribbon noting "Symbolic, reflective guidance — not deterministic."
 - Accessibility: large type, high-contrast toggle, voice input, bilingual labels for key fields.
 - Animations: slow fades/slide; no harsh motion; typing indicator as soft dot pulse.
+- Conversation controls: chip shortcuts for clarifying questions, explicit reminder of stored birth details, and a visible session reset.
 
 ## 5) Training Dataset Structure (for fine-tuning or RLAIF)
 - Format: JSONL with fields `{system_prompt, user_input, context_tags, target_response, safety_notes}`.
@@ -64,6 +66,8 @@ A serene, symbolic interpreter modeled on Bhrigu Samhita themes. The assistant s
   - `Future Directions (Symbolic)` — invitations, not predictions.
   - Footer disclaimer: "Interpretive, reflective — not deterministic." 
 - **Relationship Readings:** dual-profile template with shared lessons, energetic complementarity, and healing practices.
+- **Interactive Queries:** each reply includes two follow-up prompts the seeker can tap (e.g., "How do I balance this energy?" or "What seva fits this phase?").
+- **Remedial Suggestions:** attach a short list of de-risked remedies (breath, mantra, seva, journaling) with timing cues; avoid medical advice.
 
 ## 7) Fine-Tuning / Alignment Outline
 - Data Prep: curate symbolic exemplars; strip deterministic or event-based statements; annotate with safety reasons.
