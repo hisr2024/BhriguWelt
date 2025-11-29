@@ -29,6 +29,7 @@ from .profiles import (
     upcoming_alerts,
     alerts_summary,
     analytics_snapshot,
+    schedule_dasha_alerts,
 )
 from .chatbot import generate_chat_reply
 from .horoscope import (
@@ -555,6 +556,13 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             response.setdefault("dashas", [_serialize_obj(item) for item in kundli.get("dashas", [])])
 
         _ensure_visualization_payload(response)
+
+        profile_id = payload.get("profile_id") if isinstance(payload, dict) else None
+        if profile_id and response.get("dashas"):
+            try:
+                schedule_dasha_alerts(int(profile_id), response.get("dashas", []))
+            except Exception:  # pragma: no cover - alert scheduling is best-effort
+                logger.warning("Unable to schedule dasha alerts", extra={"profile_id": profile_id})
 
         return response
     if command == "past-life":
