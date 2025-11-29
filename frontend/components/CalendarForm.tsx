@@ -10,6 +10,8 @@ import { CalendarDetails } from "@/types/astro";
 import { useImmersiveFeedback } from "@/lib/immersive";
 import PredictionCard from "./PredictionCard";
 import BackendHealthNotice from "@/components/BackendHealthNotice";
+import { saveBirthDetails } from "@/lib/birthStorage";
+import { deriveHousePlacements, useSakaContext } from "@/lib/sakaContext";
 
 const TRANSIT_ORBITS = [
   {
@@ -48,6 +50,7 @@ export default function CalendarForm() {
   const errorRef = useRef<HTMLDivElement | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const { triggerSubmitFeedback } = useImmersiveFeedback();
+  const { updateSaka } = useSakaContext();
 
   useEffect(() => {
     if (error && errorRef.current) {
@@ -67,12 +70,32 @@ export default function CalendarForm() {
       const response = await requestCalendar(details);
       setPayload(response);
       const sakaDate = typeof response === "object" && response && "saka_date" in response ? response.saka_date : undefined;
-      setHouseGrid(
-        deriveHouseGrid(
-          details,
-          (sakaDate as { month?: string } | undefined)?.month,
-          (sakaDate as { day?: number } | undefined)?.day,
-        ),
+      const derivedGrid = deriveHouseGrid(
+        details,
+        (sakaDate as { month?: string } | undefined)?.month,
+        (sakaDate as { day?: number } | undefined)?.day,
+      );
+      setHouseGrid(derivedGrid);
+      updateSaka({
+        details,
+        sakaDate: sakaDate as { year?: number; month?: string; day?: number },
+        houseGrid: derivedGrid,
+        payload: response,
+      });
+      const placements = deriveHousePlacements(
+        derivedGrid,
+        (sakaDate as { day?: number } | undefined)?.day,
+      );
+      saveBirthDetails(
+        {
+          ...details,
+          ...placements,
+          sakaMonth: (sakaDate as { month?: string } | undefined)?.month,
+          sakaDay: (sakaDate as { day?: number } | undefined)?.day,
+          houseGrid: derivedGrid,
+          sakaLabel: sakaLabel,
+        },
+        { autoSubmit: true },
       );
       setAutoTriggered(source === "auto");
     } catch (err) {

@@ -10,6 +10,7 @@ import PredictionCard from "./PredictionCard";
 import BackendHealthNotice from "@/components/BackendHealthNotice";
 import { loadBirthDetails, onBirthDetails } from "@/lib/birthStorage";
 import { DEFAULT_BIRTH_DETAILS } from "@/lib/birthDefaults";
+import { deriveHousePlacements, formatHouseNarrative, useSakaContext } from "@/lib/sakaContext";
 
 const MAX_RETRIES = 2;
 
@@ -32,6 +33,7 @@ export default function PredictionForm({ engine, title, description, onRequestSt
   const errorRef = useRef<HTMLDivElement | null>(null);
   const lastSuccessfulPayloadRef = useRef<unknown>(null);
   const { triggerSubmitFeedback } = useImmersiveFeedback();
+  const { sakaState } = useSakaContext();
 
   useEffect(() => {
     const stored = loadBirthDetails();
@@ -55,6 +57,22 @@ export default function PredictionForm({ engine, title, description, onRequestSt
       errorRef.current.focus();
     }
   }, [error]);
+
+  useEffect(() => {
+    if (!sakaState.houseGrid?.length && !sakaState.details) return;
+    const placements = deriveHousePlacements(sakaState.houseGrid || [], sakaState.sakaDate?.day);
+    const sakaHelper = formatHouseNarrative(sakaState.houseGrid, sakaState.sakaDate);
+    setDetails((prev) => ({
+      ...prev,
+      birthDate: sakaState.details?.birthDate || prev.birthDate,
+      birthTime: sakaState.details?.birthTime || prev.birthTime,
+      birthPlace: sakaState.details?.birthPlace || prev.birthPlace,
+      ...placements,
+    }));
+    if (sakaHelper) {
+      setInfo(`${sakaHelper} Applied to ${engine} request.`);
+    }
+  }, [engine, sakaState.details?.birthDate, sakaState.details?.birthPlace, sakaState.details?.birthTime, sakaState.houseGrid, sakaState.sakaDate]);
 
   const validateDetails = (payload: BirthDetails): string | null => {
     if (!payload.birthDate || !/^\d{4}-\d{2}-\d{2}$/.test(payload.birthDate)) {

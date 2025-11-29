@@ -36,6 +36,31 @@ export default function HomePage() {
       <AetherBeltSection />
       <RitualGrid />
       <JourneyRail />
+      <section className="panel" id="calendar-conversion">
+        <div className="section-heading">
+          <p className="eyebrow">Śaka ready</p>
+          <h2>Gregorian ↔ Śaka</h2>
+          <p className="muted">{t("home.grid.bilingual.body", bilingualBody)}</p>
+        </div>
+        <div className="panel__content">
+          <div className="card softly">
+            <p className="microcopy">Reference tithi and nakshatra without extra chrome.</p>
+            <div className="timeline-chips" role="list">
+              {timelineNotes.map((note) => (
+                <div className={`timeline-chip ${note.tone}`} key={note.label} role="listitem">
+                  <span className="pill">{note.label}</span>
+                  <strong>{note.value}</strong>
+                  <p className="microcopy">{note.detail}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="card highlight">
+            <CalendarForm />
+          </div>
+        </div>
+      </section>
+
       <section className="panel" id="birth-details">
         <div className="section-heading">
           <p className="eyebrow">Birth details</p>
@@ -71,31 +96,6 @@ export default function HomePage() {
               title={t("pages.horoscope.title", "Holistic horoscope")}
               description="Enter details at your pace and receive calm guidance."
             />
-          </div>
-        </div>
-      </section>
-
-      <section className="panel" id="calendar-conversion">
-        <div className="section-heading">
-          <p className="eyebrow">Śaka ready</p>
-          <h2>Gregorian ↔ Śaka</h2>
-          <p className="muted">{t("home.grid.bilingual.body", bilingualBody)}</p>
-        </div>
-        <div className="panel__content">
-          <div className="card softly">
-            <p className="microcopy">Reference tithi and nakshatra without extra chrome.</p>
-            <div className="timeline-chips" role="list">
-              {timelineNotes.map((note) => (
-                <div className={`timeline-chip ${note.tone}`} key={note.label} role="listitem">
-                  <span className="pill">{note.label}</span>
-                  <strong>{note.value}</strong>
-                  <p className="microcopy">{note.detail}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="card highlight">
-            <CalendarForm />
           </div>
         </div>
       </section>
