@@ -7,10 +7,11 @@ extensions still receive consistent payloads.
 
 from __future__ import annotations
 
+import importlib.util
+import logging
 from datetime import datetime, timezone, timedelta
 from math import fmod, pi, sin
 from typing import Dict, Tuple
-import importlib.util
 from zoneinfo import ZoneInfo
 
 try:  # pragma: no cover - optional dependency
@@ -37,6 +38,8 @@ __all__ = [
     "derive_progressed_snapshot",
     "normalize_birth_datetime",
 ]
+
+logger = logging.getLogger("bhriguwelt.astronomy")
 
 
 # Recorded fallbacks for curated benchmark charts. These keep offline
@@ -108,7 +111,13 @@ def derive_lunar_details(dt: datetime, latitude: float | None = None, longitude:
     """
 
     if has_swisseph():
-        return _swisseph_lunar_details(dt, latitude=latitude, longitude=longitude)
+        try:
+            return _swisseph_lunar_details(dt, latitude=latitude, longitude=longitude)
+        except Exception as exc:  # pragma: no cover - optional C extensions may fail
+            logger.warning(
+                "Swiss Ephemeris unavailable for precise calculation; falling back to mean motions",
+                extra={"error": str(exc), "latitude": latitude, "longitude": longitude},
+            )
 
     utc_dt = dt.astimezone(timezone.utc)
     precomputed = _BENCHMARK_FALLBACKS.get(utc_dt.isoformat())
