@@ -10,7 +10,7 @@ import { CalendarDetails } from "@/types/astro";
 import { useImmersiveFeedback } from "@/lib/immersive";
 import PredictionCard from "./PredictionCard";
 import BackendHealthNotice from "@/components/BackendHealthNotice";
-import { saveBirthDetails } from "@/lib/birthStorage";
+import { loadBirthDetails, onBirthDetails, saveBirthDetails } from "@/lib/birthStorage";
 import { deriveHousePlacements, useSakaContext } from "@/lib/sakaContext";
 
 const TRANSIT_ORBITS = [
@@ -51,6 +51,25 @@ export default function CalendarForm() {
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const { triggerSubmitFeedback } = useImmersiveFeedback();
   const { updateSaka } = useSakaContext();
+
+  useEffect(() => {
+    const stored = loadBirthDetails();
+    if (stored) {
+      setDetails((prev) => ({
+        birthDate: stored.birthDate ?? prev.birthDate,
+        birthTime: stored.birthTime ?? prev.birthTime,
+        birthPlace: stored.birthPlace ?? prev.birthPlace,
+      }));
+    }
+
+    return onBirthDetails((next) => {
+      setDetails((prev) => ({
+        birthDate: next.birthDate ?? prev.birthDate,
+        birthTime: next.birthTime ?? prev.birthTime,
+        birthPlace: next.birthPlace ?? prev.birthPlace,
+      }));
+    });
+  }, []);
 
   useEffect(() => {
     if (error && errorRef.current) {
@@ -153,7 +172,10 @@ export default function CalendarForm() {
               onChange={(event) => setDetails({ ...details, birthDate: event.target.value })}
             />
             <p className="microcopy" id="calendar-birth-date-hint">
-              Auto-detects timezone from your device; gentle prompts fire if format slips.
+              {t(
+                "calendar.microcopy.date",
+                "Auto-detects timezone from your device; gentle prompts fire if format slips.",
+              )}
             </p>
           </div>
           <div>
@@ -165,7 +187,9 @@ export default function CalendarForm() {
               value={details.birthTime}
               onChange={(event) => setDetails({ ...details, birthTime: event.target.value })}
             />
-            <p className="microcopy">We surface am/pm warnings so beginners avoid mistakes.</p>
+            <p className="microcopy">
+              {t("calendar.microcopy.time", "We surface am/pm warnings so beginners avoid mistakes.")}
+            </p>
           </div>
           <div>
             <label htmlFor="calendar-birth-place">{t("form.birthPlace", "Birth place")}</label>
@@ -175,7 +199,12 @@ export default function CalendarForm() {
               value={details.birthPlace}
               onChange={(event) => setDetails({ ...details, birthPlace: event.target.value })}
             />
-            <p className="microcopy">Use the city or nearest landmark—house overlays adapt dynamically.</p>
+            <p className="microcopy">
+              {t(
+                "calendar.microcopy.place",
+                "Use the city or nearest landmark—house overlays adapt dynamically.",
+              )}
+            </p>
           </div>
         </div>
         <div className="form-actions">
@@ -188,11 +217,13 @@ export default function CalendarForm() {
             {loading
               ? t("form.loading", "Consulting Bhrigu...")
               : autoTriggered
-                ? "Refresh conversion"
+                ? t("calendar.refresh", "Refresh conversion")
                 : t("calendar.title", "Convert Gregorian birth details to Śaka")}
           </button>
           <span className="badge" aria-live="polite">
-            {autoTriggered ? "Live conversion applied" : "Auto converts when details are filled"}
+            {autoTriggered
+              ? t("calendar.badge.live", "Live conversion applied")
+              : t("calendar.badge.pending", "Auto converts when details are filled")}
           </span>
         </div>
         <div className="definition-row" aria-label="Helpful glossary chips">
