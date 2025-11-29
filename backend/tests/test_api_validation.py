@@ -30,3 +30,13 @@ def test_handle_command_rejects_invalid_tithi():
 def test_handle_command_rejects_unsupported_moon_element():
     with pytest.raises(ValueError):
         api.handle_command("future", _payload(moon_element="ice"))
+
+
+def test_request_from_payload_rejects_bad_birth_time():
+    with pytest.raises(ValueError, match="Invalid birth time"):
+        api.handle_command("horoscope", _payload(birth_time="7pm"))
+
+
+def test_request_from_payload_requires_city_and_country():
+    with pytest.raises(ValueError, match="city and country"):
+        api.handle_command("horoscope", _payload(birth_place="Varanasi"))

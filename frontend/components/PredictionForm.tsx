@@ -8,26 +8,10 @@ import { useImmersiveFeedback } from "@/lib/immersive";
 import { BirthDetails, PredictionEngine } from "@/types/astro";
 import PredictionCard from "./PredictionCard";
 import BackendHealthNotice from "@/components/BackendHealthNotice";
+import { loadBirthDetails, onBirthDetails } from "@/lib/birthStorage";
+import { DEFAULT_BIRTH_DETAILS } from "@/lib/birthDefaults";
 
 const MAX_RETRIES = 2;
-
-const defaultDetails: BirthDetails = {
-  name: "",
-  birthDate: "",
-  birthTime: "",
-  birthPlace: "",
-  tradition: "universal",
-  lunarTithi: "5",
-  moonElement: "water",
-  marsHouse: "1",
-  saturnHouse: "2",
-  venusHouse: "3",
-  rahuAspectsAscendant: false,
-  ketuHouse: "12",
-  mercuryHouse: "5",
-  jupiterHouse: "5",
-  saturnRetrograde: false,
-};
 
 interface Props {
   engine: PredictionEngine;
@@ -39,7 +23,7 @@ interface Props {
 
 export default function PredictionForm({ engine, title, description, onRequestStart, onResult }: Props) {
   const { t } = useI18n();
-  const [details, setDetails] = useState<BirthDetails>(defaultDetails);
+  const [details, setDetails] = useState<BirthDetails>({ ...DEFAULT_BIRTH_DETAILS });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [payload, setPayload] = useState<unknown>(null);
@@ -50,10 +34,49 @@ export default function PredictionForm({ engine, title, description, onRequestSt
   const { triggerSubmitFeedback } = useImmersiveFeedback();
 
   useEffect(() => {
+    const stored = loadBirthDetails();
+    if (stored) {
+      setDetails((prev) => ({ ...prev, ...stored }));
+    }
+
+    const unsubscribe = onBirthDetails((payload) => {
+      setDetails((prev) => ({ ...prev, ...payload }));
+      if (engine === "horoscope" && payload.autoSubmit) {
+        setInfo(t("form.autosubmit", "Submitting horoscope with fresh birth details…"));
+        void handleSubmit();
+      }
+    });
+
+    return () => unsubscribe();
+  }, [engine, t]);
+
+  useEffect(() => {
     if (error && errorRef.current) {
       errorRef.current.focus();
     }
   }, [error]);
+
+  const validateDetails = (payload: BirthDetails): string | null => {
+    if (!payload.birthDate || !/^\d{4}-\d{2}-\d{2}$/.test(payload.birthDate)) {
+      return t("form.error.birthDate", "Use YYYY-MM-DD between 1900-2100.");
+    }
+    if (!payload.birthTime || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(payload.birthTime)) {
+      return t("form.error.birthTime", "Use HH:MM in 24h format (e.g., 07:45)");
+    }
+    if (!payload.birthPlace || payload.birthPlace.length < 3 || !payload.birthPlace.includes(",")) {
+      return t("form.error.birthPlace", "Add city and country (e.g., Jaipur, Bharat)");
+    }
+    if (payload.lunarTithi && (!/^\d+$/.test(payload.lunarTithi) || Number(payload.lunarTithi) > 30)) {
+      return t("form.error.lunarTithi", "Lunar tithi must be 1-30.");
+    }
+    if (
+      payload.moonElement &&
+      !["water", "fire", "air", "earth", "ether"].includes(payload.moonElement.toLowerCase())
+    ) {
+      return t("form.error.moonElement", "Use water, fire, air, earth, or ether for moon element.");
+    }
+    return null;
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -65,6 +88,13 @@ export default function PredictionForm({ engine, title, description, onRequestSt
     onRequestStart?.();
     setLoading(true);
     const isOffline = typeof navigator !== "undefined" && navigator && !navigator.onLine;
+
+    const validationIssue = validateDetails(details);
+    if (validationIssue) {
+      setLoading(false);
+      setError(validationIssue);
+      return;
+    }
 
     if (isOffline) {
       setLoading(false);

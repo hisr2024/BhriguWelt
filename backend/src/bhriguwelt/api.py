@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 import logging
+import re
+from datetime import datetime
 from dataclasses import asdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -412,12 +414,33 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _request_from_payload(payload: Dict[str, Any]) -> HoroscopeRequest:
+    def _validate_birth_date(value: Any) -> str:
+        if not isinstance(value, str) or not value:
+            raise ValueError("Invalid birth date: use YYYY-MM-DD")
+        try:
+            datetime.strptime(value, "%Y-%m-%d")
+        except ValueError as exc:  # pragma: no cover - defensive against malformed dates
+            raise ValueError("Invalid birth date: use YYYY-MM-DD") from exc
+        return value
+
+    def _validate_birth_time(value: Any) -> str:
+        if not isinstance(value, str) or not re.match(r"^(?:[01]\d|2[0-3]):[0-5]\d$", value):
+            raise ValueError("Invalid birth time: use 24h HH:MM")
+        return value
+
+    def _validate_birth_place(value: Any) -> str:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("Invalid birth place: include city and country (e.g., Jaipur, Bharat)")
+        if "," not in value:
+            raise ValueError("Invalid birth place: include city and country (e.g., Jaipur, Bharat)")
+        return value
+
     try:
         return HoroscopeRequest(
             name=payload["name"],
-            birth_date=payload["birth_date"],
-            birth_time=payload["birth_time"],
-            birth_place=payload["birth_place"],
+            birth_date=_validate_birth_date(payload["birth_date"]),
+            birth_time=_validate_birth_time(payload["birth_time"]),
+            birth_place=_validate_birth_place(payload["birth_place"]),
             tradition=payload.get("tradition", "universal"),
             timezone=payload.get("timezone"),
             consent_for_date_predictions=bool(payload.get("consent_for_date_predictions", False)),

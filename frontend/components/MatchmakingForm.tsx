@@ -8,29 +8,13 @@ import { BirthDetails } from "@/types/astro";
 import { useImmersiveFeedback } from "@/lib/immersive";
 import PredictionCard from "./PredictionCard";
 import BackendHealthNotice from "@/components/BackendHealthNotice";
-
-const defaultDetails: BirthDetails = {
-  name: "",
-  birthDate: "",
-  birthTime: "",
-  birthPlace: "",
-  tradition: "universal",
-  lunarTithi: "5",
-  moonElement: "water",
-  marsHouse: "1",
-  saturnHouse: "2",
-  venusHouse: "3",
-  rahuAspectsAscendant: false,
-  ketuHouse: "12",
-  mercuryHouse: "5",
-  jupiterHouse: "5",
-  saturnRetrograde: false,
-};
+import { DEFAULT_BIRTH_DETAILS } from "@/lib/birthDefaults";
+import { loadBirthDetails, onBirthDetails } from "@/lib/birthStorage";
 
 export default function MatchmakingForm() {
   const { t } = useI18n();
-  const [primary, setPrimary] = useState<BirthDetails>({ ...defaultDetails });
-  const [partner, setPartner] = useState<BirthDetails>({ ...defaultDetails });
+  const [primary, setPrimary] = useState<BirthDetails>({ ...DEFAULT_BIRTH_DETAILS });
+  const [partner, setPartner] = useState<BirthDetails>({ ...DEFAULT_BIRTH_DETAILS });
   const [modernPreferences, setModernPreferences] = useState("remote-first, research-partnership");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,9 +26,38 @@ export default function MatchmakingForm() {
   const hasBirthDetails = (details: BirthDetails) =>
     Boolean(details.name && details.birthDate && details.birthTime && details.birthPlace);
 
+  const validateDetails = (details: BirthDetails) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(details.birthDate)) return t("form.error.birthDate", "Use YYYY-MM-DD between 1900-2100.");
+    if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(details.birthTime)) return t("form.error.birthTime", "Use HH:MM in 24h format (e.g., 07:45)");
+    if (!details.birthPlace.includes(",")) return t("form.error.birthPlace", "Add city and country (e.g., Jaipur, Bharat)");
+    if (details.lunarTithi && (!/^\d+$/.test(details.lunarTithi) || Number(details.lunarTithi) > 30)) {
+      return t("form.error.lunarTithi", "Lunar tithi must be 1-30.");
+    }
+    if (
+      details.moonElement &&
+      !["water", "fire", "air", "earth", "ether"].includes(details.moonElement.toLowerCase())
+    ) {
+      return t("form.error.moonElement", "Use water, fire, air, earth, or ether for moon element.");
+    }
+    return null;
+  };
+
   useEffect(() => {
     setChartsReady(hasBirthDetails(primary) && hasBirthDetails(partner));
   }, [primary, partner]);
+
+  useEffect(() => {
+    const stored = loadBirthDetails();
+    if (stored && hasBirthDetails({ ...primary, ...stored })) {
+      setPrimary((prev) => ({ ...prev, ...stored }));
+    }
+
+    const unsubscribe = onBirthDetails((payload) => {
+      setPrimary((prev) => ({ ...prev, ...payload }));
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (error && errorRef.current) {
@@ -64,6 +77,12 @@ export default function MatchmakingForm() {
           "Please complete both profiles so we can generate each chart before calculating compatibility.",
         ),
       );
+      return;
+    }
+    const primaryIssue = validateDetails(primary);
+    const partnerIssue = validateDetails(partner);
+    if (primaryIssue || partnerIssue) {
+      setError(primaryIssue || partnerIssue);
       return;
     }
     setLoading(true);

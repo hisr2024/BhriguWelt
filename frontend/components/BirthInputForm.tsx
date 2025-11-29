@@ -8,6 +8,8 @@ import { useI18n } from "@/lib/i18n";
 import { CalendarDetails } from "@/types/astro";
 import { useImmersiveFeedback } from "@/lib/immersive";
 import BackendHealthNotice from "@/components/BackendHealthNotice";
+import { saveBirthDetails } from "@/lib/birthStorage";
+import { DEFAULT_BIRTH_DETAILS } from "@/lib/birthDefaults";
 
 type BirthForm = CalendarDetails & {
   lunarTithi: string;
@@ -64,11 +66,12 @@ declare global {
 }
 
 const INITIAL_DETAILS: BirthForm = {
+  ...DEFAULT_BIRTH_DETAILS,
+  lunarTithi: "",
+  moonElement: "",
   birthDate: "",
   birthTime: "",
   birthPlace: "",
-  lunarTithi: "",
-  moonElement: "",
   timezone: typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "",
 };
 
@@ -89,6 +92,7 @@ export default function BirthInputForm() {
   const [fontScale, setFontScale] = useState(1);
   const [mapPreview, setMapPreview] = useState<string | null>(null);
   const [resolvedPlace, setResolvedPlace] = useState<string | null>(null);
+  const [infoBanner, setInfoBanner] = useState<string | null>(null);
   const mapHandleRef = useRef<MapHandle>({ map: null, marker: null });
   const [gestureMode, setGestureMode] = useState(false);
   const [confidenceScore, setConfidenceScore] = useState(0);
@@ -191,17 +195,27 @@ export default function BirthInputForm() {
 
     if (payload.birthDate) {
       const year = Number(payload.birthDate.split("-")[0]);
-      if (year < 1900 || year > 2100) {
-        feedback.dob = "Try a date within 1900-2100";
+      if (year < 1900 || year > 2100 || !/^\d{4}-\d{2}-\d{2}$/.test(payload.birthDate)) {
+        feedback.dob = t("form.error.birthDate", "Use YYYY-MM-DD between 1900-2100.");
       }
     }
 
-    if (payload.birthTime && !/^\d{2}:\d{2}$/.test(payload.birthTime)) {
-      feedback.tob = "Use HH:MM in 24h format (e.g., 07:45)";
+    if (payload.birthTime && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(payload.birthTime)) {
+      feedback.tob = t("form.error.birthTime", "Use HH:MM in 24h format (e.g., 07:45)");
     }
 
-    if (payload.birthPlace && payload.birthPlace.length < 3) {
-      feedback.pob = "Add at least 3 characters (city, country)";
+    if (payload.birthPlace) {
+      if (payload.birthPlace.length < 3 || !payload.birthPlace.includes(",")) {
+        feedback.pob = t("form.error.birthPlace", "Add city and country (e.g., Jaipur, Bharat)");
+      }
+    }
+
+    if (payload.lunarTithi && (!/^\d+$/.test(payload.lunarTithi) || Number(payload.lunarTithi) < 1 || Number(payload.lunarTithi) > 30)) {
+      feedback.dob = t("form.error.lunarTithi", "Lunar tithi must be 1-30.");
+    }
+
+    if (payload.moonElement && !["water", "fire", "air", "earth", "ether"].includes(payload.moonElement.toLowerCase())) {
+      feedback.dob = t("form.error.moonElement", "Use water, fire, air, earth, or ether for moon element.");
     }
 
     return feedback;
@@ -228,6 +242,24 @@ export default function BirthInputForm() {
       );
       setSakaParts((prev) => ({ ...prev, ...sakaValue }));
       setHouseGrid(deriveHouseGrid(details, sakaValue.month, sakaValue.day));
+      saveBirthDetails(
+        {
+          ...details,
+          birthDate: details.birthDate,
+          birthTime: details.birthTime,
+          birthPlace: details.birthPlace,
+          timezone: details.timezone,
+          sakaMonth: sakaValue.month,
+          sakaDay: sakaValue.day,
+        },
+        { autoSubmit: true },
+      );
+      setInfoBanner(
+        t(
+          "form.nextStep",
+          "Birth details saved. Your horoscope form below is now filled—submit to generate charts.",
+        ),
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to compute Bharat calendar";
       setError(`${message}. Friendly tip: double-check timezone or pick a nearby city; we auto-suggest once the pin locks.`);
@@ -491,6 +523,12 @@ export default function BirthInputForm() {
                 <li key={tip}>{tip}</li>
               ))}
             </ul>
+          </div>
+        ) : null}
+        {infoBanner ? (
+          <div className="inline-banner inline-banner--success" role="status">
+            <strong>{t("form.saved", "Ready for horoscope")}</strong>
+            <p className="microcopy">{infoBanner}</p>
           </div>
         ) : null}
         <div className="field-row">
