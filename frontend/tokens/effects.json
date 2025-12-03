@@ -1,0 +1,18 @@
+{
+  "spacingScale": [4, 8, 12, 16, 20, 24, 32, 40, 48],
+  "radii": {
+    "pill": "999px",
+    "soft": "14px",
+    "card": "18px",
+    "badge": "12px"
+  },
+  "shadows": {
+    "card": "0 18px 48px rgba(5, 30, 73, 0.12)",
+    "soft": "0 12px 28px rgba(5, 30, 73, 0.08)",
+    "glow": "0 0 38px rgba(240, 141, 182, 0.32)"
+  },
+  "glows": {
+    "featherAura": "radial-gradient(circle, rgba(240,141,182,0.4), transparent 60%)",
+    "triangle": "radial-gradient(circle at 20% 20%, rgba(53, 192, 194, 0.22), transparent 30%)"
+  }
+}

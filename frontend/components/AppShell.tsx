@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Providers from "@/app/providers";
 import { useI18n, type Language } from "@/lib/i18n";
-import { theme } from "@/lib/theme";
 import OnboardingModal from "./OnboardingModal";
 import ExperienceToolbar from "./ExperienceToolbar";
+import { KiaanLogoAnimated } from "./branding/KiaanLogo";
+import { MindVibeIcon } from "./branding/MindVibeLogo";
 
 type Props = {
   children: React.ReactNode;
@@ -57,8 +58,11 @@ function Shell({ children }: Props) {
 
       <header className="topbar" aria-label="Site header">
         <Link href="/" className="brand" aria-label={t("nav.home", "Home")}>
-          <span className="brand-mark" style={{ background: theme.gradients.brand }} aria-hidden />
-          BhriguWelt
+          <MindVibeIcon variant="ocean" size={46} badge />
+          <div className="brand__wording">
+            <strong className="brand__title">KIAAN — MindVibe Companion</strong>
+            <span className="brand__tagline">Crisp, calm guidance.</span>
+          </div>
         </Link>
         <div className="topbar__mobile">
           <button
@@ -87,6 +91,7 @@ function Shell({ children }: Props) {
         </nav>
         <div className="topbar__actions">
           <LanguageToggle />
+          <KiaanLogoAnimated compact reducedMotion={false} />
           <Link className="button-link soft" href="/matchmaking">
             {t("nav.cta", "Start a session")}
           </Link>
@@ -116,9 +121,9 @@ function Shell({ children }: Props) {
 
       <footer className="footer" aria-label="Footer">
         <div>
-          <p className="eyebrow">Bharat-centred Jyotish</p>
-          <h3>{t("nav.tagline", "Quiet guidance across every stage of life.")}</h3>
-          <p className="muted">{t("nav.desc", "Readable predictions, Śaka-ready conversions, and heartfelt remedies in one space.")}</p>
+          <p className="eyebrow">MindVibe Companion</p>
+          <h3>{t("nav.tagline", "KIAAN — crisp, calm guidance.")}</h3>
+          <p className="muted">{t("nav.desc", "MindVibe keeps every ritual gentle with balanced gradients, soft motion, and Śaka-aware clarity.")}</p>
         </div>
         <div className="footer-links">
           {navLinks.map((link) => (

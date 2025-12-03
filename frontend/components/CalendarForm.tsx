@@ -215,7 +215,7 @@ export default function CalendarForm() {
             className="ghost-button"
           >
             {loading
-              ? t("form.loading", "Consulting Bhrigu...")
+              ? t("form.loading", "Consulting MindVibe...")
               : autoTriggered
                 ? t("calendar.refresh", "Refresh conversion")
                 : t("calendar.title", "Convert Gregorian birth details to Śaka")}

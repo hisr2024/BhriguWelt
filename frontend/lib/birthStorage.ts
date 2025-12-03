@@ -2,7 +2,7 @@ import { BirthDetails } from "@/types/astro";
 import { HouseSummary } from "./houseGrid";
 
 const STORAGE_KEY = "bhrigu.birthDetails";
-const EVENT_NAME = "bhrigu:birth-details";
+const EVENT_NAME = "mindvibe:birth-details";
 
 type StoredBirthDetails = Partial<BirthDetails> & {
   timezone?: string;

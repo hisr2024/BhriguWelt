@@ -1,12 +1,12 @@
 export const heroCopy = {
   heroBody:
-    "Concise English and Hindi interpretations grounded in Bhrigu Samhita folios—ready to read, export as PDF, and share.",
+    "KIAAN — MindVibe Companion pairs soft gradients, breath-like motion, and inclusive copy so anyone can move through sessions without friction.",
   navigationBody:
-    "Jump straight to horoscope, past-life, future, matchmaking, or calendar engines and keep every flow consistent.",
+    "Move between horoscope, past-life, future, matchmaking, or calendar rituals with a unified calm visual language.",
   bilingualBody:
-    "Outputs land in plain English and Hindi with export-ready prose so families and teams can save a PDF without extra styling.",
+    "Outputs land in clear English and Hindi with export-ready prose so loved ones can share guidance effortlessly.",
   accuracyBody:
-    "Each engine mirrors backend fields to keep guidance accurate and citation-friendly across web and mobile clients.",
+    "Every interaction stays precise while feeling gentle—WCAG-aligned contrast, narrated cues, and balanced gradients support the calm.",
 };
 
 export const helperCopy = {

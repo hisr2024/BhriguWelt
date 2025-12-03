@@ -243,7 +243,7 @@ export default function MatchmakingForm() {
       <form onSubmit={handleSubmit} aria-busy={loading} aria-describedby="matchmaking-helper">
         <header className="section-heading">
           <p className="eyebrow">Compatibility lab</p>
-          <h2 id="matchmaking-heading">{t("pages.matchmaking.title", "Modern Bhrigu matchmaking")}</h2>
+          <h2 id="matchmaking-heading">{t("pages.matchmaking.title", "Modern MindVibe matchmaking")}</h2>
           <p className="muted" id="matchmaking-helper">
             {t("form.helper", "Compare two complete birth records plus lifestyle tags to align manuscript and modern signals.")}
           </p>

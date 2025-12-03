@@ -27,15 +27,15 @@ type Props = {
   chart?: NatalChart;
 };
 
-const GUIDE_NAME = "Bhrigu Samhita Guide";
+const GUIDE_NAME = "KIAAN — MindVibe Companion Guide";
 const GUIDE_GLYPH = "◐";
 
-export default function BhriguChat({ chart }: Props) {
+export default function MindVibeChat({ chart }: Props) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([{
     role: "bot",
     content:
-      "Namaste. I am your Bhrigu Samhita Guide. Ask about your chart and I will respond with calm, symbolic reflections.",
+      "Namaste. I am your KIAAN — MindVibe Companion Guide. Ask about your chart and I will respond with calm, symbolic reflections.",
   }]);
   const [context, setContext] = useState<ChatContext | undefined>(
     chart ? { lastChart: chart } : undefined,
@@ -65,7 +65,7 @@ export default function BhriguChat({ chart }: Props) {
     const hydrateSession = async () => {
       try {
         const params = new URLSearchParams({ user_id: storedUserId, session_key: storedSession });
-        const response = await fetch(`/api/bhrigu-chat?${params.toString()}`);
+        const response = await fetch(`/api/mindvibe-chat?${params.toString()}`);
         if (!response.ok) {
           throw new Error(await response.text());
         }
@@ -107,11 +107,11 @@ export default function BhriguChat({ chart }: Props) {
       }
     };
 
-    window.addEventListener("bhrigu:chart-ready", handleChartReady);
-    window.addEventListener("bhrigu:open-chat", handleChartReady);
+    window.addEventListener("mindvibe:chart-ready", handleChartReady);
+    window.addEventListener("mindvibe:open-chat", handleChartReady);
     return () => {
-      window.removeEventListener("bhrigu:chart-ready", handleChartReady);
-      window.removeEventListener("bhrigu:open-chat", handleChartReady);
+      window.removeEventListener("mindvibe:chart-ready", handleChartReady);
+      window.removeEventListener("mindvibe:open-chat", handleChartReady);
     };
   }, []);
 
@@ -135,7 +135,7 @@ export default function BhriguChat({ chart }: Props) {
     setStatusMessage(null);
 
     try {
-      const response = await fetch("/api/bhrigu-chat", {
+      const response = await fetch("/api/mindvibe-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -154,7 +154,7 @@ export default function BhriguChat({ chart }: Props) {
 
       const data: ChatResponse = await response.json();
       const reply = data.reply?.trim() ||
-        "I’m here whenever you want to reflect on your Bhrigu chart or share more context.";
+        "I’m here whenever you want to reflect on your MindVibe chart or share more context.";
 
       setMessages((prev) => [...prev, { role: "bot", content: reply }]);
 
@@ -198,22 +198,20 @@ export default function BhriguChat({ chart }: Props) {
   };
 
   return (
-    <section className="bhrigu-chat" aria-label="Bhrigu Samhita chat">
-      <header className="bhrigu-chat__header">
-        <div className="bhrigu-chat__crest" aria-hidden>
-          <span className="bhrigu-chat__glyph">{GUIDE_GLYPH}</span>
+    <section className="mindvibe-chat" aria-label="MindVibe Samhita chat">
+      <header className="mindvibe-chat__header">
+        <div className="mindvibe-chat__crest" aria-hidden>
+          <span className="mindvibe-chat__glyph">{GUIDE_GLYPH}</span>
         </div>
         <div>
           <p className="eyebrow">{GUIDE_NAME}</p>
-          <h3 className="bhrigu-chat__title">Guidance with a quiet Bharat pulse</h3>
-          <p className="muted">
-            Share a question or reflection. I’ll weave your message with Bhrigu-inspired calm.
-          </p>
+          <h3 className="mindvibe-chat__title">MindVibe Companion chat</h3>
+          <p className="muted">Share a question or reflection. I’ll weave your message with MindVibe-inspired calm.</p>
         </div>
       </header>
 
       <div
-        className="bhrigu-chat__window"
+        className="mindvibe-chat__window"
         ref={listRef}
         role="log"
         aria-live="polite"
@@ -222,10 +220,10 @@ export default function BhriguChat({ chart }: Props) {
         {messages.map((message, index) => (
           <article
             key={`${message.role}-${index}`}
-            className={`bhrigu-chat__message ${message.role === "user" ? "is-user" : "is-guide"}`.trim()}
+            className={`mindvibe-chat__message ${message.role === "user" ? "is-user" : "is-guide"}`.trim()}
           >
-            <span className="bhrigu-chat__label">{message.role === "user" ? "You" : GUIDE_NAME}</span>
-            <div className="bhrigu-chat__bubble">{message.content}</div>
+            <span className="mindvibe-chat__label">{message.role === "user" ? "You" : GUIDE_NAME}</span>
+            <div className="mindvibe-chat__bubble">{message.content}</div>
           </article>
         ))}
       </div>
@@ -236,7 +234,7 @@ export default function BhriguChat({ chart }: Props) {
         </p>
       ) : null}
 
-      <form className="bhrigu-chat__input" onSubmit={handleSend}>
+      <form className="mindvibe-chat__input" onSubmit={handleSend}>
         <label className="sr-only" htmlFor="bhrigu-message">
           Message for the guide
         </label>

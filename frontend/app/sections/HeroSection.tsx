@@ -4,6 +4,8 @@ import Link from "next/link";
 
 import { heroCopy } from "@/lib/copy";
 import { useI18n } from "@/lib/i18n";
+import { KiaanLogoAnimated } from "@/components/branding/KiaanLogo";
+import { MindVibeLockup } from "@/components/branding/MindVibeLogo";
 import { rhythmTracks } from "./sectionData";
 
 export function HeroSection() {
@@ -13,32 +15,36 @@ export function HeroSection() {
   return (
     <section className="serene-hero" id="overview">
       <div className="serene-hero__copy">
-        <p className="eyebrow">Bharatcentric • Minimal</p>
-        <h1>{t("hero.title", "BhriguWelt, now quietly reset")}</h1>
+        <p className="eyebrow">MindVibe • Universal calm</p>
+        <h1>{t("hero.title", "KIAAN — MindVibe Companion")}</h1>
         <p className="muted hero-lede">
           {t(
             "hero.body",
             heroBody ||
-              "A soft astrology workspace to collect details, convert calendars, and share bilingual remedies without clutter."
+              "A premium companion that blends breath-led motion, glowing gradients, and emotionally intelligent guidance for every seeker."
           )}
         </p>
         <div className="hero-actions">
           <Link href="#birth-details" className="button-link">
-            {t("hero.cta.horoscope", "Begin horoscope")}
+            {t("hero.cta.horoscope", "Begin the calm session")}
           </Link>
           <Link href="#matchmaking" className="ghost-button">
-            {t("hero.cta.matchmaking", "Check compatibility")}
+            {t("hero.cta.matchmaking", "Explore companionship")}
           </Link>
         </div>
         <div className="subtle-pill-row">
-          <span className="pill">Śaka friendly</span>
-          <span className="pill">English + हिंदी</span>
-          <span className="pill">PDF ready</span>
+          <span className="pill">KIAAN — MindVibe Companion</span>
+          <span className="pill">Calming motion system</span>
+          <span className="pill">Inclusive microcopy</span>
         </div>
         <div className="geometry-breath">
-          <span className="pill ghost">Cosmic geometry kept light</span>
-          <span className="pill ghost">Pastel gradients, warm + cool</span>
-          <span className="pill ghost">Nature-led layouts</span>
+          <span className="pill ghost">MvGradient Sunrise · Ocean · Aurora</span>
+          <span className="pill ghost">Feather shimmer + flute resonance</span>
+          <span className="pill ghost">Triangle energy flow tabs</span>
+        </div>
+        <div className="hero-lockup">
+          <MindVibeLockup tagline="Soft gradients, timeless calm." />
+          <KiaanLogoAnimated reducedMotion={false} />
         </div>
       </div>
       <div className="serene-hero__visuals">

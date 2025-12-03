@@ -126,7 +126,7 @@ export default function PredictionForm({ engine, title, description, onRequestSt
   const emitFlowEvent = (phase: "start" | "complete" | "error", detail?: Record<string, unknown>) => {
     if (typeof window === "undefined") return;
     window.dispatchEvent(
-      new CustomEvent("bhrigu:prediction-flow", {
+      new CustomEvent("mindvibe:prediction-flow", {
         detail: { engine, phase, ...detail },
       }),
     );
@@ -198,7 +198,7 @@ export default function PredictionForm({ engine, title, description, onRequestSt
       if (typeof window !== "undefined") {
         const maybeChart = (data as { chart?: unknown }).chart;
         window.dispatchEvent(
-          new CustomEvent("bhrigu:chart-ready", {
+          new CustomEvent("mindvibe:chart-ready", {
             detail: { chart: maybeChart, details: normalizedDetails },
           }),
         );
@@ -227,7 +227,7 @@ export default function PredictionForm({ engine, title, description, onRequestSt
     <section aria-labelledby={`${engine}-heading`}>
       <form onSubmit={handleSubmit} aria-busy={loading} aria-describedby={`${engine}-helper`}>
         <header className="section-heading">
-          <p className="eyebrow">{t("form.subtitle", "Bhrigu Samhita aligned")}</p>
+          <p className="eyebrow">{t("form.subtitle", "MindVibe Samhita aligned")}</p>
           <h2 id={`${engine}-heading`}>{title}</h2>
           <p className="muted" id={`${engine}-helper`}>
             {description || t("form.helper", "Complete every detail to keep remedies precise.")}
@@ -415,9 +415,9 @@ export default function PredictionForm({ engine, title, description, onRequestSt
         </div>
         <div className="form-actions">
           <button type="submit" disabled={loading} aria-label={t("form.submit", "Fetch insights")}>
-            {loading ? t("form.loading", "Consulting Bhrigu...") : t("form.submit", "Fetch insights")}
+            {loading ? t("form.loading", "Consulting MindVibe...") : t("form.submit", "Fetch insights")}
           </button>
-          <span className="muted">{t("form.accessibility", "All guidance references the cited Bhrigu Samhita folios.")}</span>
+          <span className="muted">{t("form.accessibility", "All guidance references the cited MindVibe Samhita folios.")}</span>
         </div>
         {error && (
           <div className="error-banner" role="alert" aria-live="assertive" tabIndex={-1} ref={errorRef}>

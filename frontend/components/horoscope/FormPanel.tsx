@@ -19,7 +19,7 @@ type Props = {
   prefillNotice?: string | null;
   onChange: (field: keyof FormState, value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  onAskBhrigu: () => void;
+  onAskMindVibe: () => void;
   onDownloadPdf: () => void;
 };
 
@@ -34,7 +34,7 @@ export default function FormPanel({
   prefillNotice,
   onChange,
   onSubmit,
-  onAskBhrigu,
+  onAskMindVibe,
   onDownloadPdf,
 }: Props) {
   return (
@@ -136,7 +136,7 @@ export default function FormPanel({
               <strong>Reading captured.</strong>
             </div>
             <div className="banner-actions">
-              <button type="button" className="ghost-button" onClick={onAskBhrigu}>
+              <button type="button" className="ghost-button" onClick={onAskMindVibe}>
                 Ask in chat
               </button>
               <button type="button" className="ghost-button" onClick={onDownloadPdf}>

@@ -188,7 +188,7 @@ function interpretHoroscope(payload: HoroscopePayload): InsightSection[] {
     });
     sections.push({
       heading: "Balance of strengths",
-      english: "Bhrigu records highlight where your efforts gain momentum.",
+      english: "MindVibe records highlight where your efforts gain momentum.",
       hindi: "भृगु पाठ बताते हैं कि ऊर्जा कहाँ तेज़ी से बढ़ती है।",
       bullets: bulletLines,
     });
@@ -237,7 +237,7 @@ function interpretHoroscope(payload: HoroscopePayload): InsightSection[] {
     const bullets = payload.dashas.map((dasha) => `${dasha.lord}: ${dasha.start} → ${dasha.end}`);
     sections.push({
       heading: "Vimshottari dasha",
-      english: "Lifecycle windows blended with Bhrigu overlays.",
+      english: "Lifecycle windows blended with MindVibe overlays.",
       hindi: "दशा क्रम भृगु सूत्रों के साथ संयोजित है।",
       bullets,
       collapsible: payload.dashas.length > 3,

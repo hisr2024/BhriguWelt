@@ -16,9 +16,9 @@ const dashboardSections = [
 ];
 
 const chatLog = [
-  { sender: "Bhrigu Guide", text: "Welcome back. Ready for a calm reading?" },
+  { sender: "MindVibe Guide", text: "Welcome back. Ready for a calm reading?" },
   { sender: "You", text: "Yes, focus on career and travel." },
-  { sender: "Bhrigu Guide", text: "Noted. I will surface a focused directive with minimal ritual steps." },
+  { sender: "MindVibe Guide", text: "Noted. I will surface a focused directive with minimal ritual steps." },
 ];
 
 const insightCards = [
@@ -51,7 +51,7 @@ export default function ExperiencePage() {
       <div className="flow-hero">
         <div>
           <p className="eyebrow">Minimal cosmic studio</p>
-          <h1>Bhriguwelt UI flow inspired by Bhrigu Samhita.</h1>
+          <h1>MindVibe Companion UI flow.</h1>
           <p className="muted">
             Clean, futuristic, and calm screens that move from intake to interpretation with Bharat-inspired geometry and soft gradients.
           </p>
@@ -182,7 +182,7 @@ export default function ExperiencePage() {
         <header className="panel-header">
           <div>
             <p className="eyebrow">Chat module</p>
-            <h2>Bhrigu Guide, conversational</h2>
+            <h2>MindVibe Guide, conversational</h2>
             <p className="muted">Modern chat bubbles, floating input, and a minimal avatar keep focus on the exchange.</p>
           </div>
           <span className="badge">Soft mode</span>

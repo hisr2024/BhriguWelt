@@ -14,6 +14,7 @@ import { AetherBeltSection } from "./sections/AetherBeltSection";
 import { HeroSection } from "./sections/HeroSection";
 import { JourneyRail } from "./sections/JourneyRail";
 import { RitualGrid } from "./sections/RitualGrid";
+import { TriangleEnergySection } from "./sections/TriangleEnergySection";
 import { DEMO_CHART, DEMO_DASHAS, journeyTimeline, timelineNotes } from "./sections/sectionData";
 
 const KundliCharts = dynamic(() => import("@/components/KundliCharts"), {
@@ -21,9 +22,9 @@ const KundliCharts = dynamic(() => import("@/components/KundliCharts"), {
   loading: () => <div className="card softly">Drawing kundli wheel…</div>,
 });
 
-const BhriguChat = dynamic(() => import("@/components/BhriguChat"), {
+const MindVibeChat = dynamic(() => import("@/components/MindVibeChat"), {
   ssr: false,
-  loading: () => <div className="card softly">Activating Bhrigu chat…</div>,
+  loading: () => <div className="card softly">Activating MindVibe chat…</div>,
 });
 
 export default function HomePage() {
@@ -33,6 +34,7 @@ export default function HomePage() {
   return (
     <div className="serene-page">
       <HeroSection />
+      <TriangleEnergySection />
       <AetherBeltSection />
       <RitualGrid />
       <JourneyRail />
@@ -170,7 +172,7 @@ export default function HomePage() {
       <section className="panel" id="assist">
         <div className="section-heading">
           <p className="eyebrow">Ask anything</p>
-          <h2>Chat with the Bhrigu guide</h2>
+          <h2>Chat with the MindVibe guide</h2>
           <p className="muted">
             Real-time feedback loop keeps seekers heard. Ask clarifying questions and capture their notes instantly.
           </p>
@@ -181,7 +183,7 @@ export default function HomePage() {
             <p className="microcopy">Responses thread alongside glossary hints for absolute beginners.</p>
           </div>
           <div className="card highlight">
-            <BhriguChat />
+            <MindVibeChat />
           </div>
         </div>
       </section>

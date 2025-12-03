@@ -1,13 +1,13 @@
-# Frontend (Next.js)
+# MindVibe Companion Frontend (Next.js)
 
-The `frontend/` workspace now contains a production-ready Next.js application
-that surfaces every Bhrigu Samhita engine (horoscope, past-life, future,
-matchmaking, and Śaka calendar conversion). It is designed to deploy directly to
-Vercel while consuming the Python backend hosted on Render (or any HTTPS URL you
-provide via an environment variable). The UI is intentionally bold—glassmorphic
-panels, gradients, and multi-page navigation that stay legible for seekers of
-every age. Language support now spans English, Hindi, Spanish, and Tamil with
-preferences persisted per visitor.
+The `frontend/` workspace now carries the KIAAN — MindVibe Companion UI: a
+production-ready Next.js experience with the new MindVibe visual + motion
+system. Horoscope, past-life, future, matchmaking, and Śaka calendar flows now
+run inside calming gradients, inclusive typography, and animated brand assets
+(MindVibe icon + animated KIAAN logo). Deploy directly to Vercel while consuming
+the Python backend hosted on Render (or any HTTPS URL you provide via an
+environment variable). Language support spans English, Hindi, Spanish, and Tamil
+with preferences persisted per visitor.
 
 ## Getting started
 

@@ -1,0 +1,38 @@
+{
+  "brand": {
+    "mvGradientSunrise": "linear-gradient(135deg, #ffb16f, #ffd98e)",
+    "mvGradientOcean": "linear-gradient(145deg, #1fb4c6, #7ae2ff)",
+    "mvGradientAurora": "linear-gradient(140deg, #f28abf, #b9b3ff)",
+    "kiaanIris": "#1a4b9b",
+    "kiaanFeather": "#7ae2ff",
+    "kiaanGlow": "#f08db6"
+  },
+  "palette": {
+    "textPrimary": "#0e1b27",
+    "textMuted": "#4b5563",
+    "surface": "#ffffff",
+    "surfaceAlt": "#f7fbff",
+    "border": "#dfe7f1",
+    "shadow": "rgba(5,30,73,0.12)",
+    "success": "#2fbf71",
+    "warning": "#ffb16f",
+    "danger": "#f08db6"
+  },
+  "triangle": {
+    "innerPeacePrimary": "#35c0c2",
+    "mindControlPrimary": "#1a4b9b",
+    "selfKindnessPrimary": "#e18ad1"
+  },
+  "modes": {
+    "light": {
+      "background": "#f7fbff",
+      "surface": "#ffffff",
+      "text": "#0e1b27"
+    },
+    "dark": {
+      "background": "#0c1528",
+      "surface": "#0f192c",
+      "text": "#e8f5ff"
+    }
+  }
+}

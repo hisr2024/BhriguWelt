@@ -5,8 +5,9 @@ import JourneyRail from "@/components/JourneyRail";
 import WizardProgress from "@/components/WizardProgress";
 
 export const metadata: Metadata = {
-  title: "BhriguWelt Experiences",
-  description: "Modern web and mobile ready UI for the Bhrigu Samhita-powered horoscope, future, past life, matchmaking, and calendar engines.",
+  title: "KIAAN — MindVibe Companion",
+  description:
+    "Calm, premium guidance for MindVibe with animated KIAAN identity, soothing gradients, and emotionally intelligent rituals.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

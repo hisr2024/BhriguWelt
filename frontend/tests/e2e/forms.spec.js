@@ -6,7 +6,7 @@ const mockHoroscope = {
   karmic_epoch: 'sadhana',
   interpretation: 'The folios say Asha leads with gentle service and steadfast study.',
   interpretation_hi: 'पांडुलिपि बताती है कि आशा सेवा और अध्ययन में स्थिर है।',
-  principles: [{ title: 'Dharma', detail: 'Stay aligned with Bhrigu counsel.' }],
+  principles: [{ title: 'Dharma', detail: 'Stay aligned with MindVibe counsel.' }],
   remedies: [{ title: 'Mantra', detail: 'Chant with devotion.' }],
   past_life_insights: [{ title: 'Past', detail: 'Seeker has served in prior era.' }],
   future_trajectories: [{ title: 'Future', detail: 'Opportunity to teach.' }],

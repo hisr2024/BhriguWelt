@@ -7,7 +7,7 @@ type Props = {
   hasNarrative: boolean;
   fallbackNarrative: string;
   timeframes: { label: string; summary: string; progress: number }[];
-  onAskBhrigu: () => void;
+  onAskMindVibe: () => void;
   onDownloadPdf: () => void;
 };
 
@@ -18,7 +18,7 @@ export default function ReadingPanel({
   hasNarrative,
   fallbackNarrative,
   timeframes,
-  onAskBhrigu,
+  onAskMindVibe,
   onDownloadPdf,
 }: Props) {
   return (
@@ -42,7 +42,7 @@ export default function ReadingPanel({
               <strong>{form.name || "Reader"}</strong>
             </div>
             <div className="toolbar-actions">
-              <button type="button" className="ghost-button" onClick={onAskBhrigu}>
+              <button type="button" className="ghost-button" onClick={onAskMindVibe}>
                 Ask in chat
               </button>
               <button type="button" className="ghost-button" onClick={onDownloadPdf}>

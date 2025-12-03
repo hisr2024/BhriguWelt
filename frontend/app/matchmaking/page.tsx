@@ -47,7 +47,7 @@ export default function MatchmakingPage() {
         <div className="card highlight">
           <div className="section-heading">
             <p className="eyebrow">Live experience</p>
-            <h2>Modern Bhrigu matchmaking</h2>
+            <h2>Modern MindVibe matchmaking</h2>
             <p>Compare two birth records plus a few lifestyle tags.</p>
           </div>
           <MatchmakingForm />

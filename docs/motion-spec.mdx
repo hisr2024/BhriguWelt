@@ -1,0 +1,46 @@
+---
+title: MindVibe Motion Spec
+---
+
+# Motion specification
+
+## Global easing + timing
+- Default easing: `cubic-bezier(0.33, 0.66, 0.4, 1)`.
+- Fast interactions: 180–220ms; standard UI: 240–320ms; ambient loops: 6–12s.
+- Respect `prefers-reduced-motion`; swap animated logos for static lockups and pause looping ripples.
+
+## Kiaan logo animation
+- **Flute shimmer:** 4s loop, shimmer sweep across flute body; delay trail shimmer by 1.2s.
+- **Feather sway:** 6s ease-in-out rotation between -2° and 4°.
+- **Aura shimmer:** 5s pulse 0.35→0.55 opacity with slight scale.
+- **Energy ripple:** 6s concentric rings scaling 0.9→1.05 with fading opacity.
+- Export: SVG/CSS animation (default) with optional Lottie JSON fallback.
+
+## MindVibe icon ripple
+- Two pulses: 4s loop with 1.2s offset, scaling 0.9→1.08 while fading.
+- Central oval ripple: 6s float translating -2px on Y-axis mid-cycle.
+- Use Sunrise/Ocean/Aurora gradients; ensure 60fps by limiting filter complexity.
+
+## Triangle flow system
+- Base loop: 12s rotation oscillation on the energy outline.
+- Sparks orbit each vertex on 9s/10s/11s staggered loops.
+- Vertex active state: brighten to 1.05 scale over 220ms with gradient tint; deactivate over 200ms.
+- Hover/focus: redirect shimmer to hovered vertex, increase glow blur to 14px.
+- Tap/active: emphasize leg toward active vertex by boosting contrast on adjacent spark.
+
+## Feather sway (standalone)
+- 6s sinusoidal sway, amplitude 4°.
+- Aura glow fades from 0.35→0.55 opacity; radial blur no more than 4px for mobile performance.
+
+## Flute shimmer
+- Metallic sweep using gradient translation across the flute bar every 4s.
+- Keep highlight width under 18px to avoid clipping on small screens.
+
+## Glow + pulse intensity
+- Idle glow opacity 0.25; hover 0.35; active 0.45.
+- Pulse scale range 0.96→1.06.
+
+## Performance
+- Target 60fps; avoid drop shadows over 38px blur on mobile.
+- Lottie/WebM assets under 600KB; SVG animations should avoid heavy filters.
+- Defer animations off-screen and pause when tab is hidden.

@@ -84,7 +84,7 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as ChatRequestBody;
   } catch (error) {
-    console.error("/api/bhrigu-chat invalid JSON", error);
+    console.error("/api/mindvibe-chat invalid JSON", error);
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
       session_key: sessionKey,
     });
   } catch (error) {
-    console.error("/api/bhrigu-chat backend unavailable, using local handler", {
+    console.error("/api/mindvibe-chat backend unavailable, using local handler", {
       ...sanitizePayload(body),
       error,
     });

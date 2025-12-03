@@ -519,7 +519,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
               })}
               <circle cx={center} cy={center} r={48} className="kundli-core" />
               <text x={center} y={center} textAnchor="middle" className="kundli-center">
-                Bhrigu
+                MindVibe
               </text>
             </svg>
             <div className="kundli-visual">
@@ -558,7 +558,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
                 })}
                 <circle cx={center} cy={center} r={48} className="kundli-core" />
                 <text x={center} y={center} textAnchor="middle" className="kundli-center">
-                  Bhrigu
+                  MindVibe
                 </text>
               </svg>
               {animate && (
@@ -648,7 +648,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
           </div>
           {detailLevel === "advanced" && activeDetail?.notes?.length ? (
             <div>
-              <p className="eyebrow">Bhrigu notes</p>
+              <p className="eyebrow">MindVibe notes</p>
               <ul className="kudos-list">
                 {activeDetail.notes.map((note) => (
                   <li key={note}>{note}</li>

@@ -23,9 +23,9 @@ type DetailedError = Error & { hint?: string; status?: number };
 const FALLBACK_RESPONSES: Record<string, unknown> = {
   "/horoscope": {
     name: "Fallback seeker",
-    interpretation: "Bhrigu folios speak of a seeker whose service-oriented Mars and calm moon weave compassion with steady leadership.",
+    interpretation: "MindVibe folios speak of a seeker whose service-oriented Mars and calm moon weave compassion with steady leadership.",
     interpretation_hi: "भृगु पांडुलिपि बताती है कि सेवा प्रधान मंगल और शांत चंद्रमा करुणा के साथ स्थिर नेतृत्व देते हैं।",
-    karmic_epoch: "Bhrigu epoch: activation of Mars mandates for infrastructural service.",
+    karmic_epoch: "MindVibe epoch: activation of Mars mandates for infrastructural service.",
     weights: {
       intuitive_dreams: 0.88,
       scholarly_pursuits: 0.76,
@@ -160,7 +160,7 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
       breakdown: [
         {
           criterion_id: "MM-DEMO-1",
-          sutra_reference: "Bhrigu compatibility demo",
+          sutra_reference: "MindVibe compatibility demo",
           description: "Moon elements align for devotional partnership and long-distance collaboration.",
           score: 0.92,
           notes: "Harmonious elements recorded in folio pairing.",
@@ -174,7 +174,7 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
         },
       ],
       modern_highlights: [
-        "Remote-first goals match Bhrigu's guidance for distributed seva.",
+        "Remote-first goals match MindVibe's guidance for distributed seva.",
         "Research-partnership tag aligns with archival scribe combinations.",
       ],
     },
@@ -361,7 +361,7 @@ function fallbackHealth(): HealthResponse {
   const principlesLoaded = Array.isArray(horoscope?.principles) ? horoscope.principles.length : undefined;
   return {
     status: "ok",
-    source: "Bhrigu Samhita (demo cache)",
+    source: "MindVibe Samhita (demo cache)",
     data: principlesLoaded ? { principles_loaded: principlesLoaded } : undefined,
     meta: { mode: "demo", attempted_hosts: BACKEND_HOSTS },
   };
@@ -401,7 +401,7 @@ async function getJson<TResponse>(path: string, fallbackKey?: string) {
     response = await fetchFromHosts(path);
   } catch (networkError) {
     if (fallbackKey && FALLBACK_RESPONSES[fallbackKey]) {
-      console.warn(`Using offline Bhrigu fallback for ${path}`, networkError);
+      console.warn(`Using offline MindVibe fallback for ${path}`, networkError);
       return FALLBACK_RESPONSES[fallbackKey] as TResponse;
     }
     throw networkError;
@@ -421,14 +421,14 @@ async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
   } catch (networkError) {
     const fallback = FALLBACK_RESPONSES[path];
     if (fallback) {
-      console.warn(`Using offline Bhrigu fallback for ${path}`, networkError);
+      console.warn(`Using offline MindVibe fallback for ${path}`, networkError);
       return fallback as TResponse;
     }
 
     const reason = networkError instanceof Error ? networkError.message : "Unknown error";
     const hostList = BACKEND_HOSTS.join(", ") || BACKEND_URL;
     throw new Error(
-      `${reason}. Unable to reach the Bhrigu backend at ${hostList}${path}. ` +
+      `${reason}. Unable to reach the MindVibe backend at ${hostList}${path}. ` +
         "Set NEXT_PUBLIC_BACKEND_URL to your deployed Python API (or NEXT_PUBLIC_BACKEND_FALLBACK_URL for a backup) to restore live predictions.",
     );
   }
@@ -438,7 +438,7 @@ async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
   } catch (parseError) {
     const fallback = FALLBACK_RESPONSES[path];
     if (fallback) {
-      console.warn(`Using offline Bhrigu fallback for ${path} after parse failure`, parseError);
+      console.warn(`Using offline MindVibe fallback for ${path} after parse failure`, parseError);
       return fallback as TResponse;
     }
     throw parseError;

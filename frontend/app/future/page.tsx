@@ -91,7 +91,7 @@ export default function FuturePage() {
     <div className="stack">
       <div className="hero">
         <p className="eyebrow">Future • Directive-first</p>
-        <h1>Actionable roadmaps that still honor the Bhrigu canon.</h1>
+        <h1>Actionable roadmaps that still honor the MindVibe canon.</h1>
         <p className="muted" style={{ maxWidth: "760px" }}>
           Finance, devotion, service, and health recommendations return as flowing interpretations you can read aloud.
         </p>

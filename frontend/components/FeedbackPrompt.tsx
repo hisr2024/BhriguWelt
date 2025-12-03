@@ -57,7 +57,7 @@ export default function FeedbackPrompt({ engine, seekerName }: Props) {
     <section className="card feedback-card" aria-live="polite">
       <header className="section-heading">
         <p className="eyebrow">Rate accuracy</p>
-        <h3>Help us strengthen Bhrigu clarity</h3>
+        <h3>Help us strengthen MindVibe clarity</h3>
         <p className="muted">{helper}</p>
       </header>
       <form onSubmit={handleSubmit} className="feedback-grid">

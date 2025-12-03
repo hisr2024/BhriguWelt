@@ -129,7 +129,7 @@ export default function OnboardingModal() {
         className="onboard-modal"
         role="dialog"
         aria-modal="true"
-        aria-label="Bhrigu onboarding journey"
+        aria-label="MindVibe onboarding journey"
       >
         <header className="onboard-header">
           <div>

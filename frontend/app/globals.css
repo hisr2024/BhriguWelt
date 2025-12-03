@@ -1,19 +1,19 @@
 @import "./styles/base.css";
 @import "./styles/components.css";
 @import "./styles/horoscope.css";
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Hind:wght@500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap");
 
 :root {
   color-scheme: light;
-  font-family: "Inter", "Hind", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Plus Jakarta Sans", "Manrope", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   line-height: 1.6;
   font-weight: 400;
-  color: #1f2a33;
-  background-color: #f7f4ec;
+  color: #0e1b27;
+  background-color: #f7fbff;
   letter-spacing: 0.01em;
   --font-scale: 1;
-  --card-shadow: 0 20px 60px rgba(0, 0, 0, 0.06);
-  --orb-gradient: radial-gradient(circle at 24% 14%, rgba(217, 119, 87, 0.08), transparent 32%);
+  --card-shadow: 0 22px 70px rgba(6, 25, 66, 0.12);
+  --orb-gradient: radial-gradient(circle at 24% 14%, rgba(46, 197, 182, 0.12), transparent 32%);
 }
 
 * {
@@ -27,8 +27,10 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: #f7f4ec;
-  color: #1f2a33;
+  background: radial-gradient(circle at 12% 8%, rgba(255, 209, 142, 0.16), transparent 32%),
+    radial-gradient(circle at 82% 12%, rgba(31, 180, 198, 0.12), transparent 32%),
+    linear-gradient(180deg, #fdfcfb 0%, #f3f7fb 50%, #eef2ff 100%);
+  color: #0e1b27;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
@@ -67,7 +69,7 @@ body[data-contrast="high"] .serene-hero {
   left: -999px;
   top: -999px;
   padding: 0.6rem 1rem;
-  background: #d97757;
+  background: #f08db6;
   color: #fff;
   border-radius: 0.75rem;
   font-weight: 700;
@@ -101,7 +103,7 @@ body[data-contrast="high"] .serene-hero {
   padding: 1rem 1.25rem;
   backdrop-filter: blur(16px);
   background: rgba(247, 244, 236, 0.9);
-  border-bottom: 1px solid #e5ddce;
+  border-bottom: 1px solid #dfe7f1;
   box-shadow: var(--card-shadow);
 }
 
@@ -113,7 +115,7 @@ body[data-contrast="high"] .serene-hero {
 }
 
 .nav-toggle {
-  border: 1px solid #e3d8c4;
+  border: 1px solid #d9e7f3;
   background: #fff;
   padding: 0.6rem 0.85rem;
   border-radius: 12px;
@@ -132,7 +134,7 @@ body[data-contrast="high"] .serene-hero {
 }
 
 .topbar nav a {
-  color: #1f2a33;
+  color: #0e1b27;
   text-decoration: none;
   padding: 0.35rem 0.6rem;
   border-radius: 999px;
@@ -150,7 +152,7 @@ body[data-contrast="high"] .serene-hero {
   align-items: center;
   gap: 0.5rem;
   font-weight: 700;
-  color: #1f2a33;
+  color: #0e1b27;
   text-decoration: none;
   letter-spacing: 0.04em;
 }
@@ -159,7 +161,7 @@ body[data-contrast="high"] .serene-hero {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #e5b769, #d97757);
+  background: linear-gradient(135deg, #7be3ff, #f08db6);
   display: inline-block;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
@@ -183,10 +185,10 @@ body[data-contrast="high"] .serene-hero {
   gap: 0.35rem;
   padding: 0.65rem 0.85rem;
   border-radius: 14px;
-  border: 1px solid #e3d8c4;
+  border: 1px solid #d9e7f3;
   background: #fff;
   text-decoration: none;
-  color: #1f2a33;
+  color: #0e1b27;
   font-weight: 600;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.04);
 }
@@ -252,10 +254,10 @@ body[data-contrast="high"] .serene-hero {
 .language-toggle {
   display: inline-flex;
   align-items: center;
-  border: 1px solid #e3d8c4;
+  border: 1px solid #d9e7f3;
   border-radius: 12px;
   padding: 0.2rem 0.5rem;
-  background: #f7f4ec;
+  background: #f7fbff;
 }
 
 .language-toggle select {
@@ -268,7 +270,7 @@ body[data-contrast="high"] .serene-hero {
 }
 
 .language-toggle select:focus {
-  outline: 2px solid #1f2a33;
+  outline: 2px solid #0e1b27;
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -359,7 +361,7 @@ body[data-contrast="high"] .serene-hero {
 .pill.ghost {
   background: rgba(241, 232, 217, 0.55);
   color: #2f2a22;
-  border: 1px solid #eadfce;
+  border: 1px solid #dfe7f1;
 }
 
 .listening-card {
@@ -658,7 +660,7 @@ body[data-animations="off"] .prediction-card__body {
   position: relative;
   padding: 1rem;
   border-radius: 16px;
-  border: 1px solid #e5ddce;
+  border: 1px solid #dfe7f1;
   background: #ffffff;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.05);
   overflow: hidden;
@@ -698,12 +700,12 @@ body[data-animations="off"] .prediction-card__body {
 }
 
 .kundli-core {
-  fill: #1f2a33;
+  fill: #0e1b27;
   opacity: 0.95;
 }
 
 .kundli-center {
-  fill: #f7f4ec;
+  fill: #f7fbff;
   font-weight: 800;
   font-size: 1rem;
 }
@@ -740,7 +742,7 @@ body[data-animations="off"] .prediction-card__body {
 }
 
 .constellation-map {
-  border: 1px dashed #e5ddce;
+  border: 1px dashed #dfe7f1;
   border-radius: 14px;
   padding: 0.5rem;
   background: #ffffff;
@@ -758,7 +760,7 @@ body[data-animations="off"] .prediction-card__body {
 
 .constellation-node {
   fill: url(#starGradient);
-  stroke: #1f2a33;
+  stroke: #0e1b27;
   stroke-width: 1px;
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.1));
   cursor: pointer;
@@ -841,7 +843,7 @@ body[data-animations="off"] .kundli-planet {
 .journey-rail {
   padding: 1rem;
   border-radius: 16px;
-  border: 1px solid #e5ddce;
+  border: 1px solid #dfe7f1;
   background: #ffffff;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.05);
 }
@@ -865,7 +867,7 @@ body[data-animations="off"] .kundli-planet {
 .journey-rail__progress-bar {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, #d97757, #86e3ce);
+  background: linear-gradient(90deg, #f08db6, #86e3ce);
 }
 
 .journey-rail__progress-label {
@@ -883,20 +885,20 @@ body[data-animations="off"] .kundli-planet {
 }
 
 .journey-rail__item {
-  border: 1px solid #e5ddce;
+  border: 1px solid #dfe7f1;
   border-radius: 14px;
   background: #fff;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.05);
 }
 
 .journey-rail__item.is-active {
-  border-color: #d97757;
+  border-color: #f08db6;
   box-shadow: 0 18px 38px rgba(217, 119, 87, 0.14);
 }
 
 .journey-rail__item.is-complete .journey-rail__label {
   text-decoration: none;
-  color: #1f2a33;
+  color: #0e1b27;
 }
 
 .journey-rail__link {
@@ -954,7 +956,7 @@ body[data-animations="off"] .kundli-planet {
   margin: 0 0 1rem;
   padding: 0.75rem 1rem;
   border-radius: 16px;
-  border: 1px solid #e5ddce;
+  border: 1px solid #dfe7f1;
   background: #ffffff;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.05);
 }
@@ -978,7 +980,7 @@ body[data-animations="off"] .kundli-planet {
 .wizard-rail__progress-bar {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, #d97757, #86e3ce);
+  background: linear-gradient(90deg, #f08db6, #86e3ce);
 }
 
 .wizard-rail__progress-label {
@@ -1005,11 +1007,11 @@ body[data-animations="off"] .kundli-planet {
 }
 
 .wizard-rail__step.is-active {
-  border-color: #d97757;
+  border-color: #f08db6;
 }
 
 .wizard-rail__step.is-complete .wizard-rail__step-label {
-  color: #1f2a33;
+  color: #0e1b27;
 }
 
 .wizard-rail__step-link {
@@ -1034,7 +1036,7 @@ body[data-animations="off"] .kundli-planet {
 .map-picker {
   margin: 1rem 0;
   padding: 0.85rem;
-  border: 1px solid #e5ddce;
+  border: 1px solid #dfe7f1;
   border-radius: 16px;
   background: #ffffff;
 }
@@ -1098,7 +1100,7 @@ body[data-animations="off"] .kundli-planet {
 .orbit-timeline__card {
   padding: 0.85rem;
   border-radius: 14px;
-  border: 1px solid #e5ddce;
+  border: 1px solid #dfe7f1;
   background: linear-gradient(135deg, #f7f0e8, #f1f6f6);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   transition: transform 0.2s ease;
@@ -1148,7 +1150,7 @@ body[data-animations="off"] .kundli-planet {
   background: #fdfbf6;
   padding: 0.75rem;
   border-radius: 14px;
-  border: 1px solid #e5ddce;
+  border: 1px solid #dfe7f1;
 }
 
 .feedback-inline {
@@ -1370,7 +1372,7 @@ body[data-animations="off"] .kundli-planet {
 }
 
 .card {
-  border: 1px solid #eadfce;
+  border: 1px solid #dfe7f1;
   border-radius: 14px;
   padding: 1rem;
   background: #fffdf8;
@@ -1388,7 +1390,7 @@ body[data-animations="off"] .kundli-planet {
 }
 
 .panel {
-  border: 1px solid #eadfce;
+  border: 1px solid #dfe7f1;
   border-radius: 18px;
   padding: 1.25rem;
   background: #fffdf8;
@@ -1473,7 +1475,7 @@ body[data-animations="off"] .kundli-planet {
 }
 
 .button-link {
-  background: linear-gradient(135deg, #e5b769, #d97757);
+  background: linear-gradient(135deg, #7be3ff, #f08db6);
   color: #1f130c;
   border-color: transparent;
   box-shadow: 0 12px 24px rgba(217, 119, 87, 0.26);
@@ -1481,8 +1483,8 @@ body[data-animations="off"] .kundli-planet {
 
 .button-link.soft {
   box-shadow: none;
-  background: #1f2a33;
-  color: #f7f4ec;
+  background: #0e1b27;
+  color: #f7fbff;
 }
 
 .button-link:hover,
@@ -1495,8 +1497,8 @@ body[data-animations="off"] .kundli-planet {
 .ghost-button,
 .ghost-link {
   background: #fff;
-  color: #1f2a33;
-  border: 1px solid #e3d8c4;
+  color: #0e1b27;
+  border: 1px solid #d9e7f3;
 }
 
 .ghost-link {
@@ -1532,7 +1534,7 @@ textarea {
   border-radius: 10px;
   border: 1px solid #e2d6c2;
   background: #fff;
-  color: #1f2a33;
+  color: #0e1b27;
   font-size: 1rem;
 }
 
@@ -1629,7 +1631,7 @@ textarea:focus {
   border-radius: 18px;
   text-align: center;
   background: #fff;
-  border: 1px solid #eadfce;
+  border: 1px solid #dfe7f1;
   box-shadow: 0 16px 32px rgba(0, 0, 0, 0.05);
 }
 
@@ -1728,7 +1730,7 @@ textarea:focus {
 }
 
 .cosmic-houses__card {
-  border: 1px solid #eadfce;
+  border: 1px solid #dfe7f1;
   border-radius: 12px;
   padding: 0.9rem;
   display: grid;
@@ -1746,7 +1748,7 @@ textarea:focus {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #d97757;
+  background: #f08db6;
   animation: breathe 2.4s ease-in-out infinite;
 }
 
@@ -1754,7 +1756,7 @@ textarea:focus {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #1f2a33;
+  background: #0e1b27;
 }
 
 .cosmic-houses__label {
@@ -1776,7 +1778,7 @@ textarea:focus {
 .horo-hero,
 .hero {
   background: #fffdf8;
-  border: 1px solid #eadfce;
+  border: 1px solid #dfe7f1;
   border-radius: 16px;
   padding: 1rem;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.04);
@@ -1809,7 +1811,7 @@ textarea:focus {
 .timeline-chip {
   border-radius: 12px;
   padding: 0.75rem;
-  border: 1px solid #eadfce;
+  border: 1px solid #dfe7f1;
   background: #fffdf8;
   display: grid;
   gap: 0.25rem;
@@ -1854,7 +1856,7 @@ textarea:focus {
 }
 
 .footer a {
-  color: #1f2a33;
+  color: #0e1b27;
   text-decoration: none;
 }
 
@@ -2358,7 +2360,7 @@ textarea:focus {
 
 .kundli-mini__text {
   font-size: 10px;
-  fill: #1f2a33;
+  fill: #0e1b27;
 }
 
 .kundli-mini__sign {

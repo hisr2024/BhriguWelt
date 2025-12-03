@@ -375,7 +375,7 @@ export default function HoroscopeForm() {
         } catch (primaryError) {
           console.error("[HoroscopeForm] Primary endpoint failed; attempting fallback", primaryError);
           try {
-            await attempt("/api/bhrigu-chat");
+            await attempt("/api/mindvibe-chat");
           } catch (fallbackError) {
             console.error("[HoroscopeForm] Fallback endpoint also failed", fallbackError);
             throw primaryError;
@@ -399,11 +399,11 @@ export default function HoroscopeForm() {
     }
   };
 
-  const handleAskBhrigu = () => {
+  const handleAskMindVibe = () => {
     if (!chart || typeof window === "undefined") return;
-    const event = new CustomEvent("bhrigu:open-chat", { detail: { chart } });
+    const event = new CustomEvent("mindvibe:open-chat", { detail: { chart } });
     window.dispatchEvent(event);
-    const chatDock = document.querySelector("[data-bhrigu-chat]");
+    const chatDock = document.querySelector("[data-mindvibe-chat]");
     if (chatDock instanceof HTMLElement) {
       chatDock.scrollIntoView({ behavior: "smooth", block: "start" });
     }
@@ -509,7 +509,7 @@ export default function HoroscopeForm() {
           prefillNotice={prefillNotice}
           onChange={handleChange}
           onSubmit={handleSubmit}
-          onAskBhrigu={handleAskBhrigu}
+          onAskMindVibe={handleAskMindVibe}
           onDownloadPdf={handleDownloadPdf}
         />
 
@@ -520,7 +520,7 @@ export default function HoroscopeForm() {
           hasNarrative={hasNarrative}
           fallbackNarrative={fallbackNarrative}
           timeframes={timeframeLinks}
-          onAskBhrigu={handleAskBhrigu}
+          onAskMindVibe={handleAskMindVibe}
           onDownloadPdf={handleDownloadPdf}
         />
       </div>
