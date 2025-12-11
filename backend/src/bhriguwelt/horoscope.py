@@ -23,7 +23,7 @@ from .calculations import (
     score_principles,
 )
 from .config import load_runtime_config
-from .data_loader import load_bhrigu_data
+from .bhrigu_core import bhrigu_core
 from .kundli_generator import generate_kundli
 
 __all__ = [
@@ -49,29 +49,6 @@ __all__ = [
 
 
 SUPPORTED_MOON_ELEMENTS = {"water", "fire", "air", "earth", "ether"}
-
-
-def _filter_by_tradition(entries: List[Dict], tradition: str) -> List[Dict]:
-    """Return entries compatible with the requested manuscript tradition."""
-
-    normalized = (tradition or "universal").lower()
-    filtered: List[Dict] = []
-    for entry in entries:
-        entry_tradition = entry.get("tradition")
-        if not entry_tradition:
-            filtered.append(entry)
-            continue
-        if isinstance(entry_tradition, (list, tuple, set)):
-            normalized_entry = {str(item).lower() for item in entry_tradition}
-            if normalized in normalized_entry or "universal" in normalized_entry:
-                filtered.append(entry)
-            continue
-
-        normalized_entry = str(entry_tradition).lower()
-        if normalized_entry == "universal" or normalized_entry == normalized or normalized == "universal":
-            filtered.append(entry)
-
-    return filtered
 
 
 @dataclass
@@ -184,11 +161,11 @@ def build_calendar_context(
 
 def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
     runtime_config = load_runtime_config()
-    bhrigu_data = load_bhrigu_data()
-    principles = _filter_by_tradition(bhrigu_data.get("principles", []), request.tradition)
-    remedies = _filter_by_tradition(bhrigu_data.get("remedies", []), request.tradition)
-    past_life_engines = _filter_by_tradition(bhrigu_data.get("past_life_engines", []), request.tradition)
-    future_engines = _filter_by_tradition(bhrigu_data.get("future_engines", []), request.tradition)
+    core_bundle = bhrigu_core.application_bundle(request.tradition)
+    principles = core_bundle.get("principles", [])
+    remedies = core_bundle.get("remedies", [])
+    past_life_engines = core_bundle.get("past_life_engines", [])
+    future_engines = core_bundle.get("future_engines", [])
 
     snapshot = _snapshot_from_request(request)
 
@@ -227,9 +204,9 @@ def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
 
 def build_past_life_report(request: HoroscopeRequest) -> PastLifeReport:
     runtime_config = load_runtime_config()
-    bhrigu_data = load_bhrigu_data()
     snapshot = _snapshot_from_request(request)
-    past_life_engines = _filter_by_tradition(bhrigu_data.get("past_life_engines", []), request.tradition)
+    core_bundle = bhrigu_core.application_bundle(request.tradition)
+    past_life_engines = core_bundle.get("past_life_engines", [])
     insights = evaluate_past_life(snapshot, past_life_engines)
     return PastLifeReport(
         name=request.name,
@@ -244,10 +221,10 @@ def build_future_report(request: HoroscopeRequest) -> FutureReport:
     if not request.consent_for_date_predictions:
         raise ValueError("User consent required for date-based predictions")
 
-    bhrigu_data = load_bhrigu_data()
     snapshot = _snapshot_from_request(request)
-    future_engines = _filter_by_tradition(bhrigu_data.get("future_engines", []), request.tradition)
-    transit_rules = _filter_by_tradition(bhrigu_data.get("transit_rules", []), request.tradition)
+    core_bundle = bhrigu_core.application_bundle(request.tradition)
+    future_engines = core_bundle.get("future_engines", [])
+    transit_rules = core_bundle.get("transit_rules", [])
     trajectories = evaluate_future_directives(snapshot, future_engines)
     now = datetime.utcnow()
     transit_dt = normalize_birth_datetime(
@@ -271,9 +248,9 @@ def build_transit_report(request: HoroscopeRequest, transit_payload: Dict[str, s
     if not request.consent_for_date_predictions:
         raise ValueError("User consent required for date-based predictions")
 
-    bhrigu_data = load_bhrigu_data()
+    core_bundle = bhrigu_core.application_bundle(request.tradition)
     snapshot = _snapshot_from_request(request)
-    transit_rules = _filter_by_tradition(bhrigu_data.get("transit_rules", []), request.tradition)
+    transit_rules = core_bundle.get("transit_rules", [])
     transit_dt = normalize_birth_datetime(
         transit_payload["transit_date"], transit_payload["transit_time"], timezone_name=transit_payload.get("timezone")
     )
@@ -293,13 +270,12 @@ def build_matchmaking_report(
     modern_preferences: List[str],
 ) -> MatchmakingReport:
     runtime_config = load_runtime_config()
-    bhrigu_data = load_bhrigu_data()
     primary_snapshot = _snapshot_from_request(primary_request)
     partner_snapshot = _snapshot_from_request(partner_request)
 
-    matchmaking_criteria = _filter_by_tradition(
-        bhrigu_data.get("matchmaking_criteria", []), primary_request.tradition
-    )
+    core_bundle = bhrigu_core.application_bundle(primary_request.tradition)
+
+    matchmaking_criteria = core_bundle.get("matchmaking_criteria", [])
 
     compatibility = evaluate_matchmaking(
         primary=primary_snapshot,

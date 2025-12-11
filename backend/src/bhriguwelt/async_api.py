@@ -16,7 +16,8 @@ except Exception as exc:  # pragma: no cover - optional dependency
     ) from exc
 
 from .api import RateLimiter, ResponseCache, handle_command
-from .data_loader import load_bhrigu_data, persist_bhrigu_data
+from .bhrigu_core import bhrigu_core
+from .data_loader import persist_bhrigu_data
 from .feedback import quarterly_reviews, record_feedback, serialize_entry
 from .ml_service import get_ml_health, retrain_feedback_model
 from .profiles import (
@@ -261,7 +262,7 @@ def create_app() -> web.Application:
 
     async def manuscript_get(request: web.Request) -> web.Response:  # pylint: disable=unused-argument
         _, rate_meta = await guard_rate_limit(request)
-        corpus = await asyncio.to_thread(load_bhrigu_data)
+        corpus = await asyncio.to_thread(bhrigu_core.dataset)
         reply = _json_response(corpus)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -271,6 +272,7 @@ def create_app() -> web.Application:
         payload = await request.json()
         updated = await asyncio.to_thread(persist_bhrigu_data, payload)
         await cache.clear()
+        await asyncio.to_thread(bhrigu_core.refresh, updated)
         return _json_response({"message": "Manuscript updated", "principles": len(updated.get("principles", []))})
 
     async def ml_retrain(request: web.Request) -> web.Response:
