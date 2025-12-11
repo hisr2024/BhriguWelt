@@ -9,11 +9,12 @@ authentic Indian manuscript extracts.
 """
 
 from copy import deepcopy
+from pathlib import Path
 from threading import Lock
 from time import monotonic
 from typing import Any, Dict, List
 
-from .data_loader import load_bhrigu_data
+from .data_loader import current_data_path, load_bhrigu_data
 
 
 class BhriguCore:
@@ -22,7 +23,7 @@ class BhriguCore:
     def __init__(self, cache_ttl_seconds: int = 900) -> None:
         self.cache_ttl_seconds = cache_ttl_seconds
         self._lock = Lock()
-        self._dataset_cache: tuple[float, Dict[str, Any]] | None = None
+        self._dataset_cache: tuple[float, Path, Dict[str, Any]] | None = None
         self._segment_cache: dict[tuple[str, str], tuple[float, List[Dict[str, Any]]]] = {}
 
     @staticmethod
@@ -49,12 +50,17 @@ class BhriguCore:
 
     def _dataset(self, now: float | None = None) -> Dict[str, Any]:
         timestamp = now if now is not None else monotonic()
+        active_path = current_data_path()
         with self._lock:
-            if self._dataset_cache and timestamp - self._dataset_cache[0] < self.cache_ttl_seconds:
-                return deepcopy(self._dataset_cache[1])
+            if (
+                self._dataset_cache
+                and self._dataset_cache[1] == active_path
+                and timestamp - self._dataset_cache[0] < self.cache_ttl_seconds
+            ):
+                return deepcopy(self._dataset_cache[2])
 
             dataset = load_bhrigu_data()
-            self._dataset_cache = (timestamp, dataset)
+            self._dataset_cache = (timestamp, active_path, dataset)
             self._segment_cache.clear()
             return deepcopy(dataset)
 
@@ -94,7 +100,7 @@ class BhriguCore:
         now = monotonic()
         with self._lock:
             dataset = deepcopy(payload) if payload is not None else load_bhrigu_data()
-            self._dataset_cache = (now, dataset)
+            self._dataset_cache = (now, current_data_path(), dataset)
             self._segment_cache.clear()
             return deepcopy(dataset)
 
