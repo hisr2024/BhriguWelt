@@ -32,7 +32,9 @@ __all__ = [
     "PastLifeReport",
     "FutureReport",
     "MatchmakingReport",
+    "CoreWisdomReading",
     "SUPPORTED_MOON_ELEMENTS",
+    "build_core_wisdom_reading",
     "build_prediction",
     "build_past_life_report",
     "build_future_report",
@@ -151,6 +153,17 @@ class TransitReport:
     interpretation: str
 
 
+@dataclass
+class CoreWisdomReading:
+    """Eight-section Bhrigu Core Wisdom digest designed for web and mobile."""
+
+    sections: Dict[str, str]
+    charts: Dict[str, List[ChartHouse]]
+    dashas: List[DashaPeriod]
+    karmic_epoch: str
+    remedies: List[Dict]
+
+
 def build_calendar_context(
     birth_date: str, birth_time: str, birth_place: str
 ) -> HinduCalendarContext:
@@ -261,6 +274,84 @@ def build_transit_report(request: HoroscopeRequest, transit_payload: Dict[str, s
         name=request.name,
         directives=directives,
         interpretation=_compose_transit_interpretation(directives, transit_dt),
+    )
+
+
+def build_core_wisdom_reading(
+    request: HoroscopeRequest, focus_areas: Sequence[str] | None = None
+) -> CoreWisdomReading:
+    """Return the 8-section Bhrigu Core Wisdom digest for web and mobile clients."""
+
+    horoscope = build_prediction(request)
+    build_calendar_context(
+        birth_date=request.birth_date, birth_time=request.birth_time, birth_place=request.birth_place
+    )  # ensures Gregorian → Śaka alignment for downstream consumers
+
+    focus_summary = ", ".join(focus_areas) if focus_areas else "general life balance"
+
+    sections = {
+        "1": (
+            "Restatement of User Query & Birth Data: "
+            f"Name: {request.name}. Birth: {request.birth_date} at {request.birth_time} in {request.birth_place}."
+            f" Focus areas: {focus_summary}."
+        ),
+        "2": (
+            "Disclaimer & Orientation: This is a Bhrigu Samhita–inspired spiritual reading. "
+            "It offers tendencies, not certainties, and is not medical, legal, or financial advice."
+        ),
+        "3": (
+            "Birth Chart Overview: "
+            f"Karmic epoch — {horoscope.karmic_epoch}. "
+            f"Dominant currents include {', '.join(sorted(horoscope.weights, key=horoscope.weights.get, reverse=True)[:3])} "
+            "with manuscript-backed interpretation: "
+            f"{horoscope.interpretation}"
+        ),
+    }
+
+    strengths = _ranked_traits(horoscope.weights, top=True)
+    challenges = _ranked_traits(horoscope.weights, top=False)
+
+    remedy_text = (
+        '; '.join(remedy.get("interpretation", remedy.get("id", "Remedy")) for remedy in horoscope.remedies[:2])
+        if horoscope.remedies
+        else "Practice steady discipline and seva."
+    )
+
+    sections.update(
+        {
+            "4": (
+                "Detailed Life Area Analysis: "
+                f"Strengths — {', '.join(strengths) or 'resilience and curiosity'}. "
+                f"Challenges — {', '.join(challenges) or 'balancing intuition with action'}. "
+                f"Key remedies from the folios: {remedy_text}"
+            ),
+            "5": (
+                "Time-Based Future Tendencies: "
+                f"{_future_tendencies(horoscope.future_trajectories)}"
+            ),
+            "6": (
+                "Consolidated Strengths, Challenges & Cautions: "
+                f"Strengths — {', '.join(strengths) or 'adaptability'}. "
+                f"Challenges — {', '.join(challenges) or 'guarding energy leaks'}. "
+                "Cautions — honor pacing and protect focus during intense transit windows."
+            ),
+            "7": (
+                "Bhrigu-Style Guidance & Remedies: "
+                f"{_guidance_summary(horoscope.remedies, horoscope.future_trajectories)}"
+            ),
+            "8": (
+                "Closing & Reminder of Free Will: Tendencies guide you, but choices shape outcomes. "
+                "Take what resonates, leave the rest, and proceed with compassion."
+            ),
+        }
+    )
+
+    return CoreWisdomReading(
+        sections=sections,
+        charts={"rashi_chart": horoscope.rashi_chart, "bhava_chart": horoscope.bhava_chart},
+        dashas=horoscope.dashas,
+        karmic_epoch=horoscope.karmic_epoch,
+        remedies=horoscope.remedies,
     )
 
 
@@ -573,6 +664,30 @@ def _compose_transit_interpretation(directives: List[TransitDirective], transit_
     return (
         f"Transit focal point on {formatted_date} via {top.planet}: {top.influence} (certainty {top.certainty:.2f}) per {top.reference}."
     )
+
+
+def _ranked_traits(weights: Dict[str, float], top: bool) -> List[str]:
+    if not weights:
+        return []
+    ordered = sorted(weights.items(), key=lambda entry: entry[1], reverse=top)
+    traits = [name.replace("_", " ") for name, score in ordered[:3] if score]
+    return traits
+
+
+def _future_tendencies(trajectories: List[FutureTrajectory]) -> str:
+    if not trajectories:
+        return "Upcoming windows emphasize steady practice; specific dates need consent."
+    slices: List[str] = []
+    for directive in trajectories[:3]:
+        window = f" during {directive.window}" if directive.window else ""
+        slices.append(f"{directive.focus}{window} (certainty {directive.certainty:.2f})")
+    return "; ".join(slices)
+
+
+def _guidance_summary(remedies: List[Dict], trajectories: List[FutureTrajectory]) -> str:
+    remedy_notes = "; ".join(remedy.get("interpretation", "Remedy per folio") for remedy in remedies[:2]) if remedies else "Light a lamp mindfully, practice seva, and journal weekly."
+    future_note = "" if not trajectories else f" Upcoming focus: {trajectories[0].focus}."
+    return f"{remedy_notes}.{future_note}"
 
 
 def _add_common_arguments(parser: argparse.ArgumentParser, prefix: str = "") -> None:

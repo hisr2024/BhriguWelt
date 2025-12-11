@@ -142,6 +142,7 @@ Supported routes:
 - `POST /matchmaking`
 - `POST /calendar` (Gregorian → Śaka conversion with IST reference)
 - `POST /transits` (transit directives for an existing natal chart)
+- `POST /core-wisdom` (8-section Bhrigu Core Wisdom digest for web/mobile apps)
 - `GET /manuscript` (retrieve the currently loaded Bhrigu corpus)
 - `POST /manuscript` (persist an updated corpus to disk for offline use)
 
