@@ -8,7 +8,28 @@ def test_core_uses_cached_dataset(monkeypatch):
     def loader():
         nonlocal calls
         calls += 1
-        return {"principles": [], "remedies": []}
+        return {
+            "principles": [],
+            "remedies": [],
+            "past_life_engines": [
+                {
+                    "id": "P1",
+                    "description": "placeholder",
+                    "narrative": "placeholder",
+                    "sutra_reference": "folio",
+                }
+            ],
+            "future_engines": [
+                {
+                    "id": "F1",
+                    "description": "placeholder",
+                    "trajectory": "placeholder",
+                    "sutra_reference": "folio",
+                }
+            ],
+            "transit_rules": [],
+            "matchmaking_criteria": [],
+        }
 
     monkeypatch.setattr(core_module, "load_bhrigu_data", loader)
     core = BhriguCore(cache_ttl_seconds=60)
@@ -29,8 +50,24 @@ def test_application_bundle_filters_and_refreshes(monkeypatch):
             {"id": "C", "tradition": "southern"},
         ],
         "remedies": [{"id": "R1", "tradition": ["northern", "universal"]}],
-        "past_life_engines": [{"id": "P1", "tradition": "southern"}],
-        "future_engines": [{"id": "F1", "tradition": "northern"}],
+        "past_life_engines": [
+            {
+                "id": "P1",
+                "tradition": "southern",
+                "description": "past placeholder",
+                "narrative": "past narrative",
+                "sutra_reference": "folio",
+            }
+        ],
+        "future_engines": [
+            {
+                "id": "F1",
+                "tradition": "northern",
+                "description": "future placeholder",
+                "trajectory": "future trajectory",
+                "sutra_reference": "folio",
+            }
+        ],
         "transit_rules": [{"id": "T1", "tradition": "universal"}],
         "matchmaking_criteria": [{"id": "M1", "tradition": "northern"}],
     }
