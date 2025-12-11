@@ -35,6 +35,7 @@ from .profiles import (
 from .chatbot import generate_chat_reply
 from .horoscope import (
     HoroscopeRequest,
+    build_core_wisdom_reading,
     build_future_report,
     build_matchmaking_report,
     build_transit_report,
@@ -162,6 +163,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/matchmaking"): "_handle_matchmaking",
         ("POST", "/calendar"): "_handle_calendar",
         ("POST", "/transits"): "_handle_transits",
+        ("POST", "/core-wisdom"): "_handle_core_wisdom",
         ("POST", "/chat"): "_handle_chat",
         ("POST", "/profiles"): "_handle_profiles",
         ("POST", "/profiles/get"): "_handle_profile_get",
@@ -272,6 +274,14 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     def _handle_transits(self) -> None:
         payload = self._read_json()
         self._respond_with_command("transits", payload)
+
+    def _handle_core_wisdom(self) -> None:
+        payload = self._read_json()
+        focus_areas = payload.get("focus_areas")
+        if focus_areas is not None and not isinstance(focus_areas, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "focus_areas must be a list when provided")
+            return
+        self._respond_with_command("core-wisdom", payload)
 
     def _handle_chat(self) -> None:
         payload = self._read_json()
@@ -566,6 +576,19 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             except Exception:  # pragma: no cover - alert scheduling is best-effort
                 logger.warning("Unable to schedule dasha alerts", extra={"profile_id": profile_id})
 
+        return response
+    if command == "core-wisdom":
+        request = _request_from_payload(payload)
+        reading = build_core_wisdom_reading(request, payload.get("focus_areas") or None)
+        response = {
+            "sections": reading.sections,
+            "rashi_chart": [_serialize_obj(item) for item in reading.charts.get("rashi_chart", [])],
+            "bhava_chart": [_serialize_obj(item) for item in reading.charts.get("bhava_chart", [])],
+            "dashas": [_serialize_obj(item) for item in reading.dashas],
+            "karmic_epoch": reading.karmic_epoch,
+            "remedies": reading.remedies,
+        }
+        _ensure_visualization_payload(response)
         return response
     if command == "past-life":
         report = build_past_life_report(_request_from_payload(payload))

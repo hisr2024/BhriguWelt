@@ -31,6 +31,13 @@ def test_handle_command_horoscope_emits_full_payload():
     assert response["interpretation"]
 
 
+def test_handle_command_core_wisdom_structures_sections():
+    response = api.handle_command("core-wisdom", {**_payload(), "focus_areas": ["career", "marriage"]})
+    assert set(response["sections"].keys()) == set(str(i) for i in range(1, 9))
+    assert response["rashi_chart"] and response["bhava_chart"]
+    assert response["dashas"]
+
+
 def test_handle_command_matchmaking_summarizes_highlights():
     response = api.handle_command(
         "matchmaking",
