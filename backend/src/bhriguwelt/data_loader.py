@@ -73,6 +73,25 @@ def _validate_principles(principles: List[Dict[str, Any]]) -> None:
         integrity["checksum"] = checksum
 
 
+def _validate_engine_block(name: str, entries: List[Dict[str, Any]], required_fields: List[str]) -> None:
+    if not isinstance(entries, list) or not entries:
+        raise ValueError(
+            f"'{name}' must be a non-empty list to keep the engine aligned with the Bhrigu Samhita folios"
+        )
+
+    for index, engine in enumerate(entries):
+        if not isinstance(engine, dict):
+            raise ValueError(f"Each entry in '{name}' must be a mapping (index {index})")
+
+        missing = [field for field in required_fields if not engine.get(field)]
+        if missing:
+            identifier = engine.get("id", f"entry {index}")
+            joined_missing = ", ".join(sorted(missing))
+            raise ValueError(
+                f"{name} entry '{identifier}' is missing required manuscript fields: {joined_missing}"
+            )
+
+
 def _validate_and_enrich(payload: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("Bhrigu data payload must be a mapping")
@@ -80,6 +99,24 @@ def _validate_and_enrich(payload: Dict[str, Any]) -> Dict[str, Any]:
     principles = payload.get("principles")
     if isinstance(principles, list):
         _validate_principles(principles)
+
+    past_life_engines = payload.get("past_life_engines")
+    if past_life_engines is None:
+        raise ValueError("Payload must include 'past_life_engines' aligned to Bhrigu narratives")
+    _validate_engine_block(
+        "past_life_engines",
+        past_life_engines,
+        ["id", "sutra_reference", "description", "narrative"],
+    )
+
+    future_engines = payload.get("future_engines")
+    if future_engines is None:
+        raise ValueError("Payload must include 'future_engines' aligned to Bhrigu directives")
+    _validate_engine_block(
+        "future_engines",
+        future_engines,
+        ["id", "sutra_reference", "description", "trajectory"],
+    )
 
     return payload
 
