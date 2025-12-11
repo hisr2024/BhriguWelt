@@ -15,7 +15,8 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from urllib.parse import urlparse, parse_qs
 
-from .data_loader import load_bhrigu_data, persist_bhrigu_data
+from .bhrigu_core import bhrigu_core
+from .data_loader import persist_bhrigu_data
 from .calendar_conversion import convert_birth_details
 from .feedback import record_feedback, quarterly_reviews, serialize_entry
 from .ml_service import get_ml_health, record_model_load, retrain_feedback_model
@@ -215,7 +216,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
 
     # Individual endpoint handlers -------------------------------------------------
     def _handle_health(self) -> None:
-        corpus = load_bhrigu_data()
+        corpus = bhrigu_core.dataset()
         principles_loaded = len(corpus.get("principles") or [])
         self._send_json(
             {
@@ -385,7 +386,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         self._send_json({"message": "Retraining complete", "metrics": result}, status=HTTPStatus.ACCEPTED)
 
     def _handle_get_manuscript(self) -> None:
-        corpus = load_bhrigu_data()
+        corpus = bhrigu_core.dataset()
         self._send_json(corpus)
 
     def _handle_update_manuscript(self) -> None:
@@ -397,6 +398,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             return
 
         self.cache.clear()
+        bhrigu_core.refresh(updated)
         self._send_json({"message": "Manuscript updated", "principles": len(updated.get("principles", []))})
 
     # Utility helpers --------------------------------------------------------------
