@@ -41,6 +41,7 @@ from .horoscope import (
     build_matchmaking_report,
     build_timeline_report,
     build_transit_report,
+    build_varshaphal_report,
     build_past_life_report,
     build_prediction,
     _snapshot_from_request,
@@ -163,6 +164,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/past-life"): "_handle_past_life",
         ("POST", "/future"): "_handle_future",
         ("POST", "/matchmaking"): "_handle_matchmaking",
+        ("POST", "/varshaphal"): "_handle_varshaphal",
         ("POST", "/calendar"): "_handle_calendar",
         ("POST", "/transits"): "_handle_transits",
         ("POST", "/core-wisdom"): "_handle_core_wisdom",
@@ -269,6 +271,14 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     def _handle_matchmaking(self) -> None:
         payload = self._read_json()
         self._respond_with_command("matchmaking", payload)
+
+    def _handle_varshaphal(self) -> None:
+        payload = self._read_json()
+        target_year = payload.get("target_year") or payload.get("target_period") or payload.get("period")
+        if target_year is not None and not isinstance(target_year, str):
+            self.send_error(HTTPStatus.BAD_REQUEST, "target_year must be a string when provided")
+            return
+        self._respond_with_command("varshaphal", payload)
 
     def _handle_calendar(self) -> None:
         payload = self._read_json()
@@ -641,6 +651,26 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "transit_directives": [_serialize_obj(item) for item in report.transit_directives],
             "progression_directives": [_serialize_obj(item) for item in report.progression_directives],
             "interpretation": report.interpretation,
+        }
+    if command == "varshaphal":
+        request = _request_from_payload(payload)
+        target_year = str(payload.get("target_year") or payload.get("target_period") or payload.get("period") or "next 12 months")
+        main_focus = payload.get("main_focus") or payload.get("focus") or ""
+        focus_areas = payload.get("focus_areas")
+        if isinstance(focus_areas, list) and focus_areas and not main_focus:
+            main_focus = ", ".join(str(area) for area in focus_areas)
+        report = build_varshaphal_report(request, target_year=target_year, main_focus=main_focus or None)
+        return {
+            "name": report.name,
+            "target_year": report.target_year,
+            "year_theme": report.year_theme,
+            "year_mantra": report.year_mantra,
+            "sections": report.sections,
+            "segments": [_serialize_obj(segment) for segment in report.segments],
+            "gateways": report.gateways,
+            "focus_areas": report.focus_areas,
+            "practices": report.practices,
+            "intentions": report.intentions,
         }
     if command == "timeline":
         request = _request_from_payload(payload)
