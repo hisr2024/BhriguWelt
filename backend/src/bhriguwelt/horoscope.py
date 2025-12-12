@@ -32,6 +32,8 @@ __all__ = [
     "PastLifeReport",
     "FutureReport",
     "MatchmakingReport",
+    "TimelineReport",
+    "TimelinePhase",
     "CoreWisdomReading",
     "SUPPORTED_MOON_ELEMENTS",
     "build_core_wisdom_reading",
@@ -39,6 +41,7 @@ __all__ = [
     "build_past_life_report",
     "build_future_report",
     "build_matchmaking_report",
+    "build_timeline_report",
     "build_transit_report",
     "build_calendar_context",
     "build_cli_parser",
@@ -143,6 +146,30 @@ class MatchmakingReport:
     compatibility: MatchmakingCompatibility
     interpretation: str
     sections: Dict[str, str]
+
+
+@dataclass
+class TimelinePhase:
+    """Single life-phase entry for the Bhrigu-inspired roadmap."""
+
+    phase: str
+    age_range: str
+    theme: str
+    dominant_influence: str
+    main_experiences: List[str]
+    karmic_lessons: List[str]
+    turning_points: List[str]
+    practical_guidance: List[str]
+
+
+@dataclass
+class TimelineReport:
+    """Five-phase karmic roadmap aligned to the Bhrigu brief."""
+
+    name: str
+    summary: str
+    disclaimer: str
+    phases: List[TimelinePhase]
 
 
 @dataclass
@@ -354,6 +381,27 @@ def build_core_wisdom_reading(
         karmic_epoch=horoscope.karmic_epoch,
         remedies=horoscope.remedies,
     )
+
+
+def build_timeline_report(request: HoroscopeRequest, focus_areas: Sequence[str] | None = None) -> TimelineReport:
+    """Return a five-phase karmic roadmap for UX surfaces and chat flows."""
+
+    snapshot = _snapshot_from_request(request)
+    influences = _rank_influences(snapshot)
+    phases = _compose_timeline(snapshot, influences, focus_areas)
+    focus_label = ", ".join(focus_areas) if focus_areas else "general balance"
+
+    summary = (
+        f"{request.name or 'The native'}'s Bhrigu-style roadmap centers on {focus_label}. "
+        f"Dominant influences: {', '.join(influences[:3])}."
+    )
+    disclaimer = (
+        "Symbolic Bhrigu Samhita-inspired timeline covering foundations, identity search, "
+        "early building, consolidation, and maturity. It offers tendencies, not fixed outcomes, "
+        "and is not medical, legal, or financial advice."
+    )
+
+    return TimelineReport(name=request.name, summary=summary, disclaimer=disclaimer, phases=phases)
 
 
 def build_matchmaking_report(
@@ -675,6 +723,145 @@ def _compose_matchmaking_sections(
     )
 
     return sections
+
+
+def _rank_influences(snapshot: CelestialSnapshot) -> List[str]:
+    """Return a ranked list of dominant planetary-style influences."""
+
+    influence_weights: Dict[str, float] = {
+        "Saturn": 0.35 + (0.08 if snapshot.saturn_retrograde else 0.0),
+        "Jupiter": 0.32,
+        "Mars": 0.28,
+        "Venus": 0.28,
+        "Rahu": 0.2 if snapshot.rahu_aspects_ascendant else 0.08,
+        "Ketu": 0.18 if snapshot.ketu_house in {8, 12} else 0.1,
+    }
+
+    if snapshot.saturn_house in {1, 4, 7, 10}:
+        influence_weights["Saturn"] += 0.08
+    if snapshot.jupiter_house in {1, 5, 9}:
+        influence_weights["Jupiter"] += 0.06
+    if snapshot.mars_house in {3, 6, 10, 11}:
+        influence_weights["Mars"] += 0.06
+    if snapshot.venus_house in {2, 7, 11}:
+        influence_weights["Venus"] += 0.06
+    if snapshot.moon_element in {"water", "ether"}:
+        influence_weights["Jupiter"] += 0.04
+        influence_weights["Venus"] += 0.04
+    if snapshot.moon_element == "fire":
+        influence_weights["Mars"] += 0.05
+    if snapshot.moon_element == "air":
+        influence_weights["Rahu"] += 0.04
+
+    return [name for name, _ in sorted(influence_weights.items(), key=lambda item: item[1], reverse=True)]
+
+
+def _compose_timeline(
+    snapshot: CelestialSnapshot, influences: Sequence[str], focus_areas: Sequence[str] | None = None
+) -> List[TimelinePhase]:
+    """Assemble five life phases with Bhrigu-style tones."""
+
+    focus_set = {area.lower() for area in focus_areas or []}
+    dominant = influences[0] if influences else "Saturn"
+    supportive = influences[1:3]
+
+    base_phases = [
+        ("Childhood", "0–12", "Foundations & Family Imprint"),
+        ("Adolescence", "13–18", "Search for Identity & Independence"),
+        ("Early Adulthood", "19–28", "Skill-Building & First Commitments"),
+        ("Consolidation", "29–40", "Building Work & Relationship Structures"),
+        ("Mature Years", "41+", "Integration, Mentorship & Spiritual Ripening"),
+    ]
+
+    phases: List[TimelinePhase] = []
+    for idx, (phase, age_range, theme) in enumerate(base_phases):
+        phases.append(
+            _phase_block(
+                phase=phase,
+                age_range=age_range,
+                theme=theme,
+                dominant=dominant,
+                supportive=supportive,
+                snapshot=snapshot,
+                focus_set=focus_set,
+                index=idx,
+            )
+        )
+    return phases
+
+
+def _phase_block(
+    phase: str,
+    age_range: str,
+    theme: str,
+    dominant: str,
+    supportive: Sequence[str],
+    snapshot: CelestialSnapshot,
+    focus_set: set[str],
+    index: int,
+) -> TimelinePhase:
+    """Craft a single timeline phase with lessons and turning points."""
+
+    influence_phrase = f"{dominant}-like with {', '.join(supportive) if supportive else 'subtle allies'}"
+    experiences = [
+        f"Emotional tone shaped by Moon in the {snapshot.moon_element or 'balanced'} element.",
+        f"Family/cultural imprint carries {dominant} discipline and {supportive[0] if supportive else 'intuitive'} creativity.",
+    ]
+
+    if snapshot.rahu_aspects_ascendant:
+        experiences.append("Unconventional mentors or sudden relocations open perspective early.")
+    if snapshot.venus_house in {2, 7, 11}:
+        experiences.append("Relationship openings arrive through community circles or artistic groups.")
+    if snapshot.mars_house in {3, 6, 10}:
+        experiences.append("Competitive streak pushes toward skill drills and practical leadership.")
+    if snapshot.saturn_retrograde:
+        experiences.append("Inner sense of responsibility matures ahead of peers, inviting patience.")
+
+    lessons = [
+        "Balance duty with play; treat every challenge as a craft lesson.",
+        "Honor lineage while defining your own vows of integrity.",
+    ]
+    if dominant == "Saturn":
+        lessons.append("Practice steady routines to transmute delays into mastery.")
+    if dominant == "Jupiter":
+        lessons.append("Guard humility as wisdom and teaching roles expand.")
+    if "career" in focus_set:
+        lessons.append("Link each study or job to a service-driven intention.")
+    if "relationships" in focus_set:
+        lessons.append("Cultivate honest dialogue; shared dharma outweighs surface attraction.")
+
+    turning_points = [
+        "Around phase midpoint, a mentor or exam redirects priorities.",
+        "Near the phase end, relocation or training invites a fresh identity layer.",
+    ]
+    if index == 2:
+        turning_points.append("Ages 24–26 favor first leadership trials or partnership talks.")
+    if index == 3:
+        turning_points.append("Ages 28–32 highlight career/home restructuring under Bhrigu's gaze.")
+    if index == 4:
+        turning_points.append("Ages 44–48 encourage teaching, writing, or mentoring younger seekers.")
+
+    guidance = [
+        "Keep journals of insights; track patterns between inner mood and external results.",
+        "Offer seva or volunteer time during each phase shift to anchor blessings.",
+    ]
+    if "spiritual" in focus_set:
+        guidance.append("Schedule spiritual pauses on lunar return days to harmonize karmic memory.")
+    if "health" in focus_set:
+        guidance.append("Choose gentle, rhythmic movement to match the dominant influence's pace.")
+    if "finances" in focus_set:
+        guidance.append("Use Saturn-style budgeting: simple, transparent, and consistent.")
+
+    return TimelinePhase(
+        phase=phase,
+        age_range=age_range,
+        theme=theme,
+        dominant_influence=influence_phrase,
+        main_experiences=experiences,
+        karmic_lessons=lessons,
+        turning_points=turning_points,
+        practical_guidance=guidance,
+    )
 
 
 def _matches_remedy_rule(value, rule) -> bool:
@@ -1028,6 +1215,27 @@ def _render_matchmaking(report: MatchmakingReport) -> None:
             print(f"  - {line}")
 
 
+def _render_timeline(report: TimelineReport, birth_place: str) -> None:
+    _render_common_intro(report.name, birth_place)
+    print(f"Summary: {report.summary}")
+    print(f"Disclaimer: {report.disclaimer}")
+    for phase in report.phases:
+        print(f"\n{phase.phase} ({phase.age_range}) — {phase.theme}")
+        print(f"  Dominant influence: {phase.dominant_influence}")
+        print("  Main experiences:")
+        for item in phase.main_experiences:
+            print(f"    - {item}")
+        print("  Karmic lessons:")
+        for lesson in phase.karmic_lessons:
+            print(f"    - {lesson}")
+        print("  Turning points:")
+        for tp in phase.turning_points:
+            print(f"    - {tp}")
+        print("  Practical guidance:")
+        for tip in phase.practical_guidance:
+            print(f"    - {tip}")
+
+
 def _render_calendar(context: HinduCalendarContext) -> None:
     print("Bhrigu Samhita insists on capturing exact birth particulars.")
     print(f"Gregorian record: {context.birth_date.isoformat()} {context.birth_time.isoformat(timespec='minutes')} at {context.birth_place}")
@@ -1078,6 +1286,16 @@ def build_cli_parser() -> argparse.ArgumentParser:
     calendar_parser.add_argument("--birth-time", required=True, help="Birth time HH:MM")
     calendar_parser.add_argument("--birth-place", required=True, help="Birth location per passport")
 
+    timeline_parser = subparsers.add_parser("timeline", help="Five-phase karmic roadmap")
+    _add_common_arguments(timeline_parser)
+    timeline_parser.add_argument(
+        "--focus-area",
+        action="append",
+        dest="focus_areas",
+        default=[],
+        help="Optional focus areas such as career, relationships, health, finances, spiritual",
+    )
+
     return parser
 
 
@@ -1110,6 +1328,10 @@ def main(argv: Sequence[str] | None = None) -> None:
     elif args.command == "calendar":
         context = build_calendar_context(args.birth_date, args.birth_time, args.birth_place)
         _render_calendar(context)
+    elif args.command == "timeline":
+        request = _request_from_namespace(args)
+        report = build_timeline_report(request, focus_areas=args.focus_areas or None)
+        _render_timeline(report, args.birth_place)
     else:  # pragma: no cover - defensive
         parser.error("Unknown command")
 
