@@ -13,6 +13,7 @@ type Props = {
 const navLinks = [
   { href: "/dashboard", key: "nav.dashboard", fallback: "Dashboard" },
   { href: "/", key: "nav.home", fallback: "Home" },
+  { href: "/studio", key: "nav.studio", fallback: "Studio" },
   { href: "/calendar", key: "nav.calendar", fallback: "Śaka calendar" },
   { href: "/horoscope", key: "nav.horoscope", fallback: "Horoscope" },
   { href: "/past-life", key: "nav.past", fallback: "Past lives" },
