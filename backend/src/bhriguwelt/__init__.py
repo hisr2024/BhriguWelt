@@ -26,6 +26,7 @@ from .horoscope import (
     main,
     build_cli_parser,
 )
+from .wisdom_bot import WisdomBotResponse, WisdomBotDownload, build_wisdom_bot_response
 
 __all__ = [
     "build_prediction",
@@ -59,4 +60,7 @@ __all__ = [
     "FlowVisualizations",
     "UnifiedExperienceFlow",
     "build_unified_experience_flow",
+    "WisdomBotResponse",
+    "WisdomBotDownload",
+    "build_wisdom_bot_response",
 ]

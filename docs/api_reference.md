@@ -31,6 +31,11 @@ the validation rules and response shapes enforced by the CLI/API handlers.
 - Body: `{ primary, partner, modern_preferences?, language? }`
 - Returns compatibility sections plus analyser validation, interpreter summaries, and audience briefings for designers/interpreters.
 
+## Wisdom bot (core analyser + interpreter bundle)
+- `POST /wisdom-bot`
+- Body: horoscope fields + `query`; optional `focus_areas: []`, `partner` (same horoscope shape), `modern_preferences: []`, `language`
+- Returns: `ai_reply`, `core_wisdom` sections/charts/dashas, analyser + interpreter flow metadata, and a shareable markdown export (`download`).
+
 ## Calendar conversion
 - `POST /calendar`
 - Body: `birth_date` (YYYY-MM-DD), `birth_time` (HH:MM, 24h), `birth_place`
