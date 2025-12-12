@@ -4,17 +4,19 @@ import CalendarForm from "@/components/CalendarForm";
 export default function CalendarPage() {
   return (
     <div className="stack">
-      <div className="hero">
-        <p className="eyebrow">Śaka calendar • Conversion lab</p>
-        <h1>Always anchor onboarding to the Hindu calendar and IST.</h1>
-        <p className="muted" style={{ maxWidth: "760px" }}>
-          Convert Gregorian birth details into Śaka-aligned payloads before calling any engine.
-        </p>
-        <div className="hero-actions">
-          <Link href="/" className="button-link" style={{ background: "rgba(255,255,255,0.08)" }}>
-            Back to studio hub
-          </Link>
-        </div>
+        <div className="hero">
+          <p className="eyebrow">Śaka calendar • Conversion lab</p>
+          <h1>Stabilised, precise Śaka backbone for every engine.</h1>
+          <p className="muted" style={{ maxWidth: "760px" }}>
+            Convert Gregorian birth details into Śaka-aligned payloads before calling any engine. The builder is now
+            calibrated to stay stable, precise, and ready to drop directly into horoscope, future, past-life, or
+            matchmaking flows.
+          </p>
+          <div className="hero-actions">
+            <Link href="/" className="button-link" style={{ background: "rgba(255,255,255,0.08)" }}>
+              Back to studio hub
+            </Link>
+          </div>
       </div>
 
       <section className="card-grid">

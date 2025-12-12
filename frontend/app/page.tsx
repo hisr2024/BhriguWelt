@@ -5,10 +5,10 @@ import { useI18n } from "@/lib/i18n";
 export default function HomePage() {
   const { t } = useI18n();
 
-  const heroTitle = t("home.heroTitle", "Gen Z cosmic studio with sacred discipline.");
+  const heroTitle = t("home.heroTitle", "Bhrigu Saṁhitā guidance, made contemporary.");
   const heroDescription = t(
     "home.heroDescription",
-    "Crafted by Bhrigu Samhita professors and stack engineers to feel alive, neon-soft, and ritual true. Home stays serene; engines now live in focused multi-page labs.",
+    "Drawn from authentic Bhrigu Saṁhitā traditions and engineered for clarity. This hub gives you the lineage story first, then routes you to the focused engines.",
   );
 
   return (
@@ -22,8 +22,9 @@ export default function HomePage() {
             <div className="introduction-card">
               <p className="eyebrow">Introductions</p>
               <p className="muted">
-                Welcome to BhriguWelt. This space keeps the introductions upfront so visitors can focus on the story
-                before exploring the studios and experiences.
+                Welcome to BhriguWelt. The opening canvas now explains the origin of the manuscripts, how the ṛṣi
+                compiled the Saṁhitā, and how we translate that discipline into today’s tools before you explore any
+                studio or engine.
               </p>
             </div>
           </div>
