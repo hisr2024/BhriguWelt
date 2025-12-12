@@ -145,7 +145,6 @@ export default function PastLifePage() {
 
       <section className="panel softly" aria-live="polite">
         <div className="section-heading">
-          <p className="eyebrow">Unlock sequence</p>
           <h2>Charts first, then folio-grade stories</h2>
           <p className="muted">Rendering routes through core wisdom, analyzers, and interpreters before any story appears.</p>
         </div>
