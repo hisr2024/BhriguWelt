@@ -60,6 +60,18 @@ __all__ = [
 SUPPORTED_MOON_ELEMENTS = {"water", "fire", "air", "earth", "ether"}
 
 
+def _ensure_bhrigu_data_available(core_bundle: Dict[str, object], required_keys: Sequence[str], tradition: str) -> None:
+    """Ensure core engines have manuscript-backed data before running calculations."""
+
+    missing = [key for key in required_keys if not core_bundle.get(key)]
+    if missing:
+        joined = ", ".join(sorted(missing))
+        raise ValueError(
+            "Bhrigu Samhita dataset is required for precise calculations; "
+            f"missing manuscript entries for: {joined} (tradition='{tradition or 'universal'}')"
+        )
+
+
 @dataclass
 class HoroscopeRequest:
     name: str
@@ -263,6 +275,7 @@ def build_calendar_context(
 def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
     runtime_config = load_runtime_config()
     core_bundle = bhrigu_core.application_bundle(request.tradition)
+    _ensure_bhrigu_data_available(core_bundle, ("principles", "past_life_engines", "future_engines"), request.tradition)
     principles = core_bundle.get("principles", [])
     remedies = core_bundle.get("remedies", [])
     past_life_engines = core_bundle.get("past_life_engines", [])
@@ -307,6 +320,7 @@ def build_past_life_report(request: HoroscopeRequest) -> PastLifeReport:
     runtime_config = load_runtime_config()
     snapshot = _snapshot_from_request(request)
     core_bundle = bhrigu_core.application_bundle(request.tradition)
+    _ensure_bhrigu_data_available(core_bundle, ("past_life_engines",), request.tradition)
     past_life_engines = core_bundle.get("past_life_engines", [])
     insights = evaluate_past_life(snapshot, past_life_engines)
     return PastLifeReport(
@@ -324,6 +338,7 @@ def build_future_report(request: HoroscopeRequest) -> FutureReport:
 
     snapshot = _snapshot_from_request(request)
     core_bundle = bhrigu_core.application_bundle(request.tradition)
+    _ensure_bhrigu_data_available(core_bundle, ("future_engines", "transit_rules"), request.tradition)
     future_engines = core_bundle.get("future_engines", [])
     transit_rules = core_bundle.get("transit_rules", [])
     trajectories = evaluate_future_directives(snapshot, future_engines)
@@ -370,6 +385,11 @@ def build_engine_outputs(request: HoroscopeRequest) -> EngineOutputs:
 
     runtime_config = load_runtime_config()
     core_bundle = bhrigu_core.application_bundle(request.tradition)
+    _ensure_bhrigu_data_available(
+        core_bundle,
+        ("principles", "past_life_engines", "future_engines", "transit_rules", "remedies"),
+        request.tradition,
+    )
 
     principles = core_bundle.get("principles", [])
     remedies = core_bundle.get("remedies", [])
@@ -623,6 +643,7 @@ def build_matchmaking_report(
     partner_snapshot = _snapshot_from_request(partner_request)
 
     core_bundle = bhrigu_core.application_bundle(primary_request.tradition)
+    _ensure_bhrigu_data_available(core_bundle, ("matchmaking_criteria",), primary_request.tradition)
 
     matchmaking_criteria = core_bundle.get("matchmaking_criteria", [])
 
