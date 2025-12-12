@@ -1,8 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import PredictionForm from "@/components/PredictionForm";
+
+type PastLifeInsight = {
+  narrative?: string;
+  sutra_reference?: string;
+  confidence?: number;
+};
+
+type PastLifePayload = {
+  insights?: PastLifeInsight[];
+  interpretation?: string;
+  name?: string;
+};
 
 export default function PastLifePage() {
   const [chartReady, setChartReady] = useState(false);
@@ -27,39 +39,82 @@ export default function PastLifePage() {
     []
   );
 
-  const chapters = [
-    {
-      title: "Past influences",
-      description: "Healing work along sacred rivers; vows to serve carry into this birth.",
-      cue: "Unlocks once the natal chart is ready.",
+  const baseChapters = useMemo(
+    () => [
+      {
+        title: "Past influences",
+        description: "Healing vows return; service along rivers guides this birth.",
+        cue: "Chart-rendered sutra anchors appear here.",
+      },
+      {
+        title: "Current lessons",
+        description: "Partnership karma asks for shared study and steady rituals.",
+        cue: "Narration tunes to your moon element once the wheel loads.",
+      },
+      {
+        title: "Future echoes",
+        description: "Service-forward leadership echoes earlier promises; remedies stay actionable.",
+        cue: "Folio references are attached to every echo.",
+      },
+    ],
+    [],
+  );
+
+  const [chapters, setChapters] = useState(baseChapters);
+
+  const deriveChapters = useCallback(
+    (payload: unknown) => {
+      if (!payload || typeof payload !== "object") return baseChapters;
+      const parsed = payload as PastLifePayload;
+      const insights = Array.isArray(parsed.insights) ? parsed.insights : [];
+      if (!insights.length) return baseChapters;
+
+      const toCue = (insight?: PastLifeInsight, fallback?: string) => {
+        if (!insight) return fallback || "Awaiting sutra reference.";
+        const ref = insight.sutra_reference ? `Folio ${insight.sutra_reference}` : null;
+        const certainty = insight.confidence ? ` • confidence ${(insight.confidence * 100).toFixed(0)}%` : "";
+        return ref ? `${ref}${certainty}` : fallback || `Core wisdom confidence ${(insight.confidence ?? 0).toFixed(2)}`;
+      };
+
+      const [past, present, future] = insights;
+      const resolved = [
+        {
+          title: "Past influences",
+          description: past?.narrative || baseChapters[0]?.description,
+          cue: toCue(past, parsed.interpretation),
+        },
+        {
+          title: "Current lessons",
+          description: present?.narrative || parsed.interpretation || baseChapters[1]?.description,
+          cue: toCue(present, parsed.interpretation),
+        },
+        {
+          title: "Future echoes",
+          description: future?.narrative || baseChapters[2]?.description,
+          cue: toCue(future, parsed.interpretation),
+        },
+      ].filter((entry) => Boolean(entry.description));
+
+      return resolved.length ? resolved : baseChapters;
     },
-    {
-      title: "Current lessons",
-      description: "Partnership karma asks for shared study, reflective journaling, and breath-led rituals.",
-      cue: "Guided narration adapts to your moon element.",
-    },
-    {
-      title: "Future echoes",
-      description: "Service-forward leadership surfaces as an echo of earlier vows—stories end with actionable remedies.",
-      cue: "Cards fade in sequentially for screen readers and storytellers alike.",
-    },
-  ];
+    [baseChapters],
+  );
 
   const activeStyle = styleTokens[illustrationStyle];
 
   const transitions = useMemo(
     () => [
       {
-        label: "Chart rendered",
-        detail: "Natal wheel locks in and cues the narration pace.",
+        label: "Core wisdom secured",
+        detail: "Bhrigu folios load and bind to your birth inputs.",
       },
       {
-        label: "Story deck unlocked",
-        detail: "Cosmic illustrations guide each chapter reveal.",
+        label: "Analyzers align",
+        detail: "Engine analyzers map placements to manuscript logic.",
       },
       {
-        label: "Remedy prompts",
-        detail: "Meditations, mantras, and offerings stay attached to the arc.",
+        label: "Interpreters & design",
+        detail: "Interpreters and designers stitch sutra-backed stories with remedies.",
       },
     ],
     [],
@@ -77,10 +132,9 @@ export default function PastLifePage() {
     <div className="stack">
       <div className="hero">
         <p className="eyebrow">Past-life • Folio referenced</p>
-        <h1>Surface reincarnation arcs with manuscript rigor.</h1>
+        <h1>Past lives, now fully operational.</h1>
         <p className="muted" style={{ maxWidth: "760px" }}>
-          Invite seekers to explore prior epochs and karmic lessons in story form without technical clutter. Generate the chart
-          first; only then do the stories fade in.
+          Chart, analyze, interpret, and render through the full Bhrigu Core chain. Only sutra-backed insights remain—no filler.
         </p>
         <div className="hero-actions">
           <Link href="/" className="button-link" style={{ background: "rgba(255,255,255,0.08)" }}>
@@ -92,10 +146,8 @@ export default function PastLifePage() {
       <section className="panel softly" aria-live="polite">
         <div className="section-heading">
           <p className="eyebrow">Unlock sequence</p>
-          <h2>Stories wait until the chart is drawn</h2>
-          <p className="muted">
-            Generate the chart first; then the insight deck glides in with illustrated chapters and soft narration cues.
-          </p>
+          <h2>Charts first, then folio-grade stories</h2>
+          <p className="muted">Rendering routes through core wisdom, analyzers, and interpreters before any story appears.</p>
         </div>
         <div className="transition-rail" role="list" aria-label="Guided transitions">
           {transitions.map((transition, index) => {
@@ -128,8 +180,8 @@ export default function PastLifePage() {
           <p className="pill">Illustrated deck</p>
           <h2>Stories unfurl after chart generation</h2>
           <p className="muted">
-            Each chapter unlocks only when birth details are validated. Guided fades keep narration in order while the art
-            echoes the chosen motif.
+            Chapters pull directly from the manuscript analyzers once birth details validate. The deck stays lean—just the
+            sutras and cues.
           </p>
           <div className="chip-group" role="group" aria-label="Illustration style">
             {(["ancient", "modern"] as const).map((style) => (
@@ -147,7 +199,7 @@ export default function PastLifePage() {
           {!chartReady && (
             <div className="alert softly" role="status">
               <p className="microcopy">
-                Generate your natal chart first. Narratives will reveal themselves with illustrations once the chart is ready.
+                Generate your natal chart first. Bhrigu Core will feed analyzers and interpreters, then unlock these cards.
               </p>
             </div>
           )}
@@ -200,10 +252,12 @@ export default function PastLifePage() {
             onRequestStart={() => {
               setChartReady(false);
               setActiveStep(0);
+              setChapters(baseChapters);
             }}
-            onResult={() => {
+            onResult={(payload) => {
               setChartReady(true);
               setActiveStep(1);
+              setChapters(deriveChapters(payload));
             }}
           />
         </div>
