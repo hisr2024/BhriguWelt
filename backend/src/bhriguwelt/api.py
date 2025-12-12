@@ -39,6 +39,7 @@ from .horoscope import (
     build_karmic_dashboard,
     build_future_report,
     build_matchmaking_report,
+    build_timeline_report,
     build_transit_report,
     build_past_life_report,
     build_prediction,
@@ -640,6 +641,15 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "transit_directives": [_serialize_obj(item) for item in report.transit_directives],
             "progression_directives": [_serialize_obj(item) for item in report.progression_directives],
             "interpretation": report.interpretation,
+        }
+    if command == "timeline":
+        request = _request_from_payload(payload)
+        report = build_timeline_report(request, payload.get("focus_areas") or None)
+        return {
+            "name": report.name,
+            "summary": report.summary,
+            "disclaimer": report.disclaimer,
+            "phases": [_serialize_obj(phase) for phase in report.phases],
         }
     if command == "matchmaking":
         primary = _request_from_payload(payload.get("primary", {}))
