@@ -155,6 +155,16 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
     partner_name: "Partner seeker",
     interpretation: "Their gunas complement each other, encouraging devotion, learning, and purposeful travel together.",
     interpretation_hi: "दोनों के गुण एक-दूसरे को संतुलित करते हैं—भक्ति, अध्ययन और उद्देश्यपूर्ण यात्राएँ साथ मिलकर उभरती हैं।",
+    sections: {
+      1: "Couple data — Fallback seeker & Partner seeker with demo preferences.",
+      2: "Symbolic Bhrigu-style guidance only; use with mutual respect.",
+      3: "Snapshots highlight steady Venus energy blended with adaptive Mercury for both charts.",
+      4: "Ashta Koota synthesis leans harmonious; conceptual score near 30/36.",
+      5: "Dimensional compatibility — emotional 82% • spiritual 78% • communication 80%.",
+      6: "Risks: pacing differences; Balancing: shared study and travel soften frictions.",
+      7: "Guidance: weekly check-ins, joint seva, and transparent finances.",
+      8: "Free will first — take what resonates and co-create the path.",
+    },
     compatibility: {
       compatibility_index: 89.5,
       breakdown: [

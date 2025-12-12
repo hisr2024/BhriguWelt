@@ -615,6 +615,7 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "primary_name": report.primary_name,
             "partner_name": report.partner_name,
+            "modern_preferences": modern_preferences,
             "compatibility": {
                 "compatibility_index": compatibility.compatibility_index,
                 "long_term_index": compatibility.long_term_index,
@@ -626,6 +627,7 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
                 "shared_life_paths": [_serialize_obj(entry) for entry in compatibility.shared_life_paths],
             },
             "interpretation": report.interpretation,
+            "sections": report.sections,
         }
     if command == "calendar":
         try:

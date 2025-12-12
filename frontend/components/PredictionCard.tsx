@@ -74,10 +74,14 @@ type MatchmakingPayload = {
   partner_name?: string;
   interpretation?: string;
   interpretation_hi?: string;
+  sections?: Record<string, string>;
   compatibility?: {
     compatibility_index?: number;
+    long_term_index?: number;
+    short_term_index?: number;
     breakdown?: { description?: string; notes?: string }[];
     modern_highlights?: string[];
+    alignment_percentages?: { emotional?: number; spiritual?: number; communication?: number };
   };
   modern_preferences?: string[];
   charts?: {
@@ -333,21 +337,53 @@ function interpretFuture(payload: FuturePayload): InsightSection[] {
 function interpretMatchmaking(payload: MatchmakingPayload): InsightSection[] {
   const sections: InsightSection[] = [];
   const pairLabel = payload.primary_name && payload.partner_name ? `${payload.primary_name} & ${payload.partner_name}` : "The pair";
-  if (payload.interpretation) {
+  const sortedSections = payload.sections
+    ? Object.entries(payload.sections).sort(([a], [b]) => Number(a) - Number(b))
+    : [];
+
+  if (sortedSections.length) {
+    sortedSections.forEach(([id, text]) => {
+      const headings = [
+        "Restatement of couple data & query",
+        "Disclaimer & orientation",
+        "Individual snapshots",
+        "Ashta Koota summary",
+        "Detailed compatibility",
+        "Risk areas & balancing factors",
+        "Guidance & remedies",
+        "Closing & free will",
+      ];
+      const heading = headings[Number(id) - 1] || `Section ${id}`;
+      sections.push({ heading, english: text });
+    });
+  } else if (payload.interpretation) {
     sections.push({
       heading: `${pairLabel}`,
       english: payload.interpretation,
       hindi: payload.interpretation_hi,
     });
   }
+
   if (payload.compatibility) {
     const bullets: string[] = [];
-    if (payload.compatibility.compatibility_index) {
+    if (payload.compatibility.compatibility_index !== undefined) {
       bullets.push(`Harmony index: ${Math.round(payload.compatibility.compatibility_index)} / 100`);
+    }
+    if (payload.compatibility.long_term_index !== undefined) {
+      bullets.push(`Long-term: ${Math.round(payload.compatibility.long_term_index)} / 100`);
+    }
+    if (payload.compatibility.short_term_index !== undefined) {
+      bullets.push(`Short-term: ${Math.round(payload.compatibility.short_term_index)} / 100`);
     }
     payload.compatibility.breakdown?.forEach((item) => {
       bullets.push(`${item.description}${item.notes ? ` — ${item.notes}` : ""}`);
     });
+    const alignments = payload.compatibility.alignment_percentages;
+    if (alignments) {
+      bullets.push(
+        `Emotional ${Math.round(alignments.emotional ?? 0)}% · Spiritual ${Math.round(alignments.spiritual ?? 0)}% · Communication ${Math.round(alignments.communication ?? 0)}%`,
+      );
+    }
     payload.compatibility.modern_highlights?.forEach((item) => bullets.push(item));
     payload.modern_preferences?.forEach((tag) => bullets.push(`Modern filter: ${tag}`));
     sections.push({
