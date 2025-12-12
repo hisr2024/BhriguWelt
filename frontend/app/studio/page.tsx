@@ -62,24 +62,6 @@ export default function StudioPage() {
 
       <section className="flowchart-grid">
         <div className="flowchart-panel">
-          <p className="eyebrow">Why this flow</p>
-          <h3>Gen Z ready yet sacred</h3>
-          <ul className="kudos-list">
-            <li>
-              <span className="badge">Neon calm</span>
-              <span>Gradients, soft glow, and micro-animations to keep seekers in flow.</span>
-            </li>
-            <li>
-              <span className="badge">Strict order</span>
-              <span>Śaka conversion → charting → matchmaking: immutable order.</span>
-            </li>
-            <li>
-              <span className="badge">Multi-screen</span>
-              <span>Each engine is isolated on its own page for clarity and stability.</span>
-            </li>
-          </ul>
-        </div>
-        <div className="flowchart-panel">
           <p className="eyebrow">Samhita guardrails</p>
           <div className="mini-flow">
             {rituals.map((ritual) => (
