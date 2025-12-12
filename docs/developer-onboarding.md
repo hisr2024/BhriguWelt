@@ -4,7 +4,7 @@ Welcome to BhriguWelt! This guide captures the minimum steps needed to boot both
 
 ## Prerequisites
 - Python 3.11+
-- Node.js 20+
+- Node.js 24+
 - [uv](https://github.com/astral-sh/uv) or `pip` for Python dependency management
 - `npm` for frontend dependencies
 
