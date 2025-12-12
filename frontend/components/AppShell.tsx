@@ -5,8 +5,6 @@ import { useEffect, useState } from "react";
 import Providers from "@/app/providers";
 import { useI18n, type Language } from "@/lib/i18n";
 import { theme } from "@/lib/theme";
-import OnboardingModal from "./OnboardingModal";
-import ExperienceToolbar from "./ExperienceToolbar";
 
 type Props = {
   children: React.ReactNode;
@@ -53,27 +51,20 @@ function Shell({ children }: Props) {
         {t("nav.skip", "Skip to content")}
       </a>
 
-      <OnboardingModal />
-
       <header className="topbar" aria-label="Site header">
         <Link href="/" className="brand" aria-label={t("nav.home", "Home")}>
           <span className="brand-mark" style={{ background: theme.gradients.brand }} aria-hidden />
           BhriguWelt
         </Link>
-        <div className="topbar__mobile">
-          <button
-            type="button"
-            className="nav-toggle"
-            aria-expanded={menuOpen}
-            aria-controls="primary-navigation"
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            {menuOpen ? "Close" : "Menu"}
-          </button>
-          <Link className="button-link soft" href="/matchmaking">
-            {t("nav.cta", "Start a session")}
-          </Link>
-        </div>
+        <button
+          type="button"
+          className="nav-toggle"
+          aria-expanded={menuOpen}
+          aria-controls="primary-navigation"
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          {menuOpen ? "Close" : "Menu"}
+        </button>
         <nav id="primary-navigation" className={menuOpen ? "is-open" : ""} aria-label="Main">
           <ul>
             {navLinks.map((link) => (
@@ -87,28 +78,11 @@ function Shell({ children }: Props) {
         </nav>
         <div className="topbar__actions">
           <LanguageToggle />
-          <Link className="button-link soft" href="/matchmaking">
+          <Link className="button-link" href="/matchmaking">
             {t("nav.cta", "Start a session")}
           </Link>
         </div>
       </header>
-
-      <div className="topbar__touch-row" role="group" aria-label={t("nav.quick.label", "Quick jump for forms")}>
-        <Link className="touch-chip" href="/experience#birth" aria-label={t("nav.quick.birth", "Birth input section")}>
-          {t("nav.quick.birth", "Birth input")}
-        </Link>
-        <Link className="touch-chip" href="/experience#chart" aria-label={t("nav.quick.chart", "Chart section")}>
-          {t("nav.quick.chart", "Chart")}
-        </Link>
-        <Link className="touch-chip" href="/horoscope" aria-label={t("nav.quick.horoscope", "Interpretations section")}>
-          {t("nav.quick.horoscope", "Interpretations")}
-        </Link>
-        <Link className="touch-chip" href="/matchmaking" aria-label={t("nav.quick.matchmaking", "Matchmaking section")}>
-          {t("nav.quick.matchmaking", "Matchmaking")}
-        </Link>
-      </div>
-
-      <ExperienceToolbar />
 
       <main id="main" className="page-shell" tabIndex={-1}>
         {children}

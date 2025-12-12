@@ -1414,6 +1414,234 @@ body[data-animations="off"] .kundli-planet {
   font-family: "Hind", "Inter", sans-serif;
 }
 
+/* Minimal redesign */
+:root {
+  color: #0f172a;
+  background-color: #f6f7fb;
+  --ink: #0f172a;
+  --muted: #6b7280;
+  --accent: #0ea5e9;
+  --surface: #ffffff;
+  --line: #e5e7eb;
+  --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+body {
+  background: var(--background, #f6f7fb);
+  color: var(--ink);
+}
+
+.page-shell {
+  max-width: 1080px;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+  backdrop-filter: blur(12px);
+}
+
+.topbar nav {
+  display: flex;
+  justify-content: center;
+}
+
+.topbar nav ul {
+  display: inline-flex;
+  gap: 0.75rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.topbar nav a {
+  text-decoration: none;
+  color: var(--ink);
+  padding: 0.4rem 0.6rem;
+  border-radius: 999px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.topbar nav a:hover,
+.topbar nav a:focus-visible {
+  background: #e0f2fe;
+  color: #0b466d;
+  outline: none;
+}
+
+.nav-toggle {
+  display: none;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 0.55rem 0.85rem;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.65rem 0.95rem;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 12px;
+  text-decoration: none;
+  border: 1px solid transparent;
+  font-weight: 700;
+  box-shadow: var(--shadow-soft);
+}
+
+.button-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ghost-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.65rem 0.85rem;
+  color: var(--ink);
+  border-radius: 12px;
+  text-decoration: none;
+  border: 1px solid var(--line);
+  background: #f8fafc;
+}
+
+.minimal-page {
+  display: grid;
+  gap: 1.25rem;
+  position: relative;
+}
+
+.minimal-hero {
+  display: grid;
+  gap: 0.75rem;
+  align-items: start;
+  padding: 1.5rem;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.hero-actions {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.minimal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.minimal-grid.two-col {
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+}
+
+.surface,
+.card,
+.panel {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1rem;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.panel__content {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.surface--stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.surface__header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.surface__header p {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}
+
+.surface__actions {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.pill.subtle {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0b466d;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+@media (max-width: 880px) {
+  .topbar {
+    grid-template-columns: auto auto;
+    grid-template-areas: "brand toggle" "nav nav" "actions actions";
+  }
+
+  .nav-toggle {
+    display: inline-flex;
+    justify-content: flex-end;
+  }
+
+  .topbar nav {
+    grid-area: nav;
+    display: none;
+    width: 100%;
+  }
+
+  .topbar nav.is-open {
+    display: block;
+  }
+
+  .topbar nav ul {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0.5rem 0 0;
+  }
+
+  .topbar__actions {
+    grid-area: actions;
+    justify-content: flex-start;
+  }
+}
+
 .section-heading p {
   margin: 0.1rem 0;
 }
