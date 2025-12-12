@@ -13,27 +13,6 @@ import BackendHealthNotice from "@/components/BackendHealthNotice";
 import { loadBirthDetails, onBirthDetails, saveBirthDetails } from "@/lib/birthStorage";
 import { deriveHousePlacements, useSakaContext } from "@/lib/sakaContext";
 
-const TRANSIT_ORBITS = [
-  {
-    label: "Transit",
-    title: "Saturn review",
-    detail: "Slow-and-steady recalibration through partnerships.",
-    action: "Open overlay",
-  },
-  {
-    label: "Progression",
-    title: "Venus return",
-    detail: "Creative bloom—note houses 5 and 10 for collaborations.",
-    action: "See art prompts",
-  },
-  {
-    label: "Remedy",
-    title: "Sandal dhup",
-    detail: "Light daily near sunrise; pair with moon-soothing mantra.",
-    action: "Add to ritual list",
-  },
-];
-
 export default function CalendarForm() {
   const { t } = useI18n();
   const helperText = helperCopy.calendar;
@@ -47,6 +26,7 @@ export default function CalendarForm() {
   const [payload, setPayload] = useState<unknown>(null);
   const [houseGrid, setHouseGrid] = useState<HouseSummary[]>([]);
   const [autoTriggered, setAutoTriggered] = useState(false);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const { triggerSubmitFeedback } = useImmersiveFeedback();
@@ -77,6 +57,10 @@ export default function CalendarForm() {
     }
   }, [error]);
 
+  useEffect(() => {
+    setSyncNotice(null);
+  }, [details.birthDate, details.birthPlace, details.birthTime]);
+
   const handleSubmit = async (event?: FormEvent<HTMLFormElement>, source: "auto" | "manual" = "manual") => {
     event?.preventDefault();
     if (source === "manual") {
@@ -85,6 +69,7 @@ export default function CalendarForm() {
     setError(null);
     setPayload(null);
     setLoading(true);
+    setSyncNotice(null);
     try {
       const response = await requestCalendar(details);
       setPayload(response);
@@ -140,12 +125,39 @@ export default function CalendarForm() {
     };
   }, [details]);
 
+  const sakaDate = useMemo(() => {
+    if (!payload || typeof payload !== "object" || !("saka_date" in payload)) return undefined;
+    return (payload as { saka_date?: { year?: number; month?: string; day?: number } }).saka_date;
+  }, [payload]);
+
   const sakaLabel = useMemo(() => {
-    if (!payload || typeof payload !== "object" || !("saka_date" in payload)) return "Śaka conversion ready";
-    const sakaDate = (payload as { saka_date?: { year?: number; month?: string; day?: number } }).saka_date;
     if (!sakaDate) return "Śaka conversion ready";
     return `Śaka ${sakaDate.year ?? ""} ${sakaDate.month ?? ""} ${sakaDate.day ?? ""}`.trim();
-  }, [payload]);
+  }, [sakaDate]);
+
+  const handleInsertToEngines = () => {
+    if (!details.birthDate || !details.birthTime || !details.birthPlace) {
+      setError("Fill date, time, and place before sending to other engines.");
+      return;
+    }
+
+    const derivedGrid = houseGrid.length ? houseGrid : deriveHouseGrid(details);
+    const placements = deriveHousePlacements(derivedGrid, sakaDate?.day);
+
+    saveBirthDetails(
+      {
+        ...details,
+        ...placements,
+        sakaMonth: sakaDate?.month,
+        sakaDay: sakaDate?.day,
+        sakaLabel,
+        houseGrid: derivedGrid,
+      },
+      { autoSubmit: true },
+    );
+
+    setSyncNotice("Details pinned for horoscope, future, matchmaking, and past-life engines.");
+  };
 
   return (
     <section aria-labelledby="calendar-heading">
@@ -226,6 +238,12 @@ export default function CalendarForm() {
               : t("calendar.badge.pending", "Auto converts when details are filled")}
           </span>
         </div>
+        <div className="form-actions" style={{ gap: "12px", flexWrap: "wrap" }}>
+          <button type="button" className="button-link" onClick={handleInsertToEngines}>
+            Insert Śaka details into other engines
+          </button>
+          {syncNotice && <span className="badge">{syncNotice}</span>}
+        </div>
         <div className="definition-row" aria-label="Helpful glossary chips">
           <span className="pill ghost">Tithi = lunar day</span>
           <span className="pill ghost">Nakshatra = star mansion</span>
@@ -253,11 +271,11 @@ export default function CalendarForm() {
             <span className="meter-orb meter-orb--tertiary" />
           </div>
         </div>
-        <div className="cosmic-houses__grid" role="list">
-          {(houseGrid.length ? houseGrid : deriveHouseGrid(details)).map((house) => (
-            <article
-              key={house.index}
-              className="cosmic-houses__card"
+      <div className="cosmic-houses__grid" role="list">
+        {(houseGrid.length ? houseGrid : deriveHouseGrid(details)).map((house) => (
+          <article
+            key={house.index}
+            className="cosmic-houses__card"
               role="listitem"
               aria-label={`House ${house.index}: ${house.focus} in ${house.sign}`}
             >
@@ -288,18 +306,6 @@ export default function CalendarForm() {
             </article>
           ))}
         </div>
-      </div>
-      <div className="orbit-timeline" aria-label="Transits, progressions, and remedies timeline">
-        {TRANSIT_ORBITS.map((orbit) => (
-          <article key={orbit.title} className="orbit-timeline__card">
-            <div className="orbit-timeline__meta">
-              <span className="pill">{orbit.label}</span>
-              <h4>{orbit.title}</h4>
-            </div>
-            <p className="muted">{orbit.detail}</p>
-            <button type="button" className="ghost-button small">{orbit.action}</button>
-          </article>
-        ))}
       </div>
       <PredictionCard title="Calendar context" payload={payload} engine="calendar" />
     </section>
