@@ -47,6 +47,7 @@ from .horoscope import (
     build_prediction,
     _snapshot_from_request,
 )
+from .matchmaking_engine import run_matchmaking_pipeline
 from .kundli_generator import SIGNS, generate_kundli
 
 _JSON_HEADER = ("Content-Type", "application/json; charset=utf-8")
@@ -165,6 +166,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/past-life"): "_handle_past_life",
         ("POST", "/future"): "_handle_future",
         ("POST", "/matchmaking"): "_handle_matchmaking",
+        ("POST", "/matchmaking/pipeline"): "_handle_matchmaking_pipeline",
         ("POST", "/varshaphal"): "_handle_varshaphal",
         ("POST", "/calendar"): "_handle_calendar",
         ("POST", "/transits"): "_handle_transits",
@@ -273,6 +275,19 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     def _handle_matchmaking(self) -> None:
         payload = self._read_json()
         self._respond_with_command("matchmaking", payload)
+
+    def _handle_matchmaking_pipeline(self) -> None:
+        payload = self._read_json()
+        language = payload.get("language") or payload.get("design_language")
+        preferences = payload.get("modern_preferences")
+        if language is not None and not isinstance(language, str):
+            self.send_error(HTTPStatus.BAD_REQUEST, "language must be a string when provided")
+            return
+        if preferences is not None and not isinstance(preferences, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "modern_preferences must be a list when provided")
+            return
+
+        self._respond_with_command("matchmaking-pipeline", payload)
 
     def _handle_varshaphal(self) -> None:
         payload = self._read_json()
@@ -725,6 +740,17 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "interpretation": report.interpretation,
             "sections": report.sections,
         }
+    if command == "matchmaking-pipeline":
+        primary = _request_from_payload(payload.get("primary", {}))
+        partner = _request_from_payload(payload.get("partner", {}))
+        modern_preferences = payload.get("modern_preferences") or []
+        language = payload.get("language") or payload.get("design_language") or "en"
+        return run_matchmaking_pipeline(
+            primary,
+            partner,
+            modern_preferences,
+            language=str(language),
+        )
     if command == "calendar":
         try:
             context = convert_birth_details(

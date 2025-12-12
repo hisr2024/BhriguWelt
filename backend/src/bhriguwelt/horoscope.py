@@ -643,15 +643,16 @@ def build_matchmaking_report(
     primary_request: HoroscopeRequest,
     partner_request: HoroscopeRequest,
     modern_preferences: List[str],
+    core_bundle: Dict[str, object] | None = None,
 ) -> MatchmakingReport:
     runtime_config = load_runtime_config()
     primary_snapshot = _snapshot_from_request(primary_request)
     partner_snapshot = _snapshot_from_request(partner_request)
 
-    core_bundle = bhrigu_core.application_bundle(primary_request.tradition)
-    _ensure_bhrigu_data_available(core_bundle, ("matchmaking_criteria",), primary_request.tradition)
+    dataset = core_bundle or bhrigu_core.application_bundle(primary_request.tradition)
+    _ensure_bhrigu_data_available(dataset, ("matchmaking_criteria",), primary_request.tradition)
 
-    matchmaking_criteria = core_bundle.get("matchmaking_criteria", [])
+    matchmaking_criteria = dataset.get("matchmaking_criteria", [])
 
     compatibility = evaluate_matchmaking(
         primary=primary_snapshot,
