@@ -153,6 +153,14 @@ def create_app() -> web.Application:
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
 
+    async def varshaphal(request: web.Request) -> web.Response:
+        _, rate_meta = await guard_rate_limit(request)
+        payload = await request.json()
+        response = await handle_cached_command("varshaphal", payload)
+        reply = _json_response(response)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
+
     async def matchmaking(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
@@ -309,6 +317,7 @@ def create_app() -> web.Application:
     app.router.add_route("POST", "/horoscope", horoscope)
     app.router.add_route("POST", "/past-life", past_life)
     app.router.add_route("POST", "/future", future)
+    app.router.add_route("POST", "/varshaphal", varshaphal)
     app.router.add_route("POST", "/matchmaking", matchmaking)
     app.router.add_route("POST", "/calendar", calendar)
     app.router.add_route("POST", "/transits", transits)

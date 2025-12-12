@@ -33,9 +33,12 @@ __all__ = [
     "FutureReport",
     "MatchmakingReport",
     "KarmicDashboard",
+    "VarshaphalReport",
+    "YearSegment",
     "CoreWisdomReading",
     "SUPPORTED_MOON_ELEMENTS",
     "build_core_wisdom_reading",
+    "build_varshaphal_report",
     "build_karmic_dashboard",
     "build_prediction",
     "build_past_life_report",
@@ -204,6 +207,33 @@ class KarmicDashboard:
     charts: Dict[str, List[ChartHouse]]
     dashas: List[DashaPeriod]
     karmic_epoch: str
+
+
+@dataclass
+class YearSegment:
+    """Quarterly or monthly block for the Varshaphal roadmap."""
+
+    label: str
+    months: List[str]
+    energies: str
+    cautions: str
+    opportunities: str
+
+
+@dataclass
+class VarshaphalReport:
+    """Twelve-month Bhrigu-style yearly karmic report."""
+
+    name: str
+    target_year: str
+    year_theme: str
+    year_mantra: str
+    sections: Dict[str, str]
+    segments: List[YearSegment]
+    gateways: List[str]
+    focus_areas: Dict[str, str]
+    practices: List[str]
+    intentions: List[str]
 
 
 def build_calendar_context(
@@ -468,6 +498,52 @@ def build_karmic_dashboard(
         charts={"rashi_chart": horoscope.rashi_chart, "bhava_chart": horoscope.bhava_chart},
         dashas=horoscope.dashas,
         karmic_epoch=horoscope.karmic_epoch,
+    )
+
+
+def build_varshaphal_report(
+    request: HoroscopeRequest, target_year: str, main_focus: str | None = None
+) -> VarshaphalReport:
+    """Return a 12-month Bhrigu Varshaphal digest with gateways and practices."""
+
+    target_label = (target_year or "next 12 months").strip() or "next 12 months"
+    focus = (main_focus or "").strip()
+
+    horoscope = build_prediction(request)
+    snapshot = _snapshot_from_request(request)
+    influences = _rank_influences(snapshot)
+
+    year_theme, mantra = _derive_year_theme(horoscope.karmic_epoch, influences, focus)
+    segments = _build_year_segments(horoscope, influences, target_label, focus)
+    gateways = _gateway_windows(horoscope.future_trajectories, segments)
+    focus_areas = _focus_area_summaries(horoscope.weights, influences, focus)
+    practices = _year_practices(focus, influences, horoscope.remedies)
+    intentions = _year_intentions(focus, influences)
+
+    sections = _compose_varshaphal_sections(
+        request,
+        target_label,
+        focus,
+        year_theme,
+        mantra,
+        segments,
+        gateways,
+        focus_areas,
+        practices,
+        intentions,
+    )
+
+    return VarshaphalReport(
+        name=request.name,
+        target_year=target_label,
+        year_theme=year_theme,
+        year_mantra=mantra,
+        sections=sections,
+        segments=segments,
+        gateways=gateways,
+        focus_areas=focus_areas,
+        practices=practices,
+        intentions=intentions,
     )
 
 
@@ -792,6 +868,212 @@ def _compose_matchmaking_sections(
     return sections
 
 
+def _derive_year_theme(karmic_epoch: str, influences: Sequence[str], focus: str) -> tuple[str, str]:
+    primary = (influences[0] if influences else "Saturn").title()
+    supportive = ", ".join(influence.title() for influence in influences[1:3]) or "steady practice"
+    theme_map = {
+        "Saturn": "Consolidation & Responsibility",
+        "Jupiter": "Expansion & Grace",
+        "Mars": "Courage & Initiative",
+        "Venus": "Harmony & Creative Bonds",
+        "Rahu": "Innovation & Recalibration",
+        "Ketu": "Detachment & Insight",
+    }
+    mantra_map = {
+        "Saturn": "Discipline",
+        "Jupiter": "Trust",
+        "Mars": "Courage",
+        "Venus": "Harmony",
+        "Rahu": "Reinvent",
+        "Ketu": "Surrender",
+    }
+
+    base_theme = theme_map.get(primary, "Integration & Steady Rhythm")
+    focus_clause = f" Main focus: {focus}." if focus else " Focus: balanced dharma across life areas."
+    theme = f"{base_theme}. Karmic epoch: {karmic_epoch}. Support from {supportive}." + focus_clause
+    return theme, mantra_map.get(primary, "Integration")
+
+
+def _build_year_segments(
+    horoscope: HoroscopeReport, influences: Sequence[str], target_year: str, focus: str
+) -> List[YearSegment]:
+    quarters = [
+        ("Q1", ["Jan", "Feb", "Mar"]),
+        ("Q2", ["Apr", "May", "Jun"]),
+        ("Q3", ["Jul", "Aug", "Sep"]),
+        ("Q4", ["Oct", "Nov", "Dec"]),
+    ]
+
+    directives = horoscope.future_trajectories or []
+    remedies = horoscope.remedies or []
+
+    segments: List[YearSegment] = []
+    for index, (label, months) in enumerate(quarters):
+        anchor = influences[index % len(influences)] if influences else "Integration"
+        directive = directives[index] if index < len(directives) else None
+        remedy_hint = None
+        if remedies:
+            remedy = remedies[index % len(remedies)]
+            remedy_hint = remedy.get("interpretation") or remedy.get("description") or remedy.get("id")
+
+        energies = f"{anchor.title()} tone with {focus or 'balanced growth'} as the anchor."
+        if directive:
+            window = directive.window or f"{label} {target_year}"
+            energies += f" Highlight: {directive.focus} ({window}) per folio {directive.sutra_reference}."
+
+        caution = (
+            f"Guard energy during {months[1]}–{months[2]} by pacing decisions; "
+            f"{anchor.lower()} patterns may tempt over-commitment."
+        )
+        opportunities = (
+            f"Use {anchor.lower()} discipline to schedule check-ins each month. "
+            f"Remedy focus: {remedy_hint or 'keep weekly seva and breath practice'}."
+        )
+
+        segments.append(
+            YearSegment(
+                label=f"{label} {target_year}",
+                months=months,
+                energies=energies,
+                cautions=caution,
+                opportunities=opportunities,
+            )
+        )
+
+    return segments
+
+
+def _gateway_windows(trajectories: List[FutureTrajectory], segments: Sequence[YearSegment]) -> List[str]:
+    gateways: List[str] = []
+    for directive in trajectories[:4]:
+        window = directive.window or "mid-year"
+        gateways.append(f"{window}: {directive.focus} (certainty {directive.certainty:.2f})")
+
+    if len(gateways) < 2:
+        for segment in segments:
+            gateways.append(f"{segment.label}: {segment.energies}")
+            if len(gateways) >= 2:
+                break
+
+    return gateways[:4]
+
+
+def _focus_area_summaries(weights: Dict[str, float], influences: Sequence[str], focus: str) -> Dict[str, str]:
+    strengths = _ranked_traits(weights, top=True)
+    challenges = _ranked_traits(weights, top=False)
+    primary = (influences[0] if influences else "Saturn").lower()
+    focus_clause = f" Priority: {focus}." if focus else ""
+
+    return {
+        "career_finances": (
+            f"{primary.title()} tone favors structured planning and transparent numbers. "
+            f"Strengths: {', '.join(strengths) or 'resilience'}. "
+            f"Cautions: {', '.join(challenges) or 'overcommitting without rest'}.{focus_clause}"
+        ),
+        "relationships_family": (
+            "Practice honest pacing in bonds. Blend duty with warmth; schedule family councils so expectations surface early. "
+            f"Watch reactive moments when {primary} pressure rises."
+        ),
+        "inner_life_health": (
+            "Anchor routines: rest, hydration, movement, breath. Track emotional weather weekly to notice patterns between mood "
+            "and decisions."
+        ),
+        "spiritual_growth": (
+            f"Karmic epoch suggests contemplative study with {primary} discipline. Daily gratitude + mantra keeps humility alive."
+        ),
+    }
+
+
+def _year_practices(focus: str, influences: Sequence[str], remedies: List[Dict]) -> List[str]:
+    primary = (influences[0] if influences else "Saturn").lower()
+    practices = [
+        "Weekly planning ritual with a short gratitude ledger.",
+        "Monthly financial/energy review aligned to lunar dates.",
+        "Daily 7-minute grounding: breath, stretch, mantra.",
+        "Quarterly declutter + seva to keep karma light.",
+    ]
+    if focus:
+        practices.append(f"Dedicated focus block each week for {focus} without distractions.")
+    if remedies:
+        remedy_text = remedies[0].get("interpretation") or remedies[0].get("description") or remedies[0].get("id")
+        if remedy_text:
+            practices.append(f"Primary remedy: {remedy_text}.")
+    if primary in {"saturn", "mars"}:
+        practices.append("Alternate intense weeks with gentler pacing to avoid burnout.")
+    else:
+        practices.append("Invite creativity (journaling, music) to process insights each weekend.")
+    return practices[:7]
+
+
+def _year_intentions(focus: str, influences: Sequence[str]) -> List[str]:
+    primary = (influences[0] if influences else "Saturn").title()
+    intentions = [
+        "I will revisit this report each quarter and adjust consciously.",
+        "I will speak honestly and kindly, even when pacing shifts.",
+        "I will protect rest so the body integrates effort.",
+    ]
+    if focus:
+        intentions.append(f"I will move {focus} forward with patient {primary.lower()} steadiness.")
+    intentions.append("I will treat gateways as invitations, not verdicts, and choose with free will.")
+    return intentions[:5]
+
+
+def _compose_varshaphal_sections(
+    request: HoroscopeRequest,
+    target_year: str,
+    focus: str,
+    year_theme: str,
+    year_mantra: str,
+    segments: Sequence[YearSegment],
+    gateways: Sequence[str],
+    focus_areas: Dict[str, str],
+    practices: Sequence[str],
+    intentions: Sequence[str],
+) -> Dict[str, str]:
+    restatement = (
+        "Restatement of Data & Target Year: "
+        f"Name {request.name}. Birth {request.birth_date} at {request.birth_time} in {request.birth_place}. "
+        f"Target window: {target_year}. Focus: {focus or 'holistic balance'}."
+    )
+    disclaimer = (
+        "Disclaimer & Orientation: Bhrigu Samhita–inspired reflective guide. "
+        "Not medical, legal, or financial advice. Timings are tendencies; free will leads."
+    )
+    theme_section = f"Overall Year Theme: {year_theme} | Year Mantra: {year_mantra}."
+    breakdown = "; ".join(
+        (
+            f"{segment.label} ({', '.join(segment.months)}): Energies — {segment.energies} | "
+            f"Cautions — {segment.cautions} | Opportunities — {segment.opportunities}"
+        )
+        for segment in segments
+    )
+    gateways_section = "Key Gateways: " + ("; ".join(gateways) or "Track monthly check-ins for shifts.")
+    focus_section = (
+        "Focus Areas — Career/Finances: "
+        f"{focus_areas.get('career_finances', '')} "
+        f"Relationships/Family: {focus_areas.get('relationships_family', '')} "
+        f"Inner life/Health: {focus_areas.get('inner_life_health', '')} "
+        f"Spiritual growth: {focus_areas.get('spiritual_growth', '')}"
+    )
+    practices_section = (
+        "Recommended Practices: " + "; ".join(practices) + ". " + "Intentions: " + "; ".join(intentions)
+    )
+    closing = (
+        "Closing & Free Will: Revisit each quarter. Choices + awareness reshape outcomes; carry gratitude and adjust freely."
+    )
+
+    return {
+        "1": restatement,
+        "2": disclaimer,
+        "3": theme_section,
+        "4": "Quarterly / Monthly Breakdown: " + breakdown,
+        "5": gateways_section,
+        "6": focus_section,
+        "7": practices_section,
+        "8": closing,
+    }
+
+
 def _rank_influences(snapshot: CelestialSnapshot) -> List[str]:
     """Return a ranked list of dominant planetary-style influences."""
 
@@ -821,6 +1103,25 @@ def _rank_influences(snapshot: CelestialSnapshot) -> List[str]:
         influence_weights["Rahu"] += 0.04
 
     return [name for name, _ in sorted(influence_weights.items(), key=lambda item: item[1], reverse=True)]
+
+
+def build_timeline_report(request: HoroscopeRequest, focus_areas: Sequence[str] | None = None) -> TimelineReport:
+    """Construct the five-phase karmic roadmap for a native."""
+
+    snapshot = _snapshot_from_request(request)
+    influences = _rank_influences(snapshot)
+    phases = _compose_timeline(snapshot, influences, focus_areas)
+    focus_summary = ", ".join(focus_areas) if focus_areas else "general life balance"
+    summary = (
+        f"Five-phase roadmap shaped by {', '.join(influences[:2]) or 'Saturn discipline'}; "
+        f"focus on {focus_summary}."
+    )
+    disclaimer = (
+        "Symbolic Bhrigu timeline; not medical, legal, or financial advice. "
+        "Treat timings as tendencies and steer with conscious choice."
+    )
+
+    return TimelineReport(name=request.name, summary=summary, disclaimer=disclaimer, phases=phases)
 
 
 def _compose_timeline(
@@ -1381,6 +1682,35 @@ def _render_timeline(report: TimelineReport, birth_place: str) -> None:
             print(f"    - {tip}")
 
 
+def _render_varshaphal(report: VarshaphalReport, birth_place: str) -> None:
+    _render_common_intro(report.name, birth_place)
+    print(f"Target year: {report.target_year}")
+    print(f"Year theme: {report.year_theme}")
+    print(f"Year mantra: {report.year_mantra}")
+    print("\nKey gateways:")
+    for gateway in report.gateways:
+        print(f"  - {gateway}")
+
+    print("\nQuarterly overview:")
+    for segment in report.segments:
+        months = ", ".join(segment.months)
+        print(f"  {segment.label} [{months}]")
+        print(f"    Energies: {segment.energies}")
+        print(f"    Cautions: {segment.cautions}")
+        print(f"    Opportunities: {segment.opportunities}")
+
+    print("\nPractices:")
+    for practice in report.practices:
+        print(f"  - {practice}")
+    print("Intentions:")
+    for intention in report.intentions:
+        print(f"  - {intention}")
+
+    print("\n8-section digest:")
+    for key in map(str, range(1, 9)):
+        print(f"  {key}: {report.sections.get(key, '')}")
+
+
 def _render_calendar(context: HinduCalendarContext) -> None:
     print("Bhrigu Samhita insists on capturing exact birth particulars.")
     print(f"Gregorian record: {context.birth_date.isoformat()} {context.birth_time.isoformat(timespec='minutes')} at {context.birth_place}")
@@ -1431,6 +1761,17 @@ def build_cli_parser() -> argparse.ArgumentParser:
     calendar_parser.add_argument("--birth-time", required=True, help="Birth time HH:MM")
     calendar_parser.add_argument("--birth-place", required=True, help="Birth location per passport")
 
+    varshaphal_parser = subparsers.add_parser("varshaphal", help="12-month Bhrigu Varshaphal karmic report")
+    _add_common_arguments(varshaphal_parser)
+    varshaphal_parser.add_argument("--target-year", required=True, help="Target year label (e.g., 2026 or next 12 months)")
+    varshaphal_parser.add_argument(
+        "--focus-area",
+        action="append",
+        dest="focus_areas",
+        default=[],
+        help="Optional focus areas such as career, relationships, health, finances, spiritual",
+    )
+
     timeline_parser = subparsers.add_parser("timeline", help="Five-phase karmic roadmap")
     _add_common_arguments(timeline_parser)
     timeline_parser.add_argument(
@@ -1473,6 +1814,11 @@ def main(argv: Sequence[str] | None = None) -> None:
     elif args.command == "calendar":
         context = build_calendar_context(args.birth_date, args.birth_time, args.birth_place)
         _render_calendar(context)
+    elif args.command == "varshaphal":
+        request = _request_from_namespace(args)
+        main_focus = ", ".join(args.focus_areas) if args.focus_areas else None
+        report = build_varshaphal_report(request, target_year=args.target_year, main_focus=main_focus)
+        _render_varshaphal(report, args.birth_place)
     elif args.command == "timeline":
         request = _request_from_namespace(args)
         report = build_timeline_report(request, focus_areas=args.focus_areas or None)
