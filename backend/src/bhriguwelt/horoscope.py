@@ -24,6 +24,7 @@ from .calculations import (
 )
 from .config import load_runtime_config
 from .bhrigu_core import bhrigu_core
+from .engine_analyzers import EngineAnalysis, analyze_core_engines
 from .kundli_generator import generate_kundli
 
 __all__ = [
@@ -54,6 +55,8 @@ __all__ = [
     "ChartHouse",
     "DashaPeriod",
     "generate_kundli",
+    "EngineAnalysis",
+    "analyze_core_engines",
 ]
 
 
@@ -235,6 +238,7 @@ class EngineOutputs:
     future_directives: List[FutureTrajectory]
     transit_directives: List[TransitDirective]
     interpretation: str
+    engine_analyses: List[EngineAnalysis]
 
 
 @dataclass
@@ -412,6 +416,7 @@ def build_engine_outputs(request: HoroscopeRequest) -> EngineOutputs:
     transit_directives = evaluate_transits(snapshot, transit_details, transit_rules)
 
     personalized_remedies = _personalize_remedies(remedies, weights, snapshot, runtime_config)
+    engine_analyses = analyze_core_engines(request.tradition, core_bundle)
 
     return EngineOutputs(
         name=request.name,
@@ -432,6 +437,7 @@ def build_engine_outputs(request: HoroscopeRequest) -> EngineOutputs:
             request.birth_place,
             runtime_config.get("interpretation", {}),
         ),
+        engine_analyses=engine_analyses,
     )
 
 
