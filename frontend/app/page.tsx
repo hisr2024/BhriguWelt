@@ -35,6 +35,9 @@ export default function HomePage() {
           <Link className="button-link" href="/matchmaking">
             {t("nav.cta", "Start a session")}
           </Link>
+          <Link className="button-link ghost-link" href="/dashboard">
+            Dashboard view
+          </Link>
           <Link className="ghost-link" href="#tools">
             Browse tools
           </Link>
