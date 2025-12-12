@@ -48,6 +48,10 @@ references to manuscript folios.
   de-risked remedial suggestions (breathwork, seva, journaling). See the
   expanded blueprint in `docs/bhrigu_chatbot_spec.md` for the persona, guardrails,
   and interactive flow.
+- **Bhrigu Wisdom Bot**: `/wisdom-bot` merges the Bhrigu Core Wisdom digest with
+  analyser/interpreter/designer briefings, delivering a shareable markdown
+  export alongside charts, dashas, and a succinct AI reply anchored to the
+  manuscripts.
 - **Profiles + sessions**: `/profiles` and `/profiles/get` store birth details,
   time zone, and metadata so seekers can return to the same session. Conversations
   are persisted per `session_id` and can be listed via `GET /profiles`.

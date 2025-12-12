@@ -797,6 +797,27 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             language=str(language),
         )
         return experience.to_dict()
+    if command == "wisdom-bot":
+        if not payload.get("query") and not payload.get("message"):
+            raise ValueError("query is required for wisdom bot")
+        if payload.get("focus_areas") is not None and not isinstance(payload.get("focus_areas"), list):
+            raise ValueError("focus_areas must be a list when provided")
+        if payload.get("modern_preferences") is not None and not isinstance(payload.get("modern_preferences"), list):
+            raise ValueError("modern_preferences must be a list when provided")
+
+        partner_payload = payload.get("partner")
+        partner_request = _request_from_payload(partner_payload) if isinstance(partner_payload, dict) else None
+
+        response = build_wisdom_bot_response(
+            primary_request=_request_from_payload(payload),
+            partner_request=partner_request,
+            focus_areas=payload.get("focus_areas"),
+            modern_preferences=payload.get("modern_preferences"),
+            language=str(payload.get("language") or payload.get("design_language") or "en"),
+            query=str(payload.get("query") or payload.get("message")),
+        ).to_dict()
+        _ensure_visualization_payload(response.get("core_wisdom", {}))
+        return response
     if command == "calendar":
         try:
             context = convert_birth_details(
