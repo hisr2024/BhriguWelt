@@ -47,6 +47,7 @@ from .horoscope import (
     build_prediction,
     _snapshot_from_request,
 )
+from .experience_flow import build_unified_experience_flow
 from .matchmaking_engine import run_matchmaking_pipeline
 from .kundli_generator import SIGNS, generate_kundli
 
@@ -173,6 +174,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/core-wisdom"): "_handle_core_wisdom",
         ("POST", "/core-engines"): "_handle_core_engines",
         ("POST", "/karmic-dashboard"): "_handle_karmic_dashboard",
+        ("POST", "/experience-flow"): "_handle_experience_flow",
         ("POST", "/chat"): "_handle_chat",
         ("POST", "/profiles"): "_handle_profiles",
         ("POST", "/profiles/get"): "_handle_profile_get",
@@ -328,6 +330,18 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.BAD_REQUEST, "issues must be a list when provided")
             return
         self._respond_with_command("karmic-dashboard", payload)
+
+    def _handle_experience_flow(self) -> None:
+        payload = self._read_json()
+        modern_preferences = payload.get("modern_preferences")
+        if modern_preferences is not None and not isinstance(modern_preferences, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "modern_preferences must be a list when provided")
+            return
+        language = payload.get("language") or payload.get("design_language")
+        if language is not None and not isinstance(language, str):
+            self.send_error(HTTPStatus.BAD_REQUEST, "language must be a string when provided")
+            return
+        self._respond_with_command("experience-flow", payload)
 
     def _handle_chat(self) -> None:
         payload = self._read_json()
@@ -751,6 +765,20 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             modern_preferences,
             language=str(language),
         )
+    if command == "experience-flow":
+        primary_payload = payload.get("primary") if isinstance(payload.get("primary"), dict) else payload
+        primary = _request_from_payload(primary_payload)
+        partner_payload = payload.get("partner") if isinstance(payload.get("partner"), dict) else None
+        partner = _request_from_payload(partner_payload) if partner_payload else None
+        modern_preferences = payload.get("modern_preferences") or []
+        language = payload.get("language") or payload.get("design_language") or "en"
+        experience = build_unified_experience_flow(
+            primary,
+            partner_request=partner,
+            modern_preferences=modern_preferences,
+            language=str(language),
+        )
+        return experience.to_dict()
     if command == "calendar":
         try:
             context = convert_birth_details(
