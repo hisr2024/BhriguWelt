@@ -43,6 +43,24 @@ class EngineInterpretation:
         }
 
 
+@dataclass
+class AudienceBriefing:
+    """Human-facing summary of how analyses and interpretations operate."""
+
+    audience: str
+    language: str
+    summary: str
+    details: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "audience": self.audience,
+            "language": self.language,
+            "summary": self.summary,
+            "details": self.details,
+        }
+
+
 def _precision_score(total_entries: int, missing_count: int, required_fields: Sequence[str]) -> float:
     """Return a normalized precision score between 0 and 1.
 
@@ -142,7 +160,83 @@ def interpret_bhrigu_wisdom(
     return interpretations
 
 
+def brief_alignment_pipeline(language: str = "en") -> List[AudienceBriefing]:
+    """Describe analyser→interpreter flow in audience-friendly language.
+
+    Designers get a narrative of how the analyser guards manuscript fidelity
+    before the interpreter renders messages for the public, while interpreters
+    (linguists) hear how to restate the Bhrigu Samhita insights in languages the
+    seeker understands. All summaries remain anchored to the Bhrigu Samhita
+    lineage so downstream storytelling stays precise.
+    """
+
+    normalized = language.lower()
+
+    english_briefings = [
+        AudienceBriefing(
+            audience="designers",
+            language="en",
+            summary=(
+                "Designers: analysers validate every engine against the Bhrigu Samhita"
+                " folios before interpreters craft user-ready narratives."
+            ),
+            details=(
+                "Use this to design flows that show manuscript alignment—start with"
+                " analyser confidence, then render the interpreter's precise, cited"
+                " result in the visitor's language."
+            ),
+        ),
+        AudienceBriefing(
+            audience="interpreters",
+            language="en",
+            summary=(
+                "Interpreters: carry analyser findings into the seeker's mother tongue"
+                " without losing Bhrigu Samhita citations."
+            ),
+            details=(
+                "Keep the core phrasing intact (precision score, missing fields, sutra"
+                " references) and translate with cultural sensitivity so the reading"
+                " remains manuscript-faithful."
+            ),
+        ),
+    ]
+
+    hindi_briefings = [
+        AudienceBriefing(
+            audience="designers",
+            language="hi",
+            summary=(
+                "डिज़ाइनर: विश्लेषक पहले हर इंजन को भ्रिगु संहिता पांडुलिपि से मिलाते हैं,"
+                " फिर दुभाषिये सरल भाषा में कथन गढ़ते हैं।"
+            ),
+            details=(
+                "फ़्लो इस तरह बनाएँ कि पहले विश्लेषक का भरोसा दिखे और उसके बाद"
+                " दुभाषिये का सूक्ष्म, उद्धृत परिणाम उपयोगकर्ता की भाषा में प्रस्तुत हो।"
+            ),
+        ),
+        AudienceBriefing(
+            audience="interpreters",
+            language="hi",
+            summary=(
+                "दुभाषिये: विश्लेषक के निष्कर्षों को साधक की मातृभाषा में पहुँचाएँ, जबकि"
+                " भ्रिगु संहिता संदर्भ और सावधानियों को सुरक्षित रखें।"
+            ),
+            details=(
+                "सटीकता स्कोर, अनुपस्थित फ़ील्ड, और सूत्र संदर्भ जैसी पंक्तियों को ज्यों का"
+                " त्यों रखें और केवल भाषा अनुवाद में सांस्कृतिक कोमलता जोड़ें।"
+            ),
+        ),
+    ]
+
+    if normalized.startswith("hi"):
+        return hindi_briefings
+
+    return english_briefings
+
+
 __all__ = [
     "EngineInterpretation",
+    "AudienceBriefing",
     "interpret_bhrigu_wisdom",
+    "brief_alignment_pipeline",
 ]

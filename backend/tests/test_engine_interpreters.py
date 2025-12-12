@@ -1,6 +1,9 @@
 import pytest
 
-from bhriguwelt.engine_interpreters import interpret_bhrigu_wisdom
+from bhriguwelt.engine_interpreters import (
+    brief_alignment_pipeline,
+    interpret_bhrigu_wisdom,
+)
 
 
 @pytest.fixture
@@ -61,3 +64,21 @@ def test_interpretations_surface_missing_fields(complete_bundle):
     assert remedies.precision_score < 1.0
     assert any("description" in missing for missing in remedies.missing_fields)
     assert "requires manuscript review" in remedies.precise_result
+
+
+def test_brief_alignment_pipeline_default_language():
+    briefings = brief_alignment_pipeline()
+
+    assert {briefing.audience for briefing in briefings} == {"designers", "interpreters"}
+    for briefing in briefings:
+        assert briefing.language == "en"
+        assert "Bhrigu Samhita" in briefing.summary
+        assert "analyser" in briefing.summary or "analyser" in briefing.details
+
+
+def test_brief_alignment_pipeline_hindi_language():
+    briefings = brief_alignment_pipeline(language="hi")
+
+    assert all(briefing.language == "hi" for briefing in briefings)
+    assert any("पांडुलिपि" in briefing.summary for briefing in briefings)
+    assert any("सटीकता" in briefing.details for briefing in briefings)
