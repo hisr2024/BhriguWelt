@@ -84,6 +84,10 @@ Python + `pip` available:
    A `{\"status\":\"ok\"}` response confirms the backend is ready to pair with the
    Vercel frontend and native clients. Use the copied URL as
    `NEXT_PUBLIC_BACKEND_URL` in Vercel or mobile `.env` files.
+11. Keep the [Railway deployment checklist](./railway.md) handy for future
+    projects or when teammates are onboarding. It summarizes the required
+    commands, environment variables, and smoke tests to avoid `pip: not found`
+    or `PYTHONPATH` import errors on new services.
 
 ## Frontend → Vercel
 
