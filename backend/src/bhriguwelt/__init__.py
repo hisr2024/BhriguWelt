@@ -4,6 +4,7 @@ from .calendar_conversion import HinduCalendarContext, convert_birth_details
 from .feedback import FeedbackEntry, quarterly_reviews, record_feedback
 from .engine_analyzers import EngineAnalysis, analyze_core_engines
 from .engine_interpreters import EngineInterpretation, interpret_bhrigu_wisdom
+from .matchmaking_engine import run_matchmaking_pipeline
 from .horoscope import (
     FutureReport,
     HoroscopeReport,
@@ -53,4 +54,5 @@ __all__ = [
     "analyze_core_engines",
     "EngineInterpretation",
     "interpret_bhrigu_wisdom",
+    "run_matchmaking_pipeline",
 ]

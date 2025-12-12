@@ -27,6 +27,9 @@ the validation rules and response shapes enforced by the CLI/API handlers.
 - `POST /matchmaking`
 - Body: `{ primary: <horoscope body>, partner: <horoscope body>, modern_preferences: ["music", "remote-first"] }`
 - Returns compatibility index, breakdown, and modern highlights.
+- `POST /matchmaking/pipeline`
+- Body: `{ primary, partner, modern_preferences?, language? }`
+- Returns compatibility sections plus analyser validation, interpreter summaries, and audience briefings for designers/interpreters.
 
 ## Calendar conversion
 - `POST /calendar`
