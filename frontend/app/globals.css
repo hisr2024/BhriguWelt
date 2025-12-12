@@ -2450,6 +2450,10 @@ textarea:focus {
   background: linear-gradient(90deg, rgba(255, 165, 228, 0.08), rgba(255, 255, 255, 0.03));
 }
 
+.timeline--fuchsia {
+  background: linear-gradient(90deg, rgba(244, 114, 182, 0.1), rgba(217, 70, 239, 0.06));
+}
+
 .horo-explorer {
   display: grid;
   gap: 12px;
