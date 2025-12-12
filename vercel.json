@@ -1,7 +1,7 @@
 {
   "version": 2,
   "env": {
-    "NEXT_PUBLIC_BACKEND_URL": "https://your-render-service.onrender.com"
+    "NEXT_PUBLIC_BACKEND_URL": "https://bhriguwelt-production.up.railway.app"
   },
   "builds": [
     {

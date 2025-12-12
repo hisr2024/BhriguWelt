@@ -22,11 +22,13 @@ backend to be reachable at `http://localhost:8000`. Point the UI at a different
 backend by setting `NEXT_PUBLIC_BACKEND_URL` before running any script:
 
 ```bash
-NEXT_PUBLIC_BACKEND_URL=https://bhriguwelt-backend.onrender.com npm run dev
+NEXT_PUBLIC_BACKEND_URL=https://bhriguwelt-production.up.railway.app npm run dev
 ```
 
 For Vercel previews and production, set `NEXT_PUBLIC_BACKEND_URL` in the Vercel
-dashboard to the Render (or self-hosted) API endpoint you control. Vercel
+dashboard to the Railway (or self-hosted) API endpoint you control. Keep it
+aligned with `https://bhriguwelt-production.up.railway.app` (or your own
+Railway domain) so every deploy targets the live backend. Vercel
 defaults to a Node 18 runtime, which matches the app's tested environment. For
 local testing against a remote backend, create a `.env.local` file with the same
 key so `npm run dev` and `npm run build` compile against the right host.
@@ -49,11 +51,11 @@ key so `npm run dev` and `npm run build` compile against the right host.
 
 ### Deployment verification
 
-- **Render health check:** After deploying the backend with `render.yaml`, run
-  `curl https://<your-render-host>/health` to ensure the API is reachable.
+- **Railway health check:** After deploying the backend to Railway, run
+  `curl https://<your-railway-host>/health` to ensure the API is reachable.
 - **Vercel preview smoke test:** Open the preview URL Vercel provides, submit
   each form, and confirm responses contain the manuscript citations returned by
-  the backend. Adjust `NEXT_PUBLIC_BACKEND_URL` if requests fail.
+  the Railway backend. Adjust `NEXT_PUBLIC_BACKEND_URL` if requests fail.
 
 ## Available scripts
 
@@ -73,7 +75,7 @@ key so `npm run dev` and `npm run build` compile against the right host.
 ## Environment and CI
 
 - Copy `.env.example` to `.env.local` (or `.env`) and set `NEXT_PUBLIC_BACKEND_URL`
-  to your Render/Railway/local backend before running the app. Optional telemetry
+  to your Railway (or local) backend before running the app. Optional telemetry
   hooks use `NEXT_PUBLIC_SENTRY_DSN` plus `NEXT_PUBLIC_SENTRY_ENVIRONMENT` and
   sampling controls for traces/profiles.
 - Optional client telemetry is controlled by `NEXT_PUBLIC_SENTRY_DSN`; when set
@@ -101,7 +103,7 @@ Quick troubleshooting tips:
 2. In Vercel, create a new project from this repository and select the `frontend`
    directory when asked for the root.
 3. Define the `NEXT_PUBLIC_BACKEND_URL` environment variable so the UI knows
-   which Render (or self-hosted) backend to call.
+   which Railway (or self-hosted) backend to call.
 4. Deploy. Vercel automatically runs `npm install`, `npm run build`, and `npm
    run start` behind the scenes.
 

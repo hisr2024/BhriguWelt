@@ -29,8 +29,8 @@ so follow the steps below to publish your own endpoints before testing clients.
    - `PYTHONPATH=src`
    - Optional: `BHRIGU_ML_ENABLED=1` to keep ML weighting active in production
 5. Deploy. Your live API URL will look like
-   `https://bhriguwelt-backend.onrender.com`—copy this for the frontend and
-   mobile clients.
+   `https://bhriguwelt-production.up.railway.app`—copy this for the frontend
+   and mobile clients.
 
 ### Manual service (if you skip the blueprint)
 
@@ -94,8 +94,9 @@ Python + `pip` available:
 1. In Vercel, create a new project and point it at the same GitHub repository.
 2. When prompted for the project root, choose `frontend/`.
 3. Add the environment variable `NEXT_PUBLIC_BACKEND_URL` and set it to the
-   Render or Railway URL created above so server components and client fetches
-   share the same base host.
+   Railway URL created above so server components and client fetches share the
+   same base host. This keeps every frontend deployment pinned to the live
+   Railway backend rather than the older Render demo URL.
 4. (Optional) Add `NEXT_PUBLIC_BACKEND_FALLBACK_URL` to mirror a staging
    backend. The horoscope form will retry against this host whenever the
    primary URL returns a non-2xx response, keeping demos resilient.
@@ -109,15 +110,16 @@ Python + `pip` available:
 
 ## Post-deploy API integration checks
 
-1. Confirm the backend health endpoint responds over HTTPS:
+1. Confirm the backend health endpoint responds over HTTPS at the Railway
+   hostname:
 
    ```bash
-   curl https://<your-render-or-railway-host>/health
+   curl https://<your-railway-host>/health
    ```
 
 2. Visit the Vercel deployment URL and open the browser Network tab. Submit a
    horoscope or past-life request; the network trace should show fetches against
-   the Render/Railway domain you set in `NEXT_PUBLIC_BACKEND_URL`.
+   the Railway domain you set in `NEXT_PUBLIC_BACKEND_URL`.
 3. If the frontend falls back to demo data, double-check the Vercel environment
    variable, confirm the backend URL is reachable over HTTPS, and redeploy.
    Successful requests return the same JSON structure as local
