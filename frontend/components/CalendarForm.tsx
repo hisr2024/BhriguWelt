@@ -29,6 +29,7 @@ export default function CalendarForm() {
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const requestIdRef = useRef(0);
   const { triggerSubmitFeedback } = useImmersiveFeedback();
   const { updateSaka } = useSakaContext();
 
@@ -59,10 +60,13 @@ export default function CalendarForm() {
 
   useEffect(() => {
     setSyncNotice(null);
+    setAutoTriggered(false);
   }, [details.birthDate, details.birthPlace, details.birthTime]);
 
   const handleSubmit = async (event?: FormEvent<HTMLFormElement>, source: "auto" | "manual" = "manual") => {
     event?.preventDefault();
+    const currentRequestId = requestIdRef.current + 1;
+    requestIdRef.current = currentRequestId;
     if (source === "manual") {
       triggerSubmitFeedback();
     }
@@ -72,6 +76,7 @@ export default function CalendarForm() {
     setSyncNotice(null);
     try {
       const response = await requestCalendar(details);
+      if (currentRequestId !== requestIdRef.current) return;
       setPayload(response);
       const sakaDate = typeof response === "object" && response && "saka_date" in response ? response.saka_date : undefined;
       const derivedGrid = deriveHouseGrid(
@@ -104,10 +109,13 @@ export default function CalendarForm() {
       setAutoTriggered(source === "auto");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to convert date";
+      if (currentRequestId !== requestIdRef.current) return;
       setError(message);
       captureClientError(message, { details, feature: "calendar" });
     } finally {
-      setLoading(false);
+      if (currentRequestId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 
