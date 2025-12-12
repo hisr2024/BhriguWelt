@@ -36,6 +36,7 @@ from .chatbot import generate_chat_reply
 from .horoscope import (
     HoroscopeRequest,
     build_core_wisdom_reading,
+    build_karmic_dashboard,
     build_future_report,
     build_matchmaking_report,
     build_timeline_report,
@@ -165,7 +166,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/calendar"): "_handle_calendar",
         ("POST", "/transits"): "_handle_transits",
         ("POST", "/core-wisdom"): "_handle_core_wisdom",
-        ("POST", "/timeline"): "_handle_timeline",
+        ("POST", "/karmic-dashboard"): "_handle_karmic_dashboard",
         ("POST", "/chat"): "_handle_chat",
         ("POST", "/profiles"): "_handle_profiles",
         ("POST", "/profiles/get"): "_handle_profile_get",
@@ -285,13 +286,17 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             return
         self._respond_with_command("core-wisdom", payload)
 
-    def _handle_timeline(self) -> None:
+    def _handle_karmic_dashboard(self) -> None:
         payload = self._read_json()
         focus_areas = payload.get("focus_areas")
+        issues = payload.get("issues")
         if focus_areas is not None and not isinstance(focus_areas, list):
             self.send_error(HTTPStatus.BAD_REQUEST, "focus_areas must be a list when provided")
             return
-        self._respond_with_command("timeline", payload)
+        if issues is not None and not isinstance(issues, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "issues must be a list when provided")
+            return
+        self._respond_with_command("karmic-dashboard", payload)
 
     def _handle_chat(self) -> None:
         payload = self._read_json()
@@ -597,6 +602,27 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "dashas": [_serialize_obj(item) for item in reading.dashas],
             "karmic_epoch": reading.karmic_epoch,
             "remedies": reading.remedies,
+        }
+        _ensure_visualization_payload(response)
+        return response
+    if command == "karmic-dashboard":
+        request = _request_from_payload(payload)
+        dashboard = build_karmic_dashboard(
+            request,
+            focus_areas=payload.get("focus_areas") or None,
+            issues=payload.get("issues") or None,
+            current_phase=payload.get("current_phase"),
+        )
+        response = {
+            "sections": dashboard.sections,
+            "hotspots": dashboard.hotspots,
+            "gifts": dashboard.gifts,
+            "active_themes": dashboard.active_themes,
+            "assignments": dashboard.assignments,
+            "rashi_chart": [_serialize_obj(item) for item in dashboard.charts.get("rashi_chart", [])],
+            "bhava_chart": [_serialize_obj(item) for item in dashboard.charts.get("bhava_chart", [])],
+            "dashas": [_serialize_obj(item) for item in dashboard.dashas],
+            "karmic_epoch": dashboard.karmic_epoch,
         }
         _ensure_visualization_payload(response)
         return response

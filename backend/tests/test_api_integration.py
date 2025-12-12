@@ -111,6 +111,14 @@ def test_http_future_round_trip():
         assert data.get("trajectories"), "Future response missing trajectories"
 
 
+def test_http_karmic_dashboard_round_trip():
+    with running_server() as address:
+        status, data, _ = _post("/karmic-dashboard", _payload(), address)
+        assert status == 200
+        assert data.get("hotspots"), "Dashboard response missing hotspots"
+        assert data.get("assignments"), "Dashboard response missing assignments"
+
+
 def test_http_past_life_round_trip():
     with running_server() as address:
         status, data, _ = _post("/past-life", _payload(), address)

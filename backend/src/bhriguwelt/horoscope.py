@@ -32,11 +32,11 @@ __all__ = [
     "PastLifeReport",
     "FutureReport",
     "MatchmakingReport",
-    "TimelineReport",
-    "TimelinePhase",
+    "KarmicDashboard",
     "CoreWisdomReading",
     "SUPPORTED_MOON_ELEMENTS",
     "build_core_wisdom_reading",
+    "build_karmic_dashboard",
     "build_prediction",
     "build_past_life_report",
     "build_future_report",
@@ -190,6 +190,20 @@ class CoreWisdomReading:
     dashas: List[DashaPeriod]
     karmic_epoch: str
     remedies: List[Dict]
+
+
+@dataclass
+class KarmicDashboard:
+    """Dashboard-style karmic overview with hotspots, gifts, and assignments."""
+
+    sections: Dict[str, str]
+    hotspots: List[Dict[str, str]]
+    gifts: List[Dict[str, str]]
+    active_themes: List[str]
+    assignments: List[str]
+    charts: Dict[str, List[ChartHouse]]
+    dashas: List[DashaPeriod]
+    karmic_epoch: str
 
 
 def build_calendar_context(
@@ -383,25 +397,78 @@ def build_core_wisdom_reading(
     )
 
 
-def build_timeline_report(request: HoroscopeRequest, focus_areas: Sequence[str] | None = None) -> TimelineReport:
-    """Return a five-phase karmic roadmap for UX surfaces and chat flows."""
+def build_karmic_dashboard(
+    request: HoroscopeRequest,
+    *,
+    focus_areas: Sequence[str] | None = None,
+    issues: Sequence[str] | None = None,
+    current_phase: str | None = None,
+) -> KarmicDashboard:
+    """Return the 8-section Karmic Dashboard with hotspots, gifts, and micro-steps."""
 
-    snapshot = _snapshot_from_request(request)
-    influences = _rank_influences(snapshot)
-    phases = _compose_timeline(snapshot, influences, focus_areas)
-    focus_label = ", ".join(focus_areas) if focus_areas else "general balance"
+    horoscope = build_prediction(request)
+    focus_summary = ", ".join(focus_areas) if focus_areas else "general balance"
+    issue_summary = ", ".join(issues) if issues else ""
 
-    summary = (
-        f"{request.name or 'The native'}'s Bhrigu-style roadmap centers on {focus_label}. "
-        f"Dominant influences: {', '.join(influences[:3])}."
+    strengths = _ranked_traits(horoscope.weights, top=True)
+    challenges = _ranked_traits(horoscope.weights, top=False)
+
+    hotspots = _dashboard_hotspots(horoscope.weights, challenges)
+    gifts = _dashboard_gifts(horoscope.weights, strengths)
+
+    active_themes = _dashboard_active_themes(horoscope.karmic_epoch, horoscope.future_trajectories, current_phase)
+    assignments = _dashboard_assignments(horoscope.remedies, hotspots, gifts)
+
+    sections = {
+        "1": (
+            "Restatement of Data & Focus: "
+            f"Name {request.name}. Birth {request.birth_date} at {request.birth_time} in {request.birth_place}. "
+            f"Focus: {focus_summary}."
+            f" Issues flagged: {issue_summary or 'none supplied'}."
+        ),
+        "2": (
+            "Disclaimer & Orientation: Reflective spiritual dashboard, not medical/legal/financial advice."
+            " Use as prompts and adjust freely."
+        ),
+        "3": (
+            "Karmic Overview Summary: "
+            f"Epoch — {horoscope.karmic_epoch}. "
+            f"Strength lanes: {', '.join(strengths) or 'adaptability and steady practice'}. "
+            f"Pressure lanes: {', '.join(challenges) or 'balancing intuition with action'}. "
+            f"Interpretation: {horoscope.interpretation}"
+        ),
+        "4": (
+            "Karma Hotspots (Pressure Zones): "
+            + "; ".join(f"{item['label']} — {item['description']}" for item in hotspots)
+        ),
+        "5": (
+            "Karmic Gifts (Supportive Zones): "
+            + "; ".join(f"{item['label']} — {item['how_to_use']}" for item in gifts)
+        ),
+        "6": (
+            "Current Active Themes (Right Now): "
+            + "; ".join(active_themes)
+        ),
+        "7": (
+            "Suggested Karmic Assignments (Next 30–90 Days): "
+            + "; ".join(assignments)
+        ),
+        "8": (
+            "Closing & Free Will: These notes are experiments. Keep what resonates, revise what doesn't,"
+            " and steer with conscious choice."
+        ),
+    }
+
+    return KarmicDashboard(
+        sections=sections,
+        hotspots=hotspots,
+        gifts=gifts,
+        active_themes=active_themes,
+        assignments=assignments,
+        charts={"rashi_chart": horoscope.rashi_chart, "bhava_chart": horoscope.bhava_chart},
+        dashas=horoscope.dashas,
+        karmic_epoch=horoscope.karmic_epoch,
     )
-    disclaimer = (
-        "Symbolic Bhrigu Samhita-inspired timeline covering foundations, identity search, "
-        "early building, consolidation, and maturity. It offers tendencies, not fixed outcomes, "
-        "and is not medical, legal, or financial advice."
-    )
-
-    return TimelineReport(name=request.name, summary=summary, disclaimer=disclaimer, phases=phases)
 
 
 def build_matchmaking_report(
@@ -931,6 +998,84 @@ def _personalize_remedies(
         return remedies
 
     return sorted(scored, key=lambda entry: entry.get("relevance", 0.0), reverse=True)
+
+
+def _format_trait_label(trait: str) -> str:
+    return trait.replace("_", " ").strip().title()
+
+
+def _dashboard_hotspots(weights: Dict[str, float], traits: List[str]) -> List[Dict[str, str]]:
+    anchors = traits or ["boundaries", "self regulation", "consistency"]
+    hotspots: List[Dict[str, str]] = []
+    for trait in anchors:
+        key = trait.replace(" ", "_")
+        score = weights.get(key, 0.0)
+        label = _format_trait_label(trait)
+        hotspots.append(
+            {
+                "label": label,
+                "description": f"Score {score:.2f} suggests retests around {label.lower()}; pace agreements and rest.",
+                "shows_up": f"Notice it when {label.lower()} feels stretched or when you overextend without clarity.",
+            }
+        )
+    return hotspots
+
+
+def _dashboard_gifts(weights: Dict[str, float], traits: List[str]) -> List[Dict[str, str]]:
+    anchors = traits or ["adaptability", "empathy", "focus"]
+    gifts: List[Dict[str, str]] = []
+    for trait in anchors:
+        key = trait.replace(" ", "_")
+        score = weights.get(key, 0.0)
+        label = _format_trait_label(trait)
+        gifts.append(
+            {
+                "label": label,
+                "how_to_use": f"Lean on {label.lower()} (score {score:.2f}) to stabilize routines and conversations.",
+            }
+        )
+    return gifts
+
+
+def _dashboard_active_themes(
+    karmic_epoch: str, trajectories: List[FutureTrajectory], current_phase: str | None
+) -> List[str]:
+    themes = [f"Karmic epoch: {karmic_epoch}"]
+    if current_phase:
+        themes.append(f"Current phase: {current_phase}")
+    if trajectories:
+        for directive in trajectories[:2]:
+            window = f" during {directive.window}" if directive.window else ""
+            themes.append(f"{directive.focus}{window} (certainty {directive.certainty:.2f})")
+    else:
+        themes.append("Emphasis on steady practice until sharper transit signals arrive.")
+    return themes
+
+
+def _dashboard_assignments(remedies: List[Dict], hotspots: List[Dict[str, str]], gifts: List[Dict[str, str]]) -> List[str]:
+    assignments: List[str] = []
+
+    for remedy in remedies[:3]:
+        interpretation = remedy.get("interpretation") or remedy.get("id") or "Apply a light remedy"
+        assignments.append(f"Weekly remedy focus: {interpretation}.")
+
+    if hotspots:
+        primary = hotspots[0]["label"].lower()
+        assignments.append(f"Daily 5-minute check on {primary}: name one clear yes/no and honor it.")
+
+    if gifts:
+        gift = gifts[0]["label"].lower()
+        assignments.append(f"Leverage {gift}: use it to schedule one protected focus block twice a week.")
+
+    if len(assignments) < 5:
+        assignments.extend(
+            [
+                "Track one trigger for two weeks; write one alternate response each time.",
+                "Add a 10-minute grounding ritual (breath, stretch, journal) at the same time daily.",
+            ][: 5 - len(assignments)]
+        )
+
+    return assignments[:8]
 
 
 def _compose_transit_interpretation(directives: List[TransitDirective], transit_dt: datetime) -> str:
