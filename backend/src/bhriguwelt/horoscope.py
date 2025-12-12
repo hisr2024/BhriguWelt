@@ -142,6 +142,7 @@ class MatchmakingReport:
     partner_name: str
     compatibility: MatchmakingCompatibility
     interpretation: str
+    sections: Dict[str, str]
 
 
 @dataclass
@@ -375,6 +376,13 @@ def build_matchmaking_report(
         modern_preferences=modern_preferences,
     )
 
+    sections = _compose_matchmaking_sections(
+        compatibility=compatibility,
+        primary_request=primary_request,
+        partner_request=partner_request,
+        modern_preferences=modern_preferences,
+    )
+
     return MatchmakingReport(
         primary_name=primary_request.name,
         partner_name=partner_request.name,
@@ -385,6 +393,7 @@ def build_matchmaking_report(
             partner_request.name,
             runtime_config.get("interpretation", {}),
         ),
+        sections=sections,
     )
 
 
@@ -584,6 +593,88 @@ def _compose_matchmaking_interpretation(
             resonance = f" ({path.resonance:.0f}% resonance)" if path.resonance else ""
             parts.append(f"Shared path — {path.theme}:{resonance} {path.guidance}")
         return " ".join(parts)
+
+
+def _compose_matchmaking_sections(
+    compatibility: MatchmakingCompatibility,
+    primary_request: HoroscopeRequest,
+    partner_request: HoroscopeRequest,
+    modern_preferences: List[str],
+) -> Dict[str, str]:
+    """Return an 8-section compatibility digest aligned with the Bhrigu brief."""
+
+    name_a = primary_request.name or "Person A"
+    name_b = partner_request.name or "Person B"
+    prefs = ", ".join(modern_preferences) if modern_preferences else "none provided"
+    time_notice_a = "(approximate)" if not primary_request.birth_time else ""
+    time_notice_b = "(approximate)" if not partner_request.birth_time else ""
+
+    comp_index = compatibility.compatibility_index
+    long_term = compatibility.long_term_index
+    alignment = compatibility.alignment_percentages or {}
+
+    varna_note = "balanced temperament blend" if comp_index >= 70 else "differing spiritual pacing"
+    nadi_note = "strong vitality sync" if long_term >= 70 else "needs mindful health rhythms"
+    bhakoot_note = "steady emotional bonding" if alignment.get("emotional", 0) >= 60 else "emotions differ in cadence"
+    graha_note = "friendlike rapport" if alignment.get("communication", 0) >= 60 else "communication styles diverge"
+
+    overlay = compatibility.synastry_overlays[0] if compatibility.synastry_overlays else None
+    overlay_text = (
+        f"Synastry focus on {overlay.area}: {overlay.alignment:.0f}% harmony — {overlay.notes}"
+        if overlay
+        else "Synastry overlays will refine as more chart details are supplied."
+    )
+
+    shared_path = compatibility.shared_life_paths[0] if compatibility.shared_life_paths else None
+    shared_text = (
+        f"Shared path {shared_path.theme} ({shared_path.resonance:.0f}% resonance): {shared_path.guidance}"
+        if shared_path
+        else "Record shared milestones to refine dharmic overlap."
+    )
+
+    breakdown = sorted(compatibility.breakdown, key=lambda entry: entry.score, reverse=True)[:3]
+    breakdown_text = "; ".join(f"{entry.description.strip()} ({entry.sutra_reference})" for entry in breakdown)
+    modern_highlight = compatibility.modern_highlights[0] if compatibility.modern_highlights else "Emphasize empathy and consent."
+
+    sections: Dict[str, str] = {}
+    sections["1"] = (
+        f"Couple data — {name_a} (DOB {primary_request.birth_date} {primary_request.birth_time or 'unknown'} {time_notice_a}) "
+        f"from {primary_request.birth_place}; {name_b} (DOB {partner_request.birth_date} {partner_request.birth_time or 'unknown'} {time_notice_b}) "
+        f"from {partner_request.birth_place}. Query: modern Bhrigu-style compatibility with preferences: {prefs}."
+    )
+    sections["2"] = (
+        "Bhrigu Samhita–inspired, symbolic guidance. Not medical, legal, or financial advice. "
+        "Use for reflection and conversation; honour consent and safety."
+    )
+    sections["3"] = (
+        f"Individual snapshots — {name_a}: emotional tone shaped by {primary_request.moon_element or 'balancing elements'}, "
+        f"relationship energy via Mars house {primary_request.mars_house or 'n/a'}, Venus house {primary_request.venus_house or 'n/a'}. "
+        f"{name_b}: emotional tone shaped by {partner_request.moon_element or 'balancing elements'}, "
+        f"relationship energy via Mars house {partner_request.mars_house or 'n/a'}, Venus house {partner_request.venus_house or 'n/a'}."
+    )
+    sections["4"] = (
+        "Ashta Koota synthesis — Varna: "
+        f"{varna_note}; Vashya: cooperation improves when pacing is acknowledged; Tara: nurture wellbeing rituals together; "
+        f"Yoni: respect boundaries while keeping warmth alive; Graha Maitri: {graha_note}; Gana: blend moods with humour; "
+        f"Bhakoot: {bhakoot_note}; Nadi: {nadi_note}. Total harmony tilt ≈ {comp_index:.1f}/100 (conceptually ~{comp_index*0.36:.1f}/36)."
+    )
+    sections["5"] = (
+        f"Dimensional compatibility — Emotional {alignment.get('emotional', 0):.0f}% • Spiritual {alignment.get('spiritual', 0):.0f}% • "
+        f"Communication {alignment.get('communication', 0):.0f}%. {overlay_text} {shared_text}"
+    )
+    sections["6"] = (
+        "Risk & balance — Watch for differing communication cadence and expectations around tradition vs flexibility. "
+        f"Balancing factors: {breakdown_text or 'shared curiosity and goodwill'}, plus modern note: {modern_highlight}."
+    )
+    sections["7"] = (
+        f"Guidance — Set weekly check-ins, alternate decision leadership, and align finances with shared priorities. "
+        f"{name_a} can practice steady listening; {name_b} can share needs early. Joint remedy: short gratitude ritual and service together."
+    )
+    sections["8"] = (
+        "Closing — Charts show patterns, not verdicts. Free will, consent, and mutual respect lead. Take what resonates and adapt together."
+    )
+
+    return sections
 
 
 def _matches_remedy_rule(value, rule) -> bool:
