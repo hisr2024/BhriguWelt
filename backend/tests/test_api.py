@@ -38,6 +38,16 @@ def test_handle_command_core_wisdom_structures_sections():
     assert response["dashas"]
 
 
+def test_handle_command_karmic_dashboard_outlines_hotspots():
+    response = api.handle_command(
+        "karmic-dashboard", {**_payload(), "focus_areas": ["career"], "issues": ["money worry"]}
+    )
+    assert set(response["sections"].keys()) == set(str(i) for i in range(1, 9))
+    assert response["hotspots"], "Hotspots should be populated"
+    assert response["gifts"], "Gifts should be populated"
+    assert response["assignments"], "Assignments should be populated"
+
+
 def test_handle_command_matchmaking_summarizes_highlights():
     response = api.handle_command(
         "matchmaking",
