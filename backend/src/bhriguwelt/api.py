@@ -41,6 +41,7 @@ from .horoscope import (
     build_matchmaking_report,
     build_timeline_report,
     build_transit_report,
+    build_engine_outputs,
     build_varshaphal_report,
     build_past_life_report,
     build_prediction,
@@ -168,6 +169,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/calendar"): "_handle_calendar",
         ("POST", "/transits"): "_handle_transits",
         ("POST", "/core-wisdom"): "_handle_core_wisdom",
+        ("POST", "/core-engines"): "_handle_core_engines",
         ("POST", "/karmic-dashboard"): "_handle_karmic_dashboard",
         ("POST", "/chat"): "_handle_chat",
         ("POST", "/profiles"): "_handle_profiles",
@@ -295,6 +297,10 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.BAD_REQUEST, "focus_areas must be a list when provided")
             return
         self._respond_with_command("core-wisdom", payload)
+
+    def _handle_core_engines(self) -> None:
+        payload = self._read_json()
+        self._respond_with_command("core-engines", payload)
 
     def _handle_karmic_dashboard(self) -> None:
         payload = self._read_json()
@@ -615,6 +621,20 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         }
         _ensure_visualization_payload(response)
         return response
+    if command == "core-engines":
+        request = _request_from_payload(payload)
+        outputs = build_engine_outputs(request)
+        return {
+            "name": outputs.name,
+            "karmic_epoch": outputs.karmic_epoch,
+            "weights": outputs.weights,
+            "principles": outputs.principles,
+            "remedies": outputs.remedies,
+            "past_life_insights": [_serialize_obj(item) for item in outputs.past_life_insights],
+            "future_directives": [_serialize_obj(item) for item in outputs.future_directives],
+            "transit_directives": [_serialize_obj(item) for item in outputs.transit_directives],
+            "interpretation": outputs.interpretation,
+        }
     if command == "karmic-dashboard":
         request = _request_from_payload(payload)
         dashboard = build_karmic_dashboard(
