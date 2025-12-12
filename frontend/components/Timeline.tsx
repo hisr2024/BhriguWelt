@@ -17,7 +17,7 @@ type TimelineEvent = {
 
 type TimelineProps = {
   events: TimelineEvent[];
-  accent?: "aqua" | "pink" | "amber";
+  accent?: "aqua" | "pink" | "amber" | "fuchsia";
 };
 
 export default function Timeline({ events, accent = "aqua" }: TimelineProps) {
