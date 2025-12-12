@@ -51,6 +51,7 @@ from .experience_flow import build_unified_experience_flow
 from .matchmaking_engine import run_matchmaking_pipeline
 from .kundli_generator import SIGNS, generate_kundli
 from .wisdom_aggregator import aggregate_wisdom_for_bot
+from .wisdom_bot import build_wisdom_bot_response
 
 _JSON_HEADER = ("Content-Type", "application/json; charset=utf-8")
 _ADMIN_TOKEN = os.environ.get("BHRIGUWELT_ADMIN_TOKEN")
