@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { requestCalendar } from "@/lib/api";
-import { helperCopy } from "@/lib/copy";
 import { deriveHouseGrid, HouseSummary } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
 import { captureClientError } from "@/lib/telemetry";
@@ -15,7 +14,6 @@ import { deriveHousePlacements, useSakaContext } from "@/lib/sakaContext";
 
 export default function CalendarForm() {
   const { t } = useI18n();
-  const helperText = helperCopy.calendar;
   const [details, setDetails] = useState<CalendarDetails>({
     birthDate: "",
     birthTime: "",
@@ -66,6 +64,11 @@ export default function CalendarForm() {
     if (source === "manual") {
       triggerSubmitFeedback();
     }
+    if (!details.birthDate || !details.birthTime || !details.birthPlace) {
+      setError("Add date, time, and place to convert.");
+      return;
+    }
+
     setError(null);
     setPayload(null);
     setLoading(true);
@@ -131,7 +134,7 @@ export default function CalendarForm() {
   }, [payload]);
 
   const sakaLabel = useMemo(() => {
-    if (!sakaDate) return "Śaka conversion ready";
+    if (!sakaDate) return "Awaiting Śaka conversion";
     return `Śaka ${sakaDate.year ?? ""} ${sakaDate.month ?? ""} ${sakaDate.day ?? ""}`.trim();
   }, [sakaDate]);
 
@@ -161,16 +164,10 @@ export default function CalendarForm() {
 
   return (
     <section aria-labelledby="calendar-heading">
-      <form onSubmit={(event) => handleSubmit(event, "manual")} aria-busy={loading} aria-describedby="calendar-helper">
+      <form onSubmit={(event) => handleSubmit(event, "manual")} aria-busy={loading}>
         <header className="section-heading">
           <p className="eyebrow">Śaka conversion</p>
           <h2 id="calendar-heading">{t("calendar.title", "Gregorian → Śaka calendar conversion")}</h2>
-          <p className="muted" id="calendar-helper">
-            {t(
-              "calendar.helper",
-              `${helperText} Type the details and the studio converts instantly—no extra clicks needed.`,
-            )}
-          </p>
           <BackendHealthNotice />
         </header>
         <div className="form-grid">
@@ -183,12 +180,6 @@ export default function CalendarForm() {
               value={details.birthDate}
               onChange={(event) => setDetails({ ...details, birthDate: event.target.value })}
             />
-            <p className="microcopy" id="calendar-birth-date-hint">
-              {t(
-                "calendar.microcopy.date",
-                "Auto-detects timezone from your device; gentle prompts fire if format slips.",
-              )}
-            </p>
           </div>
           <div>
             <label htmlFor="calendar-birth-time">{t("form.birthTime", "Birth time (HH:MM)")}</label>
@@ -199,9 +190,6 @@ export default function CalendarForm() {
               value={details.birthTime}
               onChange={(event) => setDetails({ ...details, birthTime: event.target.value })}
             />
-            <p className="microcopy">
-              {t("calendar.microcopy.time", "We surface am/pm warnings so beginners avoid mistakes.")}
-            </p>
           </div>
           <div>
             <label htmlFor="calendar-birth-place">{t("form.birthPlace", "Birth place")}</label>
@@ -211,12 +199,6 @@ export default function CalendarForm() {
               value={details.birthPlace}
               onChange={(event) => setDetails({ ...details, birthPlace: event.target.value })}
             />
-            <p className="microcopy">
-              {t(
-                "calendar.microcopy.place",
-                "Use the city or nearest landmark—house overlays adapt dynamically.",
-              )}
-            </p>
           </div>
         </div>
         <div className="form-actions">
@@ -239,15 +221,10 @@ export default function CalendarForm() {
           </span>
         </div>
         <div className="form-actions" style={{ gap: "12px", flexWrap: "wrap" }}>
-          <button type="button" className="button-link" onClick={handleInsertToEngines}>
+          <button type="button" className="button-link" onClick={handleInsertToEngines} disabled={loading}>
             Insert Śaka details into other engines
           </button>
           {syncNotice && <span className="badge">{syncNotice}</span>}
-        </div>
-        <div className="definition-row" aria-label="Helpful glossary chips">
-          <span className="pill ghost">Tithi = lunar day</span>
-          <span className="pill ghost">Nakshatra = star mansion</span>
-          <span className="pill ghost">Bhava = life house</span>
         </div>
         {error && (
           <div className="error-banner" role="alert" aria-live="assertive" tabIndex={-1} ref={errorRef}>
@@ -258,24 +235,16 @@ export default function CalendarForm() {
       <div className="cosmic-houses" aria-live="polite">
         <div className="cosmic-houses__header">
           <div>
-            <p className="eyebrow">Bharat calendar instant view</p>
+            <p className="eyebrow">Bharat calendar</p>
             <h3>{sakaLabel}</h3>
-            <p className="muted">
-              Conversion runs the moment you share date, time, and place. Each luminous segment maps the twelve houses so first
-              time seekers instantly see what was generated.
-            </p>
-          </div>
-          <div className="cosmic-houses__meter" aria-hidden="true">
-            <span className="meter-orb" />
-            <span className="meter-orb meter-orb--secondary" />
-            <span className="meter-orb meter-orb--tertiary" />
+            <p className="muted">Updated automatically after each conversion.</p>
           </div>
         </div>
-      <div className="cosmic-houses__grid" role="list">
-        {(houseGrid.length ? houseGrid : deriveHouseGrid(details)).map((house) => (
-          <article
-            key={house.index}
-            className="cosmic-houses__card"
+        <div className="cosmic-houses__grid" role="list">
+          {(houseGrid.length ? houseGrid : deriveHouseGrid(details)).map((house) => (
+            <article
+              key={house.index}
+              className="cosmic-houses__card"
               role="listitem"
               aria-label={`House ${house.index}: ${house.focus} in ${house.sign}`}
             >
@@ -295,13 +264,6 @@ export default function CalendarForm() {
                   {house.element}
                 </p>
                 <p className="house-focus">{house.focus}</p>
-                <details className="cosmic-disclosure">
-                  <summary>Expand details</summary>
-                  <p className="muted" title={house.tooltip}>
-                    {house.tooltip}
-                  </p>
-                  <p className="microcopy">Tap any badge for a quick tooltip. Long-press on mobile adds a soft vibration.</p>
-                </details>
               </div>
             </article>
           ))}
