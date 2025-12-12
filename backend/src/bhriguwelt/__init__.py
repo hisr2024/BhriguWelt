@@ -5,6 +5,7 @@ from .feedback import FeedbackEntry, quarterly_reviews, record_feedback
 from .engine_analyzers import EngineAnalysis, analyze_core_engines
 from .engine_interpreters import EngineInterpretation, interpret_bhrigu_wisdom
 from .matchmaking_engine import run_matchmaking_pipeline
+from .experience_flow import FlowVisualizations, UnifiedExperienceFlow, build_unified_experience_flow
 from .horoscope import (
     FutureReport,
     HoroscopeReport,
@@ -55,4 +56,7 @@ __all__ = [
     "EngineInterpretation",
     "interpret_bhrigu_wisdom",
     "run_matchmaking_pipeline",
+    "FlowVisualizations",
+    "UnifiedExperienceFlow",
+    "build_unified_experience_flow",
 ]
