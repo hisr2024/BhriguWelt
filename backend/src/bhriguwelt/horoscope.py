@@ -46,6 +46,7 @@ __all__ = [
     "build_matchmaking_report",
     "build_timeline_report",
     "build_transit_report",
+    "build_engine_outputs",
     "build_calendar_context",
     "build_cli_parser",
     "parse_cli_args",
@@ -210,6 +211,21 @@ class KarmicDashboard:
 
 
 @dataclass
+class EngineOutputs:
+    """Precise multi-engine digest grounded in the Bhrigu corpus."""
+
+    name: str
+    karmic_epoch: str
+    weights: Dict[str, float]
+    principles: List[Dict]
+    remedies: List[Dict]
+    past_life_insights: List[PastLifeInsight]
+    future_directives: List[FutureTrajectory]
+    transit_directives: List[TransitDirective]
+    interpretation: str
+
+
+@dataclass
 class YearSegment:
     """Quarterly or monthly block for the Varshaphal roadmap."""
 
@@ -346,6 +362,56 @@ def build_transit_report(request: HoroscopeRequest, transit_payload: Dict[str, s
         name=request.name,
         directives=directives,
         interpretation=_compose_transit_interpretation(directives, transit_dt),
+    )
+
+
+def build_engine_outputs(request: HoroscopeRequest) -> EngineOutputs:
+    """Return a consolidated view across every Bhrigu Samhita engine."""
+
+    runtime_config = load_runtime_config()
+    core_bundle = bhrigu_core.application_bundle(request.tradition)
+
+    principles = core_bundle.get("principles", [])
+    remedies = core_bundle.get("remedies", [])
+    past_life_engines = core_bundle.get("past_life_engines", [])
+    future_engines = core_bundle.get("future_engines", [])
+    transit_rules = core_bundle.get("transit_rules", [])
+
+    snapshot = _snapshot_from_request(request)
+    weights = score_principles(snapshot, principles, runtime_config)
+    karmic_epoch = derive_karmic_epoch(snapshot)
+    past_life_insights = evaluate_past_life(snapshot, past_life_engines)
+    future_directives = evaluate_future_directives(snapshot, future_engines)
+
+    now = datetime.utcnow()
+    transit_dt = normalize_birth_datetime(
+        now.date().isoformat(), now.time().isoformat(timespec="minutes"), timezone_name=request.timezone
+    )
+    natal_dt = normalize_birth_datetime(request.birth_date, request.birth_time, timezone_name=request.timezone)
+    transit_details = derive_transit_snapshot(natal_dt, transit_dt)
+    transit_directives = evaluate_transits(snapshot, transit_details, transit_rules)
+
+    personalized_remedies = _personalize_remedies(remedies, weights, snapshot, runtime_config)
+
+    return EngineOutputs(
+        name=request.name,
+        karmic_epoch=karmic_epoch,
+        weights=weights,
+        principles=principles,
+        remedies=personalized_remedies,
+        past_life_insights=past_life_insights,
+        future_directives=future_directives,
+        transit_directives=transit_directives,
+        interpretation=_compose_horoscope_interpretation(
+            karmic_epoch,
+            weights,
+            past_life_insights,
+            future_directives,
+            personalized_remedies,
+            request.name,
+            request.birth_place,
+            runtime_config.get("interpretation", {}),
+        ),
     )
 
 
