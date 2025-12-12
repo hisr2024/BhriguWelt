@@ -36,8 +36,10 @@ references to manuscript folios.
   citations backing each rule embedded in the backend data files, targeted
   guides (for example the Hindu calendar conversion explainer), onboarding
   for new contributors (`docs/developer-onboarding.md`), OpenAPI examples
-  (`docs/openapi-examples.md`), and a prompt library for shaping the UI/UX
-  roadmap (`docs/ui_improvement_prompts.md`).
+  (`docs/openapi-examples.md`), a prompt library for shaping the UI/UX
+  roadmap (`docs/ui_improvement_prompts.md`), and an engine-to-core
+  integration blueprint that routes all engines through a unified
+  Analyser/interpreter stack (`docs/engine_core_analyser_blueprint.md`).
 
 ## High-impact enhancements (chat + retention)
 
