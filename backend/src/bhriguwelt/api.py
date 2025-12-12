@@ -634,6 +634,7 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "future_directives": [_serialize_obj(item) for item in outputs.future_directives],
             "transit_directives": [_serialize_obj(item) for item in outputs.transit_directives],
             "interpretation": outputs.interpretation,
+            "engine_analyses": [_serialize_obj(item) for item in outputs.engine_analyses],
         }
     if command == "karmic-dashboard":
         request = _request_from_payload(payload)

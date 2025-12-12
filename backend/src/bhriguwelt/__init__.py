@@ -2,6 +2,7 @@
 
 from .calendar_conversion import HinduCalendarContext, convert_birth_details
 from .feedback import FeedbackEntry, quarterly_reviews, record_feedback
+from .engine_analyzers import EngineAnalysis, analyze_core_engines
 from .horoscope import (
     FutureReport,
     HoroscopeReport,
@@ -47,4 +48,6 @@ __all__ = [
     "convert_birth_details",
     "parse_cli_args",
     "main",
+    "EngineAnalysis",
+    "analyze_core_engines",
 ]
