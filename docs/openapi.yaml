@@ -327,6 +327,66 @@ paths:
                       shared_life_paths:
                         - "Venus houses sit within two steps of each other, supporting creative collaboration and shared aesthetic projects."
                     interpretation: "Composite compatibility index: 72.50%. Synastry overlay Moon element resonance: 84% harmony (Closer elemental balance signals intuitive understanding of moods and needs.)."
+
+  /timeline:
+    post:
+      summary: Generate five-phase karmic roadmap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/HoroscopeRequest'
+                - type: object
+                  properties:
+                    focus_areas:
+                      type: array
+                      items:
+                        type: string
+            examples:
+              seeker:
+                summary: Timeline request with focus areas
+                value:
+                  name: "Asha"
+                  birth_date: "1995-05-18"
+                  birth_time: "14:45"
+                  birth_place: "Varanasi, Bharat"
+                  lunar_tithi: 5
+                  moon_element: water
+                  mars_house: 10
+                  saturn_house: 2
+                  venus_house: 2
+                  rahu_aspects_ascendant: true
+                  focus_areas: ["career", "spiritual"]
+      responses:
+        "200":
+          description: Five-phase karmic roadmap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimelineResponse'
+              examples:
+                timeline:
+                  summary: Structured timeline phases
+                  value:
+                    name: "Asha"
+                    summary: "Asha's roadmap centers on career, spiritual. Dominant influences: Saturn, Jupiter, Mars."
+                    disclaimer: "Symbolic Bhrigu Samhita-inspired timeline covering foundations through maturity."
+                    phases:
+                      - phase: "Childhood"
+                        age_range: "0–12"
+                        theme: "Foundations & Family Imprint"
+                        dominant_influence: "Saturn-like with Jupiter, Mars"
+                        main_experiences:
+                          - "Emotional tone shaped by Moon in the water element."
+                          - "Family/cultural imprint carries Saturn discipline and Jupiter creativity."
+                        karmic_lessons:
+                          - "Balance duty with play; treat every challenge as a craft lesson."
+                        turning_points:
+                          - "Around phase midpoint, a mentor or exam redirects priorities."
+                        practical_guidance:
+                          - "Keep journals of insights; track patterns between inner mood and external results."
   /feedback:
     post:
       summary: Store an accuracy rating from the seeker
@@ -486,6 +546,46 @@ components:
               type: array
               items:
                 type: string
+    TimelinePhase:
+      type: object
+      properties:
+        phase:
+          type: string
+        age_range:
+          type: string
+        theme:
+          type: string
+        dominant_influence:
+          type: string
+        main_experiences:
+          type: array
+          items:
+            type: string
+        karmic_lessons:
+          type: array
+          items:
+            type: string
+        turning_points:
+          type: array
+          items:
+            type: string
+        practical_guidance:
+          type: array
+          items:
+            type: string
+    TimelineResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        summary:
+          type: string
+        disclaimer:
+          type: string
+        phases:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimelinePhase'
     FeedbackRequest:
       type: object
       required:
@@ -494,7 +594,7 @@ components:
       properties:
         engine:
           type: string
-          enum: [horoscope, past-life, future, matchmaking, calendar, transits]
+          enum: [horoscope, past-life, future, matchmaking, calendar, transits, timeline]
         rating:
           type: integer
           minimum: 1

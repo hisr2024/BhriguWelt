@@ -69,6 +69,11 @@ python -m bhriguwelt.horoscope horoscope --name "Asha" --birth-date 1995-05-18 \
     --birth-time 14:45 --birth-place "Varanasi" --lunar-tithi 5 --moon-element water \
     --mars-house 10 --saturn-house 2 --venus-house 2 --rahu-aspects-ascendant
 
+# Five-phase karmic roadmap
+python -m bhriguwelt.horoscope timeline --name "Asha" --birth-date 1995-05-18 \
+    --birth-time 14:45 --birth-place "Varanasi" --lunar-tithi 5 --moon-element water \
+    --mars-house 10 --saturn-house 2 --venus-house 2 --rahu-aspects-ascendant --focus-area career
+
 # Focused past-life, future, and matchmaking engines
 python -m bhriguwelt.horoscope past-life ...
 python -m bhriguwelt.horoscope future ...
@@ -143,6 +148,7 @@ Supported routes:
 - `POST /calendar` (Gregorian → Śaka conversion with IST reference)
 - `POST /transits` (transit directives for an existing natal chart)
 - `POST /core-wisdom` (8-section Bhrigu Core Wisdom digest for web/mobile apps)
+- `POST /timeline` (five-phase karmic roadmap matching the UX timeline brief)
 - `GET /manuscript` (retrieve the currently loaded Bhrigu corpus)
 - `POST /manuscript` (persist an updated corpus to disk for offline use)
 
