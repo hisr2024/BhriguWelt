@@ -50,7 +50,7 @@ from .horoscope import (
 from .experience_flow import build_unified_experience_flow
 from .matchmaking_engine import run_matchmaking_pipeline
 from .kundli_generator import SIGNS, generate_kundli
-from .wisdom_bot import build_wisdom_bot_response
+from .wisdom_aggregator import aggregate_wisdom_for_bot
 
 _JSON_HEADER = ("Content-Type", "application/json; charset=utf-8")
 _ADMIN_TOKEN = os.environ.get("BHRIGUWELT_ADMIN_TOKEN")
@@ -176,7 +176,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/core-engines"): "_handle_core_engines",
         ("POST", "/karmic-dashboard"): "_handle_karmic_dashboard",
         ("POST", "/experience-flow"): "_handle_experience_flow",
-        ("POST", "/wisdom-bot"): "_handle_wisdom_bot",
+        ("POST", "/wisdom-aggregator"): "_handle_wisdom_aggregator",
         ("POST", "/chat"): "_handle_chat",
         ("POST", "/profiles"): "_handle_profiles",
         ("POST", "/profiles/get"): "_handle_profile_get",
@@ -345,56 +345,13 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             return
         self._respond_with_command("experience-flow", payload)
 
-    def _handle_wisdom_bot(self) -> None:
+    def _handle_wisdom_aggregator(self) -> None:
         payload = self._read_json()
-        query = payload.get("query") or payload.get("message")
-        if not query or not isinstance(query, str):
-            self.send_error(HTTPStatus.BAD_REQUEST, "query is required for wisdom bot")
+        focus_engines = payload.get("focus_engines")
+        if focus_engines is not None and not isinstance(focus_engines, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "focus_engines must be a list when provided")
             return
-
-        focus_areas = payload.get("focus_areas")
-        if focus_areas is not None and not isinstance(focus_areas, list):
-            self.send_error(HTTPStatus.BAD_REQUEST, "focus_areas must be a list when provided")
-            return
-
-        modern_preferences = payload.get("modern_preferences")
-        if modern_preferences is not None and not isinstance(modern_preferences, list):
-            self.send_error(HTTPStatus.BAD_REQUEST, "modern_preferences must be a list when provided")
-            return
-
-        language = payload.get("language") or payload.get("design_language") or "en"
-        if language is not None and not isinstance(language, str):
-            self.send_error(HTTPStatus.BAD_REQUEST, "language must be a string when provided")
-            return
-
-        partner_payload = payload.get("partner")
-        partner_request = None
-        if partner_payload is not None:
-            if not isinstance(partner_payload, dict):
-                self.send_error(HTTPStatus.BAD_REQUEST, "partner must be an object when provided")
-                return
-            try:
-                partner_request = _request_from_payload(partner_payload)
-            except ValueError as exc:
-                self.send_error(HTTPStatus.BAD_REQUEST, str(exc))
-                return
-
-        try:
-            primary_request = _request_from_payload(payload)
-        except ValueError as exc:
-            self.send_error(HTTPStatus.BAD_REQUEST, str(exc))
-            return
-
-        response = build_wisdom_bot_response(
-            primary_request=primary_request,
-            partner_request=partner_request,
-            focus_areas=focus_areas or None,
-            modern_preferences=modern_preferences or None,
-            language=str(language),
-            query=str(query),
-        ).to_dict()
-        _ensure_visualization_payload(response.get("core_wisdom", {}))
-        self._send_json(response)
+        self._respond_with_command("wisdom-aggregator", payload)
 
     def _handle_chat(self) -> None:
         payload = self._read_json()
@@ -661,6 +618,14 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
 def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     """Process a JSON payload for the supplied command and return a response."""
 
+    if command == "wisdom-aggregator":
+        focus_engines = payload.get("focus_engines")
+        if focus_engines is not None and not isinstance(focus_engines, list):
+            raise ValueError("focus_engines must be a list when provided")
+        aggregate = aggregate_wisdom_for_bot(
+            tradition=payload.get("tradition"), focus_engines=focus_engines
+        )
+        return aggregate.to_dict()
     if command == "horoscope":
         request = _request_from_payload(payload)
         report = build_prediction(request)
