@@ -29,8 +29,8 @@ so follow the steps below to publish your own endpoints before testing clients.
    - `PYTHONPATH=src`
    - Optional: `BHRIGU_ML_ENABLED=1` to keep ML weighting active in production
 5. Deploy. Your live API URL will look like
-   `https://bhriguwelt-backend.onrender.com`—copy this for the frontend and
-   mobile clients.
+   `https://bhriguwelt-production.up.railway.app`—copy this for the frontend
+   and mobile clients.
 
 ### Manual service (if you skip the blueprint)
 
