@@ -50,6 +50,7 @@ from .horoscope import (
 from .experience_flow import build_unified_experience_flow
 from .matchmaking_engine import run_matchmaking_pipeline
 from .kundli_generator import SIGNS, generate_kundli
+from .wisdom_aggregator import aggregate_wisdom_for_bot
 
 _JSON_HEADER = ("Content-Type", "application/json; charset=utf-8")
 _ADMIN_TOKEN = os.environ.get("BHRIGUWELT_ADMIN_TOKEN")
@@ -175,6 +176,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/core-engines"): "_handle_core_engines",
         ("POST", "/karmic-dashboard"): "_handle_karmic_dashboard",
         ("POST", "/experience-flow"): "_handle_experience_flow",
+        ("POST", "/wisdom-aggregator"): "_handle_wisdom_aggregator",
         ("POST", "/chat"): "_handle_chat",
         ("POST", "/profiles"): "_handle_profiles",
         ("POST", "/profiles/get"): "_handle_profile_get",
@@ -342,6 +344,14 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.BAD_REQUEST, "language must be a string when provided")
             return
         self._respond_with_command("experience-flow", payload)
+
+    def _handle_wisdom_aggregator(self) -> None:
+        payload = self._read_json()
+        focus_engines = payload.get("focus_engines")
+        if focus_engines is not None and not isinstance(focus_engines, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "focus_engines must be a list when provided")
+            return
+        self._respond_with_command("wisdom-aggregator", payload)
 
     def _handle_chat(self) -> None:
         payload = self._read_json()
@@ -608,6 +618,14 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
 def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     """Process a JSON payload for the supplied command and return a response."""
 
+    if command == "wisdom-aggregator":
+        focus_engines = payload.get("focus_engines")
+        if focus_engines is not None and not isinstance(focus_engines, list):
+            raise ValueError("focus_engines must be a list when provided")
+        aggregate = aggregate_wisdom_for_bot(
+            tradition=payload.get("tradition"), focus_engines=focus_engines
+        )
+        return aggregate.to_dict()
     if command == "horoscope":
         request = _request_from_payload(payload)
         report = build_prediction(request)

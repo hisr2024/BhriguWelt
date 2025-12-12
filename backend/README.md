@@ -155,6 +155,7 @@ Supported routes:
 - `POST /transits` (transit directives for an existing natal chart)
 - `POST /core-wisdom` (8-section Bhrigu Core Wisdom digest for web/mobile apps)
 - `POST /timeline` (five-phase karmic roadmap matching the UX timeline brief)
+- `POST /wisdom-aggregator` (bot-friendly manuscript aggregate spanning all engines)
 - `GET /manuscript` (retrieve the currently loaded Bhrigu corpus)
 - `POST /manuscript` (persist an updated corpus to disk for offline use)
 

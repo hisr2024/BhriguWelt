@@ -203,6 +203,18 @@ def create_app() -> web.Application:
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
 
+    async def wisdom_aggregator(request: web.Request) -> web.Response:
+        _, rate_meta = await guard_rate_limit(request)
+        payload = await request.json()
+        if payload.get("focus_engines") is not None and not isinstance(payload.get("focus_engines"), list):
+            return _json_response(
+                {"message": "focus_engines must be a list when provided"}, status=HTTPStatus.BAD_REQUEST
+            )
+        response = await handle_cached_command("wisdom-aggregator", payload)
+        reply = _json_response(response)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
+
     async def chat(request: web.Request) -> web.Response:
         await guard_rate_limit(request)
         payload = await request.json()
@@ -331,6 +343,7 @@ def create_app() -> web.Application:
     app.router.add_route("POST", "/transits", transits)
     app.router.add_route("POST", "/core-wisdom", core_wisdom)
     app.router.add_route("POST", "/core-engines", core_engines)
+    app.router.add_route("POST", "/wisdom-aggregator", wisdom_aggregator)
     app.router.add_route("POST", "/chat", chat)
     app.router.add_route("POST", "/profiles", profiles_create)
     app.router.add_route("POST", "/profiles/get", profiles_get)
