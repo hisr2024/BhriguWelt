@@ -12,8 +12,9 @@ class AIIntegrationError(RuntimeError):
     """Raised when the AI provider cannot be reached or returns an invalid payload."""
 
 
-_AI_BASE_ENV_VARS = ("AI_API_BASE", "OPENAI_API_BASE")
-_AI_KEY_ENV_VARS = ("AI_API_KEY", "OPENAI_API_KEY")
+_AI_BASE_ENV_VARS = ("AI_API_BASE", "OPENAI_API_BASE", "SARVAM_API_BASE")
+_AI_KEY_ENV_VARS = ("AI_API_KEY", "OPENAI_API_KEY", "SARVAM_API_KEY")
+_SARVAM_DEFAULT_BASE = "https://api.sarvam.ai"
 _DEFAULT_MODEL = os.environ.get("AI_MODEL") or os.environ.get("OPENAI_MODEL") or "gpt-4o-mini"
 
 
@@ -25,10 +26,26 @@ def _first_env(options: Sequence[str]) -> str | None:
     return None
 
 
+def _resolve_api_base() -> str | None:
+    base = _first_env(_AI_BASE_ENV_VARS)
+    if base:
+        return base
+
+    # If only a Sarvam key is present, fall back to the known hosted endpoint.
+    if os.environ.get("SARVAM_API_KEY"):
+        return _SARVAM_DEFAULT_BASE
+
+    return None
+
+
+def _resolve_api_key() -> str | None:
+    return _first_env(_AI_KEY_ENV_VARS)
+
+
 def is_ai_configured() -> bool:
     """Return True when both an API base and key are available."""
 
-    return bool(_first_env(_AI_BASE_ENV_VARS) and _first_env(_AI_KEY_ENV_VARS))
+    return bool(_resolve_api_base() and _resolve_api_key())
 
 
 def chat_completion(
@@ -44,8 +61,8 @@ def chat_completion(
     human-friendly error is raised when the provider cannot be reached.
     """
 
-    api_base = _first_env(_AI_BASE_ENV_VARS)
-    api_key = _first_env(_AI_KEY_ENV_VARS)
+    api_base = _resolve_api_base()
+    api_key = _resolve_api_key()
     if not api_base or not api_key:
         raise AIIntegrationError("AI provider not configured; set AI_API_BASE and AI_API_KEY")
 

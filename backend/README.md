@@ -61,6 +61,10 @@ pip-compile requirements.in --output-file requirements.txt
 - `AI_API_BASE` and `AI_API_KEY` enable OpenAI-compatible chat completions for the
   `/chat` and `/wisdom-bot` surfaces. Optionally set `AI_MODEL` (defaults to
   `gpt-4o-mini`) and `AI_API_TIMEOUT` (seconds) to control the provider call.
+- Sarvam AI support: set `SARVAM_API_KEY` (and optionally `SARVAM_API_BASE`) to
+  route the chatbot and Wisdom Bot through Sarvam's OpenAI-compatible endpoint.
+  When only `SARVAM_API_KEY` is present, the client defaults to
+  `https://api.sarvam.ai`.
 
 ### CLI usage
 
