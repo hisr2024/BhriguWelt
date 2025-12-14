@@ -30,7 +30,7 @@ export default function BackendHealthNotice({ className }: Props) {
         const isDemo = response?.meta?.mode === "demo";
         const hostText = hosts?.length ? hosts.join(", ") : process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
         const message = isDemo
-          ? `Using built-in demo predictions until a backend responds (${hostText}).`
+          ? `Backend unreachable. Using built-in demo predictions until a backend responds (${hostText}).`
           : principleCount !== undefined
             ? `Backend ready. Principles loaded: ${principleCount}.`
             : "Backend ready.";
@@ -45,8 +45,8 @@ export default function BackendHealthNotice({ className }: Props) {
         const fallbackDetail =
           `Backend unreachable at ${preferredHost}. Start the API locally with "cd backend && PYTHONPATH=src python -m bhriguwelt.api" ` +
           "or set NEXT_PUBLIC_BACKEND_URL to your deployed backend. Running in demo mode until a backend responds.";
-        cachedHealth = { status: "ok", detail: fallbackDetail };
-        setStatus("ok");
+        cachedHealth = { status: "error", detail: fallbackDetail };
+        setStatus("error");
         setDetail(fallbackDetail);
       }
     })();
