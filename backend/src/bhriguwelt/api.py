@@ -48,6 +48,7 @@ from .horoscope import (
     _snapshot_from_request,
 )
 from .experience_flow import build_unified_experience_flow
+from .past_future_bridge import build_past_future_synthesis
 from .matchmaking_engine import run_matchmaking_pipeline
 from .kundli_generator import SIGNS, generate_kundli
 from .wisdom_aggregator import aggregate_wisdom_for_bot
@@ -168,6 +169,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/horoscope"): "_handle_horoscope",
         ("POST", "/past-life"): "_handle_past_life",
         ("POST", "/future"): "_handle_future",
+        ("POST", "/past-future"): "_handle_past_future",
         ("POST", "/matchmaking"): "_handle_matchmaking",
         ("POST", "/matchmaking/pipeline"): "_handle_matchmaking_pipeline",
         ("POST", "/varshaphal"): "_handle_varshaphal",
@@ -276,6 +278,14 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     def _handle_future(self) -> None:
         payload = self._read_json()
         self._respond_with_command("future", payload)
+
+    def _handle_past_future(self) -> None:
+        payload = self._read_json()
+        focus_areas = payload.get("focus_areas")
+        if focus_areas is not None and not isinstance(focus_areas, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "focus_areas must be a list when provided")
+            return
+        self._respond_with_command("past-future", payload)
 
     def _handle_matchmaking(self) -> None:
         payload = self._read_json()
@@ -627,6 +637,13 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             tradition=payload.get("tradition"), focus_engines=focus_engines
         )
         return aggregate.to_dict()
+    if command == "past-future":
+        focus_areas = payload.get("focus_areas")
+        if focus_areas is not None and not isinstance(focus_areas, list):
+            raise ValueError("focus_areas must be a list when provided")
+        request = _request_from_payload(payload)
+        synthesis = build_past_future_synthesis(request, focus_areas=focus_areas)
+        return synthesis.to_dict()
     if command == "horoscope":
         request = _request_from_payload(payload)
         report = build_prediction(request)

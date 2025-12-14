@@ -6,6 +6,7 @@ from .engine_analyzers import EngineAnalysis, analyze_core_engines
 from .engine_interpreters import EngineInterpretation, interpret_bhrigu_wisdom
 from .matchmaking_engine import run_matchmaking_pipeline
 from .experience_flow import FlowVisualizations, UnifiedExperienceFlow, build_unified_experience_flow
+from .past_future_bridge import PastFutureSynthesis, build_past_future_synthesis
 from .horoscope import (
     FutureReport,
     HoroscopeReport,
@@ -60,6 +61,8 @@ __all__ = [
     "FlowVisualizations",
     "UnifiedExperienceFlow",
     "build_unified_experience_flow",
+    "PastFutureSynthesis",
+    "build_past_future_synthesis",
     "WisdomBotResponse",
     "WisdomBotDownload",
     "build_wisdom_bot_response",
