@@ -21,6 +21,7 @@ from .horoscope import (
     build_matchmaking_report,
     build_past_life_report,
     build_prediction,
+    build_timeline_report,
 )
 
 
@@ -50,6 +51,7 @@ class UnifiedExperienceFlow:
     horoscope: Dict[str, Any]
     past_life: Dict[str, Any]
     future: Dict[str, Any]
+    timeline: Dict[str, Any]
     matchmaking: Dict[str, Any] | None
     analyzers: List[Dict[str, Any]]
     interpretations: List[Dict[str, Any]]
@@ -63,6 +65,7 @@ class UnifiedExperienceFlow:
             "horoscope": dict(self.horoscope),
             "past_life": dict(self.past_life),
             "future": dict(self.future),
+            "timeline": dict(self.timeline),
             "matchmaking": dict(self.matchmaking) if self.matchmaking else None,
             "analyzers": [dict(entry) for entry in self.analyzers],
             "interpretations": [dict(entry) for entry in self.interpretations],
@@ -147,6 +150,7 @@ def build_unified_experience_flow(
     horoscope_report = build_prediction(primary_request)
     past_life_report = build_past_life_report(primary_request)
     future_report = build_future_report(primary_request)
+    timeline_report = build_timeline_report(primary_request)
 
     matchmaking_report = None
     if partner_request:
@@ -162,6 +166,7 @@ def build_unified_experience_flow(
     horoscope_dict = asdict(horoscope_report)
     past_life_dict = asdict(past_life_report)
     future_dict = asdict(future_report)
+    timeline_dict = asdict(timeline_report)
     matchmaking_dict = asdict(matchmaking_report) if matchmaking_report else None
 
     visuals = FlowVisualizations(
@@ -192,6 +197,7 @@ def build_unified_experience_flow(
             "designers",
             "future",
             "past_life",
+            "timeline",
             "matchmaking",
         ],
     )
@@ -201,6 +207,7 @@ def build_unified_experience_flow(
         horoscope=horoscope_dict,
         past_life=past_life_dict,
         future=future_dict,
+        timeline=timeline_dict,
         matchmaking=matchmaking_dict,
         analyzers=analyzers,
         interpretations=interpretations,
