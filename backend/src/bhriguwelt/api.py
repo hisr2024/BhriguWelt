@@ -791,11 +791,21 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         partner = _request_from_payload(partner_payload) if partner_payload else None
         modern_preferences = payload.get("modern_preferences") or []
         language = payload.get("language") or payload.get("design_language") or "en"
+        tone = payload.get("tone") or "neutral"
+        cultural_sensitivity = payload.get("cultural_sensitivity") or "balanced"
+        if tone is not None and not isinstance(tone, str):
+            self.send_error(HTTPStatus.BAD_REQUEST, "tone must be a string when provided")
+        if cultural_sensitivity is not None and not isinstance(cultural_sensitivity, str):
+            self.send_error(
+                HTTPStatus.BAD_REQUEST, "cultural_sensitivity must be a string when provided"
+            )
         experience = build_unified_experience_flow(
             primary,
             partner_request=partner,
             modern_preferences=modern_preferences,
             language=str(language),
+            tone=str(tone),
+            cultural_sensitivity=str(cultural_sensitivity),
         )
         return experience.to_dict()
     if command == "wisdom-bot":
