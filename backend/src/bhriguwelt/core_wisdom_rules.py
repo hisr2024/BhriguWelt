@@ -607,6 +607,227 @@ def _build_engine_spec(today: str) -> Dict[str, Any]:
     }
 
 
+def _build_past_life_model(today: str) -> Dict[str, Any]:
+    return {
+        "module": {
+            "name": "Bhrigu Past-Life & Karmic Imprint Model",
+            "version": "1.0",
+            "created_at": today,
+            "scope": "Interpretive (non-deterministic) karmic themes using classical jyotisha indicators commonly used in Bhrigu-style readings.",
+            "note": "This model generates thematic narratives; it does not claim factual verification of past lives.",
+        },
+        "inputs": {
+            "required": ["planet_house_positions", "lagna_house_map"],
+            "recommended": ["nakshatra_lords", "house_lords", "dignities", "aspects"],
+            "advanced_optional": [
+                "charakarakas",
+                "divisional_charts",
+                "d60",
+                "d9",
+                "d10",
+            ],
+        },
+        "core_indicators": [
+            {
+                "indicator_id": "PL-KETU",
+                "name": "Ketu (moksha & prior imprint)",
+                "logic": "Primary past-life/unfinished karma marker; read Ketu's house, sign (if used), conjunctions, and aspects.",
+                "weight": 1.2,
+            },
+            {
+                "indicator_id": "PL-12H",
+                "name": "12th House (loss, liberation, foreign, retreats)",
+                "logic": "Themes of renunciation, isolation, foreignness, monasteries/ashrams, expenditure of karma; planets here show past-life residues.",
+                "weight": 1.0,
+            },
+            {
+                "indicator_id": "PL-8H",
+                "name": "8th House (transformation, death, hidden karma)",
+                "logic": "Crisis/transition karma; inheritance/lineage secrets; occult; sudden endings.",
+                "weight": 1.0,
+            },
+            {
+                "indicator_id": "PL-9H",
+                "name": "9th House (dharma, guru, punya)",
+                "logic": "Accumulated merit; teacher/student lineage; pilgrimages; vows; moral memory.",
+                "weight": 0.8,
+            },
+            {
+                "indicator_id": "PL-5H",
+                "name": "5th House (purva punya)",
+                "logic": "Past merit, talents carried forward, mantra/learning from prior births; children as karmic link.",
+                "weight": 0.9,
+            },
+            {
+                "indicator_id": "PL-RAHU-KETU-AXIS",
+                "name": "Rahu–Ketu axis (karmic direction)",
+                "logic": "Ketu = what is already known/overdone; Rahu = growth edge; interpret houses as past vs future trajectory.",
+                "weight": 1.1,
+            },
+        ],
+        "theme_library": [
+            {
+                "theme_id": "PL-ASCETIC",
+                "label": "Ascetic / renunciate imprint",
+                "triggers": [
+                    {"when": "Ketu in 12th or with Saturn", "suggest": "vows, solitude, disciplined spirituality"},
+                    {"when": "Strong 12th+9th links", "suggest": "pilgrimage/monastic connection"},
+                ],
+            },
+            {
+                "theme_id": "PL-WARRIOR",
+                "label": "Warrior / protector imprint",
+                "triggers": [
+                    {
+                        "when": "Mars influences 8th/12th or Ketu with Mars",
+                        "suggest": "conflict karma, courage, injuries/armor themes",
+                    },
+                    {"when": "Sun+Mars career axis strong", "suggest": "command, duty, service"},
+                ],
+            },
+            {
+                "theme_id": "PL-SCHOLAR",
+                "label": "Scholar / teacher imprint",
+                "triggers": [
+                    {
+                        "when": "Jupiter strong in 5th/9th or Ketu with Jupiter",
+                        "suggest": "scriptures, teaching lineages, counsel",
+                    },
+                    {"when": "Mercury strong with 5th/9th", "suggest": "languages, writing, analysis"},
+                ],
+            },
+            {
+                "theme_id": "PL-MERCHANT",
+                "label": "Merchant / trade imprint",
+                "triggers": [
+                    {
+                        "when": "Mercury/Venus influence 2nd/7th/11th",
+                        "suggest": "trade networks, negotiation karma",
+                    },
+                    {"when": "Rahu in 2nd/7th/11th", "suggest": "foreign commerce, risk appetite"},
+                ],
+            },
+            {
+                "theme_id": "PL-HEALER",
+                "label": "Healer / occult imprint",
+                "triggers": [
+                    {
+                        "when": "Strong 8th+Ketu or Ketu with Moon",
+                        "suggest": "intuition, healing arts, hidden knowledge",
+                    },
+                    {"when": "Jupiter+8th/12th links", "suggest": "spiritual medicine/ritual knowledge"},
+                ],
+            },
+        ],
+        "processing_steps": [
+            "1) Compute Ketu house and axis (Rahu house opposite).",
+            "2) Score houses 5/8/9/12 and the lords of those houses (if provided).",
+            "3) Add conjunction/aspect modifiers to adjust themes (e.g., Saturn with Ketu => austerity; Venus with Ketu => relationship detachment lessons).",
+            "4) Select top themes from theme_library using trigger matches and weighted scoring.",
+            "5) Output: past-life theme summary + unfinished lessons (Ketu) + growth direction (Rahu).",
+        ],
+        "output_schema": {
+            "past_life_summary": "string",
+            "dominant_themes": ["theme_id"],
+            "ketu_imprint": {"house": "int", "notes": "string"},
+            "rahu_direction": {"house": "int", "notes": "string"},
+            "supporting_indicators": [
+                {"indicator_id": "string", "score": "number", "notes": "string"},
+            ],
+            "traceability": {
+                "atomic_rule_ids_used": ["string"],
+                "modifier_ids_used": ["string"],
+            },
+        },
+    }
+
+
+def _build_future_prediction_model(today: str) -> Dict[str, Any]:
+    return {
+        "module": {
+            "name": "Bhrigu Future Prediction & Timing Model",
+            "version": "1.0",
+            "created_at": today,
+            "scope": "Forecasting by activation: dasha + transit triggers applied to natal atomic rules (Bhrigu-style).",
+            "note": "Predictions are probabilistic narratives. Always present as tendencies with confidence bands.",
+        },
+        "inputs": {
+            "required": ["planet_house_positions"],
+            "recommended": ["dashas"],
+            "optional": ["transits", "aspects", "planet_strength", "house_lords"],
+        },
+        "timing_layers": [
+            {
+                "layer_id": "FT-DASHA",
+                "name": "Vimshottari (or chosen) dasha activation",
+                "logic": "Mahadasha planet activates its natal house results; Antardasha adds subthemes; Pratyantar refines event windows.",
+                "weight": 1.3,
+            },
+            {
+                "layer_id": "FT-TRANSIT",
+                "name": "Transit trigger layer",
+                "logic": "Saturn/Jupiter/Rahu-Ketu transits over natal planets/houses trigger events; Mars triggers short spikes; eclipses amplify nodes.",
+                "weight": 1.0,
+            },
+            {
+                "layer_id": "FT-LORDSHIP",
+                "name": "House lord activation",
+                "logic": "When dasha/transit involves the lord of a house, that house topics become active (e.g., 7th lord => marriage/partnership).",
+                "weight": 1.1,
+            },
+        ],
+        "event_domains": [
+            "career",
+            "marriage",
+            "children",
+            "wealth",
+            "health",
+            "property",
+            "travel",
+            "education",
+            "spirituality",
+            "legal",
+            "family",
+            "reputation",
+        ],
+        "processing_steps": [
+            "1) Build baseline domain map from natal atomic rules (108 set).",
+            "2) For current/target period, determine active planets from dasha (maha/antar/pratyantar).",
+            "3) Boost domain scores where active planets sit, aspect, or lord relevant houses.",
+            "4) Apply transit triggers (slow planets for long trends, fast planets for short events).",
+            "5) Produce outputs: (a) 12-month outlook, (b) 3–5 year trend, (c) next key windows with confidence.",
+        ],
+        "confidence_model": {
+            "bands": ["very_high", "high", "medium", "low"],
+            "drivers": [
+                "Planet strength and dignity",
+                "Benefic support vs affliction",
+                "Multiple timing layers agreeing (dasha + transit)",
+                "Domain consistency across indicators",
+            ],
+        },
+        "output_schema": {
+            "period": {"start": "YYYY-MM-DD", "end": "YYYY-MM-DD"},
+            "domain_forecasts": [
+                {
+                    "domain": "string",
+                    "trend": "string",
+                    "top_triggers": [{"type": "string", "detail": "string"}],
+                    "confidence": "string",
+                    "windows": [
+                        {"start": "YYYY-MM-DD", "end": "YYYY-MM-DD", "note": "string"},
+                    ],
+                }
+            ],
+            "traceability": {
+                "atomic_rule_ids_used": ["string"],
+                "modifier_ids_used": ["string"],
+                "timing_layers_used": ["string"],
+            },
+        },
+    }
+
+
 def core_wisdom_assets(
     *, today: str = DEFAULT_CREATION_DATE, out_dir: Path | str | None = None, persist: bool = False
 ) -> Dict[str, Any]:
@@ -619,12 +840,16 @@ def core_wisdom_assets(
 
     atomic_rules = _build_atomic_rules(today)
     engine_spec = _build_engine_spec(today)
+    past_life_model = _build_past_life_model(today)
+    future_prediction_model = _build_future_prediction_model(today)
 
     payload: Dict[str, Any] = {
         "created_at": today,
         "count": len(atomic_rules),
         "atomic_rules": atomic_rules,
         "engine_spec": engine_spec,
+        "past_life_model": past_life_model,
+        "future_prediction_model": future_prediction_model,
     }
 
     if not persist:
@@ -635,6 +860,8 @@ def core_wisdom_assets(
 
     atomic_path = target_dir / "bhrigu_atomic_rules_108.json"
     engine_path = target_dir / "bhrigu_rule_engine_spec.json"
+    past_path = target_dir / "bhrigu_past_life_model.json"
+    future_path = target_dir / "bhrigu_future_prediction_model.json"
 
     with atomic_path.open("w", encoding="utf-8") as atomic_handle:
         json.dump(
@@ -653,8 +880,16 @@ def core_wisdom_assets(
     with engine_path.open("w", encoding="utf-8") as engine_handle:
         json.dump(engine_spec, engine_handle, ensure_ascii=False, indent=2)
 
+    with past_path.open("w", encoding="utf-8") as past_handle:
+        json.dump(past_life_model, past_handle, ensure_ascii=False, indent=2)
+
+    with future_path.open("w", encoding="utf-8") as future_handle:
+        json.dump(future_prediction_model, future_handle, ensure_ascii=False, indent=2)
+
     payload["atomic_rules_path"] = str(atomic_path)
     payload["engine_spec_path"] = str(engine_path)
+    payload["past_life_model_path"] = str(past_path)
+    payload["future_prediction_model_path"] = str(future_path)
 
     return payload
 
