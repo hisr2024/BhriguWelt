@@ -13,7 +13,14 @@ import { deriveHousePlacements, formatHouseNarrative, useSakaContext } from "@/l
 import FormPanel from "./horoscope/FormPanel";
 import ReadingPanel from "./horoscope/ReadingPanel";
 import { ChartResponse, FormState, FormStatus, Interpretation } from "./horoscope/types";
-import { extractInterpretation, isNatalChart, postChart, sanitize } from "./horoscope/utils";
+import {
+  buildChatPayload,
+  extractInterpretation,
+  isNatalChart,
+  postChart,
+  postChatFallback,
+  sanitize,
+} from "./horoscope/utils";
 
 const defaultForm: FormState = {
   name: "",
@@ -339,6 +346,21 @@ export default function HoroscopeForm() {
       }
     };
 
+    const attemptChatFallback = async (path: string) => {
+      const chatPayload = buildChatPayload(form);
+      console.info("[HoroscopeForm] Submitting fallback chat request", {
+        path,
+        payload: chatPayload,
+      });
+      try {
+        const data = await postChatFallback(path, form);
+        handleSuccess(data, path);
+      } catch (submissionError) {
+        console.error(`[HoroscopeForm] Submission to ${path} failed`, submissionError, { payload: chatPayload });
+        throw submissionError;
+      }
+    };
+
     const attemptBackend = async () => {
       if (!normalizedBackend) return false;
 
@@ -379,7 +401,7 @@ export default function HoroscopeForm() {
         } catch (primaryError) {
           console.error("[HoroscopeForm] Primary endpoint failed; attempting fallback", primaryError);
           try {
-            await attempt("/api/bhrigu-chat");
+            await attemptChatFallback("/api/bhrigu-chat");
           } catch (fallbackError) {
             console.error("[HoroscopeForm] Fallback endpoint also failed", fallbackError);
             throw primaryError;
