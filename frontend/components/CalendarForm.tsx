@@ -93,10 +93,14 @@ export default function CalendarForm() {
         (sakaDate as { month?: string } | undefined)?.month,
         (sakaDate as { day?: number } | undefined)?.day,
       );
+      const sakaLabelFromResponse = sakaDate
+        ? `Śaka ${sakaDate.year ?? ""} ${sakaDate.month ?? ""} ${sakaDate.day ?? ""}`.trim()
+        : "Awaiting Śaka conversion";
       setHouseGrid(derivedGrid);
       updateSaka({
         details,
         sakaDate: sakaDate as { year?: number; month?: string; day?: number },
+        sakaLabel: sakaLabelFromResponse,
         houseGrid: derivedGrid,
         payload: response,
       });
@@ -111,7 +115,7 @@ export default function CalendarForm() {
           sakaMonth: (sakaDate as { month?: string } | undefined)?.month,
           sakaDay: (sakaDate as { day?: number } | undefined)?.day,
           houseGrid: derivedGrid,
-          sakaLabel: sakaLabel,
+          sakaLabel: sakaLabelFromResponse,
         },
         { autoSubmit: true },
       );

@@ -10,6 +10,7 @@ type SakaDate = { year?: number; month?: string; day?: number };
 type SakaState = {
   details?: CalendarDetails;
   sakaDate?: SakaDate;
+  sakaLabel?: string;
   houseGrid?: HouseSummary[];
   payload?: unknown;
 };
