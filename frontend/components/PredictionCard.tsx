@@ -53,6 +53,7 @@ type PastLifePayload = {
   interpretation?: string;
   interpretation_hi?: string;
   insights?: { narrative?: string; sutra_reference?: string }[];
+  past_life_insights?: { narrative?: string; sutra_reference?: string }[];
 };
 
 type FuturePayload = {
@@ -60,6 +61,7 @@ type FuturePayload = {
   interpretation?: string;
   interpretation_hi?: string;
   trajectories?: { focus?: string; window?: string; certainty?: number }[];
+  future_trajectories?: { focus?: string; window?: string; certainty?: number }[];
 };
 
 type SynastryOverlay = {
@@ -261,7 +263,7 @@ function interpretHoroscope(payload: HoroscopePayload): InsightSection[] {
 
 function interpretPastLife(payload: PastLifePayload): InsightSection[] {
   const sections: InsightSection[] = [];
-  const insights = payload.insights ?? [];
+  const insights = payload.insights || payload.past_life_insights || [];
   const [past, present, ...echoes] = insights;
   const pastLine = past?.narrative || payload.interpretation;
 
@@ -318,8 +320,9 @@ function interpretFuture(payload: FuturePayload): InsightSection[] {
       hindi: payload.interpretation_hi,
     });
   }
-  if (payload.trajectories?.length) {
-    const bullets = payload.trajectories.map((item) => {
+  const trajectories = payload.trajectories || payload.future_trajectories || [];
+  if (trajectories.length) {
+    const bullets = trajectories.map((item) => {
       const certainty = percentage(item.certainty);
       return `${item.focus}${item.window ? ` • ${item.window}` : ""}${certainty ? ` • आश्वस्ति ${certainty}%` : ""}`;
     });
@@ -328,7 +331,7 @@ function interpretFuture(payload: FuturePayload): InsightSection[] {
       english: "Follow these dharmic steps with steadiness and gratitude.",
       hindi: "इन चरणों को धैर्य और कृतज्ञता से निभाएँ।",
       bullets,
-      collapsible: payload.trajectories.length > 2,
+      collapsible: trajectories.length > 2,
     });
   }
   return sections;

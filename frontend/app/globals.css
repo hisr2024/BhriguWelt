@@ -632,22 +632,50 @@ body[data-animations="off"] .prediction-card__body {
 .insight-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 0.75rem;
+  gap: 1.1rem;
 }
 
 .insight-block {
   border: 1px solid #e8decf;
   border-radius: 14px;
-  padding: 1.1rem;
+  padding: 1.25rem;
   background: #ffffff;
   display: grid;
-  gap: 0.4rem;
-  line-height: 1.7;
+  gap: 0.65rem;
+  line-height: 1.8;
   min-height: 280px;
 }
 
 .insight-block details {
   margin-top: 0.35rem;
+}
+
+.insight-block h4 {
+  margin: 0;
+}
+
+.insight-content {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.insight-content p {
+  margin: 0;
+}
+
+.insight-content p + p {
+  margin-top: 0.2rem;
+}
+
+.insight-content ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.insight-content li {
+  line-height: 1.65;
 }
 
 .insight-summary {
@@ -656,12 +684,6 @@ body[data-animations="off"] .prediction-card__body {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-}
-
-.insight-content {
-  display: grid;
-  gap: 0.35rem;
-  margin-top: 0.3rem;
 }
 
 .kundli-grid {
