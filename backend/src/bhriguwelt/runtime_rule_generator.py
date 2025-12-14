@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Mapping, Sequence
-
-from .calculations import CelestialSnapshot
 from .chart_engine import ChartComputationResult, PersonalizationContext
 from .core_wisdom_rules import core_wisdom_assets
 
@@ -65,8 +63,10 @@ class RuntimeRuleGenerator:
     ) -> Dict[str, object]:
         """Compose confidence-weighted narratives from atomic rules."""
 
-        relevant = self._select_relevant_rules(chart.house_assignments)
-        resolved = self._apply_modifiers(relevant)
+        relevant = self._select_relevant_rules(chart.house_assignments, dashas, personalization)
+        contextual_modifiers = self.modifiers + self._contextual_modifiers(personalization, dashas)
+        resolved = self._apply_modifiers(relevant, contextual_modifiers)
+        resolved = self._resolve_conflicts(resolved)
         narrative = self._compose_narrative(resolved, dashas, personalization, chart.ephemeris_source)
         return {
             "ephemeris_source": chart.ephemeris_source,
@@ -76,7 +76,12 @@ class RuntimeRuleGenerator:
         }
 
     # --- internals ------------------------------------------------------
-    def _select_relevant_rules(self, house_assignments: Mapping[str, int]) -> List[RuntimeRule]:
+    def _select_relevant_rules(
+        self,
+        house_assignments: Mapping[str, int],
+        dashas: List[Mapping[str, str]],
+        personalization: PersonalizationContext,
+    ) -> List[RuntimeRule]:
         active: List[RuntimeRule] = []
         for rule in self.atomic_rules:
             planet = rule.get("planet")
@@ -86,6 +91,10 @@ class RuntimeRuleGenerator:
             if house_assignments.get(planet) != house:
                 continue
             base_confidence = _CONFIDENCE_WEIGHTS.get(str(rule.get("confidence", "traditional")), 0.5)
+            dasha_bonus = self._dasha_alignment_bonus(planet, dashas)
+            user_agency = personalization.mitigation_bonus()
+            effort_multiplier = personalization.effort_multiplier()
+            base_confidence = max(0.05, min(base_confidence * effort_multiplier + dasha_bonus + user_agency, 1.0))
             narrative = rule.get("core_statement") or rule.get("description") or "Rule activated"
             active.append(
                 RuntimeRule(
@@ -99,8 +108,8 @@ class RuntimeRuleGenerator:
             )
         return active
 
-    def _apply_modifiers(self, rules: List[RuntimeRule]) -> List[RuntimeRule]:
-        for mod in self.modifiers:
+    def _apply_modifiers(self, rules: List[RuntimeRule], modifiers: List[RuleModifier]) -> List[RuntimeRule]:
+        for mod in modifiers:
             for rule in rules:
                 if mod.applies_to and rule.rule_id not in mod.applies_to:
                     continue
@@ -120,6 +129,30 @@ class RuntimeRuleGenerator:
         return sorted(compressed.values(), key=lambda item: item.confidence, reverse=True)
 
     @staticmethod
+    def _resolve_conflicts(rules: List[RuntimeRule]) -> List[RuntimeRule]:
+        """Soft conflict resolution by house overlap and low-confidence trimming."""
+
+        by_house: Dict[int, List[RuntimeRule]] = {}
+        for rule in rules:
+            by_house.setdefault(rule.house, []).append(rule)
+
+        resolved: List[RuntimeRule] = []
+        for contenders in by_house.values():
+            contenders.sort(key=lambda item: item.confidence, reverse=True)
+            if len(contenders) == 1:
+                resolved.append(contenders[0])
+                continue
+
+            strongest = contenders[0]
+            resolved.append(strongest)
+            for weaker in contenders[1:]:
+                weaker.confidence = max(0.05, weaker.confidence - 0.1)
+                weaker.applied_modifiers.append("CONFLICT:house_overlap")
+                resolved.append(weaker)
+
+        return sorted(resolved, key=lambda item: item.confidence, reverse=True)
+
+    @staticmethod
     def _compose_narrative(
         rules: List[RuntimeRule],
         dashas: List[Mapping[str, str]],
@@ -137,11 +170,82 @@ class RuntimeRuleGenerator:
             else "No mitigations provided; leaning on reflective prompts."
         )
         effort = personalization.effort_level or "balanced"
+        priorities = ", ".join(f"{k} → {v}" for k, v in personalization.choices.items())
+        prompt_text = ", ".join(personalization.reflection_prompts) or "none"
         return (
             f"Using {ephemeris_source}, active rules: {lead}. "
             f"Current dasha emphasis: {dasha_note}. {mitigation} "
-            f"User effort set to {effort}; reflective prompts: {', '.join(personalization.reflection_prompts) or 'none'}."
+            f"User effort set to {effort}; priorities: {priorities or 'none recorded'}. "
+            f"Reflect with: {prompt_text}."
         )
+
+    @staticmethod
+    def _dasha_alignment_bonus(planet: str, dashas: List[Mapping[str, str]]) -> float:
+        """Small weight increase when the active dasha lord matches the rule planet."""
+
+        if not dashas:
+            return 0.0
+        active_lords = {dasha.get("lord") for dasha in dashas[:2] if dasha.get("lord")}
+        return 0.12 if planet in active_lords else 0.0
+
+    def _contextual_modifiers(
+        self, personalization: PersonalizationContext, dashas: List[Mapping[str, str]]
+    ) -> List[RuleModifier]:
+        """Generate modifiers based on personalization and timing layers."""
+
+        modifiers: List[RuleModifier] = []
+        if personalization.choices:
+            modifiers.append(
+                RuleModifier(
+                    modifier_id="USER_CHOICE_ALIGNMENT",
+                    description="User-stated focus areas gently steer narratives.",
+                    weight=0.07,
+                    applies_to=(),
+                    polarity="support",
+                )
+            )
+        if personalization.mitigation_flags:
+            modifiers.append(
+                RuleModifier(
+                    modifier_id="MITIGATION_SOFTENER",
+                    description="Mitigation steps reduce deterministic tone.",
+                    weight=0.05,
+                    applies_to=(),
+                    polarity="caution",
+                )
+            )
+        effort_weight = personalization.effort_multiplier() - 1.0
+        if effort_weight:
+            modifiers.append(
+                RuleModifier(
+                    modifier_id="EFFORT_SIGNAL",
+                    description="High effort reduces perceived risk; low effort tempers certainty.",
+                    weight=effort_weight,
+                    applies_to=(),
+                    polarity="support" if effort_weight > 0 else "caution",
+                )
+            )
+        if dashas:
+            modifiers.append(
+                RuleModifier(
+                    modifier_id="DASHA_TIMER",
+                    description="Active dashas foreground matching planetary rules.",
+                    weight=0.08,
+                    applies_to=(),
+                    polarity="support",
+                )
+            )
+        if personalization.reflection_prompts:
+            modifiers.append(
+                RuleModifier(
+                    modifier_id="REFLECTION_ANCHOR",
+                    description="Reflection prompts keep agency in the loop.",
+                    weight=0.03,
+                    applies_to=(),
+                    polarity="support",
+                )
+            )
+        return modifiers
 
     @staticmethod
     def _default_modifiers() -> List[RuleModifier]:

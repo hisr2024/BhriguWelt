@@ -71,6 +71,28 @@ class PersonalizationContext:
     effort_level: str
     reflection_prompts: List[str]
 
+    def effort_multiplier(self) -> float:
+        """Weighting factor to soften fatalism when user effort is high.
+
+        A "high" or "heroic" effort level slightly boosts supportive rule
+        weights while simultaneously signaling to the narrative composer that
+        risk is being actively mitigated by the user.
+        """
+
+        normalized = (self.effort_level or "balanced").lower()
+        if normalized in {"heroic", "very_high"}:
+            return 1.15
+        if normalized in {"high", "elevated"}:
+            return 1.1
+        if normalized in {"low", "minimal"}:
+            return 0.95
+        return 1.0
+
+    def mitigation_bonus(self) -> float:
+        """Scaled bonus to acknowledge safeguards and free-will choices."""
+
+        return min(0.12, 0.02 * len(self.mitigation_flags))
+
 
 class ChartEngine:
     """Compute chart elements with pluggable ephemeris sources."""
