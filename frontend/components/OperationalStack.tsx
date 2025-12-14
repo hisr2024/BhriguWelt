@@ -32,13 +32,14 @@ export default function OperationalStack() {
       <div className="section-heading">
         <p className="eyebrow">Operational engines</p>
         <h2>Aligned to Bhrigu data with AI support</h2>
-        <BackendHealthNotice className="muted" />
+        <p className="microcopy">Core wisdom stays loaded; Sarvam and interpreters stay linked without extra clutter.</p>
+        <BackendHealthNotice className="microcopy" />
       </div>
       <div className="duo-chart-hint" role="list">
         {stack.map((item) => (
           <div key={item.title} className="duo-chart-hint__card" role="listitem">
             <span className="pill">{item.title}</span>
-            <p>{item.description}</p>
+            <p className="microcopy">{item.description}</p>
           </div>
         ))}
       </div>

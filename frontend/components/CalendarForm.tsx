@@ -25,6 +25,7 @@ export default function CalendarForm() {
   const [houseGrid, setHouseGrid] = useState<HouseSummary[]>([]);
   const [autoTriggered, setAutoTriggered] = useState(false);
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const errorRef = useRef<HTMLDivElement | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const requestIdRef = useRef(0);
@@ -79,9 +80,9 @@ export default function CalendarForm() {
     }
 
     setError(null);
-    setPayload(null);
     setLoading(true);
     setSyncNotice(null);
+    setRefreshing(Boolean(payload));
     try {
       const response = await requestCalendar(details);
       if (currentRequestId !== requestIdRef.current) return;
@@ -115,6 +116,7 @@ export default function CalendarForm() {
         { autoSubmit: true },
       );
       setAutoTriggered(source === "auto");
+      setRefreshing(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to convert date";
       if (currentRequestId !== requestIdRef.current) return;
@@ -123,6 +125,7 @@ export default function CalendarForm() {
     } finally {
       if (currentRequestId === requestIdRef.current) {
         setLoading(false);
+        setRefreshing(false);
       }
     }
   };
@@ -228,9 +231,11 @@ export default function CalendarForm() {
                 : t("calendar.title", "Convert Gregorian birth details to Śaka")}
           </button>
           <span className="badge" aria-live="polite">
-            {autoTriggered
-              ? t("calendar.badge.live", "Live conversion applied")
-              : t("calendar.badge.pending", "Auto converts when details are filled")}
+            {refreshing
+              ? "Refreshing Śaka conversion while keeping the last result visible"
+              : autoTriggered
+                ? t("calendar.badge.live", "Live conversion applied")
+                : t("calendar.badge.pending", "Auto converts when details are filled")}
           </span>
         </div>
         <div className="form-actions" style={{ gap: "12px", flexWrap: "wrap" }}>
