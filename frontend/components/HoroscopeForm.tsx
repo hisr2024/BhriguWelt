@@ -152,10 +152,14 @@ export default function HoroscopeForm() {
   const fallbackInterpretation = useMemo(() => buildFallbackInterpretation(), []);
   const fallbackChartSample = useMemo(() => getFallbackSample("/horoscope") as ChartResponse | null, []);
 
-  const isComplete = useMemo(() => Object.values(form).every(Boolean), [form]);
+  const hasRequiredDetails = useMemo(
+    () => Boolean(form.name && form.dateOfBirth && form.timeOfBirth && form.placeOfBirth),
+    [form.dateOfBirth, form.name, form.placeOfBirth, form.timeOfBirth],
+  );
   const missingFields = useMemo(
     () =>
       ([
+        ["name", form.name, "name"],
         ["dob", form.dateOfBirth, "date of birth"],
         ["tob", form.timeOfBirth, "time of birth"],
         ["pob", form.placeOfBirth, "place of birth"],
@@ -199,12 +203,12 @@ export default function HoroscopeForm() {
       {
         title: "Birth details captured",
         description: "Name, date, time, and place locked in.",
-        status: isComplete ? "complete" : "active",
+        status: hasRequiredDetails ? "complete" : "active",
       },
       {
         title: "Chart generated",
         description: "Planets and houses mapped in one view.",
-        status: chart ? "complete" : isComplete && loading ? "active" : "pending",
+        status: chart ? "complete" : hasRequiredDetails && loading ? "active" : "pending",
       },
       {
         title: "12-house foundation",
@@ -219,7 +223,7 @@ export default function HoroscopeForm() {
     ];
 
     return steps;
-  }, [chart, hasNarrative, houseFoundation, isComplete, loading]);
+  }, [chart, hasNarrative, hasRequiredDetails, houseFoundation, loading]);
 
   const timeframeLinks = useMemo<TimeframeLink[]>(() => {
     return timeframeAnchors.map((anchor) => {
@@ -504,7 +508,7 @@ export default function HoroscopeForm() {
           loading={loading}
           endpoint={endpoint}
           error={error}
-          isComplete={isComplete}
+          isComplete={hasRequiredDetails}
           progressSteps={progressSteps}
           prefillNotice={prefillNotice}
           onChange={handleChange}
