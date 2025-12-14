@@ -1,7 +1,7 @@
 import { BirthDetails, CalendarDetails, PredictionEngine, ResultEngine } from "@/types/astro";
 import { FeedbackRequest, QuarterlySummaryResponse } from "@/types/feedback";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
 const BACKEND_FALLBACK_URL = process.env.NEXT_PUBLIC_BACKEND_FALLBACK_URL || "";
 const BACKEND_HOSTS = Array.from(
   new Set(
@@ -315,6 +315,10 @@ export type FutureProgressResponse = {
 };
 
 async function fetchFromHosts(path: string, init?: RequestInit) {
+  if (!BACKEND_HOSTS.length) {
+    throw new Error("No backend hosts configured. Set NEXT_PUBLIC_BACKEND_URL to your API endpoint.");
+  }
+
   const errors: string[] = [];
   for (const host of BACKEND_HOSTS) {
     const target = `${host}${path}`;
@@ -356,7 +360,13 @@ function normalizeBackendError(message: string, status: number): DetailedError {
 
 async function postWithRichErrors<TResponse>(path: string, body: Record<string, unknown>) {
   let lastError: DetailedError | Error | null = null;
-  for (const host of BACKEND_HOSTS.length ? BACKEND_HOSTS : ["http://localhost:8000"]) {
+  if (!BACKEND_HOSTS.length) {
+    throw new Error(
+      "No backend hosts configured. Set NEXT_PUBLIC_BACKEND_URL (or NEXT_PUBLIC_BACKEND_FALLBACK_URL) to your API endpoint.",
+    );
+  }
+
+  for (const host of BACKEND_HOSTS) {
     const url = `${host}${path}`;
     try {
       const response = await fetch(url, {
@@ -462,7 +472,7 @@ async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
     }
 
     const reason = networkError instanceof Error ? networkError.message : "Unknown error";
-    const hostList = BACKEND_HOSTS.join(", ") || BACKEND_URL;
+    const hostList = BACKEND_HOSTS.join(", ") || BACKEND_URL || "(not configured)";
     throw new Error(
       `${reason}. Unable to reach the Bhrigu backend at ${hostList}${path}. ` +
         "Set NEXT_PUBLIC_BACKEND_URL to your deployed Python API (or NEXT_PUBLIC_BACKEND_FALLBACK_URL for a backup) to restore live predictions.",
