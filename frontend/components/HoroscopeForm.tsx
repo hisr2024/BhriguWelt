@@ -67,11 +67,15 @@ type TimeframeLink = {
 const HOROSCOPE_PENDING_SUMMARY = "Based on your inputs, a full reading is pending backend connection.";
 const PAST_LIFE_GENERIC = "Past-life memories may involve healing or service roles.";
 
+const FALLBACK_BIRTH_DATE = "2000-01-01";
+const FALLBACK_BIRTH_TIME = "00:00";
+const FALLBACK_BIRTH_PLACE = "stated place";
+
 function buildCalendarDetails(form: FormState): CalendarDetails {
   return {
-    birthDate: form.dateOfBirth || new Date().toISOString().slice(0, 10),
-    birthTime: form.timeOfBirth || "00:00",
-    birthPlace: form.placeOfBirth || "stated place",
+    birthDate: form.dateOfBirth || FALLBACK_BIRTH_DATE,
+    birthTime: form.timeOfBirth || FALLBACK_BIRTH_TIME,
+    birthPlace: form.placeOfBirth || FALLBACK_BIRTH_PLACE,
   } satisfies CalendarDetails;
 }
 
