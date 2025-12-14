@@ -910,6 +910,8 @@ def _serialize_horoscope_report(report) -> Dict[str, Any]:
         "rashi_chart": [_serialize_obj(item) for item in report.rashi_chart],
         "bhava_chart": [_serialize_obj(item) for item in report.bhava_chart],
         "dashas": [_serialize_obj(item) for item in report.dashas],
+        "runtime_rules": getattr(report, "runtime_rules", {}),
+        "ephemeris_source": getattr(report, "ephemeris_source", ""),
     }
 
 
