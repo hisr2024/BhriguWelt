@@ -58,6 +58,228 @@ HOUSE_DOMAIN_EFFECTS: Dict[int, Sequence[str]] = {
     12: ("expenses", "foreign", "spirituality"),
 }
 
+
+def _build_matchmaking_model(today: str) -> Dict[str, Any]:
+    return {
+        "module": {
+            "name": "Bhrigu Matchmaking & Compatibility Model",
+            "version": "1.0",
+            "created_at": today,
+            "scope": (
+                "Compatibility scoring using jyotisha indicators commonly used alongside "
+                "Bhrigu-style house-centric readings."
+            ),
+            "note": (
+                "Outputs are probabilistic; human compatibility also depends on values, "
+                "communication, and lived experience."
+            ),
+        },
+        "inputs": {
+            "required": {
+                "person_a": ["planet_house_positions", "lagna_house_map"],
+                "person_b": ["planet_house_positions", "lagna_house_map"],
+            },
+            "recommended": {
+                "person_a": [
+                    "moon_sign",
+                    "moon_nakshatra",
+                    "venus_house",
+                    "mars_house",
+                    "jupiter_house",
+                    "7th_house_lord",
+                    "upapada_lagna",
+                ],
+                "person_b": [
+                    "moon_sign",
+                    "moon_nakshatra",
+                    "venus_house",
+                    "mars_house",
+                    "jupiter_house",
+                    "7th_house_lord",
+                    "upapada_lagna",
+                ],
+            },
+            "optional": {
+                "both": ["aspects", "dignities", "planet_strength", "dashas"],
+            },
+        },
+        "scoring": {
+            "overall_scale": "0..100",
+            "bands": [
+                {"label": "excellent", "min": 80},
+                {"label": "good", "min": 65},
+                {"label": "mixed", "min": 50},
+                {"label": "challenging", "min": 0},
+            ],
+            "weights": {
+                "ashtakoota": 0.45,
+                "synastry": 0.35,
+                "marriage_indicators": 0.20,
+            },
+        },
+        "components": [
+            {
+                "component_id": "MM-ASHTAKOOTA",
+                "name": "Ashtakoota (8 koota) score (North Indian standard)",
+                "max_points": 36,
+                "logic": [
+                    {"koota": "Varna", "max": 1, "intent": "spiritual/temperamental compatibility"},
+                    {"koota": "Vashya", "max": 2, "intent": "mutual influence and attraction"},
+                    {"koota": "Tara (Dina)", "max": 3, "intent": "wellbeing and fortune"},
+                    {"koota": "Yoni", "max": 4, "intent": "sexual/instinctive compatibility"},
+                    {"koota": "Graha Maitri", "max": 5, "intent": "mental compatibility via lords"},
+                    {"koota": "Gana", "max": 6, "intent": "nature/behavioral match"},
+                    {"koota": "Bhakoot (Rashi)", "max": 7, "intent": "family prosperity and emotional flow"},
+                    {"koota": "Nadi", "max": 8, "intent": "health/genetic harmony (traditional)"},
+                ],
+                "output": {
+                    "koota_breakdown": [
+                        {"koota": "string", "score": "number", "note": "string"},
+                    ],
+                    "total": "number",
+                },
+            },
+            {
+                "component_id": "MM-DOSHA-CHECKS",
+                "name": "Dosha checks & mitigations",
+                "logic": [
+                    {
+                        "dosha_id": "MM-MANGAL",
+                        "name": "Kuja/Mangal Dosha",
+                        "check": "Assess Mars placement from Lagna/Moon/Venus (configurable) in 1/2/4/7/8/12",
+                        "effect": (
+                            "Increases conflict/temper; mitigated by cancellations, strength, benefic aspects, "
+                            "and matching dosha."
+                        ),
+                    },
+                    {
+                        "dosha_id": "MM-NADI",
+                        "name": "Nadi Dosha",
+                        "check": "If both have same Nadi (as per nakshatra mapping)",
+                        "effect": "Traditional concern; mitigations vary by school; present as 'risk flag' not absolute.",
+                    },
+                    {
+                        "dosha_id": "MM-BHAKOOT",
+                        "name": "Bhakoot Dosha",
+                        "check": "Moon sign distance pattern indicating strain",
+                        "effect": (
+                            "May indicate emotional/family flow challenges; mitigations via benefic support and "
+                            "strong 7th factors."
+                        ),
+                    },
+                ],
+                "output": {
+                    "flags": [
+                        {"dosha_id": "string", "severity": "low|medium|high", "note": "string"},
+                    ],
+                },
+            },
+            {
+                "component_id": "MM-SYN",
+                "name": "Synastry (cross-chart) scoring",
+                "logic": [
+                    {
+                        "rule_id": "SYN-7H-OVERLAY",
+                        "name": "7th house overlay emphasis",
+                        "check": (
+                            "Do A's key planets (Venus/Jupiter/Moon) fall into B's 7th/1st/5th/11th houses (and "
+                            "vice versa)?"
+                        ),
+                        "effect": "Boost attraction, partnership feeling, and support.",
+                    },
+                    {
+                        "rule_id": "SYN-VENUS-MARS",
+                        "name": "Venus–Mars chemistry",
+                        "check": "Venus of one connects by house/aspect to Mars of the other (configurable)",
+                        "effect": "Boost romance/chemistry; harsh aspects add volatility.",
+                    },
+                    {
+                        "rule_id": "SYN-SATURN-TO-7H",
+                        "name": "Saturn impact on relationship axis",
+                        "check": "Saturn contacts to partner’s 7th house/lord or Venus/Moon",
+                        "effect": (
+                            "Adds commitment and longevity potential but may feel heavy/delaying if afflicted."
+                        ),
+                    },
+                    {
+                        "rule_id": "SYN-JUPITER-SUPPORT",
+                        "name": "Jupiter protection",
+                        "check": "Jupiter aspects/support to partner’s 7th/1st/5th or Venus/Moon",
+                        "effect": "Improves harmony, forgiveness, family support.",
+                    },
+                    {
+                        "rule_id": "SYN-NODES",
+                        "name": "Rahu–Ketu karmic pull",
+                        "check": "Nodes connect strongly to partner’s luminaries/7th lord/Upapada",
+                        "effect": "Strong karmic attraction; may be intense; require maturity.",
+                    },
+                ],
+                "output": {
+                    "synastry_score": "number",
+                    "highlights": [
+                        {"rule_id": "string", "impact": "positive|mixed|challenging", "note": "string"},
+                    ],
+                },
+            },
+            {
+                "component_id": "MM-MARRIAGE-INDICATORS",
+                "name": "Marriage indicators (Bhrigu-style house-centric)",
+                "logic": [
+                    {
+                        "indicator_id": "MI-7H",
+                        "name": "7th house strength & affliction",
+                        "check": "Assess each chart’s 7th house, its lord, and karakas (Venus/Jupiter) for support vs affliction.",
+                        "effect": "Predicts marriage stability baseline.",
+                    },
+                    {
+                        "indicator_id": "MI-UL",
+                        "name": "Upapada Lagna (UL)",
+                        "check": "UL strength and 2nd from UL; benefic/malefic influences",
+                        "effect": "Refines spouse quality, marriage durability, public image of marriage.",
+                    },
+                    {
+                        "indicator_id": "MI-D9",
+                        "name": "Navamsa cross-check (if available)",
+                        "check": "Compare D9 Venus/Jupiter/7th lord condition for both charts",
+                        "effect": "Raises confidence; resolves conflicts from D1.",
+                    },
+                ],
+                "output": {
+                    "baseline_stability": "low|medium|high",
+                    "notes": ["string"],
+                },
+            },
+        ],
+        "processing_steps": [
+            "1) Compute Ashtakoota score from Moon nakshatra/rashi inputs (if provided); otherwise mark as 'missing' and down-weight.",
+            "2) Run dosha checks and compute severity; apply cancellations if rules are configured.",
+            "3) Compute synastry overlays and key planet-to-relationship-axis contacts in both directions.",
+            "4) Compute marriage indicator baselines (7th house/lord, Venus/Jupiter, UL; optional D9).",
+            "5) Combine weighted component scores into 0..100, produce band label + narrative highlights + risk flags.",
+        ],
+        "output_schema": {
+            "overall": {"score": "number", "band": "string"},
+            "components": {
+                "ashtakoota": {"score": "number", "max": 36, "breakdown": "array"},
+                "synastry": {"score": "number", "highlights": "array"},
+                "doshas": {"flags": "array"},
+                "marriage_indicators": {"baseline_stability": "string", "notes": "array"},
+            },
+            "recommendations": ["string"],
+            "traceability": {
+                "atomic_rule_ids_used": ["string"],
+                "modifier_ids_used": ["string"],
+                "component_ids_used": ["string"],
+            },
+        },
+        "default_recommendations_templates": [
+            "Prioritize communication rituals if emotional volatility flags are high.",
+            "If Saturn-heavy contacts exist, plan for patience and structured conflict resolution.",
+            "If strong benefic support exists, lean into shared education/values-building activities.",
+            "Where dosha flags exist, present traditional remedies only as optional cultural practices (not medical advice).",
+        ],
+    }
+
 PLANET_DOMAIN: Dict[str, Dict[str, str]] = {
     "Sun": {
         "health": "strong vitality; watch heat/pressure",
@@ -619,12 +841,14 @@ def core_wisdom_assets(
 
     atomic_rules = _build_atomic_rules(today)
     engine_spec = _build_engine_spec(today)
+    matchmaking_model = _build_matchmaking_model(today)
 
     payload: Dict[str, Any] = {
         "created_at": today,
         "count": len(atomic_rules),
         "atomic_rules": atomic_rules,
         "engine_spec": engine_spec,
+        "matchmaking_model": matchmaking_model,
     }
 
     if not persist:
@@ -635,6 +859,7 @@ def core_wisdom_assets(
 
     atomic_path = target_dir / "bhrigu_atomic_rules_108.json"
     engine_path = target_dir / "bhrigu_rule_engine_spec.json"
+    matchmaking_path = target_dir / "bhrigu_matchmaking_model.json"
 
     with atomic_path.open("w", encoding="utf-8") as atomic_handle:
         json.dump(
@@ -653,8 +878,12 @@ def core_wisdom_assets(
     with engine_path.open("w", encoding="utf-8") as engine_handle:
         json.dump(engine_spec, engine_handle, ensure_ascii=False, indent=2)
 
+    with matchmaking_path.open("w", encoding="utf-8") as matchmaking_handle:
+        json.dump(matchmaking_model, matchmaking_handle, ensure_ascii=False, indent=2)
+
     payload["atomic_rules_path"] = str(atomic_path)
     payload["engine_spec_path"] = str(engine_path)
+    payload["matchmaking_model_path"] = str(matchmaking_path)
 
     return payload
 
