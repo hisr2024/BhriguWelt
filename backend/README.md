@@ -65,6 +65,9 @@ pip-compile requirements.in --output-file requirements.txt
   route the chatbot and Wisdom Bot through Sarvam's OpenAI-compatible endpoint.
   When only `SARVAM_API_KEY` is present, the client defaults to
   `https://api.sarvam.ai`.
+  The unified experience flow and Wisdom Bot responses now surface `ai_support`
+  metadata so UI and analyser/interpreter stacks can verify Sarvam/OpenAI
+  connectivity across core wisdom, matchmaking, past-life, and future engines.
 
 ### CLI usage
 

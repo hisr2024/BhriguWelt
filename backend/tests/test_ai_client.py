@@ -35,3 +35,25 @@ def test_ai_client_prefers_explicit_base(monkeypatch: "MonkeyPatch") -> None:
 
     assert ai_client._resolve_api_base() == "https://example.test/api"
     assert ai_client._resolve_api_key() == "token"
+
+
+def test_ai_provider_metadata_infers_sarvam(monkeypatch: "MonkeyPatch") -> None:
+    _clear_ai_env(monkeypatch)
+    monkeypatch.setenv("SARVAM_API_KEY", "token")
+
+    metadata = ai_client.ai_provider_metadata()
+
+    assert metadata["configured"] is True
+    assert metadata["provider"] == "sarvam"
+    assert metadata["api_base"] == "https://api.sarvam.ai"
+    assert "wisdom-bot" in metadata["coverage"]
+
+
+def test_ai_provider_metadata_handles_unconfigured(monkeypatch: "MonkeyPatch") -> None:
+    _clear_ai_env(monkeypatch)
+
+    metadata = ai_client.ai_provider_metadata()
+
+    assert metadata["configured"] is False
+    assert metadata["provider"] == "unconfigured"
+    assert metadata["api_base"] == ""
