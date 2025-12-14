@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import Timeline from "@/components/Timeline";
 import PredictionForm from "@/components/PredictionForm";
+import OperationalStack from "@/components/OperationalStack";
 import { getFutureProgress, type FutureProgressResponse } from "@/lib/api";
 
 type FutureEvent = {
@@ -91,9 +92,9 @@ export default function FuturePage() {
     <div className="stack">
       <div className="hero">
         <p className="eyebrow">Future • Directive-first</p>
-        <h1>Actionable roadmaps that still honor the Bhrigu canon.</h1>
+        <h1>Future directives with no extra fluff.</h1>
         <p className="muted" style={{ maxWidth: "760px" }}>
-          Finance, devotion, service, and health recommendations return as flowing interpretations you can read aloud.
+          Detailed analysis and remedies come straight from the manuscripts with Sarvam AI summaries when configured.
         </p>
         <div className="hero-actions">
           <Link href="/" className="button-link" style={{ background: "rgba(255,255,255,0.08)" }}>
@@ -102,14 +103,13 @@ export default function FuturePage() {
         </div>
       </div>
 
+      <OperationalStack />
+
       <section className="panel softly" aria-label="Future timeline overlay">
         <div className="section-heading">
           <p className="eyebrow">Timeline</p>
           <h2>Scroll through phases</h2>
-          <p className="muted">
-            Interactive milestones stay linked to the foundational twelve houses. A glowing house band mirrors every
-            milestone so seekers always know which anchor is powering the directive.
-          </p>
+          <p className="muted">Milestones stay tied to the twelve-house band and feed remedies automatically.</p>
         </div>
         <div className="progress" aria-label="Karmic resolution progress">
           <div className="progress__bar" style={{ width: `${karmicResolution}%` }} />
@@ -132,28 +132,15 @@ export default function FuturePage() {
           <PredictionForm
             engine="future"
             title="Future directives"
-            description="Use this as the feed source for timelines, notifications, and profile streaks."
+            description="Analyses and remedies stay bundled for notifications, timelines, and profiles."
           />
         </div>
         <div className="card">
           <div className="section-heading">
-            <p className="eyebrow">Engine focus</p>
-            <h2>Guidance you can share</h2>
+            <p className="eyebrow">Operational notes</p>
+            <h2>Always manuscript-aligned</h2>
           </div>
-          <ul className="kudos-list">
-            <li>
-              <span className="badge">Bilingual</span>
-              <span>English and Hindi outputs keep families and teams aligned.</span>
-            </li>
-            <li>
-              <span className="badge">PDF ready</span>
-              <span>Export interpretations as PDFs for timelines or notifications.</span>
-            </li>
-            <li>
-              <span className="badge">Accurate</span>
-              <span>Field-level alignment keeps remedies and recommendations precise.</span>
-            </li>
-          </ul>
+          <p className="muted">Core wisdom data, analyzers, interpreters, designers, and Sarvam AI stay active for every directive.</p>
         </div>
       </section>
     </div>
