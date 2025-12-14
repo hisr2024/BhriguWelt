@@ -11,6 +11,14 @@ const BACKEND_HOSTS = Array.from(
       .map((value) => value.replace(/\/$/, "")),
   ),
 );
+
+function isBrowserOffline() {
+  return typeof navigator !== "undefined" && navigator.onLine === false;
+}
+
+function hasBackendHostConfigured() {
+  return BACKEND_HOSTS.length > 0;
+}
 export type HealthResponse = {
   status?: string;
   source?: string;
@@ -315,7 +323,11 @@ export type FutureProgressResponse = {
 };
 
 async function fetchFromHosts(path: string, init?: RequestInit) {
-  if (!BACKEND_HOSTS.length) {
+  if (isBrowserOffline()) {
+    throw new Error("Offline mode detected; using cached demo responses.");
+  }
+
+  if (!hasBackendHostConfigured()) {
     throw new Error("No backend hosts configured. Set NEXT_PUBLIC_BACKEND_URL to your API endpoint.");
   }
 
@@ -360,7 +372,13 @@ function normalizeBackendError(message: string, status: number): DetailedError {
 
 async function postWithRichErrors<TResponse>(path: string, body: Record<string, unknown>) {
   let lastError: DetailedError | Error | null = null;
-  if (!BACKEND_HOSTS.length) {
+  if (isBrowserOffline()) {
+    const offlineError = new Error("Offline mode detected; skipping backend sync.") as DetailedError;
+    offlineError.hint = "Reconnect and resubmit to sync your profile.";
+    throw offlineError;
+  }
+
+  if (!hasBackendHostConfigured()) {
     throw new Error(
       "No backend hosts configured. Set NEXT_PUBLIC_BACKEND_URL (or NEXT_PUBLIC_BACKEND_FALLBACK_URL) to your API endpoint.",
     );
@@ -582,6 +600,9 @@ export async function sendChatMessage(payload: {
 
 export async function checkBackendHealth(): Promise<HealthResponse> {
   try {
+    if (isBrowserOffline() || !hasBackendHostConfigured()) {
+      return fallbackHealth();
+    }
     const response = await fetchFromHosts("/health");
     const payload = (await response.json()) as HealthResponse;
     return {
