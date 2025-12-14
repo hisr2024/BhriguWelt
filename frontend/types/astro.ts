@@ -38,6 +38,32 @@ export interface CalendarDetails {
   birthPlace: string;
 }
 
+export interface SakaDatePayload {
+  year?: number;
+  month?: string;
+  month_index?: number;
+  day?: number;
+  leap_year?: boolean;
+}
+
+export interface CalendarPayload {
+  birth_date?: string;
+  birth_time?: string;
+  birth_place?: string;
+  interpretation?: string;
+  interpretation_hi?: string;
+  saka_date?: SakaDatePayload;
+  conversion_factor_years?: number;
+  ist_reference_longitude?: number;
+  nakshatra?: string;
+  yoga?: string;
+  karana?: string;
+  tithi_name?: string;
+  weekday?: string;
+  ephemeris_source?: string;
+  sources?: string[];
+}
+
 export interface MatchmakingDetails {
   primary: BirthDetails;
   partner: BirthDetails;

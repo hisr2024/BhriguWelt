@@ -6,7 +6,8 @@ import { HOUSE_FOCUSES, deriveChartHouses } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
 import { areMicroAnimationsAllowed } from "@/lib/immersive";
 import { loadBirthDetails } from "@/lib/birthStorage";
-import { CalendarDetails, ChartHouse, DashaPeriod, ResultEngine } from "@/types/astro";
+import { CalendarDetails, CalendarPayload, ChartHouse, DashaPeriod, ResultEngine } from "@/types/astro";
+import { formatSakaLabel, type SakaDate } from "@/lib/sakaContext";
 import FeedbackPrompt from "./FeedbackPrompt";
 
 interface Props {
@@ -91,19 +92,6 @@ type MatchmakingPayload = {
     partner_rashi_chart?: ChartHouse[];
     shared_score?: number;
     synastry_overlay?: SynastryOverlay[];
-  };
-};
-
-type CalendarPayload = {
-  birth_date?: string;
-  birth_time?: string;
-  birth_place?: string;
-  interpretation?: string;
-  interpretation_hi?: string;
-  saka_date?: {
-    year?: number;
-    month?: string;
-    day?: number;
   };
 };
 
@@ -400,8 +388,21 @@ function interpretMatchmaking(payload: MatchmakingPayload): InsightSection[] {
   return sections;
 }
 
+function mapSakaDate(sakaPayload?: CalendarPayload["saka_date"]): SakaDate | undefined {
+  if (!sakaPayload) return undefined;
+  return {
+    year: sakaPayload.year,
+    month: sakaPayload.month,
+    monthIndex: sakaPayload.month_index,
+    day: sakaPayload.day,
+    leapYear: sakaPayload.leap_year,
+  };
+}
+
 function interpretCalendar(payload: CalendarPayload): InsightSection[] {
   const sections: InsightSection[] = [];
+  const sakaDate = mapSakaDate(payload.saka_date);
+  const sakaLabel = formatSakaLabel(sakaDate);
   if (payload.interpretation) {
     sections.push({
       heading: "Śaka alignment",
@@ -412,9 +413,35 @@ function interpretCalendar(payload: CalendarPayload): InsightSection[] {
   if (payload.saka_date) {
     sections.push({
       heading: "Converted date",
-      english: `Śaka ${payload.saka_date.year ?? ""} ${payload.saka_date.month ?? ""} ${payload.saka_date.day ?? ""} —
-        ${payload.birth_date ?? ""} ${payload.birth_time ?? ""} at ${payload.birth_place ?? ""}`.trim(),
+      english: `${sakaLabel} — ${payload.birth_date ?? ""} ${payload.birth_time ?? ""} at ${payload.birth_place ?? ""}`.trim(),
       hindi: "कैलेंडर रूपांतरण IST सन्दर्भ के साथ तैयार है।",
+    });
+  }
+  const dashboardBullets = [
+    payload.tithi_name ? `Tithi: ${payload.tithi_name}` : null,
+    payload.nakshatra ? `Nakshatra: ${payload.nakshatra}` : null,
+    payload.yoga ? `Yoga: ${payload.yoga}` : null,
+    payload.karana ? `Karana: ${payload.karana}` : null,
+    payload.weekday ? `Weekday (IST): ${payload.weekday}` : null,
+    payload.conversion_factor_years !== undefined
+      ? `Gregorian offset: ${payload.conversion_factor_years} years`
+      : null,
+    sakaDate?.monthIndex !== undefined
+      ? `Śaka month ${sakaDate.monthIndex}${sakaDate.month ? ` (${sakaDate.month})` : ""}`
+      : null,
+    sakaDate?.leapYear !== undefined ? `Leap year: ${sakaDate.leapYear ? "Yes" : "No"}` : null,
+    payload.ephemeris_source ? `Ephemeris: ${payload.ephemeris_source}` : null,
+    payload.ist_reference_longitude ? `IST meridian: ${payload.ist_reference_longitude}°E` : null,
+    payload.sources?.length ? `Sources: ${payload.sources.join(" · ")}` : null,
+  ].filter(Boolean) as string[];
+
+  if (dashboardBullets.length) {
+    sections.push({
+      heading: "Śaka dashboard",
+      english: "Aligned Panchang factors and references.",
+      hindi: "सभी पंचांग तत्व और स्रोत प्रमाणित हैं।",
+      bullets: dashboardBullets,
+      collapsible: dashboardBullets.length > 4,
     });
   }
   return sections;

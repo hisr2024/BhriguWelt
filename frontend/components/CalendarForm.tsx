@@ -5,12 +5,12 @@ import { requestCalendar } from "@/lib/api";
 import { deriveHouseGrid, HouseSummary } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
 import { captureClientError } from "@/lib/telemetry";
-import { CalendarDetails } from "@/types/astro";
+import { CalendarDetails, CalendarPayload } from "@/types/astro";
 import { useImmersiveFeedback } from "@/lib/immersive";
 import PredictionCard from "./PredictionCard";
 import BackendHealthNotice from "@/components/BackendHealthNotice";
 import { loadBirthDetails, onBirthDetails, saveBirthDetails } from "@/lib/birthStorage";
-import { deriveHousePlacements, useSakaContext } from "@/lib/sakaContext";
+import { deriveHousePlacements, formatSakaLabel, useSakaContext } from "@/lib/sakaContext";
 
 export default function CalendarForm() {
   const { t } = useI18n();
@@ -87,24 +87,44 @@ export default function CalendarForm() {
       const response = await requestCalendar(details);
       if (currentRequestId !== requestIdRef.current) return;
       setPayload(response);
-      const sakaDate =
+      const calendarPayload: CalendarPayload | undefined =
         typeof response === "object" && response && "saka_date" in response
-          ? (response as { saka_date?: { year?: number; month?: string; day?: number } }).saka_date
+          ? (response as CalendarPayload)
           : undefined;
+      const sakaDate = calendarPayload?.saka_date
+        ? {
+            year: calendarPayload.saka_date.year,
+            month: calendarPayload.saka_date.month,
+            monthIndex: calendarPayload.saka_date.month_index,
+            day: calendarPayload.saka_date.day,
+            leapYear: calendarPayload.saka_date.leap_year,
+          }
+        : undefined;
       const derivedGrid = deriveHouseGrid(
         details,
         (sakaDate as { month?: string } | undefined)?.month,
         (sakaDate as { day?: number } | undefined)?.day,
       );
-      const sakaLabelFromResponse = sakaDate
-        ? `Śaka ${sakaDate.year ?? ""} ${sakaDate.month ?? ""} ${sakaDate.day ?? ""}`.trim()
-        : "Awaiting Śaka conversion";
+      const sakaLabelFromResponse = formatSakaLabel(sakaDate);
       setHouseGrid(derivedGrid);
       updateSaka({
         details,
-        sakaDate: sakaDate as { year?: number; month?: string; day?: number },
+        sakaDate,
         sakaLabel: sakaLabelFromResponse,
         houseGrid: derivedGrid,
+        panchang: calendarPayload
+          ? {
+              tithiName: calendarPayload.tithi_name,
+              nakshatra: calendarPayload.nakshatra,
+              yoga: calendarPayload.yoga,
+              karana: calendarPayload.karana,
+              weekday: calendarPayload.weekday,
+              conversionFactorYears: calendarPayload.conversion_factor_years,
+              istLongitude: calendarPayload.ist_reference_longitude,
+              sources: calendarPayload.sources,
+              ephemerisSource: calendarPayload.ephemeris_source,
+            }
+          : undefined,
         payload: response,
       });
       const placements = deriveHousePlacements(
@@ -153,13 +173,66 @@ export default function CalendarForm() {
 
   const sakaDate = useMemo(() => {
     if (!payload || typeof payload !== "object" || !("saka_date" in payload)) return undefined;
-    return (payload as { saka_date?: { year?: number; month?: string; day?: number } }).saka_date;
+    const sakaPayload = (payload as CalendarPayload).saka_date;
+    return sakaPayload
+      ? {
+          year: sakaPayload.year,
+          month: sakaPayload.month,
+          monthIndex: sakaPayload.month_index,
+          day: sakaPayload.day,
+          leapYear: sakaPayload.leap_year,
+        }
+      : undefined;
   }, [payload]);
 
   const sakaLabel = useMemo(() => {
-    if (!sakaDate) return "Awaiting Śaka conversion";
-    return `Śaka ${sakaDate.year ?? ""} ${sakaDate.month ?? ""} ${sakaDate.day ?? ""}`.trim();
+    return formatSakaLabel(sakaDate);
   }, [sakaDate]);
+
+  const calendarPayload = useMemo(() => {
+    if (!payload || typeof payload !== "object") return undefined;
+    return payload as CalendarPayload;
+  }, [payload]);
+
+  const sakaDashboard = useMemo(
+    () =>
+      [
+        { label: "Tithi", value: calendarPayload?.tithi_name },
+        { label: "Nakshatra", value: calendarPayload?.nakshatra },
+        { label: "Yoga", value: calendarPayload?.yoga },
+        { label: "Karana", value: calendarPayload?.karana },
+        { label: "Weekday (IST)", value: calendarPayload?.weekday },
+        {
+          label: "Conversion offset",
+          value:
+            calendarPayload?.conversion_factor_years !== undefined
+              ? `${calendarPayload.conversion_factor_years} years from Gregorian`
+              : undefined,
+        },
+        {
+          label: "IST reference", 
+          value: calendarPayload?.ist_reference_longitude
+            ? `${calendarPayload.ist_reference_longitude}°E (Allahabad meridian)`
+            : undefined,
+        },
+        { label: "Ephemeris", value: calendarPayload?.ephemeris_source },
+        {
+          label: "Source texts",
+          value: calendarPayload?.sources?.length ? calendarPayload.sources.join(" · ") : undefined,
+        },
+        { label: "Leap year", value: sakaDate?.leapYear === undefined ? undefined : sakaDate.leapYear ? "Yes" : "No" },
+        {
+          label: "Month index",
+          value:
+            sakaDate?.monthIndex !== undefined && sakaDate?.month
+              ? `${sakaDate.month} is month ${sakaDate.monthIndex}`
+              : sakaDate?.monthIndex !== undefined
+                ? `Month ${sakaDate.monthIndex}`
+                : undefined,
+        },
+      ].filter((item) => item.value),
+    [calendarPayload?.conversion_factor_years, calendarPayload?.ephemeris_source, calendarPayload?.ist_reference_longitude, calendarPayload?.karana, calendarPayload?.nakshatra, calendarPayload?.sources, calendarPayload?.tithi_name, calendarPayload?.weekday, calendarPayload?.yoga, sakaDate?.leapYear, sakaDate?.month, sakaDate?.monthIndex],
+  );
 
   const handleInsertToEngines = () => {
     if (!details.birthDate || !details.birthTime || !details.birthPlace) {
@@ -265,7 +338,7 @@ export default function CalendarForm() {
       <div className="cosmic-houses" aria-live="polite">
         <div className="cosmic-houses__header">
           <div>
-            <p className="eyebrow">Bharat calendar</p>
+            <p className="eyebrow">Śaka calendar</p>
             <h3>{sakaLabel}</h3>
             <p className="muted">Updated automatically after each conversion.</p>
           </div>
@@ -298,6 +371,20 @@ export default function CalendarForm() {
             </article>
           ))}
         </div>
+      </div>
+      <div className="panel softly" aria-live="polite" aria-label="Śaka calendar dashboard">
+        <p className="eyebrow">Śaka dashboard</p>
+        <h3>{sakaLabel}</h3>
+        <p className="muted">Cross-check Panchang details before sending to other engines.</p>
+        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "12px" }}>
+          {sakaDashboard.length === 0 && <li className="muted">Awaiting Śaka conversion data.</li>}
+          {sakaDashboard.map((item) => (
+            <li key={`${item.label}-${item.value}`} className="key-value">
+              <div style={{ fontWeight: 600 }}>{item.label}</div>
+              <div className="muted">{item.value}</div>
+            </li>
+          ))}
+        </ul>
       </div>
       <PredictionCard title="Calendar context" payload={payload} engine="calendar" />
     </section>

@@ -7,6 +7,7 @@ import { deriveHouseGrid, HouseSummary } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
 import { BirthDetails } from "@/types/astro";
 import { useImmersiveFeedback } from "@/lib/immersive";
+import { formatSakaLabel } from "@/lib/sakaContext";
 import BackendHealthNotice from "@/components/BackendHealthNotice";
 import { saveBirthDetails } from "@/lib/birthStorage";
 import { DEFAULT_BIRTH_DETAILS } from "@/lib/birthDefaults";
@@ -229,13 +230,19 @@ export default function BirthInputForm() {
     setLoading(true);
     try {
       const response = await requestCalendar(details);
-      const sakaDate = typeof response === "object" && response && "saka_date" in response ? response.saka_date : undefined;
-      const sakaValue = (sakaDate as { year?: number; month?: string; day?: number } | undefined) || {};
-      setSakaLabel(
-        sakaValue.year
-          ? `Śaka ${sakaValue.year} ${sakaValue.month ?? ""} ${sakaValue.day ?? ""}`.trim()
-          : "Śaka conversion ready",
-      );
+      const sakaDatePayload =
+        typeof response === "object" && response && "saka_date" in response ? response.saka_date : undefined;
+      const sakaValue =
+        (sakaDatePayload as { year?: number; month?: string; day?: number; month_index?: number; leap_year?: boolean } | undefined)
+          ? {
+              year: sakaDatePayload?.year,
+              month: sakaDatePayload?.month,
+              day: sakaDatePayload?.day,
+              monthIndex: sakaDatePayload?.month_index,
+              leapYear: sakaDatePayload?.leap_year,
+            }
+          : {};
+      setSakaLabel(formatSakaLabel(sakaValue));
       setSakaParts((prev) => ({ ...prev, ...sakaValue }));
       setHouseGrid(deriveHouseGrid(details, sakaValue.month, sakaValue.day));
       saveBirthDetails(
@@ -303,15 +310,14 @@ export default function BirthInputForm() {
         day: sakaDraft.day ? Number(sakaDraft.day) : undefined,
       };
       setSakaParts(parsed);
-      setSakaLabel(
-        parsed.year ? `Śaka ${parsed.year} ${parsed.month ?? ""} ${parsed.day ?? ""}`.trim() : "Śaka conversion ready",
-      );
+      const formattedLabel = formatSakaLabel(parsed);
+      setSakaLabel(formattedLabel);
       const timeLabel = details.birthTime ? `at ${details.birthTime}` : "";
       const tzLabel = details.timezone ? `(${details.timezone})` : "device timezone";
       const placeLabel = resolvedPlace || details.birthPlace || "place pending";
       setBharatPreview(
         parsed.year
-          ? `Bharat calendar: Śaka ${parsed.day ?? ""} ${parsed.month ?? ""} ${parsed.year} ${timeLabel} ${tzLabel} • ${placeLabel}`.trim()
+          ? `Bharat calendar: ${formattedLabel} ${timeLabel} ${tzLabel} • ${placeLabel}`.trim()
           : "Śaka conversion ready after choosing date, time, and place.",
       );
     } catch (err) {
