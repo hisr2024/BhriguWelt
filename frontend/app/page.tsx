@@ -5,32 +5,32 @@ import { useI18n } from "@/lib/i18n";
 export default function HomePage() {
   const { t } = useI18n();
 
-  const heroTitle = t("home.heroTitle", "Bhrigu Saṁhitā guidance, made contemporary.");
+  const heroTitle = t("home.heroTitle", "Bhrigu Saṁhitā, quietly current.");
   const heroDescription = t(
     "home.heroDescription",
-    "Drawn from authentic Bhrigu Saṁhitā traditions and engineered for clarity. This hub gives you the lineage story first, then routes you to the focused engines.",
+    "Lineage-led guidance with minimal UI—start at the source, then step into each tool.",
   );
 
   const introductionCards = [
     {
       eyebrow: "Lineage first",
-      title: "A calm doorway into ancient Bharat wisdom",
+      title: "A calm doorway to the manuscripts",
       description:
-        "Walk through the quiet glow of ṛṣi Bhrigu's manuscripts, why the palm-leaf codices travelled, and how every śloka is respected before the digital re-imagination begins.",
+        "Why the palm-leaf codices travelled and how every śloka is held intact before design begins.",
       accent: "Pamphlets to pulse",
     },
     {
       eyebrow: "Bhrigu Saṁhitā decoded",
-      title: "The questions the sages expected you to ask",
+      title: "Questions the sages expected",
       description:
-        "Understand the archetypes encoded for seekers: the karmic knots, the remedies that soften them, and the rare counsel that sits between fate and free will.",
+        "Archetypes, karmic knots, and remedies stated plainly for anyone approaching the Saṁhitā.",
       accent: "Karma maps",
     },
     {
       eyebrow: "Interactive by intent",
-      title: "Minimal motion, meaningful signals",
+      title: "Minimal motion, clear signals",
       description:
-        "Hover to reveal sutras, follow the orbits to sense the lineage, and keep the attention on the silence between words—the design stays out of the way so the wisdom can speak.",
+        "Soft reveals and simple orbits keep attention on the words while the design stays out of view.",
       accent: "Gentle interactivity",
     },
   ];
@@ -38,37 +38,37 @@ export default function HomePage() {
   const ritualMoments = [
     {
       title: "Samhitā stream",
-      detail: "Living introductions, crafted in English yet echoing Sanskrit cadence, to set the mood before predictions.",
+      detail: "Short introductions in English that keep the Sanskrit cadence before you dive in.",
     },
     {
       title: "Jyotish atelier",
-      detail: "Studio pathways for dashboards, calendars, and matchmaking, each grounded in the same origin story.",
+      detail: "Dashboards, calendars, and matchmaking flows that stay rooted in the same origin story.",
     },
     {
       title: "Remedy track",
-      detail: "Whispered upāyas framed as mindful actions—no clutter, just the essential steps.",
+      detail: "Upāyas framed as a few mindful actions—no clutter, only the steps you need.",
     },
   ];
 
   const engineExperiences = [
     {
       title: "Horoscope engine",
-      description: "Nakṣatra-aware dashboards that keep the Bhrigu story visible on every chart, with motion only when it guides.",
+      description: "Nakṣatra-aware dashboards that keep the Bhrigu story visible with motion only when it helps.",
       mantra: "Chandra-led calm",
     },
     {
       title: "Matchmaking flow",
-      description: "Kuṭumba, karma, and compatibility stitched together with soft pulses instead of loud alerts—feel the ātmā first.",
+      description: "Kuṭumba, karma, and compatibility shown with soft pulses instead of loud alerts.",
       mantra: "Śubha sandhi",
     },
     {
       title: "Past-life trace",
-      description: "Lotus-like revealers for previous janmas, balanced by warm gradients and a gentle tapas-inspired glow.",
+      description: "Lotus-like revealers for previous janmas, balanced by a gentle glow.",
       mantra: "Smaraṇa lotus",
     },
     {
       title: "Calendar atelier",
-      description: "Tithi-aware planners that light up the right muhurta bands with a mantra ribbon, never cluttering the gaze.",
+      description: "Tithi-aware planners that light up the right muhurta bands without cluttering the gaze.",
       mantra: "Muhurta weave",
     },
   ];
@@ -101,9 +101,7 @@ export default function HomePage() {
             <div className="introduction-card introduction-card--glow">
               <p className="eyebrow">Introductions</p>
               <p className="muted">
-                The new Home canvas quietly tells the origin of the manuscripts, the ṛṣi lineage, and the disciplines we
-                honour before any dashboard or studio session. It is designed to invite, not overwhelm, with subtle
-                motion and tactile hovers.
+                A quiet preface on the manuscripts, the ṛṣi lineage, and the disciplines we honour before any dashboard.
               </p>
             </div>
           </div>
@@ -117,7 +115,7 @@ export default function HomePage() {
             <div className="wisdom-orbit__spark wisdom-orbit__spark--one" />
             <div className="wisdom-orbit__spark wisdom-orbit__spark--two" />
             <div className="wisdom-orbit__spark wisdom-orbit__spark--three" />
-            <p className="orbit-caption">Ancient cadence translated into a living digital ālaya.</p>
+            <p className="orbit-caption">Ancient cadence held in a quiet digital ālaya.</p>
           </div>
         </div>
       </section>
@@ -126,10 +124,7 @@ export default function HomePage() {
         <div className="section-heading">
           <p className="eyebrow">Living preface</p>
           <h2>Enter softly; the Saṁhitā story leads.</h2>
-          <p className="muted">
-            Each card is a luminous tile that reveals the Bhrigu perspective with minimal movement. Hover or focus to
-            watch the ābhā (glow) breathe.
-          </p>
+          <p className="muted">Each card reveals the Bhrigu view with a soft glow on hover or focus.</p>
         </div>
 
         <div className="wisdom-grid">
@@ -149,10 +144,7 @@ export default function HomePage() {
         <div className="section-heading">
           <p className="eyebrow">Interactive calm</p>
           <h2>Minimalist motion that still feels sacred.</h2>
-          <p className="muted">
-            The Home page breathes with gentle gradients, orbital glyphs, and micro-interactions that mirror the heartbeat
-            of the Bhrigu manuscripts.
-          </p>
+          <p className="muted">Gentle gradients and micro-interactions echo the calm of the manuscripts.</p>
         </div>
 
         <div className="ritual-lattice__grid">
@@ -173,10 +165,7 @@ export default function HomePage() {
         <div className="section-heading">
           <p className="eyebrow">Engines in harmony</p>
           <h2>Minimal UI, deep lineage motion.</h2>
-          <p className="muted">
-            Each engine card carries a yantra-inspired aura and a mantra badge so you feel the sādhana behind the tech. The
-            animations stay soft, letting the wisdom be the loudest part of the interface.
-          </p>
+          <p className="muted">Each engine keeps a yantra aura and mantra badge while the animations stay soft.</p>
         </div>
 
         <div className="engine-grid">
