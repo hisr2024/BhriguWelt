@@ -2,7 +2,7 @@
 
 ## Data to protect
 - `backend/data/bhrigu_samhita_principles.yml` and any manuscript-derived assets.
-- Deployment configurations: `render.yaml`, `nixpacks.toml`, `start.sh` wrappers.
+- Deployment configurations: `nixpacks.toml`, `start.sh` wrappers.
 
 ## Local backups
 - Commit data changes to git with clear folio references.
@@ -12,8 +12,8 @@
   - Override the dataset path with `BHRIGU_DATA_PATH` if you are testing a custom folio file.
 
 ## Hosted backups
-- Render/Railway: enable automatic disk snapshots if persistent volumes are used; otherwise, redeploy from git.
-- Store environment variables securely (Render/ Railway dashboard export) and mirror them in `.env.example` without secrets.
+- Railway: enable automatic disk snapshots if persistent volumes are used; otherwise, redeploy from git.
+- Store environment variables securely (Railway dashboard export) and mirror them in `.env.example` without secrets.
 
 ## Recovery drill
 1. Clone repository.
