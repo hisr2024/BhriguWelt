@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Sequence
 
 from .astronomical_calculations import derive_progressed_snapshot, derive_transit_snapshot, normalize_birth_datetime
 from .calendar_conversion import HinduCalendarContext, convert_birth_details
+from .chart_engine import ChartEngine, PersonalizationContext
 from .calculations import (
     CelestialSnapshot,
     FutureTrajectory,
@@ -26,6 +27,7 @@ from .config import load_runtime_config
 from .bhrigu_core import bhrigu_core
 from .core_wisdom_rules import core_wisdom_assets
 from .engine_analyzers import EngineAnalysis, analyze_core_engines
+from .runtime_rule_generator import RuntimeRuleGenerator
 from .kundli_generator import generate_kundli
 
 __all__ = [
@@ -95,6 +97,11 @@ class HoroscopeRequest:
     mercury_house: int = 0
     jupiter_house: int = 0
     saturn_retrograde: bool = False
+    ephemeris_preference: str | None = None
+    choices: Dict[str, str] | None = None
+    mitigation_flags: List[str] | None = None
+    effort_level: str | None = None
+    reflection_prompts: List[str] | None = None
 
     def __post_init__(self) -> None:
         if self.lunar_tithi == 0 and (
@@ -118,6 +125,9 @@ class HoroscopeRequest:
             )
         self.moon_element = normalized or self.moon_element
         self.tradition = (self.tradition or "universal").lower()
+        self.choices = self.choices or {}
+        self.mitigation_flags = list(self.mitigation_flags or [])
+        self.reflection_prompts = list(self.reflection_prompts or [])
 
 
 @dataclass
@@ -135,6 +145,8 @@ class HoroscopeReport:
     rashi_chart: List[ChartHouse]
     bhava_chart: List[ChartHouse]
     dashas: List[DashaPeriod]
+    runtime_rules: Dict[str, object]
+    ephemeris_source: str
 
 
 @dataclass
@@ -279,8 +291,21 @@ def build_calendar_context(
     return convert_birth_details(birth_date=birth_date, birth_time=birth_time, birth_place=birth_place)
 
 
+def _build_personalization_context(request: HoroscopeRequest) -> PersonalizationContext:
+    return PersonalizationContext(
+        choices=request.choices or {},
+        mitigation_flags=request.mitigation_flags or [],
+        effort_level=request.effort_level or "balanced",
+        reflection_prompts=request.reflection_prompts or [
+            "Pause before key decisions",
+            "Seek counsel from trusted mentors",
+        ],
+    )
+
+
 def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
     runtime_config = load_runtime_config()
+    chart_engine = ChartEngine(ephemeris_preference=request.ephemeris_preference)
     core_bundle = bhrigu_core.application_bundle(request.tradition)
     _ensure_bhrigu_data_available(core_bundle, ("principles", "past_life_engines", "future_engines"), request.tradition)
     principles = core_bundle.get("principles", [])
@@ -289,6 +314,18 @@ def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
     future_engines = core_bundle.get("future_engines", [])
 
     snapshot = _snapshot_from_request(request)
+    chart_result = chart_engine.compute_chart(snapshot=snapshot, timezone_name=request.timezone)
+    dashas_for_rules = chart_engine.compute_dashas(
+        datetime.combine(snapshot.birth_date, snapshot.birth_time).replace(tzinfo=timezone.utc),
+        moon_longitude=chart_result.planet_longitudes.get("Moon"),
+    )
+    personalization = _build_personalization_context(request)
+    runtime_rules = RuntimeRuleGenerator().generate(
+        snapshot=snapshot,
+        chart=chart_result,
+        dashas=dashas_for_rules,
+        personalization=personalization,
+    )
 
     weights = score_principles(snapshot, principles, runtime_config)
     karmic_epoch = derive_karmic_epoch(snapshot)
@@ -320,6 +357,8 @@ def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
         rashi_chart=kundli["rashi_chart"],
         bhava_chart=kundli["bhava_chart"],
         dashas=kundli["dashas"],
+        runtime_rules=runtime_rules,
+        ephemeris_source=chart_result.ephemeris_source,
     )
 
 
