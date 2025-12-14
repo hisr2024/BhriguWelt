@@ -105,7 +105,25 @@ Quick troubleshooting tips:
   previous render," which is triggered when a component calls hooks
   conditionally. Ensure every render of a component executes the same sequence
   of hooks (e.g., move hooks above conditionals or guard returns) to remove this
-  client-side error.
+  client-side error. A fast triage loop is:
+  1. Switch to dev mode (`npm run dev`) so React prints the full message.
+  2. Confirm no hooks are placed inside `if/for/try` blocks or nested functions
+     that may be skipped on some renders.
+  3. Move all hooks to the top of the component body and replace conditional
+     hooks with conditional values inside the hook callbacks.
+- A minified React error `#418` signals a hydration mismatch between the HTML
+  pre-rendered on the server and the first client render (text vs. HTML). Common
+  causes are non-deterministic values like `Date.now()`/`new Date()` output,
+  locale-dependent translations that change after reading `localStorage`, or
+  random IDs used directly in JSX. To eliminate the mismatch:
+  1. Use stable defaults for any text rendered during SSR (e.g., seed dates
+     with fixed strings instead of `new Date()` until the client hydrates).
+  2. Gate client-only reads (`localStorage`, `navigator.language`,
+     `matchMedia`) behind a `useEffect` and render a placeholder until
+     hydration completes.
+  3. When unavoidable, wrap the dynamic text node with
+     `suppressHydrationWarning` to prevent React from throwing while keeping the
+     client render authoritative.
 
 ## Deployment to Vercel
 
