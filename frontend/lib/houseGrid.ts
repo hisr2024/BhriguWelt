@@ -55,7 +55,8 @@ export type HouseSummary = {
 };
 
 export function deriveHouseGrid(details: CalendarDetails, sakaMonth?: string, sakaDay?: number): HouseSummary[] {
-  const dateSeed = details.birthDate ? Date.parse(details.birthDate) : Date.now();
+  const rawDateSeed = details.birthDate ? Date.parse(details.birthDate) : Number.NaN;
+  const dateSeed = Number.isFinite(rawDateSeed) ? rawDateSeed : Date.UTC(2000, 0, 1);
   const [hours, minutes] = details.birthTime.split(":").map((value) => Number(value) || 0);
   const timeSeed = hours * 60 + minutes;
   const placeSeed = details.birthPlace.length;
