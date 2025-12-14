@@ -27,6 +27,7 @@ def test_build_wisdom_bot_response_compiles_shareable_markdown(sample_request):
     assert response["ai_reply"].startswith("Asha, your query")
     assert "Core Wisdom Digest" in response["download"]["markdown"]
     assert response["core_wisdom"]["sections"]
+    assert response["core_wisdom"]["sources"]
     assert response["flow"]["analyzers"]
     assert response["ai_support"]["coverage"]
 
