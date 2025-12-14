@@ -96,6 +96,17 @@ function Shell({ children }: Props) {
           <h3>{t("nav.tagline", "Quiet guidance across every stage of life.")}</h3>
           <p className="muted">{t("nav.desc", "Readable predictions, Śaka-ready conversions, and heartfelt remedies in one space.")}</p>
         </div>
+        <div>
+          <p className="eyebrow">{t("footer.bot", "Bhrigu Wisdom Bot")}</p>
+          <h4>{t("footer.bot.title", "Ask about horoscopes, past lives, the future, and matchmaking.")}</h4>
+          <ul className="soft-list">
+            <li>{t("footer.bot.horoscope", "Direct answers for your current horoscope queries.")}</li>
+            <li>{t("footer.bot.past", "Reflections on past lives shaped by our stored core wisdoms.")}</li>
+            <li>{t("footer.bot.future", "Forward-looking predictions rooted in Jyotish guidance.")}</li>
+            <li>{t("footer.bot.matchmaking", "Matchmaking insights grounded in the repository's teachings.")}</li>
+          </ul>
+          <p className="muted">{t("footer.bot.desc", "Every reply is drawn from the preserved corpus of Bhrigu knowledge.")}</p>
+        </div>
         <div className="footer-links">
           {navLinks.map((link) => (
             <Link key={link.href} href={link.href}>
