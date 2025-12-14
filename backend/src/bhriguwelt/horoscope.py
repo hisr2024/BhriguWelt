@@ -209,6 +209,7 @@ class CoreWisdomReading:
     dashas: List[DashaPeriod]
     karmic_epoch: str
     remedies: List[Dict]
+    sources: List[str]
 
 
 @dataclass
@@ -516,7 +517,52 @@ def build_core_wisdom_reading(
         dashas=horoscope.dashas,
         karmic_epoch=horoscope.karmic_epoch,
         remedies=horoscope.remedies,
+        sources=_collect_bhrigu_texts(horoscope, request.tradition),
     )
+
+
+def _collect_bhrigu_texts(horoscope: HoroscopeReport, tradition: str) -> List[str]:
+    """Return manuscript excerpts spanning all available Bhrigu Samhita sources."""
+
+    texts: List[str] = []
+    normalized_tradition = (tradition or "universal").replace("-", " ").title()
+    texts.append(f"Tradition focus: {normalized_tradition} recension")
+
+    try:
+        dataset = bhrigu_core.dataset()
+        note = dataset.get("metadata", {}).get("source_note")
+        if note:
+            texts.append(f"Corpus note: {note}")
+    except Exception:  # pragma: no cover - defensive fallback
+        pass
+
+    def _append(entry: str | None) -> None:
+        if entry and entry not in texts:
+            texts.append(entry)
+
+    for principle in horoscope.principles[:4] if horoscope.principles else []:
+        description = principle.get("description")
+        reference = principle.get("sutra_reference") or principle.get("id")
+        integrity_sources = principle.get("integrity", {}).get("sources")
+        source_note = f" (sources: {', '.join(integrity_sources)})" if integrity_sources else ""
+        _append(f"{reference}: {description}{source_note}")
+
+    for insight in horoscope.past_life_insights[:3]:
+        _append(f"{insight.sutra_reference}: {insight.narrative}")
+
+    for trajectory in horoscope.future_trajectories[:3]:
+        window = f" ({trajectory.window})" if trajectory.window else ""
+        _append(f"{trajectory.sutra_reference}: {trajectory.focus}{window}")
+
+    for remedy in horoscope.remedies[:3]:
+        description = remedy.get("description")
+        reference = remedy.get("sutra_reference") or remedy.get("id", "Remedy")
+        _append(f"{reference}: {description}")
+
+    if not texts:
+        _append("Bhrigu Samhita manuscripts available; awaiting aligned extracts.")
+
+    return texts
 
 
 def build_karmic_dashboard(

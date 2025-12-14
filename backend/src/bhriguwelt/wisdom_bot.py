@@ -119,6 +119,13 @@ def _ai_wisdom_reply(
             if len(snippets) >= 3:
                 break
 
+    if len(snippets) < 3 and isinstance(core_wisdom_sections, dict):
+        for source_text in core_wisdom_sections.get("sources", []):
+            if isinstance(source_text, str) and source_text.strip():
+                snippets.append(source_text.strip())
+            if len(snippets) >= 3:
+                break
+
     analyzers = flow.get("analyzers") or []
     interpreter_notes = flow.get("interpretations") or []
     analyzer_summary = "; ".join(
@@ -179,6 +186,13 @@ def _shareable_markdown(
             lines.append(str(value))
             lines.append("")
 
+    sources = core_wisdom_sections.get("sources") if isinstance(core_wisdom_sections, dict) else []
+    if sources:
+        lines.extend(["## Bhrigu Samhita Source Texts"])
+        for text in sources:
+            lines.append(f"- {text}")
+        lines.append("")
+
     lines.extend([
         "## Analyser and Interpreter Alignment",
     ])
@@ -238,6 +252,7 @@ def build_wisdom_bot_response(
         "dashas": [asdict(item) for item in core_reading.dashas],
         "karmic_epoch": core_reading.karmic_epoch,
         "remedies": core_reading.remedies,
+        "sources": core_reading.sources,
     }
 
     ai_reply = _compose_ai_reply(
