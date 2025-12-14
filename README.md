@@ -29,7 +29,7 @@ references to manuscript folios.
   calendar engines. It consumes the backend REST API via
   `NEXT_PUBLIC_BACKEND_URL`, builds with `npm run build`, and deploys straight to
   Vercel for immediate testing across desktop and mobile web. Point
-  `NEXT_PUBLIC_BACKEND_URL` to a Render deployment, local tunnel, or any HTTPS
+  `NEXT_PUBLIC_BACKEND_URL` to a Railway deployment, local tunnel, or any HTTPS
   instance of the Python API before running `npm run dev`, `npm run build`, or
   `npm run start`.
 - **Documentation** (`docs/`): reference notes that enumerate the manuscript
@@ -140,26 +140,14 @@ generation, chat clarifications, and dasha reminders.
    `curl -X POST $NEXT_PUBLIC_BACKEND_URL/profiles/get -d '{"user_id":"<value from localStorage>","session_id":"default"}' -H 'Content-Type: application/json'`.
 4. Run `npm run lint && npm run type-check` before shipping UI changes; the same checks run in CI.
 
-## Deployment readiness (Render + Vercel + Railway)
+## Deployment readiness (Railway + Vercel)
 
 No live instances are bundled with the repository; you must deploy the backend
-and frontend yourself. Follow the host-specific steps below to get an endpoint
-ready for web and mobile clients:
+and frontend yourself. Follow the steps below to get an endpoint ready for web
+and mobile clients:
 
-1. **Backend → Render**: Connect the repo in Render and apply the included
-   `render.yaml` blueprint (or follow the manual Web Service steps in
-   `docs/deployment.md`). The blueprint uses `python -m pip install -r
-   requirements.txt` plus `./start.sh` (which exports `PYTHONPATH=src` and
-   runs the API) so the build mirrors local development. Once deployed, verify
-   the service responds with a health payload:
-
-   ```bash
-   curl https://<your-render-host>/health
-   ```
-
-2. **Backend → Railway (alternative)**: If you prefer Railway, deploy the
-   backend as a Python service and let the Nixpacks config supply Python 3.11
-   and `pip`:
+1. **Backend → Railway**: Deploy the backend as a Python service and let the
+   Nixpacks config supply Python 3.11 and `pip`:
    - If your Railway root is set to `backend/`, the existing `backend/nixpacks.toml`
      handles setup plus `python -m pip install -r requirements.txt`.
    - If your Railway root stays at the repository root, the top-level
@@ -175,16 +163,15 @@ ready for web and mobile clients:
      returns `{ "status": "ok" }`. See `docs/deployment.md` for the
      click-by-click flow plus the Railpack/Nixpacks notes.
 
-3. **Frontend → Vercel**: Point Vercel at the `frontend/` directory (Node 18+)
-   and set `NEXT_PUBLIC_BACKEND_URL` to the Render or Railway URL. After
-   deployment, load the Vercel preview in a browser and submit each form
-   (horoscope, past-life, future, matchmaking, calendar) to confirm responses
-   render.
-   - If the preview cannot reach your backend, double-check that the Render or
-     Railway service is using the `python -m pip install -r requirements.txt`
-     build command and that `./start.sh` is executable (`chmod +x start.sh`).
+2. **Frontend → Vercel**: Point Vercel at the `frontend/` directory (Node 18+)
+   and set `NEXT_PUBLIC_BACKEND_URL` to the Railway URL. After deployment, load
+   the Vercel preview in a browser and submit each form (horoscope, past-life,
+   future, matchmaking, calendar) to confirm responses render.
+   - If the preview cannot reach your backend, double-check that the Railway
+     service is using the `python -m pip install -r requirements.txt` build
+     command and that `./start.sh` is executable (`chmod +x start.sh`).
 
-4. **Local parity**: Run `PYTHONPATH=src python -m bhriguwelt.api` inside
+3. **Local parity**: Run `PYTHONPATH=src python -m bhriguwelt.api` inside
    `backend/`, export `NEXT_PUBLIC_BACKEND_URL=http://localhost:8000`, and run
    `npm run dev` from `frontend/` to mirror the hosted topology without needing
    cloud accounts.
@@ -303,15 +290,15 @@ NEXT_PUBLIC_BACKEND_URL=http://localhost:8000 npm run dev
   `/past-life`, `/future`, `/matchmaking`, and `/calendar`, so React Native or
   Flutter teams can reuse the same contracts when shipping Android/iOS builds.
 
-See `docs/deployment.md` for Render (backend) and Vercel (frontend) recipes plus
-notes on mobile packaging.
+See `docs/deployment.md` for Railway (backend) and Vercel (frontend) recipes
+plus notes on mobile packaging.
 
 ## Environment quick-start files
 
 - Backend: copy `backend/.env.example` to `.env`; `./start.sh` auto-loads it so
   HOST/PORT/BHRIGU_DATA_PATH/SENTRY_DSN stay consistent locally and on hosts.
 - Frontend: copy `frontend/.env.example` and point `NEXT_PUBLIC_BACKEND_URL` to
-  your Render/Railway/local backend.
+  your Railway or local backend.
 
 ## CI/CD
 

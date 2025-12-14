@@ -6,14 +6,14 @@ This quickstart documents how to stand up the BhriguWelt stack locally and on co
 - Install dependencies: `cd frontend && npm ci`.
 - Run locally: `npm run dev` (uses NEXT_PUBLIC_BACKEND_URL to reach the API).
 - Deploy to Vercel:
-  - Set **NEXT_PUBLIC_BACKEND_URL** pointing to the backend (Railway/Render/etc.).
+- Set **NEXT_PUBLIC_BACKEND_URL** pointing to the backend (Railway).
   - Enable **NODE_OPTIONS=--experimental-json-modules** if using ES modules in config.
   - Include **NEXT_TELEMETRY_DISABLED=1** for privacy hardened previews.
 
 ## Backend (FastAPI-compatible HTTP server)
 - Install dependencies: `cd backend && python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`.
 - Run locally: `python -m bhriguwelt.async_api` (defaults to port 8080).
-- Deploy to Railway/Render:
+- Deploy to Railway:
   - Expose port 8080.
   - Persist the `backend/data` directory so profile + alert sqlite DB survives restarts.
   - Optional: set **BHRIGUWELT_ADMIN_TOKEN** for admin-only endpoints.

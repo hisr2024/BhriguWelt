@@ -1,60 +1,20 @@
 # Deployment playbook
 
-BhriguWelt is now wired for a two-tier deployment model: the Python backend runs
-on Render (or any long-lived VM/container platform) while the React/Next.js
-frontend deploys on Vercel. Native apps (Android/iOS) reuse the same HTTP
-contracts exposed by the backend. No hosted instances ship with the repository,
-so follow the steps below to publish your own endpoints before testing clients.
+BhriguWelt uses a two-tier deployment model: the Python backend runs on Railway
+while the React/Next.js frontend deploys on Vercel. Native apps (Android/iOS)
+reuse the same HTTP contracts exposed by the backend. No hosted instances ship
+with the repository, so follow the steps below to publish your own endpoints
+before testing clients.
 
 > **HTTPS only:** Configure every public URL (backend and frontend) with TLS and
 > keep `NEXT_PUBLIC_BACKEND_URL` pointed to an HTTPS origin. The Next.js
 > `middleware.ts` automatically redirects `http://` traffic to `https://` when
 > reverse proxies forward the `x-forwarded-proto` header.
 
-## Backend → Render
-
-### Fast path (blueprint)
-
-1. Push this repository to GitHub (Render reads the `render.yaml` blueprint at
-   the repo root).
-2. In the Render dashboard, click **New → Blueprint** and pick your GitHub repo.
-3. Render auto-detects `render.yaml`; leave the defaults in place:
-   - Runtime: Python 3.11+
-   - Root directory: `backend`
-   - Build command: `python -m pip install -r requirements.txt`
-   - Start command: `./start.sh` (exports `PYTHONPATH=src` before running the API)
-   - Health check path: `/health`
-4. Add environment variables:
-   - `BHRIGUWELT_ADMIN_TOKEN` (required to unlock `/ml/retrain`)
-   - `PYTHONPATH=src`
-   - Optional: `BHRIGU_ML_ENABLED=1` to keep ML weighting active in production
-5. Deploy. Your live API URL will look like
-   `https://bhriguwelt-production.up.railway.app`—copy this for the frontend
-   and mobile clients.
-
-### Manual service (if you skip the blueprint)
-
-1. Create a **Web Service** in Render and point it at this repo.
-2. Set **Root Directory** to `backend` and **Runtime** to Python 3.11.
-3. Build command: `python -m pip install -r requirements.txt`
-4. Start command: `./start.sh` (exports `PYTHONPATH=src` and launches the API)
-5. Health check path: `/health`
-6. Deploy and watch the Render logs until you see `Serving on ('0.0.0.0', 8000)`.
-7. Verify with `curl https://<your-render-host>/health`; if it returns
-   `{"status":"ok"}`, the backend is ready for Vercel and mobile traffic.
-8. Set `BHRIGUWELT_ADMIN_TOKEN` for production; requests to `/ml/retrain` must
-   include the matching `X-Admin-Token` header. If the variable is unset, the
-   retrain endpoint stays locked down by returning HTTP 403.
-9. Leave the default in-memory rate limiting (60 requests/min per IP) enabled
-   unless you front the service with a dedicated gateway; cached responses stay
-   fresh for 120 seconds and are invalidated automatically after retraining or
-   manuscript edits.
-
 ## Backend → Railway
 
-Railway can host the same Python backend as a **Service** that mirrors the
-Render settings. Two repository layouts are supported so the build always has
-Python + `pip` available:
+Railway hosts the Python backend as a **Service**. Two repository layouts are
+supported so the build always has Python + `pip` available:
 
 1. Push this repository to GitHub (Railway will import the repo directly).
 2. In Railway, click **New Project → Deploy from GitHub repo** and select your
@@ -81,7 +41,7 @@ Python + `pip` available:
    curl https://<your-railway-host>/health
    ```
 
-   A `{\"status\":\"ok\"}` response confirms the backend is ready to pair with the
+   A `{"status":"ok"}` response confirms the backend is ready to pair with the
    Vercel frontend and native clients. Use the copied URL as
    `NEXT_PUBLIC_BACKEND_URL` in Vercel or mobile `.env` files.
 11. Keep the [Railway deployment checklist](./railway.md) handy for future
@@ -95,8 +55,7 @@ Python + `pip` available:
 2. When prompted for the project root, choose `frontend/`.
 3. Add the environment variable `NEXT_PUBLIC_BACKEND_URL` and set it to the
    Railway URL created above so server components and client fetches share the
-   same base host. This keeps every frontend deployment pinned to the live
-   Railway backend rather than the older Render demo URL.
+   same base host.
 4. (Optional) Add `NEXT_PUBLIC_BACKEND_FALLBACK_URL` to mirror a staging
    backend. The horoscope form will retry against this host whenever the
    primary URL returns a non-2xx response, keeping demos resilient.
@@ -105,7 +64,7 @@ Python + `pip` available:
    unique URLs, perfect for QA.
 6. After the first successful deploy, enable **Deploy Hooks** in the Vercel
    dashboard so backend retrains (`/ml/retrain`) or manuscript updates can
-   trigger a fresh frontend build. Wire the hook URL into your CI or a Render
+   trigger a fresh frontend build. Wire the hook URL into your CI or a Railway
    cron job.
 
 ## Post-deploy API integration checks
@@ -133,7 +92,7 @@ Python + `pip` available:
 
 - **React Native / Expo**: reuse the fetch helpers from `frontend/lib/api.ts` or
   copy the payload structure visible in the web forms. Point the base URL to the
-  Render host.
+  Railway host.
 - **Flutter / Kotlin / Swift**: mirror the JSON bodies described in the backend
   README and API docstrings. Every route returns manuscript citations so they can
   be shown verbatim in native UI components.

@@ -24,7 +24,7 @@ item before release and on every significant backend or infrastructure change.
 - [ ] Validate `.env` files are not committed; sample configuration is stored in
   `.env.example` files only.
 - [ ] Ensure `SENTRY_DSN`, database credentials, and API tokens are provided via
-  environment variables in deployment pipelines (Vercel/Render).
+  environment variables in deployment pipelines (Vercel/Railway).
 
 ## Access control and authentication
 
@@ -49,7 +49,7 @@ item before release and on every significant backend or infrastructure change.
 
 - [ ] CI enforces formatting (Black), static typing (mypy), linting, and test
   coverage thresholds.
-- [ ] Deployment manifests (Vercel/Render) are kept in sync with environment
+- [ ] Deployment manifests (Vercel/Railway) are kept in sync with environment
   variables and secrets requirements.
 
 Update this document as you complete checks to maintain an auditable security

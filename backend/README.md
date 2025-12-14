@@ -212,45 +212,10 @@ requirements-dev.txt` if your environment does not ship `pytest` by default.
 The suite now includes threaded HTTP integration tests, so both handler
 functions and the live API surface stay in sync.
 
-#### Render blueprint
+#### Railway service
 
-The repository root ships with a `render.yaml` blueprint that provisions the
-backend as a Python Web Service. There is no default hosted instance; you must
-deploy it yourself using the steps below. The build/start commands mirror local
-development so PYTHONPATH is set and `pip` is guaranteed to exist:
-
-```yaml
-services:
-  - type: web
-    name: bhriguwelt-backend
-    env: python
-    rootDir: backend
-    buildCommand: python -m pip install -r requirements.txt
-    startCommand: ./start.sh  # exports PYTHONPATH=src before launching the API
-    healthCheckPath: /health
-```
-
-Connect your GitHub repo inside Render, point it at this blueprint, and every
-push will deploy the API used by the Vercel-hosted frontend as well as mobile
-clients. If you prefer configuring a Web Service manually, mirror the settings
-from the blueprint (`rootDir=backend`, Python 3.11, the build/start commands
-above, and a `/health` check). See `docs/deployment.md` for a click-by-click
-Render walk-through.
-
-After Render finishes the first deploy, confirm the service is reachable:
-
-```bash
-curl https://<your-render-host>/health
-```
-
-> **Deployment note:** The blueprint locks the service to Python 3.11 and the
-> included zero-dependency HTTP server. If you introduce dependencies, add them
-> to `requirements.txt` so Render caches them between builds.
-
-#### Railway service (alternative)
-
-Railway can run the same backend as a Python **Service** without any code
-changes. Two layouts are supported so Nixpacks always installs Python and `pip`:
+Railway runs the backend as a Python **Service** without any code changes. Two
+layouts are supported so Nixpacks always installs Python and `pip`:
 
 1. Create a new Railway project and deploy from this GitHub repository.
 2. If you set the project root to `backend/`, the included `backend/nixpacks.toml`
