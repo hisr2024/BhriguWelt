@@ -218,6 +218,14 @@ export default function BirthInputForm() {
     return feedback;
   };
 
+  type SakaDatePayload = {
+    year?: number;
+    month?: string;
+    day?: number;
+    month_index?: number;
+    leap_year?: boolean;
+  };
+
   const handleSubmit = async (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     setError(null);
@@ -230,18 +238,19 @@ export default function BirthInputForm() {
     setLoading(true);
     try {
       const response = await requestCalendar(details);
-      const sakaDatePayload =
-        typeof response === "object" && response && "saka_date" in response ? response.saka_date : undefined;
-      const sakaValue =
-        (sakaDatePayload as { year?: number; month?: string; day?: number; month_index?: number; leap_year?: boolean } | undefined)
-          ? {
-              year: sakaDatePayload?.year,
-              month: sakaDatePayload?.month,
-              day: sakaDatePayload?.day,
-              monthIndex: sakaDatePayload?.month_index,
-              leapYear: sakaDatePayload?.leap_year,
-            }
-          : {};
+      const sakaDatePayload: SakaDatePayload | undefined =
+        typeof response === "object" && response && "saka_date" in response
+          ? (response as { saka_date?: SakaDatePayload }).saka_date
+          : undefined;
+      const sakaValue = sakaDatePayload
+        ? {
+            year: sakaDatePayload.year,
+            month: sakaDatePayload.month,
+            day: sakaDatePayload.day,
+            monthIndex: sakaDatePayload.month_index,
+            leapYear: sakaDatePayload.leap_year,
+          }
+        : {};
       setSakaLabel(formatSakaLabel(sakaValue));
       setSakaParts((prev) => ({ ...prev, ...sakaValue }));
       setHouseGrid(deriveHouseGrid(details, sakaValue.month, sakaValue.day));
