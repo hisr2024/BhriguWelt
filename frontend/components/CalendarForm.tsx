@@ -61,6 +61,11 @@ export default function CalendarForm() {
     setAutoTriggered(false);
   }, [details.birthDate, details.birthPlace, details.birthTime]);
 
+  const hasRequiredDetails = useMemo(
+    () => Boolean(details.birthDate && details.birthTime && details.birthPlace),
+    [details.birthDate, details.birthPlace, details.birthTime],
+  );
+
   const handleSubmit = async (event?: FormEvent<HTMLFormElement>, source: "auto" | "manual" = "manual") => {
     event?.preventDefault();
     const currentRequestId = requestIdRef.current + 1;
@@ -68,7 +73,7 @@ export default function CalendarForm() {
     if (source === "manual") {
       triggerSubmitFeedback();
     }
-    if (!details.birthDate || !details.birthTime || !details.birthPlace) {
+    if (!hasRequiredDetails) {
       setError("Add date, time, and place to convert.");
       return;
     }
@@ -123,7 +128,7 @@ export default function CalendarForm() {
   };
 
   useEffect(() => {
-    if (!details.birthDate || !details.birthTime || !details.birthPlace) return;
+    if (!hasRequiredDetails) return;
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
@@ -134,7 +139,7 @@ export default function CalendarForm() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [details]);
+  }, [details, hasRequiredDetails]);
 
   const sakaDate = useMemo(() => {
     if (!payload || typeof payload !== "object" || !("saka_date" in payload)) return undefined;
@@ -212,7 +217,7 @@ export default function CalendarForm() {
         <div className="form-actions">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !hasRequiredDetails}
             aria-label={t("calendar.title", "Convert Gregorian birth details to Śaka")}
             className="ghost-button"
           >
@@ -229,7 +234,12 @@ export default function CalendarForm() {
           </span>
         </div>
         <div className="form-actions" style={{ gap: "12px", flexWrap: "wrap" }}>
-          <button type="button" className="button-link" onClick={handleInsertToEngines} disabled={loading}>
+          <button
+            type="button"
+            className="button-link"
+            onClick={handleInsertToEngines}
+            disabled={loading || !hasRequiredDetails}
+          >
             Insert Śaka details into other engines
           </button>
           {syncNotice && <span className="badge">{syncNotice}</span>}

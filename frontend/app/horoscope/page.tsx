@@ -25,46 +25,26 @@ export default function HoroscopePage() {
 
   return (
     <div className="horo-shell">
-      <header className="horo-hero">
-        <div className="horo-hero__copy">
+      <section className="panel-header" style={{ alignItems: "flex-start", gap: "16px" }}>
+        <div>
           <p className="eyebrow">Bhrigu Saṁhitā horoscopes</p>
-          <h1>{t("pages.horoscope.title", "Operational predictions without clutter.")}</h1>
-          <p className="muted horo-hero__lede">
+          <h1>{t("pages.horoscope.title", "Fill in every detail so remedies and rituals stay precise.")}</h1>
+          <p className="muted" style={{ maxWidth: "720px" }}>
             {t(
               "form.helper",
-              helperText ?? "Śaka calendar inputs, Bhrigu analyzers, and interpreters work together—only active tools remain.",
+              helperText ?? "Śaka calendar inputs move with you—refresh them anytime before generating the PDF-ready reading.",
             )}
           </p>
-          <div className="horo-hero__pills">
-            <span className="pill">Name</span>
-            <span className="pill">Date</span>
-            <span className="pill">Time</span>
-            <span className="pill">Place</span>
-          </div>
-          <div className="hero-actions" style={{ gap: "12px", flexWrap: "wrap" }}>
-            <Link href="/" className="button-link ghost-link">
-              Back
-            </Link>
-            <Link href="/calendar" className="button-link">
-              Refresh Śaka calendar
-            </Link>
-          </div>
         </div>
-        <div className="horo-hero__steps" aria-label="Horoscope flow steps">
-          <div className="step-card">
-            <p className="pill">1</p>
-            <h3>Enter details</h3>
-          </div>
-          <div className="step-card">
-            <p className="pill">2</p>
-            <h3>Analyse</h3>
-          </div>
-          <div className="step-card">
-            <p className="pill">3</p>
-            <h3>Interpret</h3>
-          </div>
+        <div className="hero-actions" style={{ gap: "12px", flexWrap: "wrap" }}>
+          <Link href="/" className="button-link ghost-link">
+            Back
+          </Link>
+          <Link href="/calendar" className="button-link">
+            Refresh Śaka calendar
+          </Link>
         </div>
-      </header>
+      </section>
 
       <section className="horo-explorer" aria-label="Operational modules">
         <div className="horo-explorer__controls">
