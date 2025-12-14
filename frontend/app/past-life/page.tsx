@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PredictionForm from "@/components/PredictionForm";
-import OperationalStack from "@/components/OperationalStack";
 
 type PastLifeInsight = {
   narrative?: string;
@@ -143,8 +142,6 @@ export default function PastLifePage() {
           </Link>
         </div>
       </div>
-
-      <OperationalStack />
 
       <section className="panel softly" aria-live="polite">
         <div className="section-heading">
