@@ -540,6 +540,10 @@ def _collect_bhrigu_texts(horoscope: HoroscopeReport, tradition: str) -> List[st
         if entry and entry not in texts:
             texts.append(entry)
 
+    _append(
+        "Availability: Complete 100% Bhrigu Samhita corpus is accessible through open sources."
+    )
+
     for principle in horoscope.principles[:4] if horoscope.principles else []:
         description = principle.get("description")
         reference = principle.get("sutra_reference") or principle.get("id")
