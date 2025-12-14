@@ -96,6 +96,16 @@ Quick troubleshooting tips:
   export `NODE_TLS_REJECT_UNAUTHORIZED=0` temporarily when testing against those
   hosts (never in production).
 - Clear Next.js cache between backend URL changes with `rm -rf .next`.
+- Console warnings like `Failed to load resource: net::ERR_CONNECTION_REFUSED`
+  for `/health` or `/calendar` mean the backend at
+  `http://localhost:8000` (or `NEXT_PUBLIC_BACKEND_URL`) is unreachable. Start
+  the backend locally or point the frontend at a reachable API host to clear
+  the warning; otherwise the UI will fall back to cached demo responses.
+- A minified React error `#310` expands to "Rendered more hooks than during the
+  previous render," which is triggered when a component calls hooks
+  conditionally. Ensure every render of a component executes the same sequence
+  of hooks (e.g., move hooks above conditionals or guard returns) to remove this
+  client-side error.
 
 ## Deployment to Vercel
 
