@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 
 import Timeline from "@/components/Timeline";
 import PredictionForm from "@/components/PredictionForm";
-import OperationalStack from "@/components/OperationalStack";
 import { getFutureProgress, type FutureProgressResponse } from "@/lib/api";
 
 type FutureEvent = {
@@ -102,8 +101,6 @@ export default function FuturePage() {
           </Link>
         </div>
       </div>
-
-      <OperationalStack />
 
       <section className="panel softly" aria-label="Future timeline overlay">
         <div className="section-heading">
