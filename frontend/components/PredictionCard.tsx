@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from "next/dynamic";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { HOUSE_FOCUSES, deriveChartHouses } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
 import { areMicroAnimationsAllowed } from "@/lib/immersive";
@@ -485,6 +485,7 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
   const horoscopePayload = engine === "horoscope" && typeof payload === "object" ? (payload as HoroscopePayload) : null;
   const [animationsEnabled, setAnimationsEnabled] = useState(false);
   const [flipActive, setFlipActive] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [fallbackCharts, setFallbackCharts] = useState<{ rashi: ChartHouse[]; bhava: ChartHouse[] }>({
     rashi: [],
     bhava: [],
@@ -550,6 +551,73 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
     );
   }
 
+  const escapePdfText = (text: string) =>
+    text
+      .replace(/\\/g, "\\\\")
+      .replace(/\(/g, "\\(")
+      .replace(/\)/g, "\\)")
+      .replace(/\r?\n/g, " ");
+
+  const downloadPdf = useCallback(() => {
+    if (!sections.length) return;
+    setIsSaving(true);
+    const lines = [
+      `${title} (${engine})`,
+      seekerName ? `Seeker: ${seekerName}` : null,
+      ...sections.flatMap((section) => [
+        section.heading,
+        section.english,
+        section.hindi ?? null,
+        ...(section.bullets ?? []),
+      ]),
+    ].filter(Boolean) as string[];
+
+    const contentLines = lines.map((line) => escapePdfText(line));
+    const streamParts = ["BT", "/F1 12 Tf", "50 780 Td"];
+    contentLines.forEach((line, index) => {
+      if (index === 0) {
+        streamParts.push(`(${line}) Tj`);
+      } else {
+        streamParts.push("0 -16 Td");
+        streamParts.push(`(${line}) Tj`);
+      }
+    });
+    streamParts.push("ET");
+    const contentStream = streamParts.join("\n");
+
+    const objects = [
+      "<< /Type /Catalog /Pages 2 0 R >>",
+      "<< /Type /Pages /Count 1 /Kids [3 0 R] >>",
+      "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+      `<< /Length ${contentStream.length} >>\nstream\n${contentStream}\nendstream`,
+      "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    ];
+
+    let pdf = "%PDF-1.4\n";
+    const offsets = [0];
+    objects.forEach((object, index) => {
+      offsets[index + 1] = pdf.length;
+      pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+    });
+
+    const xrefStart = pdf.length;
+    pdf += `xref\n0 ${objects.length + 1}\n`;
+    pdf += "0000000000 65535 f \n";
+    offsets.slice(1).forEach((offset) => {
+      pdf += `${offset.toString().padStart(10, "0")} 00000 n \n`;
+    });
+    pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+
+    const blob = new Blob([pdf], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${engine}-guidance.pdf`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setIsSaving(false);
+  }, [engine, sections, seekerName, title]);
+
   return (
     <section className={cardClassName} aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
       <div className="prediction-card__body">
@@ -557,6 +625,17 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
           <p className="eyebrow">Response</p>
           <h3>{title}</h3>
           <p className="muted">{t("results.helperRaw", "Narratives are ready to share—no JSON needed.")}</p>
+          <div className="prediction-card__actions">
+            <span className="microcopy">PDF export ready for this engine.</span>
+            <button
+              type="button"
+              className="button-link ghost-link prediction-card__download"
+              onClick={downloadPdf}
+              disabled={isSaving}
+            >
+              {isSaving ? "Preparing PDF…" : "Download PDF"}
+            </button>
+          </div>
         </div>
         <div className="insight-grid">{sections.map(renderSection)}</div>
         {horoscopePayload && (
