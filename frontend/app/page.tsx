@@ -50,6 +50,36 @@ export default function HomePage() {
     },
   ];
 
+  const engineExperiences = [
+    {
+      title: "Horoscope engine",
+      description: "Nakṣatra-aware dashboards that keep the Bhrigu story visible on every chart, with motion only when it guides.",
+      mantra: "Chandra-led calm",
+    },
+    {
+      title: "Matchmaking flow",
+      description: "Kuṭumba, karma, and compatibility stitched together with soft pulses instead of loud alerts—feel the ātmā first.",
+      mantra: "Śubha sandhi",
+    },
+    {
+      title: "Past-life trace",
+      description: "Lotus-like revealers for previous janmas, balanced by warm gradients and a gentle tapas-inspired glow.",
+      mantra: "Smaraṇa lotus",
+    },
+    {
+      title: "Calendar atelier",
+      description: "Tithi-aware planners that light up the right muhurta bands with a mantra ribbon, never cluttering the gaze.",
+      mantra: "Muhurta weave",
+    },
+  ];
+
+  const yantraGlyphs = [
+    { label: "ॐ", hint: "Source hum" },
+    { label: "क्रि", hint: "Action spark" },
+    { label: "ज्ञा", hint: "Sage knowing" },
+    { label: "ह्रीं", hint: "Heart beam" },
+  ];
+
   return (
     <div className="z-shell">
       <section className="z-hero z-hero--cosmic" aria-labelledby="hero-title">
@@ -134,6 +164,43 @@ export default function HomePage() {
                 <p className="muted">{moment.detail}</p>
               </div>
               <span className="ritual-card__pulse" aria-hidden />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="engine-weave" aria-label="Engine previews with ancient Indian cues">
+        <div className="section-heading">
+          <p className="eyebrow">Engines in harmony</p>
+          <h2>Minimal UI, deep lineage motion.</h2>
+          <p className="muted">
+            Each engine card carries a yantra-inspired aura and a mantra badge so you feel the sādhana behind the tech. The
+            animations stay soft, letting the wisdom be the loudest part of the interface.
+          </p>
+        </div>
+
+        <div className="engine-grid">
+          {engineExperiences.map((engine) => (
+            <article key={engine.title} className="engine-card">
+              <div className="engine-card__shine" />
+              <div className="engine-card__frame" />
+              <div className="engine-card__body">
+                <p className="eyebrow">{engine.mantra}</p>
+                <h3>{engine.title}</h3>
+                <p className="muted">{engine.description}</p>
+              </div>
+              <div className="engine-card__pulse" aria-hidden />
+            </article>
+          ))}
+        </div>
+
+        <div className="yantra-ribbon" aria-label="Animated yantra glyphs">
+          <div className="yantra-ribbon__trail" />
+          {yantraGlyphs.map((glyph) => (
+            <div key={glyph.label} className="yantra-chip" aria-label={glyph.hint}>
+              <span className="yantra-chip__glow" aria-hidden />
+              <span className="yantra-chip__glyph">{glyph.label}</span>
+              <span className="yantra-chip__hint">{glyph.hint}</span>
             </div>
           ))}
         </div>
