@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Sequence
 
 from .experience_flow import build_unified_experience_flow
 from .horoscope import HoroscopeRequest, build_core_wisdom_reading
-from .ai_client import AIIntegrationError, chat_completion, is_ai_configured
+from .ai_client import AIIntegrationError, ai_provider_metadata, chat_completion, is_ai_configured
 
 
 @dataclass
@@ -29,6 +29,7 @@ class WisdomBotResponse:
     focus_areas: List[str]
     core_wisdom: Dict[str, Any]
     flow: Dict[str, Any]
+    ai_support: Dict[str, Any]
     download: WisdomBotDownload
 
     def to_dict(self) -> Dict[str, Any]:
@@ -38,6 +39,7 @@ class WisdomBotResponse:
             "focus_areas": list(self.focus_areas),
             "core_wisdom": dict(self.core_wisdom),
             "flow": dict(self.flow),
+            "ai_support": dict(self.ai_support),
             "download": self.download.to_dict(),
         }
 
@@ -255,12 +257,28 @@ def build_wisdom_bot_response(
     )
     filename = f"bhrigu-wisdom-{primary_request.name.replace(' ', '-').lower() or 'seeker'}.md"
 
+    ai_support = ai_provider_metadata()
+    ai_support.setdefault(
+        "coverage",
+        [
+            "wisdom-bot",
+            "core-wisdom",
+            "analyzers",
+            "interpreters",
+            "designers",
+            "future",
+            "past_life",
+            "matchmaking",
+        ],
+    )
+
     return WisdomBotResponse(
         query=query,
         ai_reply=ai_reply,
         focus_areas=focus_list,
         core_wisdom=core_payload,
         flow=flow,
+        ai_support=ai_support,
         download=WisdomBotDownload(filename=filename, markdown=markdown),
     )
 

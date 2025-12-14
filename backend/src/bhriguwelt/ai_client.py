@@ -48,6 +48,40 @@ def is_ai_configured() -> bool:
     return bool(_resolve_api_base() and _resolve_api_key())
 
 
+def ai_provider_metadata() -> Dict[str, Any]:
+    """Expose the configured AI provider so downstream layers know if Sarvam is active.
+
+    This keeps the analyser, interpreter, and designer stacks aware of whether
+    Sarvam/OpenAI-compatible access is available for the Wisdom Bot, chat, and
+    other engines that surface AI summaries.
+    """
+
+    api_base = _resolve_api_base()
+    api_key = _resolve_api_key()
+    configured = bool(api_base and api_key)
+    provider = "unconfigured"
+
+    if configured:
+        provider = "sarvam" if "sarvam" in api_base.lower() else "openai-compatible"
+
+    return {
+        "configured": configured,
+        "provider": provider,
+        "api_base": api_base or "",
+        "coverage": [
+            "wisdom-bot",
+            "chat",
+            "core-wisdom",
+            "analyzers",
+            "interpreters",
+            "designers",
+            "future",
+            "past_life",
+            "matchmaking",
+        ],
+    }
+
+
 def chat_completion(
     messages: Sequence[Dict[str, str]],
     *,
@@ -101,4 +135,4 @@ def chat_completion(
     return message.strip()
 
 
-__all__ = ["AIIntegrationError", "is_ai_configured", "chat_completion"]
+__all__ = ["AIIntegrationError", "is_ai_configured", "chat_completion", "ai_provider_metadata"]

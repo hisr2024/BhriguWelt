@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Sequence
 
+from .ai_client import ai_provider_metadata
 from .bhrigu_core import bhrigu_core
 from .engine_analyzers import analyze_core_engines
 from .engine_interpreters import brief_alignment_pipeline, interpret_bhrigu_wisdom
@@ -53,6 +54,7 @@ class UnifiedExperienceFlow:
     analyzers: List[Dict[str, Any]]
     interpretations: List[Dict[str, Any]]
     briefings: List[Dict[str, Any]]
+    ai_support: Dict[str, Any]
     visuals: FlowVisualizations
 
     def to_dict(self) -> Dict[str, Any]:
@@ -65,6 +67,7 @@ class UnifiedExperienceFlow:
             "analyzers": [dict(entry) for entry in self.analyzers],
             "interpretations": [dict(entry) for entry in self.interpretations],
             "briefings": [dict(entry) for entry in self.briefings],
+            "ai_support": dict(self.ai_support),
             "visuals": self.visuals.to_dict(),
         }
 
@@ -179,6 +182,20 @@ def build_unified_experience_flow(
         "tradition": tradition,
     }
 
+    ai_support = ai_provider_metadata()
+    ai_support.setdefault(
+        "coverage",
+        [
+            "core-wisdom",
+            "analyzers",
+            "interpreters",
+            "designers",
+            "future",
+            "past_life",
+            "matchmaking",
+        ],
+    )
+
     return UnifiedExperienceFlow(
         seeker=seeker,
         horoscope=horoscope_dict,
@@ -188,6 +205,7 @@ def build_unified_experience_flow(
         analyzers=analyzers,
         interpretations=interpretations,
         briefings=briefings,
+        ai_support=ai_support,
         visuals=visuals,
     )
 
