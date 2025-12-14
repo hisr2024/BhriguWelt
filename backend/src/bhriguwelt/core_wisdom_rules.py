@@ -1,0 +1,662 @@
+"""Bhrigu Core Wisdom atomic rules and engine specification.
+
+This module codifies the sign-neutral, house-centric rule base provided for
+the Bhrigu Core Wisdom experience. It exposes a helper to build the atomic
+rules, assemble the engine specification, and optionally persist both to disk
+in JSON form so downstream services (designers, interpreters, data pipelines)
+can reuse the exact bundle.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any, Dict, List, Sequence, Tuple
+
+DEFAULT_CREATION_DATE = "2025-12-14"
+DEFAULT_OUTPUT_DIR = Path("/mnt/data")
+
+PLANETS: Sequence[Tuple[str, str, str]] = (
+    ("Sun", "SU", "authority, identity, government, vitality"),
+    ("Moon", "MO", "mind, emotions, public, fluids"),
+    ("Mars", "MA", "action, courage, conflict, engineering"),
+    ("Mercury", "ME", "intellect, speech, trade, skills"),
+    ("Jupiter", "JU", "wisdom, dharma, wealth-growth, children"),
+    ("Venus", "VE", "relationships, comforts, arts, pleasures"),
+    ("Saturn", "SA", "karma, delay, discipline, labor"),
+    ("Rahu", "RA", "desire, disruption, foreign, unconventional"),
+    ("Ketu", "KE", "detachment, intuition, spirituality, cuts"),
+)
+
+HOUSES: Sequence[Tuple[int, str, str]] = (
+    (1, "Self & body", "identity, temperament, health, appearance, initiative"),
+    (2, "Wealth & speech", "family, savings, food, voice, values"),
+    (3, "Effort & siblings", "courage, communication, skills, short travel"),
+    (4, "Home & peace", "mother, property, education, inner comfort"),
+    (5, "Creativity & children", "intelligence, romance, mantra, speculation"),
+    (6, "Work & obstacles", "service, debts, disease, rivals, litigation"),
+    (7, "Marriage & trade", "spouse, partnerships, public dealings"),
+    (8, "Change & longevity", "crises, occult, inheritance, transformations"),
+    (9, "Fortune & dharma", "teachers, luck, long travel, faith"),
+    (10, "Career & status", "profession, authority, reputation, actions"),
+    (11, "Gains & networks", "income, friends, fulfilment, ambitions"),
+    (12, "Loss & liberation", "expenses, sleep, foreign lands, moksha"),
+)
+
+HOUSE_DOMAIN_EFFECTS: Dict[int, Sequence[str]] = {
+    1: ("health", "personality", "status"),
+    2: ("wealth", "family", "speech"),
+    3: ("skills", "courage", "siblings"),
+    4: ("home", "property", "education"),
+    5: ("children", "creativity", "intelligence"),
+    6: ("work", "debts", "health"),
+    7: ("marriage", "business", "public_life"),
+    8: ("longevity", "sudden_events", "occult"),
+    9: ("fortune", "teachers", "travel"),
+    10: ("career", "authority", "reputation"),
+    11: ("income", "networks", "gains"),
+    12: ("expenses", "foreign", "spirituality"),
+}
+
+PLANET_DOMAIN: Dict[str, Dict[str, str]] = {
+    "Sun": {
+        "health": "strong vitality; watch heat/pressure",
+        "personality": "self-respecting, authoritative",
+        "status": "honor, leadership, visibility",
+        "wealth": "wealth via authority; pride in possessions",
+        "family": "dominant family role; respected lineage",
+        "speech": "direct, commanding speech",
+        "skills": "administration, management skills",
+        "courage": "bold, takes charge",
+        "siblings": "proud relations; leadership among siblings",
+        "home": "official/solar tone at home; father influence",
+        "property": "property through authority/government",
+        "education": "education for status; disciplined learning",
+        "children": "child brings pride; focus on legacy",
+        "creativity": "creative leadership; recognition",
+        "intelligence": "clear judgment; ego may color views",
+        "work": "service with authority; clashes with superiors possible",
+        "debts": "debts reduced through discipline; avoid ego disputes",
+        "marriage": "spouse respects status; strong will in partnership",
+        "business": "success in leadership roles; brand/authority driven",
+        "public_life": "public recognition; reputation central",
+        "longevity": "survives crises with will; heart/heat care",
+        "sudden_events": "sudden status shifts; avoid arrogance",
+        "occult": "interest in authority of knowledge; not deeply occult",
+        "fortune": "luck via mentors/authority; dharma pride",
+        "teachers": "teacher-like role; respect gurus",
+        "travel": "official travel; purposeful journeys",
+        "career": "government/leadership; high responsibility",
+        "authority": "command positions; fame possible",
+        "reputation": "name and honor emphasized",
+        "income": "gains through leadership; high expectations",
+        "networks": "influential contacts; ego conflicts possible",
+        "gains": "profits via status/brand",
+        "expenses": "spend on status, authority, father/health",
+        "foreign": "foreign for prestige/work",
+        "spirituality": "spiritual pride; need humility",
+    },
+    "Moon": {
+        "health": "variable vitality; digestion/fluids sensitive",
+        "personality": "empathetic, changeable, popular",
+        "status": "public favor; fluctuating fame",
+        "wealth": "income linked to public/mass needs",
+        "family": "nurturing family role; strong mother link",
+        "speech": "soft, persuasive speech",
+        "skills": "public relations; adaptive skills",
+        "courage": "courage in tides; mood-driven action",
+        "siblings": "caring sibling bonds; fluctuations",
+        "home": "strong domestic focus; comfort seeking",
+        "property": "property via family/mother; homes improve wellbeing",
+        "education": "learning by feeling; memory strength",
+        "children": "affectionate children; emotional bonds",
+        "creativity": "imaginative, artistic mind",
+        "intelligence": "reflective; indecision possible",
+        "work": "service in caring roles; workplace emotions",
+        "debts": "debts fluctuate; manage impulsive spending",
+        "marriage": "emotionally responsive spouse; sensitivity in marriage",
+        "business": "trade involving liquids, food, hospitality",
+        "public_life": "visibility with ups/downs; crowd support",
+        "longevity": "resilience depends on mental peace",
+        "sudden_events": "sudden mood/relationship shifts",
+        "occult": "intuition, dreams, mind sciences",
+        "fortune": "luck through women/public; changing luck",
+        "teachers": "learns through nurture; receptive to guidance",
+        "travel": "travel near water; comfort-based travel",
+        "career": "public-facing roles; caregiving/management",
+        "authority": "soft authority; relies on popularity",
+        "reputation": "reputation tied to emotions/public image",
+        "income": "income through networks; seasonal variations",
+        "networks": "many contacts; emotional ties",
+        "gains": "gains through public support",
+        "expenses": "spend on comfort, home, family",
+        "foreign": "foreign due to emotional ties/work",
+        "spirituality": "devotional mind; meditation helps stability",
+    },
+    "Mars": {
+        "health": "strong energy; risk of cuts/inflammation",
+        "personality": "brave, assertive, competitive",
+        "status": "status through action; fights for recognition",
+        "wealth": "wealth via engineering, land, initiative",
+        "family": "protective but argumentative family role",
+        "speech": "sharp speech; straightforward",
+        "skills": "technical/defense skills; hands-on competence",
+        "courage": "very high courage; takes risks",
+        "siblings": "conflicts/competition with siblings possible",
+        "home": "restlessness at home; need for independence",
+        "property": "land, construction, vehicles; disputes possible",
+        "education": "practical learning; sports/engineering",
+        "children": "active children; strict discipline",
+        "creativity": "bold creativity; entrepreneurship",
+        "intelligence": "quick decisions; impatience",
+        "work": "competitive service; wins over rivals",
+        "debts": "takes loans for action; clears by effort",
+        "marriage": "passion; disputes if anger unmanaged",
+        "business": "industry, metals, tools, machinery; competitive trade",
+        "public_life": "known for bold stands",
+        "longevity": "accident risk; stamina high",
+        "sudden_events": "sudden conflicts; accidents possible",
+        "occult": "interest in weapons/strategic occult",
+        "fortune": "fortune via courage; luck in contests",
+        "teachers": "prefers direct mentors; challenges authority",
+        "travel": "frequent short trips; action travel",
+        "career": "military, engineering, operations, leadership",
+        "authority": "command via strength; confrontations possible",
+        "reputation": "reputation as fighter/achiever",
+        "income": "income from initiative; variable with risks",
+        "networks": "networks through teams/sports/industry",
+        "gains": "gains through bold actions",
+        "expenses": "spend on vehicles, tools, competition",
+        "foreign": "foreign due to work/conflict resolution",
+        "spirituality": "discipline via martial path; needs patience",
+    },
+    "Mercury": {
+        "health": "nervous system sensitive; generally youthful",
+        "personality": "curious, witty, communicative",
+        "status": "status through skills and intellect",
+        "wealth": "wealth via trade, analytics, writing",
+        "family": "youthful family interactions; negotiations",
+        "speech": "clever speech; languages",
+        "skills": "strong in learning, commerce, tech",
+        "courage": "courage through planning; tactical bravery",
+        "siblings": "helpful sibling ties; communication central",
+        "home": "busy home environment; study-friendly",
+        "property": "property via documents/deals",
+        "education": "excellent for education; multi-disciplinary",
+        "children": "smart children; focus on studies",
+        "creativity": "writing/design/logic creativity",
+        "intelligence": "sharp reasoning; adaptable mind",
+        "work": "service in communication/analysis roles",
+        "debts": "debts handled via planning; paperwork important",
+        "marriage": "partnership built on communication; youthful spouse",
+        "business": "sales, brokerage, IT, media, consulting",
+        "public_life": "known for speech/writing",
+        "longevity": "benefits from mental activity; stress management",
+        "sudden_events": "sudden changes via deals/messages",
+        "occult": "interest in systems, numbers, astrology as craft",
+        "fortune": "fortune through learning and networking",
+        "teachers": "many teachers; learns quickly",
+        "travel": "frequent short travel; business trips",
+        "career": "commerce, analytics, media, education, tech",
+        "authority": "authority through expertise",
+        "reputation": "reputation as smart communicator",
+        "income": "income via multiple streams",
+        "networks": "large network; connector role",
+        "gains": "gains through smart deals",
+        "expenses": "spend on gadgets, learning, travel",
+        "foreign": "foreign via trade/IT/study",
+        "spirituality": "intellectual spirituality; mantra with logic",
+    },
+    "Jupiter": {
+        "health": "overall protection; watch weight/sugar",
+        "personality": "ethical, optimistic, guiding",
+        "status": "respect, honor, counsel roles",
+        "wealth": "wealth growth and stability",
+        "family": "supportive family; good lineage",
+        "speech": "wise, dignified speech",
+        "skills": "teaching, advising, law, finance",
+        "courage": "courage through dharma; confident",
+        "siblings": "helpful relations; elder-sibling protection",
+        "home": "peaceful home; blessings in residence",
+        "property": "property expansion; good lands",
+        "education": "higher education; scriptures",
+        "children": "children blessing; good progeny",
+        "creativity": "noble creativity; mentoring talent",
+        "intelligence": "excellent judgment; wisdom",
+        "work": "service in advisory/ethical roles",
+        "debts": "debts manageable; protection in disputes",
+        "marriage": "supportive spouse; moral partner",
+        "business": "education, finance, law, consulting; ethical trade",
+        "public_life": "respected and trusted by public",
+        "longevity": "protects longevity; recovery",
+        "sudden_events": "rescued in crises; benefic outcomes",
+        "occult": "interest in philosophy, dharma, higher knowledge",
+        "fortune": "strong fortune; grace of teachers",
+        "teachers": "guru support; becomes teacher",
+        "travel": "long travel for education/pilgrimage",
+        "career": "counsel, administration, law, education",
+        "authority": "authority as advisor/leader",
+        "reputation": "good name; integrity",
+        "income": "steady gains; patronage",
+        "networks": "good friends; benefactors",
+        "gains": "profits with ethics",
+        "expenses": "spend on charity, education, rituals",
+        "foreign": "foreign for study/teaching",
+        "spirituality": "strong spiritual growth; devotion",
+    },
+    "Venus": {
+        "health": "good vitality; watch sugar/indulgence",
+        "personality": "charming, diplomatic, artistic",
+        "status": "status via relationships/arts/comfort",
+        "wealth": "wealth through luxury, trade, partnerships",
+        "family": "harmonious family; pleasures",
+        "speech": "pleasant speech; persuasive",
+        "skills": "arts, design, negotiation, hospitality",
+        "courage": "courage in social settings; diplomacy",
+        "siblings": "friendly ties; cooperative",
+        "home": "beautiful home; comforts",
+        "property": "vehicles, luxuries, aesthetics in property",
+        "education": "arts/creative education",
+        "children": "affectionate children; creative legacy",
+        "creativity": "strong arts/music/design",
+        "intelligence": "balanced views; pleasure-seeking",
+        "work": "service in arts/hospitality; diplomacy at work",
+        "debts": "debts due to luxury; manage spending",
+        "marriage": "romance; strong marital focus",
+        "business": "fashion, beauty, entertainment, hospitality",
+        "public_life": "popular, liked by people",
+        "longevity": "comfort supports longevity; indulgence risks",
+        "sudden_events": "sudden romance/pleasure events",
+        "occult": "interest in tantra/arts; charm sciences",
+        "fortune": "fortune through women/alliances",
+        "teachers": "learns through refinement; artistic mentors",
+        "travel": "travel for pleasure/arts",
+        "career": "arts, luxury trade, diplomacy, design",
+        "authority": "soft authority; influence through charm",
+        "reputation": "known for taste and refinement",
+        "income": "income via clients/partners",
+        "networks": "strong social circles",
+        "gains": "gains through alliances",
+        "expenses": "spend on luxury, love, beauty",
+        "foreign": "foreign for pleasure/arts/trade",
+        "spirituality": "devotional aesthetics; bhakti through beauty",
+    },
+    "Saturn": {
+        "health": "stamina but chronic issues; bones/joints care",
+        "personality": "serious, disciplined, enduring",
+        "status": "slow, lasting status; respect for work",
+        "wealth": "wealth through labor and long-term saving",
+        "family": "duty-bound family role; burdens possible",
+        "speech": "measured speech; sometimes harsh",
+        "skills": "management of systems; endurance skills",
+        "courage": "courage through patience; steady",
+        "siblings": "responsibility for siblings; distance possible",
+        "home": "austere home; obligations",
+        "property": "property after delay; repairs/old buildings",
+        "education": "learning through effort; practical wisdom",
+        "children": "children after delay or responsibility",
+        "creativity": "structured creativity; craftsmanship",
+        "intelligence": "realistic; cautious",
+        "work": "service, labor, governance systems",
+        "debts": "debts with delay; disciplined repayment",
+        "marriage": "serious partnership; delay/tests possible",
+        "business": "industry, minerals, logistics; long-term business",
+        "public_life": "known for reliability",
+        "longevity": "supports longevity with discipline",
+        "sudden_events": "sudden setbacks if karma ripens",
+        "occult": "interest in karma, austerity, deep truths",
+        "fortune": "fortune after effort; karmic grace",
+        "teachers": "teachers strict; learns patience",
+        "travel": "travel for duty/work",
+        "career": "slow rise; administration, labor, systems",
+        "authority": "authority late; durable power",
+        "reputation": "reputation for discipline",
+        "income": "steady income; grows over time",
+        "networks": "few but reliable friends",
+        "gains": "gains through persistence",
+        "expenses": "spend on obligations, repairs, health",
+        "foreign": "foreign for labor/responsibility",
+        "spirituality": "strong tapas; detachment lessons",
+    },
+    "Rahu": {
+        "health": "odd ailments; toxins/addictions risk",
+        "personality": "ambitious, unconventional, restless",
+        "status": "sudden rise; fame through unusual paths",
+        "wealth": "wealth via foreign, tech, speculation; swings",
+        "family": "non-traditional family patterns",
+        "speech": "persuasive, sometimes deceptive",
+        "skills": "innovation, strategy, tech/media",
+        "courage": "bold, risk-taking",
+        "siblings": "unusual sibling relations; separations possible",
+        "home": "restless home; relocations",
+        "property": "property in foreign/modern areas; sudden gains/loss",
+        "education": "modern/foreign learning",
+        "children": "unusual children matters; sudden events",
+        "creativity": "breakthrough creativity; rebellion",
+        "intelligence": "cunning; obsession risk",
+        "work": "work in mass/tech/foreign sectors; politics",
+        "debts": "debts via risks; careful contracts",
+        "marriage": "unconventional marriage; attraction/instability",
+        "business": "tech, media, aviation, foreign trade",
+        "public_life": "mass appeal; controversy possible",
+        "longevity": "sudden crises possible; avoid risky habits",
+        "sudden_events": "very high—surprises, scandals, leaps",
+        "occult": "strong interest in occult, tantra, mysteries",
+        "fortune": "fortune through unconventional routes",
+        "teachers": "unorthodox mentors",
+        "travel": "foreign/long travel prominent",
+        "career": "tech/media/foreign/politics; sudden shifts",
+        "authority": "authority via influence; instability",
+        "reputation": "polarizing reputation",
+        "income": "big gains possible; volatility",
+        "networks": "wide networks; opportunistic ties",
+        "gains": "windfalls; speculative gains",
+        "expenses": "spend on desires, tech, travel",
+        "foreign": "strong foreign connection",
+        "spirituality": "spiritual breakthroughs after obsession control",
+    },
+    "Ketu": {
+        "health": "mysterious issues; cuts; nervous sensitivity",
+        "personality": "detached, inward, sharp intuition",
+        "status": "low-interest in fame; niche respect",
+        "wealth": "wealth via minimalism; sudden detachment from money",
+        "family": "distance from family norms; separations possible",
+        "speech": "few words; cutting truth",
+        "skills": "research, healing, spiritual skills",
+        "courage": "fearless in crises; dispassionate",
+        "siblings": "distance or spiritual bonds",
+        "home": "simple home; wandering spirit",
+        "property": "property renounced or simplified",
+        "education": "deep study, metaphysics, research",
+        "children": "spiritual/intense children themes; detachment",
+        "creativity": "minimalist, symbolic creativity",
+        "intelligence": "penetrating insight; skeptical",
+        "work": "work in research, healing, backstage roles",
+        "debts": "cuts debts abruptly; sudden closures",
+        "marriage": "detachment in marriage; spiritual tests",
+        "business": "spiritual goods, research, niche services",
+        "public_life": "private life; behind-the-scenes",
+        "longevity": "survives crises through detachment",
+        "sudden_events": "separations, endings, renunciation",
+        "occult": "very strong occult/spiritual interest",
+        "fortune": "fortune via letting go; pilgrimages",
+        "teachers": "spiritual teachers; mystical guidance",
+        "travel": "pilgrimage/isolated travel",
+        "career": "research, spirituality, healing; non-mainstream",
+        "authority": "dislikes authority; quiet influence",
+        "reputation": "known for depth/otherworldliness",
+        "income": "income steady but not attachment-based",
+        "networks": "few, spiritual network",
+        "gains": "gains through renunciation",
+        "expenses": "spend on spirituality, retreats, healing",
+        "foreign": "foreign for retreat/pilgrimage",
+        "spirituality": "very high—moksha orientation",
+    },
+}
+
+MODIFIERS: List[Dict[str, str]] = [
+    {
+        "modifier_id": "MOD-CONJ",
+        "type": "conjunction",
+        "applies_to": "planet_pair",
+        "description": "If two planets are conjunct (within orb), blend effects; benefic/ malefic tone depends on planets and strength.",
+    },
+    {
+        "modifier_id": "MOD-ASPECT-DRISHTI",
+        "type": "aspect",
+        "applies_to": "planet_pair",
+        "description": "Apply graha drishti (special aspects) to modify the house results of the aspected planet/house.",
+    },
+    {
+        "modifier_id": "MOD-RETRO",
+        "type": "retrograde",
+        "applies_to": "planet",
+        "description": "Retrograde amplifies inward repetition; delays/returns; can intensify outcomes and rework themes.",
+    },
+    {
+        "modifier_id": "MOD-COMBUST",
+        "type": "combustion",
+        "applies_to": "planet",
+        "description": "Combust planet loses clarity; results become strained; mitigate via strength and benefic support.",
+    },
+    {
+        "modifier_id": "MOD-EXALTED",
+        "type": "dignity",
+        "applies_to": "planet",
+        "description": "Exaltation strengthens constructive expression; improves reliability of positive outcomes.",
+    },
+    {
+        "modifier_id": "MOD-DEBILITATED",
+        "type": "dignity",
+        "applies_to": "planet",
+        "description": "Debilitation weakens constructive expression; increases challenges unless supported.",
+    },
+    {
+        "modifier_id": "MOD-OWN",
+        "type": "dignity",
+        "applies_to": "planet",
+        "description": "Own sign steadies results; makes themes consistent.",
+    },
+    {
+        "modifier_id": "MOD-FRIEND",
+        "type": "dignity",
+        "applies_to": "planet",
+        "description": "Friend sign supports smoother outcomes.",
+    },
+    {
+        "modifier_id": "MOD-ENEMY",
+        "type": "dignity",
+        "applies_to": "planet",
+        "description": "Enemy sign adds friction and delays.",
+    },
+    {
+        "modifier_id": "MOD-SHADBALA",
+        "type": "strength",
+        "applies_to": "planet",
+        "description": "Use strength score (e.g., shadbala proxy) to scale effect intensity and positivity.",
+    },
+    {
+        "modifier_id": "MOD-AFFLICTED",
+        "type": "affliction",
+        "applies_to": "planet_or_house",
+        "description": "Affliction (malefic aspects/conjunctions) increases obstacles in that domain.",
+    },
+    {
+        "modifier_id": "MOD-BENEFIC-SUPPORT",
+        "type": "support",
+        "applies_to": "planet_or_house",
+        "description": "Benefic support improves outcomes and reduces harshness.",
+    },
+    {
+        "modifier_id": "MOD-DASHA-MAHA",
+        "type": "timing",
+        "applies_to": "planet",
+        "description": "During a planet’s mahadasha, its house results manifest strongly.",
+    },
+    {
+        "modifier_id": "MOD-DASHA-ANTAR",
+        "type": "timing",
+        "applies_to": "planet_pair",
+        "description": "Antardasha planet triggers subthemes and events within the mahadasha.",
+    },
+    {
+        "modifier_id": "MOD-TRANSIT-TRIGGER",
+        "type": "timing",
+        "applies_to": "planet",
+        "description": "Key transits over natal planets/houses trigger events; use as activation layer.",
+    },
+    {
+        "modifier_id": "MOD-NAKSHATRA",
+        "type": "lunar_mansion",
+        "applies_to": "planet",
+        "description": "Nakshatra lord adds a secondary signature; blend with its atomic rule.",
+    },
+    {
+        "modifier_id": "MOD-HOUSE-LORD",
+        "type": "lordship",
+        "applies_to": "house",
+        "description": "House lord placement modifies that house’s outcomes; combine lord house + owned house domains.",
+    },
+    {
+        "modifier_id": "MOD-YOGA",
+        "type": "combination",
+        "applies_to": "chart",
+        "description": "If yoga conditions met, add yoga effects with priority weights.",
+    },
+    {
+        "modifier_id": "MOD-ARUDHA",
+        "type": "public_image",
+        "applies_to": "house",
+        "description": "Arudha pada shifts outcomes toward perceived/public manifestation.",
+    },
+    {
+        "modifier_id": "MOD-UPAPADA",
+        "type": "marriage_indicator",
+        "applies_to": "chart",
+        "description": "Use Upapada Lagna to refine spouse/marriage outcomes beyond 7th house.",
+    },
+    {
+        "modifier_id": "MOD-CHARA-KARAKA",
+        "type": "significator",
+        "applies_to": "planet",
+        "description": "Chara karaka roles refine life-domain mapping (e.g., Atmakaraka for life purpose).",
+    },
+    {
+        "modifier_id": "MOD-ARGALA",
+        "type": "intervention",
+        "applies_to": "house",
+        "description": "Argala indicates intervention/support/obstruction from specific houses; adjust outcomes.",
+    },
+    {
+        "modifier_id": "MOD-AVASTHA",
+        "type": "state",
+        "applies_to": "planet",
+        "description": "Planetary avastha (state) adjusts maturity and positivity.",
+    },
+]
+
+
+def _build_atomic_rules(today: str) -> List[Dict[str, Any]]:
+    atomic_rules: List[Dict[str, Any]] = []
+    for pname, pcode, pkws in PLANETS:
+        for hnum, hname, hkws in HOUSES:
+            domains = HOUSE_DOMAIN_EFFECTS[hnum]
+            effects = {domain: PLANET_DOMAIN[pname].get(domain, "") for domain in domains}
+            core = f"{pname} in House {hnum} ({hname}) tends to express {pkws} through {hkws}."
+            atomic_rules.append(
+                {
+                    "rule_id": f"BR-{pcode}-{hnum:02d}",
+                    "planet": pname,
+                    "house": hnum,
+                    "house_name": hname,
+                    "core_statement": core,
+                    "effects": effects,
+                    "confidence": "traditional",
+                    "notes": "Sign-neutral, Bhrigu-style house-centric principle (not verbatim from any one manuscript).",
+                    "created_at": today,
+                }
+            )
+    return atomic_rules
+
+
+def _build_engine_spec(today: str) -> Dict[str, Any]:
+    return {
+        "engine": {
+            "name": "Bhrigu-Style Rule Engine",
+            "version": "1.0",
+            "created_at": today,
+            "purpose": "Generate Bhrigu-style house-centric predictions from atomic rules + modifiers.",
+            "legal_note": (
+                "This is a synthesized, sign-neutral jyotisha rule system inspired by Bhrigu-style "
+                "reading; it is not a verbatim reproduction of any copyrighted edition."
+            ),
+        },
+        "inputs": {
+            "required": ["lagna_house_map", "planet_house_positions"],
+            "optional": [
+                "planet_strength",
+                "dignities",
+                "aspects",
+                "dashas",
+                "transits",
+                "nakshatra_lords",
+                "house_lords",
+                "yoga_flags",
+            ],
+        },
+        "processing_steps": [
+            "1) For each planet, fetch atomic rule BR-<planet>-<house>.",
+            "2) Apply house-lord and dignity modifiers to scale/tilt effects.",
+            "3) Apply conjunction/aspect/affliction/support modifiers to blend effects and add obstacles/support.",
+            "4) Apply timing layers (dasha/transit) to mark active event windows.",
+            "5) Aggregate effects by domain (career, marriage, wealth, health, etc.) and produce ranked narratives.",
+        ],
+        "scoring": {
+            "base_weight": 1.0,
+            "strength_multiplier": "0.5..1.5",
+            "benefic_support_bonus": 0.1,
+            "affliction_penalty": 0.1,
+            "timing_activation_bonus": 0.2,
+        },
+        "modifiers": MODIFIERS,
+        "output_format": {
+            "per_planet": ["core_statement", "effects", "applied_modifiers"],
+            "by_domain": ["summary", "supporting_factors", "risk_factors", "timing_notes"],
+            "traceability": ["atomic_rule_ids_used", "modifier_ids_used"],
+        },
+    }
+
+
+def core_wisdom_assets(
+    *, today: str = DEFAULT_CREATION_DATE, out_dir: Path | str | None = None, persist: bool = False
+) -> Dict[str, Any]:
+    """Build the Bhrigu Core Wisdom atomic rules and engine spec.
+
+    When ``persist`` is True, the bundle is written to JSON files in ``out_dir``
+    (defaulting to ``/mnt/data``) and the file paths are returned alongside the
+    in-memory objects.
+    """
+
+    atomic_rules = _build_atomic_rules(today)
+    engine_spec = _build_engine_spec(today)
+
+    payload: Dict[str, Any] = {
+        "created_at": today,
+        "count": len(atomic_rules),
+        "atomic_rules": atomic_rules,
+        "engine_spec": engine_spec,
+    }
+
+    if not persist:
+        return payload
+
+    target_dir = Path(out_dir) if out_dir is not None else DEFAULT_OUTPUT_DIR
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    atomic_path = target_dir / "bhrigu_atomic_rules_108.json"
+    engine_path = target_dir / "bhrigu_rule_engine_spec.json"
+
+    with atomic_path.open("w", encoding="utf-8") as atomic_handle:
+        json.dump(
+            {
+                "tradition": "Bhrigu-style (house-centric) atomic principles",
+                "version": "1.0",
+                "created_at": today,
+                "count": len(atomic_rules),
+                "atomic_rules": atomic_rules,
+            },
+            atomic_handle,
+            ensure_ascii=False,
+            indent=2,
+        )
+
+    with engine_path.open("w", encoding="utf-8") as engine_handle:
+        json.dump(engine_spec, engine_handle, ensure_ascii=False, indent=2)
+
+    payload["atomic_rules_path"] = str(atomic_path)
+    payload["engine_spec_path"] = str(engine_path)
+
+    return payload
+
+
+__all__ = ["core_wisdom_assets"]

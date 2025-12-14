@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Sequence
 
@@ -24,6 +24,7 @@ from .calculations import (
 )
 from .config import load_runtime_config
 from .bhrigu_core import bhrigu_core
+from .core_wisdom_rules import core_wisdom_assets
 from .engine_analyzers import EngineAnalysis, analyze_core_engines
 from .kundli_generator import generate_kundli
 
@@ -210,6 +211,7 @@ class CoreWisdomReading:
     karmic_epoch: str
     remedies: List[Dict]
     sources: List[str]
+    rule_engine: Dict[str, object] = field(default_factory=dict)
 
 
 @dataclass
@@ -511,6 +513,8 @@ def build_core_wisdom_reading(
         }
     )
 
+    rule_engine_bundle = core_wisdom_assets()
+
     return CoreWisdomReading(
         sections=sections,
         charts={"rashi_chart": horoscope.rashi_chart, "bhava_chart": horoscope.bhava_chart},
@@ -518,6 +522,7 @@ def build_core_wisdom_reading(
         karmic_epoch=horoscope.karmic_epoch,
         remedies=horoscope.remedies,
         sources=_collect_bhrigu_texts(horoscope, request.tradition),
+        rule_engine=rule_engine_bundle,
     )
 
 
