@@ -154,23 +154,36 @@ export async function generateNatalChart(input: {
   const validated = validateBirthDetails(input);
   const { parsed } = validated;
 
-  const chart = await runEphemerisPipeline({
-    name: validated.name,
-    dateOfBirth: parsed.date.label,
-    timeOfBirth: parsed.time.label,
-    placeOfBirth: validated.placeOfBirth,
-  });
+  try {
+    const chart = await runEphemerisPipeline({
+      name: validated.name,
+      dateOfBirth: parsed.date.label,
+      timeOfBirth: parsed.time.label,
+      placeOfBirth: validated.placeOfBirth,
+    });
 
-  chart.metadata = buildMetadata(
-    parsed,
-    validated.placeOfBirth,
-    chart.metadata.timezone,
-    chart.metadata.calendar.gregorian,
-    chart.metadata.calendar.bharat_traditional
-  );
-  chart.metadata.name = validated.name;
+    chart.metadata = buildMetadata(
+      parsed,
+      validated.placeOfBirth,
+      chart.metadata.timezone,
+      chart.metadata.calendar.gregorian,
+      chart.metadata.calendar.bharat_traditional
+    );
+    chart.metadata.name = validated.name;
 
-  return chart;
+    return chart;
+  } catch (error) {
+    console.warn("Ephemeris pipeline unavailable; returning fallback chart", {
+      error,
+      placeOfBirth: validated.placeOfBirth,
+    });
+    return buildFallbackChart({
+      name: validated.name,
+      dateOfBirth: validated.dateOfBirth,
+      timeOfBirth: validated.timeOfBirth,
+      placeOfBirth: validated.placeOfBirth,
+    });
+  }
 }
 
 function parseEphemerisOutput(output: string): NatalChart {
