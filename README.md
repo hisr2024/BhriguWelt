@@ -65,6 +65,16 @@ These additions keep chart payloads consistent (kundli wheels are regenerated if
 missing) and let the frontend transition smoothly between form inputs, chart
 generation, chat clarifications, and dasha reminders.
 
+## 🧩 Optional but powerful additions
+
+| Feature | Value |
+| --- | --- |
+| Remedies module | Cultural completeness |
+| Confidence meters | Trust & transparency |
+| Explain-why mode | Education |
+| Timeline visualizations | UX boost |
+| Consent & disclaimer system | Legal safety |
+
 ## Repository layout
 
 ```
