@@ -253,6 +253,7 @@ def build_wisdom_bot_response(
         "karmic_epoch": core_reading.karmic_epoch,
         "remedies": core_reading.remedies,
         "sources": core_reading.sources,
+        "rule_engine": core_reading.rule_engine,
     }
 
     ai_reply = _compose_ai_reply(

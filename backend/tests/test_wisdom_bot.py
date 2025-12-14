@@ -28,6 +28,7 @@ def test_build_wisdom_bot_response_compiles_shareable_markdown(sample_request):
     assert "Core Wisdom Digest" in response["download"]["markdown"]
     assert response["core_wisdom"]["sections"]
     assert response["core_wisdom"]["sources"]
+    assert response["core_wisdom"]["rule_engine"]["count"] == 108
     assert response["flow"]["analyzers"]
     assert response["ai_support"]["coverage"]
 
