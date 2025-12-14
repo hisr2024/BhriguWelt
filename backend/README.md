@@ -159,6 +159,7 @@ Supported routes:
 - `POST /horoscope`
 - `POST /past-life`
 - `POST /future`
+- `POST /past-future` (combined JSON bridge for past-life + future predictions with Sarvam/OpenAI AI summary)
 - `POST /varshaphal` (12-month Bhrigu Varshaphal digest)
 - `POST /matchmaking`
 - `POST /calendar` (Gregorian → Śaka conversion with IST reference)
