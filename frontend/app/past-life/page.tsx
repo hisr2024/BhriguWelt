@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PredictionForm from "@/components/PredictionForm";
+import OperationalStack from "@/components/OperationalStack";
 
 type PastLifeInsight = {
   narrative?: string;
@@ -132,9 +133,9 @@ export default function PastLifePage() {
     <div className="stack">
       <div className="hero">
         <p className="eyebrow">Past-life • Folio referenced</p>
-        <h1>Past lives, now fully operational.</h1>
+        <h1>Past lives with only the essentials.</h1>
         <p className="muted" style={{ maxWidth: "760px" }}>
-          Chart, analyze, interpret, and render through the full Bhrigu Core chain. Only sutra-backed insights remain—no filler.
+          The chain stays tight: Bhrigu core wisdom, analyzers, interpreters, and Sarvam-backed AI summaries.
         </p>
         <div className="hero-actions">
           <Link href="/" className="button-link" style={{ background: "rgba(255,255,255,0.08)" }}>
@@ -143,10 +144,12 @@ export default function PastLifePage() {
         </div>
       </div>
 
+      <OperationalStack />
+
       <section className="panel softly" aria-live="polite">
         <div className="section-heading">
-          <h2>Charts first, then folio-grade stories</h2>
-          <p className="muted">Rendering routes through core wisdom, analyzers, and interpreters before any story appears.</p>
+          <h2>Charts first, then sutra-backed stories</h2>
+          <p className="muted">Only the operational steps remain; no excess descriptions.</p>
         </div>
         <div className="transition-rail" role="list" aria-label="Guided transitions">
           {transitions.map((transition, index) => {
@@ -247,7 +250,7 @@ export default function PastLifePage() {
           <PredictionForm
             engine="past-life"
             title="Past-life excavation"
-            description="Great for story-driven timelines, profile badges, and loyalty rewards."
+            description="Detailed analysis and remedies arrive together—nothing extra."
             onRequestStart={() => {
               setChartReady(false);
               setActiveStep(0);
@@ -262,23 +265,10 @@ export default function PastLifePage() {
         </div>
         <div className="card">
           <div className="section-heading">
-            <p className="eyebrow">Why it resonates</p>
-            <h2>Classical insight for every generation</h2>
+            <p className="eyebrow">Operational notes</p>
+            <h2>Always manuscript-aligned</h2>
           </div>
-          <ul className="kudos-list">
-            <li>
-              <span className="badge">Scroll friendly</span>
-              <span>Looks sharp inside mobile app webviews and landing pages.</span>
-            </li>
-            <li>
-              <span className="badge">Shareable stories</span>
-              <span>Drop the response into cards, chat, or push notifications with English and Hindi side by side.</span>
-            </li>
-            <li>
-              <span className="badge">Same validation</span>
-              <span>Tithi, elements, and houses are enforced here too.</span>
-            </li>
-          </ul>
+          <p className="muted">Core wisdom, analyzers, interpreters, designers, and Sarvam AI stay active for this engine.</p>
         </div>
       </section>
     </div>
