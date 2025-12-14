@@ -1,7 +1,7 @@
 'use client';
 
-import { FormEvent, useEffect, useRef, useState } from "react";
-import { requestPrediction, upsertProfile } from "@/lib/api";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { getPredictionFallback, requestPrediction, upsertProfile } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { captureClientError } from "@/lib/telemetry";
 import { useImmersiveFeedback } from "@/lib/immersive";
@@ -35,6 +35,7 @@ export default function PredictionForm({ engine, title, description, onRequestSt
   const lastSuccessfulPayloadRef = useRef<unknown>(null);
   const { triggerSubmitFeedback } = useImmersiveFeedback();
   const { sakaState } = useSakaContext();
+  const fallbackPayload = useMemo(() => getPredictionFallback(engine), [engine]);
 
   useEffect(() => {
     const stored = loadBirthDetails();
@@ -157,6 +158,9 @@ export default function PredictionForm({ engine, title, description, onRequestSt
       if (lastSuccessfulPayloadRef.current) {
         setInfo("Showing last available guidance while offline.");
         setPayload(lastSuccessfulPayloadRef.current);
+      } else if (fallbackPayload) {
+        setInfo("Showing Bhrigu core wisdom fallback while offline.");
+        setPayload(fallbackPayload);
       }
       return;
     }
@@ -215,6 +219,9 @@ export default function PredictionForm({ engine, title, description, onRequestSt
       if (lastSuccessfulPayloadRef.current) {
         setInfo("Showing last available guidance while we retry later.");
         setPayload(lastSuccessfulPayloadRef.current);
+      } else if (fallbackPayload) {
+        setInfo("Using Bhrigu core wisdom cache while the backend reconnects.");
+        setPayload(fallbackPayload);
       }
       captureClientError(message, { engine, details });
       emitFlowEvent("error", { message });

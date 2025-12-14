@@ -275,12 +275,27 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
   },
 };
 
-export type FallbackPath = "/horoscope" | "/past-life";
+export type FallbackPath = "/horoscope" | "/past-life" | "/future" | "/matchmaking" | "/calendar";
 
 export function getFallbackSample(path: FallbackPath) {
   const sample = FALLBACK_RESPONSES[path];
   if (!sample || typeof sample !== "object") return null;
   return sample as Record<string, unknown>;
+}
+
+export function getPredictionFallback(engine: PredictionEngine) {
+  const pathMap: Record<PredictionEngine, FallbackPath | null> = {
+    horoscope: "/horoscope",
+    "past-life": "/past-life",
+    future: "/future",
+    matchmaking: "/matchmaking",
+    calendar: "/calendar",
+  };
+
+  const path = pathMap[engine];
+  if (!path) return null;
+
+  return getFallbackSample(path);
 }
 
 type FetchOptions<T> = {
@@ -428,6 +443,17 @@ async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
+
+    if (!response.ok) {
+      const fallback = FALLBACK_RESPONSES[path];
+      if (fallback) {
+        console.warn(`Using offline Bhrigu fallback for ${path} after ${response.status}`);
+        return fallback as TResponse;
+      }
+
+      const text = await response.text();
+      throw normalizeBackendError(text, response.status);
+    }
   } catch (networkError) {
     const fallback = FALLBACK_RESPONSES[path];
     if (fallback) {
