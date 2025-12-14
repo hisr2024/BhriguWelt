@@ -87,7 +87,10 @@ export default function CalendarForm() {
       const response = await requestCalendar(details);
       if (currentRequestId !== requestIdRef.current) return;
       setPayload(response);
-      const sakaDate = typeof response === "object" && response && "saka_date" in response ? response.saka_date : undefined;
+      const sakaDate =
+        typeof response === "object" && response && "saka_date" in response
+          ? (response as { saka_date?: { year?: number; month?: string; day?: number } }).saka_date
+          : undefined;
       const derivedGrid = deriveHouseGrid(
         details,
         (sakaDate as { month?: string } | undefined)?.month,
