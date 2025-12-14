@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Sequence
 
 from .experience_flow import build_unified_experience_flow
 from .horoscope import HoroscopeRequest, build_core_wisdom_reading
+from .ai_client import AIIntegrationError, chat_completion, is_ai_configured
 
 
 @dataclass
@@ -73,6 +74,16 @@ def _compose_ai_reply(
     flow: Dict[str, Any],
     focus_areas: List[str],
 ) -> str:
+    ai_reply = _ai_wisdom_reply(
+        request=request,
+        query=query,
+        core_wisdom_sections=core_wisdom_sections,
+        flow=flow,
+        focus_areas=focus_areas,
+    )
+    if ai_reply:
+        return ai_reply
+
     focus_text = ", ".join(focus_areas) if focus_areas else "general life balance"
     epoch = core_wisdom_sections.get("karmic_epoch") or core_wisdom_sections.get("sections", {}).get("3", "karmic flow")
     alignment = _summarize_alignment(flow)
@@ -83,6 +94,64 @@ def _compose_ai_reply(
         f"Focus: {focus_text}. Karmic epoch: {epoch}. "
         f"Analyser + interpreter stack: {alignment}. {design_line}"
     )
+
+
+def _ai_wisdom_reply(
+    *,
+    request: HoroscopeRequest,
+    query: str,
+    core_wisdom_sections: Dict[str, Any],
+    flow: Dict[str, Any],
+    focus_areas: List[str],
+) -> str | None:
+    if not is_ai_configured():
+        return None
+
+    focus_text = ", ".join(focus_areas) if focus_areas else "general life balance"
+    sections = core_wisdom_sections.get("sections") if isinstance(core_wisdom_sections, dict) else {}
+    snippets = []
+    if isinstance(sections, dict):
+        for _, value in sorted(sections.items()):
+            if isinstance(value, str) and value.strip():
+                snippets.append(value.strip())
+            if len(snippets) >= 3:
+                break
+
+    analyzers = flow.get("analyzers") or []
+    interpreter_notes = flow.get("interpretations") or []
+    analyzer_summary = "; ".join(
+        str(entry.get("summary")) for entry in analyzers if isinstance(entry, dict) and entry.get("summary")
+    )
+    interpretation_summary = "; ".join(
+        str(entry.get("insight")) for entry in interpreter_notes if isinstance(entry, dict) and entry.get("insight")
+    )
+
+    system_prompt = (
+        "You are the Bhrigu Wisdom Bot. Offer concise, calm guidance rooted in the Bhrigu Samhita. "
+        "Avoid deterministic predictions and sensitive health/finance claims. Keep responses friendly and symbolic."
+    )
+    user_prompt = (
+        f"Name: {request.name}\n"
+        f"Birth: {request.birth_date} {request.birth_time} at {request.birth_place}\n"
+        f"Query: {query}\n"
+        f"Focus areas: {focus_text}\n"
+        f"Core wisdom snippets: {' | '.join(snippets) or 'not available'}\n"
+        f"Analyser highlights: {analyzer_summary or 'pending scan'}\n"
+        f"Interpreter highlights: {interpretation_summary or 'pending briefings'}.\n"
+        "Respond with 3-5 sentences and end with a symbolism disclaimer."
+    )
+
+    try:
+        return chat_completion(
+            [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            max_tokens=320,
+            temperature=0.35,
+        )
+    except AIIntegrationError:
+        return None
 
 
 def _shareable_markdown(

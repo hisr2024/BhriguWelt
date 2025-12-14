@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Sequence
 
 from .profiles import Profile, SessionSnapshot, upsert_session_turn, fetch_session
+from .ai_client import AIIntegrationError, chat_completion, is_ai_configured
 
 _SAFE_THEMES = [
     "grounded breathing for clarity",
@@ -42,6 +43,17 @@ def generate_chat_reply(
     closing = "This is symbolic reflection, not a fixed fate."
 
     reply_text = f"{greeting}, {context_line} {body} {closing}"
+
+    if is_ai_configured():
+        ai_reply = _ai_reply(
+            profile=profile,
+            message=message,
+            history=history,
+            default_reply=reply_text,
+            remedies=remedies,
+        )
+        if ai_reply:
+            reply_text = ai_reply
 
     updated_session = upsert_session_turn(
         profile_id=profile.id,
@@ -107,6 +119,48 @@ def _choose_remedies(message: str, history: List[Dict[str, Any]]) -> List[str]:
     if len(chosen) < 2:
         chosen.append(_SAFE_THEMES[(len(history) + 1) % len(_SAFE_THEMES)])
     return chosen
+
+
+def _ai_reply(
+    *,
+    profile: Profile,
+    message: str,
+    history: List[Dict[str, Any]],
+    default_reply: str,
+    remedies: List[str],
+) -> str | None:
+    """Generate an AI-backed reply, falling back to the deterministic one on failure."""
+
+    history_lines = []
+    for entry in history[-6:]:
+        role = entry.get("role") or "user"
+        content = entry.get("content") or ""
+        if isinstance(content, str) and content.strip():
+            history_lines.append(f"{role}: {content.strip()}")
+    history_text = "\n".join(history_lines) or "No prior chat history."
+
+    system_prompt = (
+        "You are Bhrigu, a calm, reflective guide rooted in the Bhrigu Samhita. "
+        "Offer short, symbolic insights, avoid predictions, health/finance claims, and keep a gentle tone."
+    )
+    user_prompt = (
+        f"Seeker: {profile.full_name or 'unknown'} | Birth place: {profile.place_of_birth or 'unknown'} | "
+        f"Timezone: {profile.timezone or 'unset'} | Question: {message}\n"
+        f"Prior turns:\n{history_text}\n"
+        f"Preferred remedies to weave in: {', '.join(remedies)}."
+    )
+
+    try:
+        return chat_completion(
+            [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            max_tokens=260,
+            temperature=0.35,
+        )
+    except AIIntegrationError:
+        return default_reply
 
 
 __all__ = ["generate_chat_reply"]

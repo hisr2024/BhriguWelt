@@ -58,6 +58,9 @@ pip-compile requirements.in --output-file requirements.txt
   offline runs.
 - `BHRIGUWELT_DATA_PATH` overrides the default corpus path for sandbox
   experiments.
+- `AI_API_BASE` and `AI_API_KEY` enable OpenAI-compatible chat completions for the
+  `/chat` and `/wisdom-bot` surfaces. Optionally set `AI_MODEL` (defaults to
+  `gpt-4o-mini`) and `AI_API_TIMEOUT` (seconds) to control the provider call.
 
 ### CLI usage
 
