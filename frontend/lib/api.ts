@@ -1,4 +1,4 @@
-import { BirthDetails, CalendarDetails, PredictionEngine } from "@/types/astro";
+import { BirthDetails, CalendarDetails, PredictionEngine, ResultEngine } from "@/types/astro";
 import { FeedbackRequest, QuarterlySummaryResponse } from "@/types/feedback";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
@@ -283,8 +283,8 @@ export function getFallbackSample(path: FallbackPath) {
   return sample as Record<string, unknown>;
 }
 
-export function getPredictionFallback(engine: PredictionEngine) {
-  const pathMap: Record<PredictionEngine, FallbackPath | null> = {
+export function getPredictionFallback(engine: ResultEngine) {
+  const pathMap: Record<ResultEngine, FallbackPath | null> = {
     horoscope: "/horoscope",
     "past-life": "/past-life",
     future: "/future",
