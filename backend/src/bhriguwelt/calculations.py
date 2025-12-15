@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import math
 import os
 from dataclasses import dataclass
@@ -23,6 +24,8 @@ except Exception:  # pragma: no cover - offline or sandboxed environments
 
 from .astronomical_calculations import auto_snapshot_kwargs, derive_transit_snapshot, normalize_birth_datetime
 from .config import load_runtime_config
+
+log = logging.getLogger(__name__)
 
 def _ml_disabled() -> bool:
     flag = os.environ.get("BHRIGUWELT_DISABLE_ML_WEIGHTING", "").lower()
@@ -335,11 +338,35 @@ def evaluate_past_life(snapshot: CelestialSnapshot, engines: List[Dict]) -> List
     """Select the most resonant past-life narratives from Bhrigu engines."""
 
     insights: List[PastLifeInsight] = []
+    mismatches_logged = 0
+    log.debug(
+        "Evaluating past-life engines",
+        extra={"tradition": snapshot.tradition, "engine_count": len(engines)},
+    )
     for engine in engines:
         if not _tradition_allows(engine, snapshot.tradition):
+            if mismatches_logged < 5:
+                log.debug(
+                    "Engine skipped due to tradition",
+                    extra={"engine_id": engine.get("id"), "tradition": engine.get("tradition")},
+                )
+                mismatches_logged += 1
             continue
-        confidence = _score_conditions(snapshot, engine.get("conditions", {}), engine.get("confidence", 0.6))
+        conditions = engine.get("conditions", {})
+        base_confidence = engine.get("confidence", 0.6)
+        ratio = _condition_ratio(snapshot, normalize_conditions(conditions))
+        confidence = round(base_confidence * ratio, 2)
         if confidence <= 0:
+            if mismatches_logged < 5:
+                log.debug(
+                    "Engine conditions did not match",
+                    extra={
+                        "engine_id": engine.get("id"),
+                        "ratio": ratio,
+                        "reasons": _condition_mismatches(snapshot, conditions),
+                    },
+                )
+                mismatches_logged += 1
             continue
         insights.append(
             PastLifeInsight(
@@ -380,11 +407,35 @@ def evaluate_future_directives(
     """
 
     directives: List[FutureTrajectory] = []
+    mismatches_logged = 0
+    log.debug(
+        "Evaluating future engines",
+        extra={"tradition": snapshot.tradition, "engine_count": len(engines)},
+    )
     for engine in engines:
         if not _tradition_allows(engine, snapshot.tradition):
+            if mismatches_logged < 5:
+                log.debug(
+                    "Future engine skipped due to tradition",
+                    extra={"engine_id": engine.get("id"), "tradition": engine.get("tradition")},
+                )
+                mismatches_logged += 1
             continue
-        certainty = _score_conditions(snapshot, engine.get("conditions", {}), engine.get("certainty", 0.65))
+        conditions = engine.get("conditions", {})
+        base_certainty = engine.get("certainty", 0.65)
+        ratio = _condition_ratio(snapshot, normalize_conditions(conditions))
+        certainty = round(base_certainty * ratio, 2)
         if certainty <= 0:
+            if mismatches_logged < 5:
+                log.debug(
+                    "Future engine conditions did not match",
+                    extra={
+                        "engine_id": engine.get("id"),
+                        "ratio": ratio,
+                        "reasons": _condition_mismatches(snapshot, conditions),
+                    },
+                )
+                mismatches_logged += 1
             continue
         directives.append(
             FutureTrajectory(
@@ -1147,6 +1198,22 @@ def _score_conditions(snapshot: CelestialSnapshot, conditions: Dict, base_value:
 
     ratio = _condition_ratio(snapshot, normalize_conditions(conditions))
     return round(base_value * ratio, 2)
+
+
+def _condition_mismatches(snapshot: CelestialSnapshot, conditions: Dict) -> List[str]:
+    normalized = normalize_conditions(conditions)
+    reasons: List[str] = []
+
+    for field, rule in normalized.items():
+        value = getattr(snapshot, field, None)
+        if value is None:
+            reasons.append(f"{field}=None")
+            continue
+
+        if not _matches_rule(value, rule):
+            reasons.append(f"{field}={value} ! {rule}")
+
+    return reasons
 
 
 def _condition_ratio(snapshot: CelestialSnapshot, conditions: Dict) -> float:
