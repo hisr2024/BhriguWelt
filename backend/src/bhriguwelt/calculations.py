@@ -43,6 +43,7 @@ class CelestialSnapshot:
     lunar_tithi: int
     moon_element: str
     moon_house: int
+    ascendant_house: int
     mars_house: int
     saturn_house: int
     venus_house: int
@@ -69,6 +70,8 @@ class CelestialSnapshot:
         rahu_house: int | None = None,
         rahu_aspects_ascendant: bool | None = None,
         tradition: str | None = None,
+        moon_house: int | None = None,
+        ascendant_house: int | None = None,
         ketu_house: int | None = None,
         mercury_house: int | None = None,
         jupiter_house: int | None = None,
@@ -91,6 +94,7 @@ class CelestialSnapshot:
             "lunar_tithi": lunar_tithi,
             "moon_element": moon_element,
             "moon_house": moon_house,
+            "ascendant_house": ascendant_house,
             "mars_house": mars_house,
             "saturn_house": saturn_house,
             "venus_house": venus_house,
@@ -124,6 +128,7 @@ class CelestialSnapshot:
             lunar_tithi=int(baseline["lunar_tithi"]),
             moon_element=str(baseline["moon_element"]),
             moon_house=int(baseline["moon_house"]),
+            ascendant_house=int(baseline["ascendant_house"]),
             mars_house=int(baseline["mars_house"]),
             saturn_house=int(baseline["saturn_house"]),
             venus_house=int(baseline["venus_house"]),
@@ -1192,6 +1197,9 @@ def _matches_rule(value, rule) -> bool:
             return False
         return True
 
+    if isinstance(rule, (list, tuple, set)) and not isinstance(rule, (str, bytes)):
+        return value in rule
+
     return value == rule
 
 
@@ -1232,6 +1240,12 @@ def _evaluate_pair_rule(
             if primary_value in harmony_set and partner_value in harmony_set:
                 matched = True
                 break
+    elif comparator == "trine":
+        if isinstance(primary_value, int) and isinstance(partner_value, int):
+            difference = abs(primary_value - partner_value)
+            if rule.get("circular"):
+                difference = min(difference, 12 - difference)
+            matched = difference in {4, 8}
     elif comparator == "distance":
         if isinstance(primary_value, int) and isinstance(partner_value, int):
             diff = abs(primary_value - partner_value)
