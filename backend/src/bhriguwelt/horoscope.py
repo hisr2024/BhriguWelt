@@ -967,7 +967,8 @@ def _compose_matchmaking_interpretation(
             path = compatibility.shared_life_paths[0]
             resonance = f" ({path.resonance:.0f}% resonance)" if path.resonance else ""
             parts.append(f"Shared path — {path.theme}:{resonance} {path.guidance}")
-        return " ".join(parts)
+
+    return " ".join(parts)
 
 
 def _compose_matchmaking_sections(
