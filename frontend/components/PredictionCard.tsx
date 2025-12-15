@@ -569,18 +569,6 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
     .filter(Boolean)
     .join(" ");
 
-  if (!payload || !sections.length) {
-    return (
-      <section className={cardClassName} aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
-        <div className="section-heading">
-          <p className="eyebrow">Response</p>
-          <h3>{title}</h3>
-          <p className="muted">{t("results.helper", "Guidance will arrive in clear English and Hindi once you submit.")}</p>
-        </div>
-      </section>
-    );
-  }
-
   const escapePdfText = (text: string) =>
     text
       .replace(/\\/g, "\\\\")
@@ -647,6 +635,18 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
     URL.revokeObjectURL(url);
     setIsSaving(false);
   }, [engine, sections, seekerName, title]);
+
+  if (!payload || !sections.length) {
+    return (
+      <section className={cardClassName} aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
+        <div className="section-heading">
+          <p className="eyebrow">Response</p>
+          <h3>{title}</h3>
+          <p className="muted">{t("results.helper", "Guidance will arrive in clear English and Hindi once you submit.")}</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className={cardClassName} aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
