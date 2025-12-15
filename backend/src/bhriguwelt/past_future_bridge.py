@@ -11,7 +11,13 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Sequence
 
-from .ai_client import AIIntegrationError, ai_provider_metadata, chat_completion, is_ai_configured
+from .ai_client import (
+    AIIntegrationError,
+    ai_provider_metadata,
+    chat_completion,
+    is_ai_configured,
+    sarvam_integration_contract,
+)
 from .horoscope import HoroscopeRequest, build_core_wisdom_reading, build_future_report, build_past_life_report
 
 
@@ -50,7 +56,8 @@ def _ai_bridge_summary(
 
     system_prompt = (
         "You are a Sarvam-aligned Bhrigu interpreter. Offer calm guidance rooted in the Bhrigu Samhita core wisdom. "
-        "Blend past-life echoes with future directives. Avoid deterministic medical or financial claims and keep the tone compassionate."
+        "Blend past-life echoes with future directives and use the stored JSON payloads + folio excerpts to stay precise. "
+        "Honor analyser/interpreter/designer cues when present. Avoid deterministic medical or financial claims and keep the tone compassionate."
     )
     user_prompt = (
         f"Seeker: {request.name}\n"
@@ -181,6 +188,7 @@ def build_past_future_synthesis(
             "core-wisdom",
         ],
     )
+    ai_support.setdefault("integration_contract", sarvam_integration_contract())
 
     seeker = {
         "name": primary_request.name,

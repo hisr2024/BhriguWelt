@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Sequence
 
-from .ai_client import ai_provider_metadata
+from .ai_client import ai_provider_metadata, sarvam_integration_contract
 from .bhrigu_core import bhrigu_core
 from .engine_analyzers import analyze_core_engines
 from .engine_interpreters import brief_alignment_pipeline, interpret_bhrigu_wisdom
@@ -218,6 +218,7 @@ def build_unified_experience_flow(
             "matchmaking",
         ],
     )
+    ai_support.setdefault("integration_contract", sarvam_integration_contract())
 
     return UnifiedExperienceFlow(
         seeker=seeker,

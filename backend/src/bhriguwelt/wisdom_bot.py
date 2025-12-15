@@ -6,7 +6,13 @@ from typing import Any, Dict, List, Sequence
 
 from .experience_flow import build_unified_experience_flow
 from .horoscope import HoroscopeRequest, build_core_wisdom_reading
-from .ai_client import AIIntegrationError, ai_provider_metadata, chat_completion, is_ai_configured
+from .ai_client import (
+    AIIntegrationError,
+    ai_provider_metadata,
+    chat_completion,
+    is_ai_configured,
+    sarvam_integration_contract,
+)
 
 
 @dataclass
@@ -287,6 +293,7 @@ def build_wisdom_bot_response(
             "matchmaking",
         ],
     )
+    ai_support.setdefault("integration_contract", sarvam_integration_contract())
 
     return WisdomBotResponse(
         query=query,
