@@ -572,31 +572,37 @@ export default function HoroscopeForm() {
   return (
     <section className="horo-board" aria-label="Horoscope creation">
       <div className="horo-layout">
-        <FormPanel
-          form={form}
-          status={status}
-          loading={loading}
-          endpoint={endpoint}
-          error={error}
-          isComplete={hasRequiredDetails}
-          progressSteps={progressSteps}
-          prefillNotice={prefillNotice}
-          onChange={handleChange}
-          onSubmit={handleSubmit}
-          onAskBhrigu={handleAskBhrigu}
-          onDownloadPdf={handleDownloadPdf}
-        />
+        <div className="horo-stack">
+          <p className="muted">Input details in one go.</p>
+          <FormPanel
+            form={form}
+            status={status}
+            loading={loading}
+            endpoint={endpoint}
+            error={error}
+            isComplete={hasRequiredDetails}
+            progressSteps={progressSteps}
+            prefillNotice={prefillNotice}
+            onChange={handleChange}
+            onSubmit={handleSubmit}
+            onAskBhrigu={handleAskBhrigu}
+            onDownloadPdf={handleDownloadPdf}
+          />
+        </div>
 
-        <ReadingPanel
-          chart={chart}
-          form={form}
-          interpretation={interpretation}
-          hasNarrative={hasNarrative}
-          fallbackNarrative={fallbackNarrative}
-          timeframes={timeframeLinks}
-          onAskBhrigu={handleAskBhrigu}
-          onDownloadPdf={handleDownloadPdf}
-        />
+        <div className="horo-stack horo-stack--reading">
+          <p className="muted">Reading unfolds beneath the form for easier viewing.</p>
+          <ReadingPanel
+            chart={chart}
+            form={form}
+            interpretation={interpretation}
+            hasNarrative={hasNarrative}
+            fallbackNarrative={fallbackNarrative}
+            timeframes={timeframeLinks}
+            onAskBhrigu={handleAskBhrigu}
+            onDownloadPdf={handleDownloadPdf}
+          />
+        </div>
       </div>
     </section>
   );
