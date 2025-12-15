@@ -15,4 +15,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Railway maps traffic to $PORT, so advertise the default app port and let the
+# platform override it when necessary.
+ENV PORT=8000
+EXPOSE 8000
+
 CMD ["python", "-m", "bhriguwelt.api"]
