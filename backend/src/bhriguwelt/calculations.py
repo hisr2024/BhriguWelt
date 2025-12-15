@@ -47,12 +47,12 @@ class CelestialSnapshot:
     mars_house: int
     saturn_house: int
     venus_house: int
-    rahu_house: int = 0
-    ketu_house: int = 0
-    mercury_house: int = 0
-    jupiter_house: int = 0
-    rahu_aspects_ascendant: bool = False
-    saturn_retrograde: bool = False
+    rahu_house: int
+    ketu_house: int
+    mercury_house: int
+    jupiter_house: int
+    rahu_aspects_ascendant: bool
+    saturn_retrograde: bool
 
     @classmethod
     def from_strings(
