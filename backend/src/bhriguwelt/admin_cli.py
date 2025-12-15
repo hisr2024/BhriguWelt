@@ -16,7 +16,7 @@ from .data_loader import (
     load_bhrigu_data,
     persist_bhrigu_data,
 )
-from .ml_weighting import apply_reweighting
+from .ml_weighting import apply_reweighting, supervised_csv_reweight
 from .rule_dsl import compile_to_dataset, parse_dsl
 from .taxonomy import (
     FUTURE_PREFIX,
@@ -93,6 +93,26 @@ def _build_parser() -> argparse.ArgumentParser:
     reweight.add_argument("--in", dest="weights_in", required=True, help="Path to dataset (YAML/JSON)")
     reweight.add_argument("--out", dest="weights_out", required=True, help="Destination path")
     reweight.add_argument("--mode", dest="mode", default="conservative", help="Reweighting mode")
+
+    reweight_csv = sub.add_parser(
+        "reweight-csv", help="Reweight weights from labeled CSV without new ids"
+    )
+    reweight_csv.add_argument("--in", dest="weights_in", required=True, help="Path to dataset (YAML/JSON)")
+    reweight_csv.add_argument("--labels", dest="labels_path", required=True, help="CSV containing id,weight_key,label")
+    reweight_csv.add_argument("--out", dest="weights_out", required=True, help="Destination path")
+    reweight_csv.add_argument(
+        "--section",
+        dest="section",
+        default="principles",
+        help="Dataset section to target (default: principles)",
+    )
+    reweight_csv.add_argument(
+        "--learning-rate",
+        dest="learning_rate",
+        type=float,
+        default=0.5,
+        help="Blend factor between old weights and labels",
+    )
 
     bootstrap = sub.add_parser("bootstrap", help="Generate canonical dataset scaffold")
     bootstrap.add_argument(
@@ -267,6 +287,17 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "reweight":
         dataset = _load_dataset(Path(args.weights_in))
         reweighted = apply_reweighting(dataset, mode=args.mode)
+        _save_dataset(reweighted, Path(args.weights_out))
+        return 0
+
+    if args.command == "reweight-csv":
+        dataset = _load_dataset(Path(args.weights_in))
+        reweighted = supervised_csv_reweight(
+            dataset,
+            Path(args.labels_path),
+            section=args.section,
+            learning_rate=float(args.learning_rate),
+        )
         _save_dataset(reweighted, Path(args.weights_out))
         return 0
 
