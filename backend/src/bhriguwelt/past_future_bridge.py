@@ -49,16 +49,17 @@ def _ai_bridge_summary(
     future_lines = _representative_text(future.get("trajectories", []), key="trajectory")
 
     system_prompt = (
-        "You are a Sarvam-aligned Bhrigu interpreter. Offer calm guidance rooted in the Bhrigu Samhita core wisdom. "
+        "You are a Sarvam-aligned Bhrigu interpreter wired into the analyzer, interpreter, and designer stack. "
+        "Use the stored past-life JSON, future JSON, and Bhrigu Samhita core wisdom digest as your evidence. "
         "Blend past-life echoes with future directives. Avoid deterministic medical or financial claims and keep the tone compassionate."
     )
     user_prompt = (
         f"Seeker: {request.name}\n"
         f"Birth: {request.birth_date} {request.birth_time} at {request.birth_place}\n"
         f"Focus areas: {focus_text}\n"
-        f"Past-life threads: {' | '.join(past_lines) or 'use manuscript-driven karmic echoes'}\n"
-        f"Future windows: {' | '.join(future_lines) or 'pull from the directive set'}\n"
-        f"Core wisdom: {' | '.join(section_snippets) or 'follow the 8-section digest scaffolding'}\n"
+        f"Past-life threads: {' | '.join(past_lines) or 'use manuscript-driven karmic echoes from stored JSON'}\n"
+        f"Future windows: {' | '.join(future_lines) or 'pull from the directive set in stored JSON'}\n"
+        f"Core wisdom: {' | '.join(section_snippets) or 'follow the 8-section digest scaffolding sourced from Bhrigu Samhita'}\n"
         "Provide 4-6 sentences linking past karmic influences to upcoming opportunities. Close with a free-will reminder."
     )
 
@@ -181,6 +182,12 @@ def build_past_future_synthesis(
             "core-wisdom",
         ],
     )
+    ai_support["sources"] = {
+        "past_life_json": bool(past_life.get("insights")),
+        "future_json": bool(future.get("trajectories")),
+        "core_wisdom_json": bool(core_wisdom.get("sections")),
+        "bhrigu_samhita_sources": core_wisdom.get("sources"),
+    }
 
     seeker = {
         "name": primary_request.name,

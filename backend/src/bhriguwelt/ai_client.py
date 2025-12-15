@@ -78,7 +78,16 @@ def ai_provider_metadata() -> Dict[str, Any]:
             "future",
             "past_life",
             "matchmaking",
+            "future-json",
+            "past-life-json",
+            "core-wisdom-json",
         ],
+        "source_requirements": {
+            "future-json": "Trajectory JSON plus Sarvam/OpenAI-compatible summarization",
+            "past-life-json": "Stored karmic insights JSON available to analyzers/interpreters",
+            "core-wisdom-json": "Bhrigu Samhita digest stays loaded for AI and designer stack",
+            "analysis_stack": "Analyzers, interpreters, and designers stay linked to Sarvam AI",
+        },
     }
 
 
