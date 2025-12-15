@@ -671,17 +671,6 @@ MATCHMAKING_CRITERIA: List[Dict[str, Any]] = [
 
 
 def as_dict() -> Dict[str, Any]:
-    data_path = Path(__file__).resolve().parents[2] / "data" / "bhrigu_samhita_principles.yml"
-    try:
-        with data_path.open() as fp:
-            return json.load(fp)
-    except Exception:
-        return {
-            'metadata': METADATA,
-            'principles': PRINCIPLES,
-            'remedies': REMEDIES,
-            'past_life_engines': PAST_LIFE_ENGINES,
-            'future_engines': FUTURE_ENGINES,
-            'transit_rules': TRANSIT_RULES,
-            'matchmaking_criteria': MATCHMAKING_CRITERIA,
-        }
+    from .data_loader import load_bhrigu_data
+    return load_bhrigu_data()
+
