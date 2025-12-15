@@ -13,7 +13,7 @@ COPY . .
 
 # Ensure module resolution matches local development without a custom start command.
 ENV PYTHONPATH=/app/src
-RUN chmod +x start.sh
+RUN chmod +x start.sh "pythonpath=src"
 
 # Use the start script as an entrypoint so custom Railway commands (e.g. PYTHONPATH=src)
 # are treated as arguments instead of replacement executables. This keeps the service
