@@ -3,7 +3,7 @@
 The `frontend/` workspace now contains a production-ready Next.js application
 that surfaces every Bhrigu Samhita engine (horoscope, past-life, future,
 matchmaking, and Śaka calendar conversion). It is designed to deploy directly to
-Vercel while consuming the Python backend hosted on Render (or any HTTPS URL you
+Vercel while consuming the Python backend hosted on Railway (or any HTTPS URL you
 provide via an environment variable). The UI is intentionally bold—glassmorphic
 panels, gradients, and multi-page navigation that stay legible for seekers of
 every age. Language support now spans English, Hindi, Spanish, and Tamil with
@@ -92,9 +92,9 @@ Quick troubleshooting tips:
 
 - If forms render demo copy, confirm `.env.local` exists and restart `npm run dev`
   after updating `NEXT_PUBLIC_BACKEND_URL`.
-- Render/Railway self-signed certificates can block fetches during local dev;
-  export `NODE_TLS_REJECT_UNAUTHORIZED=0` temporarily when testing against those
-  hosts (never in production).
+- Railway self-signed certificates can block fetches during local dev; export
+  `NODE_TLS_REJECT_UNAUTHORIZED=0` temporarily when testing against those hosts
+  (never in production).
 - Clear Next.js cache between backend URL changes with `rm -rf .next`.
 - Console warnings like `Failed to load resource: net::ERR_CONNECTION_REFUSED`
   for `/health` or `/calendar` mean the backend at
