@@ -190,9 +190,11 @@ def derive_lunar_details(dt: datetime, latitude: float | None = None, longitude:
         "mars_house": mars_house,
         "saturn_house": saturn_house,
         "venus_house": venus_house,
+        "rahu_house": rahu_house,
         "ketu_house": ketu_house,
         "mercury_house": mercury_house,
         "jupiter_house": jupiter_house,
+        "ascendant_house": ascendant_house,
         "saturn_retrograde": saturn_retrograde,
         "rahu_aspects_ascendant": rahu_aspects_ascendant,
     }
@@ -249,6 +251,9 @@ def derive_transit_snapshot(
         "mars_house": transit_details["mars_house"],
         "saturn_house": transit_details["saturn_house"],
         "venus_house": transit_details["venus_house"],
+        "moon_house": transit_details["moon_house"],
+        "rahu_house": transit_details["rahu_house"],
+        "ascendant_house": transit_details["ascendant_house"],
         "ketu_house": transit_details["ketu_house"],
         "mercury_house": transit_details["mercury_house"],
         "jupiter_house": transit_details["jupiter_house"],
@@ -389,8 +394,11 @@ def _swisseph_lunar_details(dt: datetime, latitude: float | None = None, longitu
     saturn_house = _house_from_longitude(saturn_long)
     venus_house = _house_from_longitude(venus_long)
     ketu_house = _house_from_longitude(ketu_long)
+    rahu_house = _house_from_longitude(rahu_long)
+    moon_house = _house_from_longitude(moon_long)
     mercury_house = _house_from_longitude(mercury_long)
     jupiter_house = _house_from_longitude(jupiter_long)
+    ascendant_house = _house_from_longitude(sun_long)
 
     saturn_retrograde = saturn_speed < 0
     rahu_aspects_ascendant = (rahu_long % 60) < 20
@@ -401,7 +409,9 @@ def _swisseph_lunar_details(dt: datetime, latitude: float | None = None, longitu
         "mars_house": mars_house,
         "saturn_house": saturn_house,
         "venus_house": venus_house,
+        "rahu_house": rahu_house,
         "ketu_house": ketu_house,
+        "moon_house": moon_house,
         "mercury_house": mercury_house,
         "jupiter_house": jupiter_house,
         "moon_house": _house_from_longitude(moon_long),

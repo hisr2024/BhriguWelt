@@ -175,9 +175,11 @@ def test_external_astrosage_alignment(monkeypatch, chart: Dict[str, object]):
     expected = {
         "lunar_tithi": int(((longitudes["moon_long"] - longitudes["sun_long"]) % 360) // 12) + 1,
         "moon_element": _element_from_longitude(longitudes["moon_long"]),
+        "moon_house": int(longitudes["moon_long"] // 30) + 1,
         "mars_house": int(longitudes["mars_long"] // 30) + 1,
         "saturn_house": int(longitudes["saturn_long"] // 30) + 1,
         "venus_house": int(longitudes["venus_long"] // 30) + 1,
+        "rahu_house": int(longitudes["rahu_long"] // 30) + 1,
         "ketu_house": int(ketu_long // 30) + 1,
         "mercury_house": int(longitudes["mercury_long"] // 30) + 1,
         "jupiter_house": int(longitudes["jupiter_long"] // 30) + 1,

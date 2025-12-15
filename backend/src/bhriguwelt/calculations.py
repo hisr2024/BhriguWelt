@@ -47,9 +47,11 @@ class CelestialSnapshot:
     mars_house: int
     saturn_house: int
     venus_house: int
+    rahu_house: int
     ketu_house: int
     mercury_house: int
     jupiter_house: int
+    ascendant_house: int
     rahu_aspects_ascendant: bool
     saturn_retrograde: bool
 
@@ -61,9 +63,11 @@ class CelestialSnapshot:
         birth_place: str,
         lunar_tithi: int | None = None,
         moon_element: str | None = None,
+        moon_house: int | None = None,
         mars_house: int | None = None,
         saturn_house: int | None = None,
         venus_house: int | None = None,
+        rahu_house: int | None = None,
         rahu_aspects_ascendant: bool | None = None,
         tradition: str | None = None,
         moon_house: int | None = None,
@@ -71,6 +75,7 @@ class CelestialSnapshot:
         ketu_house: int | None = None,
         mercury_house: int | None = None,
         jupiter_house: int | None = None,
+        ascendant_house: int | None = None,
         saturn_retrograde: bool | None = None,
         latitude: float | None = None,
         longitude: float | None = None,
@@ -93,9 +98,11 @@ class CelestialSnapshot:
             "mars_house": mars_house,
             "saturn_house": saturn_house,
             "venus_house": venus_house,
+            "rahu_house": rahu_house,
             "ketu_house": ketu_house,
             "mercury_house": mercury_house,
             "jupiter_house": jupiter_house,
+            "ascendant_house": ascendant_house,
             "rahu_aspects_ascendant": rahu_aspects_ascendant,
             "saturn_retrograde": saturn_retrograde,
         }
@@ -125,9 +132,11 @@ class CelestialSnapshot:
             mars_house=int(baseline["mars_house"]),
             saturn_house=int(baseline["saturn_house"]),
             venus_house=int(baseline["venus_house"]),
+            rahu_house=int(baseline["rahu_house"]),
             ketu_house=int(baseline["ketu_house"]),
             mercury_house=int(baseline["mercury_house"]),
             jupiter_house=int(baseline["jupiter_house"]),
+            ascendant_house=int(baseline["ascendant_house"]),
             rahu_aspects_ascendant=bool(baseline["rahu_aspects_ascendant"]),
             saturn_retrograde=bool(baseline["saturn_retrograde"]),
         )
@@ -431,43 +440,51 @@ def evaluate_transits(
     """Blend natal snapshot with transit overlays to surface gochar guidance."""
 
     directives: List[TransitDirective] = []
-    for rule in transit_rules:
+    transit_details = transit_details or {}
+
+    for rule in transit_rules or []:
         if not _tradition_allows(rule, snapshot.tradition):
             continue
-        conditions = rule.get("conditions", {})
-        matches = 0
-        total = 0
-        for key, expected in conditions.items():
-            total += 1
-            value = transit_details.get(key, getattr(snapshot, key, None))
-            if isinstance(expected, dict):
-                min_val = expected.get("min")
-                max_val = expected.get("max")
-                any_of = expected.get("any_of")
-                if any_of is not None and value in any_of:
-                    matches += 1
-                    continue
-                if min_val is not None and value is not None and value >= min_val:
-                    matches += 1
-                    continue
-                if max_val is not None and value is not None and value <= max_val:
-                    matches += 1
-                    continue
-            elif value == expected or (isinstance(expected, (list, tuple, set)) and value in expected):
-                matches += 1
-        if total and matches / total < 0.5:
+
+        conditions = normalize_conditions(rule.get("conditions"))
+        matched = 0
+        total = len(conditions)
+
+        for field, op_rule in conditions.items():
+            value = _value_for_key(snapshot, transit_details, field)
+            if value is None:
+                continue
+            if _matches_rule(value, op_rule):
+                matched += 1
+
+        if total and (matched / total) < 0.5:
             continue
 
+        certainty = float(rule.get("certainty", 0.65))
         directives.append(
             TransitDirective(
                 reference=rule.get("sutra_reference", "Bhrigu gochar"),
-                influence=rule.get("influence", "Transit influence requires more data"),
-                certainty=round(float(rule.get("certainty", 0.65)) * (matches / max(total, 1)), 2),
-                planet=rule.get("planet", "mixed"),
+                influence=rule.get("influence", ""),
+                certainty=round(certainty * (matched / total if total else 1), 2),
+                planet=str(rule.get("planet", "mixed")),
             )
         )
 
     return sorted(directives, key=lambda directive: directive.certainty, reverse=True)
+
+
+def normalize_conditions(conditions: Dict | None) -> Dict[str, object]:
+    if not conditions:
+        return {}
+    if not isinstance(conditions, dict):
+        return {}
+    return {str(key): value for key, value in conditions.items()}
+
+
+def _value_for_key(snapshot: CelestialSnapshot, overlay_details: Dict[str, object], field: str):
+    if field in overlay_details:
+        return overlay_details.get(field)
+    return getattr(snapshot, field, None)
 
 
 def evaluate_matchmaking(
@@ -1240,5 +1257,10 @@ def _evaluate_pair_rule(
             if {primary_value, partner_value} == set(pair):
                 matched = True
                 break
+    elif comparator == "trine":
+        if isinstance(primary_value, int) and isinstance(partner_value, int):
+            diff = abs(primary_value - partner_value)
+            diff = min(diff, 12 - diff)
+            matched = diff in {4, 8}
 
     return (weight if matched else 0.0, weight)
