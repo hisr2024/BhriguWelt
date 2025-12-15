@@ -260,13 +260,6 @@ export default function PastLifePage() {
             }}
           />
         </div>
-        <div className="card">
-          <div className="section-heading">
-            <p className="eyebrow">Operational notes</p>
-            <h2>Always manuscript-aligned</h2>
-          </div>
-          <p className="muted">Core wisdom, analyzers, interpreters, designers, and Sarvam AI stay active for this engine.</p>
-        </div>
       </section>
     </div>
   );

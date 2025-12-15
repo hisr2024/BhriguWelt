@@ -132,13 +132,6 @@ export default function FuturePage() {
             description="Analyses and remedies stay bundled for notifications, timelines, and profiles."
           />
         </div>
-        <div className="card">
-          <div className="section-heading">
-            <p className="eyebrow">Operational notes</p>
-            <h2>Always manuscript-aligned</h2>
-          </div>
-          <p className="muted">Core wisdom data, analyzers, interpreters, designers, and Sarvam AI stay active for every directive.</p>
-        </div>
       </section>
     </div>
   );
