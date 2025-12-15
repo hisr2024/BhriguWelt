@@ -13,6 +13,5 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
-RUN chmod +x /app/start.sh
 
-CMD ["bash", "/app/start.sh"]
+CMD ["python", "-m", "bhriguwelt.api"]
