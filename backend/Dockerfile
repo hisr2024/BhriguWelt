@@ -3,8 +3,9 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Allow running in platforms that invoke the start command without a leading
-# './' by ensuring the project root is on PATH (e.g. `pythonpath=src`).
-ENV PATH="/app:${PATH}"
+# './' by ensuring the project root and the shim installation directory are on
+# PATH (e.g. `pythonpath=src`).
+ENV PATH="/usr/local/bin:/app:${PATH}"
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends bash \
