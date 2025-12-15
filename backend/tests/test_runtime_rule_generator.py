@@ -8,22 +8,25 @@ from bhriguwelt.runtime_rule_generator import RuntimeRuleGenerator
 
 
 def _sample_snapshot() -> CelestialSnapshot:
-    return CelestialSnapshot(
-        birth_date=date(1990, 1, 1),
-        birth_time=time(12, 0),
-        birth_place="Delhi",
-        tradition="universal",
-        lunar_tithi=1,
-        moon_element="fire",
-        mars_house=3,
-        saturn_house=4,
-        venus_house=5,
-        ketu_house=6,
-        mercury_house=7,
-        jupiter_house=8,
-        rahu_aspects_ascendant=False,
-        saturn_retrograde=False,
-    )
+        return CelestialSnapshot(
+            birth_date=date(1990, 1, 1),
+            birth_time=time(12, 0),
+            birth_place="Delhi",
+            tradition="universal",
+            lunar_tithi=1,
+            moon_element="fire",
+            moon_house=4,
+            mars_house=3,
+            saturn_house=4,
+            venus_house=5,
+            rahu_house=9,
+            ketu_house=6,
+            mercury_house=7,
+            jupiter_house=8,
+            ascendant_house=2,
+            rahu_aspects_ascendant=False,
+            saturn_retrograde=False,
+        )
 
 
 def test_personalization_and_confidence_weighting():

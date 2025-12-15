@@ -42,12 +42,15 @@ class CelestialSnapshot:
     tradition: str
     lunar_tithi: int
     moon_element: str
+    moon_house: int
     mars_house: int
     saturn_house: int
     venus_house: int
+    rahu_house: int
     ketu_house: int
     mercury_house: int
     jupiter_house: int
+    ascendant_house: int
     rahu_aspects_ascendant: bool
     saturn_retrograde: bool
 
@@ -59,14 +62,17 @@ class CelestialSnapshot:
         birth_place: str,
         lunar_tithi: int | None = None,
         moon_element: str | None = None,
+        moon_house: int | None = None,
         mars_house: int | None = None,
         saturn_house: int | None = None,
         venus_house: int | None = None,
+        rahu_house: int | None = None,
         rahu_aspects_ascendant: bool | None = None,
         tradition: str | None = None,
         ketu_house: int | None = None,
         mercury_house: int | None = None,
         jupiter_house: int | None = None,
+        ascendant_house: int | None = None,
         saturn_retrograde: bool | None = None,
         latitude: float | None = None,
         longitude: float | None = None,
@@ -84,12 +90,15 @@ class CelestialSnapshot:
         computed: Dict[str, object] = {
             "lunar_tithi": lunar_tithi,
             "moon_element": moon_element,
+            "moon_house": moon_house,
             "mars_house": mars_house,
             "saturn_house": saturn_house,
             "venus_house": venus_house,
+            "rahu_house": rahu_house,
             "ketu_house": ketu_house,
             "mercury_house": mercury_house,
             "jupiter_house": jupiter_house,
+            "ascendant_house": ascendant_house,
             "rahu_aspects_ascendant": rahu_aspects_ascendant,
             "saturn_retrograde": saturn_retrograde,
         }
@@ -114,12 +123,15 @@ class CelestialSnapshot:
             tradition=normalized_tradition,
             lunar_tithi=int(baseline["lunar_tithi"]),
             moon_element=str(baseline["moon_element"]),
+            moon_house=int(baseline["moon_house"]),
             mars_house=int(baseline["mars_house"]),
             saturn_house=int(baseline["saturn_house"]),
             venus_house=int(baseline["venus_house"]),
+            rahu_house=int(baseline["rahu_house"]),
             ketu_house=int(baseline["ketu_house"]),
             mercury_house=int(baseline["mercury_house"]),
             jupiter_house=int(baseline["jupiter_house"]),
+            ascendant_house=int(baseline["ascendant_house"]),
             rahu_aspects_ascendant=bool(baseline["rahu_aspects_ascendant"]),
             saturn_retrograde=bool(baseline["saturn_retrograde"]),
         )
@@ -1223,5 +1235,10 @@ def _evaluate_pair_rule(
             if {primary_value, partner_value} == set(pair):
                 matched = True
                 break
+    elif comparator == "trine":
+        if isinstance(primary_value, int) and isinstance(partner_value, int):
+            diff = abs(primary_value - partner_value)
+            diff = min(diff, 12 - diff)
+            matched = diff in {4, 8}
 
     return (weight if matched else 0.0, weight)

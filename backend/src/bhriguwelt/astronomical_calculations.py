@@ -100,6 +100,10 @@ def _mean_longitude(base_longitude: float, mean_motion: float, delta_days: float
     return value + 360 if value < 0 else value
 
 
+def _house_from_longitude(longitude_value: float) -> int:
+    return int(longitude_value // 30) + 1
+
+
 def derive_lunar_details(dt: datetime, latitude: float | None = None, longitude: float | None = None) -> Dict[str, int | bool]:
     """Compute Panchanga-aligned hints for use in CelestialSnapshot defaults.
 
@@ -119,10 +123,6 @@ def derive_lunar_details(dt: datetime, latitude: float | None = None, longitude:
             pass
 
     utc_dt = dt.astimezone(timezone.utc)
-    precomputed = _BENCHMARK_FALLBACKS.get(utc_dt.isoformat())
-    if precomputed:
-        return precomputed
-
     delta_days = (utc_dt - datetime(2000, 1, 1, 12, tzinfo=timezone.utc)).total_seconds() / 86400
     sun_long = _mean_longitude(280.460, 0.98564736, delta_days)
     moon_long = _mean_longitude(218.316, 13.176396, delta_days)
@@ -133,15 +133,27 @@ def derive_lunar_details(dt: datetime, latitude: float | None = None, longitude:
     saturn_long = _mean_longitude(50.077, 0.033459, delta_days)
     venus_long = _mean_longitude(181.979, 1.602130, delta_days)
     ketu_long = _mean_longitude(204.0, -0.0529538, delta_days)  # retrograde node
+    rahu_long = (ketu_long + 180) % 360
     mercury_long = _mean_longitude(252.250, 4.092334, delta_days)
     jupiter_long = _mean_longitude(34.351, 0.083092, delta_days)
 
-    mars_house = int(mars_long // 30) + 1
-    saturn_house = int(saturn_long // 30) + 1
-    venus_house = int(venus_long // 30) + 1
-    ketu_house = int(ketu_long // 30) + 1
-    mercury_house = int(mercury_long // 30) + 1
-    jupiter_house = int(jupiter_long // 30) + 1
+    moon_house = _house_from_longitude(moon_long)
+    mars_house = _house_from_longitude(mars_long)
+    saturn_house = _house_from_longitude(saturn_long)
+    venus_house = _house_from_longitude(venus_long)
+    ketu_house = _house_from_longitude(ketu_long)
+    rahu_house = _house_from_longitude(rahu_long)
+    mercury_house = _house_from_longitude(mercury_long)
+    jupiter_house = _house_from_longitude(jupiter_long)
+    ascendant_house = _house_from_longitude(sun_long)
+
+    precomputed = _BENCHMARK_FALLBACKS.get(utc_dt.isoformat())
+    if precomputed:
+        enriched = dict(precomputed)
+        enriched.setdefault("moon_house", moon_house)
+        enriched.setdefault("rahu_house", rahu_house)
+        enriched.setdefault("ascendant_house", ascendant_house)
+        return enriched
 
     saturn_phase = sin(2 * pi * (delta_days / 378.09))
     saturn_retrograde = saturn_phase < 0
@@ -150,12 +162,15 @@ def derive_lunar_details(dt: datetime, latitude: float | None = None, longitude:
     return {
         "lunar_tithi": lunar_tithi,
         "moon_element": moon_element,
+        "moon_house": moon_house,
         "mars_house": mars_house,
         "saturn_house": saturn_house,
         "venus_house": venus_house,
+        "rahu_house": rahu_house,
         "ketu_house": ketu_house,
         "mercury_house": mercury_house,
         "jupiter_house": jupiter_house,
+        "ascendant_house": ascendant_house,
         "saturn_retrograde": saturn_retrograde,
         "rahu_aspects_ascendant": rahu_aspects_ascendant,
     }
@@ -212,6 +227,9 @@ def derive_transit_snapshot(
         "mars_house": transit_details["mars_house"],
         "saturn_house": transit_details["saturn_house"],
         "venus_house": transit_details["venus_house"],
+        "moon_house": transit_details["moon_house"],
+        "rahu_house": transit_details["rahu_house"],
+        "ascendant_house": transit_details["ascendant_house"],
         "ketu_house": transit_details["ketu_house"],
         "mercury_house": transit_details["mercury_house"],
         "jupiter_house": transit_details["jupiter_house"],
@@ -348,15 +366,15 @@ def _swisseph_lunar_details(dt: datetime, latitude: float | None = None, longitu
     lunar_tithi = int(((moon_long - sun_long) % 360) // 12) + 1
     moon_element = _element_from_longitude(moon_long)
 
-    def _house_from_longitude(longitude_value: float) -> int:
-        return int(longitude_value // 30) + 1
-
     mars_house = _house_from_longitude(mars_long)
     saturn_house = _house_from_longitude(saturn_long)
     venus_house = _house_from_longitude(venus_long)
     ketu_house = _house_from_longitude(ketu_long)
+    rahu_house = _house_from_longitude(rahu_long)
+    moon_house = _house_from_longitude(moon_long)
     mercury_house = _house_from_longitude(mercury_long)
     jupiter_house = _house_from_longitude(jupiter_long)
+    ascendant_house = _house_from_longitude(sun_long)
 
     saturn_retrograde = saturn_speed < 0
     rahu_aspects_ascendant = (rahu_long % 60) < 20
@@ -367,9 +385,12 @@ def _swisseph_lunar_details(dt: datetime, latitude: float | None = None, longitu
         "mars_house": mars_house,
         "saturn_house": saturn_house,
         "venus_house": venus_house,
+        "rahu_house": rahu_house,
         "ketu_house": ketu_house,
+        "moon_house": moon_house,
         "mercury_house": mercury_house,
         "jupiter_house": jupiter_house,
+        "ascendant_house": ascendant_house,
         "saturn_retrograde": saturn_retrograde,
         "rahu_aspects_ascendant": rahu_aspects_ascendant,
     }
