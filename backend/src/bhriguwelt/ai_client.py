@@ -48,6 +48,35 @@ def is_ai_configured() -> bool:
     return bool(_resolve_api_base() and _resolve_api_key())
 
 
+def sarvam_integration_contract() -> Dict[str, Any]:
+    """Describe how Sarvam/OpenAI-compatible models must use stored sources."""
+
+    return {
+        "precision_mode": (
+            "Ground responses in stored JSON payloads (charts, timelines, compatibility) "
+            "and the preserved Bhrigu Samhita source texts."
+        ),
+        "data_sources": [
+            "bhrigu_samhita_data",
+            "json_payloads",
+            "analyzer_outputs",
+            "interpreter_briefs",
+            "designer_specs",
+        ],
+        "pipelines": {
+            "past_life": "Use karmic echoes + stored JSON to summarise without omitting sutra references.",
+            "core_wisdom": "Blend rule-engine digest with cited folios for precise, reproducible replies.",
+            "analyzers": "Respect validation notes to keep Sarvam outputs aligned with manuscript rules.",
+            "interpreters": "Fold interpreter briefs into the narrative; never freewheel beyond provided data.",
+            "designers": "Reference designer-ready specs (charts/timelines) so visual surfaces stay in sync.",
+        },
+        "fallback": (
+            "If AI transport fails, return deterministic guidance anchored in Bhrigu Samhita JSON blocks "
+            "so downstream services can render without loss."
+        ),
+    }
+
+
 def ai_provider_metadata() -> Dict[str, Any]:
     """Expose the configured AI provider so downstream layers know if Sarvam is active.
 
@@ -71,14 +100,19 @@ def ai_provider_metadata() -> Dict[str, Any]:
         "coverage": [
             "wisdom-bot",
             "chat",
+            "core_wisdom",
             "core-wisdom",
             "analyzers",
             "interpreters",
             "designers",
             "future",
+            "timeline",
             "past_life",
+            "past-life",
+            "past_future",
             "matchmaking",
         ],
+        "integration_contract": sarvam_integration_contract(),
     }
 
 
@@ -135,4 +169,10 @@ def chat_completion(
     return message.strip()
 
 
-__all__ = ["AIIntegrationError", "is_ai_configured", "chat_completion", "ai_provider_metadata"]
+__all__ = [
+    "AIIntegrationError",
+    "is_ai_configured",
+    "chat_completion",
+    "ai_provider_metadata",
+    "sarvam_integration_contract",
+]
