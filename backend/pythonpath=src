@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
-# Resolve the project root so the script works even when invoked outside /app.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
-
-export PYTHONPATH="${PYTHONPATH:-"$SCRIPT_DIR/src"}"
+# Ensure the backend runs with the expected module path even when invoked via the
+# Railway start command `pythonpath=src`.
+export PYTHONPATH=${PYTHONPATH:-"$SCRIPT_DIR/src"}
 exec "$SCRIPT_DIR/start.sh" "$@"
