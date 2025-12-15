@@ -7,6 +7,9 @@ from .engine_interpreters import EngineInterpretation, interpret_bhrigu_wisdom
 from .matchmaking_engine import run_matchmaking_pipeline
 from .experience_flow import FlowVisualizations, UnifiedExperienceFlow, build_unified_experience_flow
 from .past_future_bridge import PastFutureSynthesis, build_past_future_synthesis
+from .rule_dsl import compile_to_dataset, parse_dsl
+from .ml_weighting import apply_reweighting
+from .taxonomy import expected_ids, missing_ids_in_dataset, validate_id
 from .horoscope import (
     FutureReport,
     HoroscopeReport,
@@ -66,4 +69,10 @@ __all__ = [
     "WisdomBotResponse",
     "WisdomBotDownload",
     "build_wisdom_bot_response",
+    "parse_dsl",
+    "compile_to_dataset",
+    "apply_reweighting",
+    "expected_ids",
+    "missing_ids_in_dataset",
+    "validate_id",
 ]

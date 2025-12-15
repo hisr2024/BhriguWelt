@@ -671,6 +671,13 @@ MATCHMAKING_CRITERIA: List[Dict[str, Any]] = [
 
 
 def as_dict() -> Dict[str, Any]:
-    from .data_loader import load_bhrigu_data
-    return load_bhrigu_data()
+    return {
+        "metadata": METADATA,
+        "principles": PRINCIPLES,
+        "past_life_engines": PAST_LIFE_ENGINES,
+        "future_engines": FUTURE_ENGINES,
+        "remedies": REMEDIES,
+        "transit_rules": TRANSIT_RULES,
+        "matchmaking_criteria": MATCHMAKING_CRITERIA,
+    }
 
