@@ -2,43 +2,39 @@
 
 import Link from "next/link";
 import HoroscopeForm from "@/components/HoroscopeForm";
-import OperationalStack from "@/components/OperationalStack";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { helperCopy } from "@/lib/copy";
 import { useI18n } from "@/lib/i18n";
 
 export default function HoroscopePage() {
   const { t } = useI18n();
-  const helperText = helperCopy.horoscope;
 
   return (
-    <div className="horo-shell">
-      <section className="panel-header" style={{ alignItems: "flex-start", gap: "16px" }}>
-        <div>
-          <p className="eyebrow">Holistic horoscope</p>
-          <h1>{t("pages.horoscope.title", "Generate the full reading with one clean form.")}</h1>
-          <p className="muted" style={{ maxWidth: "720px" }}>
-            {t(
-              "form.helper",
-              helperText ?? "Validated birth details feed the Bhrigu analyzers, interpreters, and AI remedies in one flow.",
-            )}
-          </p>
-        </div>
-        <div className="hero-actions" style={{ gap: "12px", flexWrap: "wrap" }}>
+    <div className="stack">
+      <header className="panel softly">
+        <p className="eyebrow">Horoscope</p>
+        <h1>{t("pages.horoscope.title", "Clean form. Complete reading.")}</h1>
+        <p className="muted">
+          {t(
+            "form.helper",
+            "Provide the essentials and receive the full horoscope output in one step.",
+          )}
+        </p>
+        <div className="hero-actions">
           <Link href="/" className="button-link ghost-link">
             Back
           </Link>
-          <Link href="/calendar" className="button-link">
-            Refresh Śaka calendar
-          </Link>
         </div>
+      </header>
+
+      <section className="card highlight" aria-label="Horoscope form">
+        <div className="section-heading">
+          <h2>Data input</h2>
+          <p className="muted">All required fields are here. Submit to view the reading.</p>
+        </div>
+        <ErrorBoundary>
+          <HoroscopeForm />
+        </ErrorBoundary>
       </section>
-
-      <OperationalStack />
-
-      <ErrorBoundary>
-        <HoroscopeForm />
-      </ErrorBoundary>
     </div>
   );
 }
