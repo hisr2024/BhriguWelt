@@ -29,8 +29,8 @@ supported so the build always has Python + `pip` available:
    isn’t restricted to `backend/`.
 5. Set the **Build Command** to `python -m pip install -r requirements.txt`.
 6. Set the **Start Command** to `./start.sh` (works in both root layouts and
-   wraps `PYTHONPATH=src python -m bhriguwelt.api`).
-7. Add an environment variable `PYTHONPATH=src` (matches local/testing usage).
+   wraps `PYTHONPATH="$(pwd)/src" python -m bhriguwelt.api`).
+7. Add an environment variable `PYTHONPATH="$(pwd)/src"` (matches local/testing usage).
 8. Make sure both `start.sh` scripts are executable (`chmod +x start.sh` at the
    repo root and inside `backend/`) so Nixpacks can invoke them.
 9. Deploy. Once Railway shows the service as running, copy the generated domain
@@ -82,7 +82,7 @@ supported so the build always has Python + `pip` available:
 3. If the frontend falls back to demo data, double-check the Vercel environment
    variable, confirm the backend URL is reachable over HTTPS, and redeploy.
    Successful requests return the same JSON structure as local
-   `PYTHONPATH=src pytest` fixtures.
+   `PYTHONPATH="$(pwd)/src" pytest` fixtures.
 4. Confirm the backend enforces throttling by making two quick POSTs to
    `/future` or `/health` from the same IP; the second call should return HTTP
    429. Cached responses should update after 2-3 minutes or immediately after
@@ -102,7 +102,7 @@ supported so the build always has Python + `pip` available:
 
 ## Testing the full stack
 
-1. Run `PYTHONPATH=src python -m bhriguwelt.api` inside `backend/`.
+1. Run `PYTHONPATH="$(pwd)/src" python -m bhriguwelt.api` inside `backend/`.
 2. Set `NEXT_PUBLIC_BACKEND_URL=http://localhost:8000` and launch the frontend
    with `npm run dev`.
 3. Exercise every form. The responses should match CLI/pytest outputs because the
