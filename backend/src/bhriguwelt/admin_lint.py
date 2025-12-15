@@ -75,11 +75,24 @@ def main(argv: List[str] | None = None) -> int:
 
     issues = _lint_dataset(dataset)
 
+    counts = {segment: len(dataset.get(segment) or []) for segment in (
+        "principles",
+        "remedies",
+        "past_life_engines",
+        "future_engines",
+        "transit_rules",
+        "matchmaking_criteria",
+    )}
+
     if args.json:
         print(json.dumps([issue.__dict__ for issue in issues], ensure_ascii=False, indent=2))
     else:
         for it in issues:
             print(f"[{it.level}] {it.path}: {it.message}")
+
+    print("\nCounts:")
+    for section, count in counts.items():
+        print(f"- {section}: {count}")
 
     errors = [i for i in issues if i.level == "ERROR"]
     warns = [i for i in issues if i.level == "WARN"]
@@ -87,6 +100,8 @@ def main(argv: List[str] | None = None) -> int:
     if errors:
         return 2
     if args.fail_on_warn and warns:
+        return 1
+    if any(count == 0 for count in counts.values()):
         return 1
     return 0
 

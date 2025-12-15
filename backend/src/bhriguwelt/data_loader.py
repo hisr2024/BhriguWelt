@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 from copy import deepcopy
 from importlib import import_module
@@ -12,17 +13,36 @@ from typing import Any, Dict, List, Set
 
 from .bhrigu_data import as_dict as _default_bhrigu_data
 
+log = logging.getLogger(__name__)
+
 try:  # pragma: no cover - optional dependency
     yaml = import_module("yaml")
 except ModuleNotFoundError:  # pragma: no cover - expected in offline envs
     yaml = None
 
-_DATA_PATH = Path(
-    os.environ.get(
-        "BHRIGUWELT_DATA_PATH",
-        Path(__file__).resolve().parents[2] / "data" / "bhrigu_samhita_principles.yml",
-    )
-)
+
+def _resolve_data_path() -> Path:
+    """Return an absolute path to the configured dataset.
+
+    Railway and Docker builds sometimes mount data relative to the project
+    root. Using :func:`Path.resolve` with ``strict=False`` ensures the loader
+    records the intended target even when the file is not present.
+    """
+
+    env_path = os.environ.get("BHRIGUWELT_DATA_PATH")
+    project_root = Path(__file__).resolve().parents[2]
+    if env_path:
+        candidate = Path(env_path).expanduser()
+        if not candidate.is_absolute():
+            candidate = (project_root / candidate).resolve(strict=False)
+        else:
+            candidate = candidate.resolve(strict=False)
+        return candidate
+
+    return (project_root / "data" / "bhrigu_samhita_principles.yml").resolve(strict=False)
+
+
+_DATA_PATH = _resolve_data_path()
 _DEFAULT_DATASET = _default_bhrigu_data()
 _EXPECTED_PRINCIPLE_CHECKSUMS = {
     principle.get("id"): principle.get("integrity", {}).get("checksum")
@@ -298,24 +318,51 @@ def load_bhrigu_data(path: Path | None = None) -> Dict[str, Any]:
     which is convenient for integration tests.
     """
 
+    resolved_path = path or _DATA_PATH
+
     if path:
-        with path.open("r", encoding="utf-8") as handle:
+        log.debug("Loading Bhrigu dataset from explicit path", extra={"path": str(resolved_path)})
+        with resolved_path.open("r", encoding="utf-8") as handle:
             return _validate_and_enrich(json.load(handle))
 
-    if yaml and _DATA_PATH.exists():
-        try:
-            with _DATA_PATH.open("r", encoding="utf-8") as handle:
-                return _validate_and_enrich(yaml.safe_load(handle))
-        except Exception:  # pragma: no cover - defensive fallback
-            pass
+    log.debug(
+        "Resolved Bhrigu dataset path",
+        extra={"path": str(resolved_path), "yaml_available": bool(yaml)},
+    )
 
-    if _DATA_PATH.exists():
+    if yaml and resolved_path.exists():
         try:
-            with _DATA_PATH.open("r", encoding="utf-8") as handle:
-                return _validate_and_enrich(json.load(handle))
-        except Exception:  # pragma: no cover - defensive fallback
-            pass
+            with resolved_path.open("r", encoding="utf-8") as handle:
+                dataset = _validate_and_enrich(yaml.safe_load(handle))
+                log.debug(
+                    "Loaded Bhrigu dataset via YAML",
+                    extra={
+                        "path": str(resolved_path),
+                        "past_life_engines": len(dataset.get("past_life_engines", []) or []),
+                        "future_engines": len(dataset.get("future_engines", []) or []),
+                    },
+                )
+                return dataset
+        except Exception as exc:  # pragma: no cover - defensive fallback
+            log.warning("Failed to load YAML dataset; falling back", exc_info=exc)
 
+    if resolved_path.exists():
+        try:
+            with resolved_path.open("r", encoding="utf-8") as handle:
+                dataset = _validate_and_enrich(json.load(handle))
+                log.debug(
+                    "Loaded Bhrigu dataset via JSON",
+                    extra={
+                        "path": str(resolved_path),
+                        "past_life_engines": len(dataset.get("past_life_engines", []) or []),
+                        "future_engines": len(dataset.get("future_engines", []) or []),
+                    },
+                )
+                return dataset
+        except Exception as exc:  # pragma: no cover - defensive fallback
+            log.warning("Failed to load JSON dataset; falling back", exc_info=exc)
+
+    log.debug("Falling back to baked-in Bhrigu dataset")
     return _validate_and_enrich(deepcopy(_DEFAULT_DATASET))
 
 
