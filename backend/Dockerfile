@@ -18,9 +18,11 @@ COPY . .
 # Ensure module resolution matches local development without a custom start command.
 ENV PYTHONPATH=/app/src
 # Install the pythonpath=src shim to a well-known location so ENTRYPOINT resolution
-# does not depend on PATH configuration performed by the hosting platform.
-RUN install -m 755 pythonpath=src /usr/local/bin/pythonpath=src \
-  && chmod +x start.sh
+# does not depend on PATH configuration performed by the hosting platform. Using
+# an explicit copy avoids any ambiguity about executable resolution for file names
+# containing '='.
+RUN cp "pythonpath=src" /usr/local/bin/pythonpath=src \
+  && chmod +x /usr/local/bin/pythonpath=src pythonpath=src start.sh
 
 # Use the `pythonpath=src` shim as an entrypoint so platforms that replace the image
 # entrypoint with their start command still execute a known binary.
