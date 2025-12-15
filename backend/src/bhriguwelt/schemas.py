@@ -10,3 +10,5 @@ DATASET_SEGMENTS = (
     "transit_rules",
     "matchmaking_criteria",
 )
+
+SUPPORTED_OPS = {"equals", "min", "max", "any_of"}

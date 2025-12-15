@@ -51,7 +51,6 @@ class CelestialSnapshot:
     ketu_house: int
     mercury_house: int
     jupiter_house: int
-    ascendant_house: int
     rahu_aspects_ascendant: bool
     saturn_retrograde: bool
 
@@ -70,12 +69,10 @@ class CelestialSnapshot:
         rahu_house: int | None = None,
         rahu_aspects_ascendant: bool | None = None,
         tradition: str | None = None,
-        moon_house: int | None = None,
         ascendant_house: int | None = None,
         ketu_house: int | None = None,
         mercury_house: int | None = None,
         jupiter_house: int | None = None,
-        ascendant_house: int | None = None,
         saturn_retrograde: bool | None = None,
         latitude: float | None = None,
         longitude: float | None = None,
@@ -102,7 +99,6 @@ class CelestialSnapshot:
             "ketu_house": ketu_house,
             "mercury_house": mercury_house,
             "jupiter_house": jupiter_house,
-            "ascendant_house": ascendant_house,
             "rahu_aspects_ascendant": rahu_aspects_ascendant,
             "saturn_retrograde": saturn_retrograde,
         }
@@ -136,7 +132,6 @@ class CelestialSnapshot:
             ketu_house=int(baseline["ketu_house"]),
             mercury_house=int(baseline["mercury_house"]),
             jupiter_house=int(baseline["jupiter_house"]),
-            ascendant_house=int(baseline["ascendant_house"]),
             rahu_aspects_ascendant=bool(baseline["rahu_aspects_ascendant"]),
             saturn_retrograde=bool(baseline["saturn_retrograde"]),
         )
