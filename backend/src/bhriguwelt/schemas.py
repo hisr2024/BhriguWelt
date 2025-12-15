@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import Any, Dict, List, Set
+
 DATASET_SEGMENTS = (
     "principles",
     "remedies",
