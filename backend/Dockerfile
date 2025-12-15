@@ -34,6 +34,6 @@ exec "$APP_ROOT/start.sh" "$@"
 EOF
 RUN chmod +x /usr/local/bin/pythonpath=src pythonpath=src start.sh
 
-# Use the start script directly so the container always has a resolvable entrypoint
-# even when hosts disregard PATH manipulations or replace the entrypoint.
-ENTRYPOINT ["/bin/bash", "/app/start.sh"]
+# Use the shim directly as the entrypoint so hosts looking for the
+# `pythonpath=src` executable always find it regardless of PATH handling.
+ENTRYPOINT ["/usr/local/bin/pythonpath=src"]
