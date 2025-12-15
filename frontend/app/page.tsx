@@ -1,6 +1,11 @@
 'use client';
 
 import Link from "next/link";
+
+import { HeroSection } from "./sections/HeroSection";
+import { AetherBeltSection } from "./sections/AetherBeltSection";
+import { JourneyRail } from "./sections/JourneyRail";
+import { RitualGrid } from "./sections/RitualGrid";
 import { useI18n } from "@/lib/i18n";
 
 const tools = [
@@ -40,27 +45,36 @@ export default function HomePage() {
   );
 
   return (
-    <div className="stack">
-      <section className="hero" aria-labelledby="hero-title">
-        <h1 id="hero-title">{heroTitle}</h1>
-        <p className="muted" style={{ maxWidth: "720px" }}>
-          {heroDescription}
-        </p>
+    <div className="serene-page">
+      <HeroSection />
+      <AetherBeltSection />
+
+      <section className="panel softly" aria-labelledby="hero-title">
+        <div className="section-heading">
+          <p className="eyebrow">{t("home.intro.tag", "Bhrigu workspace")}</p>
+          <h2 id="hero-title">{heroTitle}</h2>
+          <p className="muted" style={{ maxWidth: "720px" }}>
+            {heroDescription}
+          </p>
+        </div>
+
+        <div className="card-grid" aria-label="Available tools">
+          {tools.map((tool) => (
+            <article key={tool.title} className="card">
+              <div className="section-heading">
+                <p className="eyebrow">{tool.title}</p>
+                <p className="muted">{tool.description}</p>
+              </div>
+              <Link href={tool.href} className="button-link" aria-label={`Open ${tool.title}`}>
+                {t("home.open", "Open")}
+              </Link>
+            </article>
+          ))}
+        </div>
       </section>
 
-      <section className="card-grid" aria-label="Available tools">
-        {tools.map((tool) => (
-          <div key={tool.title} className="card">
-            <div className="section-heading">
-              <p className="eyebrow">{tool.title}</p>
-              <p className="muted">{tool.description}</p>
-            </div>
-            <Link href={tool.href} className="button-link" aria-label={`Open ${tool.title}`}>
-              Open
-            </Link>
-          </div>
-        ))}
-      </section>
+      <RitualGrid />
+      <JourneyRail />
     </div>
   );
 }
