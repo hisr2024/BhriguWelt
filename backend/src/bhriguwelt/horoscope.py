@@ -411,6 +411,7 @@ def build_transit_report(request: HoroscopeRequest, transit_payload: Dict[str, s
         raise ValueError("User consent required for date-based predictions")
 
     core_bundle = bhrigu_core.application_bundle(request.tradition)
+    _ensure_bhrigu_data_available(core_bundle, ("transit_rules",), request.tradition)
     snapshot = _snapshot_from_request(request)
     transit_rules = core_bundle.get("transit_rules", [])
     transit_dt = normalize_birth_datetime(
