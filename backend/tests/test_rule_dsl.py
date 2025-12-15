@@ -1,55 +1,38 @@
-from bhriguwelt.rule_dsl import DSLParseError, compile_dsl_to_dataset_entries, parse_dsl
+from bhriguwelt.rule_dsl import all_of, any_of, between, compile_rule, eq, Rule
 
 
-def test_parse_dsl_parses_typed_values_including_lists():
-    text = (
-        "engine PL-12:\n"
-        "  tradition = universal\n"
-        "  sutra = \"Bikaner folio 12b\"\n"
-        "  desc = \"Watery Moon + Jupiter aspect...\"\n"
-        "  narrative = \"...\"\n"
-        "  confidence = 0.82\n"
-        "  when:\n"
-        "    moon_element any_of [water]\n"
-        "    lunar_tithi min 1\n"
-        "    lunar_tithi max 8\n"
-        "    rahu_aspects_ascendant equals true\n"
-        "engine DEMO-2:\n"
-        "  when:\n"
-        "    example_field any_of [1, 2, 3.5, true, \"foo\"]\n"
+def test_eq_any_of_between_compile():
+    compiled = compile_rule(
+        all_of(
+            eq("moon_element", "water"),
+            any_of("mars_house", [1, 5, 9]),
+            between("lunar_tithi", 1, 10),
+        )
     )
 
-    engines = parse_dsl(text)
-
-    assert len(engines) == 2
-    first = engines[0]
-    assert first["id"] == "PL-12"
-    assert first["description"] == "Watery Moon + Jupiter aspect..."
-    assert first["sutra_reference"] == "Bikaner folio 12b"
-    assert first["confidence"] == 0.82
-    assert first["conditions"]["moon_element"]["any_of"] == ["water"]
-    assert first["conditions"]["lunar_tithi"] == {"min": 1, "max": 8}
-    assert first["conditions"]["rahu_aspects_ascendant"]["equals"] is True
-
-    second = engines[1]
-    assert second["conditions"]["example_field"]["any_of"] == [1, 2, 3.5, True, "foo"]
+    assert compiled["moon_element"]["equals"] == "water"
+    assert compiled["mars_house"]["any_of"] == [1, 5, 9]
+    assert compiled["lunar_tithi"] == {"min": 1, "max": 10}
 
 
-def test_compile_dsl_defaults_tradition_and_conditions():
-    text = "engine ONLY:\n  confidence = 1\n"
-    engines = compile_dsl_to_dataset_entries(text)
 
-    assert engines[0]["tradition"] == "universal"
-    assert engines[0]["conditions"] == {}
+def test_all_of_merges_rules():
+    rule_a = eq("saturn_house", 7)
+    rule_b = any_of("saturn_house", [7, 8])
+    merged = compile_rule(all_of(rule_a, rule_b))
+
+    assert merged["saturn_house"]["equals"] == 7
+    assert merged["saturn_house"]["any_of"] == [7, 8]
 
 
-def test_parse_dsl_rejects_unknown_ops():
-    text = "engine OOPS:\n  when:\n    field unknown 1\n"
 
+def test_compile_rule_accepts_mapping():
+    mapping = {"venus_house": {"equals": 2}}
+    assert compile_rule(mapping) == mapping
+    assert compile_rule(None) == {}
     try:
-        parse_dsl(text)
-    except DSLParseError as exc:  # pragma: no cover - specific branch assertion
-        assert exc.line == 3
-        assert "unsupported op" in exc.message
-    else:  # pragma: no cover - parse_dsl must raise
-        raise AssertionError("expected DSLParseError")
+        compile_rule("bad")
+    except TypeError:
+        pass
+    else:  # pragma: no cover - guard
+        raise AssertionError("compile_rule should reject strings")

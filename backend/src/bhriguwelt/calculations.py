@@ -24,12 +24,9 @@ except Exception:  # pragma: no cover - offline or sandboxed environments
 from .astronomical_calculations import auto_snapshot_kwargs, derive_transit_snapshot, normalize_birth_datetime
 from .config import load_runtime_config
 
-_DISABLE_ML_WEIGHTING = os.environ.get("BHRIGUWELT_DISABLE_ML_WEIGHTING", "").lower() in {
-    "1",
-    "true",
-    "yes",
-    "on",
-}
+def _ml_disabled() -> bool:
+    flag = os.environ.get("BHRIGUWELT_DISABLE_ML_WEIGHTING", "").lower()
+    return flag in {"1", "true", "yes", "on"}
 
 
 @dataclass
@@ -277,7 +274,7 @@ def score_principles(
 
     resolved: Dict[str, Dict[str, object]] = {}
     ml_active = _ml_runtime_enabled(scoring_config)
-    model = _ml_model(scoring_config)
+    model = _ml_model(scoring_config) if ml_active else None
 
     for principle in principles:
         if not _tradition_allows(principle, snapshot.tradition):
@@ -307,7 +304,7 @@ def score_principles(
         for key, value in weights.items():
             posterior = _bayesian_weight(float(value), alpha, beta)
             features = _feature_vector_from_snapshot(snapshot, posterior, modifier, principle_context)
-            ml_score = _ml_weight_score(model, features)
+            ml_score = _ml_weight_score(model, features) if ml_active else posterior
             blended = _blend_scores(posterior, ml_score, scoring_config, ml_active)
             lifted_modifier = _apply_ml_lift(modifier, ml_score, scoring_config, ml_active)
             combined = round(min(1.0, blended * lifted_modifier), 2)
@@ -729,17 +726,20 @@ def _element_scalar(element: str) -> float:
 
 
 def _benchmark_path(scoring_config: Dict[str, object]) -> Path:
+    package_root = Path(__file__).resolve().parents[2]
+    default = package_root / "tests" / "data" / "benchmark_charts.json"
+    project_root = Path(__file__).resolve().parents[3]
+    fallback = project_root / "tests" / "data" / "benchmark_charts.json"
+
     configured = scoring_config.get("benchmark_data_path")
     if configured:
-        candidate = Path(str(configured))
-        if candidate.exists():
+        candidate = Path(str(configured)).resolve()
+        if candidate.exists() and candidate.name == default.name:
             return candidate
-    package_root = Path(__file__).resolve().parents[2]
-    bundled = package_root / "tests" / "data" / "benchmark_charts.json"
-    if bundled.exists():
-        return bundled
-    project_root = Path(__file__).resolve().parents[3]
-    return project_root / "tests" / "data" / "benchmark_charts.json"
+
+    if default.exists():
+        return default
+    return fallback
 
 
 @lru_cache(maxsize=None)
@@ -921,6 +921,9 @@ def _load_persisted_model(scoring_config: Dict[str, object]) -> Any | None:
 
 
 def _ml_runtime_enabled(scoring_config: Dict[str, object]) -> bool:
+    if _ml_disabled():
+        return False
+
     env_flag = os.getenv("BHRIGU_ML_ENABLED")
     if env_flag is not None:
         return env_flag.strip().lower() not in {"", "0", "false", "off"}
@@ -949,7 +952,7 @@ def _logistic_model(scoring_config: Dict[str, object]) -> Any:
     features, labels = _training_matrix(scoring_config)
     trained_parameters: Dict[str, object] | None = scoring_config.get("ml_trained_parameters")  # type: ignore[assignment]
 
-    if _DISABLE_ML_WEIGHTING:
+    if _ml_disabled():
         trained_parameters = None
 
     if trained_parameters:
@@ -1043,7 +1046,7 @@ def _ml_weight_score(model: Any, features: List[float]) -> float:
 
 def _blend_scores(posterior: float, ml_score: float, scoring_config: Dict[str, object], ml_active: bool) -> float:
     if not ml_active:
-        return (posterior + ml_score) / 2
+        return posterior
 
     blend_ratio = float(scoring_config.get("ml_blend_ratio", 0.55))
     anchor = float(scoring_config.get("ml_anchor", 0.5))
