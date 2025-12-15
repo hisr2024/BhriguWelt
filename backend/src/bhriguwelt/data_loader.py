@@ -150,18 +150,18 @@ def _validate_matchmaking_criteria(criteria: List[Dict[str, Any]]) -> None:
     if not isinstance(criteria, list):
         raise ValueError("'matchmaking_criteria' must be a list")
 
-    for index, criterion in enumerate(criteria):
-        if not isinstance(criterion, dict):
-            raise ValueError(f"Matchmaking criterion at index {index} must be a mapping")
+        for index, criterion in enumerate(criteria):
+            if not isinstance(criterion, dict):
+                raise ValueError(f"Matchmaking criterion at index {index} must be a mapping")
 
-        missing = [
-            field
-            for field in ("id", "sutra_reference", "description", "pair_rules")
-            if not criterion.get(field)
-        ]
-        if missing:
-            raise ValueError(
-                f"Matchmaking criterion {criterion.get('id', f'entry {index}')} is missing required fields: {', '.join(sorted(missing))}"
+            missing = [
+                field
+                for field in ("id", "sutra_reference", "pair_rules")
+                if not criterion.get(field)
+            ]
+            if missing:
+                raise ValueError(
+                    f"Matchmaking criterion {criterion.get('id', f'entry {index}')} is missing required fields: {', '.join(sorted(missing))}"
             )
 
         pair_rules = criterion.get("pair_rules", [])

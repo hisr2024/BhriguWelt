@@ -47,13 +47,12 @@ class CelestialSnapshot:
     mars_house: int
     saturn_house: int
     venus_house: int
-    rahu_house: int
-    ketu_house: int
-    mercury_house: int
-    jupiter_house: int
-    ascendant_house: int
-    rahu_aspects_ascendant: bool
-    saturn_retrograde: bool
+    rahu_house: int = 0
+    ketu_house: int = 0
+    mercury_house: int = 0
+    jupiter_house: int = 0
+    rahu_aspects_ascendant: bool = False
+    saturn_retrograde: bool = False
 
     @classmethod
     def from_strings(
@@ -70,12 +69,10 @@ class CelestialSnapshot:
         rahu_house: int | None = None,
         rahu_aspects_ascendant: bool | None = None,
         tradition: str | None = None,
-        moon_house: int | None = None,
         ascendant_house: int | None = None,
         ketu_house: int | None = None,
         mercury_house: int | None = None,
         jupiter_house: int | None = None,
-        ascendant_house: int | None = None,
         saturn_retrograde: bool | None = None,
         latitude: float | None = None,
         longitude: float | None = None,
@@ -102,7 +99,6 @@ class CelestialSnapshot:
             "ketu_house": ketu_house,
             "mercury_house": mercury_house,
             "jupiter_house": jupiter_house,
-            "ascendant_house": ascendant_house,
             "rahu_aspects_ascendant": rahu_aspects_ascendant,
             "saturn_retrograde": saturn_retrograde,
         }
@@ -136,7 +132,6 @@ class CelestialSnapshot:
             ketu_house=int(baseline["ketu_house"]),
             mercury_house=int(baseline["mercury_house"]),
             jupiter_house=int(baseline["jupiter_house"]),
-            ascendant_house=int(baseline["ascendant_house"]),
             rahu_aspects_ascendant=bool(baseline["rahu_aspects_ascendant"]),
             saturn_retrograde=bool(baseline["saturn_retrograde"]),
         )
