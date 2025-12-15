@@ -645,10 +645,9 @@ MATCHMAKING_CRITERIA: List[Dict[str, Any]] = [
        'weight': 0.4}],
   'sutra_reference': 'Sharada palm 77c',
   'time_horizon': 'long-term',
-  'tradition': 'universal'},
+ 'tradition': 'universal'},
  {'base_weight': 0.4,
-  'description': 'Venus stewardship and Mars missions must complement to support Bhrigu's "digital '
-                 'grihastha" households that balance art, finance, and product roadmaps.',
+  'description': "Venus stewardship and Mars missions must complement to support Bhrigu's \"digital grihastha\" households that balance art, finance, and product roadmaps.",
   'id': 'MM-8',
   'modern_modifiers': {'arts-collab': 0.05, 'creative-startup': 0.05, 'startup-ops': 0.07},
   'pair_rules': [
