@@ -31,6 +31,13 @@ export default function CalendarForm() {
   const requestIdRef = useRef(0);
   const { triggerSubmitFeedback } = useImmersiveFeedback();
   const { updateSaka } = useSakaContext();
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     const stored = loadBirthDetails();
@@ -85,12 +92,15 @@ export default function CalendarForm() {
     setRefreshing(Boolean(payload));
     try {
       const response = await requestCalendar(details);
-      if (currentRequestId !== requestIdRef.current) return;
+      if (currentRequestId !== requestIdRef.current || !isMountedRef.current) return;
+
       setPayload(response);
+
       const calendarPayload: CalendarPayload | undefined =
         typeof response === "object" && response && "saka_date" in response
           ? (response as CalendarPayload)
           : undefined;
+
       const sakaDate = calendarPayload?.saka_date
         ? {
             year: calendarPayload.saka_date.year,
@@ -100,12 +110,33 @@ export default function CalendarForm() {
             leapYear: calendarPayload.saka_date.leap_year,
           }
         : undefined;
+
       const derivedGrid = deriveHouseGrid(
         details,
         (sakaDate as { month?: string } | undefined)?.month,
         (sakaDate as { day?: number } | undefined)?.day,
       );
+
       const sakaLabelFromResponse = formatSakaLabel(sakaDate);
+      const placements = deriveHousePlacements(
+        derivedGrid,
+        (sakaDate as { day?: number } | undefined)?.day,
+      );
+
+      saveBirthDetails(
+        {
+          ...details,
+          ...placements,
+          sakaMonth: (sakaDate as { month?: string } | undefined)?.month,
+          sakaDay: (sakaDate as { day?: number } | undefined)?.day,
+          houseGrid: derivedGrid,
+          sakaLabel: sakaLabelFromResponse,
+        },
+        { autoSubmit: true },
+      );
+
+      if (!isMountedRef.current) return;
+
       setHouseGrid(derivedGrid);
       updateSaka({
         details,
@@ -127,30 +158,18 @@ export default function CalendarForm() {
           : undefined,
         payload: response,
       });
-      const placements = deriveHousePlacements(
-        derivedGrid,
-        (sakaDate as { day?: number } | undefined)?.day,
-      );
-      saveBirthDetails(
-        {
-          ...details,
-          ...placements,
-          sakaMonth: (sakaDate as { month?: string } | undefined)?.month,
-          sakaDay: (sakaDate as { day?: number } | undefined)?.day,
-          houseGrid: derivedGrid,
-          sakaLabel: sakaLabelFromResponse,
-        },
-        { autoSubmit: true },
-      );
       setAutoTriggered(source === "auto");
       setRefreshing(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to convert date";
-      if (currentRequestId !== requestIdRef.current) return;
-      setError(message);
-      captureClientError(message, { details, feature: "calendar" });
+      if (currentRequestId !== requestIdRef.current || !isMountedRef.current) return;
+      const hint = message.includes("backend hosts")
+        ? `${message}. Using demo Śaka data until an API endpoint is configured.`
+        : message;
+      setError(hint);
+      captureClientError(hint, { details, feature: "calendar" });
     } finally {
-      if (currentRequestId === requestIdRef.current) {
+      if (currentRequestId === requestIdRef.current && isMountedRef.current) {
         setLoading(false);
         setRefreshing(false);
       }
