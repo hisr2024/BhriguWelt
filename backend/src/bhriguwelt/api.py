@@ -1008,8 +1008,9 @@ def _ensure_visualization_payload(response: Dict[str, Any]) -> None:
 def serve(host: str = "0.0.0.0", port: int = 8000) -> None:
     """Run the HTTP server until interrupted."""
 
-    with ThreadingHTTPServer((host, port), BhriguAPIHandler) as server:
-        logger.info("BhriguWelt API running on http://%s:%s", host, port)
+    bound_port = int(os.environ.get("PORT", port))
+    with ThreadingHTTPServer((host, bound_port), BhriguAPIHandler) as server:
+        logger.info("BhriguWelt API running on http://%s:%s", host, bound_port)
         try:  # pragma: no cover - manual shutdown
             server.serve_forever()
         except KeyboardInterrupt:  # pragma: no cover - manual shutdown
@@ -1020,5 +1021,5 @@ __all__ = ["BhriguAPIHandler", "handle_command", "serve"]
 
 
 if __name__ == "__main__":  # pragma: no cover - manual execution
-    env_port = os.environ.get("RAILWAY_TCP_PORT") or os.environ.get("PORT", "8000")
-    serve(host=os.environ.get("HOST", "0.0.0.0"), port=int(env_port))
+    env_port = int(os.environ.get("PORT", "8000"))
+    serve(host=os.environ.get("HOST", "0.0.0.0"), port=env_port)
