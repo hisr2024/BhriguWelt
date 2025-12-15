@@ -4,50 +4,23 @@ import CalendarForm from "@/components/CalendarForm";
 export default function CalendarPage() {
   return (
     <div className="stack">
-        <div className="hero">
-          <p className="eyebrow">Śaka calendar • Conversion lab</p>
-          <h1>Stabilised, precise Śaka backbone for every engine.</h1>
-          <p className="muted" style={{ maxWidth: "760px" }}>
-            Convert Gregorian birth details into Śaka-aligned payloads before calling any engine. The builder is now
-            calibrated to stay stable, precise, and ready to drop directly into horoscope, future, past-life, or
-            matchmaking flows.
-          </p>
-          <div className="hero-actions">
-            <Link href="/" className="button-link" style={{ background: "rgba(255,255,255,0.08)" }}>
-              Back to studio hub
-            </Link>
-          </div>
-      </div>
+      <header className="panel softly">
+        <p className="eyebrow">Śaka calendar</p>
+        <h1>Convert and export without extras.</h1>
+        <p className="muted">Provide birth details, get Śaka-aligned outputs for every engine.</p>
+        <div className="hero-actions">
+          <Link href="/" className="button-link ghost-link">
+            Back
+          </Link>
+        </div>
+      </header>
 
-      <section className="card-grid">
-        <div className="card highlight">
-          <div className="section-heading">
-            <p className="eyebrow">Live experience</p>
-            <h2>Gregorian → Śaka converter</h2>
-            <p>Use this before invoking horoscope, future, past-life, or matchmaking endpoints.</p>
-          </div>
-          <CalendarForm />
+      <section className="card highlight" aria-label="Śaka converter">
+        <div className="section-heading">
+          <h2>Data input</h2>
+          <p className="muted">Only the required fields remain. Submit to see the conversion result.</p>
         </div>
-        <div className="card">
-          <div className="section-heading">
-            <p className="eyebrow">Engine alignment</p>
-            <h2>Accurate conversions</h2>
-          </div>
-          <ul className="kudos-list">
-            <li>
-              <span className="badge">Consistency</span>
-              <span>All predictions align to the same Śaka context your backend expects.</span>
-            </li>
-            <li>
-              <span className="badge">Global-ready</span>
-              <span>Great for non-IST users—the converter returns IST in the payload.</span>
-            </li>
-            <li>
-              <span className="badge">UX friendly</span>
-              <span>Minimal inputs, high clarity for any onboarding step.</span>
-            </li>
-          </ul>
-        </div>
+        <CalendarForm />
       </section>
     </div>
   );
