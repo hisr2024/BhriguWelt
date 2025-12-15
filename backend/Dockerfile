@@ -6,6 +6,10 @@ WORKDIR /app
 # './' by ensuring the project root is on PATH (e.g. `pythonpath=src`).
 ENV PATH="/app:${PATH}"
 
+# Provide a global shim so even platforms that ignore the image PATH can
+# resolve the fallback start command.
+RUN ln -sf /app/pythonpath=src /usr/local/bin/pythonpath=src
+
 RUN apt-get update \
   && apt-get install -y --no-install-recommends bash \
   && rm -rf /var/lib/apt/lists/*
