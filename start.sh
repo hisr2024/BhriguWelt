@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd "$(dirname "$0")/backend"
-exec ./start.sh
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$REPO_ROOT/backend/start.sh"
