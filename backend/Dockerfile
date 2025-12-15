@@ -20,9 +20,11 @@ COPY . .
 ENV PYTHONPATH=/app/src
 # Ensure the shim is available on PATH for hosts that invoke `pythonpath=src`
 # directly, and mark the shim plus start script executable regardless of how the
-# container is launched.
-RUN cp "pythonpath=src" /usr/local/bin/pythonpath=src \
-  && chmod +x /usr/local/bin/pythonpath=src pythonpath=src start.sh
+# container is launched. Using `install` avoids edge cases with copying files
+# that contain an equals sign in the filename while still setting the correct
+# permissions.
+RUN install -m 755 "pythonpath=src" /usr/local/bin/pythonpath=src \
+  && chmod +x pythonpath=src start.sh
 
 # Use the start script directly so the container always has a resolvable entrypoint
 # even when hosts disregard PATH manipulations or replace the entrypoint.
