@@ -1,0 +1,12 @@
+{
+  "name": "bhriguwelt-figma-plugin",
+  "version": "1.0.0",
+  "description": "Figma plugin that generates the BhriguWelt mobile design system and core screens.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.104.0",
+    "typescript": "^5.4.0"
+  }
+}
