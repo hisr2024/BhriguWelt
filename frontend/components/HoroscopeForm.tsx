@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import { HOUSE_FOCUSES, deriveChartHouses } from "@/lib/houseGrid";
 import { getFallbackSample } from "@/lib/api";
@@ -160,6 +160,12 @@ export default function HoroscopeForm() {
   const { triggerSubmitFeedback } = useImmersiveFeedback();
   const { sakaState } = useSakaContext();
 
+  const normalizedBackend = useMemo(() => {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
+    const sanitized = backendUrl ? backendUrl.replace(/\/$/, "") : null;
+    return sanitized || "/api";
+  }, []);
+
   const fallbackInterpretation = useMemo(() => buildFallbackInterpretation(), []);
   const fallbackChartSample = useMemo(() => getFallbackSample("/horoscope") as ChartResponse | null, []);
 
@@ -277,33 +283,45 @@ export default function HoroscopeForm() {
     return feedback;
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    triggerSubmitFeedback();
-    setError(null);
-    setStatus("idle");
-    setChart(null);
-    setEndpoint(null);
-    setInterpretation({});
-
-    if (missingFields.length || Object.keys(validations).length) {
-      setError("Please fix the highlighted birth details.");
-      return;
-    }
-
-    setLoading(true);
-
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
-    const normalizedBackend = backendUrl ? backendUrl.replace(/\/$/, "") : null;
-
-    const requestPayload = {
+  const requestPayload = useMemo(
+    () => ({
       name: form.name,
       dateOfBirth: form.dateOfBirth,
       timeOfBirth: form.timeOfBirth,
       placeOfBirth: form.placeOfBirth,
-    } satisfies FormState;
+      tradition: form.tradition,
+      lunarTithi: form.lunarTithi,
+      moonElement: form.moonElement,
+      marsHouse: form.marsHouse,
+      saturnHouse: form.saturnHouse,
+      venusHouse: form.venusHouse,
+      rahuAspectsAscendant: form.rahuAspectsAscendant,
+      ketuHouse: form.ketuHouse,
+      mercuryHouse: form.mercuryHouse,
+      jupiterHouse: form.jupiterHouse,
+      saturnRetrograde: form.saturnRetrograde,
+    }),
+    [
+      form.dateOfBirth,
+      form.jupiterHouse,
+      form.ketuHouse,
+      form.lunarTithi,
+      form.marsHouse,
+      form.mercuryHouse,
+      form.moonElement,
+      form.name,
+      form.placeOfBirth,
+      form.rahuAspectsAscendant,
+      form.saturnHouse,
+      form.saturnRetrograde,
+      form.timeOfBirth,
+      form.tradition,
+      form.venusHouse,
+    ],
+  );
 
-    const handleSuccess = (data: ChartResponse, path: string) => {
+  const handleSuccess = useCallback(
+    (data: ChartResponse, path: string) => {
       const hydrated = hydrateCharts(data, form);
       const extracted = extractInterpretation(hydrated);
 
@@ -331,16 +349,19 @@ export default function HoroscopeForm() {
           "Live response did not include a narrative. Showing a curated sample reading until the backend reconnects.",
         );
       }
-    };
+    },
+    [fallbackInterpretation, form, requestPayload],
+  );
 
-    const attempt = async (path: string, baseUrl?: string) => {
+  const attempt = useCallback(
+    async (path: string, baseUrl?: string) => {
       const endpointPath = baseUrl ? `${baseUrl}${path}` : path;
       console.info("[HoroscopeForm] Submitting horoscope request", {
         path: endpointPath,
         payload: requestPayload,
       });
       try {
-        const data = await postChart(path, form, baseUrl || undefined);
+        const data = await postChart(path, requestPayload, baseUrl || undefined);
         handleSuccess(data, endpointPath);
       } catch (submissionError) {
         console.error(`[HoroscopeForm] Submission to ${endpointPath} failed`, submissionError, {
@@ -348,53 +369,76 @@ export default function HoroscopeForm() {
         });
         throw submissionError;
       }
-    };
+    },
+    [handleSuccess, requestPayload],
+  );
 
-    const attemptChatFallback = async (path: string) => {
-      const chatPayload = buildChatPayload(form);
+  const attemptChatFallback = useCallback(
+    async (path: string) => {
+      const chatPayload = buildChatPayload(requestPayload);
       console.info("[HoroscopeForm] Submitting fallback chat request", {
         path,
         payload: chatPayload,
       });
       try {
-        const data = await postChatFallback(path, form);
+        const data = await postChatFallback(path, requestPayload);
         handleSuccess(data, path);
       } catch (submissionError) {
         console.error(`[HoroscopeForm] Submission to ${path} failed`, submissionError, { payload: chatPayload });
         throw submissionError;
       }
-    };
+    },
+    [handleSuccess, requestPayload],
+  );
 
-    const attemptBackend = async () => {
-      if (!normalizedBackend) return false;
+  const attemptBackend = useCallback(async () => {
+    const backendBase = normalizedBackend?.trim();
+
+    if (!backendBase) return false;
+
+    try {
+      const horoscopeResponse = await postChart("/horoscope", requestPayload, backendBase);
+      let combinedResponse: ChartResponse = horoscopeResponse;
 
       try {
-        const horoscopeResponse = await postChart("/horoscope", form, normalizedBackend);
-        let combinedResponse: ChartResponse = horoscopeResponse;
-
-        try {
-          const pastLifeResponse = await postChart("/past-life", form, normalizedBackend);
-          combinedResponse = {
-            ...(horoscopeResponse as Record<string, unknown>),
-            past_life_report: pastLifeResponse,
-            past_life_insights:
-              (horoscopeResponse as { past_life_insights?: unknown[] }).past_life_insights ||
-              (pastLifeResponse as { insights?: unknown[] }).insights,
-          } as ChartResponse;
-        } catch (pastLifeError) {
-          console.warn("[HoroscopeForm] Past-life endpoint unavailable; continuing with horoscope output", pastLifeError);
-        }
-
-        handleSuccess(combinedResponse, `${normalizedBackend}/horoscope`);
-        return true;
-      } catch (backendError) {
-        console.error("[HoroscopeForm] Backend endpoints failed", backendError, {
-          payload: requestPayload,
-          backend: normalizedBackend,
-        });
-        return false;
+        const pastLifeResponse = await postChart("/past-life", requestPayload, backendBase);
+        combinedResponse = {
+          ...(horoscopeResponse as Record<string, unknown>),
+          past_life_report: pastLifeResponse,
+          past_life_insights:
+            (horoscopeResponse as { past_life_insights?: unknown[] }).past_life_insights ||
+            (pastLifeResponse as { insights?: unknown[] }).insights,
+        } as ChartResponse;
+      } catch (pastLifeError) {
+        console.warn("[HoroscopeForm] Past-life endpoint unavailable; continuing with horoscope output", pastLifeError);
       }
-    };
+
+      handleSuccess(combinedResponse, `${backendBase}/horoscope`);
+      return true;
+    } catch (backendError) {
+      console.error("[HoroscopeForm] Backend endpoints failed", backendError, {
+        payload: requestPayload,
+        backend: backendBase,
+      });
+      return false;
+    }
+  }, [handleSuccess, normalizedBackend, requestPayload]);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    triggerSubmitFeedback();
+    setError(null);
+    setStatus("idle");
+    setChart(null);
+    setEndpoint(null);
+    setInterpretation({});
+
+    if (missingFields.length || Object.keys(validations).length) {
+      setError("Please fix the highlighted birth details.");
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const backendSucceeded = await attemptBackend();
