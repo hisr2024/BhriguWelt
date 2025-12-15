@@ -11,7 +11,13 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Sequence
 
-from .ai_client import AIIntegrationError, ai_provider_metadata, chat_completion, is_ai_configured
+from .ai_client import (
+    AIIntegrationError,
+    ai_provider_metadata,
+    chat_completion,
+    is_ai_configured,
+    sarvam_integration_contract,
+)
 from .horoscope import HoroscopeRequest, build_core_wisdom_reading, build_future_report, build_past_life_report
 
 
