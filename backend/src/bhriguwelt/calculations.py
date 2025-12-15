@@ -423,43 +423,51 @@ def evaluate_transits(
     """Blend natal snapshot with transit overlays to surface gochar guidance."""
 
     directives: List[TransitDirective] = []
-    for rule in transit_rules:
+    transit_details = transit_details or {}
+
+    for rule in transit_rules or []:
         if not _tradition_allows(rule, snapshot.tradition):
             continue
-        conditions = rule.get("conditions", {})
-        matches = 0
-        total = 0
-        for key, expected in conditions.items():
-            total += 1
-            value = transit_details.get(key, getattr(snapshot, key, None))
-            if isinstance(expected, dict):
-                min_val = expected.get("min")
-                max_val = expected.get("max")
-                any_of = expected.get("any_of")
-                if any_of is not None and value in any_of:
-                    matches += 1
-                    continue
-                if min_val is not None and value is not None and value >= min_val:
-                    matches += 1
-                    continue
-                if max_val is not None and value is not None and value <= max_val:
-                    matches += 1
-                    continue
-            elif value == expected or (isinstance(expected, (list, tuple, set)) and value in expected):
-                matches += 1
-        if total and matches / total < 0.5:
+
+        conditions = normalize_conditions(rule.get("conditions"))
+        matched = 0
+        total = len(conditions)
+
+        for field, op_rule in conditions.items():
+            value = _value_for_key(snapshot, transit_details, field)
+            if value is None:
+                continue
+            if _matches_rule(value, op_rule):
+                matched += 1
+
+        if total and (matched / total) < 0.5:
             continue
 
+        certainty = float(rule.get("certainty", 0.65))
         directives.append(
             TransitDirective(
                 reference=rule.get("sutra_reference", "Bhrigu gochar"),
-                influence=rule.get("influence", "Transit influence requires more data"),
-                certainty=round(float(rule.get("certainty", 0.65)) * (matches / max(total, 1)), 2),
-                planet=rule.get("planet", "mixed"),
+                influence=rule.get("influence", ""),
+                certainty=round(certainty * (matched / total if total else 1), 2),
+                planet=str(rule.get("planet", "mixed")),
             )
         )
 
     return sorted(directives, key=lambda directive: directive.certainty, reverse=True)
+
+
+def normalize_conditions(conditions: Dict | None) -> Dict[str, object]:
+    if not conditions:
+        return {}
+    if not isinstance(conditions, dict):
+        return {}
+    return {str(key): value for key, value in conditions.items()}
+
+
+def _value_for_key(snapshot: CelestialSnapshot, overlay_details: Dict[str, object], field: str):
+    if field in overlay_details:
+        return overlay_details.get(field)
+    return getattr(snapshot, field, None)
 
 
 def evaluate_matchmaking(
