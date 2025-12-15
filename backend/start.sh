@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+APP_ROOT="/app"
+cd "$APP_ROOT"
 
-export PYTHONPATH=${PYTHONPATH:-"$SCRIPT_DIR/src"}
+export PYTHONPATH="/app/src:${PYTHONPATH:-}"
 
-# Load optional local overrides so HOST/PORT/BHRIGU_DATA_PATH remain consistent
-# between local runs and hosted environments without extra flags.
 if [ -f .env ]; then
   set -o allexport
   # shellcheck disable=SC1091
@@ -15,20 +13,26 @@ if [ -f .env ]; then
   set +o allexport
 fi
 
-export HOST=${HOST:-0.0.0.0}
-export PORT=${PORT:-${RAILWAY_TCP_PORT:-8000}}
-python - <<'PY'
+export HOST="0.0.0.0"
+export PORT="${PORT:-${RAILWAY_TCP_PORT:-8000}}"
+
+if python - <<'PY'
+import importlib.util
 import os
-print("Starting Bhrigu API", flush=True)
-print(f"PYTHONPATH: {os.environ.get('PYTHONPATH')}", flush=True)
-try:
-    from bhriguwelt.api import serve
-    print("Import successful", flush=True)
-except ImportError as e:
-    print(f"Import error: {e}", flush=True)
-    exit(1)
-host = os.environ.get("HOST", "0.0.0.0")
-port = int(os.environ.get("RAILWAY_TCP_PORT") or os.environ.get("PORT", "8000"))
-print(f"BhriguWelt API running on http://{host}:{port}", flush=True)
-serve(host, port)
+
+app_module = os.environ.get("APP_MODULE", "")
+module_name = app_module.split(":", 1)[0] if app_module else ""
+
+has_fastapi = importlib.util.find_spec("fastapi") is not None
+has_uvicorn = importlib.util.find_spec("uvicorn") is not None
+has_app_module = bool(module_name) and importlib.util.find_spec(module_name) is not None
+
+if has_fastapi and has_uvicorn and has_app_module:
+    raise SystemExit(0)
+raise SystemExit(1)
 PY
+then
+  exec uvicorn "${APP_MODULE}" --host "${HOST}" --port "${PORT}"
+else
+  exec python -m bhriguwelt.api
+fi
