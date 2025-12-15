@@ -1145,23 +1145,26 @@ def _score_conditions(snapshot: CelestialSnapshot, conditions: Dict, base_value:
     if not conditions:
         return round(base_value, 2)
 
-    ratio = _condition_ratio(snapshot, conditions)
+    ratio = _condition_ratio(snapshot, normalize_conditions(conditions))
     return round(base_value * ratio, 2)
 
 
 def _condition_ratio(snapshot: CelestialSnapshot, conditions: Dict) -> float:
     """Return match ratio using a NumPy fast-path when available."""
 
+    if not conditions:
+        return 1.0
+
     results: List[bool] = []
     for field, rule in conditions.items():
-        try:
-            value = getattr(snapshot, field)
-        except AttributeError as exc:
-            raise ValueError(f"Snapshot missing field required by rule: {field}") from exc
+        value = getattr(snapshot, field, None)
+        if value is None:
+            results.append(False)
+            continue
         results.append(_matches_rule(value, rule))
 
     if not results:
-        return 1.0
+        return 0.0
 
     if np is not None:
         array = np.fromiter((1.0 if match else 0.0 for match in results), dtype=float)
@@ -1181,6 +1184,8 @@ def _safe_ratio(numerator: float, denominator: float) -> float:
 
 def _matches_rule(value, rule) -> bool:
     if isinstance(rule, dict):
+        if value is None:
+            return False
         equals = rule.get("equals")
         if equals is not None and value != equals:
             return False
