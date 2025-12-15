@@ -1021,5 +1021,5 @@ __all__ = ["BhriguAPIHandler", "handle_command", "serve"]
 
 
 if __name__ == "__main__":  # pragma: no cover - manual execution
-    env_port = int(os.environ.get("PORT", "8000"))
+    env_port = int(os.environ.get("PORT", 8000))
     serve(host=os.environ.get("HOST", "0.0.0.0"), port=env_port)
