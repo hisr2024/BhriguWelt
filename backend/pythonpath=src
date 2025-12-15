@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
-export PYTHONPATH="${PYTHONPATH:-src}"
-exec ./start.sh "$@"
+
+# Resolve the project root so the script works even when invoked outside /app.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+export PYTHONPATH="${PYTHONPATH:-"$SCRIPT_DIR/src"}"
+exec "$SCRIPT_DIR/start.sh" "$@"
