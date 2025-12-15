@@ -11,7 +11,9 @@ from typing import Dict, Iterable, List
 import pytest
 
 from bhriguwelt.astronomical_calculations import (
+    _ascendant_house,
     _element_from_longitude,
+    _house_from_longitude,
     derive_lunar_details,
     has_swisseph,
     normalize_birth_datetime,
@@ -67,6 +69,8 @@ def test_swisseph_branch_respects_external_longitudes(monkeypatch):
         "saturn_speed": -0.1,
     }
 
+    dt = normalize_birth_datetime("1863-01-12", "06:33", timezone_name="Asia/Kolkata")
+
     element_map = [
         "fire",
         "earth",
@@ -82,18 +86,17 @@ def test_swisseph_branch_respects_external_longitudes(monkeypatch):
         "water",
     ]
 
-    def _house(longitude_value: float) -> int:
-        return int(longitude_value // 30) + 1
-
     expected = {
         "lunar_tithi": int(((swe_output["moon_long"] - swe_output["sun_long"]) % 360) // 12) + 1,
         "moon_element": element_map[int(swe_output["moon_long"] // 30)],
-        "mars_house": _house(swe_output["mars_long"]),
-        "saturn_house": _house(swe_output["saturn_long"]),
-        "venus_house": _house(swe_output["venus_long"]),
-        "ketu_house": _house(swe_output["ketu_long"]),
-        "mercury_house": _house(swe_output["mercury_long"]),
-        "jupiter_house": _house(swe_output["jupiter_long"]),
+        "mars_house": _house_from_longitude(swe_output["mars_long"]),
+        "saturn_house": _house_from_longitude(swe_output["saturn_long"]),
+        "venus_house": _house_from_longitude(swe_output["venus_long"]),
+        "ketu_house": _house_from_longitude(swe_output["ketu_long"]),
+        "mercury_house": _house_from_longitude(swe_output["mercury_long"]),
+        "jupiter_house": _house_from_longitude(swe_output["jupiter_long"]),
+        "moon_house": _house_from_longitude(swe_output["moon_long"]),
+        "ascendant_house": _ascendant_house(swe_output["sun_long"], dt, longitude=88.3639),
         "saturn_retrograde": swe_output["saturn_speed"] < 0,
         "rahu_aspects_ascendant": (swe_output["rahu_long"] % 60) < 20,
     }
@@ -107,7 +110,6 @@ def test_swisseph_branch_respects_external_longitudes(monkeypatch):
     monkeypatch.setattr("bhriguwelt.astronomical_calculations.has_swisseph", fake_has_swisseph)
     monkeypatch.setattr("bhriguwelt.astronomical_calculations._swisseph_lunar_details", fake_swisseph_details)
 
-    dt = normalize_birth_datetime("1863-01-12", "06:33", timezone_name="Asia/Kolkata")
     details = derive_lunar_details(dt, latitude=22.5726, longitude=88.3639)
 
     assert details == expected
@@ -179,6 +181,8 @@ def test_external_astrosage_alignment(monkeypatch, chart: Dict[str, object]):
         "ketu_house": int(ketu_long // 30) + 1,
         "mercury_house": int(longitudes["mercury_long"] // 30) + 1,
         "jupiter_house": int(longitudes["jupiter_long"] // 30) + 1,
+        "moon_house": int(longitudes["moon_long"] // 30) + 1,
+        "ascendant_house": _ascendant_house(longitudes["sun_long"], dt, longitude=chart["longitude"]),
         "saturn_retrograde": longitudes.get("saturn_speed", 0.0) < 0,
         "rahu_aspects_ascendant": (longitudes["rahu_long"] % 60) < 20,
     }

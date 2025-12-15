@@ -15,6 +15,8 @@ def _sample_snapshot() -> CelestialSnapshot:
         tradition="universal",
         lunar_tithi=1,
         moon_element="fire",
+        moon_house=2,
+        ascendant_house=1,
         mars_house=3,
         saturn_house=4,
         venus_house=5,
