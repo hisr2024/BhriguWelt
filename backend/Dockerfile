@@ -1,12 +1,13 @@
 FROM python:3.10-slim
 
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app/src
+
 WORKDIR /app
 
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app/src
-
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends bash \
+  && apt-get install -y --no-install-recommends bash ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
