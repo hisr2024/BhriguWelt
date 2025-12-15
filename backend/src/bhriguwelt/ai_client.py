@@ -104,6 +104,7 @@ def ai_provider_metadata() -> Dict[str, Any]:
         "coverage": [
             "wisdom-bot",
             "chat",
+            "horoscope",
             "core_wisdom",
             "core-wisdom",
             "analyzers",

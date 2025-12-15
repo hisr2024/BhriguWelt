@@ -20,6 +20,7 @@ from .data_loader import persist_bhrigu_data
 from .calendar_conversion import convert_birth_details
 from .feedback import record_feedback, quarterly_reviews, serialize_entry
 from .ml_service import get_ml_health, record_model_load, retrain_feedback_model
+from .ai_client import AIIntegrationError, ai_provider_metadata, chat_completion
 from .telemetry import capture_exception, init_telemetry
 from .profiles import (
     create_or_update_profile,
@@ -157,6 +158,11 @@ class ResponseCache:
     def stats(self) -> Dict[str, int]:
         with self._lock:
             return {"hits": self._hits, "misses": self._misses, "entries": len(self._store)}
+
+
+_AI_ENHANCED_COMMANDS = {"horoscope", "past-life", "future", "matchmaking"}
+_ai_narrative_cache = ResponseCache(ttl_seconds=900, max_entries=512)
+_ai_rate_limiter = RateLimiter(max_requests=30, window_seconds=60)
 
 
 class BhriguAPIHandler(BaseHTTPRequestHandler):
@@ -511,6 +517,11 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             logger.exception("Unexpected server error handling %s", command, extra={"path": self.path})
             self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, "Unexpected server error")
             return
+        ai_payload = dict(payload)
+        ai_payload["_client_ip"] = self.client_address[0]
+        if command in _AI_ENHANCED_COMMANDS:
+            response = _enhance_with_ai(response, command, ai_payload)
+
         self.cache.set(cache_key, response)
         self._send_json(response, headers={"X-Cache": "MISS"})
 
@@ -587,7 +598,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         serialized = json.dumps(payload or {}, sort_keys=True, ensure_ascii=False)
         return f"{command}:{serialized}"
 
-    def send_error(  # type: ignore[override]
+def send_error(  # type: ignore[override]
         self,
         code: int,
         message: str | None = None,
@@ -624,6 +635,128 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(content)))
         self.end_headers()
         self.wfile.write(content)
+
+
+def _extract_principle_context(limit: int = 5) -> str:
+    corpus = bhrigu_core.dataset() or {}
+    principles = corpus.get("principles") or []
+    snippets = []
+    for entry in principles[:limit]:
+        code = entry.get("id") or entry.get("code") or "Principle"
+        sutra = entry.get("sutra_reference") or entry.get("sutra") or ""
+        description = entry.get("description") or entry.get("principle") or ""
+        sources = []
+        integrity = entry.get("integrity") or {}
+        if isinstance(integrity.get("sources"), list):
+            sources = integrity.get("sources", [])
+        weights = entry.get("weights") or {}
+        weight_excerpt = ", ".join(f"{key}:{value}" for key, value in list(weights.items())[:3])
+        snippet = f"{code} ({sutra}) — {description}".strip()
+        if weight_excerpt:
+            snippet += f" | weights: {weight_excerpt}"
+        if sources:
+            snippet += f" | sources: {', '.join(sources)}"
+        snippets.append(snippet)
+
+    metadata = corpus.get("metadata", {})
+    integrity_note = metadata.get("source_note", "Bhrigu Samhita folios drive all narratives.")
+    return integrity_note + "\n" + "\n".join(snippets)
+
+
+def _enhance_with_ai(response_dict: Dict[str, Any], endpoint: str, request_data: Dict[str, Any]) -> Dict[str, Any]:
+    ai_support = ai_provider_metadata()
+    response_with_ai = dict(response_dict)
+    response_with_ai["ai_provider_metadata"] = ai_support
+    if not ai_support.get("configured"):
+        return response_with_ai
+
+    cache_key = json.dumps(
+        {
+            "endpoint": endpoint,
+            "response": response_dict,
+            "request": request_data,
+        },
+        sort_keys=True,
+        ensure_ascii=False,
+    )
+    cached = _ai_narrative_cache.get(cache_key)
+    if cached:
+        return cached
+
+    requester = str(
+        request_data.get("user_id")
+        or request_data.get("profile_id")
+        or request_data.get("_client_ip")
+        or "guest"
+    )
+    if not _ai_rate_limiter.allow(requester):
+        logger.warning("AI narrative rate limited", extra={"endpoint": endpoint, "requester": requester})
+        return response_dict
+
+    principle_context = _extract_principle_context()
+
+    base_elements = {
+        "interpretation": response_dict.get("interpretation"),
+        "principles": response_dict.get("principles"),
+        "weights": response_dict.get("weights"),
+        "insights": response_dict.get("insights") or response_dict.get("past_life_insights"),
+        "trajectories": response_dict.get("future_trajectories")
+        or response_dict.get("trajectories")
+        or response_dict.get("progression_directives"),
+        "compatibility": response_dict.get("compatibility"),
+        "remedies": response_dict.get("remedies"),
+        "sections": response_dict.get("sections"),
+    }
+
+    seeker_name = request_data.get("name") or request_data.get("full_name") or "Seeker"
+    birth_details = {
+        "birth_date": request_data.get("birth_date"),
+        "birth_time": request_data.get("birth_time"),
+        "birth_place": request_data.get("birth_place"),
+        "timezone": request_data.get("timezone"),
+    }
+
+    system_prompt = (
+        "You are a Sarvam AI interpreter for Bhrigu Samhita. Ground every narrative in the stored folios "
+        "and reference principle IDs (e.g., BR-1), sutra references, sources, and weights provided. Maintain "
+        "a compassionate mentor tone, avoid medical or financial directives, and remind seekers of free will "
+        "and personal agency. Keep outputs between 300 and 500 words with practical remedies and gentle "
+        "advice aligned to the manuscripts."
+    )
+
+    user_prompt = (
+        "Create an extensive guidance narrative for the {endpoint} route. Bhrigu dataset context: {context}. "
+        "Base engine findings: {base}. Seeker: {name}. Birth details: {birth}. "
+        "Explicitly weave in cited principles (e.g., BR-7 leadership mandates, BR-18 Saturn/Venus cues) and "
+        "source notes such as Bikaner folios. Expand with storyline, karmic lessons, lifestyle adjustments, "
+        "and remedies that stay within Bhrigu Samhita boundaries while echoing the provided weights and "
+        "sutras. Close with a free-will reminder."
+    ).format(
+        endpoint=endpoint,
+        context=principle_context,
+        base=json.dumps(base_elements, ensure_ascii=False, default=str),
+        name=seeker_name,
+        birth=json.dumps(birth_details, ensure_ascii=False, default=str),
+    )
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+
+    try:
+        narrative = chat_completion(messages, max_tokens=600, temperature=0.4)
+    except AIIntegrationError as exc:
+        logger.warning("AI enhancement failed", extra={"endpoint": endpoint, "error": str(exc)})
+        return response_with_ai
+
+    response_with_ai["ai_narrative"] = narrative
+    _ai_narrative_cache.set(cache_key, response_with_ai)
+    logger.info(
+        "AI narrative generated",
+        extra={"endpoint": endpoint, "requester": requester, "cached": False},
+    )
+    return response_with_ai
 
 
 def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
