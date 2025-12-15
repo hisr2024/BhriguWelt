@@ -569,7 +569,12 @@ export default function BirthInputForm() {
               aria-describedby={validations.tob ? "birth-tob-hint" : "birth-time-hint"}
               required
             />
-            <p className="microcopy" id={validations.tob ? "birth-tob-hint" : "birth-time-hint"} role="status">
+            <p
+              className="microcopy"
+              id={validations.tob ? "birth-tob-hint" : "birth-time-hint"}
+              role="status"
+              suppressHydrationWarning
+            >
               {validations.tob || "Use HH:MM (e.g., 07:45); timezone auto-detected as " + (details.timezone || "—")}
             </p>
           </div>
@@ -599,9 +604,16 @@ export default function BirthInputForm() {
               </p>
             ) : null}
           </div>
-          <div className="field">
+          <div className="field" suppressHydrationWarning>
             <label htmlFor="birth-timezone">Timezone</label>
-            <input id="birth-timezone" type="text" value={details.timezone} readOnly aria-readonly />
+            <input
+              id="birth-timezone"
+              type="text"
+              value={details.timezone}
+              readOnly
+              aria-readonly
+              suppressHydrationWarning
+            />
             <p className="microcopy">Detected from device; adjust later in settings if needed.</p>
           </div>
         </div>
@@ -696,7 +708,7 @@ export default function BirthInputForm() {
           <div>
             <p className="eyebrow">Śaka calendar preview</p>
             <h4>{sakaLabel}</h4>
-            <p className="microcopy">
+            <p className="microcopy" suppressHydrationWarning>
               {details.birthDate
                 ? bharatPreview ||
                   `Derived from ${details.birthDate} with auto timezone ${details.timezone || "device default"}.`

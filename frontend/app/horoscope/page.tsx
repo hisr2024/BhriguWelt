@@ -3,6 +3,7 @@
 import Link from "next/link";
 import HoroscopeForm from "@/components/HoroscopeForm";
 import OperationalStack from "@/components/OperationalStack";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { helperCopy } from "@/lib/copy";
 import { useI18n } from "@/lib/i18n";
 
@@ -35,7 +36,9 @@ export default function HoroscopePage() {
 
       <OperationalStack />
 
-      <HoroscopeForm />
+      <ErrorBoundary>
+        <HoroscopeForm />
+      </ErrorBoundary>
     </div>
   );
 }
