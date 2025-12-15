@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+
+APP_ROOT=${APP_ROOT:-/app}
+cd "$APP_ROOT"
+
 # Ensure the backend runs with the expected module path even when invoked via the
 # Railway start command `pythonpath=src`.
-export PYTHONPATH=${PYTHONPATH:-"$SCRIPT_DIR/src"}
-exec "$SCRIPT_DIR/start.sh" "$@"
+export PYTHONPATH=${PYTHONPATH:-"$APP_ROOT/src"}
+exec "$APP_ROOT/start.sh" "$@"
