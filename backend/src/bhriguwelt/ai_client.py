@@ -68,6 +68,10 @@ def sarvam_integration_contract() -> Dict[str, Any]:
             "core_wisdom": "Blend rule-engine digest with cited folios for precise, reproducible replies.",
             "analyzers": "Respect validation notes to keep Sarvam outputs aligned with manuscript rules.",
             "interpreters": "Fold interpreter briefs into the narrative; never freewheel beyond provided data.",
+            "matchmaking": (
+                "Use the stored matchmaking compatibility JSON and the Bhrigu Samhita folios for precision. "
+                "Cross-check analyser/interpreter cues before presenting designer-friendly overlays."
+            ),
             "designers": "Reference designer-ready specs (charts/timelines) so visual surfaces stay in sync.",
         },
         "fallback": (

@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Any, Dict, Sequence
 
+from .ai_client import ai_provider_metadata, sarvam_integration_contract
 from .bhrigu_core import bhrigu_core
 from .engine_analyzers import analyze_core_engines
 from .engine_interpreters import brief_alignment_pipeline, interpret_bhrigu_wisdom
@@ -56,6 +57,30 @@ def run_matchmaking_pipeline(
     )
     briefings = brief_alignment_pipeline(language=language)
 
+    ai_support = ai_provider_metadata()
+    ai_support.setdefault(
+        "coverage",
+        [
+            "core_wisdom",
+            "matchmaking",
+            "analyzers",
+            "interpreters",
+            "designers",
+        ],
+    )
+    ai_support.setdefault("integration_contract", sarvam_integration_contract())
+    ai_support.setdefault("sources", {})
+    ai_support["sources"].update(
+        {
+            "matchmaking_json": (
+                "Stored compatibility JSON (indices, overlays, alignments, shared paths) ready for AI summaries."
+            ),
+            "bhrigu_samhita_data": (
+                "Bhrigu Samhita-derived compatibility criteria powering analyser and interpreter alignment."
+            ),
+        }
+    )
+
     return {
         "tradition": tradition,
         "modern_preferences": preferences,
@@ -67,6 +92,7 @@ def run_matchmaking_pipeline(
             if interpretation.engine == "matchmaking_criteria"
         ],
         "briefings": [briefing.to_dict() for briefing in briefings],
+        "ai_support": ai_support,
     }
 
 
