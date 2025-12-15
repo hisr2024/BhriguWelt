@@ -405,12 +405,14 @@ async function postWithRichErrors<TResponse>(path: string, body: Record<string, 
         continue;
       }
 
+      backendReachable = true;
       return (await response.json()) as TResponse;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
     }
   }
 
+  backendReachable = false;
   if (lastError) throw lastError;
   throw new Error(`Unable to reach backend for ${path}`);
 }
@@ -455,84 +457,65 @@ function mapCalendarDetails(input: CalendarDetails) {
 }
 
 async function getJson<TResponse>(path: string, fallbackKey?: string) {
-  let response: Response;
   const fallback = fallbackKey ? FALLBACK_RESPONSES[fallbackKey] : undefined;
 
-  if (backendReachable === false && fallback) {
-    if (!loggedDemoFallback) {
-      console.warn("Backend previously unreachable; using demo responses until a backend responds.");
-      loggedDemoFallback = true;
-    }
-    return fallback as TResponse;
-  }
-
   try {
-    response = await fetchFromHosts(path);
+    const response = await fetchFromHosts(path);
+    return (await response.json()) as TResponse;
   } catch (networkError) {
+    backendReachable = false;
     if (fallback) {
       console.warn(`Using offline Bhrigu fallback for ${path}`, networkError);
-      backendReachable = false;
       return fallback as TResponse;
     }
     throw networkError;
   }
-
-  return (await response.json()) as TResponse;
 }
 
 async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
-  let response: Response;
   const fallback = FALLBACK_RESPONSES[path];
 
-  if (backendReachable === false && fallback) {
+  const errors: (Error | DetailedError)[] = [];
+
+  for (const host of BACKEND_HOSTS) {
+    const url = `${host}${path}`;
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        errors.push(normalizeBackendError(text, response.status));
+        continue;
+      }
+
+      backendReachable = true;
+      try {
+        return (await response.json()) as TResponse;
+      } catch (parseError) {
+        errors.push(parseError instanceof Error ? parseError : new Error(String(parseError)));
+        continue;
+      }
+    } catch (networkError) {
+      errors.push(networkError instanceof Error ? networkError : new Error(String(networkError)));
+    }
+  }
+
+  backendReachable = false;
+
+  if (fallback) {
+    console.warn(`Using offline Bhrigu fallback for ${path}`, errors[errors.length - 1]);
     if (!loggedDemoFallback) {
-      console.warn("Backend previously unreachable; using demo responses until a backend responds.");
       loggedDemoFallback = true;
     }
     return fallback as TResponse;
   }
 
-  try {
-    response = await fetchFromHosts(path, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      if (fallback) {
-        console.warn(`Using offline Bhrigu fallback for ${path} after ${response.status}`);
-        backendReachable = false;
-        return fallback as TResponse;
-      }
-
-      const text = await response.text();
-      throw normalizeBackendError(text, response.status);
-    }
-  } catch (networkError) {
-    if (fallback) {
-      console.warn(`Using offline Bhrigu fallback for ${path}`, networkError);
-      backendReachable = false;
-      return fallback as TResponse;
-    }
-
-    const reason = networkError instanceof Error ? networkError.message : "Unknown error";
-    const hostList = BACKEND_HOSTS.join(", ") || BACKEND_URL || "(not configured)";
-    throw new Error(
-      `${reason}. Unable to reach the Bhrigu backend at ${hostList}${path}. ` +
-        "Set NEXT_PUBLIC_BACKEND_URL to your deployed Python API (or NEXT_PUBLIC_BACKEND_FALLBACK_URL for a backup) to restore live predictions.",
-    );
-  }
-
-  try {
-    return (await response.json()) as TResponse;
-  } catch (parseError) {
-    if (fallback) {
-      console.warn(`Using offline Bhrigu fallback for ${path} after parse failure`, parseError);
-      return fallback as TResponse;
-    }
-    throw parseError;
-  }
+  if (errors.length) throw errors[errors.length - 1];
+  throw new Error(`Unable to reach the Bhrigu backend at ${BACKEND_HOSTS.join(", ") || BACKEND_URL || "(not configured)"}${path}`);
 }
 
 export async function requestPrediction(engine: PredictionEngine, details: BirthDetails) {
