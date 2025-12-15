@@ -118,6 +118,22 @@ def _validate_and_enrich(payload: Dict[str, Any]) -> Dict[str, Any]:
         ["id", "sutra_reference", "description", "trajectory"],
     )
 
+    transit_rules = payload.get("transit_rules")
+    if transit_rules is None:
+        raise ValueError("Payload must include 'transit_rules' aligned to Bhrigu transit sutras")
+    _validate_engine_block("transit_rules", transit_rules, ["id", "sutra_reference", "influence"])
+
+    matchmaking_criteria = payload.get("matchmaking_criteria")
+    if matchmaking_criteria is None:
+        raise ValueError(
+            "Payload must include 'matchmaking_criteria' aligned to Bhrigu compatibility sutras"
+        )
+    _validate_engine_block(
+        "matchmaking_criteria",
+        matchmaking_criteria,
+        ["id", "sutra_reference", "pair_rules"],
+    )
+
     return payload
 
 
