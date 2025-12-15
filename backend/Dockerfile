@@ -15,4 +15,7 @@ COPY . .
 ENV PYTHONPATH=/app/src
 RUN chmod +x start.sh
 
-CMD ["./start.sh"]
+# Use the start script as an entrypoint so custom Railway commands (e.g. PYTHONPATH=src)
+# are treated as arguments instead of replacement executables. This keeps the service
+# bootable even when the platform start command is misconfigured.
+ENTRYPOINT ["./start.sh"]
