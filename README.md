@@ -159,7 +159,7 @@ and mobile clients:
    - Ensure both `start.sh` scripts are executable (`chmod +x start.sh` at the
      repo root and inside `backend/`) before triggering a deploy so Nixpacks can
      invoke the wrapper successfully.
-   - Add `PYTHONPATH=src` as an environment variable and confirm `/health`
+   - Add `PYTHONPATH="$(pwd)/src"` as an environment variable and confirm `/health`
      returns `{ "status": "ok" }`. See `docs/deployment.md` for the
      click-by-click flow plus the Railpack/Nixpacks notes.
 
@@ -171,7 +171,7 @@ and mobile clients:
      service is using the `python -m pip install -r requirements.txt` build
      command and that `./start.sh` is executable (`chmod +x start.sh`).
 
-3. **Local parity**: Run `PYTHONPATH=src python -m bhriguwelt.api` inside
+3. **Local parity**: Run `PYTHONPATH="$(pwd)/src" python -m bhriguwelt.api` inside
    `backend/`, export `NEXT_PUBLIC_BACKEND_URL=http://localhost:8000`, and run
    `npm run dev` from `frontend/` to mirror the hosted topology without needing
    cloud accounts.
@@ -190,7 +190,7 @@ and mobile clients:
 2. Generate a horoscope prediction sourced from the Bhrigu Samhita wisdom:
 
    ```bash
-   export PYTHONPATH=src
+   export PYTHONPATH="$(pwd)/src"
    python -m bhriguwelt.horoscope horoscope \
        --name "Asha" \
        --birth-date 1995-05-18 \
@@ -228,7 +228,7 @@ and mobile clients:
    HTTP server (documented below), and the `/frontend` Next.js experience calls
    it out of the box (see the Frontend quick start below). If you extend the
    backend, remember to run the pytest suite from inside
-   `backend/` with `PYTHONPATH=src pytest` so the package layout mirrors
+   `backend/` with `PYTHONPATH="$(pwd)/src" pytest` so the package layout mirrors
    production usage. To validate the web bundle, run `npm run lint` and `npm run
    type-check` from within `frontend/` after pointing
    `NEXT_PUBLIC_BACKEND_URL` at your chosen backend.
@@ -240,7 +240,7 @@ clients. Launch it from the backend workspace:
 
 ```bash
 cd backend
-PYTHONPATH=src python -m bhriguwelt.api
+PYTHONPATH="$(pwd)/src" python -m bhriguwelt.api
 ```
 
 Endpoints:
@@ -260,7 +260,7 @@ frontend/mobile layers can present manuscripts alongside insights.
 - A concise OpenAPI spec lives at `docs/openapi.yaml` and mirrors the
   validation rules enforced by the CLI/API handlers for `/health`, `/horoscope`,
   `/past-life`, `/future`, `/matchmaking`, and `/calendar`.
-- A dataset backup helper is available via `cd backend && PYTHONPATH=src python
+- A dataset backup helper is available via `cd backend && PYTHONPATH="$(pwd)/src" python
   scripts/backup_data.py`, which writes timestamped copies into
   `backend/backups/` for safe archival.
 - Frontend telemetry is opt-in through `NEXT_PUBLIC_SENTRY_DSN`; without the
@@ -303,7 +303,7 @@ plus notes on mobile packaging.
 ## CI/CD
 
 GitHub Actions guardrails ship with the repo:
-- `Backend CI` runs pytest with `PYTHONPATH=src`.
+- `Backend CI` runs pytest with `PYTHONPATH="$(pwd)/src"`.
 - `Frontend CI` installs dependencies, lints, and type-checks with Node 18.
 
 ## API reference and docs

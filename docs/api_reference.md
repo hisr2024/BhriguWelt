@@ -1,6 +1,6 @@
 # API Reference
 
-Base URL defaults to `http://localhost:8000` when running `PYTHONPATH=src python -m bhriguwelt.api`.
+Base URL defaults to `http://localhost:8000` when running `PYTHONPATH="$(pwd)/src" python -m bhriguwelt.api`.
 
 For machine-readable contracts, see `openapi.yaml` in this directory; it mirrors
 the validation rules and response shapes enforced by the CLI/API handlers.

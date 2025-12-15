@@ -43,7 +43,7 @@ export default function BackendHealthNotice({ className }: Props) {
         if (!active) return;
         const preferredHost = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
         const fallbackDetail =
-          `Backend unreachable at ${preferredHost}. Start the API locally with "cd backend && PYTHONPATH=src python -m bhriguwelt.api" ` +
+          `Backend unreachable at ${preferredHost}. Start the API locally with "cd backend && PYTHONPATH=\\"$(pwd)/src\\" python -m bhriguwelt.api" ` +
           "or set NEXT_PUBLIC_BACKEND_URL to your deployed backend. Running in demo mode until a backend responds.";
         cachedHealth = { status: "error", detail: fallbackDetail };
         setStatus("error");

@@ -11,7 +11,7 @@
 1. Clone the repo and install tools:
    - Backend: `python -m pip install -r backend/requirements.txt`
    - Frontend: `cd frontend && npm install`
-2. Export `PYTHONPATH=src` when running backend commands from `backend/`.
+2. Export `PYTHONPATH="$(pwd)/src"` when running backend commands from `backend/`.
 3. Use the provided `.env.example` files as a starting point for secrets and endpoints.
 
 ## Code style
@@ -24,7 +24,7 @@
 - Attach Figma links or screenshots to PRs when altering core layouts so reviewers can trace visual intent.
 
 ## Running tests
-- Backend: `cd backend && PYTHONPATH=src pytest`
+- Backend: `cd backend && PYTHONPATH="$(pwd)/src" pytest`
 - Frontend lint: `cd frontend && npm run lint`
 - Frontend types: `cd frontend && npm run type-check`
 - When adding engines or validation rules, include negative-path tests (malformed

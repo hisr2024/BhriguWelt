@@ -16,7 +16,7 @@ entries) via the admin CLI:
 
 ```bash
 cd backend
-export PYTHONPATH=src
+export PYTHONPATH="$(pwd)/src"
 python -m bhriguwelt.admin_cli bootstrap --out backend/data/bhrigu_samhita_principles.yml
 ```
 
@@ -29,7 +29,7 @@ Validate a dataset in place with:
 
 ```bash
 cd backend
-export PYTHONPATH=src
+export PYTHONPATH="$(pwd)/src"
 python -m bhriguwelt.admin_cli lint --path backend/data/bhrigu_samhita_principles.yml
 ```
 

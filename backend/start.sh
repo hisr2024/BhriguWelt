@@ -2,9 +2,13 @@
 set -euo pipefail
 
 APP_ROOT="/app"
+if [ ! -d "${APP_ROOT}/src" ] && [ -d "/app/backend/src" ]; then
+  ln -sf /app/backend/src "${APP_ROOT}/src"
+fi
+
 cd "$APP_ROOT"
 
-export PYTHONPATH="/app/src:${PYTHONPATH:-}"
+export PYTHONPATH="${APP_ROOT}/src:${PYTHONPATH:-}"
 
 if [ -f .env ]; then
   set -o allexport
@@ -15,6 +19,7 @@ fi
 
 export HOST="0.0.0.0"
 export PORT="${PORT:-${RAILWAY_TCP_PORT:-8000}}"
+export APP_MODULE="${APP_MODULE:-bhriguwelt.api:app}"
 
 if python - <<'PY'
 import importlib.util
@@ -34,5 +39,5 @@ PY
 then
   exec uvicorn "${APP_MODULE}" --host "${HOST}" --port "${PORT}"
 else
-  exec python -m bhriguwelt.api
+  exec python -m bhriguwelt.horoscope
 fi
