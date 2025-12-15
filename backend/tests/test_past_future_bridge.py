@@ -57,3 +57,5 @@ def test_past_future_command_handles_payload():
     assert response["past_life"]["insights"]
     assert response["future"]["trajectories"]
     assert response["ai_support"]["coverage"]
+    assert response["ai_support"]["sources"]["past_life_json"] is True
+    assert response["ai_support"]["sources"]["future_json"] is True
