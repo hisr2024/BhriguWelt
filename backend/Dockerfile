@@ -2,7 +2,7 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-ENV PATH="/usr/local/bin:/app:${PATH}"
+ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src
 
 RUN apt-get update \
@@ -10,9 +10,9 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 RUN chmod +x /app/start.sh
 
-CMD ["bash","/app/start.sh"]
+CMD ["bash", "/app/start.sh"]
