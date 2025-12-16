@@ -155,6 +155,7 @@ def build_past_future_synthesis(
     for directive in future_report.trajectories:
         predictions.append({
             "engine": "future",
+            "engine_id": directive.engine_id,
             "focus": directive.focus,
             "trajectory": directive.focus,
             "window": directive.window,
