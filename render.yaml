@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: bhriguwelt-backend
+    env: python
+    plan: starter
+    rootDir: backend
+    pythonVersion: 3.11
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: ./start.sh
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONPATH
+        value: /opt/render/project/src/backend/src
+      - key: BHRIGUWELT_DATA_PATH
+        value: /opt/render/project/data/bhrigu_samhita_principles.yml
+      - key: BHRIGUWELT_ADMIN_TOKEN
+        generateValue: true
+    disk:
+      name: bhriguwelt-data
+      mountPath: /opt/render/project/data
+      sizeGB: 1
