@@ -1,7 +1,7 @@
 # Deployment playbook
 
 BhriguWelt uses a two-tier deployment model: the Python backend runs on Railway
-while the React/Next.js frontend deploys on Vercel. Native apps (Android/iOS)
+or Render while the React/Next.js frontend deploys on Vercel. Native apps (Android/iOS)
 reuse the same HTTP contracts exposed by the backend. No hosted instances ship
 with the repository, so follow the steps below to publish your own endpoints
 before testing clients.
@@ -48,6 +48,28 @@ supported so the build always has Python + `pip` available:
     projects or when teammates are onboarding. It summarizes the required
     commands, environment variables, and smoke tests to avoid `pip: not found`
     or `PYTHONPATH` import errors on new services.
+
+## Backend → Render
+
+Render hosts the backend with the included [`render.yaml`](../render.yaml)
+blueprint. It provisions Python 3.11, attaches a persistent disk for manuscript
+updates, and wires the same start command used locally.
+
+1. In Render, click **New + → Blueprint** and point it at your GitHub fork. Keep
+   the repo root unchanged; the blueprint already scopes the service to
+   `backend/`.
+2. The blueprint sets `pythonVersion: 3.11`, runs `pip install -r
+   requirements.txt`, and starts the API via `./start.sh` (which exports
+   `PYTHONPATH` automatically).
+3. Accept the `bhriguwelt-data` disk mount at `/opt/render/project/data`; the
+   start script seeds `BHRIGUWELT_DATA_PATH` with the canonical corpus on first
+   boot so `/manuscript` updates persist across deploys.
+4. Render auto-generates `BHRIGUWELT_ADMIN_TOKEN`. Add any optional AI
+   variables (`AI_API_KEY`, `AI_API_BASE`, `AI_MODEL`, `SARVAM_API_KEY`) in the
+   dashboard to enable chatbot flows.
+5. Once the service is live, hit `https://<render-host>/health` to verify
+   `{"status":"ok"}` and propagate the URL to the frontend as
+   `NEXT_PUBLIC_BACKEND_URL`.
 
 ## Frontend → Vercel
 

@@ -598,7 +598,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         serialized = json.dumps(payload or {}, sort_keys=True, ensure_ascii=False)
         return f"{command}:{serialized}"
 
-def send_error(  # type: ignore[override]
+    def send_error(  # type: ignore[override]
         self,
         code: int,
         message: str | None = None,
