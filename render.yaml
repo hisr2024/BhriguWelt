@@ -10,7 +10,7 @@ services:
     healthCheckPath: /health
     envVars:
       - key: PYTHONPATH
-        value: /opt/render/project/src/backend/src
+        value: /opt/render/project/backend/src
       - key: BHRIGUWELT_DATA_PATH
         value: /opt/render/project/data/bhrigu_samhita_principles.yml
       - key: BHRIGUWELT_ADMIN_TOKEN
