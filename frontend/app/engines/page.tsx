@@ -1,21 +1,10 @@
 import Link from "next/link";
-import { Space_Grotesk, Manrope } from "next/font/google";
 import { ArrowUpRight } from "lucide-react";
 import { engineCards } from "@/lib/engineConfig";
 
-const displayFont = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-display",
-});
-
-const bodyFont = Manrope({
-  subsets: ["latin"],
-  variable: "--font-body",
-});
-
 export default function EnginesPage() {
   return (
-    <div className={`${displayFont.variable} ${bodyFont.variable} min-h-screen bg-hero-gradient text-white`}>
+    <div className="min-h-screen bg-hero-gradient text-white">
       <div className="mx-auto max-w-6xl px-6 py-16">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
