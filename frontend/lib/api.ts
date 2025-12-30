@@ -241,6 +241,30 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
       },
     ],
   },
+  "/transits": {
+    name: "Fallback seeker",
+    interpretation: "Current transits emphasize steady pacing, boundary setting, and focus on restorative rituals.",
+    directives: [
+      {
+        reference: "TR-11",
+        influence: "Saturn transit emphasizes discipline and boundaries in daily routines.",
+        certainty: 0.74,
+        planet: "Saturn",
+      },
+      {
+        reference: "TR-18",
+        influence: "Jupiter transit uplifts study, mentorship, and expansion in dharmic duties.",
+        certainty: 0.66,
+        planet: "Jupiter",
+      },
+      {
+        reference: "TR-22",
+        influence: "Moon transit highlights emotional resets and nourishment cycles.",
+        certainty: 0.58,
+        planet: "Moon",
+      },
+    ],
+  },
   "/matchmaking": {
     primary_name: "Fallback seeker",
     partner_name: "Partner seeker",
@@ -601,6 +625,23 @@ async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
 export async function requestPrediction(engine: PredictionEngine, details: BirthDetails) {
   const path = `/${engine}`;
   return postJson({ path, body: mapBirthDetails(details) });
+}
+
+export async function requestTransits(
+  details: BirthDetails,
+  transit: { transitDate: string; transitTime: string; timezone?: string },
+) {
+  return postJson({
+    path: "/transits",
+    body: {
+      natal: mapBirthDetails(details),
+      transit: {
+        transit_date: transit.transitDate,
+        transit_time: transit.transitTime,
+        timezone: transit.timezone,
+      },
+    },
+  });
 }
 
 export async function getFutureProgress() {

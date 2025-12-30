@@ -736,6 +736,12 @@ body[data-animations="off"] .prediction-card__body {
   fill: #4c5b66;
 }
 
+.kundli-transit {
+  font-size: 0.65rem;
+  fill: #d97757;
+  font-weight: 600;
+}
+
 .kundli-core {
   fill: #1f2a33;
   opacity: 0.95;
