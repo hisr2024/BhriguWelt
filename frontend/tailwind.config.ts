@@ -10,7 +10,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        midnight: "#0b1017",
+        midnight: "#1a1a2e",
         aurora: "#8cf5d6",
         ember: "#f6b867",
         blush: "#f58db8",
