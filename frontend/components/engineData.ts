@@ -1,3 +1,5 @@
+import { engineConfigs, type EngineConfig } from "@/lib/engineConfig";
+
 export type EngineSlug =
   | "horoscope"
   | "past-life"
@@ -145,4 +147,4 @@ export const ENGINES: EngineMeta[] = [
   },
 ];
 
-export const ENGINE_MAP = Object.fromEntries(ENGINES.map((engine) => [engine.slug, engine])) as Record<EngineSlug, EngineMeta>;
+export const ENGINE_MAP = Object.fromEntries(engineConfigs.map((engine) => [engine.slug, engine])) as Record<EngineSlug, EngineConfig>;
