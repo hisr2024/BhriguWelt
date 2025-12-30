@@ -25,6 +25,8 @@
 
 html {
   font-size: calc(16px * var(--font-scale));
+  scroll-behavior: smooth;
+  overscroll-behavior-y: contain;
 }
 
 body {
@@ -34,6 +36,8 @@ body {
   color: #1f2a33;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 body[data-theme="dark"] {
