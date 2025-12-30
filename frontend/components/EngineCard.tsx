@@ -34,12 +34,14 @@ export default function EngineCard({ engine, index }: EngineCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ ...transition, delay: 0.06 * index }}
       whileHover={{ y: -6 }}
-      className="group relative flex h-full flex-col gap-5 rounded-3xl border border-white/10 bg-slate-950/70 p-6 shadow-[0_25px_60px_rgba(2,6,23,0.55)]"
+      className="glass-card hover-glow group relative flex h-full flex-col gap-5 border border-white/10 p-6"
     >
-      <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${engine.accent} opacity-0 transition group-hover:opacity-100`} />
+      <div
+        className={`absolute inset-0 rounded-[1.75rem] bg-gradient-to-br ${engine.accent} opacity-0 transition group-hover:opacity-100`}
+      />
       <div className="relative flex items-center justify-between gap-3">
         <motion.span
-          className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-white shadow-glow"
+          className="neon-ring flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-white"
           animate={
             shouldReduceMotion
               ? undefined

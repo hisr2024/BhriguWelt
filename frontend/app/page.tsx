@@ -21,6 +21,7 @@ import OnboardingTour from "@/components/OnboardingTour";
 
 const easeOutCurve: Easing = [0.25, 0.46, 0.45, 0.94];
 const transition: Transition = { duration: 0.45, ease: easeOutCurve };
+const staggerChildren: Transition = { duration: 0.4, ease: easeOutCurve, staggerChildren: 0.1 };
 
 const quickAccess = [
   { href: "/horoscope", label: "Horoscope" },
@@ -123,7 +124,7 @@ export default function HomePage() {
             <div className="flex flex-wrap gap-3">
               <Link
                 href="/dashboard"
-                className="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400"
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 via-sky-500 to-teal-400 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
               >
                 Open dashboard
                 <ArrowUpRight className="h-4 w-4" />
@@ -175,8 +176,8 @@ export default function HomePage() {
               </div>
               <p className="mt-2 text-xs text-slate-400">13 engines live · 4 rituals queued</p>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </motion.section>
 
       <section className="space-y-6">
