@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Providers from "@/app/providers";
 import { useI18n, type Language } from "@/lib/i18n";
 import { theme } from "@/lib/theme";
@@ -42,12 +42,72 @@ function LanguageToggle() {
 function Shell({ children }: Props) {
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const closeOnResize = () => setMenuOpen(false);
     window.addEventListener("resize", closeOnResize);
     return () => window.removeEventListener("resize", closeOnResize);
   }, []);
+
+  useEffect(() => {
+    const handleClickHaptics = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) {
+        return;
+      }
+      const hapticTarget = target.closest("[data-haptic]");
+      if (hapticTarget && "vibrate" in navigator) {
+        navigator.vibrate(12);
+      }
+    };
+
+    document.addEventListener("click", handleClickHaptics);
+    return () => document.removeEventListener("click", handleClickHaptics);
+  }, []);
+
+  useEffect(() => {
+    const handleTouchStart = (event: TouchEvent) => {
+      const touch = event.touches[0];
+      if (!touch) {
+        return;
+      }
+      touchStart.current = { x: touch.clientX, y: touch.clientY };
+    };
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      const start = touchStart.current;
+      const touch = event.changedTouches[0];
+      touchStart.current = null;
+      if (!start || !touch) {
+        return;
+      }
+      const deltaX = touch.clientX - start.x;
+      const deltaY = touch.clientY - start.y;
+      const isHorizontalSwipe = Math.abs(deltaX) > 60 && Math.abs(deltaY) < 40;
+      if (!isHorizontalSwipe) {
+        return;
+      }
+      if (!menuOpen && start.x < 40 && deltaX > 0) {
+        setMenuOpen(true);
+        if ("vibrate" in navigator) {
+          navigator.vibrate(18);
+        }
+      } else if (menuOpen && deltaX < 0) {
+        setMenuOpen(false);
+        if ("vibrate" in navigator) {
+          navigator.vibrate(18);
+        }
+      }
+    };
+
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd);
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [menuOpen]);
 
   return (
     <>
@@ -65,6 +125,7 @@ function Shell({ children }: Props) {
           className="nav-toggle"
           aria-expanded={menuOpen}
           aria-controls="primary-navigation"
+          data-haptic="light"
           onClick={() => setMenuOpen((open) => !open)}
         >
           {menuOpen ? "Close" : "Menu"}
@@ -82,7 +143,7 @@ function Shell({ children }: Props) {
         </nav>
         <div className="topbar__actions">
           <LanguageToggle />
-          <Link className="button-link" href="/matchmaking">
+          <Link className="button-link" href="/matchmaking" data-haptic="light">
             {t("nav.cta", "Start a session")}
           </Link>
         </div>
@@ -125,6 +186,21 @@ function Shell({ children }: Props) {
 }
 
 export default function AppShell({ children }: Props) {
+  useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
+      return;
+    }
+
+    const registerServiceWorker = () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        // Registration failure should not block the UI.
+      });
+    };
+
+    window.addEventListener("load", registerServiceWorker);
+    return () => window.removeEventListener("load", registerServiceWorker);
+  }, []);
+
   return (
     <Providers>
       <Shell>{children}</Shell>
