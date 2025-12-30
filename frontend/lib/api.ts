@@ -241,6 +241,204 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
       },
     ],
   },
+  "/varshaphal": {
+    year: 2025,
+    years: [2024, 2025, 2026],
+    updated_at: "2024-06-01",
+    overview: {
+      theme: "Anchoring purpose with steady renewal.",
+      focus: "Career clarity, family rituals, and health routines.",
+      summary: "Move through the solar return by strengthening daily structure and embracing leadership moments.",
+      confidence: 0.86,
+    },
+    timeline: [
+      {
+        label: "Opening ignition",
+        window: "Months 1-3",
+        highlight: "Momentum builds for career pivots and skill refinement.",
+        confidence: 0.82,
+      },
+      {
+        label: "Mid-year recalibration",
+        window: "Months 4-6",
+        highlight: "Focus on wellness discipline and family commitments.",
+        confidence: 0.74,
+      },
+      {
+        label: "Expansion window",
+        window: "Months 7-9",
+        highlight: "Partnerships and public visibility rise in importance.",
+        confidence: 0.79,
+      },
+      {
+        label: "Closing integration",
+        window: "Months 10-12",
+        highlight: "Consolidate gains and prepare next-year intentions.",
+        confidence: 0.84,
+      },
+    ],
+    months: [
+      {
+        month: "January",
+        title: "Solar ignition",
+        forecast: "Launch fresh routines and stabilize morning rituals to support new responsibilities.",
+        confidence: 0.78,
+        highlights: ["Establish a sunrise routine", "Plan quarterly learning goals"],
+        remedies: [
+          {
+            title: "Surya arghya",
+            description: "Offer water to the morning sun for 21 days to set intention and clarity.",
+            action_label: "Set sunrise reminder",
+            action_url: "/calendar",
+          },
+        ],
+      },
+      {
+        month: "February",
+        title: "Steady alliances",
+        forecast: "Partnerships require patient dialogue and shared milestones.",
+        confidence: 0.74,
+        highlights: ["Clarify collaboration terms", "Schedule weekly alignment check-ins"],
+        remedies: [
+          {
+            title: "Venus harmony mantra",
+            description: "Chant Shukra beej mantra on Fridays to align partnerships.",
+            action_label: "Begin Friday chant",
+          },
+        ],
+      },
+      {
+        month: "March",
+        title: "Resource alignment",
+        forecast: "Refine financial discipline and strengthen family commitments.",
+        confidence: 0.76,
+        highlights: ["Audit budgets", "Complete a family gratitude ritual"],
+        remedies: [
+          {
+            title: "Lakshmi diya",
+            description: "Light a ghee lamp on Thursdays for prosperity flow.",
+          },
+        ],
+      },
+      {
+        month: "April",
+        title: "Mind-body reset",
+        forecast: "Balance work intensity with restorative wellness practices.",
+        confidence: 0.71,
+        highlights: ["Introduce breathwork", "Schedule health checkups"],
+        remedies: [
+          {
+            title: "Pranayama cadence",
+            description: "Practice alternate nostril breathing for 12 minutes daily.",
+          },
+        ],
+      },
+      {
+        month: "May",
+        title: "Learning pilgrimage",
+        forecast: "Seek mentorship, coursework, and travel for inspiration.",
+        confidence: 0.8,
+        highlights: ["Enroll in a skill cohort", "Plan a spiritual day retreat"],
+        remedies: [
+          {
+            title: "Guru vandana",
+            description: "Offer gratitude to mentors every Thursday for clarity.",
+          },
+        ],
+      },
+      {
+        month: "June",
+        title: "Family harmonics",
+        forecast: "Anchor family rhythms and home responsibilities.",
+        confidence: 0.73,
+        highlights: ["Host a family meal", "Review household goals"],
+        remedies: [
+          {
+            title: "Chandra water ritual",
+            description: "Offer water to the moon on Mondays to calm emotions.",
+          },
+        ],
+      },
+      {
+        month: "July",
+        title: "Visibility surge",
+        forecast: "Leadership opportunities peak; refine public messaging.",
+        confidence: 0.82,
+        highlights: ["Prepare a presentation", "Celebrate team milestones"],
+        remedies: [
+          {
+            title: "Saturn grounding",
+            description: "Volunteer on Saturdays to stabilize professional karma.",
+          },
+        ],
+      },
+      {
+        month: "August",
+        title: "Partnership promises",
+        forecast: "Contracts and long-term alliances take center stage.",
+        confidence: 0.79,
+        highlights: ["Negotiate long-term terms", "Invest in relationship rituals"],
+        remedies: [
+          {
+            title: "Relationship sankalpa",
+            description: "Write shared intentions and read them weekly.",
+          },
+        ],
+      },
+      {
+        month: "September",
+        title: "Creative harvest",
+        forecast: "Channel creativity into tangible deliverables and content.",
+        confidence: 0.81,
+        highlights: ["Publish a creative piece", "Celebrate progress with peers"],
+        remedies: [
+          {
+            title: "Saraswati offering",
+            description: "Offer white flowers on Wednesdays to enhance creativity.",
+          },
+        ],
+      },
+      {
+        month: "October",
+        title: "Financial consolidation",
+        forecast: "Reassess investment plans and align resources with goals.",
+        confidence: 0.77,
+        highlights: ["Review savings plan", "Plan year-end giving"],
+        remedies: [
+          {
+            title: "Kubera focus",
+            description: "Chant Kubera mantra on Fridays for stability.",
+          },
+        ],
+      },
+      {
+        month: "November",
+        title: "Spiritual integration",
+        forecast: "Slow down to integrate lessons and deepen spiritual practices.",
+        confidence: 0.75,
+        highlights: ["Plan a retreat day", "Document key insights"],
+        remedies: [
+          {
+            title: "Silent sadhana",
+            description: "Take a weekly silence window to recalibrate.",
+          },
+        ],
+      },
+      {
+        month: "December",
+        title: "Cycle completion",
+        forecast: "Close the year with gratitude rituals and future intentions.",
+        confidence: 0.83,
+        highlights: ["Write year-end reflections", "Set next-year sankalpa"],
+        remedies: [
+          {
+            title: "Fire release ritual",
+            description: "Offer old intentions to fire on the new moon.",
+          },
+        ],
+      },
+    ],
+  },
   "/matchmaking": {
     primary_name: "Fallback seeker",
     partner_name: "Partner seeker",
@@ -609,6 +807,11 @@ export async function getFutureProgress() {
 
 export async function getTimeline() {
   return getJson("/timeline", "/timeline");
+}
+
+export async function getVarshaphal(year?: number) {
+  const query = typeof year === "number" ? `?year=${year}` : "";
+  return getJson(`/varshaphal${query}`, "/varshaphal");
 }
 
 export async function requestMatchmaking(

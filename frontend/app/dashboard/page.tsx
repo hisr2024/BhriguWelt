@@ -13,6 +13,7 @@ const tools = [
   { title: "Śaka calendar", href: "/calendar", note: "Calendar" },
   { title: "Future guidance", href: "/future", note: "Care" },
   { title: "Timeline", href: "/timeline", note: "Journey" },
+  { title: "Varshaphal", href: "/varshaphal", note: "Solar return" },
   { title: "Matchmaking", href: "/matchmaking", note: "Connections" },
 ];
 
