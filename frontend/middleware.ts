@@ -11,6 +11,9 @@ export function middleware(request: NextRequest) {
   const protoHeader = request.headers.get("x-forwarded-proto");
 
   if (protoHeader && protoHeader !== SECURE_PROTO) {
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      return NextResponse.next();
+    }
     const secureUrl = new URL(request.url);
     secureUrl.protocol = `${SECURE_PROTO}:`;
     return NextResponse.redirect(secureUrl, 308);
