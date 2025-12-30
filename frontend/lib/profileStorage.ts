@@ -20,9 +20,17 @@ function randomId(prefix: string) {
 
 export function getProfileIdentifiers() {
   const storage = safeStorage();
-  const userId = storage?.getItem(USER_ID_KEY) || randomId("seeker");
+  const storedUserId = storage?.getItem(USER_ID_KEY);
+  const storedSession = storage?.getItem(SESSION_KEY);
+  const userId = storedUserId || randomId("seeker");
+  const session = storedSession || randomId("session");
   const profileIdRaw = storage?.getItem(PROFILE_ID_KEY);
-  const session = storage?.getItem(SESSION_KEY) || randomId("session");
+
+  if (storage) {
+    if (!storedUserId) storage.setItem(USER_ID_KEY, userId);
+    if (!storedSession) storage.setItem(SESSION_KEY, session);
+  }
+
   return { userId, profileId: profileIdRaw ? Number(profileIdRaw) : undefined, sessionKey: session };
 }
 
