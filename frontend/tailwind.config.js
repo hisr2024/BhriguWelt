@@ -17,6 +17,11 @@ module.exports = {
         aurora: "#8cf5d6",
         ember: "#f6b867",
         blush: "#f58db8",
+        lotus: "#f4a3c2",
+        sand: "#e7d7b8",
+        sunrise: "#ffc48d",
+        dusk: "#7c3aed",
+        aether: "#78a8b6",
       },
       boxShadow: {
         glow: "0 0 30px rgba(99, 102, 241, 0.35)",

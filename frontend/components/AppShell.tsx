@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, type Easing } from "framer-motion";
 import {
   Bell,
   CalendarDays,
@@ -32,7 +32,7 @@ const engineLinks = engineConfigs.map((engine) => ({
   label: engine.title,
 }));
 
-const easeOutCurve: [number, number, number, number] = [0, 0, 0.58, 1];
+const easeOutCurve: Easing = [0, 0, 0.58, 1];
 
 function ThemeToggle() {
   const { mode, cycleMode } = useThemeMode();
