@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+from dataclasses import asdict
 from http import HTTPStatus
 from typing import Any, Dict
 
@@ -15,10 +16,12 @@ except Exception as exc:  # pragma: no cover - optional dependency
         "aiohttp is required for the async API server; install it from PyPI when network access is available."
     ) from exc
 
-from .api import RateLimiter, ResponseCache, handle_command
+from .api import RateLimiter, ResponseCache, handle_command, _request_from_payload
 from .bhrigu_core import bhrigu_core
 from .data_loader import persist_bhrigu_data
 from .feedback import feedback_analytics_snapshot, quarterly_reviews, record_feedback, serialize_entry
+from .horoscope import _snapshot_from_request
+from .kundli_generator import generate_kundli
 from .ml_service import get_ml_health, retrain_feedback_model
 from .profiles import (
     create_or_update_profile,
@@ -244,6 +247,30 @@ def create_app() -> web.Application:
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
 
+    async def chart(request: web.Request) -> web.Response:
+        _, rate_meta = await guard_rate_limit(request)
+        payload = await request.json()
+        try:
+            request_payload = _request_from_payload(payload)
+        except ValueError as exc:
+            return _json_response({"message": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+        snapshot = _snapshot_from_request(request_payload)
+        kundli = await asyncio.to_thread(
+            generate_kundli,
+            snapshot,
+            weights=payload.get("weights"),
+            timezone_name=request_payload.timezone,
+        )
+        response = {
+            "rashi_chart": [asdict(item) for item in kundli.get("rashi_chart", [])],
+            "bhava_chart": [asdict(item) for item in kundli.get("bhava_chart", [])],
+            "dashas": [asdict(item) for item in kundli.get("dashas", [])],
+            "ephemeris_source": kundli.get("ephemeris_source"),
+        }
+        reply = _json_response(response)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
+
     async def core_wisdom(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
@@ -440,6 +467,7 @@ def create_app() -> web.Application:
     app.router.add_route("POST", "/matchmaking/diagnostics", matchmaking_diagnostics)
     app.router.add_route("POST", "/calendar", calendar)
     app.router.add_route("POST", "/transits", transits)
+    app.router.add_route("POST", "/chart", chart)
     app.router.add_route("POST", "/core-wisdom", core_wisdom)
     app.router.add_route("POST", "/implementation-core", implementation_core)
     app.router.add_route("POST", "/core-engines", core_engines)
