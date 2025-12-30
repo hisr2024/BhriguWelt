@@ -1,5 +1,78 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  @apply border-white/10;
+}
 
 body {
-  font-family: var(--font-body, "Manrope", system-ui, sans-serif);
+  @apply min-h-screen bg-cosmic-900 text-white antialiased;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  background-image: radial-gradient(circle at 10% 10%, rgba(88, 101, 242, 0.3), transparent 35%),
+    radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.25), transparent 35%),
+    radial-gradient(circle at 50% 90%, rgba(56, 189, 248, 0.2), transparent 40%),
+    linear-gradient(150deg, rgba(6, 8, 22, 1), rgba(9, 11, 31, 1));
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-poppins), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.6), rgba(236, 72, 153, 0.6));
+  border-radius: 999px;
+}
+
+.glass-panel {
+  @apply rounded-3xl border border-white/10 bg-white/5 shadow-cosmic backdrop-blur-xl;
+}
+
+.neon-outline {
+  @apply border border-neon-cyan/40 shadow-neon;
+}
+
+.glow-ring {
+  position: relative;
+}
+
+.glow-ring::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  box-shadow: 0 0 25px rgba(139, 92, 246, 0.35);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.glow-ring:hover::after {
+  opacity: 1;
+}
+
+.input-field {
+  @apply w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-neon-cyan/70 focus:outline-none focus:ring-2 focus:ring-neon-cyan/40;
+}
+
+.badge {
+  @apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/70;
+}
+
+.section-grid {
+  @apply grid gap-6 lg:grid-cols-2;
 }
