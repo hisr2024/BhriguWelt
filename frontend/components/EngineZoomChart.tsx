@@ -115,7 +115,7 @@ export default function EngineZoomChart({ accent }: EngineZoomChartProps) {
               />
             </div>
             <span className="text-[0.65rem] text-slate-400">S{index + 1}</span>
-          </motion.div>
+          </div>
         ))}
       </motion.div>
     </div>

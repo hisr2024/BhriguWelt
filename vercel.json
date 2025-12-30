@@ -7,5 +7,13 @@
   "env": {
     "NEXT_PUBLIC_BACKEND_URL": "https://bhriguwelt-production.up.railway.app"
   },
-  "regions": ["iad1", "sfo1", "fra1"]
+  "regions": ["iad1", "sfo1", "fra1"],
+  "installCommand": "npm install",
+  "buildCommand": "npm run build --workspace frontend",
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "frontend/$1"
+    }
+  ]
 }
