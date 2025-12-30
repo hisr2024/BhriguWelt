@@ -1,0 +1,5 @@
+@import "tailwindcss";
+
+body {
+  font-family: var(--font-body, "Manrope", system-ui, sans-serif);
+}
