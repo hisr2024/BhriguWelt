@@ -1,3 +1,4 @@
+@reference "tailwindcss";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,7 +8,7 @@
 }
 
 * {
-  @apply border-white/10;
+  @apply border-white border-opacity-10;
 }
 
 body {
@@ -39,7 +40,7 @@ h6 {
 }
 
 .glass-panel {
-  @apply rounded-3xl border border-white/10 bg-white/5 shadow-cosmic backdrop-blur-xl;
+  @apply rounded-3xl border border-white border-opacity-10 bg-white/5 shadow-cosmic backdrop-blur-xl;
 }
 
 .neon-outline {
@@ -66,11 +67,11 @@ h6 {
 }
 
 .input-field {
-  @apply w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-neon-cyan/70 focus:outline-none focus:ring-2 focus:ring-neon-cyan/40;
+  @apply w-full rounded-2xl border border-white border-opacity-10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-neon-cyan/70 focus:outline-none focus:ring-2 focus:ring-neon-cyan/40;
 }
 
 .badge {
-  @apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/70;
+  @apply inline-flex items-center gap-2 rounded-full border border-white border-opacity-10 bg-white/5 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/70;
 }
 
 .section-grid {
