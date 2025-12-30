@@ -13,8 +13,8 @@
     }
   ],
   "regions": ["iad1", "sfo1", "fra1"],
-  "installCommand": "cd frontend && npm install",
-  "buildCommand": "cd frontend && npm run build",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build --workspace frontend",
   "routes": [
     {
       "src": "/(.*)",
