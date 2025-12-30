@@ -652,6 +652,11 @@ export async function getTimeline() {
   return getJson("/timeline", "/timeline");
 }
 
+export async function getVarshaphal(year?: number) {
+  const query = typeof year === "number" ? `?year=${year}` : "";
+  return getJson(`/varshaphal${query}`, "/varshaphal");
+}
+
 export async function requestMatchmaking(
   primary: BirthDetails,
   partner: BirthDetails,
