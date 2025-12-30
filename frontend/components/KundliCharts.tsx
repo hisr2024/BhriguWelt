@@ -626,9 +626,9 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
                 <motion.ul
                   className="kudos-list"
                   style={{ marginTop: "0.75rem" }}
-                  initial={shouldAnimate ? { opacity: 0, y: 12 } : false}
-                  animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-                  exit={shouldAnimate ? { opacity: 0, y: 12 } : false}
+                  initial={shouldAnimate ? { opacity: 0, y: 12 } : undefined}
+                  animate={shouldAnimate ? { opacity: 1, y: 0 } : undefined}
+                  exit={shouldAnimate ? { opacity: 0, y: 12 } : undefined}
                   transition={{ duration: 0.3 }}
                 >
                   {overlays.map((note) => (
