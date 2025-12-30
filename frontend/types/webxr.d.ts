@@ -29,7 +29,7 @@ declare global {
     getViewerPose(referenceSpace: XRReferenceSpace): XRViewerPose | null;
   }
 
-  interface XRReferenceSpace {}
+  type XRReferenceSpace = object;
 
   interface XRWebGLLayer extends WebGLRenderingContext {
     framebuffer: WebGLFramebuffer | null;

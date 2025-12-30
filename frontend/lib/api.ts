@@ -20,7 +20,6 @@ function hasBackendHostConfigured() {
   return BACKEND_HOSTS.length > 0;
 }
 
-let backendReachable: boolean | null = null;
 let loggedDemoFallback = false;
 export type HealthResponse = {
   status?: string;
@@ -468,14 +467,11 @@ async function fetchFromHosts(path: string, init?: RequestInit) {
         errors.push(message || `${target} responded with ${response.status}`);
         continue;
       }
-      backendReachable = true;
       return response;
     } catch (error) {
       errors.push(error instanceof Error ? error.message : String(error));
     }
   }
-
-  backendReachable = false;
 
   const errorMessage = errors.length
     ? errors.join(" | ")
@@ -529,14 +525,12 @@ async function postWithRichErrors<TResponse>(path: string, body: Record<string, 
         continue;
       }
 
-      backendReachable = true;
       return (await response.json()) as TResponse;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
     }
   }
 
-  backendReachable = false;
   if (lastError) throw lastError;
   throw new Error(`Unable to reach backend for ${path}`);
 }
@@ -587,7 +581,6 @@ async function getJson<TResponse>(path: string, fallbackKey?: string) {
     const response = await fetchFromHosts(path);
     return (await response.json()) as TResponse;
   } catch (networkError) {
-    backendReachable = false;
     if (fallback) {
       console.warn(`Using offline Bhrigu fallback for ${path}`, networkError);
       return fallback as TResponse;
@@ -616,7 +609,6 @@ async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
         continue;
       }
 
-      backendReachable = true;
       try {
         return (await response.json()) as TResponse;
       } catch (parseError) {
@@ -627,8 +619,6 @@ async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
       errors.push(networkError instanceof Error ? networkError : new Error(String(networkError)));
     }
   }
-
-  backendReachable = false;
 
   if (fallback) {
     console.warn(`Using offline Bhrigu fallback for ${path}`, errors[errors.length - 1]);
@@ -770,7 +760,6 @@ export async function sendChatMessage(payload: {
 export async function checkBackendHealth(): Promise<HealthResponse> {
   try {
     if (isBrowserOffline() || !hasBackendHostConfigured()) {
-      backendReachable = false;
       return fallbackHealth();
     }
     const response = await fetchFromHosts("/health");
@@ -781,7 +770,6 @@ export async function checkBackendHealth(): Promise<HealthResponse> {
     };
   } catch (error) {
     console.warn("Falling back to cached demo responses for health check", error);
-    backendReachable = false;
     return fallbackHealth();
   }
 }
