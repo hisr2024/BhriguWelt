@@ -143,7 +143,8 @@ export function validateBirthDetails(input: {
 }
 
 /**
- * TODO: Replace placeholder calculations with real ephemeris-based math and time zone derivation.
+ * Generate natal charts using the backend ephemeris pipeline, with a fallback
+ * to deterministic approximations when Swiss Ephemeris is unavailable.
  */
 export async function generateNatalChart(input: {
   name: string;
@@ -154,23 +155,36 @@ export async function generateNatalChart(input: {
   const validated = validateBirthDetails(input);
   const { parsed } = validated;
 
-  const chart = await runEphemerisPipeline({
-    name: validated.name,
-    dateOfBirth: parsed.date.label,
-    timeOfBirth: parsed.time.label,
-    placeOfBirth: validated.placeOfBirth,
-  });
+  try {
+    const chart = await runEphemerisPipeline({
+      name: validated.name,
+      dateOfBirth: parsed.date.label,
+      timeOfBirth: parsed.time.label,
+      placeOfBirth: validated.placeOfBirth,
+    });
 
-  chart.metadata = buildMetadata(
-    parsed,
-    validated.placeOfBirth,
-    chart.metadata.timezone,
-    chart.metadata.calendar.gregorian,
-    chart.metadata.calendar.bharat_traditional
-  );
-  chart.metadata.name = validated.name;
+    chart.metadata = buildMetadata(
+      parsed,
+      validated.placeOfBirth,
+      chart.metadata.timezone,
+      chart.metadata.calendar.gregorian,
+      chart.metadata.calendar.bharat_traditional
+    );
+    chart.metadata.name = validated.name;
 
-  return chart;
+    return chart;
+  } catch (error) {
+    console.warn("Ephemeris pipeline unavailable; returning fallback chart", {
+      error,
+      placeOfBirth: validated.placeOfBirth,
+    });
+    return buildFallbackChart({
+      name: validated.name,
+      dateOfBirth: validated.dateOfBirth,
+      timeOfBirth: validated.timeOfBirth,
+      placeOfBirth: validated.placeOfBirth,
+    });
+  }
 }
 
 function parseEphemerisOutput(output: string): NatalChart {
@@ -234,6 +248,25 @@ def house_from_longitude(longitude: float, cusps: list[float]) -> int:
     return 1
 
 
+def mean_longitude(base_longitude: float, mean_motion: float, delta_days: float) -> float:
+    value = math.fmod(base_longitude + mean_motion * delta_days, 360.0)
+    return value + 360.0 if value < 0 else value
+
+
+def approximate_longitudes(ut_dt: datetime) -> dict[str, float]:
+    delta_days = (ut_dt - datetime(2000, 1, 1, 12, tzinfo=timezone.utc)).total_seconds() / 86400
+    return {
+        "Sun": mean_longitude(280.460, 0.98564736, delta_days),
+        "Moon": mean_longitude(218.316, 13.176396, delta_days),
+        "Mars": mean_longitude(355.433, 0.524039, delta_days),
+        "Saturn": mean_longitude(50.077, 0.033459, delta_days),
+        "Venus": mean_longitude(181.979, 1.602130, delta_days),
+        "Ketu": mean_longitude(204.0, -0.0529538, delta_days),
+        "Mercury": mean_longitude(252.250, 4.092334, delta_days),
+        "Jupiter": mean_longitude(34.351, 0.083092, delta_days),
+    }
+
+
 def build_chart(payload: dict) -> dict:
     place = payload.get("placeOfBirth", "")
     birth_date = payload.get("dateOfBirth")
@@ -258,45 +291,57 @@ def build_chart(payload: dict) -> dict:
         ]
     )
 
-    if not has_swisseph():
-        raise RuntimeError(
-            "Swiss Ephemeris is required for natal chart calculations; please install pyswisseph."
+    if has_swisseph():
+        import swisseph as swe
+
+        swe.set_ephe_path(".")
+        swe.set_topo(longitude or 0.0, latitude or 0.0, 0)
+        jd = swe.julday(
+            ut_dt.year,
+            ut_dt.month,
+            ut_dt.day,
+            ut_dt.hour + ut_dt.minute / 60.0 + ut_dt.second / 3600.0,
+            swe.GREG_CAL,
         )
+        cusps_raw, ascmc = swe.houses_ex(jd, latitude or 0.0, longitude or 0.0, b"P")
+        cusps = list(cusps_raw[:12])
+        asc_longitude = float(ascmc[0])
 
-    import swisseph as swe
+        planet_codes = {
+            "Sun": swe.SUN,
+            "Moon": swe.MOON,
+            "Mercury": swe.MERCURY,
+            "Venus": swe.VENUS,
+            "Mars": swe.MARS,
+            "Jupiter": swe.JUPITER,
+            "Saturn": swe.SATURN,
+            "Rahu": swe.TRUE_NODE,
+        }
 
-    swe.set_ephe_path(".")
-    swe.set_topo(longitude or 0.0, latitude or 0.0, 0)
-    jd = swe.julday(
-        ut_dt.year,
-        ut_dt.month,
-        ut_dt.day,
-        ut_dt.hour + ut_dt.minute / 60.0 + ut_dt.second / 3600.0,
-        swe.GREG_CAL,
-    )
-    cusps_raw, ascmc = swe.houses_ex(jd, latitude or 0.0, longitude or 0.0, b"P")
-    cusps = list(cusps_raw[:12])
-    asc_longitude = float(ascmc[0])
+        planetary_states: dict[str, tuple[float, float]] = {}
+        for name, code in planet_codes.items():
+            coords, _flags = swe.calc_ut(jd, code)
+            longitude_value = float(coords[0])
+            speed_long = float(coords[3]) if len(coords) > 3 else 0.0
+            planetary_states[name] = (longitude_value, speed_long)
+        rahu_longitude, rahu_speed = planetary_states.get("Rahu", (0.0, 0.0))
+        planetary_states["Ketu"] = ((rahu_longitude + 180.0) % 360, -rahu_speed)
+    else:
+        approximations = approximate_longitudes(ut_dt)
+        rahu_longitude = (approximations.get("Ketu", 0.0) + 180.0) % 360
+        approximations["Rahu"] = rahu_longitude
 
-    planet_codes = {
-        "Sun": swe.SUN,
-        "Moon": swe.MOON,
-        "Mercury": swe.MERCURY,
-        "Venus": swe.VENUS,
-        "Mars": swe.MARS,
-        "Jupiter": swe.JUPITER,
-        "Saturn": swe.SATURN,
-        "Rahu": swe.TRUE_NODE,
-    }
+        asc_longitude = (
+            approximations.get("Sun", 0.0)
+            + ((ut_dt.hour * 60 + ut_dt.minute) / 4.0)
+            + (longitude or 0.0)
+        ) % 360
+        cusps = [((asc_longitude + idx * 30) % 360) for idx in range(12)]
 
-    planetary_states: dict[str, tuple[float, float]] = {}
-    for name, code in planet_codes.items():
-        coords, _flags = swe.calc_ut(jd, code)
-        longitude_value = float(coords[0])
-        speed_long = float(coords[3]) if len(coords) > 3 else 0.0
-        planetary_states[name] = (longitude_value, speed_long)
-    rahu_longitude, rahu_speed = planetary_states.get("Rahu", (0.0, 0.0))
-    planetary_states["Ketu"] = ((rahu_longitude + 180.0) % 360, -rahu_speed)
+        planetary_states = {
+            name: (value, -0.1 if name in {"Rahu", "Ketu"} else 0.1)
+            for name, value in approximations.items()
+        }
 
     ascendant = {
         "sign": sign_name(asc_longitude),

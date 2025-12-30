@@ -24,7 +24,7 @@ backend/
 
 - An OpenAPI snapshot of the HTTP surface ships in `docs/openapi.yaml` for quick
   client generation and contract review.
-- Use `python scripts/backup_data.py` (with `PYTHONPATH=src`) to create
+- Use `python scripts/backup_data.py` (with `PYTHONPATH="$(pwd)/src"`) to create
   timestamped backups of `data/bhrigu_samhita_principles.yml` under
   `backend/backups/` before changing manuscript data.
 
@@ -35,7 +35,7 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-export PYTHONPATH=src  # keep set for CLI, API, and tests
+export PYTHONPATH="$(pwd)/src"  # keep set for CLI, API, and tests
 
 # Deterministic dependency refresh (requires pip-tools from requirements-dev.txt)
 pip-compile requirements.in --output-file requirements.txt
@@ -49,7 +49,7 @@ pip-compile requirements.in --output-file requirements.txt
 
 ### Environment variables
 
-- `PYTHONPATH=src` (required) keeps imports pointed at the local source tree.
+- `PYTHONPATH="$(pwd)/src"` (required) keeps imports pointed at the local source tree.
 - `BHRIGUWELT_ADMIN_TOKEN` gates `/ml/retrain` in production; set it locally to
   test the admin flow with `X-Admin-Token`.
 - `BHRIGU_ML_ENABLED=1` forces ML weighting during development; unset or `0`
@@ -72,7 +72,7 @@ pip-compile requirements.in --output-file requirements.txt
 ### CLI usage
 
 ```bash
-export PYTHONPATH=src
+export PYTHONPATH="$(pwd)/src"
 
 # Comprehensive horoscope (includes past + future engines)
 python -m bhriguwelt.horoscope horoscope --name "Asha" --birth-date 1995-05-18 \
@@ -128,7 +128,7 @@ framework required):
 
 ```bash
 cd backend
-PYTHONPATH=src python -m bhriguwelt.api
+PYTHONPATH="$(pwd)/src" python -m bhriguwelt.api
 ```
 
 Example `curl` request:
@@ -159,6 +159,7 @@ Supported routes:
 - `POST /horoscope`
 - `POST /past-life`
 - `POST /future`
+- `POST /past-future` (combined JSON bridge for past-life + future predictions with Sarvam/OpenAI AI summary)
 - `POST /varshaphal` (12-month Bhrigu Varshaphal digest)
 - `POST /matchmaking`
 - `POST /calendar` (Gregorian → Śaka conversion with IST reference)
@@ -203,7 +204,7 @@ used in production:
 
 ```bash
 cd backend
-PYTHONPATH=src pytest --cov=src --cov-report=xml
+PYTHONPATH="$(pwd)/src" pytest --cov=src --cov-report=xml
 ```
 
 (ensure your virtual environment is activated first so the package resolves to
@@ -212,45 +213,10 @@ requirements-dev.txt` if your environment does not ship `pytest` by default.
 The suite now includes threaded HTTP integration tests, so both handler
 functions and the live API surface stay in sync.
 
-#### Render blueprint
+#### Railway service
 
-The repository root ships with a `render.yaml` blueprint that provisions the
-backend as a Python Web Service. There is no default hosted instance; you must
-deploy it yourself using the steps below. The build/start commands mirror local
-development so PYTHONPATH is set and `pip` is guaranteed to exist:
-
-```yaml
-services:
-  - type: web
-    name: bhriguwelt-backend
-    env: python
-    rootDir: backend
-    buildCommand: python -m pip install -r requirements.txt
-    startCommand: ./start.sh  # exports PYTHONPATH=src before launching the API
-    healthCheckPath: /health
-```
-
-Connect your GitHub repo inside Render, point it at this blueprint, and every
-push will deploy the API used by the Vercel-hosted frontend as well as mobile
-clients. If you prefer configuring a Web Service manually, mirror the settings
-from the blueprint (`rootDir=backend`, Python 3.11, the build/start commands
-above, and a `/health` check). See `docs/deployment.md` for a click-by-click
-Render walk-through.
-
-After Render finishes the first deploy, confirm the service is reachable:
-
-```bash
-curl https://<your-render-host>/health
-```
-
-> **Deployment note:** The blueprint locks the service to Python 3.11 and the
-> included zero-dependency HTTP server. If you introduce dependencies, add them
-> to `requirements.txt` so Render caches them between builds.
-
-#### Railway service (alternative)
-
-Railway can run the same backend as a Python **Service** without any code
-changes. Two layouts are supported so Nixpacks always installs Python and `pip`:
+Railway runs the backend as a Python **Service** without any code changes. Two
+layouts are supported so Nixpacks always installs Python and `pip`:
 
 1. Create a new Railway project and deploy from this GitHub repository.
 2. If you set the project root to `backend/`, the included `backend/nixpacks.toml`
@@ -262,8 +228,8 @@ changes. Two layouts are supported so Nixpacks always installs Python and `pip`:
 4. Build command: `python -m pip install -r requirements.txt` (works in either
    layout because the Nixpacks files explicitly provide `python311Packages.pip`).
 5. Start command: `./start.sh` (uses the correct wrapper in both root
-   configurations and exports `PYTHONPATH=src`).
-6. Add environment variable `PYTHONPATH=src` so the package resolves like local
+   configurations and exports `PYTHONPATH="$(pwd)/src"`).
+6. Add environment variable `PYTHONPATH="$(pwd)/src"` so the package resolves like local
    development.
 7. Ensure both `start.sh` scripts are executable (`chmod +x start.sh` at the
    repo root and inside `backend/`) so Nixpacks can invoke them.
@@ -275,11 +241,11 @@ changes. Two layouts are supported so Nixpacks always installs Python and `pip`:
 - Copy `.env.example` to `.env` to mirror local settings used in deployment
   blueprints (including `HOST`, `PORT`, optional `BHRIGU_DATA_PATH` if you
   relocate the dataset, and `SENTRY_DSN` when telemetry is enabled). The start
-  script reads these values automatically and exports `PYTHONPATH=src` before
+  script reads these values automatically and exports `PYTHONPATH="$(pwd)/src"` before
   launching.
 - Optional telemetry: set `SENTRY_DSN` (and `ENVIRONMENT` if you want to label
   staging vs. production) to capture unhandled API errors in Sentry. When the
   SDK is unavailable, the API continues running with no additional overhead.
 - Backend GitHub Action (`Backend CI`) installs dependencies and runs
-  `PYTHONPATH=src pytest` on pushes/PRs touching backend assets.
+  `PYTHONPATH="$(pwd)/src" pytest` on pushes/PRs touching backend assets.
 - Endpoint request/response formats are documented in `../docs/api_reference.md`.

@@ -1,12 +1,13 @@
 'use client';
 
 import dynamic from "next/dynamic";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { HOUSE_FOCUSES, deriveChartHouses } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
 import { areMicroAnimationsAllowed } from "@/lib/immersive";
 import { loadBirthDetails } from "@/lib/birthStorage";
-import { CalendarDetails, ChartHouse, DashaPeriod, ResultEngine } from "@/types/astro";
+import { CalendarDetails, CalendarPayload, ChartHouse, DashaPeriod, ResultEngine } from "@/types/astro";
+import { formatSakaLabel, type SakaDate } from "@/lib/sakaContext";
 import FeedbackPrompt from "./FeedbackPrompt";
 
 interface Props {
@@ -40,7 +41,7 @@ type HoroscopePayload = {
   interpretation_hi?: string;
   weights?: Record<string, number>;
   principles?: { sutra_reference?: string; description?: string }[];
-  remedies?: { sutra_reference?: string; description?: string }[];
+  remedies?: { id?: string; sutra_reference?: string; description?: string; relevance?: number }[];
   past_life_insights?: { narrative?: string; sutra_reference?: string }[];
   future_trajectories?: { focus?: string; window?: string }[];
   rashi_chart?: ChartHouse[];
@@ -53,6 +54,7 @@ type PastLifePayload = {
   interpretation?: string;
   interpretation_hi?: string;
   insights?: { narrative?: string; sutra_reference?: string }[];
+  past_life_insights?: { narrative?: string; sutra_reference?: string }[];
 };
 
 type FuturePayload = {
@@ -60,6 +62,7 @@ type FuturePayload = {
   interpretation?: string;
   interpretation_hi?: string;
   trajectories?: { focus?: string; window?: string; certainty?: number }[];
+  future_trajectories?: { focus?: string; window?: string; certainty?: number }[];
 };
 
 type SynastryOverlay = {
@@ -92,25 +95,22 @@ type MatchmakingPayload = {
   };
 };
 
-type CalendarPayload = {
-  birth_date?: string;
-  birth_time?: string;
-  birth_place?: string;
-  interpretation?: string;
-  interpretation_hi?: string;
-  saka_date?: {
-    year?: number;
-    month?: string;
-    day?: number;
-  };
-};
-
 const KundliCharts = dynamic(() => import("./KundliCharts"), {
   ssr: false,
   loading: () => (
     <div className="panel softly prediction-card__chart-loading" role="status" aria-live="polite">
       <p className="eyebrow">Chart render</p>
       <p className="muted">Orbiting wheels will appear as soon as the houses load.</p>
+    </div>
+  ),
+});
+
+const WebXRChart = dynamic(() => import("./WebXRChart"), {
+  ssr: false,
+  loading: () => (
+    <div className="panel softly prediction-card__chart-loading" role="status" aria-live="polite">
+      <p className="eyebrow">WebXR render</p>
+      <p className="muted">3D chart booting up for the immersive view.</p>
     </div>
   ),
 });
@@ -261,7 +261,7 @@ function interpretHoroscope(payload: HoroscopePayload): InsightSection[] {
 
 function interpretPastLife(payload: PastLifePayload): InsightSection[] {
   const sections: InsightSection[] = [];
-  const insights = payload.insights ?? [];
+  const insights = payload.insights || payload.past_life_insights || [];
   const [past, present, ...echoes] = insights;
   const pastLine = past?.narrative || payload.interpretation;
 
@@ -318,8 +318,9 @@ function interpretFuture(payload: FuturePayload): InsightSection[] {
       hindi: payload.interpretation_hi,
     });
   }
-  if (payload.trajectories?.length) {
-    const bullets = payload.trajectories.map((item) => {
+  const trajectories = payload.trajectories || payload.future_trajectories || [];
+  if (trajectories.length) {
+    const bullets = trajectories.map((item) => {
       const certainty = percentage(item.certainty);
       return `${item.focus}${item.window ? ` • ${item.window}` : ""}${certainty ? ` • आश्वस्ति ${certainty}%` : ""}`;
     });
@@ -328,7 +329,7 @@ function interpretFuture(payload: FuturePayload): InsightSection[] {
       english: "Follow these dharmic steps with steadiness and gratitude.",
       hindi: "इन चरणों को धैर्य और कृतज्ञता से निभाएँ।",
       bullets,
-      collapsible: payload.trajectories.length > 2,
+      collapsible: trajectories.length > 2,
     });
   }
   return sections;
@@ -397,8 +398,21 @@ function interpretMatchmaking(payload: MatchmakingPayload): InsightSection[] {
   return sections;
 }
 
+function mapSakaDate(sakaPayload?: CalendarPayload["saka_date"]): SakaDate | undefined {
+  if (!sakaPayload) return undefined;
+  return {
+    year: sakaPayload.year,
+    month: sakaPayload.month,
+    monthIndex: sakaPayload.month_index,
+    day: sakaPayload.day,
+    leapYear: sakaPayload.leap_year,
+  };
+}
+
 function interpretCalendar(payload: CalendarPayload): InsightSection[] {
   const sections: InsightSection[] = [];
+  const sakaDate = mapSakaDate(payload.saka_date);
+  const sakaLabel = formatSakaLabel(sakaDate);
   if (payload.interpretation) {
     sections.push({
       heading: "Śaka alignment",
@@ -409,9 +423,35 @@ function interpretCalendar(payload: CalendarPayload): InsightSection[] {
   if (payload.saka_date) {
     sections.push({
       heading: "Converted date",
-      english: `Śaka ${payload.saka_date.year ?? ""} ${payload.saka_date.month ?? ""} ${payload.saka_date.day ?? ""} —
-        ${payload.birth_date ?? ""} ${payload.birth_time ?? ""} at ${payload.birth_place ?? ""}`.trim(),
+      english: `${sakaLabel} — ${payload.birth_date ?? ""} ${payload.birth_time ?? ""} at ${payload.birth_place ?? ""}`.trim(),
       hindi: "कैलेंडर रूपांतरण IST सन्दर्भ के साथ तैयार है।",
+    });
+  }
+  const dashboardBullets = [
+    payload.tithi_name ? `Tithi: ${payload.tithi_name}` : null,
+    payload.nakshatra ? `Nakshatra: ${payload.nakshatra}` : null,
+    payload.yoga ? `Yoga: ${payload.yoga}` : null,
+    payload.karana ? `Karana: ${payload.karana}` : null,
+    payload.weekday ? `Weekday (IST): ${payload.weekday}` : null,
+    payload.conversion_factor_years !== undefined
+      ? `Gregorian offset: ${payload.conversion_factor_years} years`
+      : null,
+    sakaDate?.monthIndex !== undefined
+      ? `Śaka month ${sakaDate.monthIndex}${sakaDate.month ? ` (${sakaDate.month})` : ""}`
+      : null,
+    sakaDate?.leapYear !== undefined ? `Leap year: ${sakaDate.leapYear ? "Yes" : "No"}` : null,
+    payload.ephemeris_source ? `Ephemeris: ${payload.ephemeris_source}` : null,
+    payload.ist_reference_longitude ? `IST meridian: ${payload.ist_reference_longitude}°E` : null,
+    payload.sources?.length ? `Sources: ${payload.sources.join(" · ")}` : null,
+  ].filter(Boolean) as string[];
+
+  if (dashboardBullets.length) {
+    sections.push({
+      heading: "Śaka dashboard",
+      english: "Aligned Panchang factors and references.",
+      hindi: "सभी पंचांग तत्व और स्रोत प्रमाणित हैं।",
+      bullets: dashboardBullets,
+      collapsible: dashboardBullets.length > 4,
     });
   }
   return sections;
@@ -483,8 +523,19 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
   const { t } = useI18n();
   const sections = useMemo(() => buildSections(engine, payload), [engine, payload]);
   const horoscopePayload = engine === "horoscope" && typeof payload === "object" ? (payload as HoroscopePayload) : null;
+  const feedbackContext = useMemo(() => {
+    if (!payload || typeof payload !== "object") return undefined;
+    const typed = payload as HoroscopePayload;
+    const remedyIds = (typed.remedies || []).map((remedy) => remedy.id).filter(Boolean) as string[];
+    if (!typed.weights && !remedyIds.length) return undefined;
+    return {
+      weights: typed.weights,
+      remedyIds,
+    };
+  }, [payload]);
   const [animationsEnabled, setAnimationsEnabled] = useState(false);
   const [flipActive, setFlipActive] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [fallbackCharts, setFallbackCharts] = useState<{ rashi: ChartHouse[]; bhava: ChartHouse[] }>({
     rashi: [],
     bhava: [],
@@ -538,6 +589,73 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
     .filter(Boolean)
     .join(" ");
 
+  const escapePdfText = (text: string) =>
+    text
+      .replace(/\\/g, "\\\\")
+      .replace(/\(/g, "\\(")
+      .replace(/\)/g, "\\)")
+      .replace(/\r?\n/g, " ");
+
+  const downloadPdf = useCallback(() => {
+    if (!sections.length) return;
+    setIsSaving(true);
+    const lines = [
+      `${title} (${engine})`,
+      seekerName ? `Seeker: ${seekerName}` : null,
+      ...sections.flatMap((section) => [
+        section.heading,
+        section.english,
+        section.hindi ?? null,
+        ...(section.bullets ?? []),
+      ]),
+    ].filter(Boolean) as string[];
+
+    const contentLines = lines.map((line) => escapePdfText(line));
+    const streamParts = ["BT", "/F1 12 Tf", "50 780 Td"];
+    contentLines.forEach((line, index) => {
+      if (index === 0) {
+        streamParts.push(`(${line}) Tj`);
+      } else {
+        streamParts.push("0 -16 Td");
+        streamParts.push(`(${line}) Tj`);
+      }
+    });
+    streamParts.push("ET");
+    const contentStream = streamParts.join("\n");
+
+    const objects = [
+      "<< /Type /Catalog /Pages 2 0 R >>",
+      "<< /Type /Pages /Count 1 /Kids [3 0 R] >>",
+      "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+      `<< /Length ${contentStream.length} >>\nstream\n${contentStream}\nendstream`,
+      "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    ];
+
+    let pdf = "%PDF-1.4\n";
+    const offsets = [0];
+    objects.forEach((object, index) => {
+      offsets[index + 1] = pdf.length;
+      pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+    });
+
+    const xrefStart = pdf.length;
+    pdf += `xref\n0 ${objects.length + 1}\n`;
+    pdf += "0000000000 65535 f \n";
+    offsets.slice(1).forEach((offset) => {
+      pdf += `${offset.toString().padStart(10, "0")} 00000 n \n`;
+    });
+    pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+
+    const blob = new Blob([pdf], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${engine}-guidance.pdf`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setIsSaving(false);
+  }, [engine, sections, seekerName, title]);
+
   if (!payload || !sections.length) {
     return (
       <section className={cardClassName} aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
@@ -557,16 +675,30 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
           <p className="eyebrow">Response</p>
           <h3>{title}</h3>
           <p className="muted">{t("results.helperRaw", "Narratives are ready to share—no JSON needed.")}</p>
+          <div className="prediction-card__actions">
+            <span className="microcopy">PDF export ready for this engine.</span>
+            <button
+              type="button"
+              className="button-link ghost-link prediction-card__download"
+              onClick={downloadPdf}
+              disabled={isSaving}
+            >
+              {isSaving ? "Preparing PDF…" : "Download PDF"}
+            </button>
+          </div>
         </div>
         <div className="insight-grid">{sections.map(renderSection)}</div>
         {horoscopePayload && (
-          <KundliCharts
-            rashiChart={horoscopePayload.rashi_chart?.length ? horoscopePayload.rashi_chart : fallbackCharts.rashi}
-            bhavaChart={horoscopePayload.bhava_chart?.length ? horoscopePayload.bhava_chart : fallbackCharts.bhava}
-            dashas={horoscopePayload.dashas}
-          />
+          <>
+            <KundliCharts
+              rashiChart={horoscopePayload.rashi_chart?.length ? horoscopePayload.rashi_chart : fallbackCharts.rashi}
+              bhavaChart={horoscopePayload.bhava_chart?.length ? horoscopePayload.bhava_chart : fallbackCharts.bhava}
+              dashas={horoscopePayload.dashas}
+            />
+            <WebXRChart rashiChart={horoscopePayload.rashi_chart ?? fallbackCharts.rashi} />
+          </>
         )}
-        {payload && <FeedbackPrompt engine={engine} seekerName={seekerName} />}
+        {payload && <FeedbackPrompt engine={engine} seekerName={seekerName} context={feedbackContext} />}
       </div>
     </section>
   );

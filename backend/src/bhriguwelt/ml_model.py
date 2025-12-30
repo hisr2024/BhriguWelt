@@ -92,6 +92,25 @@ def _encode_chart_markers(payload: Dict[str, Any]) -> Dict[str, float]:
     return encoded
 
 
+def _encode_remedy_signals(payload: Dict[str, Any]) -> Dict[str, float]:
+    encoded: Dict[str, float] = {}
+    remedies = payload.get("remedies") or payload.get("remedy_ids") or payload.get("remedy_id")
+    if isinstance(remedies, list):
+        items = remedies
+    elif remedies:
+        items = [remedies]
+    else:
+        items = []
+    for item in items:
+        if isinstance(item, dict):
+            remedy_id = item.get("id") or item.get("remedy_id") or item.get("code")
+        else:
+            remedy_id = item
+        if remedy_id:
+            encoded[f"remedy.{remedy_id}"] = 1.0
+    return encoded
+
+
 def _flatten_numeric_signals(payload: Dict[str, Any]) -> Dict[str, float]:
     flattened = _extract_numeric_inputs(payload)
     return flattened
@@ -102,6 +121,7 @@ def encode_feedback_features(engine: str, inputs: Dict[str, Any] | None) -> Dict
     features: Dict[str, Any] = {"engine": engine or payload.get("engine", "")}
     features.update(_encode_principle_weights(payload))
     features.update(_encode_chart_markers(payload))
+    features.update(_encode_remedy_signals(payload))
     features.update(_flatten_numeric_signals(payload))
     return features
 

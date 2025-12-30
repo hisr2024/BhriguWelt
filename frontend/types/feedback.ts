@@ -5,6 +5,7 @@ export interface FeedbackRequest {
   rating: number;
   seekerName?: string;
   notes?: string;
+  inputs?: Record<string, unknown>;
 }
 
 export interface FeedbackNote {

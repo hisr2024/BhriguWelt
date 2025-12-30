@@ -47,3 +47,6 @@ def test_experience_flow_populates_all_engine_reports():
     assert len(flow["timeline"].get("phases", [])) >= 5
     assert flow["matchmaking"]["compatibility"]["compatibility_index"] > 0
     assert any(entry.get("engine") == "future_engines" for entry in flow["analyzers"])
+    assert flow["language_layer"]["language"] == "en"
+    assert flow["language_layer"]["tone"] == "neutral"
+    assert flow["language_layer"]["sections"]

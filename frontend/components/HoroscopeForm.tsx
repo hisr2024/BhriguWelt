@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import { HOUSE_FOCUSES, deriveChartHouses } from "@/lib/houseGrid";
 import { getFallbackSample } from "@/lib/api";
@@ -13,7 +13,14 @@ import { deriveHousePlacements, formatHouseNarrative, useSakaContext } from "@/l
 import FormPanel from "./horoscope/FormPanel";
 import ReadingPanel from "./horoscope/ReadingPanel";
 import { ChartResponse, FormState, FormStatus, Interpretation } from "./horoscope/types";
-import { extractInterpretation, isNatalChart, postChart, sanitize } from "./horoscope/utils";
+import {
+  buildChatPayload,
+  extractInterpretation,
+  isNatalChart,
+  postChart,
+  postChatFallback,
+  sanitize,
+} from "./horoscope/utils";
 
 const defaultForm: FormState = {
   name: "",
@@ -60,11 +67,15 @@ type TimeframeLink = {
 const HOROSCOPE_PENDING_SUMMARY = "Based on your inputs, a full reading is pending backend connection.";
 const PAST_LIFE_GENERIC = "Past-life memories may involve healing or service roles.";
 
+const FALLBACK_BIRTH_DATE = "2000-01-01";
+const FALLBACK_BIRTH_TIME = "00:00";
+const FALLBACK_BIRTH_PLACE = "stated place";
+
 function buildCalendarDetails(form: FormState): CalendarDetails {
   return {
-    birthDate: form.dateOfBirth || new Date().toISOString().slice(0, 10),
-    birthTime: form.timeOfBirth || "00:00",
-    birthPlace: form.placeOfBirth || "stated place",
+    birthDate: form.dateOfBirth || FALLBACK_BIRTH_DATE,
+    birthTime: form.timeOfBirth || FALLBACK_BIRTH_TIME,
+    birthPlace: form.placeOfBirth || FALLBACK_BIRTH_PLACE,
   } satisfies CalendarDetails;
 }
 
@@ -145,9 +156,17 @@ export default function HoroscopeForm() {
   const [status, setStatus] = useState<FormStatus>("idle");
   const [validations, setValidations] = useState<ValidationState>({});
   const [prefillNotice, setPrefillNotice] = useState<string | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const { triggerSubmitFeedback } = useImmersiveFeedback();
   const { sakaState } = useSakaContext();
+  const voiceSupported = typeof window !== "undefined" && "speechSynthesis" in window;
+
+  const normalizedBackend = useMemo(() => {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
+    const sanitized = backendUrl ? backendUrl.replace(/\/$/, "") : null;
+    return sanitized || "/api";
+  }, []);
 
   const fallbackInterpretation = useMemo(() => buildFallbackInterpretation(), []);
   const fallbackChartSample = useMemo(() => getFallbackSample("/horoscope") as ChartResponse | null, []);
@@ -241,6 +260,47 @@ export default function HoroscopeForm() {
     });
   }, [chart, hasNarrative, houseFoundation?.length, timeframeAnchors]);
 
+  const voiceStatus = useMemo(() => {
+    if (!voiceSupported) return "Voice guidance unavailable.";
+    if (isSpeaking) return "Voice guidance is playing.";
+    if (missingFields.length) return `Missing ${missingFields.join(", ")}.`;
+    if (Object.keys(validations).length) return "Fix the highlighted fields to proceed.";
+    return "Ready to generate your reading.";
+  }, [isSpeaking, missingFields, validations, voiceSupported]);
+
+  const voiceScript = useMemo(() => {
+    const header = "Horoscope form guidance.";
+    const missing = missingFields.length ? `Missing ${missingFields.join(", ")}.` : "All required fields are present.";
+    const validationNotes = Object.values(validations).length
+      ? `Validation reminders: ${Object.values(validations).join(" ")}`
+      : "No validation errors found.";
+    const progress = progressSteps
+      .map((step) => `${step.title}: ${step.status === "complete" ? "done" : step.status === "active" ? "in progress" : "next"}.`)
+      .join(" ");
+    return `${header} ${missing} ${validationNotes} ${progress} When ready, press Generate reading to create the chart.`;
+  }, [missingFields, progressSteps, validations]);
+
+  const toggleVoiceGuidance = () => {
+    if (!voiceSupported) return;
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+
+    if (isSpeaking) {
+      synth.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(voiceScript);
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    synth.cancel();
+    synth.speak(utterance);
+    setIsSpeaking(true);
+  };
+
   const handleChange = (field: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
@@ -266,33 +326,45 @@ export default function HoroscopeForm() {
     return feedback;
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    triggerSubmitFeedback();
-    setError(null);
-    setStatus("idle");
-    setChart(null);
-    setEndpoint(null);
-    setInterpretation({});
-
-    if (missingFields.length || Object.keys(validations).length) {
-      setError("Please fix the highlighted birth details.");
-      return;
-    }
-
-    setLoading(true);
-
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
-    const normalizedBackend = backendUrl ? backendUrl.replace(/\/$/, "") : null;
-
-    const requestPayload = {
+  const requestPayload = useMemo(
+    () => ({
       name: form.name,
       dateOfBirth: form.dateOfBirth,
       timeOfBirth: form.timeOfBirth,
       placeOfBirth: form.placeOfBirth,
-    } satisfies FormState;
+      tradition: form.tradition,
+      lunarTithi: form.lunarTithi,
+      moonElement: form.moonElement,
+      marsHouse: form.marsHouse,
+      saturnHouse: form.saturnHouse,
+      venusHouse: form.venusHouse,
+      rahuAspectsAscendant: form.rahuAspectsAscendant,
+      ketuHouse: form.ketuHouse,
+      mercuryHouse: form.mercuryHouse,
+      jupiterHouse: form.jupiterHouse,
+      saturnRetrograde: form.saturnRetrograde,
+    }),
+    [
+      form.dateOfBirth,
+      form.jupiterHouse,
+      form.ketuHouse,
+      form.lunarTithi,
+      form.marsHouse,
+      form.mercuryHouse,
+      form.moonElement,
+      form.name,
+      form.placeOfBirth,
+      form.rahuAspectsAscendant,
+      form.saturnHouse,
+      form.saturnRetrograde,
+      form.timeOfBirth,
+      form.tradition,
+      form.venusHouse,
+    ],
+  );
 
-    const handleSuccess = (data: ChartResponse, path: string) => {
+  const handleSuccess = useCallback(
+    (data: ChartResponse, path: string) => {
       const hydrated = hydrateCharts(data, form);
       const extracted = extractInterpretation(hydrated);
 
@@ -320,16 +392,19 @@ export default function HoroscopeForm() {
           "Live response did not include a narrative. Showing a curated sample reading until the backend reconnects.",
         );
       }
-    };
+    },
+    [fallbackInterpretation, form, requestPayload],
+  );
 
-    const attempt = async (path: string, baseUrl?: string) => {
+  const attempt = useCallback(
+    async (path: string, baseUrl?: string) => {
       const endpointPath = baseUrl ? `${baseUrl}${path}` : path;
       console.info("[HoroscopeForm] Submitting horoscope request", {
         path: endpointPath,
         payload: requestPayload,
       });
       try {
-        const data = await postChart(path, form, baseUrl || undefined);
+        const data = await postChart(path, requestPayload, baseUrl || undefined);
         handleSuccess(data, endpointPath);
       } catch (submissionError) {
         console.error(`[HoroscopeForm] Submission to ${endpointPath} failed`, submissionError, {
@@ -337,38 +412,76 @@ export default function HoroscopeForm() {
         });
         throw submissionError;
       }
-    };
+    },
+    [handleSuccess, requestPayload],
+  );
 
-    const attemptBackend = async () => {
-      if (!normalizedBackend) return false;
+  const attemptChatFallback = useCallback(
+    async (path: string) => {
+      const chatPayload = buildChatPayload(requestPayload);
+      console.info("[HoroscopeForm] Submitting fallback chat request", {
+        path,
+        payload: chatPayload,
+      });
+      try {
+        const data = await postChatFallback(path, requestPayload);
+        handleSuccess(data, path);
+      } catch (submissionError) {
+        console.error(`[HoroscopeForm] Submission to ${path} failed`, submissionError, { payload: chatPayload });
+        throw submissionError;
+      }
+    },
+    [handleSuccess, requestPayload],
+  );
+
+  const attemptBackend = useCallback(async () => {
+    const backendBase = normalizedBackend?.trim();
+
+    if (!backendBase) return false;
+
+    try {
+      const horoscopeResponse = await postChart("/horoscope", requestPayload, backendBase);
+      let combinedResponse: ChartResponse = horoscopeResponse;
 
       try {
-        const horoscopeResponse = await postChart("/horoscope", form, normalizedBackend);
-        let combinedResponse: ChartResponse = horoscopeResponse;
-
-        try {
-          const pastLifeResponse = await postChart("/past-life", form, normalizedBackend);
-          combinedResponse = {
-            ...(horoscopeResponse as Record<string, unknown>),
-            past_life_report: pastLifeResponse,
-            past_life_insights:
-              (horoscopeResponse as { past_life_insights?: unknown[] }).past_life_insights ||
-              (pastLifeResponse as { insights?: unknown[] }).insights,
-          } as ChartResponse;
-        } catch (pastLifeError) {
-          console.warn("[HoroscopeForm] Past-life endpoint unavailable; continuing with horoscope output", pastLifeError);
-        }
-
-        handleSuccess(combinedResponse, `${normalizedBackend}/horoscope`);
-        return true;
-      } catch (backendError) {
-        console.error("[HoroscopeForm] Backend endpoints failed", backendError, {
-          payload: requestPayload,
-          backend: normalizedBackend,
-        });
-        return false;
+        const pastLifeResponse = await postChart("/past-life", requestPayload, backendBase);
+        combinedResponse = {
+          ...(horoscopeResponse as Record<string, unknown>),
+          past_life_report: pastLifeResponse,
+          past_life_insights:
+            (horoscopeResponse as { past_life_insights?: unknown[] }).past_life_insights ||
+            (pastLifeResponse as { insights?: unknown[] }).insights,
+        } as ChartResponse;
+      } catch (pastLifeError) {
+        console.warn("[HoroscopeForm] Past-life endpoint unavailable; continuing with horoscope output", pastLifeError);
       }
-    };
+
+      handleSuccess(combinedResponse, `${backendBase}/horoscope`);
+      return true;
+    } catch (backendError) {
+      console.error("[HoroscopeForm] Backend endpoints failed", backendError, {
+        payload: requestPayload,
+        backend: backendBase,
+      });
+      return false;
+    }
+  }, [handleSuccess, normalizedBackend, requestPayload]);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    triggerSubmitFeedback();
+    setError(null);
+    setStatus("idle");
+    setChart(null);
+    setEndpoint(null);
+    setInterpretation({});
+
+    if (missingFields.length || Object.keys(validations).length) {
+      setError("Please fix the highlighted birth details.");
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const backendSucceeded = await attemptBackend();
@@ -379,7 +492,7 @@ export default function HoroscopeForm() {
         } catch (primaryError) {
           console.error("[HoroscopeForm] Primary endpoint failed; attempting fallback", primaryError);
           try {
-            await attempt("/api/bhrigu-chat");
+            await attemptChatFallback("/api/bhrigu-chat");
           } catch (fallbackError) {
             console.error("[HoroscopeForm] Fallback endpoint also failed", fallbackError);
             throw primaryError;
@@ -499,34 +612,51 @@ export default function HoroscopeForm() {
     }
   }, [missingFields, validations]);
 
+  useEffect(() => {
+    return () => {
+      if (!voiceSupported) return;
+      window.speechSynthesis?.cancel();
+    };
+  }, [voiceSupported]);
+
   return (
     <section className="horo-board" aria-label="Horoscope creation">
       <div className="horo-layout">
-        <FormPanel
-          form={form}
-          status={status}
-          loading={loading}
-          endpoint={endpoint}
-          error={error}
-          isComplete={hasRequiredDetails}
-          progressSteps={progressSteps}
-          prefillNotice={prefillNotice}
-          onChange={handleChange}
-          onSubmit={handleSubmit}
-          onAskBhrigu={handleAskBhrigu}
-          onDownloadPdf={handleDownloadPdf}
-        />
+        <div className="horo-stack">
+          <p className="muted">Input details in one go.</p>
+          <FormPanel
+            form={form}
+            status={status}
+            loading={loading}
+            endpoint={endpoint}
+            error={error}
+            isComplete={hasRequiredDetails}
+            progressSteps={progressSteps}
+            prefillNotice={prefillNotice}
+            voiceSupported={voiceSupported}
+            isSpeaking={isSpeaking}
+            onToggleVoiceGuidance={toggleVoiceGuidance}
+            voiceStatus={voiceStatus}
+            onChange={handleChange}
+            onSubmit={handleSubmit}
+            onAskBhrigu={handleAskBhrigu}
+            onDownloadPdf={handleDownloadPdf}
+          />
+        </div>
 
-        <ReadingPanel
-          chart={chart}
-          form={form}
-          interpretation={interpretation}
-          hasNarrative={hasNarrative}
-          fallbackNarrative={fallbackNarrative}
-          timeframes={timeframeLinks}
-          onAskBhrigu={handleAskBhrigu}
-          onDownloadPdf={handleDownloadPdf}
-        />
+        <div className="horo-stack horo-stack--reading">
+          <p className="muted">Reading unfolds beneath the form for easier viewing.</p>
+          <ReadingPanel
+            chart={chart}
+            form={form}
+            interpretation={interpretation}
+            hasNarrative={hasNarrative}
+            fallbackNarrative={fallbackNarrative}
+            timeframes={timeframeLinks}
+            onAskBhrigu={handleAskBhrigu}
+            onDownloadPdf={handleDownloadPdf}
+          />
+        </div>
       </div>
     </section>
   );

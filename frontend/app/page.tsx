@@ -1,141 +1,117 @@
 'use client';
 
-import { useI18n } from "@/lib/i18n";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
+import { engineCards } from "@/lib/engineConfig";
+
+const transition = { duration: 0.5, ease: "easeOut" };
 
 export default function HomePage() {
-  const { t } = useI18n();
-
-  const heroTitle = t("home.heroTitle", "Bhrigu Saṁhitā guidance, made contemporary.");
-  const heroDescription = t(
-    "home.heroDescription",
-    "Drawn from authentic Bhrigu Saṁhitā traditions and engineered for clarity. This hub gives you the lineage story first, then routes you to the focused engines.",
-  );
-
-  const introductionCards = [
-    {
-      eyebrow: "Lineage first",
-      title: "A calm doorway into ancient Bharat wisdom",
-      description:
-        "Walk through the quiet glow of ṛṣi Bhrigu's manuscripts, why the palm-leaf codices travelled, and how every śloka is respected before the digital re-imagination begins.",
-      accent: "Pamphlets to pulse",
-    },
-    {
-      eyebrow: "Bhrigu Saṁhitā decoded",
-      title: "The questions the sages expected you to ask",
-      description:
-        "Understand the archetypes encoded for seekers: the karmic knots, the remedies that soften them, and the rare counsel that sits between fate and free will.",
-      accent: "Karma maps",
-    },
-    {
-      eyebrow: "Interactive by intent",
-      title: "Minimal motion, meaningful signals",
-      description:
-        "Hover to reveal sutras, follow the orbits to sense the lineage, and keep the attention on the silence between words—the design stays out of the way so the wisdom can speak.",
-      accent: "Gentle interactivity",
-    },
-  ];
-
-  const ritualMoments = [
-    {
-      title: "Samhitā stream",
-      detail: "Living introductions, crafted in English yet echoing Sanskrit cadence, to set the mood before predictions.",
-    },
-    {
-      title: "Jyotish atelier",
-      detail: "Studio pathways for dashboards, calendars, and matchmaking, each grounded in the same origin story.",
-    },
-    {
-      title: "Remedy track",
-      detail: "Whispered upāyas framed as mindful actions—no clutter, just the essential steps.",
-    },
-  ];
-
   return (
-    <div className="z-shell">
-      <section className="z-hero z-hero--cosmic" aria-labelledby="hero-title">
-        <div className="z-hero__grid">
-          <div className="z-hero__copy">
-            <span className="z-pill">Bhrigu Saṁhitā aligned</span>
-            <h1 id="hero-title">{heroTitle}</h1>
-            <p>{heroDescription}</p>
-
-            <div className="hero-actions">
-              <a className="button-link" href="#introduction">
-                Begin the introduction
-              </a>
-              <div className="mantra-chip" aria-label="Bhrigu invocation">
-                ॐ नमो भगवते भृगवे
-              </div>
+    <div className="space-y-12">
+      <motion.section
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={transition}
+        className="space-y-6"
+      >
+        <div className="chip">BhriguWelt Engines</div>
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+          <div className="space-y-4">
+            <h1 className="text-4xl font-semibold text-white sm:text-5xl">
+              World-class astrology experiences in a focused, dark-first command center.
+            </h1>
+            <p className="max-w-2xl text-base text-slate-300">
+              Explore every engine with zero clutter, crisp motion, and results that feel premium on every device.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400"
+              >
+                Open dashboard
+                <ArrowUpRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/chat"
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:border-white/30"
+              >
+                Start chat
+              </Link>
             </div>
-
-            <div className="introduction-card introduction-card--glow">
-              <p className="eyebrow">Introductions</p>
-              <p className="muted">
-                The new Home canvas quietly tells the origin of the manuscripts, the ṛṣi lineage, and the disciplines we
-                honour before any dashboard or studio session. It is designed to invite, not overwhelm, with subtle
-                motion and tactile hovers.
+          </div>
+          <div className="glass-panel p-6">
+            <div className="space-y-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Today’s pulse</p>
+              <h2 className="text-2xl font-semibold text-white">Lunar clarity with rising intuition.</h2>
+              <p className="text-sm text-slate-300">
+                Capture your next insight across every engine with seamless transitions and clean results.
               </p>
-            </div>
-          </div>
-
-          <div className="wisdom-orbit" aria-hidden>
-            <div className="wisdom-orbit__halo" />
-            <div className="wisdom-orbit__ring wisdom-orbit__ring--outer" />
-            <div className="wisdom-orbit__ring wisdom-orbit__ring--inner" />
-            <div className="wisdom-orbit__pulse" />
-            <div className="wisdom-orbit__glyph">भृ</div>
-            <div className="wisdom-orbit__spark wisdom-orbit__spark--one" />
-            <div className="wisdom-orbit__spark wisdom-orbit__spark--two" />
-            <div className="wisdom-orbit__spark wisdom-orbit__spark--three" />
-            <p className="orbit-caption">Ancient cadence translated into a living digital ālaya.</p>
-          </div>
-        </div>
-      </section>
-
-      <section id="introduction" className="introduction-grid" aria-label="Bhrigu introduction">
-        <div className="section-heading">
-          <p className="eyebrow">Living preface</p>
-          <h2>Enter softly; the Saṁhitā story leads.</h2>
-          <p className="muted">
-            Each card is a luminous tile that reveals the Bhrigu perspective with minimal movement. Hover or focus to
-            watch the ābhā (glow) breathe.
-          </p>
-        </div>
-
-        <div className="wisdom-grid">
-          {introductionCards.map((card) => (
-            <article key={card.title} className="wisdom-card">
-              <div className="wisdom-card__halo" />
-              <p className="eyebrow">{card.eyebrow}</p>
-              <h3>{card.title}</h3>
-              <p className="muted">{card.description}</p>
-              <div className="wisdom-card__accent">{card.accent}</div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="ritual-lattice" aria-label="Experience flow">
-        <div className="section-heading">
-          <p className="eyebrow">Interactive calm</p>
-          <h2>Minimalist motion that still feels sacred.</h2>
-          <p className="muted">
-            The Home page breathes with gentle gradients, orbital glyphs, and micro-interactions that mirror the heartbeat
-            of the Bhrigu manuscripts.
-          </p>
-        </div>
-
-        <div className="ritual-lattice__grid">
-          {ritualMoments.map((moment) => (
-            <div key={moment.title} className="ritual-card">
-              <div className="ritual-card__orb" />
-              <div className="ritual-card__content">
-                <h3>{moment.title}</h3>
-                <p className="muted">{moment.detail}</p>
+              <div className="grid gap-2 text-sm text-slate-200">
+                <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                  <span>Next transit alert</span>
+                  <span className="font-semibold text-white">21:10 IST</span>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                  <span>Daily remedy</span>
+                  <span className="font-semibold text-white">Water ritual</span>
+                </div>
               </div>
-              <span className="ritual-card__pulse" aria-hidden />
             </div>
-          ))}
+          </div>
+        </div>
+      </motion.section>
+
+      <section className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold text-white">All engines</h2>
+          <p className="text-sm text-slate-400">Tap any card to launch the experience.</p>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {engineCards.map((engine, index) => {
+            const Icon = engine.icon;
+            return (
+              <motion.article
+                key={engine.slug}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ ...transition, delay: 0.08 * index }}
+                whileHover={{ y: -6 }}
+                className="glass-panel flex h-full flex-col gap-5 p-6"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white">
+                    <Icon className="h-6 w-6" />
+                  </span>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
+                    Engine
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  <h3 className="text-xl font-semibold text-white">{engine.title}</h3>
+                  <p className="text-sm text-slate-300">{engine.description}</p>
+                </div>
+                <ul className="space-y-2 text-sm text-slate-300">
+                  {engine.features.map((feature) => (
+                    <li key={feature} className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-indigo-400" aria-hidden />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-auto">
+                  <Link
+                    href={`/${engine.slug}`}
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-white"
+                  >
+                    Explore {engine.title}
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </motion.article>
+            );
+          })}
         </div>
       </section>
     </div>

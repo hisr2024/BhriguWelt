@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import EngineCoverage from "@/components/EngineCoverage";
+
 const labs = [
   {
     title: "Intake & Śaka sync",
@@ -73,6 +75,8 @@ export default function StudioPage() {
           </div>
         </div>
       </section>
+
+      <EngineCoverage />
     </div>
   );
 }

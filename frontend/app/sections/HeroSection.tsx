@@ -75,6 +75,18 @@ export function HeroSection() {
             ))}
           </div>
         </div>
+        <div className="immersion-card" aria-label="Immersive constellation cues">
+          <p className="eyebrow">Immersion cues</p>
+          <h3>Constellations react gently</h3>
+          <p className="muted">
+            Subtle glows confirm chart accuracy, haptics mark milestones, and errors surface as soft, actionable prompts.
+          </p>
+          <ul className="immersion-list">
+            <li>Cosmic progress rings show chart generation in real time.</li>
+            <li>Accessibility presets keep contrast, font, and motion in balance.</li>
+            <li>Micro-animations guide you without overwhelming the view.</li>
+          </ul>
+        </div>
       </div>
     </section>
   );

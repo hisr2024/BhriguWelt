@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Sequence
 
-from .ai_client import ai_provider_metadata
+from .ai_client import ai_provider_metadata, sarvam_integration_contract
 from .bhrigu_core import bhrigu_core
 from .engine_analyzers import analyze_core_engines
 from .engine_interpreters import brief_alignment_pipeline, interpret_bhrigu_wisdom
@@ -23,6 +23,7 @@ from .horoscope import (
     build_prediction,
     build_timeline_report,
 )
+from .ux_language_layer import compose_language_layer
 
 
 @dataclass
@@ -58,6 +59,7 @@ class UnifiedExperienceFlow:
     briefings: List[Dict[str, Any]]
     ai_support: Dict[str, Any]
     visuals: FlowVisualizations
+    language_layer: Dict[str, Any]
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -72,6 +74,7 @@ class UnifiedExperienceFlow:
             "briefings": [dict(entry) for entry in self.briefings],
             "ai_support": dict(self.ai_support),
             "visuals": self.visuals.to_dict(),
+            "language_layer": dict(self.language_layer),
         }
 
 
@@ -141,6 +144,8 @@ def build_unified_experience_flow(
     partner_request: HoroscopeRequest | None = None,
     modern_preferences: Sequence[str] | None = None,
     language: str = "en",
+    tone: str = "neutral",
+    cultural_sensitivity: str = "balanced",
 ) -> UnifiedExperienceFlow:
     """Return a comprehensive, operational flow payload for all pillars."""
 
@@ -187,6 +192,18 @@ def build_unified_experience_flow(
         "tradition": tradition,
     }
 
+    language_layer = compose_language_layer(
+        seeker=seeker,
+        horoscope=horoscope_dict,
+        past_life=past_life_dict,
+        future=future_dict,
+        timeline=timeline_dict,
+        matchmaking=matchmaking_dict,
+        language=language,
+        tone=tone,
+        cultural_sensitivity=cultural_sensitivity,
+    ).to_dict()
+
     ai_support = ai_provider_metadata()
     ai_support.setdefault(
         "coverage",
@@ -201,6 +218,7 @@ def build_unified_experience_flow(
             "matchmaking",
         ],
     )
+    ai_support.setdefault("integration_contract", sarvam_integration_contract())
 
     return UnifiedExperienceFlow(
         seeker=seeker,
@@ -214,6 +232,7 @@ def build_unified_experience_flow(
         briefings=briefings,
         ai_support=ai_support,
         visuals=visuals,
+        language_layer=language_layer,
     )
 
 

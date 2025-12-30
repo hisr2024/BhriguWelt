@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
-from datetime import datetime
-from typing import Dict, List, Sequence
+import calendar
+import re
+from dataclasses import dataclass, field
+from datetime import date, datetime, timedelta, timezone
+from typing import Any, Dict, List, Sequence
 
 from .astronomical_calculations import derive_progressed_snapshot, derive_transit_snapshot, normalize_birth_datetime
 from .calendar_conversion import HinduCalendarContext, convert_birth_details
+from .chart_engine import ChartEngine, PersonalizationContext
 from .calculations import (
     CelestialSnapshot,
     FutureTrajectory,
@@ -24,8 +27,12 @@ from .calculations import (
 )
 from .config import load_runtime_config
 from .bhrigu_core import bhrigu_core
+from .core_wisdom_rules import core_wisdom_assets
+from .wisdom_sources import source_catalog
 from .engine_analyzers import EngineAnalysis, analyze_core_engines
-from .kundli_generator import generate_kundli
+from .runtime_rule_generator import RuntimeRuleGenerator
+from .kundli_generator import DASHA_SEQUENCE, ChartHouse, DashaPeriod, generate_kundli
+from .remedy_personalization import personalize_remedies_with_feedback
 
 __all__ = [
     "HoroscopeRequest",
@@ -94,6 +101,11 @@ class HoroscopeRequest:
     mercury_house: int = 0
     jupiter_house: int = 0
     saturn_retrograde: bool = False
+    ephemeris_preference: str | None = None
+    choices: Dict[str, str] | None = None
+    mitigation_flags: List[str] | None = None
+    effort_level: str | None = None
+    reflection_prompts: List[str] | None = None
 
     def __post_init__(self) -> None:
         if self.lunar_tithi == 0 and (
@@ -117,6 +129,9 @@ class HoroscopeRequest:
             )
         self.moon_element = normalized or self.moon_element
         self.tradition = (self.tradition or "universal").lower()
+        self.choices = self.choices or {}
+        self.mitigation_flags = list(self.mitigation_flags or [])
+        self.reflection_prompts = list(self.reflection_prompts or [])
 
 
 @dataclass
@@ -134,6 +149,8 @@ class HoroscopeReport:
     rashi_chart: List[ChartHouse]
     bhava_chart: List[ChartHouse]
     dashas: List[DashaPeriod]
+    runtime_rules: Dict[str, object]
+    ephemeris_source: str
 
 
 @dataclass
@@ -171,6 +188,7 @@ class MatchmakingReport:
 class TimelinePhase:
     """Single life-phase entry for the Bhrigu-inspired roadmap."""
 
+    order: int
     phase: str
     age_range: str
     theme: str
@@ -179,6 +197,41 @@ class TimelinePhase:
     karmic_lessons: List[str]
     turning_points: List[str]
     practical_guidance: List[str]
+    symbolic_guidance: List[str]
+    remedies: List[Dict[str, Any]]
+    timing: "PhaseTiming"
+    confidence_grade: str
+    citations: List[str]
+
+
+@dataclass
+class AntardashaWindow:
+    """Nested dasha window used for micro-phase timing."""
+
+    lord: str
+    start: str
+    end: str
+
+
+@dataclass
+class DashaWindow:
+    """Dasha window with nested antardasha timing."""
+
+    lord: str
+    start: str
+    end: str
+    antardashas: List[AntardashaWindow]
+
+
+@dataclass
+class PhaseTiming:
+    """Timing anchors for a timeline phase."""
+
+    start: str
+    end: str | None
+    age_range: str
+    dashas: List[DashaWindow]
+    antardasha_highlights: List[AntardashaWindow]
 
 
 @dataclass
@@ -189,6 +242,7 @@ class TimelineReport:
     summary: str
     disclaimer: str
     phases: List[TimelinePhase]
+    citations: List[str]
 
 
 @dataclass
@@ -197,6 +251,9 @@ class TransitReport:
 
     name: str
     directives: List[TransitDirective]
+    symbolic_directives: List[str]
+    remedies: List[Dict]
+    citations: List[str]
     interpretation: str
 
 
@@ -210,6 +267,8 @@ class CoreWisdomReading:
     karmic_epoch: str
     remedies: List[Dict]
     sources: List[str]
+    manuscript_wisdom: List[str]
+    rule_engine: Dict[str, object] = field(default_factory=dict)
 
 
 @dataclass
@@ -251,6 +310,8 @@ class YearSegment:
     energies: str
     cautions: str
     opportunities: str
+    focus_area: str
+    transit_influences: List[str]
 
 
 @dataclass
@@ -267,6 +328,7 @@ class VarshaphalReport:
     focus_areas: Dict[str, str]
     practices: List[str]
     intentions: List[str]
+    citations: List[str]
 
 
 def build_calendar_context(
@@ -277,8 +339,21 @@ def build_calendar_context(
     return convert_birth_details(birth_date=birth_date, birth_time=birth_time, birth_place=birth_place)
 
 
+def _build_personalization_context(request: HoroscopeRequest) -> PersonalizationContext:
+    return PersonalizationContext(
+        choices=request.choices or {},
+        mitigation_flags=request.mitigation_flags or [],
+        effort_level=request.effort_level or "balanced",
+        reflection_prompts=request.reflection_prompts or [
+            "Pause before key decisions",
+            "Seek counsel from trusted mentors",
+        ],
+    )
+
+
 def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
     runtime_config = load_runtime_config()
+    chart_engine = ChartEngine(ephemeris_preference=request.ephemeris_preference)
     core_bundle = bhrigu_core.application_bundle(request.tradition)
     _ensure_bhrigu_data_available(core_bundle, ("principles", "past_life_engines", "future_engines"), request.tradition)
     principles = core_bundle.get("principles", [])
@@ -287,6 +362,18 @@ def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
     future_engines = core_bundle.get("future_engines", [])
 
     snapshot = _snapshot_from_request(request)
+    chart_result = chart_engine.compute_chart(snapshot=snapshot, timezone_name=request.timezone)
+    dashas_for_rules = chart_engine.compute_dashas(
+        datetime.combine(snapshot.birth_date, snapshot.birth_time).replace(tzinfo=timezone.utc),
+        moon_longitude=chart_result.planet_longitudes.get("Moon"),
+    )
+    personalization = _build_personalization_context(request)
+    runtime_rules = RuntimeRuleGenerator().generate(
+        snapshot=snapshot,
+        chart=chart_result,
+        dashas=dashas_for_rules,
+        personalization=personalization,
+    )
 
     weights = score_principles(snapshot, principles, runtime_config)
     karmic_epoch = derive_karmic_epoch(snapshot)
@@ -318,6 +405,8 @@ def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
         rashi_chart=kundli["rashi_chart"],
         bhava_chart=kundli["bhava_chart"],
         dashas=kundli["dashas"],
+        runtime_rules=runtime_rules,
+        ephemeris_source=chart_result.ephemeris_source,
     )
 
 
@@ -365,22 +454,50 @@ def build_future_report(request: HoroscopeRequest) -> FutureReport:
     )
 
 
-def build_transit_report(request: HoroscopeRequest, transit_payload: Dict[str, str]) -> TransitReport:
+def build_transit_report(request: HoroscopeRequest, transit_payload: Dict[str, str] | None = None) -> TransitReport:
     if not request.consent_for_date_predictions:
         raise ValueError("User consent required for date-based predictions")
 
+    runtime_config = load_runtime_config()
     core_bundle = bhrigu_core.application_bundle(request.tradition)
+    _ensure_bhrigu_data_available(core_bundle, ("principles", "transit_rules", "remedies"), request.tradition)
     snapshot = _snapshot_from_request(request)
+    principles = core_bundle.get("principles", [])
     transit_rules = core_bundle.get("transit_rules", [])
-    transit_dt = normalize_birth_datetime(
-        transit_payload["transit_date"], transit_payload["transit_time"], timezone_name=transit_payload.get("timezone")
-    )
-    natal_dt = normalize_birth_datetime(request.birth_date, request.birth_time, timezone_name=transit_payload.get("timezone"))
+    remedies = core_bundle.get("remedies", [])
+    weights = score_principles(snapshot, principles, runtime_config)
+
+    if transit_payload:
+        transit_dt = normalize_birth_datetime(
+            transit_payload["transit_date"], transit_payload["transit_time"], timezone_name=transit_payload.get("timezone")
+        )
+        timezone = transit_payload.get("timezone")
+    else:
+        now = datetime.utcnow()
+        transit_dt = normalize_birth_datetime(
+            now.date().isoformat(), now.time().isoformat(timespec="minutes"), timezone_name=request.timezone
+        )
+        timezone = request.timezone
+
+    natal_dt = normalize_birth_datetime(request.birth_date, request.birth_time, timezone_name=timezone)
     transit_details = derive_transit_snapshot(natal_dt, transit_dt)
     directives = evaluate_transits(snapshot, transit_details, transit_rules)
+    symbolic_directives = [
+        f"{directive.planet} transit — {directive.influence} ({directive.reference})" for directive in directives
+    ]
+    personalized_remedies = _personalize_remedies(remedies, weights, snapshot, runtime_config)
+    citations = sorted(
+        {
+            *(directive.reference for directive in directives if directive.reference),
+            *(remedy.get("sutra_reference") for remedy in personalized_remedies if remedy.get("sutra_reference")),
+        }
+    )
     return TransitReport(
         name=request.name,
         directives=directives,
+        symbolic_directives=symbolic_directives,
+        remedies=personalized_remedies,
+        citations=citations,
         interpretation=_compose_transit_interpretation(directives, transit_dt),
     )
 
@@ -454,25 +571,6 @@ def build_core_wisdom_reading(
 
     focus_summary = ", ".join(focus_areas) if focus_areas else "general life balance"
 
-    sections = {
-        "1": (
-            "Restatement of User Query & Birth Data: "
-            f"Name: {request.name}. Birth: {request.birth_date} at {request.birth_time} in {request.birth_place}."
-            f" Focus areas: {focus_summary}."
-        ),
-        "2": (
-            "Disclaimer & Orientation: This is a Bhrigu Samhita–inspired spiritual reading. "
-            "It offers tendencies, not certainties, and is not medical, legal, or financial advice."
-        ),
-        "3": (
-            "Birth Chart Overview: "
-            f"Karmic epoch — {horoscope.karmic_epoch}. "
-            f"Dominant currents include {', '.join(sorted(horoscope.weights, key=horoscope.weights.get, reverse=True)[:3])} "
-            "with manuscript-backed interpretation: "
-            f"{horoscope.interpretation}"
-        ),
-    }
-
     strengths = _ranked_traits(horoscope.weights, top=True)
     challenges = _ranked_traits(horoscope.weights, top=False)
 
@@ -482,34 +580,50 @@ def build_core_wisdom_reading(
         else "Practice steady discipline and seva."
     )
 
-    sections.update(
-        {
-            "4": (
-                "Detailed Life Area Analysis: "
-                f"Strengths — {', '.join(strengths) or 'resilience and curiosity'}. "
-                f"Challenges — {', '.join(challenges) or 'balancing intuition with action'}. "
-                f"Key remedies from the folios: {remedy_text}"
-            ),
-            "5": (
-                "Time-Based Future Tendencies: "
-                f"{_future_tendencies(horoscope.future_trajectories)}"
-            ),
-            "6": (
-                "Consolidated Strengths, Challenges & Cautions: "
-                f"Strengths — {', '.join(strengths) or 'adaptability'}. "
-                f"Challenges — {', '.join(challenges) or 'guarding energy leaks'}. "
-                "Cautions — honor pacing and protect focus during intense transit windows."
-            ),
-            "7": (
-                "Bhrigu-Style Guidance & Remedies: "
-                f"{_guidance_summary(horoscope.remedies, horoscope.future_trajectories)}"
-            ),
-            "8": (
-                "Closing & Reminder of Free Will: Tendencies guide you, but choices shape outcomes. "
-                "Take what resonates, leave the rest, and proceed with compassion."
-            ),
-        }
-    )
+    manuscript_wisdom = _aggregate_manuscript_wisdom(horoscope.principles, horoscope.weights)
+    manuscript_excerpt = "; ".join(manuscript_wisdom) if manuscript_wisdom else "The folios highlight steady discipline."
+
+    sections = {
+        "1": (
+            "Seeker Snapshot: "
+            f"Name {request.name}. Birth {request.birth_date} at {request.birth_time} in {request.birth_place}. "
+            f"Focus areas: {focus_summary}."
+        ),
+        "2": (
+            "Karmic Insights: "
+            f"Karmic epoch — {horoscope.karmic_epoch}. "
+            f"Primary currents include {', '.join(sorted(horoscope.weights, key=horoscope.weights.get, reverse=True)[:3])}."
+        ),
+        "3": (
+            "Birth Chart Overview: "
+            "Manuscript-backed interpretation: "
+            f"{horoscope.interpretation}"
+        ),
+        "4": (
+            "Life Area Focus: "
+            f"Strengths — {', '.join(strengths) or 'resilience and curiosity'}. "
+            f"Challenges — {', '.join(challenges) or 'balancing intuition with action'}. "
+            f"Key remedies from the folios: {remedy_text}"
+        ),
+        "5": (
+            "Manuscript Wisdom: "
+            "Anchors from the Bhrigu folios: "
+            f"{manuscript_excerpt}"
+        ),
+        "6": "Future Tendencies: " + _future_tendencies(horoscope.future_trajectories),
+        "7": (
+            "Dharma Guidance: "
+            f"{_guidance_summary(horoscope.remedies, horoscope.future_trajectories)} "
+            "Hold steady discipline, align effort with higher duty, and revisit intentions weekly."
+        ),
+        "8": (
+            "Closing Blessing: "
+            "Tendencies guide you, but choices shape outcomes. "
+            "Take what resonates, leave the rest, and proceed with compassion."
+        ),
+    }
+
+    rule_engine_bundle = core_wisdom_assets()
 
     return CoreWisdomReading(
         sections=sections,
@@ -518,6 +632,8 @@ def build_core_wisdom_reading(
         karmic_epoch=horoscope.karmic_epoch,
         remedies=horoscope.remedies,
         sources=_collect_bhrigu_texts(horoscope, request.tradition),
+        manuscript_wisdom=manuscript_wisdom,
+        rule_engine=rule_engine_bundle,
     )
 
 
@@ -567,6 +683,45 @@ def _collect_bhrigu_texts(horoscope: HoroscopeReport, tradition: str) -> List[st
         _append("Bhrigu Samhita manuscripts available; awaiting aligned extracts.")
 
     return texts
+
+
+def _aggregate_manuscript_wisdom(
+    principles: Sequence[Dict[str, Any]], weights: Dict[str, float], limit: int = 4
+) -> List[str]:
+    """Summarize manuscript principles most aligned with the seeker's chart."""
+
+    if not principles:
+        return []
+
+    scored: List[tuple[float, Dict[str, Any]]] = []
+    for principle in principles:
+        if not isinstance(principle, dict):
+            continue
+        code = str(principle.get("id") or principle.get("code") or principle.get("name") or "").strip()
+        normalized = code.lower()
+        weight = 0.0
+        if code and code in weights:
+            weight = float(weights.get(code, 0.0))
+        elif normalized and normalized in weights:
+            weight = float(weights.get(normalized, 0.0))
+        scored.append((weight, principle))
+
+    scored.sort(key=lambda item: item[0], reverse=True)
+    selected = scored[:limit] if any(weight for weight, _ in scored) else scored[:limit]
+
+    summaries: List[str] = []
+    for _, principle in selected:
+        code = principle.get("id") or principle.get("code") or principle.get("name") or "Principle"
+        sutra = principle.get("sutra_reference") or principle.get("sutra") or ""
+        description = principle.get("description") or principle.get("principle") or ""
+        base = f"{code}"
+        if sutra:
+            base += f" ({sutra})"
+        if description:
+            base += f" — {description}"
+        summaries.append(base.strip())
+
+    return summaries
 
 
 def build_karmic_dashboard(
@@ -654,13 +809,25 @@ def build_varshaphal_report(
     horoscope = build_prediction(request)
     snapshot = _snapshot_from_request(request)
     influences = _rank_influences(snapshot)
+    core_bundle = bhrigu_core.application_bundle(request.tradition)
+    _ensure_bhrigu_data_available(core_bundle, ("transit_rules",), request.tradition)
+    transit_rules = core_bundle.get("transit_rules", [])
 
     year_theme, mantra = _derive_year_theme(horoscope.karmic_epoch, influences, focus)
-    segments = _build_year_segments(horoscope, influences, target_label, focus)
+    segments = _build_year_segments(
+        horoscope,
+        snapshot,
+        influences,
+        target_label,
+        focus,
+        transit_rules=transit_rules,
+        timezone_name=request.timezone,
+    )
     gateways = _gateway_windows(horoscope.future_trajectories, segments)
     focus_areas = _focus_area_summaries(horoscope.weights, influences, focus)
     practices = _year_practices(focus, influences, horoscope.remedies)
     intentions = _year_intentions(focus, influences)
+    citations = _collect_varshaphal_citations(horoscope, request.tradition, transit_rules)
 
     sections = _compose_varshaphal_sections(
         request,
@@ -673,6 +840,7 @@ def build_varshaphal_report(
         focus_areas,
         practices,
         intentions,
+        citations,
     )
 
     return VarshaphalReport(
@@ -686,6 +854,7 @@ def build_varshaphal_report(
         focus_areas=focus_areas,
         practices=practices,
         intentions=intentions,
+        citations=citations,
     )
 
 
@@ -927,7 +1096,8 @@ def _compose_matchmaking_interpretation(
             path = compatibility.shared_life_paths[0]
             resonance = f" ({path.resonance:.0f}% resonance)" if path.resonance else ""
             parts.append(f"Shared path — {path.theme}:{resonance} {path.guidance}")
-        return " ".join(parts)
+
+    return " ".join(parts)
 
 
 def _compose_matchmaking_sections(
@@ -1039,20 +1209,22 @@ def _derive_year_theme(karmic_epoch: str, influences: Sequence[str], focus: str)
 
 
 def _build_year_segments(
-    horoscope: HoroscopeReport, influences: Sequence[str], target_year: str, focus: str
+    horoscope: HoroscopeReport,
+    snapshot: CelestialSnapshot,
+    influences: Sequence[str],
+    target_year: str,
+    focus: str,
+    *,
+    transit_rules: List[Dict],
+    timezone_name: str | None,
 ) -> List[YearSegment]:
-    quarters = [
-        ("Q1", ["Jan", "Feb", "Mar"]),
-        ("Q2", ["Apr", "May", "Jun"]),
-        ("Q3", ["Jul", "Aug", "Sep"]),
-        ("Q4", ["Oct", "Nov", "Dec"]),
-    ]
-
+    month_windows = _resolve_varshaphal_months(target_year, timezone_name)
     directives = horoscope.future_trajectories or []
     remedies = horoscope.remedies or []
 
+    natal_dt = normalize_birth_datetime(snapshot.birth_date, snapshot.birth_time, timezone_name=timezone_name)
     segments: List[YearSegment] = []
-    for index, (label, months) in enumerate(quarters):
+    for index, (label, months, transit_dt) in enumerate(month_windows):
         anchor = influences[index % len(influences)] if influences else "Integration"
         directive = directives[index] if index < len(directives) else None
         remedy_hint = None
@@ -1060,31 +1232,118 @@ def _build_year_segments(
             remedy = remedies[index % len(remedies)]
             remedy_hint = remedy.get("interpretation") or remedy.get("description") or remedy.get("id")
 
-        energies = f"{anchor.title()} tone with {focus or 'balanced growth'} as the anchor."
+        transit_details = derive_transit_snapshot(natal_dt, transit_dt)
+        transit_directives = evaluate_transits(snapshot, transit_details, transit_rules)
+        transit_influences = _format_transit_influences(transit_directives, transit_details)
+        focus_area = _month_focus_area(snapshot, transit_details, focus)
+
+        energies = (
+            f"{anchor.title()}-led rhythm with {focus_area.lower()} emphasis. "
+            "Transit notes frame reflective themes rather than predictions."
+        )
         if directive:
-            window = directive.window or f"{label} {target_year}"
+            window = directive.window or label
             energies += f" Highlight: {directive.focus} ({window}) per folio {directive.sutra_reference}."
 
         caution = (
-            f"Guard energy during {months[1]}–{months[2]} by pacing decisions; "
-            f"{anchor.lower()} patterns may tempt over-commitment."
+            f"Guard energy this month by pacing commitments; "
+            f"{anchor.lower()} patterns can tempt overreach or urgency."
         )
         opportunities = (
-            f"Use {anchor.lower()} discipline to schedule check-ins each month. "
-            f"Remedy focus: {remedy_hint or 'keep weekly seva and breath practice'}."
+            f"Schedule a monthly review to align {focus_area.lower()} choices. "
+            f"Remedy focus: {remedy_hint or 'weekly seva, steady breathwork'}."
         )
 
         segments.append(
             YearSegment(
-                label=f"{label} {target_year}",
+                label=label,
                 months=months,
                 energies=energies,
                 cautions=caution,
                 opportunities=opportunities,
+                focus_area=focus_area,
+                transit_influences=transit_influences,
             )
         )
 
     return segments
+
+
+def _resolve_varshaphal_months(target_year: str, timezone_name: str | None) -> List[tuple[str, List[str], datetime]]:
+    now = datetime.now(timezone.utc)
+    match = re.search(r"(19|20)\\d{2}", target_year or "")
+    if match:
+        anchor = date(int(match.group()), 1, 15)
+    else:
+        today = now.date()
+        day = min(15, calendar.monthrange(today.year, today.month)[1])
+        anchor = date(today.year, today.month, day)
+
+    month_windows: List[tuple[str, List[str], datetime]] = []
+    for offset in range(0, 12, 3):
+        quarter_start = _add_months(anchor, offset)
+        quarter_months = [_add_months(quarter_start, index) for index in range(3)]
+        month_labels = [month.strftime("%b") for month in quarter_months]
+        month_range = f"{quarter_months[0].strftime('%b')}–{quarter_months[-1].strftime('%b %Y')}"
+        transit_date = quarter_months[1].isoformat()
+        month_windows.append(
+            (
+                month_range,
+                month_labels,
+                normalize_birth_datetime(transit_date, "12:00", timezone_name=timezone_name),
+            )
+        )
+    return month_windows
+
+
+def _add_months(base: date, offset: int) -> date:
+    year = base.year + (base.month - 1 + offset) // 12
+    month = (base.month - 1 + offset) % 12 + 1
+    day = min(base.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def _format_transit_influences(
+    directives: Sequence[TransitDirective], transit_details: Dict[str, object]
+) -> List[str]:
+    influences: List[str] = []
+    for directive in directives[:2]:
+        influences.append(f"{directive.planet}: {directive.influence} ({directive.reference})")
+
+    if influences:
+        return influences
+
+    for planet in ("mars_house", "venus_house", "saturn_house", "jupiter_house"):
+        house = transit_details.get(planet)
+        if house:
+            label = planet.replace("_house", "").title()
+            influences.append(f"{label} in house {house}")
+        if len(influences) >= 2:
+            break
+    return influences or ["Balanced gochar emphasis; treat as a reflective month."]
+
+
+def _month_focus_area(snapshot: CelestialSnapshot, transit_details: Dict[str, object], focus: str) -> str:
+    focus_hint = f" (keep {focus} in view)" if focus else ""
+    mars_house = int(transit_details.get("mars_house") or snapshot.mars_house or 0)
+    if mars_house:
+        if mars_house in {3, 6, 10, 11}:
+            return f"Career & disciplined effort via Mars house {mars_house}{focus_hint}"
+        return f"Personal initiative via Mars house {mars_house}{focus_hint}"
+
+    venus_house = int(transit_details.get("venus_house") or snapshot.venus_house or 0)
+    if venus_house:
+        return f"Relationships & creativity via Venus house {venus_house}{focus_hint}"
+
+    saturn_house = int(transit_details.get("saturn_house") or snapshot.saturn_house or 0)
+    if saturn_house:
+        return f"Responsibilities & boundaries via Saturn house {saturn_house}{focus_hint}"
+
+    jupiter_house = int(transit_details.get("jupiter_house") or snapshot.jupiter_house or 0)
+    if jupiter_house:
+        return f"Learning & dharma via Jupiter house {jupiter_house}{focus_hint}"
+
+    return f"Holistic balance and integration{focus_hint}"
 
 
 def _gateway_windows(trajectories: List[FutureTrajectory], segments: Sequence[YearSegment]) -> List[str]:
@@ -1173,6 +1432,7 @@ def _compose_varshaphal_sections(
     focus_areas: Dict[str, str],
     practices: Sequence[str],
     intentions: Sequence[str],
+    citations: Sequence[str],
 ) -> Dict[str, str]:
     restatement = (
         "Restatement of Data & Target Year: "
@@ -1181,12 +1441,14 @@ def _compose_varshaphal_sections(
     )
     disclaimer = (
         "Disclaimer & Orientation: Bhrigu Samhita–inspired reflective guide. "
-        "Not medical, legal, or financial advice. Timings are tendencies; free will leads."
+        "Not medical, legal, or financial advice. Timings are tendencies; free will leads. "
+        f"Sources: {', '.join(citations) if citations else 'Bhrigu corpus references'}."
     )
     theme_section = f"Overall Year Theme: {year_theme} | Year Mantra: {year_mantra}."
     breakdown = "; ".join(
         (
-            f"{segment.label} ({', '.join(segment.months)}): Energies — {segment.energies} | "
+            f"{segment.label} ({', '.join(segment.months)}): Focus — {segment.focus_area}. "
+            f"Transits — {', '.join(segment.transit_influences)}. Energies — {segment.energies} | "
             f"Cautions — {segment.cautions} | Opportunities — {segment.opportunities}"
         )
         for segment in segments
@@ -1210,7 +1472,7 @@ def _compose_varshaphal_sections(
         "1": restatement,
         "2": disclaimer,
         "3": theme_section,
-        "4": "Quarterly / Monthly Breakdown: " + breakdown,
+        "4": "Monthly Breakdown: " + breakdown,
         "5": gateways_section,
         "6": focus_section,
         "7": practices_section,
@@ -1252,9 +1514,17 @@ def _rank_influences(snapshot: CelestialSnapshot) -> List[str]:
 def build_timeline_report(request: HoroscopeRequest, focus_areas: Sequence[str] | None = None) -> TimelineReport:
     """Construct the five-phase karmic roadmap for a native."""
 
+    horoscope = build_prediction(request)
     snapshot = _snapshot_from_request(request)
     influences = _rank_influences(snapshot)
-    phases = _compose_timeline(snapshot, influences, focus_areas)
+    timing_map = _timeline_timing_map(snapshot)
+    phases = _compose_timeline(
+        snapshot,
+        influences,
+        focus_areas,
+        horoscope=horoscope,
+        timing_map=timing_map,
+    )
     focus_summary = ", ".join(focus_areas) if focus_areas else "general life balance"
     summary = (
         f"Five-phase roadmap shaped by {', '.join(influences[:2]) or 'Saturn discipline'}; "
@@ -1264,12 +1534,24 @@ def build_timeline_report(request: HoroscopeRequest, focus_areas: Sequence[str] 
         "Symbolic Bhrigu timeline; not medical, legal, or financial advice. "
         "Treat timings as tendencies and steer with conscious choice."
     )
+    citations = _collect_timeline_citations(horoscope, request.tradition)
 
-    return TimelineReport(name=request.name, summary=summary, disclaimer=disclaimer, phases=phases)
+    return TimelineReport(
+        name=request.name,
+        summary=summary,
+        disclaimer=disclaimer,
+        phases=phases,
+        citations=citations,
+    )
 
 
 def _compose_timeline(
-    snapshot: CelestialSnapshot, influences: Sequence[str], focus_areas: Sequence[str] | None = None
+    snapshot: CelestialSnapshot,
+    influences: Sequence[str],
+    focus_areas: Sequence[str] | None = None,
+    *,
+    horoscope: HoroscopeReport,
+    timing_map: Dict[str, PhaseTiming],
 ) -> List[TimelinePhase]:
     """Assemble five life phases with Bhrigu-style tones."""
 
@@ -1289,6 +1571,7 @@ def _compose_timeline(
     for idx, (phase, age_range, theme) in enumerate(base_phases):
         phases.append(
             _phase_block(
+                order=idx + 1,
                 phase=phase,
                 age_range=age_range,
                 theme=theme,
@@ -1297,12 +1580,15 @@ def _compose_timeline(
                 snapshot=snapshot,
                 focus_set=focus_set,
                 index=idx,
+                horoscope=horoscope,
+                timing=timing_map.get(phase, _fallback_phase_timing(age_range)),
             )
         )
     return phases
 
 
 def _phase_block(
+    order: int,
     phase: str,
     age_range: str,
     theme: str,
@@ -1311,6 +1597,8 @@ def _phase_block(
     snapshot: CelestialSnapshot,
     focus_set: set[str],
     index: int,
+    horoscope: HoroscopeReport,
+    timing: PhaseTiming,
 ) -> TimelinePhase:
     """Craft a single timeline phase with lessons and turning points."""
 
@@ -1364,7 +1652,19 @@ def _phase_block(
     if "finances" in focus_set:
         guidance.append("Use Saturn-style budgeting: simple, transparent, and consistent.")
 
+    symbolic_guidance = _phase_symbolic_guidance(
+        dominant,
+        supportive,
+        focus_set=focus_set,
+        timing=timing,
+        index=index,
+    )
+    remedies = _timeline_phase_remedies(horoscope.remedies, dominant, supportive)
+    confidence_grade = _phase_confidence_grade(dominant, snapshot, timing)
+    citations = _collect_phase_citations(horoscope, dominant, supportive)
+
     return TimelinePhase(
+        order=order,
         phase=phase,
         age_range=age_range,
         theme=theme,
@@ -1373,7 +1673,245 @@ def _phase_block(
         karmic_lessons=lessons,
         turning_points=turning_points,
         practical_guidance=guidance,
+        symbolic_guidance=symbolic_guidance,
+        remedies=remedies,
+        timing=timing,
+        confidence_grade=confidence_grade,
+        citations=citations,
     )
+
+
+def _timeline_timing_map(snapshot: CelestialSnapshot) -> Dict[str, PhaseTiming]:
+    birth_dt = datetime.combine(snapshot.birth_date, snapshot.birth_time).replace(tzinfo=timezone.utc)
+    phase_defs = [
+        ("Childhood", 0, 12),
+        ("Adolescence", 12, 18),
+        ("Early Adulthood", 18, 28),
+        ("Consolidation", 28, 40),
+        ("Mature Years", 40, None),
+    ]
+    sequence = DASHA_SEQUENCE
+    dashas = _build_dasha_windows(birth_dt, sequence)
+    timing_map: Dict[str, PhaseTiming] = {}
+    for phase, start_age, end_age in phase_defs:
+        start_dt = birth_dt + timedelta(days=365.25 * start_age)
+        end_dt = birth_dt + timedelta(days=365.25 * end_age) if end_age is not None else None
+        window_dashas = _filter_dashas_for_window(dashas, start_dt, end_dt)
+        highlights = _collect_antardasha_highlights(window_dashas)
+        timing_map[phase] = PhaseTiming(
+            start=start_dt.date().isoformat(),
+            end=end_dt.date().isoformat() if end_dt else None,
+            age_range=_format_age_range(start_age, end_age),
+            dashas=window_dashas,
+            antardasha_highlights=highlights,
+        )
+    return timing_map
+
+
+def _build_dasha_windows(
+    birth_dt: datetime, sequence: Sequence[tuple[str, int]], years_total: int = 80
+) -> List[DashaWindow]:
+    windows: List[DashaWindow] = []
+    current_start = birth_dt
+    elapsed = 0.0
+    while elapsed < years_total:
+        for lord, duration_years in sequence:
+            if elapsed >= years_total:
+                break
+            actual_years = min(duration_years, years_total - elapsed)
+            end_dt = current_start + timedelta(days=365.25 * actual_years)
+            antardashas = _build_antardasha_windows(lord, current_start, actual_years, sequence)
+            windows.append(
+                DashaWindow(
+                    lord=lord,
+                    start=current_start.date().isoformat(),
+                    end=end_dt.date().isoformat(),
+                    antardashas=antardashas,
+                )
+            )
+            current_start = end_dt
+            elapsed += actual_years
+    return windows
+
+
+def _build_antardasha_windows(
+    maha_lord: str,
+    start_dt: datetime,
+    duration_years: float,
+    sequence: Sequence[tuple[str, int]],
+) -> List[AntardashaWindow]:
+    total = sum(years for _, years in sequence)
+    if total == 0:
+        return []
+    start_index = next((index for index, (lord, _) in enumerate(sequence) if lord == maha_lord), 0)
+    ordered = list(sequence[start_index:]) + list(sequence[:start_index])
+    windows: List[AntardashaWindow] = []
+    current_start = start_dt
+    for lord, years in ordered:
+        span_years = duration_years * (years / total)
+        end_dt = current_start + timedelta(days=365.25 * span_years)
+        windows.append(
+            AntardashaWindow(
+                lord=lord,
+                start=current_start.date().isoformat(),
+                end=end_dt.date().isoformat(),
+            )
+        )
+        current_start = end_dt
+    return windows
+
+
+def _filter_dashas_for_window(
+    dashas: Sequence[DashaWindow], start_dt: datetime, end_dt: datetime | None
+) -> List[DashaWindow]:
+    def _parse(date_str: str) -> datetime:
+        return datetime.fromisoformat(date_str).replace(tzinfo=timezone.utc)
+
+    window_dashas: List[DashaWindow] = []
+    for dasha in dashas:
+        dasha_start = _parse(dasha.start)
+        dasha_end = _parse(dasha.end)
+        if end_dt is not None and dasha_start >= end_dt:
+            break
+        if dasha_end <= start_dt:
+            continue
+        window_dashas.append(dasha)
+    return window_dashas
+
+
+def _collect_antardasha_highlights(dashas: Sequence[DashaWindow]) -> List[AntardashaWindow]:
+    highlights: List[AntardashaWindow] = []
+    for dasha in dashas[:2]:
+        highlights.extend(dasha.antardashas[:2])
+    return highlights
+
+
+def _format_age_range(start_age: int, end_age: int | None) -> str:
+    if end_age is None:
+        return f"{start_age}+"
+    return f"{start_age}–{end_age}"
+
+
+def _fallback_phase_timing(age_range: str) -> PhaseTiming:
+    return PhaseTiming(start="", end=None, age_range=age_range, dashas=[], antardasha_highlights=[])
+
+
+def _phase_symbolic_guidance(
+    dominant: str,
+    supportive: Sequence[str],
+    *,
+    focus_set: set[str],
+    timing: PhaseTiming,
+    index: int,
+) -> List[str]:
+    guidance = [
+        f"Primary dasha current: {dominant}; treat responsibilities as sacred vows.",
+        f"Antardasha cues: {', '.join(item.lord for item in timing.antardasha_highlights) or 'watch inner shifts monthly'}.",
+        "Use symbols (lamp, water, or earth) to anchor ritual during phase transitions.",
+    ]
+    if supportive:
+        guidance.append(f"Invite {supportive[0]} practices to soften the {dominant} lesson.")
+    if "relationships" in focus_set:
+        guidance.append("Offer heartfelt gratitude on Fridays to align relationship karma.")
+    if "career" in focus_set:
+        guidance.append("Begin each new project in a waxing Moon window for stability.")
+    if "spiritual" in focus_set:
+        guidance.append("Recite a grounding mantra 108 times when antardasha shifts.")
+    if index == 4:
+        guidance.append("Mentorship becomes a sacred offering; teach what you have lived.")
+    return guidance
+
+
+def _timeline_phase_remedies(
+    remedies: Sequence[Dict[str, Any]],
+    dominant: str,
+    supportive: Sequence[str],
+) -> List[Dict[str, Any]]:
+    if not remedies:
+        return []
+    selected: List[Dict[str, Any]] = []
+    for remedy in remedies:
+        text = str(remedy.get("description") or remedy.get("interpretation") or "").lower()
+        if dominant.lower() in text or any(item.lower() in text for item in supportive):
+            selected.append(remedy)
+        if len(selected) >= 3:
+            break
+    if selected:
+        return selected
+    return list(remedies[:2])
+
+
+def _phase_confidence_grade(dominant: str, snapshot: CelestialSnapshot, timing: PhaseTiming) -> str:
+    score = 0
+    if snapshot.moon_element:
+        score += 1
+    if snapshot.mars_house or snapshot.saturn_house or snapshot.venus_house:
+        score += 1
+    if timing.dashas:
+        score += 1
+    if dominant in {"Saturn", "Jupiter"}:
+        score += 1
+    return {0: "C", 1: "C+", 2: "B", 3: "B+", 4: "A"}.get(score, "B")
+
+
+def _collect_phase_citations(
+    horoscope: HoroscopeReport, dominant: str, supportive: Sequence[str]
+) -> List[str]:
+    citations: List[str] = []
+    for principle in horoscope.principles[:3]:
+        reference = principle.get("sutra_reference") or principle.get("id")
+        description = principle.get("description")
+        if reference and description:
+            citations.append(f"{reference}: {description}")
+    for remedy in horoscope.remedies[:2]:
+        reference = remedy.get("sutra_reference") or remedy.get("id")
+        description = remedy.get("description") or remedy.get("interpretation")
+        if reference and description:
+            citations.append(f"{reference}: {description}")
+    for trajectory in horoscope.future_trajectories[:2]:
+        reference = trajectory.sutra_reference
+        citations.append(f"{reference}: {trajectory.focus}")
+    if not citations:
+        citations.append(f"{dominant} dasha emphasis from Vimshottari sequence.")
+    return citations
+
+
+def _collect_timeline_citations(horoscope: HoroscopeReport, tradition: str) -> List[str]:
+    citations = []
+    citations.extend(_collect_bhrigu_texts(horoscope, tradition)[:3])
+    if horoscope.dashas:
+        citations.append("Dashas derived via Vimshottari sequence; antardashas proportionally scaled.")
+    return citations[:5]
+
+
+def _collect_varshaphal_citations(
+    horoscope: HoroscopeReport,
+    tradition: str,
+    transit_rules: Sequence[Dict[str, object]] | None,
+) -> List[str]:
+    citations: List[str] = []
+    citations.extend(_collect_bhrigu_texts(horoscope, tradition)[:3])
+
+    normalized_tradition = (tradition or "universal").lower()
+    for rule in transit_rules or []:
+        if not isinstance(rule, dict):
+            continue
+        rule_tradition = str(rule.get("tradition") or "").lower()
+        if rule_tradition and rule_tradition not in {"universal", normalized_tradition}:
+            continue
+        reference = rule.get("sutra_reference") or rule.get("id") or "Transit rule"
+        influence = rule.get("influence") or "Transit guidance recorded."
+        citations.append(f"{reference}: {influence}")
+        if len(citations) >= 6:
+            break
+
+    if horoscope.dashas:
+        citations.append("Vimshottari dasha cadence used to sequence monthly focus areas.")
+
+    if not citations:
+        citations.append("Bhrigu Samhita manuscripts referenced for Varshaphal alignment.")
+
+    return citations[:6]
 
 
 def _matches_remedy_rule(value, rule) -> bool:
@@ -1442,7 +1980,8 @@ def _personalize_remedies(
     if not scored:
         return remedies
 
-    return sorted(scored, key=lambda entry: entry.get("relevance", 0.0), reverse=True)
+    ranked = sorted(scored, key=lambda entry: entry.get("relevance", 0.0), reverse=True)
+    return personalize_remedies_with_feedback(ranked, engine="horoscope", weights=weights)
 
 
 def _format_trait_label(trait: str) -> str:
@@ -1811,6 +2350,7 @@ def _render_timeline(report: TimelineReport, birth_place: str) -> None:
     print(f"Disclaimer: {report.disclaimer}")
     for phase in report.phases:
         print(f"\n{phase.phase} ({phase.age_range}) — {phase.theme}")
+        print(f"  Order: {phase.order}")
         print(f"  Dominant influence: {phase.dominant_influence}")
         print("  Main experiences:")
         for item in phase.main_experiences:
@@ -1824,6 +2364,31 @@ def _render_timeline(report: TimelineReport, birth_place: str) -> None:
         print("  Practical guidance:")
         for tip in phase.practical_guidance:
             print(f"    - {tip}")
+        print("  Symbolic guidance:")
+        for tip in phase.symbolic_guidance:
+            print(f"    - {tip}")
+        if phase.remedies:
+            print("  Remedies:")
+            for remedy in phase.remedies:
+                label = remedy.get("interpretation") or remedy.get("description") or remedy.get("id", "Remedy")
+                print(f"    - {label}")
+        timing = phase.timing
+        print(
+            "  Timing: "
+            f"{timing.age_range} | {timing.start or 'n/a'}"
+            f"{' → ' + timing.end if timing.end else ''}"
+        )
+        if timing.dashas:
+            print("  Dashas:")
+            for dasha in timing.dashas[:2]:
+                print(f"    - {dasha.lord} {dasha.start} → {dasha.end}")
+                for antar in dasha.antardashas[:2]:
+                    print(f"      • {antar.lord} {antar.start} → {antar.end}")
+        print(f"  Confidence: {phase.confidence_grade}")
+        if phase.citations:
+            print("  Citations:")
+            for cite in phase.citations:
+                print(f"    - {cite}")
 
 
 def _render_varshaphal(report: VarshaphalReport, birth_place: str) -> None:
@@ -1835,10 +2400,15 @@ def _render_varshaphal(report: VarshaphalReport, birth_place: str) -> None:
     for gateway in report.gateways:
         print(f"  - {gateway}")
 
-    print("\nQuarterly overview:")
+    print("\nMonthly overview:")
     for segment in report.segments:
         months = ", ".join(segment.months)
         print(f"  {segment.label} [{months}]")
+        print(f"    Focus: {segment.focus_area}")
+        if segment.transit_influences:
+            print("    Transits:")
+            for influence in segment.transit_influences:
+                print(f"      - {influence}")
         print(f"    Energies: {segment.energies}")
         print(f"    Cautions: {segment.cautions}")
         print(f"    Opportunities: {segment.opportunities}")
@@ -1849,6 +2419,10 @@ def _render_varshaphal(report: VarshaphalReport, birth_place: str) -> None:
     print("Intentions:")
     for intention in report.intentions:
         print(f"  - {intention}")
+    if report.citations:
+        print("Citations:")
+        for cite in report.citations:
+            print(f"  - {cite}")
 
     print("\n8-section digest:")
     for key in map(str, range(1, 9)):
