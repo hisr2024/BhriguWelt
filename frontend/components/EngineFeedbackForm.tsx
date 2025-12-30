@@ -37,13 +37,13 @@ export default function EngineFeedbackForm({ engineTitle }: EngineFeedbackFormPr
   };
 
   return (
-    <section className="rounded-3xl border border-white/10 bg-slate-950/70 p-6">
+    <section className="glass-panel p-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Feedback</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/60">Feedback</p>
           <h3 className="text-xl font-semibold text-white">How did {engineTitle} perform?</h3>
         </div>
-        <MessageSquare className="h-5 w-5 text-indigo-300" />
+        <MessageSquare className="h-5 w-5 text-neon-cyan" />
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         {ratings.map((value) => (
@@ -57,8 +57,8 @@ export default function EngineFeedbackForm({ engineTitle }: EngineFeedbackFormPr
             }}
             className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition ${
               rating === value
-                ? "border-indigo-400 bg-indigo-500/20 text-white"
-                : "border-white/10 bg-white/5 text-slate-300 hover:border-white/30"
+                ? "border-neon-cyan bg-neon-cyan/20 text-white"
+                : "border-white/10 bg-white/5 text-white/70 hover:border-white/30"
             }`}
           >
             <Star className="h-4 w-4" />
@@ -66,20 +66,20 @@ export default function EngineFeedbackForm({ engineTitle }: EngineFeedbackFormPr
           </button>
         ))}
       </div>
-      <label className="mt-4 flex flex-col gap-2 text-sm text-slate-300">
+      <label className="mt-4 flex flex-col gap-2 text-sm text-white/70">
         Share a quick note
         <textarea
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           placeholder="Tell us what felt great or what needs improvement"
-          className="min-h-[110px] rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
+          className="glass-input min-h-[110px] border border-white/10 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-neon-cyan focus:outline-none focus:ring-2 focus:ring-neon-cyan/30"
         />
       </label>
       <button
         type="button"
         onClick={handleSubmit}
         disabled={status === "submitting"}
-        className="mt-4 inline-flex items-center gap-2 rounded-full bg-indigo-500 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:bg-indigo-500/60"
+        className="mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-neon-cyan via-neon-violet to-neon-pink px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-900 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {status === "submitting" ? "Submitting..." : "Submit feedback"}
       </button>

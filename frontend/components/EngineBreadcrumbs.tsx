@@ -15,7 +15,7 @@ export default function EngineBreadcrumbs() {
   }
 
   return (
-    <nav className="flex flex-wrap items-center gap-2 text-xs text-slate-400" aria-label="Breadcrumb">
+    <nav className="flex flex-wrap items-center gap-2 text-xs text-white/60" aria-label="Breadcrumb">
       <Link href="/" className="transition hover:text-white">
         Home
       </Link>

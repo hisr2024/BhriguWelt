@@ -18,15 +18,15 @@ export default function EngineStatusPanel() {
   }, []);
 
   return (
-    <section className="rounded-3xl border border-white/10 bg-slate-950/70 p-6">
+    <section className="glass-panel p-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Engine health</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/60">Engine health</p>
           <h3 className="text-xl font-semibold text-white">Integration status</h3>
         </div>
-        <ServerCog className="h-5 w-5 text-indigo-300" />
+        <ServerCog className="h-5 w-5 text-neon-cyan" />
       </div>
-      <div className="mt-4 grid gap-3 text-sm text-slate-300">
+      <div className="mt-4 grid gap-3 text-sm text-white/70">
         <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
           <span className="inline-flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-emerald-300" />

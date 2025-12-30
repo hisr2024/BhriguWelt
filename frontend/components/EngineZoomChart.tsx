@@ -44,20 +44,20 @@ export default function EngineZoomChart({ accent }: EngineZoomChartProps) {
   };
 
   return (
-    <div className="relative rounded-3xl border border-white/10 bg-slate-950/70 p-6">
+    <div className="glass-panel relative p-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Interactive chart</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/60">Interactive chart</p>
           <h4 className="text-lg font-semibold text-white">Zoomable signal map</h4>
         </div>
         <motion.div
           animate={shouldReduceMotion ? undefined : { y: [0, -4, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
         >
-          <ZoomIn className="h-5 w-5 text-indigo-300" />
+          <ZoomIn className="h-5 w-5 text-neon-cyan" />
         </motion.div>
       </div>
-      <div className="mt-4 flex items-center gap-3 text-xs text-slate-300">
+      <div className="mt-4 flex items-center gap-3 text-xs text-white/70">
         <span>Zoom</span>
         <input
           type="range"
@@ -66,7 +66,7 @@ export default function EngineZoomChart({ accent }: EngineZoomChartProps) {
           step="0.05"
           value={zoom}
           onChange={(event) => setZoom(Number(event.target.value))}
-          className="flex-1 accent-indigo-400"
+          className="flex-1 accent-neon-cyan"
           aria-label="Zoom signal chart"
         />
         <span className="w-10 text-right text-white">{Math.round(zoom * 100)}%</span>
@@ -74,13 +74,13 @@ export default function EngineZoomChart({ accent }: EngineZoomChartProps) {
       <AnimatePresence>
         {activeSignal ? (
           <motion.div
-            className="pointer-events-none absolute left-1/2 top-[6.5rem] z-10 w-44 -translate-x-1/2 rounded-xl border border-white/10 bg-slate-900/90 px-3 py-2 text-center text-[0.7rem] text-slate-100 shadow-xl"
+            className="pointer-events-none absolute left-1/2 top-[6.5rem] z-10 w-44 -translate-x-1/2 rounded-xl border border-white/10 bg-ink-900/90 px-3 py-2 text-center text-[0.7rem] text-white shadow-xl"
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
           >
-            <p className="text-[0.6rem] uppercase tracking-[0.3em] text-slate-400">
+            <p className="text-[0.6rem] uppercase tracking-[0.3em] text-white/60">
               Signal {activeSignal.index + 1}
             </p>
             <p className="text-sm font-semibold text-white">{activeSignal.value}% intensity</p>
@@ -106,7 +106,7 @@ export default function EngineZoomChart({ accent }: EngineZoomChartProps) {
             tabIndex={0}
             role="group"
           >
-            <div className="h-24 w-full rounded-full bg-white/5">
+            <div className="h-24 w-full rounded-full bg-white/10">
               <motion.div
                 className={`w-full rounded-full bg-gradient-to-t ${accent}`}
                 initial={shouldReduceMotion ? undefined : { height: "0%" }}
@@ -114,7 +114,7 @@ export default function EngineZoomChart({ accent }: EngineZoomChartProps) {
                 transition={{ duration: 0.5, delay: index * 0.04, ease: easeOutCurve }}
               />
             </div>
-            <span className="text-[0.65rem] text-slate-400">S{index + 1}</span>
+            <span className="text-[0.65rem] text-white/50">S{index + 1}</span>
           </motion.div>
         ))}
       </motion.div>

@@ -1,13 +1,27 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/react";
+import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
 import Providers from "./providers";
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
+});
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  variable: "--font-display",
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "BhriguWelt Astrology",
   description:
-    "World-class astrology experiences with dark-first design, smooth motion, and sharp results across every engine.",
+    "Gen Z-ready cosmic intelligence with neon glassmorphism, instant rituals, and 13 live engines.",
   manifest: "/manifest.json",
   icons: {
     icon: "/logo.svg",
@@ -21,7 +35,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport = {
-  themeColor: "#0b1017",
+  themeColor: "#05070f",
   width: "device-width",
   initialScale: 1,
 };
@@ -30,8 +44,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const enableAnalytics = process.env.NEXT_PUBLIC_VERCEL_ANALYTICS === "true";
 
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-slate-900 text-slate-100">
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${poppins.variable}`}>
+      <body className="min-h-screen bg-ink-950 text-white antialiased">
         <Providers>
           <AppShell>{children}</AppShell>
         </Providers>

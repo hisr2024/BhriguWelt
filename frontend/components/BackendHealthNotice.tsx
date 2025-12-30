@@ -67,15 +67,19 @@ export default function BackendHealthNotice({ className }: Props) {
 
   if (status === "error") {
     return (
-      <div className={`alert-warning ${className ?? ""}`} role="alert" aria-live="assertive">
-        <strong>Backend unreachable.</strong>
-        <span>{detail}</span>
+      <div
+        className={`rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-100 ${className ?? ""}`}
+        role="alert"
+        aria-live="assertive"
+      >
+        <strong className="block font-semibold">Backend unreachable.</strong>
+        <span className="mt-1 block text-white/80">{detail}</span>
       </div>
     );
   }
 
   return (
-    <p className={`microcopy ${className ?? ""}`} aria-live="polite">
+    <p className={`text-xs text-white/60 ${className ?? ""}`} aria-live="polite">
       {detail}
     </p>
   );

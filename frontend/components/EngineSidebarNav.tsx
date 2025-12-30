@@ -20,11 +20,11 @@ export default function EngineSidebarNav({ currentSlug }: EngineSidebarNavProps)
 
   return (
     <aside className="hidden lg:block">
-      <div className="sticky top-28 space-y-6 rounded-3xl border border-white/10 bg-slate-950/70 p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Engines</p>
+      <div className="glass-panel sticky top-28 space-y-6 p-5">
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/60">Engines</p>
         {grouped.map((group) => (
           <div key={group.category} className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{group.category}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">{group.category}</p>
             <div className="grid gap-2">
               {group.engines.map((engine) => {
                 const isActive = engine.slug === currentSlug;
@@ -34,12 +34,12 @@ export default function EngineSidebarNav({ currentSlug }: EngineSidebarNavProps)
                     href={`/${engine.slug}`}
                     className={`flex items-center justify-between rounded-2xl border px-3 py-2 text-sm transition ${
                       isActive
-                        ? "border-indigo-400/60 bg-indigo-500/20 text-white"
-                        : "border-white/10 bg-white/5 text-slate-300 hover:border-white/30"
+                        ? "border-neon-cyan/60 bg-neon-cyan/10 text-white"
+                        : "border-white/10 bg-white/5 text-white/70 hover:border-white/30"
                     }`}
                   >
                     {engine.title}
-                    <span className="text-xs text-slate-400">→</span>
+                    <span className="text-xs text-white/50">→</span>
                   </Link>
                 );
               })}

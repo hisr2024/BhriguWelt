@@ -60,9 +60,9 @@ export default function VoiceInputButton({ onTranscript, disabled }: VoiceInputB
       <button
         type="button"
         onClick={handleToggle}
-        className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-200 transition hover:border-white/30 hover:text-white ${
+        className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 transition hover:border-white/30 hover:text-white ${
           disabled || !supported ? "opacity-40" : ""
-        } ${listening ? "border-indigo-400 text-white shadow-glow" : ""}`}
+        } ${listening ? "border-neon-cyan text-white shadow-neon" : ""}`}
         aria-label={label}
         aria-pressed={listening}
         disabled={disabled || !supported}

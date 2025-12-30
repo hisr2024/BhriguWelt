@@ -212,15 +212,18 @@ export default function EngineForm({
     <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
       <form className="space-y-6" onSubmit={handleSubmit} noValidate aria-busy={loading}>
         {steps.length > 1 ? (
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-xs text-slate-300">
+          <div className="glass-card p-4 text-xs text-white/70">
             <div className="flex items-center justify-between gap-4">
-              <span className="font-semibold uppercase tracking-[0.2em] text-slate-400">
+              <span className="font-semibold uppercase tracking-[0.2em] text-white/60">
                 Step {activeStep + 1} of {steps.length}
               </span>
-              <span className="text-slate-400">Completion {completion}%</span>
+              <span className="text-white/50">Completion {completion}%</span>
             </div>
-            <div className="mt-3 h-2 rounded-full bg-white/5">
-              <div className="h-2 rounded-full bg-gradient-to-r from-indigo-400 via-sky-400 to-fuchsia-400" style={{ width: `${completion}%` }} />
+            <div className="mt-3 h-2 rounded-full bg-white/10">
+              <div
+                className="h-2 rounded-full bg-gradient-to-r from-neon-cyan via-neon-violet to-neon-pink"
+                style={{ width: `${completion}%` }}
+              />
             </div>
           </div>
         ) : null}
@@ -230,25 +233,25 @@ export default function EngineForm({
             You are offline. Submissions will use cached guidance and sync when reconnected.
           </div>
         ) : null}
-        <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-5">
+        <div className="glass-card p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Form status</p>
-              <p className="text-sm text-slate-200">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/60">Form status</p>
+              <p className="text-sm text-white/70">
                 {loading ? "Calibrating chart signals" : result ? "Insight stream ready" : "Awaiting your details"}
               </p>
             </div>
-            <Sparkles className="h-5 w-5 text-indigo-300" />
+            <Sparkles className="h-5 w-5 text-neon-cyan" />
           </div>
-          <div className="mt-4 h-2 rounded-full bg-white/5">
+          <div className="mt-4 h-2 rounded-full bg-white/10">
             <motion.div
-              className="h-2 rounded-full bg-gradient-to-r from-indigo-400 via-sky-400 to-fuchsia-400"
+              className="h-2 rounded-full bg-gradient-to-r from-neon-cyan via-neon-violet to-neon-pink"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={transition}
             />
           </div>
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-300">
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-white/60">
             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
               {requiredCount} required · {totalFields} fields
             </span>
@@ -263,15 +266,15 @@ export default function EngineForm({
             const hasError = Boolean(errors[field.name]);
             const fieldId = `${formId}-${field.name}`;
             const baseClass =
-              "w-full rounded-2xl border px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/40";
-            const inputClass = `${baseClass} bg-slate-900/70 ${hasError ? "border-red-400" : "border-white/10"}`;
+              "glass-input w-full border px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-neon-cyan focus:outline-none focus:ring-2 focus:ring-neon-cyan/30";
+            const inputClass = `${baseClass} ${hasError ? "border-red-400" : "border-white/10"}`;
 
             return (
-              <label key={field.name} className="flex flex-col gap-2 text-sm text-slate-300" htmlFor={fieldId}>
-                <span className="flex items-center gap-2 font-medium text-slate-200">
+              <label key={field.name} className="flex flex-col gap-2 text-sm text-white/70" htmlFor={fieldId}>
+                <span className="flex items-center gap-2 font-medium text-white">
                   {field.label}
                   {field.required ? (
-                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[0.6rem] uppercase tracking-[0.2em] text-slate-400">
+                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[0.6rem] uppercase tracking-[0.2em] text-white/50">
                       Required
                     </span>
                   ) : null}
@@ -350,7 +353,7 @@ export default function EngineForm({
                     {errors[field.name]}
                   </span>
                 ) : field.helper ? (
-                  <span className="text-xs text-slate-500">{field.helper}</span>
+                  <span className="text-xs text-white/40">{field.helper}</span>
                 ) : null}
               </label>
             );
@@ -362,7 +365,7 @@ export default function EngineForm({
               type="button"
               onClick={() => setActiveStep((prev) => Math.max(prev - 1, 0))}
               disabled={activeStep === 0}
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:border-white/30 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-white/80 transition hover:border-white/30 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Back
             </button>
@@ -370,7 +373,7 @@ export default function EngineForm({
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-neon-cyan via-neon-violet to-neon-pink px-5 py-3 text-sm font-semibold text-slate-900 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {loading ? "Processing" : isLastStep ? submitLabel : "Continue"}
@@ -378,13 +381,13 @@ export default function EngineForm({
           <button
             type="button"
             onClick={handleFillSample}
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:border-white/30"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-white/80 transition hover:border-white/30"
           >
             Autofill sample
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:border-white/30"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-white/80 transition hover:border-white/30"
             onClick={resetForm}
           >
             Reset
@@ -426,11 +429,11 @@ export default function EngineForm({
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            className="result-frame flex h-full flex-col items-start justify-center gap-3 border border-dashed border-white/20 bg-white/5 p-6 text-sm text-slate-400"
+            className="glass-card flex h-full flex-col items-start justify-center gap-3 border border-dashed border-white/20 p-6 text-sm text-white/60"
           >
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Results dock</p>
-            <p className="text-base font-semibold text-slate-200">Results will appear here.</p>
-            <p className="text-slate-400">Submit the form to view a highlighted report with interactive orbit cards.</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/60">Results dock</p>
+            <p className="text-base font-semibold text-white">Results will appear here.</p>
+            <p className="text-white/60">Submit the form to view a highlighted report with interactive orbit cards.</p>
             <div className={`mt-2 h-1.5 w-full rounded-full bg-gradient-to-r ${accent} opacity-60`} />
           </motion.aside>
         )}

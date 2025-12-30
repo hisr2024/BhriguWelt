@@ -13,38 +13,74 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        midnight: "#1a1a2e",
-        aurora: "#8cf5d6",
-        ember: "#f6b867",
-        blush: "#f58db8",
-        lotus: "#f4a3c2",
-        sand: "#e7d7b8",
-        sunrise: "#ffc48d",
-        dusk: "#7c3aed",
-        aether: "#78a8b6",
+        ink: {
+          950: "#05070f",
+          900: "#0b1020",
+          850: "#11182b",
+          800: "#151d33",
+          700: "#1b2742",
+        },
+        aurora: {
+          400: "#64ffda",
+          500: "#22d3ee",
+          600: "#38bdf8",
+        },
+        neon: {
+          cyan: "#22d3ee",
+          pink: "#f472b6",
+          violet: "#a855f7",
+          lime: "#4ade80",
+          amber: "#facc15",
+        },
+        stardust: "#e2e8f0",
+        carbon: "#0b0f1a",
+      },
+      fontFamily: {
+        sans: ["var(--font-body)", "Inter", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+        display: ["var(--font-display)", "Poppins", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        glow: "0 0 30px rgba(99, 102, 241, 0.35)",
-      },
-      fontSize: {
-        "fluid-sm": "clamp(0.85rem, 0.8rem + 0.35vw, 1rem)",
-        "fluid-base": "clamp(1rem, 0.95rem + 0.5vw, 1.125rem)",
-        "fluid-lg": "clamp(1.25rem, 1.1rem + 0.8vw, 1.5rem)",
-        "fluid-xl": "clamp(1.6rem, 1.2rem + 1.6vw, 2.4rem)",
-        "fluid-2xl": "clamp(2rem, 1.5rem + 2.4vw, 3rem)",
-      },
-      spacing: {
-        "safe-bottom": "env(safe-area-inset-bottom)",
-        "safe-top": "env(safe-area-inset-top)",
+        neon: "0 0 18px rgba(34, 211, 238, 0.25), 0 0 60px rgba(168, 85, 247, 0.25)",
+        glass: "0 35px 90px rgba(3, 7, 18, 0.55)",
+        elevated: "0 20px 50px rgba(2, 6, 23, 0.45)",
       },
       backgroundImage: {
-        "hero-gradient":
-          "radial-gradient(circle at top, rgba(99,102,241,0.25), transparent 45%), radial-gradient(circle at 20% 20%, rgba(236,72,153,0.2), transparent 40%), linear-gradient(135deg, rgba(15,23,42,1) 0%, rgba(2,6,23,1) 100%)",
-        "card-gradient": "linear-gradient(135deg, rgba(30,41,59,0.95) 0%, rgba(15,23,42,0.95) 100%)",
-        "result-gradient": "linear-gradient(135deg, rgba(14,116,144,0.35) 0%, rgba(59,130,246,0.25) 45%, rgba(217,70,239,0.2) 100%)",
-        "cosmic-radial":
-          "radial-gradient(circle at 20% 20%, rgba(99,102,241,0.2), transparent 40%), radial-gradient(circle at 80% 10%, rgba(236,72,153,0.25), transparent 45%), radial-gradient(circle at 50% 80%, rgba(14,165,233,0.18), transparent 45%)",
-        "cosmic-glow": "radial-gradient(circle, rgba(99,102,241,0.3), transparent 65%)",
+        "cosmic-hero":
+          "radial-gradient(circle at 15% 20%, rgba(34, 211, 238, 0.22), transparent 45%), radial-gradient(circle at 85% 15%, rgba(244, 114, 182, 0.2), transparent 40%), radial-gradient(circle at 50% 80%, rgba(168, 85, 247, 0.22), transparent 45%), linear-gradient(135deg, rgba(5,7,15,1) 0%, rgba(10,16,32,1) 100%)",
+        "cosmic-grid":
+          "linear-gradient(to right, rgba(148,163,184,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.08) 1px, transparent 1px)",
+        "glass-sheen":
+          "linear-gradient(120deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 45%, rgba(255,255,255,0.08) 100%)",
+      },
+      keyframes: {
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-12px)" },
+        },
+        pulseGlow: {
+          "0%, 100%": { opacity: "0.55", transform: "scale(1)" },
+          "50%": { opacity: "1", transform: "scale(1.05)" },
+        },
+        spinSlow: {
+          from: { transform: "rotate(0deg)" },
+          to: { transform: "rotate(360deg)" },
+        },
+        shimmer: {
+          "0%, 100%": { transform: "translateX(-10%)" },
+          "50%": { transform: "translateX(10%)" },
+        },
+        drift: {
+          "0%": { transform: "translate3d(0, 0, 0)" },
+          "50%": { transform: "translate3d(0, -14px, 0)" },
+          "100%": { transform: "translate3d(0, 0, 0)" },
+        },
+      },
+      animation: {
+        float: "float 8s ease-in-out infinite",
+        "pulse-glow": "pulseGlow 4.5s ease-in-out infinite",
+        "spin-slow": "spinSlow 20s linear infinite",
+        shimmer: "shimmer 6s ease-in-out infinite",
+        drift: "drift 10s ease-in-out infinite",
       },
     },
   },

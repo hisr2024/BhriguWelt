@@ -21,8 +21,8 @@ export default function EngineInsightOrbit({ highlights, accent }: EngineInsight
   const shouldReduceMotion = useReducedMotion();
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Interactive orbit</p>
+    <div className="glass-card p-5">
+      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/60">Interactive orbit</p>
       <div className="mt-4 grid gap-6 lg:grid-cols-[0.7fr_1.3fr]">
         <div className="relative flex items-center justify-center">
           <div className={`absolute inset-0 rounded-full bg-gradient-to-br ${accent} blur-2xl opacity-60`} />
@@ -34,7 +34,7 @@ export default function EngineInsightOrbit({ highlights, accent }: EngineInsight
               aria-hidden
             />
             <motion.span
-              className="absolute h-3 w-3 rounded-full bg-white/80 shadow-glow"
+              className="absolute h-3 w-3 rounded-full bg-white/80 shadow-neon"
               animate={shouldReduceMotion ? undefined : { scale: [1, 1.25, 1] }}
               transition={shouldReduceMotion ? undefined : pulseTransition}
             />
@@ -42,8 +42,8 @@ export default function EngineInsightOrbit({ highlights, accent }: EngineInsight
               <motion.button
                 key={highlight.label}
                 type="button"
-                className={`absolute h-8 w-8 rounded-full border border-white/20 bg-slate-900/80 text-xs font-semibold text-slate-200 transition hover:text-white ${
-                  index === activeIndex ? "border-indigo-400 text-white shadow-glow" : ""
+                className={`absolute h-8 w-8 rounded-full border border-white/20 bg-ink-900/80 text-xs font-semibold text-white/70 transition hover:text-white ${
+                  index === activeIndex ? "border-neon-cyan text-white shadow-neon" : ""
                 }`}
                 style={{
                   transform: `rotate(${(index / highlights.length) * 360}deg) translate(0, -88px) rotate(-${
@@ -62,15 +62,15 @@ export default function EngineInsightOrbit({ highlights, accent }: EngineInsight
           </div>
         </div>
         <div className="space-y-3">
-          <p className="text-sm text-slate-300">Tap the nodes to reveal the strongest insight stream.</p>
+          <p className="text-sm text-white/70">Tap the nodes to reveal the strongest insight stream.</p>
           <motion.div
             key={highlights[activeIndex]?.label}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={orbitTransition}
-            className="rounded-2xl border border-white/10 bg-slate-950/70 p-4"
+            className="glass-card p-4"
           >
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{highlights[activeIndex]?.label}</p>
+            <p className="text-xs uppercase tracking-[0.25em] text-white/60">{highlights[activeIndex]?.label}</p>
             <p className="mt-2 text-base font-semibold text-white">{highlights[activeIndex]?.value}</p>
           </motion.div>
         </div>
