@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ReactNode } from "react";
 
 import AnimatedLogo from "@/components/AnimatedLogo";
-import { EngineConfig } from "@/lib/engineConfig";
+import type { EngineConfig } from "@/lib/engineConfig";
 
 type EnginePageProps = {
   engine: EngineConfig;
