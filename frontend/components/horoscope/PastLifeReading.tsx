@@ -14,7 +14,7 @@ const FALLBACK_TAGLINES = [
 ];
 
 type InsightRecord = {
-  narrative?: string;
+  narrative: string;
   sutra_reference?: string;
   epoch?: string;
   role?: string;
@@ -48,16 +48,18 @@ function normalizeInsights(payload: ChartResponse | null) {
       }
       if (typeof entry === "object" && entry) {
         const record = entry as InsightRecord;
+        const narrative = typeof record.narrative === "string" ? record.narrative : undefined;
+        if (!narrative) return null;
         return {
-          narrative: record.narrative,
-          sutra_reference: record.sutra_reference,
-          epoch: record.epoch,
-          role: record.role,
+          narrative,
+          sutra_reference: typeof record.sutra_reference === "string" ? record.sutra_reference : undefined,
+          epoch: typeof record.epoch === "string" ? record.epoch : undefined,
+          role: typeof record.role === "string" ? record.role : undefined,
         } satisfies InsightRecord;
       }
       return null;
     })
-    .filter((entry): entry is InsightRecord => Boolean(entry?.narrative));
+    .filter((entry): entry is InsightRecord => Boolean(entry));
 }
 
 function buildShareText(name: string, insights: InsightRecord[]) {
@@ -74,7 +76,7 @@ export default function PastLifeReading({ chart, form }: Props) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const fallbackSample = useMemo(() => getFallbackSample("/past-life"), []);
 
-  const insights = useMemo(() => {
+  const insights = useMemo<InsightRecord[]>(() => {
     const primary = normalizeInsights(chart);
     if (primary.length) return primary;
 

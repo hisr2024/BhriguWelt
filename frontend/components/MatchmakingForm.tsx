@@ -92,13 +92,13 @@ export default function MatchmakingForm() {
   );
 
   const formatIndex = (value?: number) => {
-    if (value === undefined) return null;
+    if (value === undefined) return undefined;
     const normalized = value <= 1 ? value * 100 : value;
     return `${Math.round(normalized)} / 100`;
   };
 
   const formatPercent = (value?: number) => {
-    if (value === undefined) return null;
+    if (value === undefined) return undefined;
     const normalized = value <= 1 ? value * 100 : value;
     return `${Math.round(normalized)}%`;
   };

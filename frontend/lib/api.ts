@@ -655,6 +655,24 @@ export async function requestCoreWisdom(details: BirthDetails, focusAreas?: stri
   return postJson({ path: "/core-wisdom", body: payload });
 }
 
+export async function requestTransits(
+  details: BirthDetails,
+  transit: { transitDate: string; transitTime: string; timezone?: string },
+) {
+  const transitPayload = {
+    transit_date: transit.transitDate,
+    transit_time: transit.transitTime,
+    ...(transit.timezone ? { timezone: transit.timezone } : {}),
+  };
+  return postJson({
+    path: "/transits",
+    body: {
+      natal: mapBirthDetails(details),
+      transit: transitPayload,
+    },
+  });
+}
+
 export async function getFutureProgress() {
   return getJson<FutureProgressResponse>("/future-progress", "/future-progress");
 }
