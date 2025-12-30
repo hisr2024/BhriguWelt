@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, type Easing } from "framer-motion";
 import { AlertTriangle, Loader2, Sparkles } from "lucide-react";
 import type { EngineField, EngineResult } from "@/lib/engineConfig";
 import Tooltip from "@/components/Tooltip";
@@ -9,7 +9,7 @@ import VoiceInputButton from "@/components/VoiceInputButton";
 import EngineResultPanel from "@/components/EngineResultPanel";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const transition = { duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9] };
+const transition = { duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9] as Easing };
 
 const getSampleValue = (field: EngineField) => {
   switch (field.type) {

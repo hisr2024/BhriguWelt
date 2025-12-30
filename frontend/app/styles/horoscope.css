@@ -542,6 +542,38 @@
   gap: 0.6rem;
 }
 
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: #5c666d;
+}
+
+.chart-controls__value {
+  min-width: 3rem;
+  text-align: right;
+  font-weight: 600;
+  color: #1f2a33;
+}
+
+.chart-tooltip {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid #eadfce;
+  background: #fff7ed;
+  color: #5c666d;
+  font-size: 0.72rem;
+  box-shadow: 0 8px 18px rgba(217, 119, 87, 0.12);
+}
+
+.chart-tooltip strong {
+  color: #1f2a33;
+  font-weight: 700;
+}
+
 .kundli-svg {
   width: 100%;
   height: auto;

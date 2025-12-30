@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, type Easing } from "framer-motion";
 import { ArrowDownToLine, ArrowUpRight, FileSpreadsheet, Flame, ShieldCheck, Sparkles, Star, Wand2 } from "lucide-react";
 import type { EngineResult } from "@/lib/engineConfig";
 import Tooltip from "@/components/Tooltip";
@@ -8,7 +8,7 @@ import EngineInsightOrbit from "@/components/EngineInsightOrbit";
 import EngineZoomChart from "@/components/EngineZoomChart";
 
 const highlightIcons = [Sparkles, Flame, ShieldCheck, Star, Wand2];
-const transition = { duration: 0.45, ease: [0.2, 0.65, 0.3, 0.9] };
+const transition = { duration: 0.45, ease: [0.2, 0.65, 0.3, 0.9] as Easing };
 
 type EngineResultPanelProps = {
   result: EngineResult;
@@ -28,12 +28,19 @@ export default function EngineResultPanel({ result, accent, engineTitle }: Engin
     >
       <div className="result-frame relative overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70 p-6">
         <div className={`absolute inset-0 bg-gradient-to-br ${accent} opacity-70`} aria-hidden />
-        <div className="relative space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-200">{engineTitle} results</p>
-          <h3 className="text-2xl font-semibold text-white">{result.title}</h3>
-          <p className="text-sm text-slate-100/80">{result.summary}</p>
+        <div className="relative space-y-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-200">{engineTitle} results</p>
+              <h3 className="text-2xl font-semibold text-white">{result.title}</h3>
+              <p className="max-w-2xl text-sm text-slate-100/80">{result.summary}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-xs font-semibold uppercase tracking-[0.25em] text-slate-200">
+              Prime highlights
+            </div>
+          </div>
         </div>
-        <div className="relative mt-6 grid gap-4">
+        <div className="relative mt-6 grid gap-4 md:grid-cols-2" aria-label="Result highlights">
           {result.highlights.map((highlight, index) => {
             const Icon = highlightIcons[index % highlightIcons.length];
             const confidence = 70 + index * 8;
@@ -42,7 +49,7 @@ export default function EngineResultPanel({ result, accent, engineTitle }: Engin
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-slate-300">
-                      <Icon className="h-4 w-4 text-indigo-300" />
+                      <Icon className="h-4 w-4 text-indigo-300" aria-hidden />
                       {highlight.label}
                       <Tooltip content="Highlighted from the engine signal blend." />
                     </div>
@@ -58,7 +65,7 @@ export default function EngineResultPanel({ result, accent, engineTitle }: Engin
                     transition={transition}
                   />
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>
@@ -68,9 +75,9 @@ export default function EngineResultPanel({ result, accent, engineTitle }: Engin
 
       <EngineZoomChart accent={accent} />
 
-      <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Recommended next steps</p>
-        <ul className="mt-4 space-y-2 text-sm text-slate-200">
+      <div className="rounded-3xl border border-white/10 bg-slate-950/80 p-6 shadow-[0_24px_50px_rgba(2,6,23,0.45)]">
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-300">Recommended next steps</p>
+        <ul className="mt-4 space-y-2 text-sm text-slate-100">
           {result.nextSteps.map((step) => (
             <li key={step} className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-indigo-400" aria-hidden />
@@ -81,27 +88,31 @@ export default function EngineResultPanel({ result, accent, engineTitle }: Engin
         <div className="mt-6 flex flex-wrap gap-3">
           <button
             type="button"
-            className="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-indigo-400"
+            className="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-[0_14px_26px_rgba(79,70,229,0.45)] transition hover:bg-indigo-400"
+            aria-label="Save report"
           >
             Save report
             <ArrowUpRight className="h-4 w-4" />
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:border-white/30"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-100 transition hover:border-white/30"
+            aria-label="Share insights"
           >
             Share insights
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:border-white/30"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-100 transition hover:border-white/30"
+            aria-label="Export results as PDF"
           >
             Export PDF
             <ArrowDownToLine className="h-4 w-4" />
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:border-white/30"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-100 transition hover:border-white/30"
+            aria-label="Export results as CSV"
           >
             Export CSV
             <FileSpreadsheet className="h-4 w-4" />
