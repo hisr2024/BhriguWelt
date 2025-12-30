@@ -29,14 +29,17 @@ type Props = {
 
 const GUIDE_NAME = "Bhrigu Samhita Guide";
 const GUIDE_GLYPH = "◐";
+const BASE_MESSAGE: Message = {
+  role: "bot",
+  content:
+    "Namaste. I am your Bhrigu Samhita Guide. Ask about your chart and I will respond with calm, symbolic reflections.",
+};
+const STORAGE_KEY = "bhrigu-chat-transcript";
+const DOCK_KEY = "bhrigu-chat-dock";
 
 export default function BhriguChat({ chart }: Props) {
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([{
-    role: "bot",
-    content:
-      "Namaste. I am your Bhrigu Samhita Guide. Ask about your chart and I will respond with calm, symbolic reflections.",
-  }]);
+  const [messages, setMessages] = useState<Message[]>([BASE_MESSAGE]);
   const [context, setContext] = useState<ChatContext | undefined>(
     chart ? { lastChart: chart } : undefined,
   );
@@ -46,7 +49,13 @@ export default function BhriguChat({ chart }: Props) {
   const [userId, setUserId] = useState<string | undefined>();
   const [sessionKey, setSessionKey] = useState<string | undefined>();
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [isDockOpen, setIsDockOpen] = useState(true);
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
+  const recognitionRef = useRef<any | null>(null);
+  const speechSeedRef = useRef<string>("");
+  const hasHydratedRef = useRef(false);
   const { triggerSubmitFeedback } = useImmersiveFeedback();
 
   useEffect(() => {
@@ -62,10 +71,29 @@ export default function BhriguChat({ chart }: Props) {
     setProfileId(storedProfileId);
     setSessionKey(storedSession);
 
+    if (typeof window !== "undefined") {
+      const cachedMessages = window.localStorage.getItem(STORAGE_KEY);
+      if (cachedMessages) {
+        try {
+          const parsed = JSON.parse(cachedMessages) as Message[];
+          if (parsed.length) {
+            setMessages([BASE_MESSAGE, ...parsed.filter((entry) => entry.content)]);
+          }
+        } catch (error) {
+          console.warn("Unable to restore chat transcript", error);
+        }
+      }
+
+      const storedDock = window.localStorage.getItem(DOCK_KEY);
+      if (storedDock === "closed") {
+        setIsDockOpen(false);
+      }
+    }
+
     const hydrateSession = async () => {
       try {
         const params = new URLSearchParams({ user_id: storedUserId, session_key: storedSession });
-        const response = await fetch(`/api/bhrigu-chat?${params.toString()}`);
+        const response = await fetch(`/chat?${params.toString()}`);
         if (!response.ok) {
           throw new Error(await response.text());
         }
@@ -75,17 +103,63 @@ export default function BhriguChat({ chart }: Props) {
           .map((entry) => ({ role: entry.role === "user" ? "user" : "bot", content: entry.content || "" }));
 
         if (transcriptMessages.length) {
-          setMessages((prev) => [prev[0], ...transcriptMessages]);
+          setMessages([BASE_MESSAGE, ...transcriptMessages]);
         }
         if (payload.profile_id) setProfileId(payload.profile_id);
         if (payload.user_id) setUserId(payload.user_id);
       } catch (error) {
         console.warn("Unable to hydrate chat session", error);
         setStatusMessage("Chat history will sync after the backend reconnects.");
+      } finally {
+        hasHydratedRef.current = true;
       }
     };
 
     void hydrateSession();
+  }, []);
+
+  useEffect(() => {
+    if (!hasHydratedRef.current || typeof window === "undefined") return;
+    const stored = messages.filter((entry) => entry.role !== "bot" || entry.content !== BASE_MESSAGE.content);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored.slice(-40)));
+  }, [messages]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const SpeechRecognition =
+      (window as typeof window & { SpeechRecognition?: any; webkitSpeechRecognition?: any }).SpeechRecognition ||
+      (window as typeof window & { SpeechRecognition?: any; webkitSpeechRecognition?: any }).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results as SpeechRecognitionResultList)
+        .map((result) => result[0]?.transcript ?? "")
+        .join("")
+        .trim();
+      const base = speechSeedRef.current;
+      const next = [base, transcript].filter(Boolean).join(" ").trim();
+      setInput(next);
+    };
+    recognition.onerror = () => {
+      setIsListening(false);
+      setStatusMessage("Microphone access is unavailable. Please type your question instead.");
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    setSpeechSupported(true);
+
+    return () => {
+      recognition.stop();
+      recognitionRef.current = null;
+    };
   }, []);
 
   useEffect(() => {
@@ -135,7 +209,7 @@ export default function BhriguChat({ chart }: Props) {
     setStatusMessage(null);
 
     try {
-      const response = await fetch("/api/bhrigu-chat", {
+      const response = await fetch("/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -197,61 +271,124 @@ export default function BhriguChat({ chart }: Props) {
     }
   };
 
+  const handleDockToggle = () => {
+    setIsDockOpen((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(DOCK_KEY, next ? "open" : "closed");
+      }
+      return next;
+    });
+  };
+
+  const handleMicToggle = () => {
+    if (!recognitionRef.current) return;
+    if (isListening) {
+      recognitionRef.current.stop();
+      return;
+    }
+    speechSeedRef.current = input.trim();
+    setStatusMessage(null);
+    try {
+      recognitionRef.current.start();
+      setIsListening(true);
+    } catch (error) {
+      console.warn("Unable to start speech recognition", error);
+    }
+  };
+
   return (
-    <section className="bhrigu-chat" aria-label="Bhrigu Samhita chat">
-      <header className="bhrigu-chat__header">
-        <div className="bhrigu-chat__crest" aria-hidden>
-          <span className="bhrigu-chat__glyph">{GUIDE_GLYPH}</span>
-        </div>
-        <div>
-          <p className="eyebrow">{GUIDE_NAME}</p>
-          <h3 className="bhrigu-chat__title">Guidance with a quiet Bharat pulse</h3>
-          <p className="muted">
-            Share a question or reflection. I’ll weave your message with Bhrigu-inspired calm.
-          </p>
-        </div>
-      </header>
-
-      <div
-        className="bhrigu-chat__window"
-        ref={listRef}
-        role="log"
-        aria-live="polite"
-        aria-busy={isSending}
+    <div
+      className={`bhrigu-chat-dock ${isDockOpen ? "is-open" : "is-closed"}`.trim()}
+      data-bhrigu-chat
+    >
+      <button
+        type="button"
+        className="bhrigu-chat-dock__toggle"
+        aria-expanded={isDockOpen}
+        onClick={handleDockToggle}
       >
-        {messages.map((message, index) => (
-          <article
-            key={`${message.role}-${index}`}
-            className={`bhrigu-chat__message ${message.role === "user" ? "is-user" : "is-guide"}`.trim()}
+        <span aria-hidden>◐</span>
+        <span>{isDockOpen ? "Hide chat" : "Open chat"}</span>
+      </button>
+
+      {isDockOpen ? (
+        <section className="bhrigu-chat" aria-label="Bhrigu Samhita chat">
+          <header className="bhrigu-chat__header">
+            <div className="bhrigu-chat__crest" aria-hidden>
+              <span className="bhrigu-chat__glyph">{GUIDE_GLYPH}</span>
+            </div>
+            <div>
+              <p className="eyebrow">{GUIDE_NAME}</p>
+              <h3 className="bhrigu-chat__title">Guidance with a quiet Bharat pulse</h3>
+              <p className="muted">
+                Share a question or reflection. I’ll weave your message with Bhrigu-inspired calm.
+              </p>
+            </div>
+            <button type="button" className="bhrigu-chat__collapse" onClick={handleDockToggle}>
+              Collapse
+            </button>
+          </header>
+
+          <div
+            className="bhrigu-chat__window"
+            ref={listRef}
+            role="log"
+            aria-live="polite"
+            aria-busy={isSending}
           >
-            <span className="bhrigu-chat__label">{message.role === "user" ? "You" : GUIDE_NAME}</span>
-            <div className="bhrigu-chat__bubble">{message.content}</div>
-          </article>
-        ))}
-      </div>
+            {messages.map((message, index) => (
+              <article
+                key={`${message.role}-${index}`}
+                className={`bhrigu-chat__message ${message.role === "user" ? "is-user" : "is-guide"}`.trim()}
+              >
+                <span className="bhrigu-chat__label">{message.role === "user" ? "You" : GUIDE_NAME}</span>
+                <div className="bhrigu-chat__bubble">{message.content}</div>
+              </article>
+            ))}
+          </div>
 
-      {statusMessage ? (
-        <p className="microcopy" role="status" aria-live="polite">
-          {statusMessage}
-        </p>
+          {statusMessage ? (
+            <p className="microcopy" role="status" aria-live="polite">
+              {statusMessage}
+            </p>
+          ) : null}
+
+          <form className="bhrigu-chat__input" onSubmit={handleSend}>
+            <label className="sr-only" htmlFor="bhrigu-message">
+              Message for the guide
+            </label>
+            <input
+              id="bhrigu-message"
+              name="message"
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              placeholder="Ask about the chart, remedies, or timelines"
+              autoComplete="off"
+            />
+            {speechSupported ? (
+              <button
+                type="button"
+                className={`bhrigu-chat__mic ${isListening ? "is-listening" : ""}`.trim()}
+                onClick={handleMicToggle}
+              >
+                {isListening ? "Listening…" : "Mic"}
+              </button>
+            ) : null}
+            <button type="submit" disabled={isSending}>
+              {isSending ? "Sending..." : "Send"}
+            </button>
+          </form>
+
+          <div className="bhrigu-chat__disclaimer">
+            <p>
+              This chat is reflective and spiritual in tone. It is not medical, legal, or financial advice. Keep
+              private details to a minimum.
+            </p>
+            <p>Session memory is stored on this device and synced when the guide reconnects.</p>
+          </div>
+        </section>
       ) : null}
-
-      <form className="bhrigu-chat__input" onSubmit={handleSend}>
-        <label className="sr-only" htmlFor="bhrigu-message">
-          Message for the guide
-        </label>
-        <input
-          id="bhrigu-message"
-          name="message"
-          value={input}
-          onChange={(event) => setInput(event.target.value)}
-          placeholder="Ask about the chart, remedies, or timelines"
-          autoComplete="off"
-        />
-        <button type="submit" disabled={isSending}>
-          {isSending ? "Sending..." : "Send"}
-        </button>
-      </form>
-    </section>
+    </div>
   );
 }
