@@ -2588,6 +2588,88 @@ textarea:focus {
   gap: 12px;
 }
 
+.timeline-page {
+  display: grid;
+  gap: 24px;
+  padding: 32px 0 64px;
+}
+
+.timeline-hero {
+  display: grid;
+  gap: 12px;
+}
+
+.timeline-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.timeline-rail {
+  display: grid;
+  gap: 16px;
+}
+
+.timeline-phases {
+  display: grid;
+  gap: 16px;
+}
+
+.timeline-phases__grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.timeline-phase {
+  display: grid;
+  gap: 12px;
+}
+
+.timeline-phase__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.timeline-phase__details {
+  display: none;
+  gap: 12px;
+}
+
+.timeline-phase__details.is-open {
+  display: grid;
+}
+
+.timeline-phase__milestones {
+  display: grid;
+  gap: 12px;
+}
+
+.timeline-phase__milestone {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.timeline-phase__milestone-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-phase__reminders {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
 @keyframes timelineReveal {
   0% {
     opacity: 0;
@@ -2608,6 +2690,10 @@ textarea:focus {
 
 @media (max-width: 720px) {
   .future-actions {
+    align-items: stretch;
+  }
+
+  .timeline-hero__actions {
     align-items: stretch;
   }
 }
