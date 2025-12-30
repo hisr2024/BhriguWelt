@@ -1,10 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowUpRight, Flame, ShieldCheck, Sparkles, Star, Wand2 } from "lucide-react";
+import { ArrowDownToLine, ArrowUpRight, FileSpreadsheet, Flame, ShieldCheck, Sparkles, Star, Wand2 } from "lucide-react";
 import type { EngineResult } from "@/lib/engineConfig";
 import Tooltip from "@/components/Tooltip";
 import EngineInsightOrbit from "@/components/EngineInsightOrbit";
+import EngineZoomChart from "@/components/EngineZoomChart";
 
 const highlightIcons = [Sparkles, Flame, ShieldCheck, Star, Wand2];
 const transition = { duration: 0.45, ease: [0.2, 0.65, 0.3, 0.9] };
@@ -65,6 +66,8 @@ export default function EngineResultPanel({ result, accent, engineTitle }: Engin
 
       <EngineInsightOrbit highlights={result.highlights} accent={accent} />
 
+      <EngineZoomChart accent={accent} />
+
       <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Recommended next steps</p>
         <ul className="mt-4 space-y-2 text-sm text-slate-200">
@@ -88,6 +91,20 @@ export default function EngineResultPanel({ result, accent, engineTitle }: Engin
             className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:border-white/30"
           >
             Share insights
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:border-white/30"
+          >
+            Export PDF
+            <ArrowDownToLine className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:border-white/30"
+          >
+            Export CSV
+            <FileSpreadsheet className="h-4 w-4" />
           </button>
         </div>
       </div>
