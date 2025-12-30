@@ -18,6 +18,7 @@ const navLinks = [
   { href: "/horoscope", key: "nav.horoscope", fallback: "Horoscope" },
   { href: "/past-life", key: "nav.past", fallback: "Past lives" },
   { href: "/future", key: "nav.future", fallback: "Future" },
+  { href: "/core-wisdom", key: "nav.coreWisdom", fallback: "Core wisdom" },
   { href: "/matchmaking", key: "nav.matchmaking", fallback: "Matchmaking" },
 ];
 

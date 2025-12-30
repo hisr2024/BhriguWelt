@@ -12,7 +12,7 @@ const tools = [
   { title: "Horoscope", href: "/horoscope", note: "Profiles" },
   { title: "Śaka calendar", href: "/calendar", note: "Calendar" },
   { title: "Future guidance", href: "/future", note: "Care" },
-  { title: "Transits", href: "/transits", note: "Gochar" },
+  { title: "Core wisdom", href: "/core-wisdom", note: "Digest" },
   { title: "Timeline", href: "/timeline", note: "Journey" },
   { title: "Varshaphal", href: "/varshaphal", note: "Solar return" },
   { title: "Matchmaking", href: "/matchmaking", note: "Connections" },

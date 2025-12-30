@@ -31,8 +31,8 @@ export type HealthResponse = {
 };
 
 type DetailedError = Error & { hint?: string; status?: number };
-const FALLBACK_RESPONSES: Record<string, unknown> = {
-  "/horoscope": {
+
+const FALLBACK_HOROSCOPE = {
     name: "Fallback seeker",
     interpretation: "Bhrigu folios speak of a seeker whose service-oriented Mars and calm moon weave compassion with steady leadership.",
     interpretation_hi: "भृगु पांडुलिपि बताती है कि सेवा प्रधान मंगल और शांत चंद्रमा करुणा के साथ स्थिर नेतृत्व देते हैं।",
@@ -107,6 +107,26 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
       { lord: "Venus", start: "2007-12-30", end: "2027-12-22", anchor_rule: "Scholarly Pursuits activated (0.76)" },
       { lord: "Sun", start: "2027-12-22", end: "2033-12-20", anchor_rule: "Ancestral Calling activated (0.92)" },
     ],
+};
+
+const FALLBACK_RESPONSES: Record<string, unknown> = {
+  "/horoscope": FALLBACK_HOROSCOPE,
+  "/core-wisdom": {
+    sections: {
+      "1": "Restatement of User Query & Birth Data: Fallback seeker. Birth: 1995-08-18 at 06:30 in Jaipur, Bharat. Focus areas: general life balance.",
+      "2": "Disclaimer & Orientation: This is a Bhrigu Samhita–inspired spiritual reading. It offers tendencies, not certainties, and is not medical, legal, or financial advice.",
+      "3": "Birth Chart Overview: Karmic epoch — Bhrigu epoch: activation of Mars mandates for infrastructural service. Dominant currents include intuitive dreams, infrastructural success, and ancestral calling with manuscript-backed interpretation.",
+      "4": "Detailed Life Area Analysis: Strengths — intuitive dreams, infrastructural success. Challenges — balancing intuition with action. Key remedies from the folios: Light a copper lamp at dawn while reciting Om Brighave Namah to stabilize mind and memory.",
+      "5": "Time-Based Future Tendencies: Multi-decade leadership on smart-city logistics with ancestral blessings.",
+      "6": "Consolidated Strengths, Challenges & Cautions: Strengths — intuitive dreams, infrastructural success. Challenges — guarding energy leaks. Cautions — honor pacing and protect focus during intense transit windows.",
+      "7": "Bhrigu-Style Guidance & Remedies: Keep discipline steady, prioritize service rituals, and maintain a dawn lamp practice.",
+      "8": "Closing & Reminder of Free Will: Tendencies guide you, but choices shape outcomes. Take what resonates, leave the rest, and proceed with compassion.",
+    },
+    rashi_chart: FALLBACK_HOROSCOPE.rashi_chart,
+    bhava_chart: FALLBACK_HOROSCOPE.bhava_chart,
+    dashas: FALLBACK_HOROSCOPE.dashas,
+    karmic_epoch: FALLBACK_HOROSCOPE.karmic_epoch,
+    remedies: FALLBACK_HOROSCOPE.remedies,
   },
   "/past-life": {
     name: "Fallback seeker",
@@ -627,21 +647,12 @@ export async function requestPrediction(engine: PredictionEngine, details: Birth
   return postJson({ path, body: mapBirthDetails(details) });
 }
 
-export async function requestTransits(
-  details: BirthDetails,
-  transit: { transitDate: string; transitTime: string; timezone?: string },
-) {
-  return postJson({
-    path: "/transits",
-    body: {
-      natal: mapBirthDetails(details),
-      transit: {
-        transit_date: transit.transitDate,
-        transit_time: transit.transitTime,
-        timezone: transit.timezone,
-      },
-    },
-  });
+export async function requestCoreWisdom(details: BirthDetails, focusAreas?: string[]) {
+  const payload = {
+    ...mapBirthDetails(details),
+    ...(focusAreas?.length ? { focus_areas: focusAreas } : {}),
+  };
+  return postJson({ path: "/core-wisdom", body: payload });
 }
 
 export async function getFutureProgress() {
