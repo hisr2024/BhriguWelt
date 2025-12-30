@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "rm -f app/chat/route.ts app/chat/route.tsx app/chat/route.js",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ext .ts,.tsx",

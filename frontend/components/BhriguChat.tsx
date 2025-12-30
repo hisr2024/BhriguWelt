@@ -58,6 +58,7 @@ type SpeechRecognitionWindow = typeof window & {
 
 const GUIDE_NAME = "Bhrigu Samhita Guide";
 const GUIDE_GLYPH = "◐";
+const CHAT_ENDPOINT = "/api/bhrigu-chat";
 const BASE_MESSAGE: Message = {
   role: "bot",
   content:
@@ -126,7 +127,7 @@ export default function BhriguChat({ chart }: Props) {
     const hydrateSession = async () => {
       try {
         const params = new URLSearchParams({ user_id: storedUserId, session_key: storedSession });
-        const response = await fetch(`/chat?${params.toString()}`);
+        const response = await fetch(`${CHAT_ENDPOINT}?${params.toString()}`);
         if (!response.ok) {
           throw new Error(await response.text());
         }
@@ -373,7 +374,7 @@ export default function BhriguChat({ chart }: Props) {
         return;
       }
 
-      const response = await fetch("/chat", {
+      const response = await fetch(CHAT_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
