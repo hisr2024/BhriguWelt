@@ -32,6 +32,22 @@ export interface DashaPeriod {
   anchor_rule: string;
 }
 
+export interface CoreWisdomRemedy {
+  id?: string;
+  sutra_reference?: string;
+  description?: string;
+  interpretation?: string;
+}
+
+export interface CoreWisdomPayload {
+  sections?: Record<string, string>;
+  rashi_chart?: ChartHouse[];
+  bhava_chart?: ChartHouse[];
+  dashas?: DashaPeriod[];
+  karmic_epoch?: string;
+  remedies?: CoreWisdomRemedy[];
+}
+
 export interface CalendarDetails {
   birthDate: string;
   birthTime: string;
