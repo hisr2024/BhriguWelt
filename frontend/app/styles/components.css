@@ -808,6 +808,100 @@ textarea:focus {
   align-items: center;
 }
 
+.calendar-map {
+  margin-top: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.calendar-map__canvas {
+  min-height: 220px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 148, 148, 0.3);
+  background: linear-gradient(140deg, rgba(240, 240, 246, 0.7), rgba(230, 230, 238, 0.45));
+}
+
+.calendar-map__meta {
+  display: grid;
+  gap: 10px;
+}
+
+.calendar-map__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.calendar-wheel {
+  margin-top: 16px;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+}
+
+.calendar-wheel__ring {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  border: 1px solid rgba(148, 148, 148, 0.3);
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.9), rgba(233, 233, 240, 0.7));
+}
+
+.calendar-wheel__tick {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 10px;
+  background: rgba(90, 90, 110, 0.6);
+  transform-origin: center -98px;
+  transform: rotate(var(--tick-rotation));
+}
+
+.calendar-wheel__marker {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #4c5fff;
+  box-shadow: 0 0 12px rgba(76, 95, 255, 0.6);
+  transform: rotate(var(--wheel-rotation)) translateY(-94px);
+}
+
+.calendar-wheel__center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 4px;
+  padding: 24px;
+}
+
+.calendar-wheel__legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 12px;
+}
+
+.calendar-wheel__legend-item {
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(150, 150, 160, 0.35);
+  color: rgba(70, 70, 90, 0.9);
+}
+
+.calendar-wheel__legend-item.is-active {
+  border-color: rgba(76, 95, 255, 0.5);
+  background: rgba(76, 95, 255, 0.12);
+  color: rgba(50, 60, 130, 0.95);
+}
+
 .house-sign {
   font-weight: 700;
   color: #2f3740;
@@ -1701,3 +1795,4 @@ body[data-animations="off"] .matchmaking-energy__layer {
     transform: translateY(0);
   }
 }
+
