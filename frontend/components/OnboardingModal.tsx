@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type TouchEvent } from "react";
 
 const GLOSSARY = [
   {
@@ -72,6 +72,7 @@ export default function OnboardingModal() {
   const [voice, setVoice] = useState(false);
   const [haptics, setHaptics] = useState(false);
   const [beginnerMode, setBeginnerMode] = useState(true);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const seen = typeof window !== "undefined" ? localStorage.getItem("bhrigu-onboarded") : null;
@@ -120,16 +121,40 @@ export default function OnboardingModal() {
   };
 
   const prev = () => setStep((prev) => Math.max(prev - 1, 0));
+  const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    touchStart.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    if (!touchStart.current) return;
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - touchStart.current.x;
+    const deltaY = touch.clientY - touchStart.current.y;
+    touchStart.current = null;
+
+    if (Math.abs(deltaX) < 60 || Math.abs(deltaX) < Math.abs(deltaY) * 1.2) {
+      return;
+    }
+
+    if (deltaX < 0) {
+      next();
+    } else {
+      prev();
+    }
+  };
 
   if (!open) return null;
 
   return (
     <div className="onboard-overlay" role="presentation">
       <div
-        className="onboard-modal"
+        className="onboard-modal touch-pan-y"
         role="dialog"
         aria-modal="true"
         aria-label="Bhrigu onboarding journey"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         <header className="onboard-header">
           <div>

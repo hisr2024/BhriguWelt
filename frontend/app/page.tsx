@@ -186,12 +186,12 @@ export default function HomePage() {
             <h2 className="text-2xl font-semibold text-white">All engines, one scroll</h2>
             <p className="text-sm text-slate-400">Swipe on mobile, hover on desktop. Every engine stays discoverable.</p>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs">
+          <div className="flex w-full gap-2 overflow-x-auto pb-1 text-xs sm:w-auto sm:flex-wrap">
             {quickAccess.map((engine) => (
               <Link
                 key={engine.href}
                 href={engine.href}
-                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-slate-200 transition hover:border-white/30"
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-slate-200 transition hover:border-white/30 touch-manipulation active:scale-95"
               >
                 {engine.label}
               </Link>
