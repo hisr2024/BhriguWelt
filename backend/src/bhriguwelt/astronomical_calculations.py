@@ -7,9 +7,10 @@ extensions still receive consistent payloads.
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from math import fmod, pi, sin
 from typing import Dict, Tuple
 from zoneinfo import ZoneInfo
@@ -350,9 +351,17 @@ def geocode_location(birth_place: str) -> Tuple[float | None, float | None, str 
             tz_name = None
 
     if latitude is None or longitude is None:
-        ordinal_hash = hash(birth_place)
+        digest = hashlib.sha256(birth_place.encode("utf-8")).hexdigest()
+        ordinal_hash = int(digest[:16], 16)
         latitude = ((ordinal_hash % 18000) / 100) - 90
         longitude = ((ordinal_hash // 18000 % 36000) / 100) - 180
+
+    if tz_name is None and TimezoneFinder is not None:
+        try:  # pragma: no cover - optional dependency
+            tz_finder = TimezoneFinder()
+            tz_name = tz_finder.timezone_at(lng=longitude, lat=latitude)
+        except Exception:
+            tz_name = None
 
     return latitude, longitude, tz_name
 
