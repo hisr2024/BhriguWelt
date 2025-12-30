@@ -37,9 +37,13 @@ export default function EngineForm({
   const [result, setResult] = useState<EngineResult | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [activeStep, setActiveStep] = useState(0);
+  const [offline, setOffline] = useState(false);
+  const [lastSubmitted, setLastSubmitted] = useState<Record<string, string> | null>(null);
 
   useEffect(() => {
     setValues(initialValues);
+    setActiveStep(0);
   }, [initialValues]);
 
   useEffect(() => {
@@ -54,26 +58,75 @@ export default function EngineForm({
     return () => window.clearInterval(timer);
   }, [loading, result]);
 
-  const validate = () => {
-    const nextErrors: Record<string, string> = {};
-    fields.forEach((field) => {
+  useEffect(() => {
+    const updateStatus = () => setOffline(!navigator.onLine);
+    updateStatus();
+    window.addEventListener("online", updateStatus);
+    window.addEventListener("offline", updateStatus);
+    return () => {
+      window.removeEventListener("online", updateStatus);
+      window.removeEventListener("offline", updateStatus);
+    };
+  }, []);
+
+  const steps = useMemo(() => {
+    if (fields.length <= 3) return [fields];
+    const chunkSize = 2;
+    const chunks: EngineField[][] = [];
+    for (let index = 0; index < fields.length; index += chunkSize) {
+      chunks.push(fields.slice(index, index + chunkSize));
+    }
+    return chunks;
+  }, [fields]);
+
+  const visibleFields = steps[activeStep] ?? fields;
+  const isLastStep = activeStep === steps.length - 1;
+  const requiredFields = useMemo(() => fields.filter((field) => field.required), [fields]);
+  const completion = useMemo(() => {
+    if (requiredFields.length === 0) return 0;
+    const completed = requiredFields.filter((field) => values[field.name]?.trim()).length;
+    return Math.round((completed / requiredFields.length) * 100);
+  }, [requiredFields, values]);
+
+  const validate = (fieldsToValidate: EngineField[] = fields) => {
+    const nextErrors: Record<string, string> = { ...errors };
+    fieldsToValidate.forEach((field) => {
       const value = values[field.name]?.trim();
       if (field.required && !value) {
         nextErrors[field.name] = "This field is required.";
+        return;
       }
       if (field.type === "email" && value && !emailPattern.test(value)) {
         nextErrors[field.name] = "Enter a valid email.";
+        return;
       }
       if (field.type === "number" && value && Number.isNaN(Number(value))) {
         nextErrors[field.name] = "Enter a valid number.";
+        return;
       }
+      delete nextErrors[field.name];
     });
+    if (fieldsToValidate.length === fields.length) {
+      Object.keys(nextErrors).forEach((key) => {
+        if (!fields.find((field) => field.name === key)) {
+          delete nextErrors[key];
+        }
+      });
+    }
     setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+    return fieldsToValidate.every((field) => !nextErrors[field.name]);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!isLastStep && steps.length > 1) {
+      if (!validate(visibleFields)) {
+        setProgress(0);
+        return;
+      }
+      setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
+      return;
+    }
     if (!validate()) {
       setProgress(0);
       return;
@@ -81,8 +134,23 @@ export default function EngineForm({
     setLoading(true);
     setSubmitError(null);
     setResult(null);
+    setLastSubmitted(values);
     try {
       const nextResult = await onSubmit(values);
+      setResult(nextResult);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRetry = async () => {
+    if (!lastSubmitted) return;
+    setLoading(true);
+    setSubmitError(null);
+    try {
+      const nextResult = await onSubmit(lastSubmitted);
       setResult(nextResult);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Something went wrong.");
@@ -97,11 +165,31 @@ export default function EngineForm({
     setResult(null);
     setSubmitError(null);
     setProgress(0);
+    setActiveStep(0);
   };
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
       <form className="space-y-6" onSubmit={handleSubmit} noValidate aria-busy={loading}>
+        {steps.length > 1 ? (
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-xs text-slate-300">
+            <div className="flex items-center justify-between gap-4">
+              <span className="font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Step {activeStep + 1} of {steps.length}
+              </span>
+              <span className="text-slate-400">Completion {completion}%</span>
+            </div>
+            <div className="mt-3 h-2 rounded-full bg-white/5">
+              <div className="h-2 rounded-full bg-gradient-to-r from-indigo-400 via-sky-400 to-fuchsia-400" style={{ width: `${completion}%` }} />
+            </div>
+          </div>
+        ) : null}
+
+        {offline ? (
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
+            You are offline. Submissions will use cached guidance and sync when reconnected.
+          </div>
+        ) : null}
         <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-5">
           <div className="flex items-center justify-between">
             <div>
@@ -123,7 +211,7 @@ export default function EngineForm({
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
-          {fields.map((field) => {
+          {visibleFields.map((field) => {
             const hasError = Boolean(errors[field.name]);
             const fieldId = `${formId}-${field.name}`;
             const baseClass =
@@ -147,6 +235,7 @@ export default function EngineForm({
                       onChange={(event) =>
                         setValues((prev) => ({ ...prev, [field.name]: event.target.value }))
                       }
+                      onBlur={() => validate([field])}
                       aria-invalid={hasError}
                       aria-describedby={hasError ? `${fieldId}-error` : undefined}
                     />
@@ -166,6 +255,7 @@ export default function EngineForm({
                     name={field.name}
                     value={values[field.name]}
                     onChange={(event) => setValues((prev) => ({ ...prev, [field.name]: event.target.value }))}
+                    onBlur={() => validate([field])}
                     aria-invalid={hasError}
                     aria-describedby={hasError ? `${fieldId}-error` : undefined}
                   >
@@ -188,6 +278,7 @@ export default function EngineForm({
                       onChange={(event) =>
                         setValues((prev) => ({ ...prev, [field.name]: event.target.value }))
                       }
+                      onBlur={() => validate([field])}
                       aria-invalid={hasError}
                       aria-describedby={hasError ? `${fieldId}-error` : undefined}
                     />
@@ -211,13 +302,23 @@ export default function EngineForm({
           })}
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {steps.length > 1 ? (
+            <button
+              type="button"
+              onClick={() => setActiveStep((prev) => Math.max(prev - 1, 0))}
+              disabled={activeStep === 0}
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:border-white/30 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Back
+            </button>
+          ) : null}
           <button
             type="submit"
             disabled={loading}
             className="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {loading ? "Processing" : submitLabel}
+            {loading ? "Processing" : isLastStep ? submitLabel : "Continue"}
           </button>
           <button
             type="button"
@@ -237,7 +338,16 @@ export default function EngineForm({
               role="alert"
             >
               <AlertTriangle className="mt-1 h-4 w-4" />
-              <span>{submitError}</span>
+              <div className="space-y-2">
+                <p>{submitError}</p>
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white transition hover:border-white/30"
+                >
+                  Retry submission
+                </button>
+              </div>
             </motion.div>
           ) : null}
         </AnimatePresence>
