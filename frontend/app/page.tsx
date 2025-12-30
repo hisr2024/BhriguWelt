@@ -6,6 +6,8 @@ import { ArrowRight, ArrowUpRight, Sparkles, Stars } from "lucide-react";
 import { engineCards } from "@/lib/engineConfig";
 import CosmicBackground from "@/components/CosmicBackground";
 import EngineCard from "@/components/EngineCard";
+import EngineDiscovery from "@/components/EngineDiscovery";
+import OnboardingTour from "@/components/OnboardingTour";
 
 const transition: Transition = { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] };
 
@@ -102,8 +104,8 @@ export default function HomePage() {
       <section className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-semibold text-white">All engines</h2>
-            <p className="text-sm text-slate-400">Tap any card to launch the experience instantly.</p>
+            <h2 className="text-2xl font-semibold text-white">Quick launch</h2>
+            <p className="text-sm text-slate-400">Jump into popular engines or swipe on mobile for instant access.</p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             {quickAccess.map((engine) => (
@@ -118,11 +120,15 @@ export default function HomePage() {
           </div>
         </div>
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {engineCards.map((engine, index) => (
+          {engineCards.slice(0, 6).map((engine, index) => (
             <EngineCard key={engine.slug} engine={engine} index={index} />
           ))}
         </div>
       </section>
+
+      <EngineDiscovery engines={engineCards} />
+
+      <OnboardingTour />
     </div>
   );
 }

@@ -9,23 +9,21 @@ type VoiceInputButtonProps = {
   disabled?: boolean;
 };
 
-type SpeechRecognitionType = typeof window extends { webkitSpeechRecognition: infer T }
-  ? T
-  : typeof window extends { SpeechRecognition: infer U }
-  ? U
-  : any;
+type SpeechRecognitionConstructor = new () => SpeechRecognition;
 
 export default function VoiceInputButton({ onTranscript, disabled }: VoiceInputButtonProps) {
   const [supported, setSupported] = useState(false);
   const [listening, setListening] = useState(false);
-  const recognitionRef = useRef<SpeechRecognitionType | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    const SpeechRecognitionConstructor =
+      window.SpeechRecognition ??
+      (window as Window & { webkitSpeechRecognition?: SpeechRecognitionConstructor }).webkitSpeechRecognition;
+    if (!SpeechRecognitionConstructor) return;
     setSupported(true);
-    const recognition = new SpeechRecognition();
+    const recognition = new SpeechRecognitionConstructor();
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = "en-US";

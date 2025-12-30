@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import GdprConsentBanner from "@/components/GdprConsentBanner";
 import { useThemeMode } from "@/lib/themeContext";
+import { engineConfigs } from "@/lib/engineConfig";
 
 const navLinks = [
   { href: "/", label: "Home", icon: Compass },
@@ -26,16 +27,10 @@ const navLinks = [
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
 ];
 
-const engineLinks = [
-  { href: "/horoscope", label: "Horoscope" },
-  { href: "/past-life", label: "Past Life" },
-  { href: "/future", label: "Future" },
-  { href: "/matchmaking", label: "Matchmaking" },
-  { href: "/timeline", label: "Timeline" },
-  { href: "/varshaphal", label: "Varshaphal" },
-  { href: "/transits", label: "Transits" },
-  { href: "/core-wisdom", label: "Core Wisdom" },
-];
+const engineLinks = engineConfigs.map((engine) => ({
+  href: `/${engine.slug}`,
+  label: engine.title,
+}));
 
 const easeOutCurve: [number, number, number, number] = [0, 0, 0.58, 1];
 
