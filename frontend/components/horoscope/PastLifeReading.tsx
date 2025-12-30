@@ -246,7 +246,10 @@ export default function PastLifeReading({ chart, form }: Props) {
                   initial={reduceMotion ? "open" : "closed"}
                   animate="open"
                   exit={reduceMotion ? "open" : "closed"}
-                  transition={{ duration: reduceMotion ? 0 : 0.35, ease: "easeOut" }}
+                  transition={{
+                    duration: reduceMotion ? 0 : 0.35,
+                    ease: [0.25, 0.46, 0.45, 0.94],
+                  }}
                 >
                   <summary>
                     <div className="past-life-card__art" aria-hidden="true">
