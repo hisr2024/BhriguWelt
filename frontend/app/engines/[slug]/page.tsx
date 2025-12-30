@@ -14,17 +14,15 @@ export function generateStaticParams() {
 
 export function generateMetadata({ params }: EnginePageProps) {
   const engine = engineBySlug[params.slug];
-  if (!engine) {
-    return {
-      title: "Engine not found · BhriguWelt",
-      description: "Engine not available.",
-    };
-  }
-
-  return {
-    title: `${engine.title} · BhriguWelt`,
-    description: engine.description,
-  };
+  return engine
+    ? {
+        title: `${engine.title} · BhriguWelt`,
+        description: engine.description,
+      }
+    : {
+        title: "Engine not found · BhriguWelt",
+        description: "Engine not available.",
+      };
 }
 
 export default function EngineSlugPage({ params }: EnginePageProps) {
