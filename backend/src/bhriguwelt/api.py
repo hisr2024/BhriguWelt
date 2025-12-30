@@ -48,6 +48,7 @@ from .horoscope import (
     build_prediction,
     _snapshot_from_request,
 )
+from .implementation_core import build_implementation_core_response
 from .experience_flow import build_unified_experience_flow
 from .past_future_bridge import build_past_future_synthesis
 from .matchmaking_engine import run_matchmaking_pipeline
@@ -183,6 +184,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/transits"): "_handle_transits",
         ("POST", "/core-wisdom"): "_handle_core_wisdom",
         ("POST", "/core-engines"): "_handle_core_engines",
+        ("POST", "/implementation-core"): "_handle_implementation_core",
         ("POST", "/karmic-dashboard"): "_handle_karmic_dashboard",
         ("POST", "/experience-flow"): "_handle_experience_flow",
         ("POST", "/wisdom-aggregator"): "_handle_wisdom_aggregator",
@@ -333,6 +335,14 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.BAD_REQUEST, "focus_areas must be a list when provided")
             return
         self._respond_with_command("core-wisdom", payload)
+
+    def _handle_implementation_core(self) -> None:
+        payload = self._read_json()
+        focus_areas = payload.get("focus_areas")
+        if focus_areas is not None and not isinstance(focus_areas, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "focus_areas must be a list when provided")
+            return
+        self._respond_with_command("implementation-core", payload)
 
     def _handle_core_engines(self) -> None:
         payload = self._read_json()
@@ -819,6 +829,10 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         }
         _ensure_visualization_payload(response)
         return response
+    if command == "implementation-core":
+        request = _request_from_payload(payload)
+        response = build_implementation_core_response(request, payload.get("focus_areas") or None)
+        return response.to_dict()
     if command == "core-engines":
         request = _request_from_payload(payload)
         outputs = build_engine_outputs(request)
