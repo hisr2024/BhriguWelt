@@ -5,12 +5,24 @@ import { createContext, useContext, useMemo, useState } from "react";
 import { CalendarDetails } from "@/types/astro";
 import { HouseSummary } from "./houseGrid";
 
-type SakaDate = { year?: number; month?: string; day?: number };
+type SakaDate = { year?: number; month?: string; monthIndex?: number; day?: number; leapYear?: boolean };
 
 type SakaState = {
   details?: CalendarDetails;
   sakaDate?: SakaDate;
+  sakaLabel?: string;
   houseGrid?: HouseSummary[];
+  panchang?: {
+    tithiName?: string;
+    nakshatra?: string;
+    yoga?: string;
+    karana?: string;
+    weekday?: string;
+    conversionFactorYears?: number;
+    istLongitude?: number;
+    sources?: string[];
+    ephemerisSource?: string;
+  };
   payload?: unknown;
 };
 
@@ -67,11 +79,24 @@ export function deriveHousePlacements(houseGrid: HouseSummary[] = [], sakaDay?: 
   } as const;
 }
 
+export function formatSakaLabel(sakaDate?: SakaDate) {
+  if (!sakaDate) return "Awaiting Śaka conversion";
+  const parts = ["Śaka", sakaDate.day, sakaDate.month, sakaDate.year].filter(Boolean);
+  const baseLabel = parts.join(" ").trim();
+
+  if (sakaDate.leapYear === undefined && !sakaDate.monthIndex) return baseLabel;
+
+  const qualifiers = [
+    sakaDate.monthIndex ? `month ${sakaDate.monthIndex}` : null,
+    sakaDate.leapYear !== undefined ? (sakaDate.leapYear ? "leap year" : "common year") : null,
+  ].filter(Boolean);
+
+  return qualifiers.length ? `${baseLabel} (${qualifiers.join(" · ")})` : baseLabel;
+}
+
 export function formatHouseNarrative(houseGrid: HouseSummary[] = [], sakaDate?: SakaDate) {
   if (!houseGrid.length) return "";
-  const sakaLabel = sakaDate
-    ? [`Śaka ${sakaDate.year ?? ""}`.trim(), sakaDate.month, sakaDate.day].filter(Boolean).join(" ")
-    : "Śaka calendar";
+  const sakaLabel = sakaDate ? formatSakaLabel(sakaDate) : "Śaka calendar";
   const highlights = houseGrid
     .slice(0, 3)
     .map((house) => `House ${house.index} (${house.sign}) • ${house.focus}`)

@@ -7,9 +7,10 @@ extensions still receive consistent payloads.
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from math import fmod, pi, sin
 from typing import Dict, Tuple
 from zoneinfo import ZoneInfo
@@ -95,9 +96,34 @@ def _fallback_cycle(value: int, modulus: int, offset: int = 0) -> int:
     return ((value + offset) % modulus) or modulus
 
 
+def _house_from_longitude(longitude_value: float) -> int:
+    return int(longitude_value // 30) + 1
+
+
+def _ascendant_house(sun_long: float, dt: datetime, longitude: float | None = None) -> int:
+    utc_dt = dt.astimezone(timezone.utc)
+    rotation_offset = (utc_dt.hour * 60 + utc_dt.minute) / 4.0
+    ascendant_long = (sun_long + rotation_offset + (longitude or 0.0)) % 360
+    return _house_from_longitude(ascendant_long)
+
+
 def _mean_longitude(base_longitude: float, mean_motion: float, delta_days: float) -> float:
     value = fmod(base_longitude + mean_motion * delta_days, 360.0)
     return value + 360 if value < 0 else value
+
+
+def _approximate_longitudes(utc_dt: datetime) -> Dict[str, float]:
+    delta_days = (utc_dt - datetime(2000, 1, 1, 12, tzinfo=timezone.utc)).total_seconds() / 86400
+    return {
+        "sun": _mean_longitude(280.460, 0.98564736, delta_days),
+        "moon": _mean_longitude(218.316, 13.176396, delta_days),
+        "mars": _mean_longitude(355.433, 0.524039, delta_days),
+        "saturn": _mean_longitude(50.077, 0.033459, delta_days),
+        "venus": _mean_longitude(181.979, 1.602130, delta_days),
+        "ketu": _mean_longitude(204.0, -0.0529538, delta_days),
+        "mercury": _mean_longitude(252.250, 4.092334, delta_days),
+        "jupiter": _mean_longitude(34.351, 0.083092, delta_days),
+    }
 
 
 def derive_lunar_details(dt: datetime, latitude: float | None = None, longitude: float | None = None) -> Dict[str, int | bool]:
@@ -119,29 +145,42 @@ def derive_lunar_details(dt: datetime, latitude: float | None = None, longitude:
             pass
 
     utc_dt = dt.astimezone(timezone.utc)
+    delta_days = (utc_dt - datetime(2000, 1, 1, 12, tzinfo=timezone.utc)).total_seconds() / 86400
+    longitudes = _approximate_longitudes(utc_dt)
     precomputed = _BENCHMARK_FALLBACKS.get(utc_dt.isoformat())
     if precomputed:
-        return precomputed
+        enriched = dict(precomputed)
+        enriched.setdefault(
+            "moon_house",
+            _house_from_longitude(longitudes["moon"]),
+        )
+        enriched.setdefault(
+            "ascendant_house",
+            _ascendant_house(longitudes["sun"], dt, longitude=longitude),
+        )
+        return enriched
 
-    delta_days = (utc_dt - datetime(2000, 1, 1, 12, tzinfo=timezone.utc)).total_seconds() / 86400
-    sun_long = _mean_longitude(280.460, 0.98564736, delta_days)
-    moon_long = _mean_longitude(218.316, 13.176396, delta_days)
+    sun_long = longitudes["sun"]
+    moon_long = longitudes["moon"]
     lunar_tithi = int(((moon_long - sun_long) % 360) // 12) + 1
     moon_element = _element_from_longitude(moon_long)
 
-    mars_long = _mean_longitude(355.433, 0.524039, delta_days)
-    saturn_long = _mean_longitude(50.077, 0.033459, delta_days)
-    venus_long = _mean_longitude(181.979, 1.602130, delta_days)
-    ketu_long = _mean_longitude(204.0, -0.0529538, delta_days)  # retrograde node
-    mercury_long = _mean_longitude(252.250, 4.092334, delta_days)
-    jupiter_long = _mean_longitude(34.351, 0.083092, delta_days)
+    mars_long = longitudes["mars"]
+    saturn_long = longitudes["saturn"]
+    venus_long = longitudes["venus"]
+    ketu_long = longitudes["ketu"]
+    mercury_long = longitudes["mercury"]
+    jupiter_long = longitudes["jupiter"]
+    rahu_long = (ketu_long + 180) % 360
 
-    mars_house = int(mars_long // 30) + 1
-    saturn_house = int(saturn_long // 30) + 1
-    venus_house = int(venus_long // 30) + 1
-    ketu_house = int(ketu_long // 30) + 1
-    mercury_house = int(mercury_long // 30) + 1
-    jupiter_house = int(jupiter_long // 30) + 1
+    mars_house = _house_from_longitude(mars_long)
+    saturn_house = _house_from_longitude(saturn_long)
+    venus_house = _house_from_longitude(venus_long)
+    ketu_house = _house_from_longitude(ketu_long)
+    mercury_house = _house_from_longitude(mercury_long)
+    jupiter_house = _house_from_longitude(jupiter_long)
+    rahu_house = _house_from_longitude(rahu_long)
+    ascendant_house = _ascendant_house(sun_long, dt, longitude=longitude)
 
     saturn_phase = sin(2 * pi * (delta_days / 378.09))
     saturn_retrograde = saturn_phase < 0
@@ -150,9 +189,12 @@ def derive_lunar_details(dt: datetime, latitude: float | None = None, longitude:
     return {
         "lunar_tithi": lunar_tithi,
         "moon_element": moon_element,
+        "moon_house": _house_from_longitude(moon_long),
+        "ascendant_house": ascendant_house,
         "mars_house": mars_house,
         "saturn_house": saturn_house,
         "venus_house": venus_house,
+        "rahu_house": rahu_house,
         "ketu_house": ketu_house,
         "mercury_house": mercury_house,
         "jupiter_house": jupiter_house,
@@ -212,6 +254,9 @@ def derive_transit_snapshot(
         "mars_house": transit_details["mars_house"],
         "saturn_house": transit_details["saturn_house"],
         "venus_house": transit_details["venus_house"],
+        "moon_house": transit_details["moon_house"],
+        "rahu_house": transit_details["rahu_house"],
+        "ascendant_house": transit_details["ascendant_house"],
         "ketu_house": transit_details["ketu_house"],
         "mercury_house": transit_details["mercury_house"],
         "jupiter_house": transit_details["jupiter_house"],
@@ -306,9 +351,17 @@ def geocode_location(birth_place: str) -> Tuple[float | None, float | None, str 
             tz_name = None
 
     if latitude is None or longitude is None:
-        ordinal_hash = hash(birth_place)
+        digest = hashlib.sha256(birth_place.encode("utf-8")).hexdigest()
+        ordinal_hash = int(digest[:16], 16)
         latitude = ((ordinal_hash % 18000) / 100) - 90
         longitude = ((ordinal_hash // 18000 % 36000) / 100) - 180
+
+    if tz_name is None and TimezoneFinder is not None:
+        try:  # pragma: no cover - optional dependency
+            tz_finder = TimezoneFinder()
+            tz_name = tz_finder.timezone_at(lng=longitude, lat=latitude)
+        except Exception:
+            tz_name = None
 
     return latitude, longitude, tz_name
 
@@ -348,15 +401,15 @@ def _swisseph_lunar_details(dt: datetime, latitude: float | None = None, longitu
     lunar_tithi = int(((moon_long - sun_long) % 360) // 12) + 1
     moon_element = _element_from_longitude(moon_long)
 
-    def _house_from_longitude(longitude_value: float) -> int:
-        return int(longitude_value // 30) + 1
-
     mars_house = _house_from_longitude(mars_long)
     saturn_house = _house_from_longitude(saturn_long)
     venus_house = _house_from_longitude(venus_long)
     ketu_house = _house_from_longitude(ketu_long)
+    rahu_house = _house_from_longitude(rahu_long)
+    moon_house = _house_from_longitude(moon_long)
     mercury_house = _house_from_longitude(mercury_long)
     jupiter_house = _house_from_longitude(jupiter_long)
+    ascendant_house = _house_from_longitude(sun_long)
 
     saturn_retrograde = saturn_speed < 0
     rahu_aspects_ascendant = (rahu_long % 60) < 20
@@ -367,9 +420,13 @@ def _swisseph_lunar_details(dt: datetime, latitude: float | None = None, longitu
         "mars_house": mars_house,
         "saturn_house": saturn_house,
         "venus_house": venus_house,
+        "rahu_house": rahu_house,
         "ketu_house": ketu_house,
+        "moon_house": moon_house,
         "mercury_house": mercury_house,
         "jupiter_house": jupiter_house,
+        "moon_house": _house_from_longitude(moon_long),
+        "ascendant_house": _ascendant_house(sun_long, dt, longitude=longitude),
         "saturn_retrograde": saturn_retrograde,
         "rahu_aspects_ascendant": rahu_aspects_ascendant,
     }

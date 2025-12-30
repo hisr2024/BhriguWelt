@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List
 
-from .astronomical_calculations import _clamp_latlon, geocode_location, has_swisseph, normalize_birth_datetime
+from .chart_engine import ChartEngine
 from .calculations import CelestialSnapshot
 
 SIGNS = [
@@ -77,64 +77,6 @@ def _fallback_occupants(snapshot: CelestialSnapshot) -> Dict[int, List[str]]:
     return mapping
 
 
-def _swisseph_occupants(snapshot: CelestialSnapshot, tz_name: str | None) -> Dict[int, List[str]]:
-    try:  # pragma: no cover - depends on optional binary wheels
-        import swisseph as swe
-    except Exception:  # pragma: no cover - fallback when Swiss Ephemeris missing
-        return _fallback_occupants(snapshot)
-
-    try:  # pragma: no cover - rely on fallbacks when Swiss Ephemeris misbehaves
-        birth_dt = normalize_birth_datetime(
-            birth_date=snapshot.birth_date.isoformat(),
-            birth_time=snapshot.birth_time.isoformat(timespec="minutes"),
-            timezone_name=tz_name,
-        )
-        latitude, longitude, _ = geocode_location(snapshot.birth_place)
-        clamped_lat, clamped_lon = _clamp_latlon(latitude, longitude)
-        swe.set_topo(clamped_lon, clamped_lat, 0)
-        julian_day = swe.julday(
-            birth_dt.year,
-            birth_dt.month,
-            birth_dt.day,
-            birth_dt.hour + birth_dt.minute / 60.0,
-            swe.GREG_CAL,
-        )
-
-        occupants: Dict[int, List[str]] = {index: [] for index in range(1, 13)}
-        planet_codes = {
-            "Sun": swe.SUN,
-            "Moon": swe.MOON,
-            "Mars": swe.MARS,
-            "Mercury": swe.MERCURY,
-            "Jupiter": swe.JUPITER,
-            "Venus": swe.VENUS,
-            "Saturn": swe.SATURN,
-            "Rahu": swe.MEAN_NODE,
-            "Ketu": swe.MEAN_NODE,
-        }
-
-        ascendant = int((swe.houses_ex(julian_day, clamped_lat, clamped_lon, b"P"))[0][0] // 30) + 1
-        occupants[ascendant].append("Asc")
-
-        for planet_name, code in planet_codes.items():
-            position = swe.calc_ut(julian_day, code)[0][0]
-            house_number = int(position // 30) + 1
-            label = planet_name
-            if planet_name == "Ketu":
-                ketu_house = ((house_number + 6 - 1) % 12) + 1
-                occupants[ketu_house].append(label)
-            else:
-                occupants[house_number].append(label)
-
-        return occupants
-    except Exception:
-        # When the Swiss Ephemeris extension is installed but fails to compute
-        # houses (common on minimal CI images lacking data files), gracefully
-        # fall back to the deterministic placements so downstream reports still
-        # render.
-        return _fallback_occupants(snapshot)
-
-
 def _overlay_notes(weights: Dict[str, float] | None) -> List[str]:
     if not weights:
         return []
@@ -148,8 +90,20 @@ def _overlay_notes(weights: Dict[str, float] | None) -> List[str]:
 def generate_kundli(snapshot: CelestialSnapshot, weights: Dict[str, float] | None = None, timezone_name: str | None = None):
     """Return Rashi, Bhava, and Vimshottari dasha details for visualization."""
 
-    occupant_map = _swisseph_occupants(snapshot, tz_name=timezone_name) if has_swisseph() else _fallback_occupants(snapshot)
+    chart_engine = ChartEngine()
+    occupant_map = _fallback_occupants(snapshot)
+    moon_longitude = None
+    ephemeris_source = "Mean motions fallback"
+    try:
+        chart_result = chart_engine.compute_chart(snapshot=snapshot, timezone_name=timezone_name)
+        occupant_map = chart_result.occupant_map or occupant_map
+        moon_longitude = chart_result.planet_longitudes.get("Moon")
+        ephemeris_source = chart_result.ephemeris_source
+    except Exception:
+        # Keep deterministic fallback map when chart computation fails.
+        pass
     overlay = _overlay_notes(weights)
+    birth_dt = datetime.combine(snapshot.birth_date, snapshot.birth_time).replace(tzinfo=timezone.utc)
 
     def build_chart(offset: int = 0) -> List[ChartHouse]:
         houses: List[ChartHouse] = []
@@ -163,12 +117,25 @@ def generate_kundli(snapshot: CelestialSnapshot, weights: Dict[str, float] | Non
     rashi_chart = build_chart()
     bhava_chart = build_chart(offset=1)
 
-    dashas = generate_vimshottari_dasha(snapshot, weights)
+    dashas = []
+    raw_dashas = chart_engine.compute_dashas(birth_dt, moon_longitude=moon_longitude)
+    for entry in raw_dashas:
+        dashas.append(
+            DashaPeriod(
+                lord=entry.get("lord", ""),
+                start=entry.get("start", ""),
+                end=entry.get("end", ""),
+                anchor_rule=entry.get("anchor_rule", "Aligned with natal snapshot"),
+            )
+        )
+    if not dashas:
+        dashas = generate_vimshottari_dasha(snapshot, weights)
 
     return {
         "rashi_chart": rashi_chart,
         "bhava_chart": bhava_chart,
         "dashas": dashas,
+        "ephemeris_source": ephemeris_source,
     }
 
 

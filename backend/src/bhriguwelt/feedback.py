@@ -204,6 +204,59 @@ def quarterly_reviews(limit: int = 8) -> List[Dict[str, object]]:
     return summary
 
 
+def feedback_analytics_snapshot(limit_recent: int = 5) -> Dict[str, Any]:
+    with _connect() as connection:
+        total_count = connection.execute("SELECT COUNT(*) FROM feedback").fetchone()[0]
+        average_rating = connection.execute("SELECT AVG(rating) FROM feedback").fetchone()[0]
+        ratings_breakdown = connection.execute(
+            "SELECT rating, COUNT(*) AS total FROM feedback GROUP BY rating ORDER BY rating"
+        ).fetchall()
+        by_engine = connection.execute(
+            """
+            SELECT engine, COUNT(*) AS submissions, AVG(rating) AS average_rating,
+                   SUM(CASE WHEN rating >= 4 THEN 1 ELSE 0 END) AS promoters
+            FROM feedback
+            GROUP BY engine
+            ORDER BY submissions DESC
+            """
+        ).fetchall()
+        recent_entries = connection.execute(
+            """
+            SELECT id, engine, rating, seeker_name, notes, created_at
+            FROM feedback
+            ORDER BY created_at DESC
+            LIMIT ?
+            """,
+            (limit_recent,),
+        ).fetchall()
+
+    return {
+        "total": total_count,
+        "average_rating": round(average_rating, 2) if average_rating is not None else None,
+        "ratings_breakdown": {row["rating"]: row["total"] for row in ratings_breakdown},
+        "by_engine": [
+            {
+                "engine": row["engine"],
+                "submissions": row["submissions"],
+                "average_rating": round(row["average_rating"], 2) if row["average_rating"] is not None else None,
+                "promoters": row["promoters"] or 0,
+            }
+            for row in by_engine
+        ],
+        "recent": [
+            {
+                "id": row["id"],
+                "engine": row["engine"],
+                "rating": row["rating"],
+                "seeker_name": row["seeker_name"],
+                "notes": row["notes"],
+                "created_at": row["created_at"],
+            }
+            for row in recent_entries
+        ],
+    }
+
+
 def serialize_entry(entry: FeedbackEntry) -> Dict[str, object]:
     return asdict(entry)
 
@@ -235,4 +288,11 @@ def load_feedback_dataframe(limit: int | None = None):
     return frame
 
 
-__all__ = ["FeedbackEntry", "record_feedback", "quarterly_reviews", "serialize_entry", "load_feedback_dataframe"]
+__all__ = [
+    "FeedbackEntry",
+    "record_feedback",
+    "quarterly_reviews",
+    "feedback_analytics_snapshot",
+    "serialize_entry",
+    "load_feedback_dataframe",
+]
