@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { ZoomIn } from "lucide-react";
 
 const baseSignals = [65, 78, 52, 88, 71, 94, 60];
@@ -11,6 +12,7 @@ type EngineZoomChartProps = {
 
 export default function EngineZoomChart({ accent }: EngineZoomChartProps) {
   const [zoom, setZoom] = useState(1);
+  const shouldReduceMotion = useReducedMotion();
 
   const signals = useMemo(() => baseSignals.map((value) => Math.min(100, Math.round(value * zoom))), [zoom]);
 
@@ -21,7 +23,12 @@ export default function EngineZoomChart({ accent }: EngineZoomChartProps) {
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Interactive chart</p>
           <h4 className="text-lg font-semibold text-white">Zoomable signal map</h4>
         </div>
-        <ZoomIn className="h-5 w-5 text-indigo-300" />
+        <motion.div
+          animate={shouldReduceMotion ? undefined : { y: [0, -4, 0] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <ZoomIn className="h-5 w-5 text-indigo-300" />
+        </motion.div>
       </div>
       <div className="mt-4 flex items-center gap-3 text-xs text-slate-300">
         <span>Zoom</span>
@@ -41,9 +48,11 @@ export default function EngineZoomChart({ accent }: EngineZoomChartProps) {
         {signals.map((value, index) => (
           <div key={`signal-${index}`} className="flex flex-col items-center gap-2">
             <div className="h-24 w-full rounded-full bg-white/5">
-              <div
+              <motion.div
                 className={`w-full rounded-full bg-gradient-to-t ${accent}`}
-                style={{ height: `${value}%` }}
+                initial={shouldReduceMotion ? undefined : { height: "0%" }}
+                animate={{ height: `${value}%` }}
+                transition={{ duration: 0.5, delay: index * 0.04, ease: "easeOut" }}
               />
             </div>
             <span className="text-[0.65rem] text-slate-400">S{index + 1}</span>

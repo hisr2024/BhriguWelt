@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ArrowUpRight, Cpu, HelpCircle, Radar, Waves } from "lucide-react";
 import { engineBySlug } from "@/lib/engineConfig";
 import type { EngineResult } from "@/lib/engineConfig";
@@ -17,6 +17,14 @@ import EngineFeedbackForm from "@/components/EngineFeedbackForm";
 
 const easeOutCurve: [number, number, number, number] = [0, 0, 0.58, 1];
 const transition = { duration: 0.45, ease: easeOutCurve };
+const staggerContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
+const staggerItem = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition },
+};
 
 const engineStats = [
   { label: "Signal clarity", value: "92%", icon: Radar },
@@ -31,6 +39,7 @@ type EnginePageProps = {
 export default function EnginePage({ slug }: EnginePageProps) {
   const config = engineBySlug[slug];
   const Icon = config.icon;
+  const shouldReduceMotion = useReducedMotion();
 
   const result = useMemo<EngineResult>(
     () => ({
@@ -76,34 +85,63 @@ export default function EnginePage({ slug }: EnginePageProps) {
                   <h1 className="text-3xl font-semibold text-white sm:text-4xl">{config.description}</h1>
                   <p className="max-w-2xl text-sm text-slate-300">{config.cardDescription}</p>
                 </div>
-                <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${config.accent}`}>
+                <motion.div
+                  className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${config.accent}`}
+                  animate={
+                    shouldReduceMotion
+                      ? undefined
+                      : {
+                          y: [0, -6, 0],
+                          rotate: [0, 4, 0],
+                        }
+                  }
+                  transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+                  whileHover={shouldReduceMotion ? undefined : { scale: 1.06, rotate: 8 }}
+                >
                   <Icon className="h-6 w-6 text-white" />
-                </div>
+                </motion.div>
               </div>
-              <div className="flex flex-wrap gap-3">
+              <motion.div
+                className="flex flex-wrap gap-3"
+                variants={staggerContainer}
+                initial="hidden"
+                animate="show"
+              >
                 {config.features.map((feature) => (
-                  <span
+                  <motion.span
                     key={feature}
+                    variants={staggerItem}
+                    whileHover={shouldReduceMotion ? undefined : { y: -3, scale: 1.02 }}
                     className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200"
                   >
                     {feature}
-                  </span>
+                  </motion.span>
                 ))}
-              </div>
-              <div className="grid gap-4 md:grid-cols-3">
+              </motion.div>
+              <motion.div
+                className="grid gap-4 md:grid-cols-3"
+                variants={staggerContainer}
+                initial="hidden"
+                animate="show"
+              >
                 {engineStats.map((stat) => {
                   const StatIcon = stat.icon;
                   return (
-                    <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <motion.div
+                      key={stat.label}
+                      variants={staggerItem}
+                      whileHover={shouldReduceMotion ? undefined : { y: -4 }}
+                      className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                    >
                       <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-400">
                         {stat.label}
                         <StatIcon className="h-4 w-4 text-indigo-300" />
                       </div>
                       <p className="mt-2 text-lg font-semibold text-white">{stat.value}</p>
-                    </div>
+                    </motion.div>
                   );
                 })}
-              </div>
+              </motion.div>
             </div>
           </motion.section>
 
