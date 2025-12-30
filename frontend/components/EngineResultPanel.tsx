@@ -26,7 +26,7 @@ export default function EngineResultPanel({ result, accent, engineTitle }: Engin
       transition={transition}
       className="space-y-6"
     >
-      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-950/80 p-6 shadow-[0_30px_60px_rgba(2,6,23,0.55)]">
+      <div className="result-frame relative overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70 p-6">
         <div className={`absolute inset-0 bg-gradient-to-br ${accent} opacity-70`} aria-hidden />
         <div className="relative space-y-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -45,14 +45,7 @@ export default function EngineResultPanel({ result, accent, engineTitle }: Engin
             const Icon = highlightIcons[index % highlightIcons.length];
             const confidence = 70 + index * 8;
             return (
-              <motion.div
-                key={highlight.label}
-                custom={index}
-                variants={highlightVariants}
-                initial="hidden"
-                animate="show"
-                className="rounded-2xl border border-white/10 bg-slate-950/70 p-4 shadow-[0_12px_30px_rgba(2,6,23,0.45)]"
-              >
+              <div key={highlight.label} className="result-highlight rounded-2xl border border-white/10 bg-slate-950/60 p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-slate-300">

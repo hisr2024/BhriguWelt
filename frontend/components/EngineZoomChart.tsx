@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { ZoomIn } from "lucide-react";
 
 import { AnimatePresence, motion, useReducedMotion } from "@/lib/framer-motion";
@@ -82,24 +83,13 @@ export default function EngineZoomChart({ accent }: EngineZoomChartProps) {
         animate={shouldAnimate ? "visible" : false}
       >
         {signals.map((value, index) => (
-          <motion.div
-            key={`signal-${index}`}
-            className="flex flex-col items-center gap-2"
-            variants={shouldAnimate ? barVariants : undefined}
-            custom={index}
-            onMouseEnter={() => setHoveredIndex(index)}
-            onFocus={() => setHoveredIndex(index)}
-            onMouseLeave={() => setHoveredIndex(null)}
-            onBlur={() => setHoveredIndex(null)}
-            whileHover={shouldAnimate ? { y: -2 } : undefined}
-            transition={{ duration: 0.2 }}
-          >
-            <div className="relative h-24 w-full overflow-hidden rounded-full bg-white/5">
+          <div key={`signal-${index}`} className="flex flex-col items-center gap-2">
+            <div className="h-24 w-full rounded-full bg-white/5">
               <motion.div
-                className={`absolute bottom-0 w-full rounded-full bg-gradient-to-t ${accent}`}
-                initial={shouldAnimate ? { height: 0 } : false}
+                className={`w-full rounded-full bg-gradient-to-t ${accent}`}
+                initial={{ height: 0 }}
                 animate={{ height: `${value}%` }}
-                transition={shouldAnimate ? { duration: 0.5, ease: [0, 0, 0.58, 1] } : { duration: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
               />
             </div>
             <span className="text-[0.65rem] text-slate-400">S{index + 1}</span>

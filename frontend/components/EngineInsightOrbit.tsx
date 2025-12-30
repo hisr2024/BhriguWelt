@@ -4,7 +4,9 @@ import { useState } from "react";
 import { motion, type Easing } from "framer-motion";
 import type { EngineResult } from "@/lib/engineConfig";
 
-const orbitTransition = { duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9] as Easing };
+const orbitTransition = { duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9] };
+const orbitSpin = { duration: 50, repeat: Infinity, ease: "linear" as const };
+const pulseTransition = { duration: 3.2, repeat: Infinity, ease: "easeInOut" as const };
 
 type EngineInsightOrbitProps = {
   highlights: EngineResult["highlights"];
@@ -21,7 +23,17 @@ export default function EngineInsightOrbit({ highlights, accent }: EngineInsight
         <div className="relative flex items-center justify-center">
           <div className={`absolute inset-0 rounded-full bg-gradient-to-br ${accent} blur-2xl opacity-60`} />
           <div className="relative flex h-40 w-40 items-center justify-center rounded-full border border-white/20">
-            <span className="absolute h-3 w-3 rounded-full bg-white/80 shadow-glow" />
+            <motion.div
+              className="absolute inset-0 rounded-full border border-white/10"
+              animate={{ rotate: 360 }}
+              transition={orbitSpin}
+              aria-hidden
+            />
+            <motion.span
+              className="absolute h-3 w-3 rounded-full bg-white/80 shadow-glow"
+              animate={{ scale: [1, 1.25, 1] }}
+              transition={pulseTransition}
+            />
             {highlights.map((highlight, index) => (
               <motion.button
                 key={highlight.label}
