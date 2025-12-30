@@ -38,7 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
-      <body className="min-h-screen bg-midnight text-slate-100">
+      <body className="min-h-screen bg-slate-900 text-slate-100">
         <Providers>
           <AppShell>{children}</AppShell>
         </Providers>
