@@ -117,6 +117,33 @@
     opacity: 0.6;
     animation: cosmic-float 6s ease-in-out infinite;
   }
+
+  .result-frame {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1.75rem;
+    box-shadow: 0 30px 70px rgba(2, 6, 23, 0.55);
+  }
+
+  .result-frame::after {
+    content: "";
+    position: absolute;
+    inset: -40%;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.18), transparent 60%);
+    opacity: 0.35;
+    animation: result-shimmer 10s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .result-highlight {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .result-highlight:hover {
+    transform: translateY(-2px);
+    border-color: rgba(129, 140, 248, 0.6);
+  }
 }
 
 @keyframes cosmic-float {
@@ -128,5 +155,15 @@
   50% {
     transform: translateY(-12px);
     opacity: 1;
+  }
+}
+
+@keyframes result-shimmer {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(10%, -6%, 0) scale(1.05);
   }
 }

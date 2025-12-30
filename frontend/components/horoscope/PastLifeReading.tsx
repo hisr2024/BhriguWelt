@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
+import type { Easing } from "framer-motion";
 import { AnimatePresence, motion, useReducedMotion } from "@/lib/framer-motion";
 import { getFallbackSample } from "@/lib/api";
 import { ChartResponse, FormState } from "./types";
@@ -14,7 +15,7 @@ const FALLBACK_TAGLINES = [
   "Past-life bonds hint at compassionate leadership.",
 ];
 
-const easeOutCurve: [number, number, number, number] = [0, 0, 0.58, 1];
+const easeOutCurve: Easing = [0, 0, 0.58, 1];
 
 type InsightRecord = {
   narrative: string;

@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { HOUSE_FOCUSES, deriveChartHouses } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
 import { areMicroAnimationsAllowed } from "@/lib/immersive";
@@ -26,6 +27,30 @@ type InsightSection = {
 };
 
 const DEFAULT_DETAIL_LEVEL: "beginner" | "advanced" = "advanced";
+const sectionVariants = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9] } },
+};
+const sectionGridVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
+
+const engineAccents: Record<ResultEngine, string> = {
+  horoscope: "from-indigo-500/40 via-sky-500/20 to-fuchsia-500/40",
+  "past-life": "from-amber-400/40 via-rose-400/20 to-violet-500/40",
+  future: "from-cyan-400/40 via-blue-500/20 to-indigo-500/40",
+  matchmaking: "from-fuchsia-400/40 via-pink-500/20 to-amber-500/40",
+  calendar: "from-emerald-400/40 via-teal-500/20 to-sky-500/40",
+};
+
+const engineLabels: Record<ResultEngine, string> = {
+  horoscope: "Horoscope engine",
+  "past-life": "Past-life engine",
+  future: "Future engine",
+  matchmaking: "Matchmaking engine",
+  calendar: "Calendar engine",
+};
 
 type TimeframeAnchor = {
   label: string;
@@ -131,13 +156,16 @@ function renderSection(section: InsightSection, index: number) {
     section.collapsible && ((section.english?.length ?? 0) > 180 || trimmedBullets.length > 3 || section.hindi),
   );
   const content = (
-    <div className="insight-content">
-      <p>{englishCopy}</p>
-      {hindiCopy ? <p className="muted">{hindiCopy}</p> : null}
+    <div className="insight-content space-y-3 text-sm text-slate-100/90">
+      <p className="leading-relaxed">{englishCopy}</p>
+      {hindiCopy ? <p className="text-slate-300">{hindiCopy}</p> : null}
       {trimmedBullets.length > 0 && (
-        <ul>
+        <ul className="space-y-2 text-slate-200">
           {trimmedBullets.map((bullet, bulletIndex) => (
-            <li key={bulletIndex}>{bullet}</li>
+            <li key={bulletIndex} className="flex gap-2">
+              <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-indigo-400" aria-hidden />
+              <span>{bullet}</span>
+            </li>
           ))}
         </ul>
       )}
@@ -146,21 +174,31 @@ function renderSection(section: InsightSection, index: number) {
 
   if (shouldCollapse) {
     return (
-      <article key={index} className="insight-block">
-        <h4>{section.heading}</h4>
-        <details>
-          <summary className="insight-summary">Expand details</summary>
-          {content}
+      <motion.article
+        key={index}
+        variants={sectionVariants}
+        className="insight-block rounded-2xl border border-white/10 bg-slate-950/70 p-5 shadow-[0_18px_40px_rgba(2,6,23,0.35)]"
+      >
+        <h4 className="text-base font-semibold text-white">{section.heading}</h4>
+        <details className="group mt-3 space-y-3">
+          <summary className="insight-summary cursor-pointer text-xs font-semibold uppercase tracking-[0.3em] text-slate-300">
+            Expand details
+          </summary>
+          <div className="pt-2">{content}</div>
         </details>
-      </article>
+      </motion.article>
     );
   }
 
   return (
-    <article key={index} className="insight-block">
-      <h4>{section.heading}</h4>
-      {content}
-    </article>
+    <motion.article
+      key={index}
+      variants={sectionVariants}
+      className="insight-block rounded-2xl border border-white/10 bg-slate-950/70 p-5 shadow-[0_18px_40px_rgba(2,6,23,0.35)]"
+    >
+      <h4 className="text-base font-semibold text-white">{section.heading}</h4>
+      <div className="mt-3">{content}</div>
+    </motion.article>
   );
 }
 
@@ -522,6 +560,8 @@ function buildSections(engine: ResultEngine, payload: unknown): InsightSection[]
 export default function PredictionCard({ title, payload, engine, seekerName }: Props) {
   const { t } = useI18n();
   const sections = useMemo(() => buildSections(engine, payload), [engine, payload]);
+  const accent = engineAccents[engine] ?? engineAccents.horoscope;
+  const engineLabel = engineLabels[engine] ?? "Engine results";
   const horoscopePayload = engine === "horoscope" && typeof payload === "object" ? (payload as HoroscopePayload) : null;
   const feedbackContext = useMemo(() => {
     if (!payload || typeof payload !== "object") return undefined;
@@ -536,6 +576,7 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
   const [animationsEnabled, setAnimationsEnabled] = useState(false);
   const [flipActive, setFlipActive] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
   const [fallbackCharts, setFallbackCharts] = useState<{ rashi: ChartHouse[]; bhava: ChartHouse[] }>({
     rashi: [],
     bhava: [],
@@ -583,23 +624,24 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
     "results",
     "card",
     "prediction-card",
+    "relative",
+    "overflow-hidden",
+    "rounded-[2.5rem]",
+    "border",
+    "border-white/10",
+    "bg-slate-950/80",
+    "p-8",
+    "shadow-[0_30px_60px_rgba(2,6,23,0.55)]",
+    "backdrop-blur",
     animationsEnabled ? "prediction-card--animated" : "",
     flipActive ? "is-flipped" : "",
   ]
     .filter(Boolean)
     .join(" ");
 
-  const escapePdfText = (text: string) =>
-    text
-      .replace(/\\/g, "\\\\")
-      .replace(/\(/g, "\\(")
-      .replace(/\)/g, "\\)")
-      .replace(/\r?\n/g, " ");
-
-  const downloadPdf = useCallback(() => {
-    if (!sections.length) return;
-    setIsSaving(true);
-    const lines = [
+  const buildExportLines = useCallback(() => {
+    if (!sections.length) return [];
+    return [
       `${title} (${engine})`,
       seekerName ? `Seeker: ${seekerName}` : null,
       ...sections.flatMap((section) => [
@@ -609,7 +651,19 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
         ...(section.bullets ?? []),
       ]),
     ].filter(Boolean) as string[];
+  }, [engine, sections, seekerName, title]);
 
+  const escapePdfText = (text: string) =>
+    text
+      .replace(/\\/g, "\\\\")
+      .replace(/\(/g, "\\(")
+      .replace(/\)/g, "\\)")
+      .replace(/\r?\n/g, " ");
+
+  const downloadPdf = useCallback(() => {
+    const lines = buildExportLines();
+    if (!lines.length) return;
+    setIsSaving(true);
     const contentLines = lines.map((line) => escapePdfText(line));
     const streamParts = ["BT", "/F1 12 Tf", "50 780 Td"];
     contentLines.forEach((line, index) => {
@@ -654,15 +708,57 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
     anchor.click();
     URL.revokeObjectURL(url);
     setIsSaving(false);
-  }, [engine, sections, seekerName, title]);
+  }, [buildExportLines, engine]);
+
+  const downloadText = useCallback(() => {
+    const lines = buildExportLines();
+    if (!lines.length) return;
+    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${engine}-guidance.txt`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }, [buildExportLines, engine]);
+
+  const copySummary = useCallback(async () => {
+    const lines = buildExportLines();
+    if (!lines.length) return;
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setCopyStatus("copied");
+    } catch (error) {
+      console.error("Unable to copy summary", error);
+      setCopyStatus("failed");
+    }
+  }, [buildExportLines]);
+
+  useEffect(() => {
+    if (copyStatus === "idle") return;
+    const timeout = window.setTimeout(() => setCopyStatus("idle"), 2200);
+    return () => window.clearTimeout(timeout);
+  }, [copyStatus]);
 
   if (!payload || !sections.length) {
     return (
       <section className={cardClassName} aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
-        <div className="section-heading">
-          <p className="eyebrow">Response</p>
-          <h3>{title}</h3>
-          <p className="muted">{t("results.helper", "Guidance will arrive in clear English and Hindi once you submit.")}</p>
+        <div className={`absolute inset-0 bg-gradient-to-br ${accent} opacity-30`} aria-hidden />
+        <div className="relative space-y-4">
+          <div className="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.3em] text-slate-300">
+            <span className="rounded-full border border-white/15 bg-white/10 px-4 py-1">{engineLabel}</span>
+            <span className="rounded-full border border-white/15 bg-white/10 px-4 py-1">Awaiting results</span>
+          </div>
+          <div className="section-heading space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Response</p>
+            <h3 className="text-2xl font-semibold text-white">{title}</h3>
+            <p className="text-sm text-slate-300">
+              {t("results.helper", "Guidance will arrive in clear English and Hindi once you submit.")}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+            Submit the form to unlock layered narratives, bilingual summaries, and chart visuals tailored to this engine.
+          </div>
         </div>
       </section>
     );
@@ -670,16 +766,23 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
 
   return (
     <section className={cardClassName} aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
-      <div className="prediction-card__body">
-        <div className="section-heading">
-          <p className="eyebrow">Response</p>
-          <h3>{title}</h3>
-          <p className="muted">{t("results.helperRaw", "Narratives are ready to share—no JSON needed.")}</p>
-          <div className="prediction-card__actions">
-            <span className="microcopy">PDF export ready for this engine.</span>
+      <div className={`absolute inset-0 bg-gradient-to-br ${accent} opacity-35`} aria-hidden />
+      <div className="prediction-card__body relative space-y-8">
+        <div className="section-heading space-y-3">
+          <div className="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.3em] text-slate-300">
+            <span className="rounded-full border border-white/15 bg-white/10 px-4 py-1">{engineLabel}</span>
+            {seekerName ? (
+              <span className="rounded-full border border-white/15 bg-white/10 px-4 py-1">{seekerName}</span>
+            ) : null}
+          </div>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Response</p>
+          <h3 className="text-2xl font-semibold text-white">{title}</h3>
+          <p className="text-sm text-slate-300">{t("results.helperRaw", "Narratives are ready to share—no JSON needed.")}</p>
+          <div className="prediction-card__actions flex flex-wrap items-center justify-between gap-3">
+            <span className="text-sm text-slate-200">PDF export ready for this engine.</span>
             <button
               type="button"
-              className="button-link ghost-link prediction-card__download"
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-100 transition hover:border-white/30"
               onClick={downloadPdf}
               disabled={isSaving}
             >
@@ -687,7 +790,14 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
             </button>
           </div>
         </div>
-        <div className="insight-grid">{sections.map(renderSection)}</div>
+        <motion.div
+          className="insight-grid grid gap-4 lg:grid-cols-2"
+          variants={sectionGridVariants}
+          initial="hidden"
+          animate="show"
+        >
+          {sections.map(renderSection)}
+        </motion.div>
         {horoscopePayload && (
           <>
             <KundliCharts

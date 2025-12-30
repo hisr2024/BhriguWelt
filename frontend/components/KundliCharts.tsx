@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { Easing } from "framer-motion";
 import { AnimatePresence, motion, useReducedMotion } from "@/lib/framer-motion";
 
 import { areMicroAnimationsAllowed } from "@/lib/immersive";
@@ -63,7 +64,7 @@ type D3Lite = {
 
 type PositionedHouse = ChartHouse & { x: number; y: number };
 
-const easeOutCurve: [number, number, number, number] = [0, 0, 0.58, 1];
+const easeOutCurve: Easing = [0, 0, 0.58, 1];
 
 export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas = [], compatibilityOverlay }: Props) {
   const [animateCharts, setAnimateCharts] = useState(false);

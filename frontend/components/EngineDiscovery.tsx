@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ComponentType } from "react";
-import { Search, Sparkles } from "lucide-react";
+import { Search, Sparkles, X } from "lucide-react";
 import EngineCard from "@/components/EngineCard";
 import Tooltip from "@/components/Tooltip";
 
@@ -62,6 +62,16 @@ export default function EngineDiscovery({ engines }: EngineDiscoveryProps) {
             className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none"
             aria-label="Search engines"
           />
+          {query ? (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-300 transition hover:border-white/30"
+              aria-label="Clear search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
         </label>
         <div className="flex flex-wrap gap-2">
           {categories.map((item) => (
