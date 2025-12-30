@@ -1,6 +1,7 @@
 """Conversational helper that keeps Bhrigu persona consistent with session memory."""
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, List, Sequence
 
 from .profiles import Profile, SessionSnapshot, upsert_session_turn, fetch_session
@@ -13,6 +14,15 @@ _SAFE_THEMES = [
     "sun salutations for warmth and stamina",
     "moon gazing to cool emotions",
     "offering water to a plant as seva",
+]
+
+_GUARDRAIL_PATTERNS = [
+    re.compile(r"\bwill\b\s+(be|happen|occur|get|receive|find|meet)", re.IGNORECASE),
+    re.compile(r"\bgoing to\b", re.IGNORECASE),
+    re.compile(r"\bdefinitely\b|\bguarantee\b|\bcertainty\b", re.IGNORECASE),
+    re.compile(r"\bpredict\w*\b|\bforetell\w*\b", re.IGNORECASE),
+    re.compile(r"\bdiagnos\w*\b|\bcure\b|\bheal\b", re.IGNORECASE),
+    re.compile(r"\bwealth\b\s+will\b|\bincome\b\s+will\b", re.IGNORECASE),
 ]
 
 
@@ -42,7 +52,10 @@ def generate_chat_reply(
     body = _body_line(message)
     closing = "This is symbolic reflection, not a fixed fate."
 
-    reply_text = f"{greeting}, {context_line} {body} {closing}"
+    reply_text = _ensure_remedies_in_reply(
+        f"{greeting}, {context_line} {body} {closing}",
+        remedies,
+    )
 
     if is_ai_configured():
         ai_reply = _ai_reply(
@@ -131,36 +144,72 @@ def _ai_reply(
 ) -> str | None:
     """Generate an AI-backed reply, falling back to the deterministic one on failure."""
 
-    history_lines = []
-    for entry in history[-6:]:
-        role = entry.get("role") or "user"
-        content = entry.get("content") or ""
-        if isinstance(content, str) and content.strip():
-            history_lines.append(f"{role}: {content.strip()}")
-    history_text = "\n".join(history_lines) or "No prior chat history."
-
     system_prompt = (
         "You are Bhrigu, a calm, reflective guide rooted in the Bhrigu Samhita. "
-        "Offer short, symbolic insights, avoid predictions, health/finance claims, and keep a gentle tone."
+        "Offer short, symbolic insights and reflective questions. "
+        "Do not make predictions or guarantees. Avoid health/finance claims. "
+        "Close with two gentle remedial suggestions (remedies)."
     )
-    user_prompt = (
-        f"Seeker: {profile.full_name or 'unknown'} | Birth place: {profile.place_of_birth or 'unknown'} | "
-        f"Timezone: {profile.timezone or 'unset'} | Question: {message}\n"
-        f"Prior turns:\n{history_text}\n"
-        f"Preferred remedies to weave in: {', '.join(remedies)}."
+
+    messages: List[Dict[str, str]] = [
+        {"role": "system", "content": system_prompt},
+        {
+            "role": "user",
+            "content": (
+                "Here is the seeker context. Use it only for reflection, not prediction. "
+                f"Name: {profile.full_name or 'unknown'}. "
+                f"Birth place: {profile.place_of_birth or 'unknown'}. "
+                f"Timezone: {profile.timezone or 'unset'}."
+            ),
+        },
+    ]
+
+    for entry in history[-6:]:
+        role = entry.get("role") if isinstance(entry, dict) else None
+        content = entry.get("content") if isinstance(entry, dict) else None
+        if not isinstance(content, str) or not content.strip():
+            continue
+        normalized_role = "assistant" if role == "assistant" else "user"
+        messages.append({"role": normalized_role, "content": content.strip()})
+
+    messages.append(
+        {
+            "role": "user",
+            "content": (
+                f"Seeker question: {message}\n"
+                f"Remedies to include: {', '.join(remedies)}."
+            ),
+        }
     )
 
     try:
-        return chat_completion(
-            [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
+        response = chat_completion(
+            messages,
             max_tokens=260,
             temperature=0.35,
         )
     except AIIntegrationError:
         return default_reply
+
+    safe_response = _ensure_remedies_in_reply(response, remedies)
+    if not _is_reply_safe(safe_response):
+        return default_reply
+    return safe_response
+
+
+def _ensure_remedies_in_reply(reply: str, remedies: List[str]) -> str:
+    if not remedies:
+        return reply
+    lower_reply = reply.lower()
+    missing = [remedy for remedy in remedies if remedy.lower() not in lower_reply]
+    if not missing:
+        return reply
+    remedies_line = "; ".join(remedies[:2])
+    return f"{reply} Remedies: {remedies_line}."
+
+
+def _is_reply_safe(reply: str) -> bool:
+    return not any(pattern.search(reply) for pattern in _GUARDRAIL_PATTERNS)
 
 
 __all__ = ["generate_chat_reply"]
