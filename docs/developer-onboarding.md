@@ -4,9 +4,14 @@ Welcome to BhriguWelt! This guide captures the minimum steps needed to boot both
 
 ## Prerequisites
 - Python 3.11+
-- Node.js 20+
+- Node.js 24+
 - [uv](https://github.com/astral-sh/uv) or `pip` for Python dependency management
 - `npm` for frontend dependencies
+
+## Video tutorials (setup walkthroughs)
+- [Backend setup and API smoke tests](https://example.com/bhriguwelt-backend-setup.mp4)
+- [Frontend setup and local UI validation](https://example.com/bhriguwelt-frontend-setup.mp4)
+- [Full-stack run-through (API + web app)](https://example.com/bhriguwelt-fullstack-setup.mp4)
 
 ## Backend setup
 1. Change into the backend folder:
@@ -64,5 +69,8 @@ Welcome to BhriguWelt! This guide captures the minimum steps needed to boot both
     -H "Content-Type: application/json" \
     -d '{"message":"Summarize my dashas","user_id":"demo-user","full_name":"Aditi"}'
   ```
+
+Prefer a guided interface? Use the Swagger UI playground in
+[`docs/api_playground.md`](./api_playground.md) to explore endpoints interactively.
 
 Happy hacking! If you run into setup blockers, open a draft PR with log output so maintainers can assist.
