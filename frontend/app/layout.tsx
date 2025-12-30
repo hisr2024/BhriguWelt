@@ -1,8 +1,21 @@
 import type { Metadata } from "next";
+import { Manrope, Sora } from "next/font/google";
 
 import "./globals.css";
 import Navigation from "./components/Navigation";
 import SkipLink from "./components/SkipLink";
+
+const sora = Sora({
+  subsets: ["latin"],
+  variable: "--font-display",
+  weight: ["400", "500", "600", "700"],
+});
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-body",
+  weight: ["400", "500", "600", "700"],
+});
 
 export const metadata: Metadata = {
   title: "BhriguWelt · Cosmic Intelligence Studio",
@@ -12,8 +25,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body>
+    <html lang="en" className={`${sora.variable} ${manrope.variable} scroll-smooth`}>
+      <body className="font-body">
         <SkipLink />
         <Navigation />
         {children}
