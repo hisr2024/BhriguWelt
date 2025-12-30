@@ -1,7 +1,7 @@
 {
   "framework": "nextjs",
   "installCommand": "npm install",
-  "buildCommand": "npm run build --workspace frontend",
+  "buildCommand": "npm run build",
   "outputDirectory": "frontend/.next",
   "env": {
     "NEXT_PUBLIC_BACKEND_URL": "https://bhriguwelt-production.up.railway.app"
