@@ -6,7 +6,8 @@ import { motion } from "framer-motion";
 import { ArrowUpRight, Info } from "lucide-react";
 import Tooltip from "@/components/Tooltip";
 
-const transition = { duration: 0.35, ease: [0.2, 0.65, 0.3, 0.9] };
+const easeStandard: [number, number, number, number] = [0.2, 0.65, 0.3, 0.9];
+const transition = { duration: 0.35, ease: easeStandard };
 
 type EngineCardProps = {
   engine: {

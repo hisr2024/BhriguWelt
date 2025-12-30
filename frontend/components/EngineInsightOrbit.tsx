@@ -4,7 +4,8 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import type { EngineResult } from "@/lib/engineConfig";
 
-const orbitTransition = { duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9] };
+const easeStandard: [number, number, number, number] = [0.2, 0.65, 0.3, 0.9];
+const orbitTransition = { duration: 0.4, ease: easeStandard };
 
 type EngineInsightOrbitProps = {
   highlights: EngineResult["highlights"];

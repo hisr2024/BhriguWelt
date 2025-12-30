@@ -9,7 +9,8 @@ import VoiceInputButton from "@/components/VoiceInputButton";
 import EngineResultPanel from "@/components/EngineResultPanel";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const transition = { duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9] };
+const easeStandard: [number, number, number, number] = [0.2, 0.65, 0.3, 0.9];
+const transition = { duration: 0.4, ease: easeStandard };
 
 type EngineFormProps = {
   fields: EngineField[];
