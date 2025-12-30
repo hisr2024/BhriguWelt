@@ -109,4 +109,24 @@
     mask-composite: exclude;
     pointer-events: none;
   }
+
+  .cosmic-particle {
+    position: absolute;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.7);
+    opacity: 0.6;
+    animation: cosmic-float 6s ease-in-out infinite;
+  }
+}
+
+@keyframes cosmic-float {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-12px);
+    opacity: 1;
+  }
 }
