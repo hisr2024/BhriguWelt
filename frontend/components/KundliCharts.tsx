@@ -63,6 +63,8 @@ type D3Lite = {
 
 type PositionedHouse = ChartHouse & { x: number; y: number };
 
+const easeOutCurve: [number, number, number, number] = [0, 0, 0.58, 1];
+
 export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas = [], compatibilityOverlay }: Props) {
   const [animateCharts, setAnimateCharts] = useState(false);
   const [detailLevel, setDetailLevel] = useState<DetailLevel>("concise");
@@ -477,11 +479,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
       visible: (index: number) => ({
         opacity: 1,
         scale: 1,
-        transition: {
-          delay: index * 0.04,
-          duration: 0.45,
-          ease: [0.25, 0.46, 0.45, 0.94],
-        },
+        transition: { delay: index * 0.04, duration: 0.45, ease: easeOutCurve },
       }),
     };
 
@@ -528,7 +526,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
         className={`kundli-card ${animate ? "kundli-card--animated" : ""}`}
         initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
         animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-        transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+        transition={{ duration: 0.6, ease: easeOutCurve }}
       >
         <header className="section-heading">
           <p className="eyebrow">{label}</p>
@@ -544,7 +542,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
               preserveAspectRatio="xMidYMid meet"
               initial={shouldAnimate ? { opacity: 0 } : false}
               animate={shouldAnimate ? { opacity: 1 } : false}
-              transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+              transition={{ duration: 0.6, ease: easeOutCurve }}
             >
               <motion.circle
                 cx={center}
@@ -553,7 +551,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
                 className="kundli-ring"
                 initial={shouldAnimate ? { opacity: 0 } : false}
                 animate={shouldAnimate ? { opacity: 1 } : false}
-                transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+                transition={{ duration: 0.6, ease: easeOutCurve }}
               />
               {houses.map((house, index) => renderHouseGroup(house, index))}
               <motion.circle
@@ -563,11 +561,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
                 className="kundli-core"
                 initial={shouldAnimate ? { opacity: 0, scale: 0.9 } : false}
                 animate={shouldAnimate ? { opacity: 1, scale: 1 } : false}
-                transition={{
-                  duration: 0.5,
-                  delay: 0.2,
-                  ease: [0.25, 0.46, 0.45, 0.94],
-                }}
+                transition={{ duration: 0.5, delay: 0.2, ease: easeOutCurve }}
               />
               <motion.text
                 x={center}
@@ -589,7 +583,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
                 aria-label={`${label} twelve-house wheel`}
                 initial={shouldAnimate ? { opacity: 0 } : false}
                 animate={shouldAnimate ? { opacity: 1 } : false}
-                transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+                transition={{ duration: 0.6, ease: easeOutCurve }}
               >
                 <motion.circle
                   cx={center}
@@ -598,7 +592,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
                   className="kundli-ring"
                   initial={shouldAnimate ? { opacity: 0 } : false}
                   animate={shouldAnimate ? { opacity: 1 } : false}
-                  transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  transition={{ duration: 0.6, ease: easeOutCurve }}
                 />
                 {houses.map((house, index) => renderHouseGroup(house, index))}
                 <motion.circle
@@ -608,11 +602,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
                   className="kundli-core"
                   initial={shouldAnimate ? { opacity: 0, scale: 0.9 } : false}
                   animate={shouldAnimate ? { opacity: 1, scale: 1 } : false}
-                  transition={{
-                    duration: 0.5,
-                    delay: 0.2,
-                    ease: [0.25, 0.46, 0.45, 0.94],
-                  }}
+                  transition={{ duration: 0.5, delay: 0.2, ease: easeOutCurve }}
                 />
                 <motion.text
                   x={center}
