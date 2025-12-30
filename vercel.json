@@ -1,7 +1,7 @@
 {
   "version": 2,
   "env": {
-    "NEXT_PUBLIC_BACKEND_URL": "https://your-render-service.onrender.com"
+    "NEXT_PUBLIC_BACKEND_URL": "https://bhriguwelt-production.up.railway.app"
   },
   "builds": [
     {
@@ -12,7 +12,8 @@
       }
     }
   ],
-  "installCommand": "npm install --workspaces --include-workspace-root",
+  "regions": ["iad1", "sfo1", "fra1"],
+  "installCommand": "cd frontend && npm install",
   "buildCommand": "cd frontend && npm run build",
   "routes": [
     {
