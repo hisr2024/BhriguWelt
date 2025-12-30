@@ -1,7 +1,10 @@
 """User profile, session memory, and alert scheduling utilities."""
 from __future__ import annotations
 
+import base64
+import binascii
 import json
+import logging
 import os
 import sqlite3
 from dataclasses import dataclass, asdict
@@ -9,7 +12,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
 _DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "profiles.db"
+_ENCRYPTION_PREFIX = "enc::"
+_ENCRYPTION_KEY: bytes | None = None
+logger = logging.getLogger(__name__)
 
 
 def _db_path() -> Path:
@@ -72,6 +80,75 @@ def _ensure_schema(connection: sqlite3.Connection) -> None:
 
 def _timestamp(now: Optional[datetime] = None) -> str:
     return (now or datetime.utcnow()).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _load_encryption_key() -> bytes | None:
+    raw_key = os.environ.get("BHRIGUWELT_PROFILE_ENCRYPTION_KEY")
+    if not raw_key:
+        return None
+    for decoder in (_decode_base64_key, _decode_hex_key):
+        key = decoder(raw_key)
+        if key:
+            return key
+    raise ValueError("BHRIGUWELT_PROFILE_ENCRYPTION_KEY must be base64 or hex for 16/24/32-byte keys")
+
+
+def _decode_base64_key(raw_key: str) -> bytes | None:
+    try:
+        key = base64.urlsafe_b64decode(raw_key)
+    except (ValueError, binascii.Error):
+        return None
+    if len(key) in {16, 24, 32}:
+        return key
+    return None
+
+
+def _decode_hex_key(raw_key: str) -> bytes | None:
+    try:
+        key = bytes.fromhex(raw_key)
+    except ValueError:
+        return None
+    if len(key) in {16, 24, 32}:
+        return key
+    return None
+
+
+def _encryption_key() -> bytes | None:
+    global _ENCRYPTION_KEY
+    if _ENCRYPTION_KEY is None:
+        _ENCRYPTION_KEY = _load_encryption_key()
+        if _ENCRYPTION_KEY is None:
+            logger.warning("Profile encryption key not configured; birth data stored in plaintext")
+    return _ENCRYPTION_KEY
+
+
+def _encrypt_value(value: str | None) -> str | None:
+    if not value:
+        return value
+    key = _encryption_key()
+    if not key:
+        return value
+    aesgcm = AESGCM(key)
+    nonce = os.urandom(12)
+    encrypted = aesgcm.encrypt(nonce, value.encode("utf-8"), None)
+    payload = base64.urlsafe_b64encode(nonce + encrypted).decode("utf-8")
+    return f"{_ENCRYPTION_PREFIX}{payload}"
+
+
+def _decrypt_value(value: str | None) -> str | None:
+    if not value:
+        return value
+    if not value.startswith(_ENCRYPTION_PREFIX):
+        return value
+    key = _encryption_key()
+    if not key:
+        raise ValueError("Encryption key not configured for encrypted birth data")
+    payload = value[len(_ENCRYPTION_PREFIX) :]
+    raw = base64.urlsafe_b64decode(payload.encode("utf-8"))
+    nonce, encrypted = raw[:12], raw[12:]
+    aesgcm = AESGCM(key)
+    decrypted = aesgcm.decrypt(nonce, encrypted, None)
+    return decrypted.decode("utf-8")
 
 
 @dataclass
@@ -140,6 +217,13 @@ def create_or_update_profile(payload: Dict[str, Any]) -> Profile:
     user_id = payload.get("user_id")
     now = _timestamp()
     metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+    encrypted_payload = {
+        "full_name": payload.get("full_name"),
+        "date_of_birth": _encrypt_value(payload.get("date_of_birth")),
+        "time_of_birth": _encrypt_value(payload.get("time_of_birth")),
+        "place_of_birth": _encrypt_value(payload.get("place_of_birth")),
+        "timezone": _encrypt_value(payload.get("timezone")),
+    }
     with _connect() as connection:
         existing = None
         if user_id:
@@ -156,11 +240,11 @@ def create_or_update_profile(payload: Dict[str, Any]) -> Profile:
                 WHERE user_id = ?
                 """,
                 (
-                    payload.get("full_name"),
-                    payload.get("date_of_birth"),
-                    payload.get("time_of_birth"),
-                    payload.get("place_of_birth"),
-                    payload.get("timezone"),
+                    encrypted_payload["full_name"],
+                    encrypted_payload["date_of_birth"],
+                    encrypted_payload["time_of_birth"],
+                    encrypted_payload["place_of_birth"],
+                    encrypted_payload["timezone"],
                     _serialize_metadata(metadata),
                     now,
                     user_id,
@@ -175,11 +259,11 @@ def create_or_update_profile(payload: Dict[str, Any]) -> Profile:
                 """,
                 (
                     user_id,
-                    payload.get("full_name"),
-                    payload.get("date_of_birth"),
-                    payload.get("time_of_birth"),
-                    payload.get("place_of_birth"),
-                    payload.get("timezone"),
+                    encrypted_payload["full_name"],
+                    encrypted_payload["date_of_birth"],
+                    encrypted_payload["time_of_birth"],
+                    encrypted_payload["place_of_birth"],
+                    encrypted_payload["timezone"],
                     now,
                     now,
                     _serialize_metadata(metadata),
@@ -202,10 +286,10 @@ def _row_to_profile(row: sqlite3.Row) -> Profile:
         id=row["id"],
         user_id=row["user_id"],
         full_name=row["full_name"],
-        date_of_birth=row["date_of_birth"],
-        time_of_birth=row["time_of_birth"],
-        place_of_birth=row["place_of_birth"],
-        timezone=row["timezone"],
+        date_of_birth=_decrypt_value(row["date_of_birth"]),
+        time_of_birth=_decrypt_value(row["time_of_birth"]),
+        place_of_birth=_decrypt_value(row["place_of_birth"]),
+        timezone=_decrypt_value(row["timezone"]),
         created_at=row["created_at"],
         updated_at=row["updated_at"],
         metadata=_deserialize_metadata(row["metadata_json"]),

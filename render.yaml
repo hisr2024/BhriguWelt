@@ -15,6 +15,12 @@ services:
         value: /opt/render/project/data/bhrigu_samhita_principles.yml
       - key: BHRIGUWELT_ADMIN_TOKEN
         generateValue: true
+      - key: BHRIGUWELT_JWT_SECRET
+        generateValue: true
+      - key: BHRIGUWELT_PROFILE_ENCRYPTION_KEY
+        value: REPLACE_WITH_BASE64_AES_KEY
+      - key: REDIS_URL
+        value: redis://:password@hostname:6379/0
     disk:
       name: bhriguwelt-data
       mountPath: /opt/render/project/data
