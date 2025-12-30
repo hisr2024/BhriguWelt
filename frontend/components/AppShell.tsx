@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import Providers from "@/app/providers";
 import { useI18n, type Language } from "@/lib/i18n";
 import { theme } from "@/lib/theme";
 import GdprConsentBanner from "@/components/GdprConsentBanner";
@@ -201,9 +200,5 @@ export default function AppShell({ children }: Props) {
     return () => window.removeEventListener("load", registerServiceWorker);
   }, []);
 
-  return (
-    <Providers>
-      <Shell>{children}</Shell>
-    </Providers>
-  );
+  return <Shell>{children}</Shell>;
 }

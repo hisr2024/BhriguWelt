@@ -8,10 +8,30 @@ type MotionComponent = React.ForwardRefExoticComponent<
 
 type MotionProxy = Record<string, MotionComponent>;
 
+type MotionProps = React.HTMLAttributes<HTMLElement> & {
+  initial?: unknown;
+  animate?: unknown;
+  exit?: unknown;
+  variants?: unknown;
+  transition?: unknown;
+  whileHover?: unknown;
+  whileTap?: unknown;
+  whileInView?: unknown;
+};
+
 function createMotionComponent(tag: string): MotionComponent {
-  const Component = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement> & Record<string, unknown>>(
-    (props, ref) => React.createElement(tag, { ...props, ref }),
-  );
+  const Component = React.forwardRef<HTMLElement, MotionProps>((props, ref) => {
+    const sanitized = { ...props } as Record<string, unknown>;
+    delete sanitized.initial;
+    delete sanitized.animate;
+    delete sanitized.exit;
+    delete sanitized.variants;
+    delete sanitized.transition;
+    delete sanitized.whileHover;
+    delete sanitized.whileTap;
+    delete sanitized.whileInView;
+    return React.createElement(tag, { ...sanitized, ref });
+  });
   Component.displayName = `motion.${tag}`;
   return Component;
 }
