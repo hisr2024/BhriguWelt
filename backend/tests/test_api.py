@@ -31,6 +31,23 @@ def test_handle_command_horoscope_emits_full_payload():
     assert response["interpretation"]
 
 
+def test_handle_command_core_wisdom_structures_sections():
+    response = api.handle_command("core-wisdom", {**_payload(), "focus_areas": ["career", "marriage"]})
+    assert set(response["sections"].keys()) == set(str(i) for i in range(1, 9))
+    assert response["rashi_chart"] and response["bhava_chart"]
+    assert response["dashas"]
+
+
+def test_handle_command_karmic_dashboard_outlines_hotspots():
+    response = api.handle_command(
+        "karmic-dashboard", {**_payload(), "focus_areas": ["career"], "issues": ["money worry"]}
+    )
+    assert set(response["sections"].keys()) == set(str(i) for i in range(1, 9))
+    assert response["hotspots"], "Hotspots should be populated"
+    assert response["gifts"], "Gifts should be populated"
+    assert response["assignments"], "Assignments should be populated"
+
+
 def test_handle_command_matchmaking_summarizes_highlights():
     response = api.handle_command(
         "matchmaking",
@@ -70,8 +87,8 @@ def test_handle_command_calendar_returns_saka_payload():
         "calendar",
         dict(birth_date="2024-03-21", birth_time="05:30", birth_place="Prayagraj"),
     )
-    assert response["saka_date"]["year"] == 1946
-    assert response["conversion_factor_years"] == 78
+    assert response["Śaka Date"]["Year"] == 1946
+    assert response["Reference Notes"]["Conversion Factor Years"] == 78
 
 
 def test_ensure_visualization_payload_pads_missing_charts():

@@ -43,8 +43,8 @@ def test_convert_birth_details_exposes_full_panchang(monkeypatch):
     assert context.tithi_number >= 1
     assert context.weekday in {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
     payload = context.as_payload()
-    assert payload["nakshatra_index"] == context.nakshatra_index
-    assert payload["karana"] == context.karana
+    assert payload["Panchanga Details"]["Nakshatra Index"] == context.nakshatra_index
+    assert payload["Panchanga Details"]["Karana"] == context.karana
 
 
 def test_fallback_panchang_matches_surya_siddhanta_means():

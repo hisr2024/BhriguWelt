@@ -591,16 +591,93 @@ FUTURE_ENGINES: List[Dict[str, Any]] = [{'certainty': 0.84,
                 'apprenticeship centers partnering with village councils.',
   'window': 'Years 30-55'}]
 
+
+TRANSIT_RULES: List[Dict[str, Any]] = [
+ {'certainty': 0.72,
+  'conditions': {'saturn_house': {'any_of': [10, 11]}, 'tithi_delta': {'min': 0}},
+  'id': 'TR-1',
+  'influence': 'Sustained career pressure bringing structural acclaim when matched with charity.',
+  'planet': 'Saturn',
+  'sutra_reference': 'Gochar compendium 1a',
+  'tradition': 'universal'},
+ {'certainty': 0.78,
+  'conditions': {'ketu_house': 12, 'moon_element_shift': ['water', 'ether']},
+  'id': 'TR-2',
+  'influence': 'Dream-intensive retreat season; prioritize solitude and scriptural study.',
+  'planet': 'Ketu',
+  'sutra_reference': 'Grantha scroll 68f',
+  'tradition': 'southern-grantha'},
+ {'certainty': 0.69,
+  'conditions': {'mercury_house': {'any_of': [3, 6]}, 'tithi_delta': {'max': 3}},
+  'id': 'TR-3',
+  'influence': 'Short journeys ignite research alliances and multilingual drafting sprints.',
+  'planet': 'Mercury',
+  'sutra_reference': 'Northern Bhrigu bundle 5a',
+  'tradition': 'northern'},
+ {'certainty': 0.77,
+  'conditions': {'saturn_house': {'any_of': [8, 12]},
+                 'saturn_retrograde': {'equals': True},
+                 'tithi_delta': {'max': 2}},
+  'id': 'TR-4',
+  'influence': 'Shadow work season: pause overextension, rebuild boundaries, and honor ancestor offerings.',
+  'planet': 'Saturn',
+  'sutra_reference': 'Grantha gochar leaf 12c',
+  'tradition': ['southern-grantha', 'universal']}]
+
+MATCHMAKING_CRITERIA: List[Dict[str, Any]] = [
+ {'base_weight': 0.6,
+  'description': 'Harmonious lunar elements and synchronized tithis create empathic partnerships '
+                 'that Bhrigu recommends for both spiritual and modern entrepreneurial households.',
+  'id': 'MM-3',
+  'modern_modifiers': {'co-living': 0.03, 'remote-first': 0.05, 'research-partnership': 0.04},
+  'pair_rules': [
+      {'comparator': 'harmonious',
+       'label': 'Lunar element harmony',
+       'partner_field': 'moon_element',
+       'primary_field': 'moon_element',
+       'sets': [['water', 'earth'], ['fire', 'air']],
+       'weight': 0.6},
+      {'comparator': 'distance',
+       'label': 'Shared tithi rhythm',
+       'max_difference': 2,
+       'partner_field': 'lunar_tithi',
+       'primary_field': 'lunar_tithi',
+       'weight': 0.4}],
+  'sutra_reference': 'Sharada palm 77c',
+  'time_horizon': 'long-term',
+ 'tradition': 'universal'},
+ {'base_weight': 0.4,
+  'description': "Venus stewardship and Mars missions must complement to support Bhrigu's \"digital "
+                 'grihastha" households that balance art, finance, and product roadmaps.',
+  'id': 'MM-8',
+  'modern_modifiers': {'arts-collab': 0.05, 'creative-startup': 0.05, 'startup-ops': 0.07},
+  'pair_rules': [
+      {'circular': True,
+       'comparator': 'distance',
+       'label': 'Venus treasury sync',
+       'max_difference': 1,
+       'partner_field': 'venus_house',
+       'primary_field': 'venus_house',
+       'weight': 0.5},
+      {'comparator': 'distance',
+       'label': 'Mars mission complement',
+       'max_difference': 3,
+       'partner_field': 'mars_house',
+       'primary_field': 'mars_house',
+       'weight': 0.5}],
+  'sutra_reference': 'Grantha scroll 18d',
+  'time_horizon': 'short-term',
+  'tradition': 'southern-grantha'}]
+
+
 def as_dict() -> Dict[str, Any]:
-    data_path = Path(__file__).resolve().parents[2] / "data" / "bhrigu_samhita_principles.yml"
-    try:
-        with data_path.open() as fp:
-            return json.load(fp)
-    except Exception:
-        return {
-            'metadata': METADATA,
-            'principles': PRINCIPLES,
-            'remedies': REMEDIES,
-            'past_life_engines': PAST_LIFE_ENGINES,
-            'future_engines': FUTURE_ENGINES,
-        }
+    return {
+        "metadata": METADATA,
+        "principles": PRINCIPLES,
+        "past_life_engines": PAST_LIFE_ENGINES,
+        "future_engines": FUTURE_ENGINES,
+        "remedies": REMEDIES,
+        "transit_rules": TRANSIT_RULES,
+        "matchmaking_criteria": MATCHMAKING_CRITERIA,
+    }
+

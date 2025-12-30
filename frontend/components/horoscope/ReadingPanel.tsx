@@ -1,4 +1,5 @@
 import { ChartResponse, FormState, Interpretation } from "./types";
+import PastLifeReading from "./PastLifeReading";
 
 type Props = {
   chart: ChartResponse | null;
@@ -106,6 +107,8 @@ export default function ReadingPanel({
               </div>
             </aside>
           </div>
+
+          <PastLifeReading chart={chart} form={form} />
         </div>
       ) : (
         <div className="reading-placeholder">
