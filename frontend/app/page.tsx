@@ -1,132 +1,122 @@
-"use client";
+import Link from "next/link";
 
-import { KundliChart } from "@/components/KundliChart";
-import { OnboardingDialog } from "@/components/OnboardingDialog";
-import { LinkButton } from "@/components/ui/LinkButton";
+import KundliChart from "./components/KundliChart";
+import OnboardingDialog from "./components/OnboardingDialog";
 
-const engines = [
+const quickLinks = [
   {
-    title: "Horoscope Engine",
-    description: "Panchanga-aligned intake with chart visuals and bilingual reading output.",
+    title: "Horoscope Studio",
+    description: "Generate manuscript-backed chart readings with bilingual insights.",
     href: "/horoscope",
   },
   {
-    title: "Past-Life Engine",
-    description: "Narrative regressions, sutra references, and karmic memory highlights.",
-    href: "/past-life",
+    title: "Insights Dashboard",
+    description: "Connect the full chart, remedies, and real-time chat guidance.",
+    href: "/studio/insights",
   },
   {
-    title: "Future Engine",
-    description: "Trajectory map, milestone tracker, and long-range planning prompts.",
-    href: "/future",
-  },
-  {
-    title: "Matchmaking Engine",
-    description: "Dual-profile compatibility with modern preference tags and clarity metrics.",
+    title: "Matchmaking",
+    description: "Compare compatibility and harmony markers for modern partnerships.",
     href: "/matchmaking",
   },
   {
-    title: "Śaka Calendar",
-    description: "Global calendar conversions with culturally grounded guidance.",
+    title: "Sacred Calendar",
+    description: "Convert Gregorian dates into Śaka-aligned spiritual timing.",
     href: "/calendar",
   },
-  {
-    title: "Studio Insights",
-    description: "Chart + chat studio for real-time Bhrigu consultation.",
-    href: "/studio/insights",
-  },
+];
+
+const highlights = [
+  "Four-language guidance with instant toggle",
+  "Kundli charts remain perfectly square on mobile",
+  "Onboarding glossary for every ritual term",
+  "Bhrigu-style chat transcripts for follow-up clarity",
 ];
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col gap-10">
+    <main id="main" tabIndex={-1} className="mx-auto flex max-w-6xl flex-col gap-16 px-6 py-12">
       <OnboardingDialog />
-      <section className="grid gap-8 rounded-3xl border border-slate-800 bg-hero-gradient p-6 md:grid-cols-[1.2fr_0.8fr]">
-        <div className="flex flex-col gap-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-200">Bhrigu Welt Studio</p>
-          <h1 className="text-fluid-2xl font-semibold text-white">
-            Explore the Bhrigu Samhita engines—built for mobile seekers, powered by real-time charting.
+      <section className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="rounded-3xl border border-white/10 bg-card-gradient p-10 shadow-glow">
+          <p className="text-xs uppercase tracking-[0.4em] text-aurora">Bhrigu Samhita Intelligence</p>
+          <h1 className="mt-4 text-fluid-2xl font-semibold">
+            The world-class astrology command center for seekers, mentors, and families.
           </h1>
-          <p className="text-sm text-slate-200">
-            A modern sanctuary for horoscope, past-life, future, matchmaking, and calendar insights. Designed with touch-first
-            gestures, responsive dashboards, and a PWA-ready experience.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <LinkButton href="/horoscope">Start with Horoscope</LinkButton>
-            <LinkButton href="/studio/insights" variant="ghost">
-              Enter Studio
-            </LinkButton>
-          </div>
-        </div>
-        <div className="flex items-center justify-center">
-          <KundliChart />
-        </div>
-      </section>
-
-      <section className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-3xl border border-slate-800 bg-card-gradient p-6">
-          <h2 className="text-fluid-lg font-semibold">Quick guidance</h2>
-          <p className="mt-2 text-sm text-slate-300">
-            Jump into an engine and keep the outputs centered. Each workflow is tuned for small screens and full functionality.
+          <p className="mt-4 text-sm text-slate-300">
+            BhriguWelt unifies horoscope, past-life, future, and matchmaking engines into a single ritual-ready
+            studio. Each dashboard keeps manuscripts, charts, and remedies connected across devices.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <LinkButton href="/past-life">Past-Life</LinkButton>
-            <LinkButton href="/future" variant="ghost">
-              Future
-            </LinkButton>
-            <LinkButton href="/matchmaking" variant="ghost">
-              Matchmaking
-            </LinkButton>
-          </div>
-          <div className="mt-6 grid gap-4 rounded-2xl border border-slate-700 bg-slate-950/60 p-4 text-xs text-slate-300">
-            <div className="flex items-center justify-between">
-              <span>Touch gestures</span>
-              <span className="font-semibold text-amber-200">Swipe to open menu</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>PWA ready</span>
-              <span className="font-semibold text-emerald-200">Installable experience</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Live engines</span>
-              <span className="font-semibold text-sky-200">Backend + offline fallback</span>
-            </div>
+            <Link
+              href="/horoscope"
+              className="rounded-full bg-aurora px-5 py-2 text-sm font-semibold text-slate-900"
+            >
+              Start a reading
+            </Link>
+            <Link
+              href="/studio/insights"
+              className="rounded-full border border-white/20 px-5 py-2 text-sm text-slate-100"
+            >
+              Open dashboard
+            </Link>
           </div>
         </div>
-        <div className="rounded-3xl border border-slate-800 bg-card-gradient p-6">
-          <h3 className="text-lg font-semibold">Live previews</h3>
-          <ul className="mt-4 grid gap-3 text-sm text-slate-200">
-            <li className="flex items-start gap-2">
-              <span className="text-amber-200">◆</span>
-              Mobile-first cards keep inputs and results legible in portrait mode.
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-amber-200">◆</span>
-              Results stay anchored with sticky action bars and clear status signals.
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-amber-200">◆</span>
-              Engine outputs map to charts, future timelines, and matchmaking scores.
-            </li>
-          </ul>
+        <div className="rounded-3xl border border-white/10 bg-card-gradient p-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Live chart preview</p>
+              <h2 className="mt-2 text-xl">Kundli overlays</h2>
+            </div>
+            <span className="rounded-full border border-aurora/40 bg-aurora/10 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-aurora">
+              Real time
+            </span>
+          </div>
+          <div className="mt-6 flex items-center justify-center text-aurora">
+            <KundliChart className="h-44 w-44" />
+          </div>
+          <p className="mt-4 text-xs text-slate-400">
+            Square chart geometry is preserved across mobile, tablet, and desktop layouts.
+          </p>
         </div>
       </section>
 
       <section className="grid gap-6 md:grid-cols-2">
-        {engines.map((engine) => (
+        {quickLinks.map((link) => (
           <Link
-            key={engine.title}
-            href={engine.href}
-            className="group rounded-3xl border border-slate-800 bg-card-gradient p-5 transition hover:border-amber-300/60"
+            key={link.href}
+            href={link.href}
+            className="group rounded-3xl border border-white/10 bg-white/5 p-6 transition hover:border-aurora/50"
           >
-            <h3 className="text-lg font-semibold text-white group-hover:text-amber-200">{engine.title}</h3>
-            <p className="mt-2 text-sm text-slate-300">{engine.description}</p>
-            <span className="mt-4 inline-flex text-xs font-semibold uppercase tracking-[0.25em] text-amber-200">
-              Open engine
+            <h3 className="text-lg font-semibold text-white group-hover:text-aurora">{link.title}</h3>
+            <p className="mt-2 text-sm text-slate-300">{link.description}</p>
+            <span className="mt-4 inline-flex text-xs uppercase tracking-[0.3em] text-slate-400">
+              Enter experience →
             </span>
           </Link>
         ))}
       </section>
-    </div>
+
+      <section className="rounded-3xl border border-white/10 bg-card-gradient p-8">
+        <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Final polish</p>
+            <h2 className="mt-2 text-fluid-xl">Every feature showcased, every ritual guided.</h2>
+            <p className="mt-3 text-sm text-slate-300">
+              The UX now balances clarity and mysticism with accessible navigation, responsive cards, and
+              accessible labels for screen readers and multi-language seekers.
+            </p>
+          </div>
+          <ul className="grid gap-3 text-sm text-slate-200">
+            {highlights.map((item) => (
+              <li key={item} className="flex items-start gap-3">
+                <span className="mt-1 h-2 w-2 rounded-full bg-aurora" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    </main>
   );
 }

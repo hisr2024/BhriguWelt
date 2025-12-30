@@ -1,89 +1,113 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 
-import { Button } from "@/components/ui/Button";
-import { Field } from "@/components/ui/Field";
-import { requestCalendar } from "@/lib/api";
-import type { CalendarDetails, CalendarPayload } from "@/types/astro";
+const backendBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+
+type CalendarResponse = {
+  gregorian?: string;
+  bharat_traditional?: string;
+};
 
 export default function CalendarPage() {
-  const [form, setForm] = useState<CalendarDetails>({ birthDate: "", birthTime: "", birthPlace: "" });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<CalendarPayload | null>(null);
+  const [formState, setFormState] = useState({
+    birthDate: "",
+    birthTime: "",
+    birthPlace: "",
+  });
+  const [result, setResult] = useState<CalendarResponse | null>(null);
+  const [status, setStatus] = useState("Convert a moment into Śaka calendar context.");
 
-  const canSubmit = useMemo(() => form.birthDate && form.birthTime && form.birthPlace, [form]);
-
-  const handleChange = (field: keyof CalendarDetails) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({ ...prev, [field]: event.target.value }));
+  const handleChange = (field: keyof typeof formState) => (event: ChangeEvent<HTMLInputElement>) => {
+    setFormState((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setLoading(true);
-    setError(null);
+    setStatus("Converting calendar…");
     try {
-      const response = await requestCalendar(form);
-      setResult(response as CalendarPayload);
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Unable to fetch calendar conversion");
-    } finally {
-      setLoading(false);
+      const response = await fetch(`${backendBaseUrl}/calendar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          birth_date: formState.birthDate,
+          birth_time: formState.birthTime,
+          birth_place: formState.birthPlace,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to convert calendar.");
+      }
+
+      const data = (await response.json()) as CalendarResponse;
+      setResult(data);
+      setStatus("Calendar conversion complete.");
+    } catch (err) {
+      setStatus("Calendar conversion unavailable. Please retry later.");
     }
   };
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-      <section className="rounded-3xl border border-slate-800 bg-card-gradient p-6">
+    <main id="main" tabIndex={-1} className="mx-auto flex max-w-5xl flex-col gap-10 px-6 py-12">
+      <section className="rounded-3xl border border-white/10 bg-card-gradient p-8">
         <h1 className="text-fluid-xl font-semibold">Śaka Calendar Converter</h1>
-        <p className="mt-2 text-sm text-slate-300">
-          Convert Gregorian inputs into Śaka calendar insights with mobile-first conversion results.
+        <p className="mt-3 text-sm text-slate-300">
+          Align Gregorian dates with traditional lunar markers for ritual planning and family calendars.
         </p>
         <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Birth date / Date of birth" type="date" value={form.birthDate} onChange={handleChange("birthDate")} required />
-            <Field label="Birth time / Time of birth" type="time" value={form.birthTime} onChange={handleChange("birthTime")} required />
-          </div>
-          <Field label="Birth place / Place of birth" value={form.birthPlace} onChange={handleChange("birthPlace")} required />
-          <div className="flex flex-wrap items-center gap-3">
-            <Button type="submit" disabled={!canSubmit || loading}>
-              {loading ? "Converting..." : "Convert calendar"}
-            </Button>
-            {loading && <span className="text-xs text-amber-200">Calculating Śaka date...</span>}
-          </div>
-          {error && <p className="rounded-2xl border border-rose-500/40 bg-rose-500/10 p-3 text-xs text-rose-200">{error}</p>}
+          <label className="grid gap-2 text-sm">
+            Birth date
+            <input
+              type="date"
+              value={formState.birthDate}
+              onChange={handleChange("birthDate")}
+              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
+              required
+            />
+          </label>
+          <label className="grid gap-2 text-sm">
+            Birth time
+            <input
+              type="time"
+              value={formState.birthTime}
+              onChange={handleChange("birthTime")}
+              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
+              required
+            />
+          </label>
+          <label className="grid gap-2 text-sm">
+            Birth place
+            <input
+              value={formState.birthPlace}
+              onChange={handleChange("birthPlace")}
+              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
+              required
+            />
+          </label>
+          <button
+            type="submit"
+            className="mt-2 rounded-full bg-aurora px-6 py-3 text-sm font-semibold text-slate-900"
+          >
+            Convert date
+          </button>
         </form>
       </section>
 
-      <section className="flex flex-col gap-6">
-        <div role="status" className="rounded-3xl border border-slate-800 bg-result-gradient p-6" aria-live="polite">
-          <h2 className="text-lg font-semibold">Conversion results</h2>
-          {!result && !loading && <p className="mt-2 text-sm text-slate-300">Submit the form to view Śaka calendar results.</p>}
-          {result && (
-            <div className="mt-3 grid gap-3 text-sm text-slate-100">
-              <p className="font-semibold">Śaka date: {result.saka_date?.day ?? "—"} {result.saka_date?.month ?? ""} {result.saka_date?.year ?? ""}</p>
-              {result.tithi_name && <p className="text-xs text-slate-300">Tithi: {result.tithi_name}</p>}
-              {result.weekday && <p className="text-xs text-slate-300">Weekday: {result.weekday}</p>}
-              {result.interpretation && <p>{result.interpretation}</p>}
-              {result.interpretation_hi && <p className="text-amber-200">{result.interpretation_hi}</p>}
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-3xl border border-slate-800 bg-card-gradient p-6">
-          <h3 className="text-base font-semibold">Observation details</h3>
-          {result ? (
-            <ul className="mt-3 grid gap-3 text-sm text-slate-300">
-              <li className="rounded-2xl border border-slate-700 bg-slate-950/70 p-3">Nakshatra: {result.nakshatra ?? "—"}</li>
-              <li className="rounded-2xl border border-slate-700 bg-slate-950/70 p-3">Yoga: {result.yoga ?? "—"}</li>
-              <li className="rounded-2xl border border-slate-700 bg-slate-950/70 p-3">Karana: {result.karana ?? "—"}</li>
-            </ul>
-          ) : (
-            <p className="mt-3 text-xs text-slate-500">Observation details will appear after conversion.</p>
-          )}
+      <section className="rounded-3xl border border-white/10 bg-card-gradient p-8">
+        <p role="status" className="text-sm text-aurora">
+          {status}
+        </p>
+        <div className="mt-4 grid gap-3 text-sm text-slate-200">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            Gregorian: {result?.gregorian || "Pending"}
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            Śaka: {result?.bharat_traditional || "Pending"}
+          </div>
         </div>
       </section>
-    </div>
+    </main>
   );
 }

@@ -1,42 +1,26 @@
-import type { Metadata, Viewport } from "next";
-import "./globals.css";
+import type { Metadata } from "next";
+import { Inter, Playfair_Display } from "next/font/google";
 
-import { AppShell } from "@/components/AppShell";
+import "./globals.css";
+import Navigation from "./components/Navigation";
+import SkipLink from "./components/SkipLink";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
 
 export const metadata: Metadata = {
-  title: "BhriguWelt",
-  description: "Bhrigu Samhita engines for horoscope, past-life, future, matchmaking, and calendar insights.",
-  manifest: "/manifest.json",
-  applicationName: "BhriguWelt",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "BhriguWelt",
-  },
-  icons: {
-    icon: "/logo.svg",
-  },
-};
-
-export const viewport: Viewport = {
-  themeColor: "#0f172a",
-  width: "device-width",
-  initialScale: 1,
-  viewportFit: "cover",
+  title: "BhriguWelt · Cosmic Intelligence Studio",
+  description:
+    "Bhrigu Samhita-inspired astrology studio with live charting, matchmaking, and future insights.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="text-slate-100">
-        <a href="#main" className="skip-link">
-          Skip to content
-        </a>
-        <AppShell>
-          <main id="main" tabIndex={-1} className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-4 py-10 sm:px-6">
-            {children}
-          </main>
-        </AppShell>
+      <body className={`${inter.variable} ${playfair.variable} font-sans bg-hero-gradient min-h-screen`}>
+        <SkipLink />
+        <Navigation />
+        {children}
       </body>
     </html>
   );

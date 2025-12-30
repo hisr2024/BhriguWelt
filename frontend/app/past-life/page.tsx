@@ -1,98 +1,117 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 
-import { Button } from "@/components/ui/Button";
-import { Field } from "@/components/ui/Field";
-import { DEFAULT_BIRTH_DETAILS } from "@/lib/birthDefaults";
-import { requestPrediction } from "@/lib/api";
-import type { BirthDetails } from "@/types/astro";
+const backendBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 type PastLifeResponse = {
-  name?: string;
   interpretation?: string;
   interpretation_hi?: string;
-  insights?: { narrative?: string; sutra_reference?: string; confidence?: number }[];
 };
 
 export default function PastLifePage() {
-  const [form, setForm] = useState<BirthDetails>(DEFAULT_BIRTH_DETAILS);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [formState, setFormState] = useState({
+    name: "",
+    birthDate: "",
+    birthTime: "",
+    birthPlace: "",
+  });
   const [result, setResult] = useState<PastLifeResponse | null>(null);
+  const [status, setStatus] = useState("Enter details to unlock past-life insights.");
 
-  const canSubmit = useMemo(() => form.name && form.birthDate && form.birthTime && form.birthPlace, [form]);
-
-  const handleChange = (field: keyof BirthDetails) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({ ...prev, [field]: event.target.value }));
+  const handleChange = (field: keyof typeof formState) => (event: ChangeEvent<HTMLInputElement>) => {
+    setFormState((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setLoading(true);
-    setError(null);
+    setStatus("Consulting the manuscripts…");
     try {
-      const response = (await requestPrediction("past-life", form)) as PastLifeResponse;
-      setResult(response);
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Unable to fetch past-life insights");
-    } finally {
-      setLoading(false);
+      const response = await fetch(`${backendBaseUrl}/past-life`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formState.name,
+          birth_date: formState.birthDate,
+          birth_time: formState.birthTime,
+          birth_place: formState.birthPlace,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to fetch past-life insights.");
+      }
+
+      const data = (await response.json()) as PastLifeResponse;
+      setResult(data);
+      setStatus("Past-life narratives delivered.");
+    } catch (err) {
+      setStatus("Past-life insights are unavailable right now.");
     }
   };
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-      <section className="rounded-3xl border border-slate-800 bg-card-gradient p-6">
-        <h1 className="text-fluid-xl font-semibold">Past-Life Engine</h1>
-        <p className="mt-2 text-sm text-slate-300">
-          Enter your core birth details to unlock the past-life narrative drawn from the Bhrigu manuscripts.
+    <main id="main" tabIndex={-1} className="mx-auto flex max-w-5xl flex-col gap-10 px-6 py-12">
+      <section className="rounded-3xl border border-white/10 bg-card-gradient p-8">
+        <h1 className="text-fluid-xl font-semibold">Past-Life Echoes</h1>
+        <p className="mt-3 text-sm text-slate-300">
+          Explore reincarnation narratives aligned with your natal chart and Bhrigu manuscripts.
         </p>
         <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
-          <Field label="Full name" name="name" value={form.name} onChange={handleChange("name")} required />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Birth date / Date of birth" type="date" value={form.birthDate} onChange={handleChange("birthDate")} required />
-            <Field label="Birth time / Time of birth" type="time" value={form.birthTime} onChange={handleChange("birthTime")} required />
-          </div>
-          <Field label="Birth place / Place of birth" value={form.birthPlace} onChange={handleChange("birthPlace")} required />
-          <div className="flex flex-wrap items-center gap-3">
-            <Button type="submit" disabled={!canSubmit || loading}>
-              {loading ? "Reading folios..." : "Reveal past-life story"}
-            </Button>
-            {loading && <span className="text-xs text-amber-200">Aligning timelines...</span>}
-          </div>
-          {error && <p className="rounded-2xl border border-rose-500/40 bg-rose-500/10 p-3 text-xs text-rose-200">{error}</p>}
+          <label className="grid gap-2 text-sm">
+            Full name
+            <input
+              value={formState.name}
+              onChange={handleChange("name")}
+              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
+              required
+            />
+          </label>
+          <label className="grid gap-2 text-sm">
+            Birth date
+            <input
+              type="date"
+              value={formState.birthDate}
+              onChange={handleChange("birthDate")}
+              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
+              required
+            />
+          </label>
+          <label className="grid gap-2 text-sm">
+            Birth time
+            <input
+              type="time"
+              value={formState.birthTime}
+              onChange={handleChange("birthTime")}
+              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
+              required
+            />
+          </label>
+          <label className="grid gap-2 text-sm">
+            Birth place
+            <input
+              value={formState.birthPlace}
+              onChange={handleChange("birthPlace")}
+              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
+              required
+            />
+          </label>
+          <button type="submit" className="mt-2 rounded-full bg-aurora px-6 py-3 text-sm font-semibold text-slate-900">
+            Reveal past-life
+          </button>
         </form>
       </section>
 
-      <section className="flex flex-col gap-6">
-        <div role="status" className="rounded-3xl border border-slate-800 bg-result-gradient p-6" aria-live="polite">
-          <h2 className="text-lg font-semibold">Past-life results</h2>
-          {!result && !loading && <p className="mt-2 text-sm text-slate-300">Submit the form to view past-life results.</p>}
-          {result && (
-            <div className="mt-3 grid gap-3 text-sm text-slate-100">
-              <p className="font-semibold">{result.name || form.name}</p>
-              <p>{result.interpretation}</p>
-              {result.interpretation_hi && <p className="text-amber-200">{result.interpretation_hi}</p>}
-            </div>
-          )}
-        </div>
-        <div className="rounded-3xl border border-slate-800 bg-card-gradient p-6">
-          <h3 className="text-base font-semibold">Sutra highlights</h3>
-          <ul className="mt-3 grid gap-3 text-sm text-slate-300">
-            {(result?.insights || []).map((insight, index) => (
-              <li key={`${insight.sutra_reference}-${index}`} className="rounded-2xl border border-slate-700 bg-slate-950/70 p-3">
-                <p className="text-xs text-amber-200">{insight.sutra_reference || "Manuscript"}</p>
-                <p>{insight.narrative}</p>
-                {typeof insight.confidence === "number" && (
-                  <p className="text-xs text-slate-400">Confidence: {(insight.confidence * 100).toFixed(0)}%</p>
-                )}
-              </li>
-            ))}
-            {!result?.insights?.length && <li className="text-xs text-slate-500">Insights will appear here.</li>}
-          </ul>
+      <section className="rounded-3xl border border-white/10 bg-card-gradient p-8">
+        <p role="status" className="text-sm text-aurora">
+          {status}
+        </p>
+        <div className="mt-4 space-y-3 text-sm text-slate-200">
+          <p>{result?.interpretation || "Awaiting the manuscript narrative."}</p>
+          {result?.interpretation_hi && <p className="text-slate-300">{result.interpretation_hi}</p>}
         </div>
       </section>
-    </div>
+    </main>
   );
 }

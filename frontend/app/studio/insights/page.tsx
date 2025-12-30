@@ -1,135 +1,224 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 
-import { ChatPanel } from "@/components/ChatPanel";
-import { KundliChart } from "@/components/KundliChart";
-import { Button } from "@/components/ui/Button";
-import { Field, TextareaField } from "@/components/ui/Field";
+import KundliChart from "../../components/KundliChart";
 
-type StudioForm = {
-  name: string;
-  birthDate: string;
-  birthTime: string;
-  birthPlace: string;
-  question: string;
-};
-
-type ChartResponse = {
+type InsightResponse = {
   interpretation?: string;
-  interpretation_hi?: string;
-  karmic_epoch?: string;
-  chart?: unknown;
+  name?: string;
 };
 
-export default function StudioInsightsPage() {
-  const [form, setForm] = useState<StudioForm>({
+type ChatMessage = { role: "user" | "assistant"; content: string };
+
+const backendBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+
+export default function InsightsStudioPage() {
+  const [formState, setFormState] = useState({
     name: "",
     birthDate: "",
     birthTime: "",
     birthPlace: "",
-    question: "",
   });
+  const [statusMessage, setStatusMessage] = useState("Awaiting your birth details.");
+  const [response, setResponse] = useState<InsightResponse | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatOpen, setChatOpen] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<ChartResponse | null>(null);
-  const [chatOpen, setChatOpen] = useState(false);
 
-  const canSubmit = useMemo(() => form.name && form.birthDate && form.birthTime && form.birthPlace, [form]);
-
-  const handleChange = (field: keyof StudioForm) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm((prev) => ({ ...prev, [field]: event.target.value }));
+  const handleChange = (field: keyof typeof formState) => (event: ChangeEvent<HTMLInputElement>) => {
+    setFormState((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
-    setError(null);
+
     try {
-      const response = await fetch("/api/chart", {
+      const response = await fetch(`${backendBaseUrl}/horoscope`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: form.name,
-          birth_date: form.birthDate,
-          birth_time: form.birthTime,
-          birth_place: form.birthPlace,
-          question: form.question,
+          name: formState.name,
+          birth_date: formState.birthDate,
+          birth_time: formState.birthTime,
+          birth_place: formState.birthPlace,
         }),
       });
-      const payload = (await response.json()) as ChartResponse & { error?: string };
-      if (!response.ok || payload.error) {
-        throw new Error(payload.error || "Unable to generate chart");
+
+      if (!response.ok) {
+        throw new Error("Unable to fetch insights.");
       }
-      setResult(payload);
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Unable to generate chart");
+
+      const data = (await response.json()) as InsightResponse;
+      setResponse(data);
+      setStatusMessage(`Response ready for ${data.name || formState.name || "Seeker"}.`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unexpected error";
+      setStatusMessage(message);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSendChat = async () => {
+    if (!chatInput.trim()) return;
+
+    const message = chatInput.trim();
+    setChatMessages((prev) => [...prev, { role: "user", content: message }]);
+    setChatInput("");
+
+    try {
+      const response = await fetch(`${backendBaseUrl}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to reach chat.");
+      }
+
+      const data = (await response.json()) as { reply?: string };
+      if (data.reply) {
+        setChatMessages((prev) => [...prev, { role: "assistant", content: data.reply || "" }]);
+      }
+    } catch (err) {
+      setChatMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "We could not connect to chat right now." },
+      ]);
+    }
+  };
+
   return (
-    <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-      <section className="rounded-3xl border border-slate-800 bg-card-gradient p-6">
-        <h1 className="text-fluid-xl font-semibold">Studio Insights</h1>
-        <p className="mt-2 text-sm text-slate-300">
-          A full-screen studio for chart generation, responses, and real-time chat. Optimized for touch and PWA use.
-        </p>
-        <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
-          <Field label="Full name" value={form.name} onChange={handleChange("name")} required />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Birth date / Date of birth" type="date" value={form.birthDate} onChange={handleChange("birthDate")} required />
-            <Field label="Birth time / Time of birth" type="time" value={form.birthTime} onChange={handleChange("birthTime")} required />
-          </div>
-          <Field label="Birth place / Place of birth" value={form.birthPlace} onChange={handleChange("birthPlace")} required />
-          <TextareaField label="Focus question" value={form.question} onChange={handleChange("question")} placeholder="What should I know about my next steps?" />
-          <div className="flex flex-wrap items-center gap-3">
-            <Button type="submit" disabled={!canSubmit || loading}>
-              {loading ? "Fetching..." : "Fetch insights"}
-            </Button>
-            {loading && <span className="text-xs text-amber-200">Rendering chart...</span>}
-            <Button variant="ghost" onClick={() => setChatOpen(true)}>
-              Open chat
-            </Button>
-          </div>
-          {error && <p className="rounded-2xl border border-rose-500/40 bg-rose-500/10 p-3 text-xs text-rose-200">{error}</p>}
-        </form>
-      </section>
+    <main id="main" tabIndex={-1} className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-12">
+      <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-3xl border border-white/10 bg-card-gradient p-8">
+          <h1 className="text-fluid-xl font-semibold">Insights Dashboard</h1>
+          <p className="mt-3 text-sm text-slate-300">
+            Connect the core horoscope, live chat, and ritual guidance in a single studio experience.
+          </p>
+          <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
+            <label className="grid gap-2 text-sm">
+              Full name
+              <input
+                value={formState.name}
+                onChange={handleChange("name")}
+                className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
+                required
+              />
+            </label>
+            <label className="grid gap-2 text-sm">
+              Birth date
+              <input
+                type="date"
+                value={formState.birthDate}
+                onChange={handleChange("birthDate")}
+                className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
+                required
+              />
+            </label>
+            <label className="grid gap-2 text-sm">
+              Birth time
+              <input
+                type="time"
+                value={formState.birthTime}
+                onChange={handleChange("birthTime")}
+                className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
+                required
+              />
+            </label>
+            <label className="grid gap-2 text-sm">
+              Birth place
+              <input
+                value={formState.birthPlace}
+                onChange={handleChange("birthPlace")}
+                className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
+                required
+              />
+            </label>
+            <button
+              type="submit"
+              className="mt-2 rounded-full bg-aurora px-6 py-3 text-sm font-semibold text-slate-900"
+            >
+              {loading ? "Fetching…" : "Fetch insights"}
+            </button>
+          </form>
+        </div>
 
-      <section className="flex flex-col gap-6">
-        <div
-          role="status"
-          aria-label="results"
-          className="rounded-3xl border border-slate-800 bg-result-gradient p-6"
-          aria-live="polite"
-        >
-          <h2 className="text-lg font-semibold">Response</h2>
-          {!result && !loading && <p className="mt-2 text-sm text-slate-300">Submit the form to view studio results.</p>}
-          {result && (
-            <div className="mt-3 grid gap-3 text-sm text-slate-100">
-              <p className="font-semibold">Response captured for {form.name}</p>
-              {result.karmic_epoch && <p className="text-xs text-slate-300">Karmic epoch: {result.karmic_epoch}</p>}
-              {result.interpretation && <p>{result.interpretation}</p>}
-              {result.interpretation_hi && <p className="text-amber-200">{result.interpretation_hi}</p>}
+        <div className="rounded-3xl border border-white/10 bg-card-gradient p-8">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Results summary</p>
+              <p role="status" aria-label="Results" className="mt-2 text-sm text-aurora">
+                Response · {statusMessage}
+              </p>
             </div>
-          )}
-          <div className="mt-4 flex justify-center">
-            <KundliChart />
+            <KundliChart className="h-20 w-20 text-aurora" />
           </div>
-        </div>
-
-        <div className="rounded-3xl border border-slate-800 bg-card-gradient p-6">
-          <h3 className="text-base font-semibold">Interactive chart controls</h3>
-          <p className="mt-2 text-xs text-slate-400">Pinch-zoom or swipe to review the chart panel.</p>
-          <div className="mt-4 grid gap-3 text-sm text-slate-300">
-            <div className="rounded-2xl border border-slate-700 bg-slate-950/70 p-3">Tap once to highlight houses.</div>
-            <div className="rounded-2xl border border-slate-700 bg-slate-950/70 p-3">Swipe right to open navigation.</div>
+          <div className="mt-6 space-y-4 text-sm text-slate-200">
+            <p className="font-semibold">Response narrative</p>
+            <p>{response?.interpretation || "Run a reading to generate the latest manuscript response."}</p>
+          </div>
+          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-slate-300">
+            Bhrigu insight blending chart dynamics with manuscript context. Export summaries or share with mentors.
           </div>
         </div>
       </section>
 
-      <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} chart={result?.chart} context={{ birthDetails: form }} />
-    </div>
+      <section className="rounded-3xl border border-white/10 bg-card-gradient p-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold">Live chart conversation</h2>
+            <p className="text-sm text-slate-300">Ask about transits, remedies, or pacing.</p>
+          </div>
+          <button
+            type="button"
+            className="rounded-full border border-white/15 px-4 py-2 text-xs uppercase tracking-[0.2em]"
+            onClick={() => setChatOpen((prev) => !prev)}
+          >
+            {chatOpen ? "Close chat" : "Open chat"}
+          </button>
+        </div>
+
+        {chatOpen && (
+          <div className="mt-6 grid gap-4">
+            <div className="max-h-64 space-y-3 overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/60 p-4 text-sm">
+              {chatMessages.length === 0 && (
+                <p className="text-slate-400">Ask about the chart to start your transcript.</p>
+              )}
+              {chatMessages.map((message, index) => (
+                <div
+                  key={`${message.role}-${index}`}
+                  className={`rounded-2xl px-4 py-3 ${
+                    message.role === "user" ? "bg-aurora/10 text-aurora" : "bg-white/10 text-slate-200"
+                  }`}
+                >
+                  {message.content}
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <input
+                value={chatInput}
+                onChange={(event) => setChatInput(event.target.value)}
+                placeholder="Ask about the chart"
+                className="flex-1 rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm"
+              />
+              <button
+                type="button"
+                className="rounded-full bg-aurora px-6 py-3 text-sm font-semibold text-slate-900"
+                onClick={handleSendChat}
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+    </main>
   );
 }
