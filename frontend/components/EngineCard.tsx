@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import type { ComponentType } from "react";
-import { motion } from "framer-motion";
-import { ArrowUpRight, Info } from "lucide-react";
-import Tooltip from "@/components/Tooltip";
+import { motion, useReducedMotion } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
 
 const transition = { duration: 0.35, ease: [0.2, 0.65, 0.3, 0.9] };
 
@@ -24,6 +23,18 @@ type EngineCardProps = {
 
 export default function EngineCard({ engine, index }: EngineCardProps) {
   const Icon = engine.icon;
+  const shouldReduceMotion = useReducedMotion();
+  const iconFloat = shouldReduceMotion
+    ? undefined
+    : {
+        y: [0, -5, 0],
+        boxShadow: [
+          "0 0 0 rgba(99,102,241,0)",
+          "0 0 16px rgba(99,102,241,0.35)",
+          "0 0 0 rgba(99,102,241,0)",
+        ],
+      };
+  const iconRotate = shouldReduceMotion ? undefined : { rotate: [0, 6, 0] };
 
   return (
     <motion.article
@@ -34,9 +45,31 @@ export default function EngineCard({ engine, index }: EngineCardProps) {
       className="group relative flex h-full flex-col gap-5 rounded-3xl border border-white/10 bg-slate-950/70 p-6 shadow-[0_25px_60px_rgba(2,6,23,0.55)]"
     >
       <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${engine.accent} opacity-0 transition group-hover:opacity-100`} />
-      <div className="relative flex items-center justify-between gap-3">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-white shadow-glow">
-          <Icon className="h-7 w-7" />
+      <div className="relative flex items-center justify-between">
+        <motion.span
+          className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white"
+          animate={iconFloat}
+          transition={{
+            duration: 3.6,
+            ease: "easeInOut",
+            repeat: shouldReduceMotion ? 0 : Infinity,
+            delay: index * 0.1,
+          }}
+        >
+          <motion.span
+            animate={iconRotate}
+            transition={{
+              duration: 4.8,
+              ease: "easeInOut",
+              repeat: shouldReduceMotion ? 0 : Infinity,
+              delay: index * 0.1,
+            }}
+          >
+            <Icon className="h-6 w-6" />
+          </motion.span>
+        </motion.span>
+        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
+          Engine
         </span>
         <div className="flex items-center gap-2">
           <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
