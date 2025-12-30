@@ -10,6 +10,7 @@ from .past_future_bridge import PastFutureSynthesis, build_past_future_synthesis
 from .rule_dsl import compile_to_dataset, parse_dsl
 from .ml_weighting import apply_reweighting
 from .implementation_core import ImplementationCoreResponse, build_implementation_core_response
+from .horoscope_engine import HoroscopeEngine, generate_horoscope_payload
 from .taxonomy import expected_ids, missing_ids_in_dataset, validate_id
 from .horoscope import (
     FutureReport,
@@ -70,6 +71,8 @@ __all__ = [
     "build_past_future_synthesis",
     "ImplementationCoreResponse",
     "build_implementation_core_response",
+    "HoroscopeEngine",
+    "generate_horoscope_payload",
     "WisdomBotResponse",
     "WisdomBotDownload",
     "build_wisdom_bot_response",
