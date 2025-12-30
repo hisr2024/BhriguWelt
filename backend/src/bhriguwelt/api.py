@@ -967,6 +967,7 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "focus_areas": report.focus_areas,
             "practices": report.practices,
             "intentions": report.intentions,
+            "citations": report.citations,
         }
     if command == "timeline":
         request = _request_from_payload(payload)
@@ -1086,14 +1087,17 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     if command == "transits":
         try:
             request = _request_from_payload(payload["natal"])
-            transit_payload = payload["transit"]
         except KeyError as exc:
             missing = exc.args[0]
             raise ValueError(f"Missing required field: {missing}") from exc
+        transit_payload = payload.get("transit")
         report = build_transit_report(request, transit_payload)
         return {
             "name": report.name,
             "directives": [_serialize_obj(item) for item in report.directives],
+            "symbolic_directives": report.symbolic_directives,
+            "remedies": report.remedies,
+            "citations": report.citations,
             "interpretation": report.interpretation,
         }
     raise ValueError(f"Unsupported command: {command}")

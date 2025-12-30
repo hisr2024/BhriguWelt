@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import calendar
+import re
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Sequence
 
 from .astronomical_calculations import derive_progressed_snapshot, derive_transit_snapshot, normalize_birth_datetime
@@ -248,6 +250,9 @@ class TransitReport:
 
     name: str
     directives: List[TransitDirective]
+    symbolic_directives: List[str]
+    remedies: List[Dict]
+    citations: List[str]
     interpretation: str
 
 
@@ -304,6 +309,8 @@ class YearSegment:
     energies: str
     cautions: str
     opportunities: str
+    focus_area: str
+    transit_influences: List[str]
 
 
 @dataclass
@@ -320,6 +327,7 @@ class VarshaphalReport:
     focus_areas: Dict[str, str]
     practices: List[str]
     intentions: List[str]
+    citations: List[str]
 
 
 def build_calendar_context(
@@ -445,23 +453,50 @@ def build_future_report(request: HoroscopeRequest) -> FutureReport:
     )
 
 
-def build_transit_report(request: HoroscopeRequest, transit_payload: Dict[str, str]) -> TransitReport:
+def build_transit_report(request: HoroscopeRequest, transit_payload: Dict[str, str] | None = None) -> TransitReport:
     if not request.consent_for_date_predictions:
         raise ValueError("User consent required for date-based predictions")
 
+    runtime_config = load_runtime_config()
     core_bundle = bhrigu_core.application_bundle(request.tradition)
-    _ensure_bhrigu_data_available(core_bundle, ("transit_rules",), request.tradition)
+    _ensure_bhrigu_data_available(core_bundle, ("principles", "transit_rules", "remedies"), request.tradition)
     snapshot = _snapshot_from_request(request)
+    principles = core_bundle.get("principles", [])
     transit_rules = core_bundle.get("transit_rules", [])
-    transit_dt = normalize_birth_datetime(
-        transit_payload["transit_date"], transit_payload["transit_time"], timezone_name=transit_payload.get("timezone")
-    )
-    natal_dt = normalize_birth_datetime(request.birth_date, request.birth_time, timezone_name=transit_payload.get("timezone"))
+    remedies = core_bundle.get("remedies", [])
+    weights = score_principles(snapshot, principles, runtime_config)
+
+    if transit_payload:
+        transit_dt = normalize_birth_datetime(
+            transit_payload["transit_date"], transit_payload["transit_time"], timezone_name=transit_payload.get("timezone")
+        )
+        timezone = transit_payload.get("timezone")
+    else:
+        now = datetime.utcnow()
+        transit_dt = normalize_birth_datetime(
+            now.date().isoformat(), now.time().isoformat(timespec="minutes"), timezone_name=request.timezone
+        )
+        timezone = request.timezone
+
+    natal_dt = normalize_birth_datetime(request.birth_date, request.birth_time, timezone_name=timezone)
     transit_details = derive_transit_snapshot(natal_dt, transit_dt)
     directives = evaluate_transits(snapshot, transit_details, transit_rules)
+    symbolic_directives = [
+        f"{directive.planet} transit — {directive.influence} ({directive.reference})" for directive in directives
+    ]
+    personalized_remedies = _personalize_remedies(remedies, weights, snapshot, runtime_config)
+    citations = sorted(
+        {
+            *(directive.reference for directive in directives if directive.reference),
+            *(remedy.get("sutra_reference") for remedy in personalized_remedies if remedy.get("sutra_reference")),
+        }
+    )
     return TransitReport(
         name=request.name,
         directives=directives,
+        symbolic_directives=symbolic_directives,
+        remedies=personalized_remedies,
+        citations=citations,
         interpretation=_compose_transit_interpretation(directives, transit_dt),
     )
 
@@ -768,13 +803,25 @@ def build_varshaphal_report(
     horoscope = build_prediction(request)
     snapshot = _snapshot_from_request(request)
     influences = _rank_influences(snapshot)
+    core_bundle = bhrigu_core.application_bundle(request.tradition)
+    _ensure_bhrigu_data_available(core_bundle, ("transit_rules",), request.tradition)
+    transit_rules = core_bundle.get("transit_rules", [])
 
     year_theme, mantra = _derive_year_theme(horoscope.karmic_epoch, influences, focus)
-    segments = _build_year_segments(horoscope, influences, target_label, focus)
+    segments = _build_year_segments(
+        horoscope,
+        snapshot,
+        influences,
+        target_label,
+        focus,
+        transit_rules=transit_rules,
+        timezone_name=request.timezone,
+    )
     gateways = _gateway_windows(horoscope.future_trajectories, segments)
     focus_areas = _focus_area_summaries(horoscope.weights, influences, focus)
     practices = _year_practices(focus, influences, horoscope.remedies)
     intentions = _year_intentions(focus, influences)
+    citations = _collect_varshaphal_citations(horoscope, request.tradition, transit_rules)
 
     sections = _compose_varshaphal_sections(
         request,
@@ -787,6 +834,7 @@ def build_varshaphal_report(
         focus_areas,
         practices,
         intentions,
+        citations,
     )
 
     return VarshaphalReport(
@@ -800,6 +848,7 @@ def build_varshaphal_report(
         focus_areas=focus_areas,
         practices=practices,
         intentions=intentions,
+        citations=citations,
     )
 
 
@@ -1154,20 +1203,22 @@ def _derive_year_theme(karmic_epoch: str, influences: Sequence[str], focus: str)
 
 
 def _build_year_segments(
-    horoscope: HoroscopeReport, influences: Sequence[str], target_year: str, focus: str
+    horoscope: HoroscopeReport,
+    snapshot: CelestialSnapshot,
+    influences: Sequence[str],
+    target_year: str,
+    focus: str,
+    *,
+    transit_rules: List[Dict],
+    timezone_name: str | None,
 ) -> List[YearSegment]:
-    quarters = [
-        ("Q1", ["Jan", "Feb", "Mar"]),
-        ("Q2", ["Apr", "May", "Jun"]),
-        ("Q3", ["Jul", "Aug", "Sep"]),
-        ("Q4", ["Oct", "Nov", "Dec"]),
-    ]
-
+    month_windows = _resolve_varshaphal_months(target_year, timezone_name)
     directives = horoscope.future_trajectories or []
     remedies = horoscope.remedies or []
 
+    natal_dt = normalize_birth_datetime(snapshot.birth_date, snapshot.birth_time, timezone_name=timezone_name)
     segments: List[YearSegment] = []
-    for index, (label, months) in enumerate(quarters):
+    for index, (label, months, transit_dt) in enumerate(month_windows):
         anchor = influences[index % len(influences)] if influences else "Integration"
         directive = directives[index] if index < len(directives) else None
         remedy_hint = None
@@ -1175,31 +1226,115 @@ def _build_year_segments(
             remedy = remedies[index % len(remedies)]
             remedy_hint = remedy.get("interpretation") or remedy.get("description") or remedy.get("id")
 
-        energies = f"{anchor.title()} tone with {focus or 'balanced growth'} as the anchor."
+        transit_details = derive_transit_snapshot(natal_dt, transit_dt)
+        transit_directives = evaluate_transits(snapshot, transit_details, transit_rules)
+        transit_influences = _format_transit_influences(transit_directives, transit_details)
+        focus_area = _month_focus_area(snapshot, transit_details, focus)
+
+        energies = (
+            f"{anchor.title()}-led rhythm with {focus_area.lower()} emphasis. "
+            "Transit notes frame reflective themes rather than predictions."
+        )
         if directive:
-            window = directive.window or f"{label} {target_year}"
+            window = directive.window or label
             energies += f" Highlight: {directive.focus} ({window}) per folio {directive.sutra_reference}."
 
         caution = (
-            f"Guard energy during {months[1]}–{months[2]} by pacing decisions; "
-            f"{anchor.lower()} patterns may tempt over-commitment."
+            f"Guard energy this month by pacing commitments; "
+            f"{anchor.lower()} patterns can tempt overreach or urgency."
         )
         opportunities = (
-            f"Use {anchor.lower()} discipline to schedule check-ins each month. "
-            f"Remedy focus: {remedy_hint or 'keep weekly seva and breath practice'}."
+            f"Schedule a monthly review to align {focus_area.lower()} choices. "
+            f"Remedy focus: {remedy_hint or 'weekly seva, steady breathwork'}."
         )
 
         segments.append(
             YearSegment(
-                label=f"{label} {target_year}",
+                label=label,
                 months=months,
                 energies=energies,
                 cautions=caution,
                 opportunities=opportunities,
+                focus_area=focus_area,
+                transit_influences=transit_influences,
             )
         )
 
     return segments
+
+
+def _resolve_varshaphal_months(target_year: str, timezone_name: str | None) -> List[tuple[str, List[str], datetime]]:
+    now = datetime.now(timezone.utc)
+    match = re.search(r"(19|20)\\d{2}", target_year or "")
+    if match:
+        anchor = date(int(match.group()), 1, 15)
+    else:
+        today = now.date()
+        day = min(15, calendar.monthrange(today.year, today.month)[1])
+        anchor = date(today.year, today.month, day)
+
+    month_windows: List[tuple[str, List[str], datetime]] = []
+    for offset in range(12):
+        month_date = _add_months(anchor, offset)
+        month_label = month_date.strftime("%b %Y")
+        month_windows.append(
+            (
+                month_label,
+                [month_date.strftime("%b")],
+                normalize_birth_datetime(month_date.isoformat(), "12:00", timezone_name=timezone_name),
+            )
+        )
+    return month_windows
+
+
+def _add_months(base: date, offset: int) -> date:
+    year = base.year + (base.month - 1 + offset) // 12
+    month = (base.month - 1 + offset) % 12 + 1
+    day = min(base.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def _format_transit_influences(
+    directives: Sequence[TransitDirective], transit_details: Dict[str, object]
+) -> List[str]:
+    influences: List[str] = []
+    for directive in directives[:2]:
+        influences.append(f"{directive.planet}: {directive.influence} ({directive.reference})")
+
+    if influences:
+        return influences
+
+    for planet in ("mars_house", "venus_house", "saturn_house", "jupiter_house"):
+        house = transit_details.get(planet)
+        if house:
+            label = planet.replace("_house", "").title()
+            influences.append(f"{label} in house {house}")
+        if len(influences) >= 2:
+            break
+    return influences or ["Balanced gochar emphasis; treat as a reflective month."]
+
+
+def _month_focus_area(snapshot: CelestialSnapshot, transit_details: Dict[str, object], focus: str) -> str:
+    focus_hint = f" (keep {focus} in view)" if focus else ""
+    mars_house = int(transit_details.get("mars_house") or snapshot.mars_house or 0)
+    if mars_house:
+        if mars_house in {3, 6, 10, 11}:
+            return f"Career & disciplined effort via Mars house {mars_house}{focus_hint}"
+        return f"Personal initiative via Mars house {mars_house}{focus_hint}"
+
+    venus_house = int(transit_details.get("venus_house") or snapshot.venus_house or 0)
+    if venus_house:
+        return f"Relationships & creativity via Venus house {venus_house}{focus_hint}"
+
+    saturn_house = int(transit_details.get("saturn_house") or snapshot.saturn_house or 0)
+    if saturn_house:
+        return f"Responsibilities & boundaries via Saturn house {saturn_house}{focus_hint}"
+
+    jupiter_house = int(transit_details.get("jupiter_house") or snapshot.jupiter_house or 0)
+    if jupiter_house:
+        return f"Learning & dharma via Jupiter house {jupiter_house}{focus_hint}"
+
+    return f"Holistic balance and integration{focus_hint}"
 
 
 def _gateway_windows(trajectories: List[FutureTrajectory], segments: Sequence[YearSegment]) -> List[str]:
@@ -1288,6 +1423,7 @@ def _compose_varshaphal_sections(
     focus_areas: Dict[str, str],
     practices: Sequence[str],
     intentions: Sequence[str],
+    citations: Sequence[str],
 ) -> Dict[str, str]:
     restatement = (
         "Restatement of Data & Target Year: "
@@ -1296,12 +1432,14 @@ def _compose_varshaphal_sections(
     )
     disclaimer = (
         "Disclaimer & Orientation: Bhrigu Samhita–inspired reflective guide. "
-        "Not medical, legal, or financial advice. Timings are tendencies; free will leads."
+        "Not medical, legal, or financial advice. Timings are tendencies; free will leads. "
+        f"Sources: {', '.join(citations) if citations else 'Bhrigu corpus references'}."
     )
     theme_section = f"Overall Year Theme: {year_theme} | Year Mantra: {year_mantra}."
     breakdown = "; ".join(
         (
-            f"{segment.label} ({', '.join(segment.months)}): Energies — {segment.energies} | "
+            f"{segment.label} ({', '.join(segment.months)}): Focus — {segment.focus_area}. "
+            f"Transits — {', '.join(segment.transit_influences)}. Energies — {segment.energies} | "
             f"Cautions — {segment.cautions} | Opportunities — {segment.opportunities}"
         )
         for segment in segments
@@ -1325,7 +1463,7 @@ def _compose_varshaphal_sections(
         "1": restatement,
         "2": disclaimer,
         "3": theme_section,
-        "4": "Quarterly / Monthly Breakdown: " + breakdown,
+        "4": "Monthly Breakdown: " + breakdown,
         "5": gateways_section,
         "6": focus_section,
         "7": practices_section,
@@ -2222,10 +2360,15 @@ def _render_varshaphal(report: VarshaphalReport, birth_place: str) -> None:
     for gateway in report.gateways:
         print(f"  - {gateway}")
 
-    print("\nQuarterly overview:")
+    print("\nMonthly overview:")
     for segment in report.segments:
         months = ", ".join(segment.months)
         print(f"  {segment.label} [{months}]")
+        print(f"    Focus: {segment.focus_area}")
+        if segment.transit_influences:
+            print("    Transits:")
+            for influence in segment.transit_influences:
+                print(f"      - {influence}")
         print(f"    Energies: {segment.energies}")
         print(f"    Cautions: {segment.cautions}")
         print(f"    Opportunities: {segment.opportunities}")
@@ -2236,6 +2379,10 @@ def _render_varshaphal(report: VarshaphalReport, birth_place: str) -> None:
     print("Intentions:")
     for intention in report.intentions:
         print(f"  - {intention}")
+    if report.citations:
+        print("Citations:")
+        for cite in report.citations:
+            print(f"  - {cite}")
 
     print("\n8-section digest:")
     for key in map(str, range(1, 9)):
