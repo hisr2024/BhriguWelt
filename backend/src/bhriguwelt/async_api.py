@@ -16,7 +16,7 @@ except Exception as exc:  # pragma: no cover - optional dependency
         "aiohttp is required for the async API server; install it from PyPI when network access is available."
     ) from exc
 
-from .api import RateLimiter, ResponseCache, handle_command, _request_from_payload
+from .api import RateLimiter, ResponseCache, handle_command, _request_from_payload, build_rate_limiter
 from .bhrigu_core import bhrigu_core
 from .data_loader import persist_bhrigu_data
 from .feedback import feedback_analytics_snapshot, quarterly_reviews, record_feedback, serialize_entry
@@ -252,6 +252,22 @@ def create_app() -> web.Application:
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
 
+    async def matchmaking_pipeline(request: web.Request) -> web.Response:
+        _, rate_meta = await guard_rate_limit(request)
+        payload = await request.json()
+        language = payload.get("language") or payload.get("design_language")
+        preferences = payload.get("modern_preferences")
+        if language is not None and not isinstance(language, str):
+            return _json_response({"message": "language must be a string when provided"}, status=HTTPStatus.BAD_REQUEST)
+        if preferences is not None and not isinstance(preferences, list):
+            return _json_response(
+                {"message": "modern_preferences must be a list when provided"}, status=HTTPStatus.BAD_REQUEST
+            )
+        response = await handle_cached_command("matchmaking-pipeline", payload)
+        reply = _json_response(response)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
+
     async def calendar(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
@@ -320,6 +336,20 @@ def create_app() -> web.Application:
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
 
+    async def karmic_dashboard(request: web.Request) -> web.Response:
+        _, rate_meta = await guard_rate_limit(request)
+        payload = await request.json()
+        focus_areas = payload.get("focus_areas")
+        issues = payload.get("issues")
+        if focus_areas is not None and not isinstance(focus_areas, list):
+            return _json_response({"message": "focus_areas must be a list when provided"}, status=HTTPStatus.BAD_REQUEST)
+        if issues is not None and not isinstance(issues, list):
+            return _json_response({"message": "issues must be a list when provided"}, status=HTTPStatus.BAD_REQUEST)
+        response = await handle_cached_command("karmic-dashboard", payload)
+        reply = _json_response(response)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
+
     async def wisdom_aggregator(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
@@ -328,6 +358,57 @@ def create_app() -> web.Application:
                 {"message": "focus_engines must be a list when provided"}, status=HTTPStatus.BAD_REQUEST
             )
         response = await handle_cached_command("wisdom-aggregator", payload)
+        reply = _json_response(response)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
+
+    async def wisdom_bot(request: web.Request) -> web.Response:
+        _, rate_meta = await guard_rate_limit(request)
+        payload = await request.json()
+        if not payload.get("query") and not payload.get("message"):
+            return _json_response({"message": "query is required for wisdom bot"}, status=HTTPStatus.BAD_REQUEST)
+        if payload.get("focus_areas") is not None and not isinstance(payload.get("focus_areas"), list):
+            return _json_response({"message": "focus_areas must be a list when provided"}, status=HTTPStatus.BAD_REQUEST)
+        if payload.get("modern_preferences") is not None and not isinstance(payload.get("modern_preferences"), list):
+            return _json_response(
+                {"message": "modern_preferences must be a list when provided"}, status=HTTPStatus.BAD_REQUEST
+            )
+        response = await handle_cached_command("wisdom-bot", payload)
+        reply = _json_response(response)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
+
+    async def experience_flow(request: web.Request) -> web.Response:
+        _, rate_meta = await guard_rate_limit(request)
+        payload = await request.json()
+        modern_preferences = payload.get("modern_preferences")
+        if modern_preferences is not None and not isinstance(modern_preferences, list):
+            return _json_response(
+                {"message": "modern_preferences must be a list when provided"}, status=HTTPStatus.BAD_REQUEST
+            )
+        language = payload.get("language") or payload.get("design_language")
+        if language is not None and not isinstance(language, str):
+            return _json_response({"message": "language must be a string when provided"}, status=HTTPStatus.BAD_REQUEST)
+        tone = payload.get("tone")
+        if tone is not None and not isinstance(tone, str):
+            return _json_response({"message": "tone must be a string when provided"}, status=HTTPStatus.BAD_REQUEST)
+        cultural_sensitivity = payload.get("cultural_sensitivity")
+        if cultural_sensitivity is not None and not isinstance(cultural_sensitivity, str):
+            return _json_response(
+                {"message": "cultural_sensitivity must be a string when provided"}, status=HTTPStatus.BAD_REQUEST
+            )
+        response = await handle_cached_command("experience-flow", payload)
+        reply = _json_response(response)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
+
+    async def past_future(request: web.Request) -> web.Response:
+        _, rate_meta = await guard_rate_limit(request)
+        payload = await request.json()
+        focus_areas = payload.get("focus_areas")
+        if focus_areas is not None and not isinstance(focus_areas, list):
+            return _json_response({"message": "focus_areas must be a list when provided"}, status=HTTPStatus.BAD_REQUEST)
+        response = await handle_cached_command("past-future", payload)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -351,6 +432,43 @@ def create_app() -> web.Application:
         )
         response = {"profile_id": profile.id, "user_id": profile.user_id, **reply}
         return _json_response(response)
+
+    async def profiles_register(request: web.Request) -> web.Response:
+        await guard_rate_limit(request)
+        payload = await request.json()
+        try:
+            profile = await resolve_profile(payload, allow_update_only=False)
+            token = await asyncio.to_thread(issue_profile_token, user_id=str(profile.user_id), profile_id=profile.id)
+        except ValueError as exc:
+            return _json_response({"message": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+        except RuntimeError as exc:
+            return _json_response({"message": str(exc)}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+        return _json_response({"profile": profile.to_dict(), "token": token}, status=HTTPStatus.CREATED)
+
+    async def profiles_token(request: web.Request) -> web.Response:
+        await guard_rate_limit(request)
+        if not _ADMIN_TOKEN or request.headers.get("X-Admin-Token") != _ADMIN_TOKEN:
+            return _json_response({"message": "Admin token required for profile token issuance"}, status=HTTPStatus.FORBIDDEN)
+        payload = await request.json()
+        profile_id = payload.get("profile_id")
+        user_id = payload.get("user_id")
+        role = payload.get("role", "user")
+        if role not in {"user", "admin"}:
+            return _json_response({"message": "role must be user or admin"}, status=HTTPStatus.BAD_REQUEST)
+        profile = None
+        if profile_id:
+            profile = await asyncio.to_thread(get_profile, profile_id=int(profile_id))
+        elif user_id:
+            profile = await asyncio.to_thread(get_profile, user_id=str(user_id))
+        if not profile:
+            return _json_response({"message": "Profile not found"}, status=HTTPStatus.NOT_FOUND)
+        try:
+            token = await asyncio.to_thread(
+                issue_profile_token, user_id=str(profile.user_id), profile_id=profile.id, role=str(role)
+            )
+        except RuntimeError as exc:
+            return _json_response({"message": str(exc)}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+        return _json_response({"token": token, "profile": profile.to_dict()})
 
     async def chat_socket(request: web.Request) -> web.StreamResponse:
         ws = web.WebSocketResponse(heartbeat=30.0)
@@ -559,13 +677,18 @@ def create_app() -> web.Application:
     app.router.add_route("POST", "/varshaphal", varshaphal)
     app.router.add_route("POST", "/matchmaking", matchmaking)
     app.router.add_route("POST", "/matchmaking/diagnostics", matchmaking_diagnostics)
+    app.router.add_route("POST", "/matchmaking/pipeline", matchmaking_pipeline)
     app.router.add_route("POST", "/calendar", calendar)
     app.router.add_route("POST", "/transits", transits)
     app.router.add_route("POST", "/chart", chart)
     app.router.add_route("POST", "/core-wisdom", core_wisdom)
     app.router.add_route("POST", "/implementation-core", implementation_core)
     app.router.add_route("POST", "/core-engines", core_engines)
+    app.router.add_route("POST", "/karmic-dashboard", karmic_dashboard)
     app.router.add_route("POST", "/wisdom-aggregator", wisdom_aggregator)
+    app.router.add_route("POST", "/wisdom-bot", wisdom_bot)
+    app.router.add_route("POST", "/experience-flow", experience_flow)
+    app.router.add_route("POST", "/past-future", past_future)
     app.router.add_route("POST", "/chat", chat)
     app.router.add_route("GET", "/ws/chat", chat_socket)
     app.router.add_route("POST", "/profiles", profiles_create)
