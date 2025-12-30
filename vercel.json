@@ -3,15 +3,6 @@
   "env": {
     "NEXT_PUBLIC_BACKEND_URL": "https://bhriguwelt-production.up.railway.app"
   },
-  "builds": [
-    {
-      "src": "frontend/next.config.js",
-      "use": "@vercel/next",
-      "config": {
-        "outputDirectory": ".next"
-      }
-    }
-  ],
   "regions": ["iad1", "sfo1", "fra1"],
   "installCommand": "npm install",
   "buildCommand": "npm run build --workspace frontend",
