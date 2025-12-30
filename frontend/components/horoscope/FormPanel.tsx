@@ -144,6 +144,38 @@ export default function FormPanel({
           </div>
         </div>
 
+        <div className="field-row field-row--split">
+          <div className="field">
+            <label htmlFor="horoscope-lunar-tithi">Lunar tithi (1-30)</label>
+            <input
+              id="horoscope-lunar-tithi"
+              name="lunarTithi"
+              type="number"
+              min={1}
+              max={30}
+              placeholder="e.g. 12"
+              value={form.lunarTithi || ""}
+              onChange={(event) => onChange("lunarTithi", event.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="horoscope-moon-element">Moon element</label>
+            <select
+              id="horoscope-moon-element"
+              name="moonElement"
+              value={form.moonElement || ""}
+              onChange={(event) => onChange("moonElement", event.target.value)}
+            >
+              <option value="">Select element</option>
+              <option value="water">Water</option>
+              <option value="fire">Fire</option>
+              <option value="air">Air</option>
+              <option value="earth">Earth</option>
+              <option value="ether">Ether</option>
+            </select>
+          </div>
+        </div>
+
         <div className="action-row">
           <button type="submit" disabled={loading || !isComplete} aria-label="Generate horoscope">
             {loading ? "Preparing your reading..." : "Generate reading"}
