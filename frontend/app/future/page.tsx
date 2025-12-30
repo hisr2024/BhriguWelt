@@ -1,117 +1,161 @@
 "use client";
 
-import { useState } from "react";
-import type { ChangeEvent, FormEvent } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 
-const backendBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+import Timeline from "@/components/Timeline";
+import PredictionForm from "@/components/PredictionForm";
+import { getFutureProgress, type FutureProgressResponse } from "@/lib/api";
 
-type FutureResponse = {
-  interpretation?: string;
-  interpretation_hi?: string;
+type FutureEvent = {
+  title: string;
+  window: string;
+  houseAnchor: string;
+  detail: string;
+  icon?: string;
+  planet?: string;
+  progressLabel?: string;
 };
 
 export default function FuturePage() {
-  const [formState, setFormState] = useState({
-    name: "",
-    birthDate: "",
-    birthTime: "",
-    birthPlace: "",
-  });
-  const [result, setResult] = useState<FutureResponse | null>(null);
-  const [status, setStatus] = useState("Generate your future trajectory.");
+  const [progressData, setProgressData] = useState<FutureProgressResponse | null>(null);
+  const [progressError, setProgressError] = useState<string | null>(null);
 
-  const handleChange = (field: keyof typeof formState) => (event: ChangeEvent<HTMLInputElement>) => {
-    setFormState((prev) => ({ ...prev, [field]: event.target.value }));
-  };
+  useEffect(() => {
+    let mounted = true;
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setStatus("Mapping future cycles…");
-    try {
-      const response = await fetch(`${backendBaseUrl}/future`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formState.name,
-          birth_date: formState.birthDate,
-          birth_time: formState.birthTime,
-          birth_place: formState.birthPlace,
-        }),
+    getFutureProgress()
+      .then((data) => {
+        if (!mounted) return;
+        setProgressData(data);
+      })
+      .catch((error) => {
+        console.error("Unable to fetch future progress", error);
+        if (mounted) setProgressError("Using offline demo house progress");
       });
 
-      if (!response.ok) {
-        throw new Error("Unable to fetch future insights.");
-      }
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
-      const data = (await response.json()) as FutureResponse;
-      setResult(data);
-      setStatus("Future guidance delivered.");
-    } catch (err) {
-      setStatus("Future insights are unavailable right now.");
-    }
-  };
+  const events = useMemo<FutureEvent[]>(
+    () => [
+      {
+        title: "Transit glow",
+        window: "Next 6 months",
+        houseAnchor: "House 4 • Roots",
+        detail: "Home rituals and study sprints anchor this phase; hover for remedy prompts.",
+        icon: "☾",
+        planet: "Moon",
+      },
+      {
+        title: "Dasha shift",
+        window: "2025",
+        houseAnchor: "House 9 • Dharma",
+        detail: "Scholarship streaks, pilgrimages, and mentorship checklists surface automatically.",
+        icon: "♃",
+        planet: "Jupiter",
+      },
+      {
+        title: "Partnership bloom",
+        window: "2026",
+        houseAnchor: "House 7 • Partnerships",
+        detail: "Shared service and travel markers light up; progress bars show karma resolution.",
+        icon: "♀",
+        planet: "Venus",
+      },
+    ],
+    [],
+  );
+
+  const enrichedEvents = useMemo(() => {
+    return events.map((event) => {
+      const houseNumber = Number(event.houseAnchor.match(/(\d+)/)?.[1]);
+      const milestone = progressData?.milestones.find((item) => item.house === houseNumber);
+
+      return {
+        ...event,
+        houseIndex: houseNumber,
+        progress: milestone?.completion,
+        progressLabel: milestone?.label || event.progressLabel,
+        planet: milestone?.planet || event.planet,
+        icon: milestone?.icon || event.icon,
+      };
+    });
+  }, [events, progressData]);
+
+  const karmicResolution = progressData?.karmic_resolution ?? 0;
 
   return (
-    <main id="main" tabIndex={-1} className="mx-auto flex max-w-5xl flex-col gap-10 px-6 py-12">
-      <section className="rounded-3xl border border-white/10 bg-card-gradient p-8">
-        <h1 className="text-fluid-xl font-semibold">Future Pathway</h1>
-        <p className="mt-3 text-sm text-slate-300">
-          View upcoming cycles, recommended remedies, and timeline anchors in one streamlined experience.
+    <div className="stack">
+      <div className="hero">
+        <p className="eyebrow">Future • Directive-first</p>
+        <h1>Actionable roadmaps that still honor the Bhrigu canon.</h1>
+        <p className="muted" style={{ maxWidth: "760px" }}>
+          Finance, devotion, service, and health recommendations return as flowing interpretations you can read aloud.
         </p>
-        <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
-          <label className="grid gap-2 text-sm">
-            Full name
-            <input
-              value={formState.name}
-              onChange={handleChange("name")}
-              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
-              required
-            />
-          </label>
-          <label className="grid gap-2 text-sm">
-            Birth date
-            <input
-              type="date"
-              value={formState.birthDate}
-              onChange={handleChange("birthDate")}
-              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
-              required
-            />
-          </label>
-          <label className="grid gap-2 text-sm">
-            Birth time
-            <input
-              type="time"
-              value={formState.birthTime}
-              onChange={handleChange("birthTime")}
-              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
-              required
-            />
-          </label>
-          <label className="grid gap-2 text-sm">
-            Birth place
-            <input
-              value={formState.birthPlace}
-              onChange={handleChange("birthPlace")}
-              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
-              required
-            />
-          </label>
-          <button type="submit" className="mt-2 rounded-full bg-aurora px-6 py-3 text-sm font-semibold text-slate-900">
-            Reveal future
-          </button>
-        </form>
-      </section>
+        <div className="hero-actions">
+          <Link href="/" className="button-link" style={{ background: "rgba(255,255,255,0.08)" }}>
+            Back to studio hub
+          </Link>
+        </div>
+      </div>
 
-      <section className="rounded-3xl border border-white/10 bg-card-gradient p-8">
-        <p role="status" className="text-sm text-aurora">
-          {status}
-        </p>
-        <div className="mt-4 space-y-3 text-sm text-slate-200">
-          <p>{result?.interpretation || "Future insights will populate here."}</p>
-          {result?.interpretation_hi && <p className="text-slate-300">{result.interpretation_hi}</p>}
+      <section className="panel softly" aria-label="Future timeline overlay">
+        <div className="section-heading">
+          <p className="eyebrow">Timeline</p>
+          <h2>Scroll through phases</h2>
+          <p className="muted">
+            Interactive milestones stay linked to the foundational twelve houses. A glowing house band mirrors every
+            milestone so seekers always know which anchor is powering the directive.
+          </p>
+        </div>
+        <div className="progress" aria-label="Karmic resolution progress">
+          <div className="progress__bar" style={{ width: `${karmicResolution}%` }} />
+          <span className="progress__label">{karmicResolution}% karmic resolution synced from backend</span>
+        </div>
+        <Timeline events={enrichedEvents} accent="pink" />
+        <div className="microcopy">
+          Drag or flick horizontally to fast-forward; milestones glow brighter as house anchors match the twelve-house band.
+          {progressError ? ` ${progressError}.` : ""}
         </div>
       </section>
-    </main>
+
+      <section className="card-grid">
+        <div className="card highlight">
+          <div className="section-heading">
+            <p className="eyebrow">Live experience</p>
+            <h2>Future directives</h2>
+            <p>Chart the manuscript-backed steps to take next in English and Hindi.</p>
+          </div>
+          <PredictionForm
+            engine="future"
+            title="Future directives"
+            description="Use this as the feed source for timelines, notifications, and profile streaks."
+          />
+        </div>
+        <div className="card">
+          <div className="section-heading">
+            <p className="eyebrow">Engine focus</p>
+            <h2>Guidance you can share</h2>
+          </div>
+          <ul className="kudos-list">
+            <li>
+              <span className="badge">Bilingual</span>
+              <span>English and Hindi outputs keep families and teams aligned.</span>
+            </li>
+            <li>
+              <span className="badge">PDF ready</span>
+              <span>Export interpretations as PDFs for timelines or notifications.</span>
+            </li>
+            <li>
+              <span className="badge">Accurate</span>
+              <span>Field-level alignment keeps remedies and recommendations precise.</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </div>
   );
 }

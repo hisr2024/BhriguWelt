@@ -1,45 +1,142 @@
-"use client";
+'use client';
 
-import { PropsWithChildren, useCallback, useEffect, useState } from "react";
-import { MobileMenu } from "@/components/MobileMenu";
-import { Navigation } from "@/components/Navigation";
-import { useSwipe } from "@/components/hooks/useSwipe";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import Providers from "@/app/providers";
+import { useI18n, type Language } from "@/lib/i18n";
+import { theme } from "@/lib/theme";
+import OnboardingModal from "./OnboardingModal";
+import ExperienceToolbar from "./ExperienceToolbar";
 
-export function AppShell({ children }: PropsWithChildren) {
+type Props = {
+  children: React.ReactNode;
+};
+
+const navLinks = [
+  { href: "/", key: "nav.home", fallback: "Home" },
+  { href: "/calendar", key: "nav.calendar", fallback: "Śaka calendar" },
+  { href: "/horoscope", key: "nav.horoscope", fallback: "Horoscope" },
+  { href: "/past-life", key: "nav.past", fallback: "Past lives" },
+  { href: "/future", key: "nav.future", fallback: "Future" },
+  { href: "/matchmaking", key: "nav.matchmaking", fallback: "Matchmaking" },
+];
+
+function LanguageToggle() {
+  const { lang, setLang, availableLanguages } = useI18n();
+  return (
+    <label className="language-toggle" aria-label="Language toggle">
+      <span className="sr-only">Language</span>
+      <select value={lang} onChange={(event) => setLang(event.target.value as Language)}>
+        {availableLanguages.map((option) => (
+          <option key={option.code} value={option.code}>
+            {option.nativeLabel} ({option.label})
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function Shell({ children }: Props) {
+  const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const openMenu = useCallback(() => setMenuOpen(true), []);
-  const closeMenu = useCallback(() => setMenuOpen(false), []);
-
-  const swipeHandlers = useSwipe({
-    onSwipeLeft: closeMenu,
-    onSwipeRight: openMenu,
-  });
-
   useEffect(() => {
-    if (!menuOpen) return;
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeMenu();
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [menuOpen, closeMenu]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-    }
+    const closeOnResize = () => setMenuOpen(false);
+    window.addEventListener("resize", closeOnResize);
+    return () => window.removeEventListener("resize", closeOnResize);
   }, []);
 
   return (
-    <div className="min-h-screen" {...swipeHandlers}>
-      <Navigation onOpenMenu={openMenu} />
-      <MobileMenu open={menuOpen} onClose={closeMenu} />
-      {children}
-      <footer className="border-t border-slate-800/80 bg-slate-950/80 px-6 py-10 text-center text-xs text-slate-500">
-        Crafted for seekers · BhriguWelt engines with offline fallback.
+    <>
+      <a href="#main" className="skip-link">
+        {t("nav.skip", "Skip to content")}
+      </a>
+
+      <OnboardingModal />
+
+      <header className="topbar" aria-label="Site header">
+        <Link href="/" className="brand" aria-label={t("nav.home", "Home")}>
+          <span className="brand-mark" style={{ background: theme.gradients.brand }} aria-hidden />
+          BhriguWelt
+        </Link>
+        <div className="topbar__mobile">
+          <button
+            type="button"
+            className="nav-toggle"
+            aria-expanded={menuOpen}
+            aria-controls="primary-navigation"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {menuOpen ? "Close" : "Menu"}
+          </button>
+          <Link className="button-link soft" href="/matchmaking">
+            {t("nav.cta", "Start a session")}
+          </Link>
+        </div>
+        <nav id="primary-navigation" className={menuOpen ? "is-open" : ""} aria-label="Main">
+          <ul>
+            {navLinks.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href} onClick={() => setMenuOpen(false)}>
+                  {t(link.key, link.fallback)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div className="topbar__actions">
+          <LanguageToggle />
+          <Link className="button-link soft" href="/matchmaking">
+            {t("nav.cta", "Start a session")}
+          </Link>
+        </div>
+      </header>
+
+      <div className="topbar__touch-row" role="group" aria-label={t("nav.quick.label", "Quick jump for forms")}>
+        <Link className="touch-chip" href="/experience#birth" aria-label={t("nav.quick.birth", "Birth input section")}>
+          {t("nav.quick.birth", "Birth input")}
+        </Link>
+        <Link className="touch-chip" href="/experience#chart" aria-label={t("nav.quick.chart", "Chart section")}>
+          {t("nav.quick.chart", "Chart")}
+        </Link>
+        <Link className="touch-chip" href="/horoscope" aria-label={t("nav.quick.horoscope", "Interpretations section")}>
+          {t("nav.quick.horoscope", "Interpretations")}
+        </Link>
+        <Link className="touch-chip" href="/matchmaking" aria-label={t("nav.quick.matchmaking", "Matchmaking section")}>
+          {t("nav.quick.matchmaking", "Matchmaking")}
+        </Link>
+      </div>
+
+      <ExperienceToolbar />
+
+      <main id="main" className="page-shell" tabIndex={-1}>
+        {children}
+      </main>
+
+      <footer className="footer" aria-label="Footer">
+        <div>
+          <p className="eyebrow">Bharat-centred Jyotish</p>
+          <h3>{t("nav.tagline", "Quiet guidance across every stage of life.")}</h3>
+          <p className="muted">{t("nav.desc", "Readable predictions, Śaka-ready conversions, and heartfelt remedies in one space.")}</p>
+        </div>
+        <div className="footer-links">
+          {navLinks.map((link) => (
+            <Link key={link.href} href={link.href}>
+              {t(link.key, link.fallback)}
+            </Link>
+          ))}
+          <Link href="/">{t("nav.home", "Home")}</Link>
+        </div>
       </footer>
-    </div>
+    </>
+  );
+}
+
+export default function AppShell({ children }: Props) {
+  return (
+    <Providers>
+      <Shell>{children}</Shell>
+    </Providers>
   );
 }

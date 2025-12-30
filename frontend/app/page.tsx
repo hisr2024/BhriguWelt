@@ -1,209 +1,199 @@
-import Link from "next/link";
+'use client';
 
-import KundliChart from "./components/KundliChart";
-import OnboardingDialog from "./components/OnboardingDialog";
+import dynamic from "next/dynamic";
 
-const quickLinks = [
-  {
-    title: "Horoscope Studio",
-    description: "Generate manuscript-backed chart readings with bilingual insights.",
-    href: "/horoscope",
-  },
-  {
-    title: "Insights Dashboard",
-    description: "Connect the full chart, remedies, and real-time chat guidance.",
-    href: "/studio/insights",
-  },
-  {
-    title: "Matchmaking",
-    description: "Compare compatibility and harmony markers for modern partnerships.",
-    href: "/matchmaking",
-  },
-  {
-    title: "Sacred Calendar",
-    description: "Convert Gregorian dates into Śaka-aligned spiritual timing.",
-    href: "/calendar",
-  },
-];
+import CalendarForm from "@/components/CalendarForm";
+import BirthInputForm from "@/components/BirthInputForm";
+import MatchmakingForm from "@/components/MatchmakingForm";
+import PredictionForm from "@/components/PredictionForm";
+import QuarterlyReviewPanel from "@/components/QuarterlyReviewPanel";
+import Timeline from "@/components/Timeline";
+import { heroCopy } from "@/lib/copy";
+import { useI18n } from "@/lib/i18n";
+import { AetherBeltSection } from "./sections/AetherBeltSection";
+import { HeroSection } from "./sections/HeroSection";
+import { JourneyRail } from "./sections/JourneyRail";
+import { RitualGrid } from "./sections/RitualGrid";
+import { DEMO_CHART, DEMO_DASHAS, journeyTimeline, timelineNotes } from "./sections/sectionData";
 
-const experienceLinks = [
-  {
-    title: "Webapp Experience",
-    description: "Navigate every engine, dashboard, and session flow in the full studio.",
-    href: "/webapp",
-  },
-  {
-    title: "Marketing Website",
-    description: "High-converting storytelling for seekers, families, and mentors.",
-    href: "/marketing",
-  },
-  {
-    title: "Mobile App",
-    description: "Native-first guidance with offline mode, alerts, and one-handed rituals.",
-    href: "/mobile",
-  },
-];
+const KundliCharts = dynamic(() => import("@/components/KundliCharts"), {
+  ssr: false,
+  loading: () => <div className="card softly">Drawing kundli wheel…</div>,
+});
 
-const studioRoles = [
-  {
-    title: "Stacks Engineer",
-    description: "Architecting resilient systems, data flows, and layered interfaces for scale.",
-    tag: "Systems · Cloud · APIs",
-  },
-  {
-    title: "UI/UX Specialist",
-    description: "Crafting intuitive journeys with tactile touchpoints and accessible navigation.",
-    tag: "Research · Interaction · Flow",
-  },
-  {
-    title: "Animation Specialist",
-    description: "Breathing motion into every overlay, transition, and ritual cue.",
-    tag: "Motion · Micro-interactions",
-  },
-  {
-    title: "Graphics & App Designer",
-    description: "Composing brand visuals, mobile-first layouts, and luminous assets.",
-    tag: "Brand · Visuals · Mobile",
-  },
-];
+const BhriguChat = dynamic(() => import("@/components/BhriguChat"), {
+  ssr: false,
+  loading: () => <div className="card softly">Activating Bhrigu chat…</div>,
+});
 
 export default function HomePage() {
+  const { t } = useI18n();
+  const { navigationBody, bilingualBody, accuracyBody } = heroCopy;
+
   return (
-    <main id="main" tabIndex={-1} className="mx-auto flex max-w-6xl flex-col gap-16 px-6 py-12">
-      <OnboardingDialog />
-      <section className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-3xl border border-white/10 bg-card-gradient p-10 shadow-glow">
-          <p className="text-xs uppercase tracking-[0.4em] text-aurora">Bhrigu Samhita Intelligence</p>
-          <h1 className="mt-4 text-fluid-2xl font-semibold font-display">
-            The world-class astrology command center for seekers, mentors, and families.
-          </h1>
-          <p className="mt-4 text-sm text-slate-300">
-            BhriguWelt unifies horoscope, past-life, future, and matchmaking engines into a single ritual-ready
-            studio. Each dashboard keeps manuscripts, charts, and remedies connected across devices.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              href="/horoscope"
-              className="rounded-full bg-aurora px-5 py-2 text-sm font-semibold text-slate-900"
-            >
-              Start a reading
-            </Link>
-            <Link
-              href="/studio/insights"
-              className="rounded-full border border-white/20 px-5 py-2 text-sm text-slate-100"
-            >
-              Open dashboard
-            </Link>
-          </div>
+    <div className="serene-page">
+      <HeroSection />
+      <AetherBeltSection />
+      <RitualGrid />
+      <JourneyRail />
+      <section className="panel" id="calendar-conversion">
+        <div className="section-heading">
+          <p className="eyebrow">Śaka ready</p>
+          <h2>Gregorian ↔ Śaka</h2>
+          <p className="muted">{t("home.grid.bilingual.body", bilingualBody)}</p>
         </div>
-        <div className="rounded-3xl border border-white/10 bg-card-gradient p-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Live chart preview</p>
-              <h2 className="mt-2 text-xl">Kundli overlays</h2>
-            </div>
-            <span className="rounded-full border border-aurora/40 bg-aurora/10 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-aurora">
-              Real time
-            </span>
-          </div>
-          <div className="mt-6 flex items-center justify-center text-aurora">
-            <KundliChart className="h-44 w-44" />
-          </div>
-          <p className="mt-4 text-xs text-slate-400">
-            Square chart geometry is preserved across mobile, tablet, and desktop layouts.
-          </p>
-        </div>
-      </section>
-
-      <section className="relative overflow-hidden rounded-3xl border border-white/30 bg-white/70 p-8 shadow-sm">
-        <div className="absolute inset-0 bg-bricks opacity-40" aria-hidden="true" />
-        <div className="absolute -right-24 -top-20 h-48 w-48 rounded-full bg-aurora/25 blur-3xl" aria-hidden="true" />
-        <div className="relative z-10 grid gap-8 lg:grid-cols-[1.05fr_1fr]">
-          <div className="space-y-4">
-            <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Studio craft</p>
-            <h2 className="text-2xl font-semibold text-slate-900 font-display">
-              Animated logos, bricks, and overlays for every creative discipline.
-            </h2>
-            <p className="text-sm text-slate-600">
-              A modular identity system highlights each discipline with stacked logos, animated blocks, and layered
-              glass overlays so the experience feels tangible from web to app.
-            </p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {studioRoles.map((role) => (
-              <div
-                key={role.title}
-                className="card-with-overlay relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-4 shadow-sm backdrop-blur"
-              >
-                <span className="card-overlay" aria-hidden="true" />
-                <div className="relative z-10 flex items-start gap-4">
-                  <div className="logo-stack">
-                    <span className="logo-orbit" aria-hidden="true" />
-                    <span className="logo-block logo-block--one" aria-hidden="true" />
-                    <span className="logo-block logo-block--two" aria-hidden="true" />
-                    <span className="logo-block logo-block--three" aria-hidden="true" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-semibold text-slate-900">{role.title}</h3>
-                    <p className="mt-1 text-xs text-slate-600">{role.description}</p>
-                    <span className="mt-3 inline-flex rounded-full bg-slate-900/5 px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                      {role.tag}
-                    </span>
-                  </div>
+        <div className="panel__content">
+          <div className="card softly">
+            <p className="microcopy">Reference tithi and nakshatra without extra chrome.</p>
+            <div className="timeline-chips" role="list">
+              {timelineNotes.map((note) => (
+                <div className={`timeline-chip ${note.tone}`} key={note.label} role="listitem">
+                  <span className="pill">{note.label}</span>
+                  <strong>{note.value}</strong>
+                  <p className="microcopy">{note.detail}</p>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          </div>
+          <div className="card highlight">
+            <CalendarForm />
           </div>
         </div>
       </section>
 
-      <section className="grid gap-6 md:grid-cols-2">
-        {quickLinks.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className="group rounded-3xl border border-white/10 bg-white/5 p-6 transition hover:border-aurora/50"
-          >
-            <h3 className="text-lg font-semibold text-white group-hover:text-aurora">{link.title}</h3>
-            <p className="mt-2 text-sm text-slate-300">{link.description}</p>
-            <span className="mt-4 inline-flex text-xs uppercase tracking-[0.3em] text-slate-400">
-              Enter experience →
-            </span>
-          </Link>
-        ))}
+      <section className="panel" id="birth-details">
+        <div className="section-heading">
+          <p className="eyebrow">Birth details</p>
+          <h2>{t("hero.title", "Horoscope without noise")}</h2>
+          <p className="muted">{t("home.grid.navigation.body", navigationBody)}</p>
+        </div>
+        <div className="panel__content panel__content--stacked">
+          <div className="card softly cosmic-backdrop">
+            <p className="microcopy">
+              Save bilingual interpretations and export PDFs straight from the quiet interface.
+            </p>
+            <p className="microcopy">Only the essentials stay on screen: name, date, time, and place.</p>
+            <ul className="soft-list">
+              <li>Timezone auto-detect with friendly validation prompts.</li>
+              <li>Śaka calendar preview that updates as you type.</li>
+              <li>Mini 12-house chart with elemental glow for each segment.</li>
+            </ul>
+          </div>
+          <div className="card highlight cosmic-form">
+            <div className="cosmic-form__sky" aria-hidden>
+              <span className="cosmic-star" />
+              <span className="cosmic-star delay" />
+              <span className="cosmic-star slow" />
+              <span className="cosmic-star" />
+              <span className="cosmic-star delay" />
+              <span className="cosmic-star slow" />
+            </div>
+            <BirthInputForm />
+          </div>
+          <div className="card">
+            <PredictionForm
+              engine="horoscope"
+              title={t("pages.horoscope.title", "Holistic horoscope")}
+              description="Enter details at your pace and receive calm guidance."
+            />
+          </div>
+        </div>
       </section>
 
-      <section className="rounded-3xl border border-white/10 bg-card-gradient p-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <section className="panel softly" id="future-timeline">
+        <div className="section-heading">
+          <p className="eyebrow">Timeline</p>
+          <h2>Future phases anchored to houses</h2>
+          <p className="muted">
+            Swipe through glowing milestones that map to the twelve-house foundation. Tooltips and local reminders keep seekers
+            on track without feeling overwhelmed.
+          </p>
+        </div>
+        <Timeline events={journeyTimeline} accent="amber" />
+        <p className="microcopy" aria-live="polite">
+          Drag horizontally to fast-forward through years; badges note which natal placements fuel each milestone.
+        </p>
+      </section>
+
+      <section className="panel" id="matchmaking">
+        <div className="section-heading">
+          <p className="eyebrow">Matchmaking</p>
+          <h2>Aligned companionship</h2>
+          <p className="muted">{t("home.grid.accuracy.body", accuracyBody)}</p>
+        </div>
+        <div className="panel__content">
+          <div className="card softly">
+            <h4>What we check</h4>
+            <ul className="soft-list">
+              <li>Śaka-aware rituals for celebrations</li>
+              <li>Guna blend alongside lifestyle preferences</li>
+              <li>Weekday-compatible remedies to try together</li>
+            </ul>
+          </div>
+          <div className="card highlight">
+            <MatchmakingForm />
+          </div>
+        </div>
+      </section>
+
+      <section className="panel softly" id="visualization">
+        <div className="section-heading">
+          <p className="eyebrow">Data visualisation</p>
+          <h2>Kundli wheels and immersive overlays</h2>
+          <p className="muted">
+            Graphical rāśi and bhava wheels replace text-only outputs. Hover or tap planets to expand their stories.
+          </p>
+        </div>
+        <KundliCharts rashiChart={DEMO_CHART} bhavaChart={DEMO_CHART} dashas={DEMO_DASHAS} />
+        <div className="micro-interactions" aria-label="Micro-interactions and tooltips">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Platform experiences</p>
-            <h2 className="mt-3 text-2xl font-semibold">Create for web, marketing, and mobile</h2>
-            <p className="mt-3 text-sm text-slate-300">
-              Launch the full BhriguWelt ecosystem with a cohesive webapp, premium marketing site, and native mobile
-              rituals built around the same manuscript intelligence.
+            <h4>Micro-interactions</h4>
+            <p className="muted">
+              Subtle pulses on the wheel, fade-in legends, and swipe-to-reveal overlays modernise the neon theme.
             </p>
           </div>
-          <Link href="/marketing" className="rounded-full bg-aurora px-5 py-2 text-sm font-semibold text-slate-900">
-            Explore platform
-          </Link>
-        </div>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {experienceLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="group rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:border-aurora/50"
-            >
-              <h3 className="text-lg font-semibold text-white group-hover:text-aurora">{link.title}</h3>
-              <p className="mt-2 text-sm text-slate-300">{link.description}</p>
-              <span className="mt-4 inline-flex text-xs uppercase tracking-[0.3em] text-slate-400">
-                See blueprint →
-              </span>
-            </Link>
-          ))}
+          <div>
+            <h4>Progressive disclosure</h4>
+            <p className="muted">
+              Expandable overlays keep newcomers from feeling overwhelmed while still rewarding deep dives.
+            </p>
+          </div>
+          <div>
+            <h4>Icons for planets</h4>
+            <p className="muted">
+              Element glyphs sit atop each card—fire, earth, air, and water cues sit beside the sign badges.
+            </p>
+          </div>
         </div>
       </section>
 
-    </main>
+      <section className="panel" id="assist">
+        <div className="section-heading">
+          <p className="eyebrow">Ask anything</p>
+          <h2>Chat with the Bhrigu guide</h2>
+          <p className="muted">
+            Real-time feedback loop keeps seekers heard. Ask clarifying questions and capture their notes instantly.
+          </p>
+        </div>
+        <div className="panel__content">
+          <div className="card softly">
+            <p className="microcopy">Supports mobile voice dictation, swipe to dismiss, and large tap targets.</p>
+            <p className="microcopy">Responses thread alongside glossary hints for absolute beginners.</p>
+          </div>
+          <div className="card highlight">
+            <BhriguChat />
+          </div>
+        </div>
+      </section>
+
+      <section className="panel softly" id="insights">
+        <div className="section-heading">
+          <p className="eyebrow">Quarterly lens</p>
+          <h2>Guidance that stays gentle</h2>
+          <p className="muted">Lean on structured reviews while keeping the interface restful.</p>
+        </div>
+        <QuarterlyReviewPanel />
+      </section>
+    </div>
   );
 }
