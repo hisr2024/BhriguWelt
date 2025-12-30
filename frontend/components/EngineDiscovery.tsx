@@ -41,8 +41,8 @@ export default function EngineDiscovery({ engines }: EngineDiscoveryProps) {
     <section className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-fluid-lg font-semibold text-white">All engines</h2>
-          <p className="text-fluid-sm text-slate-400">Search, filter, and explore every engine in seconds.</p>
+          <h2 className="text-2xl font-semibold text-white">All engines</h2>
+          <p className="text-sm text-slate-400">Search, filter, and explore all 13 engines in seconds.</p>
         </div>
         <div className="flex items-center gap-2 text-xs">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-slate-200">
@@ -53,7 +53,7 @@ export default function EngineDiscovery({ engines }: EngineDiscoveryProps) {
         </div>
       </div>
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <label className="flex items-center gap-3 rounded-3xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-slate-300">
+        <label className="glass-panel flex items-center gap-3 px-4 py-3 text-sm text-slate-300">
           <Search className="h-4 w-4 text-slate-400" />
           <input
             value={query}
@@ -90,9 +90,11 @@ export default function EngineDiscovery({ engines }: EngineDiscoveryProps) {
           ))}
         </div>
       </div>
-      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="scroll-snap-x flex gap-4 overflow-x-auto pb-4 md:grid md:gap-6 md:overflow-visible md:grid-cols-2 xl:grid-cols-3">
         {filteredEngines.map((engine, index) => (
-          <EngineCard key={engine.slug} engine={engine} index={index} />
+          <div key={engine.slug} className="scroll-snap-item min-w-[260px] flex-1 md:min-w-0">
+            <EngineCard engine={engine} index={index} />
+          </div>
         ))}
       </div>
       {filteredEngines.length === 0 ? (

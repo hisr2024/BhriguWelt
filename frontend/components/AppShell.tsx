@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import type { Easing } from "framer-motion";
 import {
   Bell,
   CalendarDays,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import GdprConsentBanner from "@/components/GdprConsentBanner";
 import { AnimatePresence, motion, useReducedMotion } from "@/lib/framer-motion";
+import { getButtonMotion, getFloatAnimation, pageTransition, pageVariants } from "@/lib/animations";
 import { useThemeMode } from "@/lib/themeContext";
 import { engineConfigs } from "@/lib/engineConfig";
 
@@ -33,23 +33,23 @@ const engineLinks = engineConfigs.map((engine) => ({
   label: engine.title,
 }));
 
-const easeOutCurve: Easing = [0, 0, 0.58, 1];
-const easeInOutCurve: Easing = [0.42, 0, 0.58, 1];
-
 function ThemeToggle() {
   const { mode, cycleMode } = useThemeMode();
   const Icon = mode === "light" ? Sun : Moon;
+  const shouldReduceMotion = useReducedMotion();
+  const buttonMotion = getButtonMotion(shouldReduceMotion);
 
   return (
-    <button
+    <motion.button
       type="button"
       onClick={cycleMode}
       className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-slate-200 transition hover:border-white/30 hover:text-white dark:text-slate-200"
       aria-label="Toggle theme"
+      {...buttonMotion}
     >
       <Icon className="h-4 w-4" />
       {mode === "light" ? "Light" : mode === "high-contrast" ? "Focus" : "Dark"}
-    </button>
+    </motion.button>
   );
 }
 
@@ -58,25 +58,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const shouldReduceMotion = useReducedMotion();
 
-  const logoAnimation = shouldReduceMotion
-    ? undefined
-    : {
-        y: [0, -4, 0],
-        rotate: [0, -4, 0],
-        boxShadow: [
-          "0 0 0 rgba(129,140,248,0)",
-          "0 0 18px rgba(129,140,248,0.35)",
-          "0 0 0 rgba(129,140,248,0)",
-        ],
-      };
-
-  const logoTransition = shouldReduceMotion
-    ? undefined
-    : {
-        duration: 4.2,
-        ease: easeInOutCurve,
-        repeat: Infinity,
-      };
+  const { animate: logoAnimation, transition: logoTransition } = getFloatAnimation(shouldReduceMotion, {
+    y: 5,
+    rotate: 4,
+    duration: 5.4,
+  });
+  const { animate: navFloatAnimation, transition: navFloatTransition } = getFloatAnimation(shouldReduceMotion, {
+    y: 3,
+    rotate: 0,
+    duration: 7,
+    delay: 0.4,
+  });
 
   useEffect(() => {
     setMenuOpen(false);
@@ -117,28 +109,36 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             {navLinks.map((link) => {
               const Icon = link.icon;
               return (
-                <Link
+                <motion.div
                   key={link.href}
-                  href={link.href}
-                  className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white"
+                  animate={navFloatAnimation}
+                  transition={navFloatTransition}
+                  whileHover={shouldReduceMotion ? undefined : { y: -2, scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <Icon className="h-4 w-4" />
-                  {link.label}
-                </Link>
+                  <Link
+                    href={link.href}
+                    className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white"
+                  >
+                    <Icon className="h-4 w-4" />
+                    {link.label}
+                  </Link>
+                </motion.div>
               );
             })}
           </nav>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <button
+            <motion.button
               type="button"
               className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/10 lg:hidden touch-manipulation active:scale-95"
               onClick={() => setMenuOpen((open) => !open)}
               aria-expanded={menuOpen}
               aria-controls="mobile-navigation"
+              whileTap={{ scale: 0.96 }}
             >
               {menuOpen ? "Close" : "Menu"}
-            </button>
+            </motion.button>
           </div>
         </div>
         <div
@@ -183,11 +183,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <motion.main
           key={mainKey}
           id="main"
-          className="mx-auto w-full max-w-6xl px-5 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-10 sm:px-8 sm:pb-16"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.35, ease: easeOutCurve }}
+          className="mx-auto w-full max-w-6xl px-5 pb-16 pt-10 sm:px-8"
+          variants={pageVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={pageTransition}
         >
           {children}
         </motion.main>

@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { AnimatePresence, motion, useReducedMotion } from "@/lib/framer-motion";
 import { ChartHouse } from "@/types/astro";
+import { fadeUpVariants, getButtonMotion, staggerChildren } from "@/lib/animations";
 
 type Props = {
   rashiChart?: ChartHouse[];
@@ -154,6 +156,8 @@ export default function WebXRChart({ rashiChart = [] }: Props) {
   const rotationRef = useRef(0);
   const [xrSupported, setXrSupported] = useState(false);
   const [xrStatus, setXrStatus] = useState<"idle" | "active" | "unsupported">("idle");
+  const shouldReduceMotion = useReducedMotion();
+  const buttonMotion = getButtonMotion(shouldReduceMotion);
 
   const chartPoints = useMemo(() => {
     const chart = rashiChart.length ? rashiChart : [];
@@ -361,40 +365,61 @@ export default function WebXRChart({ rashiChart = [] }: Props) {
 
   return (
     <section className="card webxr-chart" aria-label="WebXR chart">
-      <header className="section-heading webxr-chart__header">
-        <div>
+      <motion.header
+        className="section-heading webxr-chart__header"
+        variants={staggerChildren}
+        initial={shouldReduceMotion ? false : "hidden"}
+        animate={shouldReduceMotion ? false : "show"}
+      >
+        <motion.div variants={fadeUpVariants}>
           <p className="eyebrow">WebXR 3D chart</p>
           <h3>Immersive wheel</h3>
           <p className="muted">
             Explore the chart in 3D. Enter VR to walk the houses or stay inline for a rotating constellation.
           </p>
-        </div>
-        <div className="webxr-chart__actions">
-          <button
+        </motion.div>
+        <motion.div className="webxr-chart__actions" variants={fadeUpVariants}>
+          <motion.button
             type="button"
             className="button-link"
             onClick={xrStatus === "active" ? stopXRSession : startXRSession}
             disabled={!xrSupported}
+            {...buttonMotion}
           >
             {xrStatus === "active" ? "Exit XR" : xrSupported ? "Enter XR" : "XR unavailable"}
-          </button>
+          </motion.button>
           <span className="badge badge--ghost">{xrStatus === "active" ? "Live XR" : "Inline"}</span>
-        </div>
-      </header>
+        </motion.div>
+      </motion.header>
       <div className="webxr-chart__surface">
         <canvas ref={canvasRef} className="webxr-chart__canvas" role="img" aria-label="3D chart canvas" />
-        <div className="webxr-chart__legend">
-          {chartPoints.length ? (
-            chartPoints.map((house) => (
-              <div key={house.index} className="webxr-chart__legend-item">
-                <span className="webxr-chart__legend-index">House {house.index}</span>
-                <span>{house.sign || "Sign"}</span>
-              </div>
-            ))
-          ) : (
-            <p className="muted">Awaiting chart data. Submit a horoscope to animate the houses.</p>
-          )}
-        </div>
+        <motion.div
+          className="webxr-chart__legend"
+          variants={staggerChildren}
+          initial={shouldReduceMotion ? false : "hidden"}
+          animate={shouldReduceMotion ? false : "show"}
+        >
+          <AnimatePresence>
+            {chartPoints.length ? (
+              chartPoints.map((house) => (
+                <motion.div key={house.index} className="webxr-chart__legend-item" variants={fadeUpVariants}>
+                  <span className="webxr-chart__legend-index">House {house.index}</span>
+                  <span>{house.sign || "Sign"}</span>
+                </motion.div>
+              ))
+            ) : (
+              <motion.p
+                key="webxr-empty"
+                className="muted"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                Awaiting chart data. Submit a horoscope to animate the houses.
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
     </section>
   );

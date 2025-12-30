@@ -2,14 +2,16 @@
 
 import dynamic from "next/dynamic";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import type { Easing } from "framer-motion";
+import { Heart } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "@/lib/framer-motion";
 import { HOUSE_FOCUSES, deriveChartHouses } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
 import { areMicroAnimationsAllowed } from "@/lib/immersive";
 import { loadBirthDetails } from "@/lib/birthStorage";
 import { CalendarDetails, CalendarPayload, ChartHouse, DashaPeriod, ResultEngine } from "@/types/astro";
 import { formatSakaLabel, type SakaDate } from "@/lib/sakaContext";
+import { getButtonMotion } from "@/lib/animations";
 import FeedbackPrompt from "./FeedbackPrompt";
 
 interface Props {
@@ -579,10 +581,13 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
   const [flipActive, setFlipActive] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const [isFavorite, setIsFavorite] = useState(false);
   const [fallbackCharts, setFallbackCharts] = useState<{ rashi: ChartHouse[]; bhava: ChartHouse[] }>({
     rashi: [],
     bhava: [],
   });
+  const shouldReduceMotion = useReducedMotion();
+  const buttonMotion = getButtonMotion(shouldReduceMotion, { lift: 3, scale: 1.03 });
 
   useEffect(() => {
     const stored = loadBirthDetails();
@@ -782,14 +787,56 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
           <p className="text-sm text-slate-300">{t("results.helperRaw", "Narratives are ready to share—no JSON needed.")}</p>
           <div className="prediction-card__actions flex flex-wrap items-center justify-between gap-3">
             <span className="text-sm text-slate-200">PDF export ready for this engine.</span>
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-100 transition hover:border-white/30"
-              onClick={downloadPdf}
-              disabled={isSaving}
-            >
-              {isSaving ? "Preparing PDF…" : "Download PDF"}
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <motion.button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-100 transition hover:border-white/30"
+                onClick={downloadPdf}
+                disabled={isSaving}
+                {...buttonMotion}
+              >
+                {isSaving ? "Preparing PDF…" : "Download PDF"}
+              </motion.button>
+              <motion.button
+                type="button"
+                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition ${
+                  isFavorite
+                    ? "border-pink-400/60 bg-pink-500/20 text-pink-100"
+                    : "border-white/10 bg-white/5 text-slate-200 hover:border-white/30"
+                }`}
+                onClick={() => setIsFavorite((prev) => !prev)}
+                aria-pressed={isFavorite}
+                aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                {...buttonMotion}
+              >
+                <motion.span
+                  animate={
+                    shouldReduceMotion
+                      ? undefined
+                      : isFavorite
+                        ? { scale: [1, 1.2, 1], rotate: [0, -8, 0] }
+                        : { scale: 1 }
+                  }
+                  transition={{ duration: 0.35, ease: easeStandard }}
+                >
+                  <Heart className={`h-4 w-4 ${isFavorite ? "fill-pink-400 text-pink-200" : ""}`} />
+                </motion.span>
+                {isFavorite ? "Saved" : "Favorite"}
+              </motion.button>
+              <AnimatePresence>
+                {isFavorite ? (
+                  <motion.span
+                    className="text-xs font-semibold uppercase tracking-[0.2em] text-pink-200"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 6 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    Loved
+                  </motion.span>
+                ) : null}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
         <motion.div
