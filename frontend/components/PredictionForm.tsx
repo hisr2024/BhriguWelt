@@ -128,25 +128,30 @@ export default function PredictionForm({ engine, title, description, onRequestSt
   };
 
   const validateDetails = (payload: BirthDetails): string | null => {
-    if (!payload.birthDate || !/^\d{4}-\d{2}-\d{2}$/.test(payload.birthDate)) {
-      return t("form.error.birthDate", "Use YYYY-MM-DD between 1900-2100.");
+    try {
+      if (!payload.birthDate || !/^\d{4}-\d{2}-\d{2}$/.test(payload.birthDate)) {
+        return t("form.error.birthDate", "Invalid birth date. Use YYYY-MM-DD between 1900-2100.");
+      }
+      if (!payload.birthTime || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(payload.birthTime)) {
+        return t("form.error.birthTime", "Use HH:MM in 24h format (e.g., 07:45)");
+      }
+      if (!payload.birthPlace || payload.birthPlace.length < 3 || !payload.birthPlace.includes(",")) {
+        return t("form.error.birthPlace", "Add city and country (e.g., Jaipur, Bharat)");
+      }
+      if (payload.lunarTithi && (!/^\d+$/.test(payload.lunarTithi) || Number(payload.lunarTithi) > 30)) {
+        return t("form.error.lunarTithi", "Lunar tithi must be 1-30.");
+      }
+      if (
+        payload.moonElement &&
+        !["water", "fire", "air", "earth", "ether"].includes(payload.moonElement.toLowerCase())
+      ) {
+        return t("form.error.moonElement", "Use water, fire, air, earth, or ether for moon element.");
+      }
+      return null;
+    } catch (error) {
+      console.warn("Validation failed", error);
+      return "Invalid birth details. Please verify the date, time, and place fields.";
     }
-    if (!payload.birthTime || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(payload.birthTime)) {
-      return t("form.error.birthTime", "Use HH:MM in 24h format (e.g., 07:45)");
-    }
-    if (!payload.birthPlace || payload.birthPlace.length < 3 || !payload.birthPlace.includes(",")) {
-      return t("form.error.birthPlace", "Add city and country (e.g., Jaipur, Bharat)");
-    }
-    if (payload.lunarTithi && (!/^\d+$/.test(payload.lunarTithi) || Number(payload.lunarTithi) > 30)) {
-      return t("form.error.lunarTithi", "Lunar tithi must be 1-30.");
-    }
-    if (
-      payload.moonElement &&
-      !["water", "fire", "air", "earth", "ether"].includes(payload.moonElement.toLowerCase())
-    ) {
-      return t("form.error.moonElement", "Use water, fire, air, earth, or ether for moon element.");
-    }
-    return null;
   };
 
   const syncProfile = async (payload: BirthDetails) => {

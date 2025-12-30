@@ -67,19 +67,30 @@ export default function MatchmakingForm() {
     Boolean(details.name && details.birthDate && details.birthTime && details.birthPlace);
 
   const validateDetails = (details: BirthDetails) => {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(details.birthDate)) return t("form.error.birthDate", "Use YYYY-MM-DD between 1900-2100.");
-    if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(details.birthTime)) return t("form.error.birthTime", "Use HH:MM in 24h format (e.g., 07:45)");
-    if (!details.birthPlace.includes(",")) return t("form.error.birthPlace", "Add city and country (e.g., Jaipur, Bharat)");
-    if (details.lunarTithi && (!/^\d+$/.test(details.lunarTithi) || Number(details.lunarTithi) > 30)) {
-      return t("form.error.lunarTithi", "Lunar tithi must be 1-30.");
+    try {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(details.birthDate)) {
+        return t("form.error.birthDate", "Invalid birth date. Use YYYY-MM-DD between 1900-2100.");
+      }
+      if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(details.birthTime)) {
+        return t("form.error.birthTime", "Use HH:MM in 24h format (e.g., 07:45)");
+      }
+      if (!details.birthPlace.includes(",")) {
+        return t("form.error.birthPlace", "Add city and country (e.g., Jaipur, Bharat)");
+      }
+      if (details.lunarTithi && (!/^\d+$/.test(details.lunarTithi) || Number(details.lunarTithi) > 30)) {
+        return t("form.error.lunarTithi", "Lunar tithi must be 1-30.");
+      }
+      if (
+        details.moonElement &&
+        !["water", "fire", "air", "earth", "ether"].includes(details.moonElement.toLowerCase())
+      ) {
+        return t("form.error.moonElement", "Use water, fire, air, earth, or ether for moon element.");
+      }
+      return null;
+    } catch (error) {
+      console.warn("Matchmaking validation failed", error);
+      return t("form.error.birthDate", "Invalid birth date. Use YYYY-MM-DD between 1900-2100.");
     }
-    if (
-      details.moonElement &&
-      !["water", "fire", "air", "earth", "ether"].includes(details.moonElement.toLowerCase())
-    ) {
-      return t("form.error.moonElement", "Use water, fire, air, earth, or ether for moon element.");
-    }
-    return null;
   };
 
   const parsedPreferences = useMemo(
