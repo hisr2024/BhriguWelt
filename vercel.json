@@ -12,7 +12,8 @@
       }
     }
   ],
-  "installCommand": "npm install --workspaces --include-workspace-root",
+  "regions": ["iad1", "sfo1", "fra1"],
+  "installCommand": "cd frontend && npm install",
   "buildCommand": "cd frontend && npm run build",
   "routes": [
     {

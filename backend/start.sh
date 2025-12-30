@@ -1,34 +1,44 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Determine repository root for backend assets.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-export PYTHONPATH=${PYTHONPATH:-"$SCRIPT_DIR/src"}
-
-# Load optional local overrides so HOST/PORT/BHRIGU_DATA_PATH remain consistent
-# between local runs and hosted environments without extra flags.
-if [ -f .env ]; then
-  set -o allexport
-  # shellcheck disable=SC1091
+# Load environment variables from .env when present.
+if [[ -f .env ]]; then
+  set -a
   source .env
-  set +o allexport
+  set +a
 fi
 
-export HOST=${HOST:-0.0.0.0}
-export PORT=${PORT:-${RAILWAY_TCP_PORT:-8000}}
-python - <<'PY'
+export PYTHONPATH="${SCRIPT_DIR}/src${PYTHONPATH:+:${PYTHONPATH}}"
+export PORT="${PORT:-8000}"
+
+# Bootstrap the manuscript corpus to the configured path when running in
+# environments (e.g., Render) that mount a writable volume for updates.
+if [[ -n "${BHRIGUWELT_DATA_PATH:-}" ]]; then
+  if [[ ! -f "${BHRIGUWELT_DATA_PATH}" ]]; then
+    echo "Seeding Bhrigu Samhita corpus to ${BHRIGUWELT_DATA_PATH}"
+    python - <<'PY'
 import os
-print("Starting Bhrigu API", flush=True)
-print(f"PYTHONPATH: {os.environ.get('PYTHONPATH')}", flush=True)
-try:
-    from bhriguwelt.api import serve
-    print("Import successful", flush=True)
-except ImportError as e:
-    print(f"Import error: {e}", flush=True)
-    exit(1)
-host = os.environ.get("HOST", "0.0.0.0")
-port = int(os.environ.get("RAILWAY_TCP_PORT") or os.environ.get("PORT", "8000"))
-print(f"BhriguWelt API running on http://{host}:{port}", flush=True)
-serve(host, port)
+from pathlib import Path
+
+from bhriguwelt import bhrigu_data
+from bhriguwelt.data_loader import persist_bhrigu_data
+
+target = Path(os.environ["BHRIGUWELT_DATA_PATH"]).expanduser()
+target.parent.mkdir(parents=True, exist_ok=True)
+persist_bhrigu_data(bhrigu_data.as_dict(), target)
+print(f"Initialized Bhrigu dataset at {target}")
 PY
+  else
+    echo "Using existing Bhrigu corpus at ${BHRIGUWELT_DATA_PATH}"
+  fi
+fi
+
+if [[ "${BHRIGU_ASYNC_API:-1}" == "1" ]]; then
+  exec python -m bhriguwelt.async_api
+fi
+
+exec python -m bhriguwelt.api

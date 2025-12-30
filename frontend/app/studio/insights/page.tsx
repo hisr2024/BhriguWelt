@@ -13,6 +13,11 @@ const KundliCharts = dynamic(() => import("@/components/KundliCharts"), {
   loading: () => <div className="surface">Drawing kundli wheel…</div>,
 });
 
+const WebXRChart = dynamic(() => import("@/components/WebXRChart"), {
+  ssr: false,
+  loading: () => <div className="surface">Booting immersive chart…</div>,
+});
+
 const BhriguChat = dynamic(() => import("@/components/BhriguChat"), {
   ssr: false,
   loading: () => <div className="surface">Activating Bhrigu chat…</div>,
@@ -62,6 +67,7 @@ export default function InsightsLab() {
         <article className="lab-card light">
           <div className="pill subtle">Kundli charts</div>
           <KundliCharts rashiChart={DEMO_CHART} bhavaChart={DEMO_CHART} dashas={DEMO_DASHAS} />
+          <WebXRChart rashiChart={DEMO_CHART} />
         </article>
         <article className="lab-card light">
           <div className="pill subtle">Chat</div>

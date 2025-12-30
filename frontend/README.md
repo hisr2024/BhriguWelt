@@ -81,6 +81,8 @@ key so `npm run dev` and `npm run build` compile against the right host.
 - Optional client telemetry is controlled by `NEXT_PUBLIC_SENTRY_DSN`; when set
   and paired with `@sentry/nextjs`, errors surface in your Sentry project. When
   unset, telemetry helpers no-op to preserve the zero-dependency runtime.
+- Enable Vercel Analytics by setting `NEXT_PUBLIC_VERCEL_ANALYTICS=true` in your
+  environment before deployment.
 - Choose the default locale with `NEXT_PUBLIC_DEFAULT_LANGUAGE` (supported: en,
   hi, es, ta). The multilingual toggle persists the selected language in
   `localStorage` so visitors keep their preference across visits.

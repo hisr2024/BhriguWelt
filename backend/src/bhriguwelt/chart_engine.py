@@ -24,6 +24,7 @@ from .astronomical_calculations import (
     normalize_birth_datetime,
 )
 from .calculations import CelestialSnapshot
+from .cache import RedisCache
 
 logger = logging.getLogger("bhriguwelt.chart_engine")
 
@@ -41,6 +42,31 @@ _FALLBACK_MEAN_MOTIONS: Mapping[str, Tuple[float, float]] = {
     "Saturn": (50.077, 0.033459),
     "Rahu": (204.000, -0.0529538),
 }
+
+_chart_cache = RedisCache(prefix="chart", ttl_seconds=3600)
+_dashas_cache = RedisCache(prefix="dashas", ttl_seconds=21600)
+
+
+def _chart_cache_key(snapshot: CelestialSnapshot, timezone_name: str | None, ephemeris_preference: str) -> str:
+    return "|".join(
+        [
+            snapshot.birth_date.isoformat(),
+            snapshot.birth_time.isoformat(timespec="minutes"),
+            snapshot.birth_place.strip().lower(),
+            (timezone_name or "").strip().lower(),
+            snapshot.tradition.strip().lower(),
+            ephemeris_preference,
+        ]
+    )
+
+
+def _dashas_cache_key(birth_dt: datetime, moon_longitude: float | None) -> str:
+    lunar_marker = f"{moon_longitude:.4f}" if moon_longitude is not None else "none"
+    return f"{birth_dt.date().isoformat()}|{birth_dt.time().isoformat(timespec='minutes')}|{lunar_marker}"
+
+
+def _deserialize_occupants(payload: Dict[str, List[str]]) -> Dict[int, List[str]]:
+    return {int(key): value for key, value in payload.items()}
 
 
 @dataclass
@@ -111,6 +137,22 @@ class ChartEngine:
     ) -> ChartComputationResult:
         """Return longitudes, cusps, and house assignments for a snapshot."""
 
+        cache_key = _chart_cache_key(snapshot, timezone_name, self.ephemeris_preference)
+        cached = _chart_cache.get(cache_key)
+        if isinstance(cached, dict):
+            occupant_map = cached.get("occupant_map")
+            if isinstance(occupant_map, dict):
+                occupant_map = _deserialize_occupants(occupant_map)
+            else:
+                occupant_map = {}
+            return ChartComputationResult(
+                ephemeris_source=str(cached.get("ephemeris_source", "cached")),
+                planet_longitudes=dict(cached.get("planet_longitudes") or {}),
+                house_cusps=list(cached.get("house_cusps") or []),
+                house_assignments=dict(cached.get("house_assignments") or {}),
+                occupant_map=occupant_map,
+            )
+
         birth_dt = normalize_birth_datetime(
             birth_date=snapshot.birth_date.isoformat(),
             birth_time=snapshot.birth_time.isoformat(timespec="minutes"),
@@ -118,22 +160,38 @@ class ChartEngine:
         )
         latitude, longitude, _ = geocode_location(snapshot.birth_place)
 
+        result = None
         if self._should_use_swisseph():
             try:
                 result = self._compute_with_swisseph(birth_dt, latitude, longitude)
-                if result:
-                    return result
             except Exception as exc:  # pragma: no cover - defensive around optional dep
                 logger.warning("Swiss Ephemeris failed, falling back to mean motions: %s", exc)
 
-        jagannatha = self._compute_from_jagannatha(birth_dt)
-        if jagannatha:
-            return jagannatha
+        if result is None:
+            result = self._compute_from_jagannatha(birth_dt)
 
-        return self._compute_from_fallbacks(birth_dt)
+        if result is None:
+            result = self._compute_from_fallbacks(birth_dt)
+
+        _chart_cache.set(
+            cache_key,
+            {
+                "ephemeris_source": result.ephemeris_source,
+                "planet_longitudes": result.planet_longitudes,
+                "house_cusps": result.house_cusps,
+                "house_assignments": result.house_assignments,
+                "occupant_map": result.occupant_map,
+            },
+        )
+        return result
 
     def compute_dashas(self, birth_dt: datetime, moon_longitude: float | None = None) -> List[Dict[str, str]]:
         """Generate Vimshottari-like dashas anchored to the Moon's longitude."""
+
+        cache_key = _dashas_cache_key(birth_dt, moon_longitude)
+        cached = _dashas_cache.get(cache_key)
+        if isinstance(cached, list):
+            return [dict(entry) for entry in cached]
 
         seq = [
             ("Ketu", 7),
@@ -172,6 +230,7 @@ class ChartEngine:
             )
             current_start = end_dt
             balance_fraction = 1.0
+        _dashas_cache.set(cache_key, dashas)
         return dashas
 
     def compute_transits(self, snapshot: CelestialSnapshot, target_dt: datetime) -> Dict[str, int | bool]:

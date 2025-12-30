@@ -7,6 +7,12 @@ from .engine_interpreters import EngineInterpretation, interpret_bhrigu_wisdom
 from .matchmaking_engine import run_matchmaking_pipeline
 from .experience_flow import FlowVisualizations, UnifiedExperienceFlow, build_unified_experience_flow
 from .past_future_bridge import PastFutureSynthesis, build_past_future_synthesis
+from .past_life_memory import build_past_life_memory_reconstruction
+from .rule_dsl import compile_to_dataset, parse_dsl
+from .ml_weighting import apply_reweighting
+from .implementation_core import ImplementationCoreResponse, build_implementation_core_response
+from .horoscope_engine import HoroscopeEngine, generate_horoscope_payload
+from .taxonomy import expected_ids, missing_ids_in_dataset, validate_id
 from .horoscope import (
     FutureReport,
     HoroscopeReport,
@@ -28,6 +34,7 @@ from .horoscope import (
     build_cli_parser,
 )
 from .wisdom_bot import WisdomBotResponse, WisdomBotDownload, build_wisdom_bot_response
+from .wisdom_engine_generator import WisdomEngineResults, generate_engine_results
 
 __all__ = [
     "build_prediction",
@@ -63,7 +70,20 @@ __all__ = [
     "build_unified_experience_flow",
     "PastFutureSynthesis",
     "build_past_future_synthesis",
+    "build_past_life_memory_reconstruction",
+    "ImplementationCoreResponse",
+    "build_implementation_core_response",
+    "HoroscopeEngine",
+    "generate_horoscope_payload",
     "WisdomBotResponse",
     "WisdomBotDownload",
     "build_wisdom_bot_response",
+    "WisdomEngineResults",
+    "generate_engine_results",
+    "parse_dsl",
+    "compile_to_dataset",
+    "apply_reweighting",
+    "expected_ids",
+    "missing_ids_in_dataset",
+    "validate_id",
 ]

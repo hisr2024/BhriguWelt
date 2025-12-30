@@ -7,9 +7,10 @@ extensions still receive consistent payloads.
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from math import fmod, pi, sin
 from typing import Dict, Tuple
 from zoneinfo import ZoneInfo
@@ -170,6 +171,7 @@ def derive_lunar_details(dt: datetime, latitude: float | None = None, longitude:
     ketu_long = longitudes["ketu"]
     mercury_long = longitudes["mercury"]
     jupiter_long = longitudes["jupiter"]
+    rahu_long = (ketu_long + 180) % 360
 
     mars_house = _house_from_longitude(mars_long)
     saturn_house = _house_from_longitude(saturn_long)
@@ -177,6 +179,8 @@ def derive_lunar_details(dt: datetime, latitude: float | None = None, longitude:
     ketu_house = _house_from_longitude(ketu_long)
     mercury_house = _house_from_longitude(mercury_long)
     jupiter_house = _house_from_longitude(jupiter_long)
+    rahu_house = _house_from_longitude(rahu_long)
+    ascendant_house = _ascendant_house(sun_long, dt, longitude=longitude)
 
     saturn_phase = sin(2 * pi * (delta_days / 378.09))
     saturn_retrograde = saturn_phase < 0
@@ -186,7 +190,7 @@ def derive_lunar_details(dt: datetime, latitude: float | None = None, longitude:
         "lunar_tithi": lunar_tithi,
         "moon_element": moon_element,
         "moon_house": _house_from_longitude(moon_long),
-        "ascendant_house": _ascendant_house(sun_long, dt, longitude=longitude),
+        "ascendant_house": ascendant_house,
         "mars_house": mars_house,
         "saturn_house": saturn_house,
         "venus_house": venus_house,
@@ -194,7 +198,6 @@ def derive_lunar_details(dt: datetime, latitude: float | None = None, longitude:
         "ketu_house": ketu_house,
         "mercury_house": mercury_house,
         "jupiter_house": jupiter_house,
-        "ascendant_house": ascendant_house,
         "saturn_retrograde": saturn_retrograde,
         "rahu_aspects_ascendant": rahu_aspects_ascendant,
     }
@@ -348,9 +351,17 @@ def geocode_location(birth_place: str) -> Tuple[float | None, float | None, str 
             tz_name = None
 
     if latitude is None or longitude is None:
-        ordinal_hash = hash(birth_place)
+        digest = hashlib.sha256(birth_place.encode("utf-8")).hexdigest()
+        ordinal_hash = int(digest[:16], 16)
         latitude = ((ordinal_hash % 18000) / 100) - 90
         longitude = ((ordinal_hash // 18000 % 36000) / 100) - 180
+
+    if tz_name is None and TimezoneFinder is not None:
+        try:  # pragma: no cover - optional dependency
+            tz_finder = TimezoneFinder()
+            tz_name = tz_finder.timezone_at(lng=longitude, lat=latitude)
+        except Exception:
+            tz_name = None
 
     return latitude, longitude, tz_name
 

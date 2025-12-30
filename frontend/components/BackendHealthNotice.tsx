@@ -29,11 +29,18 @@ export default function BackendHealthNotice({ className }: Props) {
         const hosts = response?.meta?.attempted_hosts?.filter(Boolean);
         const isDemo = response?.meta?.mode === "demo";
         const hostText = hosts?.length ? hosts.join(", ") : process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+        const aiProvider = response?.ai_provider_metadata?.provider;
+        const aiConfigured = response?.ai_provider_metadata?.configured;
+        const aiLabel = aiConfigured
+          ? aiProvider === "sarvam"
+            ? "AI: Sarvam connected."
+            : "AI: OpenAI-compatible connected."
+          : "AI: not configured.";
         const message = isDemo
-          ? `Backend unreachable. Using built-in demo predictions until a backend responds (${hostText}).`
+          ? `Backend unreachable. Using built-in demo predictions until a backend responds (${hostText}). ${aiLabel}`
           : principleCount !== undefined
-            ? `Backend ready. Principles loaded: ${principleCount}.`
-            : "Backend ready.";
+            ? `Backend ready. Principles loaded: ${principleCount}. ${aiLabel}`
+            : `Backend ready. ${aiLabel}`;
         if (!active) return;
         cachedHealth = { status: "ok", detail: message };
         setStatus("ok");
@@ -43,7 +50,7 @@ export default function BackendHealthNotice({ className }: Props) {
         if (!active) return;
         const preferredHost = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
         const fallbackDetail =
-          `Backend unreachable at ${preferredHost}. Start the API locally with "cd backend && PYTHONPATH=src python -m bhriguwelt.api" ` +
+          `Backend unreachable at ${preferredHost}. Start the API locally with "cd backend && PYTHONPATH=\\"$(pwd)/src\\" python -m bhriguwelt.api" ` +
           "or set NEXT_PUBLIC_BACKEND_URL to your deployed backend. Running in demo mode until a backend responds.";
         cachedHealth = { status: "error", detail: fallbackDetail };
         setStatus("error");
