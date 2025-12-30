@@ -175,6 +175,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/feedback"): "_handle_feedback",
         ("GET", "/feedback/quarterly"): "_handle_feedback_quarterly",
         ("POST", "/horoscope"): "_handle_horoscope",
+        ("POST", "/timeline"): "_handle_timeline",
         ("POST", "/past-life"): "_handle_past_life",
         ("POST", "/future"): "_handle_future",
         ("POST", "/future-directives"): "_handle_future_directives",
@@ -280,6 +281,14 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     def _handle_horoscope(self) -> None:
         payload = self._read_json()
         self._respond_with_command("horoscope", payload)
+
+    def _handle_timeline(self) -> None:
+        payload = self._read_json()
+        focus_areas = payload.get("focus_areas")
+        if focus_areas is not None and not isinstance(focus_areas, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "focus_areas must be a list when provided")
+            return
+        self._respond_with_command("timeline", payload)
 
     def _handle_past_life(self) -> None:
         payload = self._read_json()
@@ -922,6 +931,7 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "summary": report.summary,
             "disclaimer": report.disclaimer,
             "phases": [_serialize_obj(phase) for phase in report.phases],
+            "citations": report.citations,
         }
     if command == "matchmaking":
         primary = _request_from_payload(payload.get("primary", {}))

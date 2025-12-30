@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Dict, List, Sequence
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Sequence
 
 from .astronomical_calculations import derive_progressed_snapshot, derive_transit_snapshot, normalize_birth_datetime
 from .calendar_conversion import HinduCalendarContext, convert_birth_details
@@ -29,7 +29,7 @@ from .core_wisdom_rules import core_wisdom_assets
 from .wisdom_sources import source_catalog
 from .engine_analyzers import EngineAnalysis, analyze_core_engines
 from .runtime_rule_generator import RuntimeRuleGenerator
-from .kundli_generator import generate_kundli
+from .kundli_generator import DASHA_SEQUENCE, ChartHouse, DashaPeriod, generate_kundli
 
 __all__ = [
     "HoroscopeRequest",
@@ -185,6 +185,7 @@ class MatchmakingReport:
 class TimelinePhase:
     """Single life-phase entry for the Bhrigu-inspired roadmap."""
 
+    order: int
     phase: str
     age_range: str
     theme: str
@@ -193,6 +194,41 @@ class TimelinePhase:
     karmic_lessons: List[str]
     turning_points: List[str]
     practical_guidance: List[str]
+    symbolic_guidance: List[str]
+    remedies: List[Dict[str, Any]]
+    timing: "PhaseTiming"
+    confidence_grade: str
+    citations: List[str]
+
+
+@dataclass
+class AntardashaWindow:
+    """Nested dasha window used for micro-phase timing."""
+
+    lord: str
+    start: str
+    end: str
+
+
+@dataclass
+class DashaWindow:
+    """Dasha window with nested antardasha timing."""
+
+    lord: str
+    start: str
+    end: str
+    antardashas: List[AntardashaWindow]
+
+
+@dataclass
+class PhaseTiming:
+    """Timing anchors for a timeline phase."""
+
+    start: str
+    end: str | None
+    age_range: str
+    dashas: List[DashaWindow]
+    antardasha_highlights: List[AntardashaWindow]
 
 
 @dataclass
@@ -203,6 +239,7 @@ class TimelineReport:
     summary: str
     disclaimer: str
     phases: List[TimelinePhase]
+    citations: List[str]
 
 
 @dataclass
@@ -1301,9 +1338,17 @@ def _rank_influences(snapshot: CelestialSnapshot) -> List[str]:
 def build_timeline_report(request: HoroscopeRequest, focus_areas: Sequence[str] | None = None) -> TimelineReport:
     """Construct the five-phase karmic roadmap for a native."""
 
+    horoscope = build_prediction(request)
     snapshot = _snapshot_from_request(request)
     influences = _rank_influences(snapshot)
-    phases = _compose_timeline(snapshot, influences, focus_areas)
+    timing_map = _timeline_timing_map(snapshot)
+    phases = _compose_timeline(
+        snapshot,
+        influences,
+        focus_areas,
+        horoscope=horoscope,
+        timing_map=timing_map,
+    )
     focus_summary = ", ".join(focus_areas) if focus_areas else "general life balance"
     summary = (
         f"Five-phase roadmap shaped by {', '.join(influences[:2]) or 'Saturn discipline'}; "
@@ -1313,12 +1358,24 @@ def build_timeline_report(request: HoroscopeRequest, focus_areas: Sequence[str] 
         "Symbolic Bhrigu timeline; not medical, legal, or financial advice. "
         "Treat timings as tendencies and steer with conscious choice."
     )
+    citations = _collect_timeline_citations(horoscope, request.tradition)
 
-    return TimelineReport(name=request.name, summary=summary, disclaimer=disclaimer, phases=phases)
+    return TimelineReport(
+        name=request.name,
+        summary=summary,
+        disclaimer=disclaimer,
+        phases=phases,
+        citations=citations,
+    )
 
 
 def _compose_timeline(
-    snapshot: CelestialSnapshot, influences: Sequence[str], focus_areas: Sequence[str] | None = None
+    snapshot: CelestialSnapshot,
+    influences: Sequence[str],
+    focus_areas: Sequence[str] | None = None,
+    *,
+    horoscope: HoroscopeReport,
+    timing_map: Dict[str, PhaseTiming],
 ) -> List[TimelinePhase]:
     """Assemble five life phases with Bhrigu-style tones."""
 
@@ -1338,6 +1395,7 @@ def _compose_timeline(
     for idx, (phase, age_range, theme) in enumerate(base_phases):
         phases.append(
             _phase_block(
+                order=idx + 1,
                 phase=phase,
                 age_range=age_range,
                 theme=theme,
@@ -1346,12 +1404,15 @@ def _compose_timeline(
                 snapshot=snapshot,
                 focus_set=focus_set,
                 index=idx,
+                horoscope=horoscope,
+                timing=timing_map.get(phase, _fallback_phase_timing(age_range)),
             )
         )
     return phases
 
 
 def _phase_block(
+    order: int,
     phase: str,
     age_range: str,
     theme: str,
@@ -1360,6 +1421,8 @@ def _phase_block(
     snapshot: CelestialSnapshot,
     focus_set: set[str],
     index: int,
+    horoscope: HoroscopeReport,
+    timing: PhaseTiming,
 ) -> TimelinePhase:
     """Craft a single timeline phase with lessons and turning points."""
 
@@ -1413,7 +1476,19 @@ def _phase_block(
     if "finances" in focus_set:
         guidance.append("Use Saturn-style budgeting: simple, transparent, and consistent.")
 
+    symbolic_guidance = _phase_symbolic_guidance(
+        dominant,
+        supportive,
+        focus_set=focus_set,
+        timing=timing,
+        index=index,
+    )
+    remedies = _timeline_phase_remedies(horoscope.remedies, dominant, supportive)
+    confidence_grade = _phase_confidence_grade(dominant, snapshot, timing)
+    citations = _collect_phase_citations(horoscope, dominant, supportive)
+
     return TimelinePhase(
+        order=order,
         phase=phase,
         age_range=age_range,
         theme=theme,
@@ -1422,7 +1497,215 @@ def _phase_block(
         karmic_lessons=lessons,
         turning_points=turning_points,
         practical_guidance=guidance,
+        symbolic_guidance=symbolic_guidance,
+        remedies=remedies,
+        timing=timing,
+        confidence_grade=confidence_grade,
+        citations=citations,
     )
+
+
+def _timeline_timing_map(snapshot: CelestialSnapshot) -> Dict[str, PhaseTiming]:
+    birth_dt = datetime.combine(snapshot.birth_date, snapshot.birth_time).replace(tzinfo=timezone.utc)
+    phase_defs = [
+        ("Childhood", 0, 12),
+        ("Adolescence", 12, 18),
+        ("Early Adulthood", 18, 28),
+        ("Consolidation", 28, 40),
+        ("Mature Years", 40, None),
+    ]
+    sequence = DASHA_SEQUENCE
+    dashas = _build_dasha_windows(birth_dt, sequence)
+    timing_map: Dict[str, PhaseTiming] = {}
+    for phase, start_age, end_age in phase_defs:
+        start_dt = birth_dt + timedelta(days=365.25 * start_age)
+        end_dt = birth_dt + timedelta(days=365.25 * end_age) if end_age is not None else None
+        window_dashas = _filter_dashas_for_window(dashas, start_dt, end_dt)
+        highlights = _collect_antardasha_highlights(window_dashas)
+        timing_map[phase] = PhaseTiming(
+            start=start_dt.date().isoformat(),
+            end=end_dt.date().isoformat() if end_dt else None,
+            age_range=_format_age_range(start_age, end_age),
+            dashas=window_dashas,
+            antardasha_highlights=highlights,
+        )
+    return timing_map
+
+
+def _build_dasha_windows(
+    birth_dt: datetime, sequence: Sequence[tuple[str, int]], years_total: int = 80
+) -> List[DashaWindow]:
+    windows: List[DashaWindow] = []
+    current_start = birth_dt
+    elapsed = 0.0
+    while elapsed < years_total:
+        for lord, duration_years in sequence:
+            if elapsed >= years_total:
+                break
+            actual_years = min(duration_years, years_total - elapsed)
+            end_dt = current_start + timedelta(days=365.25 * actual_years)
+            antardashas = _build_antardasha_windows(lord, current_start, actual_years, sequence)
+            windows.append(
+                DashaWindow(
+                    lord=lord,
+                    start=current_start.date().isoformat(),
+                    end=end_dt.date().isoformat(),
+                    antardashas=antardashas,
+                )
+            )
+            current_start = end_dt
+            elapsed += actual_years
+    return windows
+
+
+def _build_antardasha_windows(
+    maha_lord: str,
+    start_dt: datetime,
+    duration_years: float,
+    sequence: Sequence[tuple[str, int]],
+) -> List[AntardashaWindow]:
+    total = sum(years for _, years in sequence)
+    if total == 0:
+        return []
+    start_index = next((index for index, (lord, _) in enumerate(sequence) if lord == maha_lord), 0)
+    ordered = list(sequence[start_index:]) + list(sequence[:start_index])
+    windows: List[AntardashaWindow] = []
+    current_start = start_dt
+    for lord, years in ordered:
+        span_years = duration_years * (years / total)
+        end_dt = current_start + timedelta(days=365.25 * span_years)
+        windows.append(
+            AntardashaWindow(
+                lord=lord,
+                start=current_start.date().isoformat(),
+                end=end_dt.date().isoformat(),
+            )
+        )
+        current_start = end_dt
+    return windows
+
+
+def _filter_dashas_for_window(
+    dashas: Sequence[DashaWindow], start_dt: datetime, end_dt: datetime | None
+) -> List[DashaWindow]:
+    def _parse(date_str: str) -> datetime:
+        return datetime.fromisoformat(date_str).replace(tzinfo=timezone.utc)
+
+    window_dashas: List[DashaWindow] = []
+    for dasha in dashas:
+        dasha_start = _parse(dasha.start)
+        dasha_end = _parse(dasha.end)
+        if end_dt is not None and dasha_start >= end_dt:
+            break
+        if dasha_end <= start_dt:
+            continue
+        window_dashas.append(dasha)
+    return window_dashas
+
+
+def _collect_antardasha_highlights(dashas: Sequence[DashaWindow]) -> List[AntardashaWindow]:
+    highlights: List[AntardashaWindow] = []
+    for dasha in dashas[:2]:
+        highlights.extend(dasha.antardashas[:2])
+    return highlights
+
+
+def _format_age_range(start_age: int, end_age: int | None) -> str:
+    if end_age is None:
+        return f"{start_age}+"
+    return f"{start_age}–{end_age}"
+
+
+def _fallback_phase_timing(age_range: str) -> PhaseTiming:
+    return PhaseTiming(start="", end=None, age_range=age_range, dashas=[], antardasha_highlights=[])
+
+
+def _phase_symbolic_guidance(
+    dominant: str,
+    supportive: Sequence[str],
+    *,
+    focus_set: set[str],
+    timing: PhaseTiming,
+    index: int,
+) -> List[str]:
+    guidance = [
+        f"Primary dasha current: {dominant}; treat responsibilities as sacred vows.",
+        f"Antardasha cues: {', '.join(item.lord for item in timing.antardasha_highlights) or 'watch inner shifts monthly'}.",
+        "Use symbols (lamp, water, or earth) to anchor ritual during phase transitions.",
+    ]
+    if supportive:
+        guidance.append(f"Invite {supportive[0]} practices to soften the {dominant} lesson.")
+    if "relationships" in focus_set:
+        guidance.append("Offer heartfelt gratitude on Fridays to align relationship karma.")
+    if "career" in focus_set:
+        guidance.append("Begin each new project in a waxing Moon window for stability.")
+    if "spiritual" in focus_set:
+        guidance.append("Recite a grounding mantra 108 times when antardasha shifts.")
+    if index == 4:
+        guidance.append("Mentorship becomes a sacred offering; teach what you have lived.")
+    return guidance
+
+
+def _timeline_phase_remedies(
+    remedies: Sequence[Dict[str, Any]],
+    dominant: str,
+    supportive: Sequence[str],
+) -> List[Dict[str, Any]]:
+    if not remedies:
+        return []
+    selected: List[Dict[str, Any]] = []
+    for remedy in remedies:
+        text = str(remedy.get("description") or remedy.get("interpretation") or "").lower()
+        if dominant.lower() in text or any(item.lower() in text for item in supportive):
+            selected.append(remedy)
+        if len(selected) >= 3:
+            break
+    if selected:
+        return selected
+    return list(remedies[:2])
+
+
+def _phase_confidence_grade(dominant: str, snapshot: CelestialSnapshot, timing: PhaseTiming) -> str:
+    score = 0
+    if snapshot.moon_element:
+        score += 1
+    if snapshot.mars_house or snapshot.saturn_house or snapshot.venus_house:
+        score += 1
+    if timing.dashas:
+        score += 1
+    if dominant in {"Saturn", "Jupiter"}:
+        score += 1
+    return {0: "C", 1: "C+", 2: "B", 3: "B+", 4: "A"}.get(score, "B")
+
+
+def _collect_phase_citations(
+    horoscope: HoroscopeReport, dominant: str, supportive: Sequence[str]
+) -> List[str]:
+    citations: List[str] = []
+    for principle in horoscope.principles[:3]:
+        reference = principle.get("sutra_reference") or principle.get("id")
+        description = principle.get("description")
+        if reference and description:
+            citations.append(f"{reference}: {description}")
+    for remedy in horoscope.remedies[:2]:
+        reference = remedy.get("sutra_reference") or remedy.get("id")
+        description = remedy.get("description") or remedy.get("interpretation")
+        if reference and description:
+            citations.append(f"{reference}: {description}")
+    for trajectory in horoscope.future_trajectories[:2]:
+        reference = trajectory.sutra_reference
+        citations.append(f"{reference}: {trajectory.focus}")
+    if not citations:
+        citations.append(f"{dominant} dasha emphasis from Vimshottari sequence.")
+    return citations
+
+
+def _collect_timeline_citations(horoscope: HoroscopeReport, tradition: str) -> List[str]:
+    citations = []
+    citations.extend(_collect_bhrigu_texts(horoscope, tradition)[:3])
+    if horoscope.dashas:
+        citations.append("Dashas derived via Vimshottari sequence; antardashas proportionally scaled.")
+    return citations[:5]
 
 
 def _matches_remedy_rule(value, rule) -> bool:
@@ -1860,6 +2143,7 @@ def _render_timeline(report: TimelineReport, birth_place: str) -> None:
     print(f"Disclaimer: {report.disclaimer}")
     for phase in report.phases:
         print(f"\n{phase.phase} ({phase.age_range}) — {phase.theme}")
+        print(f"  Order: {phase.order}")
         print(f"  Dominant influence: {phase.dominant_influence}")
         print("  Main experiences:")
         for item in phase.main_experiences:
@@ -1873,6 +2157,31 @@ def _render_timeline(report: TimelineReport, birth_place: str) -> None:
         print("  Practical guidance:")
         for tip in phase.practical_guidance:
             print(f"    - {tip}")
+        print("  Symbolic guidance:")
+        for tip in phase.symbolic_guidance:
+            print(f"    - {tip}")
+        if phase.remedies:
+            print("  Remedies:")
+            for remedy in phase.remedies:
+                label = remedy.get("interpretation") or remedy.get("description") or remedy.get("id", "Remedy")
+                print(f"    - {label}")
+        timing = phase.timing
+        print(
+            "  Timing: "
+            f"{timing.age_range} | {timing.start or 'n/a'}"
+            f"{' → ' + timing.end if timing.end else ''}"
+        )
+        if timing.dashas:
+            print("  Dashas:")
+            for dasha in timing.dashas[:2]:
+                print(f"    - {dasha.lord} {dasha.start} → {dasha.end}")
+                for antar in dasha.antardashas[:2]:
+                    print(f"      • {antar.lord} {antar.start} → {antar.end}")
+        print(f"  Confidence: {phase.confidence_grade}")
+        if phase.citations:
+            print("  Citations:")
+            for cite in phase.citations:
+                print(f"    - {cite}")
 
 
 def _render_varshaphal(report: VarshaphalReport, birth_place: str) -> None:
