@@ -266,6 +266,7 @@ class CoreWisdomReading:
     karmic_epoch: str
     remedies: List[Dict]
     sources: List[str]
+    manuscript_wisdom: List[str]
     rule_engine: Dict[str, object] = field(default_factory=dict)
 
 
@@ -569,25 +570,6 @@ def build_core_wisdom_reading(
 
     focus_summary = ", ".join(focus_areas) if focus_areas else "general life balance"
 
-    sections = {
-        "1": (
-            "Restatement of User Query & Birth Data: "
-            f"Name: {request.name}. Birth: {request.birth_date} at {request.birth_time} in {request.birth_place}."
-            f" Focus areas: {focus_summary}."
-        ),
-        "2": (
-            "Disclaimer & Orientation: This is a Bhrigu Samhita–inspired spiritual reading. "
-            "It offers tendencies, not certainties, and is not medical, legal, or financial advice."
-        ),
-        "3": (
-            "Birth Chart Overview: "
-            f"Karmic epoch — {horoscope.karmic_epoch}. "
-            f"Dominant currents include {', '.join(sorted(horoscope.weights, key=horoscope.weights.get, reverse=True)[:3])} "
-            "with manuscript-backed interpretation: "
-            f"{horoscope.interpretation}"
-        ),
-    }
-
     strengths = _ranked_traits(horoscope.weights, top=True)
     challenges = _ranked_traits(horoscope.weights, top=False)
 
@@ -597,34 +579,41 @@ def build_core_wisdom_reading(
         else "Practice steady discipline and seva."
     )
 
-    sections.update(
-        {
-            "4": (
-                "Detailed Life Area Analysis: "
-                f"Strengths — {', '.join(strengths) or 'resilience and curiosity'}. "
-                f"Challenges — {', '.join(challenges) or 'balancing intuition with action'}. "
-                f"Key remedies from the folios: {remedy_text}"
-            ),
-            "5": (
-                "Time-Based Future Tendencies: "
-                f"{_future_tendencies(horoscope.future_trajectories)}"
-            ),
-            "6": (
-                "Consolidated Strengths, Challenges & Cautions: "
-                f"Strengths — {', '.join(strengths) or 'adaptability'}. "
-                f"Challenges — {', '.join(challenges) or 'guarding energy leaks'}. "
-                "Cautions — honor pacing and protect focus during intense transit windows."
-            ),
-            "7": (
-                "Bhrigu-Style Guidance & Remedies: "
-                f"{_guidance_summary(horoscope.remedies, horoscope.future_trajectories)}"
-            ),
-            "8": (
-                "Closing & Reminder of Free Will: Tendencies guide you, but choices shape outcomes. "
-                "Take what resonates, leave the rest, and proceed with compassion."
-            ),
-        }
-    )
+    manuscript_wisdom = _aggregate_manuscript_wisdom(horoscope.principles, horoscope.weights)
+    manuscript_excerpt = "; ".join(manuscript_wisdom) if manuscript_wisdom else "The folios highlight steady discipline."
+
+    sections = {
+        "Seeker Snapshot": (
+            f"Name: {request.name}. Birth: {request.birth_date} at {request.birth_time} in {request.birth_place}. "
+            f"Focus areas: {focus_summary}."
+        ),
+        "Karmic Insights": (
+            f"Karmic epoch — {horoscope.karmic_epoch}. "
+            f"Primary currents include {', '.join(sorted(horoscope.weights, key=horoscope.weights.get, reverse=True)[:3])}."
+        ),
+        "Birth Chart Overview": (
+            "Manuscript-backed interpretation: "
+            f"{horoscope.interpretation}"
+        ),
+        "Life Area Focus": (
+            f"Strengths — {', '.join(strengths) or 'resilience and curiosity'}. "
+            f"Challenges — {', '.join(challenges) or 'balancing intuition with action'}. "
+            f"Key remedies from the folios: {remedy_text}"
+        ),
+        "Manuscript Wisdom": (
+            "Anchors from the Bhrigu folios: "
+            f"{manuscript_excerpt}"
+        ),
+        "Future Tendencies": _future_tendencies(horoscope.future_trajectories),
+        "Dharma Guidance": (
+            f"{_guidance_summary(horoscope.remedies, horoscope.future_trajectories)} "
+            "Hold steady discipline, align effort with higher duty, and revisit intentions weekly."
+        ),
+        "Closing Blessing": (
+            "Tendencies guide you, but choices shape outcomes. "
+            "Take what resonates, leave the rest, and proceed with compassion."
+        ),
+    }
 
     rule_engine_bundle = core_wisdom_assets()
 
@@ -635,6 +624,7 @@ def build_core_wisdom_reading(
         karmic_epoch=horoscope.karmic_epoch,
         remedies=horoscope.remedies,
         sources=_collect_bhrigu_texts(horoscope, request.tradition),
+        manuscript_wisdom=manuscript_wisdom,
         rule_engine=rule_engine_bundle,
     )
 
@@ -689,20 +679,43 @@ def _collect_bhrigu_texts(horoscope: HoroscopeReport, tradition: str) -> List[st
     return texts
 
 
-def _collect_varshaphal_citations(
-    horoscope: HoroscopeReport, tradition: str, transit_rules: Sequence[Dict]
+def _aggregate_manuscript_wisdom(
+    principles: Sequence[Dict[str, Any]], weights: Dict[str, float], limit: int = 4
 ) -> List[str]:
-    citations = _collect_bhrigu_texts(horoscope, tradition)
-    for rule in transit_rules[:3]:
-        reference = rule.get("sutra_reference")
-        influence = rule.get("influence")
-        if reference and influence:
-            entry = f"{reference}: {influence}"
-            if entry not in citations:
-                citations.append(entry)
-    if horoscope.dashas:
-        citations.append("Dashas derived via Vimshottari sequence; antardashas proportionally scaled.")
-    return citations[:8]
+    """Summarize manuscript principles most aligned with the seeker's chart."""
+
+    if not principles:
+        return []
+
+    scored: List[tuple[float, Dict[str, Any]]] = []
+    for principle in principles:
+        if not isinstance(principle, dict):
+            continue
+        code = str(principle.get("id") or principle.get("code") or principle.get("name") or "").strip()
+        normalized = code.lower()
+        weight = 0.0
+        if code and code in weights:
+            weight = float(weights.get(code, 0.0))
+        elif normalized and normalized in weights:
+            weight = float(weights.get(normalized, 0.0))
+        scored.append((weight, principle))
+
+    scored.sort(key=lambda item: item[0], reverse=True)
+    selected = scored[:limit] if any(weight for weight, _ in scored) else scored[:limit]
+
+    summaries: List[str] = []
+    for _, principle in selected:
+        code = principle.get("id") or principle.get("code") or principle.get("name") or "Principle"
+        sutra = principle.get("sutra_reference") or principle.get("sutra") or ""
+        description = principle.get("description") or principle.get("principle") or ""
+        base = f"{code}"
+        if sutra:
+            base += f" ({sutra})"
+        if description:
+            base += f" — {description}"
+        summaries.append(base.strip())
+
+    return summaries
 
 
 def build_karmic_dashboard(
