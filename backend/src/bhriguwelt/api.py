@@ -442,9 +442,9 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     def _handle_profile_get(self) -> None:
         payload = self._read_json()
         profile_id = payload.get("profile_id")
-        user_id = payload.get("user_id")
+        user_id = payload.get("user_id") or payload.get("session_id") or payload.get("session_key")
         if not profile_id and not user_id:
-            self.send_error(HTTPStatus.BAD_REQUEST, "profile_id or user_id required")
+            self.send_error(HTTPStatus.BAD_REQUEST, "profile_id, user_id, or session_id required")
             return
         profile = get_profile(profile_id=int(profile_id)) if profile_id else get_profile(user_id=str(user_id))
         if not profile:
@@ -456,6 +456,28 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         self._send_json({"profile": profile.to_dict(), "alerts": alerts, "session": session.to_dict() if session else None})
 
     def _handle_profile_list(self) -> None:
+        profile_id = self._query_param("profile_id")
+        user_id = self._query_param("user_id")
+        session_id = self._query_param("session_id") or self._query_param("session_key")
+        lookup_id = user_id or session_id
+
+        if profile_id or lookup_id:
+            profile = get_profile(profile_id=int(profile_id)) if profile_id else get_profile(user_id=str(lookup_id))
+            if not profile:
+                self.send_error(HTTPStatus.NOT_FOUND, "Profile not found")
+                return
+            alerts = [alert.to_dict() for alert in upcoming_alerts(profile_id=profile.id)]
+            session_key = session_id or "default"
+            session = fetch_session(profile.id, str(session_key))
+            self._send_json(
+                {
+                    "profile": profile.to_dict(),
+                    "alerts": alerts,
+                    "session": session.to_dict() if session else None,
+                }
+            )
+            return
+
         profiles = [profile.to_dict() for profile in list_profiles()]
         self._send_json({"profiles": profiles})
 
@@ -596,7 +618,8 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
 
     def _resolve_profile(self, payload: Dict[str, Any], allow_update_only: bool = True):
         profile_payload = payload.get("profile") if isinstance(payload.get("profile"), dict) else {}
-        user_id = payload.get("user_id") or profile_payload.get("user_id")
+        session_id = payload.get("session_id") or payload.get("session_key")
+        user_id = payload.get("user_id") or profile_payload.get("user_id") or session_id
         profile_id = payload.get("profile_id") or profile_payload.get("profile_id")
 
         base_payload = {
@@ -622,7 +645,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         if allow_update_only and not any(value for key, value in base_payload.items() if key != "metadata"):
             raise ValueError("Provide profile_id, user_id, or profile fields")
 
-        base_payload.setdefault("user_id", payload.get("session_id") or payload.get("session_key") or "guest")
+        base_payload.setdefault("user_id", session_id or "guest")
         return create_or_update_profile(base_payload)
 
     def _query_param(self, key: str) -> str | None:

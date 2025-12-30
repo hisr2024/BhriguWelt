@@ -105,6 +105,38 @@ def create_app() -> web.Application:
         await cache.set(key, response)
         return response
 
+    async def resolve_profile(payload: Dict[str, Any], allow_update_only: bool = True):
+        profile_payload = payload.get("profile") if isinstance(payload.get("profile"), dict) else {}
+        session_id = payload.get("session_id") or payload.get("session_key")
+        user_id = payload.get("user_id") or profile_payload.get("user_id") or session_id
+        profile_id = payload.get("profile_id") or profile_payload.get("profile_id")
+
+        base_payload = {
+            "user_id": user_id,
+            "full_name": payload.get("full_name") or profile_payload.get("full_name"),
+            "date_of_birth": payload.get("date_of_birth") or profile_payload.get("date_of_birth"),
+            "time_of_birth": payload.get("time_of_birth") or profile_payload.get("time_of_birth"),
+            "place_of_birth": payload.get("place_of_birth") or profile_payload.get("place_of_birth"),
+            "timezone": payload.get("timezone") or profile_payload.get("timezone"),
+            "metadata": payload.get("metadata") or profile_payload.get("metadata"),
+        }
+
+        profile = None
+        if profile_id:
+            profile = await asyncio.to_thread(get_profile, profile_id=int(profile_id))
+        if not profile and user_id:
+            profile = await asyncio.to_thread(get_profile, user_id=str(user_id))
+
+        if profile:
+            base_payload["user_id"] = profile.user_id or user_id
+            return await asyncio.to_thread(create_or_update_profile, base_payload)
+
+        if allow_update_only and not any(value for key, value in base_payload.items() if key != "metadata"):
+            raise ValueError("Provide profile_id, user_id, or profile fields")
+
+        base_payload.setdefault("user_id", session_id or "guest")
+        return await asyncio.to_thread(create_or_update_profile, base_payload)
+
     async def health(_: web.Request) -> web.Response:
         return _json_response({"status": "ok", "source": "Bhrigu Samhita", "ml": get_ml_health()})
 
@@ -279,9 +311,11 @@ def create_app() -> web.Application:
         await guard_rate_limit(request)
         payload = await request.json()
         profile_id = payload.get("profile_id")
-        user_id = payload.get("user_id")
+        user_id = payload.get("user_id") or payload.get("session_id") or payload.get("session_key")
         if not profile_id and not user_id:
-            return _json_response({"message": "profile_id or user_id required"}, status=HTTPStatus.BAD_REQUEST)
+            return _json_response(
+                {"message": "profile_id, user_id, or session_id required"}, status=HTTPStatus.BAD_REQUEST
+            )
         profile = await asyncio.to_thread(get_profile, profile_id=int(profile_id)) if profile_id else await asyncio.to_thread(get_profile, user_id=str(user_id))
         if not profile:
             return _json_response({"message": "Profile not found"}, status=HTTPStatus.NOT_FOUND)
@@ -292,6 +326,28 @@ def create_app() -> web.Application:
 
     async def profiles_list(request: web.Request) -> web.Response:  # pylint: disable=unused-argument
         await guard_rate_limit(request)
+        profile_id = request.query.get("profile_id")
+        user_id = request.query.get("user_id")
+        session_id = request.query.get("session_id") or request.query.get("session_key")
+        lookup_id = user_id or session_id
+        if profile_id or lookup_id:
+            profile = (
+                await asyncio.to_thread(get_profile, profile_id=int(profile_id))
+                if profile_id
+                else await asyncio.to_thread(get_profile, user_id=str(lookup_id))
+            )
+            if not profile:
+                return _json_response({"message": "Profile not found"}, status=HTTPStatus.NOT_FOUND)
+            alerts = [alert.to_dict() for alert in await asyncio.to_thread(upcoming_alerts, profile_id=profile.id)]
+            session_key = session_id or "default"
+            session = await asyncio.to_thread(fetch_session, profile.id, str(session_key))
+            return _json_response(
+                {
+                    "profile": profile.to_dict(),
+                    "alerts": alerts,
+                    "session": session.to_dict() if session else None,
+                }
+            )
         profiles = [profile.to_dict() for profile in await asyncio.to_thread(list_profiles)]
         return _json_response({"profiles": profiles})
 
