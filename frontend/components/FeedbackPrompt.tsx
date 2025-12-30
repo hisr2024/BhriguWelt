@@ -22,7 +22,7 @@ interface Props {
   };
 }
 
-export default function FeedbackPrompt({ engine, seekerName }: Props) {
+export default function FeedbackPrompt({ engine, seekerName, context }: Props) {
   const [rating, setRating] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");

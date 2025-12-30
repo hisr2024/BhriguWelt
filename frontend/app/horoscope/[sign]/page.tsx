@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 
 import { getStaticHoroscope, horoscopeSigns } from "@/lib/horoscopeStatic";
 
-export const runtime = "edge";
 export const revalidate = 3600;
 export const dynamicParams = false;
 

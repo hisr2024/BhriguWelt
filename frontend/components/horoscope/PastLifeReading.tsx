@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "@/lib/framer-motion";
 import { getFallbackSample } from "@/lib/api";
 import { ChartResponse, FormState } from "./types";
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "@/lib/framer-motion";
 
 import { areMicroAnimationsAllowed } from "@/lib/immersive";
 import { ChartHouse, DashaPeriod } from "@/types/astro";
