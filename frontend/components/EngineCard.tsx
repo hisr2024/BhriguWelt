@@ -7,9 +7,8 @@ import { ArrowUpRight, Info } from "lucide-react";
 import Tooltip from "@/components/Tooltip";
 import { motion, useReducedMotion } from "@/lib/framer-motion";
 
-const easeStandard: [number, number, number, number] = [0.2, 0.65, 0.3, 0.9];
 const easeInOutCurve: Easing = [0.42, 0, 0.58, 1];
-const transition = { duration: 0.35, ease: easeStandard };
+const transition = { duration: 0.35, ease: "easeOut" };
 
 type EngineCardProps = {
   engine: {
