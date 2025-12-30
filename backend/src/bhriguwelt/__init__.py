@@ -7,6 +7,7 @@ from .engine_interpreters import EngineInterpretation, interpret_bhrigu_wisdom
 from .matchmaking_engine import run_matchmaking_pipeline
 from .experience_flow import FlowVisualizations, UnifiedExperienceFlow, build_unified_experience_flow
 from .past_future_bridge import PastFutureSynthesis, build_past_future_synthesis
+from .past_life_memory import build_past_life_memory_reconstruction
 from .rule_dsl import compile_to_dataset, parse_dsl
 from .ml_weighting import apply_reweighting
 from .implementation_core import ImplementationCoreResponse, build_implementation_core_response
@@ -68,6 +69,7 @@ __all__ = [
     "build_unified_experience_flow",
     "PastFutureSynthesis",
     "build_past_future_synthesis",
+    "build_past_life_memory_reconstruction",
     "ImplementationCoreResponse",
     "build_implementation_core_response",
     "WisdomBotResponse",
