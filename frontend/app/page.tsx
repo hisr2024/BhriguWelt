@@ -44,6 +44,29 @@ const experienceLinks = [
   },
 ];
 
+const studioRoles = [
+  {
+    title: "Stacks Engineer",
+    description: "Architecting resilient systems, data flows, and layered interfaces for scale.",
+    tag: "Systems · Cloud · APIs",
+  },
+  {
+    title: "UI/UX Specialist",
+    description: "Crafting intuitive journeys with tactile touchpoints and accessible navigation.",
+    tag: "Research · Interaction · Flow",
+  },
+  {
+    title: "Animation Specialist",
+    description: "Breathing motion into every overlay, transition, and ritual cue.",
+    tag: "Motion · Micro-interactions",
+  },
+  {
+    title: "Graphics & App Designer",
+    description: "Composing brand visuals, mobile-first layouts, and luminous assets.",
+    tag: "Brand · Visuals · Mobile",
+  },
+];
+
 export default function HomePage() {
   return (
     <main id="main" tabIndex={-1} className="mx-auto flex max-w-6xl flex-col gap-16 px-6 py-12">
@@ -51,7 +74,7 @@ export default function HomePage() {
       <section className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="rounded-3xl border border-white/10 bg-card-gradient p-10 shadow-glow">
           <p className="text-xs uppercase tracking-[0.4em] text-aurora">Bhrigu Samhita Intelligence</p>
-          <h1 className="mt-4 text-fluid-2xl font-semibold">
+          <h1 className="mt-4 text-fluid-2xl font-semibold font-display">
             The world-class astrology command center for seekers, mentors, and families.
           </h1>
           <p className="mt-4 text-sm text-slate-300">
@@ -89,6 +112,48 @@ export default function HomePage() {
           <p className="mt-4 text-xs text-slate-400">
             Square chart geometry is preserved across mobile, tablet, and desktop layouts.
           </p>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden rounded-3xl border border-white/30 bg-white/70 p-8 shadow-sm">
+        <div className="absolute inset-0 bg-bricks opacity-40" aria-hidden="true" />
+        <div className="absolute -right-24 -top-20 h-48 w-48 rounded-full bg-aurora/25 blur-3xl" aria-hidden="true" />
+        <div className="relative z-10 grid gap-8 lg:grid-cols-[1.05fr_1fr]">
+          <div className="space-y-4">
+            <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Studio craft</p>
+            <h2 className="text-2xl font-semibold text-slate-900 font-display">
+              Animated logos, bricks, and overlays for every creative discipline.
+            </h2>
+            <p className="text-sm text-slate-600">
+              A modular identity system highlights each discipline with stacked logos, animated blocks, and layered
+              glass overlays so the experience feels tangible from web to app.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {studioRoles.map((role) => (
+              <div
+                key={role.title}
+                className="card-with-overlay relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-4 shadow-sm backdrop-blur"
+              >
+                <span className="card-overlay" aria-hidden="true" />
+                <div className="relative z-10 flex items-start gap-4">
+                  <div className="logo-stack">
+                    <span className="logo-orbit" aria-hidden="true" />
+                    <span className="logo-block logo-block--one" aria-hidden="true" />
+                    <span className="logo-block logo-block--two" aria-hidden="true" />
+                    <span className="logo-block logo-block--three" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-900">{role.title}</h3>
+                    <p className="mt-1 text-xs text-slate-600">{role.description}</p>
+                    <span className="mt-3 inline-flex rounded-full bg-slate-900/5 px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                      {role.tag}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
