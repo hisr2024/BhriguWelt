@@ -536,6 +536,7 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
   const [animationsEnabled, setAnimationsEnabled] = useState(false);
   const [flipActive, setFlipActive] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
   const [fallbackCharts, setFallbackCharts] = useState<{ rashi: ChartHouse[]; bhava: ChartHouse[] }>({
     rashi: [],
     bhava: [],
@@ -589,17 +590,9 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
     .filter(Boolean)
     .join(" ");
 
-  const escapePdfText = (text: string) =>
-    text
-      .replace(/\\/g, "\\\\")
-      .replace(/\(/g, "\\(")
-      .replace(/\)/g, "\\)")
-      .replace(/\r?\n/g, " ");
-
-  const downloadPdf = useCallback(() => {
-    if (!sections.length) return;
-    setIsSaving(true);
-    const lines = [
+  const buildExportLines = useCallback(() => {
+    if (!sections.length) return [];
+    return [
       `${title} (${engine})`,
       seekerName ? `Seeker: ${seekerName}` : null,
       ...sections.flatMap((section) => [
@@ -609,7 +602,19 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
         ...(section.bullets ?? []),
       ]),
     ].filter(Boolean) as string[];
+  }, [engine, sections, seekerName, title]);
 
+  const escapePdfText = (text: string) =>
+    text
+      .replace(/\\/g, "\\\\")
+      .replace(/\(/g, "\\(")
+      .replace(/\)/g, "\\)")
+      .replace(/\r?\n/g, " ");
+
+  const downloadPdf = useCallback(() => {
+    const lines = buildExportLines();
+    if (!lines.length) return;
+    setIsSaving(true);
     const contentLines = lines.map((line) => escapePdfText(line));
     const streamParts = ["BT", "/F1 12 Tf", "50 780 Td"];
     contentLines.forEach((line, index) => {
@@ -654,15 +659,47 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
     anchor.click();
     URL.revokeObjectURL(url);
     setIsSaving(false);
-  }, [engine, sections, seekerName, title]);
+  }, [buildExportLines, engine]);
+
+  const downloadText = useCallback(() => {
+    const lines = buildExportLines();
+    if (!lines.length) return;
+    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${engine}-guidance.txt`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }, [buildExportLines, engine]);
+
+  const copySummary = useCallback(async () => {
+    const lines = buildExportLines();
+    if (!lines.length) return;
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setCopyStatus("copied");
+    } catch (error) {
+      console.error("Unable to copy summary", error);
+      setCopyStatus("failed");
+    }
+  }, [buildExportLines]);
+
+  useEffect(() => {
+    if (copyStatus === "idle") return;
+    const timeout = window.setTimeout(() => setCopyStatus("idle"), 2200);
+    return () => window.clearTimeout(timeout);
+  }, [copyStatus]);
 
   if (!payload || !sections.length) {
     return (
       <section className={cardClassName} aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
-        <div className="section-heading">
-          <p className="eyebrow">Response</p>
-          <h3>{title}</h3>
-          <p className="muted">{t("results.helper", "Guidance will arrive in clear English and Hindi once you submit.")}</p>
+        <div className="prediction-card__body">
+          <div className="section-heading prediction-card__header">
+            <p className="eyebrow">Response</p>
+            <h3>{title}</h3>
+            <p className="muted">{t("results.helper", "Guidance will arrive in clear English and Hindi once you submit.")}</p>
+          </div>
         </div>
       </section>
     );
@@ -671,20 +708,36 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
   return (
     <section className={cardClassName} aria-live="polite" role="status" aria-label={t("results.title", "Results")}>
       <div className="prediction-card__body">
-        <div className="section-heading">
+        <div className="section-heading prediction-card__header">
           <p className="eyebrow">Response</p>
           <h3>{title}</h3>
           <p className="muted">{t("results.helperRaw", "Narratives are ready to share—no JSON needed.")}</p>
           <div className="prediction-card__actions">
-            <span className="microcopy">PDF export ready for this engine.</span>
-            <button
-              type="button"
-              className="button-link ghost-link prediction-card__download"
-              onClick={downloadPdf}
-              disabled={isSaving}
-            >
-              {isSaving ? "Preparing PDF…" : "Download PDF"}
-            </button>
+            <div className="prediction-card__action-copy">
+              <span className="microcopy">
+                {copyStatus === "copied"
+                  ? "Copied summary to clipboard."
+                  : copyStatus === "failed"
+                    ? "Copy failed—try export instead."
+                    : "Export or share this guidance."}
+              </span>
+            </div>
+            <div className="prediction-card__action-group" role="group" aria-label="Export results">
+              <button
+                type="button"
+                className="prediction-card__action prediction-card__action--primary"
+                onClick={downloadPdf}
+                disabled={isSaving}
+              >
+                {isSaving ? "Preparing PDF…" : "Download PDF"}
+              </button>
+              <button type="button" className="prediction-card__action" onClick={downloadText}>
+                Export TXT
+              </button>
+              <button type="button" className="prediction-card__action" onClick={copySummary}>
+                Copy summary
+              </button>
+            </div>
           </div>
         </div>
         <div className="insight-grid">{sections.map(renderSection)}</div>
