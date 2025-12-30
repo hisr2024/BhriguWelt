@@ -932,6 +932,7 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "focus_areas": report.focus_areas,
             "practices": report.practices,
             "intentions": report.intentions,
+            "citations": report.citations,
         }
     if command == "timeline":
         request = _request_from_payload(payload)
