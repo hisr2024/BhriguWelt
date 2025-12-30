@@ -39,6 +39,7 @@ export type EngineConfig = {
   title: string;
   description: string;
   cardDescription: string;
+  highlight: string;
   category: EngineCategory;
   preview: string[];
   features: string[];
@@ -51,6 +52,7 @@ export type EngineConfig = {
   resultHighlights: Array<{ label: string; value: string }>;
   nextSteps: string[];
   accent: string;
+  cta: string;
 };
 
 export const engineConfigs: EngineConfig[] = [
@@ -59,6 +61,7 @@ export const engineConfigs: EngineConfig[] = [
     title: "Horoscope",
     description: "Refined natal insights with precise timing and calm guidance.",
     cardDescription: "Birth-chart intelligence that stays crisp and readable.",
+    highlight: "Realtime karma map",
     category: "Current",
     preview: ["Chart clarity score", "Dasha timeline peek", "Remedy spotlight"],
     features: ["Birth map", "Dasha focus", "Remedy cues"],
@@ -87,12 +90,14 @@ export const engineConfigs: EngineConfig[] = [
     ],
     nextSteps: ["Review your 90-day dasha window", "Lock daily remedies", "Share the profile"],
     accent: "from-indigo-500/30 to-cyan-500/30",
+    cta: "Generate horoscope",
   },
   {
     slug: "past-life",
     title: "Past Life",
     description: "Karmic patterns, soul contracts, and restorative focus areas.",
     cardDescription: "A gentle look into karmic memory and release points.",
+    highlight: "Soulline stories",
     category: "Past",
     preview: ["Karmic motif scan", "Soul contract hints", "Healing focus map"],
     features: ["Karmic themes", "Soul contracts", "Healing focus"],
@@ -121,12 +126,14 @@ export const engineConfigs: EngineConfig[] = [
     ],
     nextSteps: ["Record a grounding ritual", "Log recurring dreams", "Align with a mentor"],
     accent: "from-orange-500/25 to-pink-500/25",
+    cta: "Explore past lives",
   },
   {
     slug: "future",
     title: "Future",
     description: "Forward-looking predictions mapped to cycles and milestones.",
     cardDescription: "Smooth, focused predictions with milestone clarity.",
+    highlight: "Long-range forecasts",
     category: "Future",
     preview: ["Milestone radar", "Opportunity scan", "Risk buffer"],
     features: ["Milestones", "Opportunity windows", "Risk alerts"],
@@ -155,12 +162,14 @@ export const engineConfigs: EngineConfig[] = [
     ],
     nextSteps: ["Schedule a strategy review", "Set protective routines", "Capture goals"],
     accent: "from-emerald-500/25 to-sky-500/25",
+    cta: "Map the future",
   },
   {
     slug: "matchmaking",
     title: "Matchmaking",
     description: "Compatibility scoring with dosha balance and remedies.",
     cardDescription: "Sharp compatibility scores with clear remedy guidance.",
+    highlight: "Dual-profile sync",
     category: "Current",
     preview: ["Compatibility score", "Dosha balance", "Remedy prompts"],
     features: ["Dosha balance", "Partner alignment", "Remedy guide"],
@@ -196,12 +205,14 @@ export const engineConfigs: EngineConfig[] = [
     ],
     nextSteps: ["Review shared rituals", "Book a deeper match reading", "Save the report"],
     accent: "from-rose-500/25 to-fuchsia-500/25",
+    cta: "Match two charts",
   },
   {
     slug: "calendar",
     title: "Calendar",
     description: "Śaka calendar highlights, tithi markers, and daily guidance.",
     cardDescription: "Daily alignment with śaka conversions and rituals.",
+    highlight: "Śaka converter",
     category: "Current",
     preview: ["Tithi highlights", "Festival cues", "Daily rituals"],
     features: ["Tithi mapping", "Festival highlights", "Daily rituals"],
@@ -230,12 +241,14 @@ export const engineConfigs: EngineConfig[] = [
     ],
     nextSteps: ["Add to reminders", "Schedule rituals", "Share the alignment"],
     accent: "from-teal-500/25 to-indigo-500/25",
+    cta: "Convert calendar",
   },
   {
     slug: "timeline",
     title: "Timeline",
     description: "Life chapters mapped into a polished timeline view.",
     cardDescription: "Milestone tracking with clear narrative arcs.",
+    highlight: "Phases + milestones",
     category: "Future",
     preview: ["Milestone arcs", "Transit checkpoints", "Life chapters"],
     features: ["Life chapters", "Key transits", "Milestone alerts"],
@@ -264,12 +277,14 @@ export const engineConfigs: EngineConfig[] = [
     ],
     nextSteps: ["Export to calendar", "Set milestone alerts", "Request mentor review"],
     accent: "from-blue-500/25 to-violet-500/25",
+    cta: "Load timeline",
   },
   {
     slug: "varshaphal",
     title: "Varshaphal",
     description: "Yearly solar return guidance with refined focus points.",
     cardDescription: "Annual guidance with strong actionable cues.",
+    highlight: "Yearly signal",
     category: "Future",
     preview: ["Year tone map", "Quarterly signals", "Priority chart"],
     features: ["Solar return", "Year themes", "Priority chart"],
@@ -291,12 +306,14 @@ export const engineConfigs: EngineConfig[] = [
     ],
     nextSteps: ["Plan quarterly reviews", "Lock annual rituals", "Share the plan"],
     accent: "from-amber-500/25 to-orange-500/25",
+    cta: "View varshaphal",
   },
   {
     slug: "transits",
     title: "Transits",
     description: "Live planetary transits and the cleanest actionable guidance.",
     cardDescription: "Live motion tracking for daily decisions.",
+    highlight: "Live transit map",
     category: "Current",
     preview: ["Live transit pulse", "Daily impact cues", "Remedy focus"],
     features: ["Transit alerts", "Daily impact", "Remedy cues"],
@@ -318,12 +335,14 @@ export const engineConfigs: EngineConfig[] = [
     ],
     nextSteps: ["Subscribe to transit alerts", "Plan key meetings", "Save daily snapshot"],
     accent: "from-sky-500/25 to-purple-500/25",
+    cta: "Check transits",
   },
   {
     slug: "core-wisdom",
     title: "Core Wisdom",
     description: "Bhrigu Samhita teachings distilled into sharp guidance.",
     cardDescription: "Library-backed answers with ritual direction.",
+    highlight: "Eight-section reading",
     category: "Current",
     preview: ["Wisdom snapshot", "Remedy list", "Focus guardrails"],
     features: ["Wisdom archive", "Remedy lists", "Focused guidance"],
@@ -352,12 +371,14 @@ export const engineConfigs: EngineConfig[] = [
     ],
     nextSteps: ["Save to your vault", "Share with a mentor", "Create reminders"],
     accent: "from-purple-500/25 to-indigo-500/25",
+    cta: "Unlock core wisdom",
   },
   {
     slug: "chat",
     title: "Chat",
     description: "Conversational astrology guidance with live context.",
     cardDescription: "Live chat guidance with structured prompts.",
+    highlight: "Live counsel",
     category: "Current",
     preview: ["Live prompt", "Context cues", "Follow-up path"],
     features: ["Live answers", "Context-aware", "Follow-up prompts"],
@@ -393,12 +414,14 @@ export const engineConfigs: EngineConfig[] = [
     ],
     nextSteps: ["Open live chat", "Save the prompt", "Share with advisor"],
     accent: "from-cyan-500/25 to-indigo-500/25",
+    cta: "Start chat",
   },
   {
     slug: "dashboard",
     title: "Dashboard",
     description: "All engines, alerts, and saved reports in one place.",
     cardDescription: "Mission control for every astrology workflow.",
+    highlight: "Progress arcs",
     category: "Current",
     preview: ["Workspace overview", "Recent reports", "Alert readiness"],
     features: ["Recent reports", "Quick actions", "Alerts overview"],
@@ -427,12 +450,14 @@ export const engineConfigs: EngineConfig[] = [
     ],
     nextSteps: ["Sync reminders", "Set weekly review", "Invite collaborators"],
     accent: "from-slate-500/25 to-indigo-500/25",
+    cta: "Open dashboard",
   },
   {
     slug: "alerts",
     title: "Alerts",
     description: "Transit alerts and daily pings with smart filters.",
     cardDescription: "Precision alerts for transits and milestones.",
+    highlight: "Alert feed",
     category: "Current",
     preview: ["Priority filters", "Quiet hour guard", "Signal routing"],
     features: ["Transit pings", "Priority filters", "Quiet hours"],
@@ -468,12 +493,14 @@ export const engineConfigs: EngineConfig[] = [
     ],
     nextSteps: ["Enable push notifications", "Add special dates", "Save alert preset"],
     accent: "from-fuchsia-500/25 to-rose-500/25",
+    cta: "View alerts",
   },
   {
     slug: "analytics",
     title: "Analytics",
     description: "Insight dashboards, pattern tracking, and growth metrics.",
     cardDescription: "Performance analytics for your astrological journey.",
+    highlight: "Feedback intelligence",
     category: "Current",
     preview: ["Trend snapshots", "Engagement curve", "Goal tracking"],
     features: ["Trend tracking", "Engagement", "Outcome signals"],
@@ -502,6 +529,7 @@ export const engineConfigs: EngineConfig[] = [
     ],
     nextSteps: ["Export the report", "Schedule insights review", "Share with advisor"],
     accent: "from-emerald-500/25 to-teal-500/25",
+    cta: "Load analytics",
   },
 ];
 

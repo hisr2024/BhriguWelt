@@ -145,4 +145,4 @@ export const ENGINES: EngineMeta[] = [
   },
 ];
 
-export const ENGINE_MAP = Object.fromEntries(ENGINES.map((engine) => [engine.slug, engine]));
+export const ENGINE_MAP = Object.fromEntries(ENGINES.map((engine) => [engine.slug, engine])) as Record<EngineSlug, EngineMeta>;
