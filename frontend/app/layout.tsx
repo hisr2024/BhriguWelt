@@ -12,8 +12,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "BhriguWelt Experiences",
-  description: "Modern web and mobile ready UI for the Bhrigu Samhita-powered horoscope, future, past life, matchmaking, and calendar engines.",
+  title: "BhriguWelt Astrology",
+  description:
+    "World-class astrology experiences with dark-first design, smooth motion, and sharp results across every engine.",
   manifest: "/manifest.json",
   icons: {
     icon: "/logo.svg",
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "BhriguWelt",
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
   },
 };
 
@@ -37,7 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
-      <body className="app-body">
+      <body className="min-h-screen bg-midnight text-slate-100">
         <Providers>
           <AppShell>{children}</AppShell>
         </Providers>

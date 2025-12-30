@@ -44,17 +44,33 @@ export default function GdprConsentBanner() {
   }
 
   return (
-    <section className="consent-banner" role="dialog" aria-live="polite" aria-label="Privacy consent">
-      <div className="consent-banner__content">
-        <strong>We respect your privacy.</strong>
-        <p>
-          BhriguWelt uses essential cookies for login continuity and secure profile storage. You can also opt in to
-          analytics so we can improve future readings and experience flows.
+    <section
+      className="fixed bottom-6 right-6 z-50 w-[min(420px,90vw)] space-y-4 rounded-3xl border border-white/10 bg-slate-950/95 p-6 text-sm text-slate-200 shadow-[0_25px_60px_rgba(2,6,23,0.6)] backdrop-blur"
+      role="dialog"
+      aria-live="polite"
+      aria-label="Privacy consent"
+    >
+      <div className="space-y-2">
+        <strong className="text-base text-white">We respect your privacy.</strong>
+        <p className="text-slate-300">
+          Essential cookies keep sessions steady. Opt into analytics to help refine new readings and experience flows.
         </p>
       </div>
-      <div className="consent-banner__actions">
-        <button type="button" className="consent-button" onClick={() => persistConsent("accepted")}>Accept analytics</button>
-        <button type="button" className="consent-button ghost" onClick={() => persistConsent("essential")}>Essential only</button>
+      <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          className="rounded-full bg-indigo-500 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-white"
+          onClick={() => persistConsent("accepted")}
+        >
+          Accept analytics
+        </button>
+        <button
+          type="button"
+          className="rounded-full border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-slate-200"
+          onClick={() => persistConsent("essential")}
+        >
+          Essential only
+        </button>
       </div>
     </section>
   );

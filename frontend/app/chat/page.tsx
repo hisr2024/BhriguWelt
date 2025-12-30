@@ -1,6 +1,6 @@
 import EnginePage from "@/components/EnginePage";
 import { engineBySlug } from "@/lib/engineConfig";
 
-export default function FuturePage() {
-  return <EnginePage config={engineBySlug["future"]} />;
+export default function ChatPage() {
+  return <EnginePage config={engineBySlug["chat"]} />;
 }
