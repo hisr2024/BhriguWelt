@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Sequence
 from .bhrigu_core import bhrigu_core
 from .engine_analyzers import analyze_core_engines
 from .engine_interpreters import interpret_bhrigu_wisdom
+from .wisdom_sources import source_catalog
 
 
 def _representative_entries(entries: Sequence[Dict[str, Any]], *, limit: int = 3) -> List[str]:
@@ -76,6 +77,7 @@ class WisdomBotAggregate:
 
     tradition: str
     manuscript: Dict[str, Any]
+    source_catalog: List[Dict[str, str]]
     engines: List[EngineWisdomDigest]
     analyses: List[Dict[str, Any]]
     interpretations: List[Dict[str, Any]]
@@ -85,6 +87,7 @@ class WisdomBotAggregate:
         return {
             "tradition": self.tradition,
             "manuscript": dict(self.manuscript),
+            "source_catalog": [dict(source) for source in self.source_catalog],
             "engines": [engine.to_dict() for engine in self.engines],
             "analyses": [dict(analysis) for analysis in self.analyses],
             "interpretations": [dict(interpretation) for interpretation in self.interpretations],
@@ -143,6 +146,7 @@ def aggregate_wisdom_for_bot(
             "integrity": metadata.get("integrity", {}),
             "source_note": metadata.get("source_note", "Aligned to the preserved Bhrigu folios."),
         },
+        source_catalog=source_catalog(),
         engines=engine_digests,
         analyses=[analysis.to_dict() for analysis in analyses],
         interpretations=interpretations,
