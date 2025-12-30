@@ -62,3 +62,14 @@ class RedisCache:
             )
         except redis.RedisError as exc:  # pragma: no cover - non-fatal
             logger.info("Redis set failed", extra={"error": str(exc)})
+
+    def clear(self) -> None:
+        client = self._client_or_none()
+        if not client:
+            return
+        try:
+            pattern = f"{self.prefix}:*"
+            for key in client.scan_iter(match=pattern):
+                client.delete(key)
+        except redis.RedisError as exc:  # pragma: no cover - non-fatal
+            logger.info("Redis clear failed", extra={"error": str(exc)})

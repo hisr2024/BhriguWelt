@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@sentry/nextjs": "file:vendor/sentry-nextjs",
+    "@vercel/analytics": "^1.5.0",
     "framer-motion": "^11.18.2",
     "next": "16.0.3",
     "react": "19.2.0",

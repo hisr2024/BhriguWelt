@@ -63,6 +63,7 @@ from .wisdom_aggregator import aggregate_wisdom_for_bot
 from .wisdom_bot import build_wisdom_bot_response
 from .future_directives import build_future_directives_engine
 from .auth import decode_profile_token, issue_profile_token
+from .cache import RedisCache
 
 _JSON_HEADER = ("Content-Type", "application/json; charset=utf-8")
 _ADMIN_TOKEN = os.environ.get("BHRIGUWELT_ADMIN_TOKEN")
@@ -221,8 +222,43 @@ class ResponseCache:
             return {"hits": self._hits, "misses": self._misses, "entries": len(self._store)}
 
 
+class HybridResponseCache:
+    """Cache layer that combines in-memory speed with optional Redis durability."""
+
+    def __init__(self, memory_cache: ResponseCache, redis_cache: RedisCache | None = None) -> None:
+        self._memory = memory_cache
+        self._redis = redis_cache
+
+    def get(self, key: str) -> Dict[str, Any] | None:
+        cached = self._memory.get(key)
+        if cached is not None:
+            return cached
+        if not self._redis:
+            return None
+        cached = self._redis.get(key)
+        if cached is not None:
+            self._memory.set(key, cached)
+        return cached
+
+    def set(self, key: str, payload: Dict[str, Any]) -> None:
+        self._memory.set(key, payload)
+        if self._redis:
+            self._redis.set(key, payload)
+
+    def clear(self) -> None:
+        self._memory.clear()
+        if self._redis:
+            self._redis.clear()
+
+    def stats(self) -> Dict[str, int]:
+        return self._memory.stats()
+
+
 _AI_ENHANCED_COMMANDS = {"horoscope", "past-life", "future", "matchmaking"}
-_ai_narrative_cache = ResponseCache(ttl_seconds=900, max_entries=512)
+_ai_narrative_cache = HybridResponseCache(
+    ResponseCache(ttl_seconds=900, max_entries=512),
+    RedisCache(prefix="bhriguwelt:ai", ttl_seconds=900),
+)
 _ai_rate_limiter = build_rate_limiter(max_requests=30, window_seconds=60)
 
 
@@ -267,7 +303,10 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     }
 
     rate_limiter = build_rate_limiter()
-    cache = ResponseCache()
+    cache = HybridResponseCache(
+        ResponseCache(),
+        RedisCache(prefix="bhriguwelt:responses", ttl_seconds=120),
+    )
 
     def do_GET(self) -> None:  # pragma: no cover - exercised via route map
         self._dispatch("GET")
@@ -722,6 +761,9 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         self._send_json(corpus)
 
     def _handle_update_manuscript(self) -> None:
+        if not self._is_admin():
+            self.send_error(HTTPStatus.FORBIDDEN, "Admin token required for manuscript updates")
+            return
         payload = self._read_json()
         try:
             updated = persist_bhrigu_data(payload)

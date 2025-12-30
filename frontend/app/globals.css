@@ -2228,6 +2228,13 @@ textarea:focus {
   gap: 1rem;
 }
 
+.footer-brand {
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .footer-links {
   display: grid;
   gap: 0.45rem;
