@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
 import Providers from "./providers";
@@ -32,12 +33,15 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const enableAnalytics = process.env.NEXT_PUBLIC_VERCEL_ANALYTICS === "true";
+
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body className="app-body">
         <Providers>
           <AppShell>{children}</AppShell>
         </Providers>
+        {enableAnalytics ? <Analytics /> : null}
       </body>
     </html>
   );

@@ -1,15 +1,20 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import PredictionForm from "@/components/PredictionForm";
 import Timeline from "@/components/Timeline";
-import BhriguChat from "@/components/BhriguChat";
 import { getFutureProgress, requestPrediction } from "@/lib/api";
 import { loadBirthDetails } from "@/lib/birthStorage";
 import { DEFAULT_BIRTH_DETAILS } from "@/lib/birthDefaults";
 import type { BirthDetails } from "@/types/astro";
 import { useThemeMode, type ThemeMode } from "@/lib/themeContext";
+
+const BhriguChat = dynamic(() => import("@/components/BhriguChat"), {
+  ssr: false,
+  loading: () => null,
+});
 
 type FutureTrajectory = {
   focus?: string;

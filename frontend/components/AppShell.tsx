@@ -1,5 +1,6 @@
 'use client';
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useI18n, type Language } from "@/lib/i18n";
@@ -159,6 +160,10 @@ function Shell({ children }: Props) {
           <p className="eyebrow">Bharat-centred Jyotish</p>
           <h3>{t("nav.tagline", "Quiet guidance across every stage of life.")}</h3>
           <p className="muted">{t("nav.desc", "Readable predictions, Śaka-ready conversions, and heartfelt remedies in one space.")}</p>
+          <div className="footer-brand">
+            <Image src="/logo.svg" alt="" width={28} height={28} loading="lazy" aria-hidden />
+            <span className="muted">Offline-ready PWA experiences</span>
+          </div>
         </div>
         <div>
           <p className="eyebrow">{t("footer.bot", "Bhrigu Wisdom Bot")}</p>

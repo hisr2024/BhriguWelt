@@ -4,9 +4,12 @@
 ![Frontend CI](https://github.com/BhriguWelt/BhriguWelt/actions/workflows/frontend.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 
-![Homepage preview](docs/media/homepage-preview.svg)
-
 [Demo video (loom placeholder)](https://example.com/bhriguwelt-demo.mp4)
+
+## Screenshots
+
+![Homepage preview](docs/media/homepage-preview.svg)
+![Offline mode preview](docs/media/offline-preview.svg)
 
 BhriguWelt is a full-stack scaffold for delivering astrology experiences whose
 entire knowledge base is sourced from the **Bhrigu Samhita** corpus. The
@@ -162,6 +165,10 @@ instructions file open when prompting for larger changes.
 No live instances are bundled with the repository; you must deploy the backend
 and frontend yourself. Follow the steps below to get an endpoint ready for web
 and mobile clients:
+
+For detailed deployment guides (Railway, Vercel, and operational checklists), see
+[`docs/deployment.md`](docs/deployment.md) and the rollback notes in
+[`docs/backup_and_recovery.md`](docs/backup_and_recovery.md).
 
 1. **Backend → Railway**: Deploy the backend as a Python service and let the
    Nixpacks config supply Python 3.11 and `pip`:
