@@ -1,15 +1,8 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
 import Providers from "./providers";
-
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
-});
 
 export const metadata: Metadata = {
   title: "BhriguWelt Astrology",
@@ -37,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const enableAnalytics = process.env.NEXT_PUBLIC_VERCEL_ANALYTICS === "true";
 
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-midnight text-slate-100">
         <Providers>
           <AppShell>{children}</AppShell>

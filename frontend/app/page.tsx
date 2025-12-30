@@ -1,23 +1,26 @@
 'use client';
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "@/lib/framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { engineCards } from "@/lib/engineConfig";
 
 const transition = { duration: 0.5, ease: "easeOut" };
 
 export default function HomePage() {
+  const shouldReduceMotion = useReducedMotion();
+  const heroAnimation = shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 };
+
   return (
     <div className="space-y-12">
       <motion.section
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={transition}
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
+        animate={heroAnimation}
+        transition={{ ...transition, duration: shouldReduceMotion ? 0 : transition.duration }}
         className="space-y-6"
       >
         <div className="chip">BhriguWelt Engines</div>
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+        <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
           <div className="space-y-4">
             <h1 className="text-4xl font-semibold text-white sm:text-5xl">
               World-class astrology experiences in a focused, dark-first command center.
@@ -74,14 +77,18 @@ export default function HomePage() {
             return (
               <motion.article
                 key={engine.slug}
-                initial={{ opacity: 0, y: 20 }}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ ...transition, delay: 0.08 * index }}
-                whileHover={{ y: -6 }}
-                className="glass-panel flex h-full flex-col gap-5 p-6"
+                transition={{
+                  ...transition,
+                  duration: shouldReduceMotion ? 0 : transition.duration,
+                  delay: shouldReduceMotion ? 0 : 0.08 * index,
+                }}
+                whileHover={shouldReduceMotion ? undefined : { y: -6 }}
+                className="glass-panel flex h-full flex-col gap-5 p-6 transition-transform"
               >
                 <div className="flex items-center justify-between">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/30 via-purple-500/30 to-pink-500/30 text-white">
                     <Icon className="h-6 w-6" />
                   </span>
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">

@@ -5,6 +5,7 @@ import { TranslationProvider } from "@/lib/i18n";
 import { SakaProvider } from "@/lib/sakaContext";
 import { ThemeProvider } from "@/lib/themeContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import ServiceWorkerManager from "@/components/ServiceWorkerManager";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -12,7 +13,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <TranslationProvider>
         <TelemetryProvider>
           <ThemeProvider>
-            <SakaProvider>{children}</SakaProvider>
+            <SakaProvider>
+              <ServiceWorkerManager />
+              {children}
+            </SakaProvider>
           </ThemeProvider>
         </TelemetryProvider>
       </TranslationProvider>

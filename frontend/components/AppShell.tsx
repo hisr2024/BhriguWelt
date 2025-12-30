@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "@/lib/framer-motion";
 import {
   Bell,
   CalendarDays,
@@ -57,6 +57,7 @@ function ThemeToggle() {
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     setMenuOpen(false);
@@ -152,10 +153,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           key={mainKey}
           id="main"
           className="mx-auto w-full max-w-6xl px-5 pb-16 pt-10 sm:px-8"
-          initial={{ opacity: 0, y: 12 }}
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
+          exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -12 }}
+          transition={{ duration: shouldReduceMotion ? 0 : 0.35, ease: "easeOut" }}
         >
           {children}
         </motion.main>

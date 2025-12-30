@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "@/lib/framer-motion";
 import type { EngineConfig, EngineResult } from "@/lib/engineConfig";
 import EngineForm from "@/components/EngineForm";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -14,6 +14,7 @@ type EnginePageProps = {
 
 export default function EnginePage({ config }: EnginePageProps) {
   const Icon = config.icon;
+  const shouldReduceMotion = useReducedMotion();
 
   const result = useMemo<EngineResult>(
     () => ({
@@ -33,10 +34,10 @@ export default function EnginePage({ config }: EnginePageProps) {
   return (
     <div className="space-y-10">
       <motion.section
-        initial={{ opacity: 0, y: 16 }}
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={transition}
-        className={`glass-panel relative overflow-hidden p-8 bg-gradient-to-br `}
+        transition={{ ...transition, duration: shouldReduceMotion ? 0 : transition.duration }}
+        className="glass-panel relative overflow-hidden bg-gradient-to-br p-8"
       >
         <div className="absolute inset-0 bg-result-gradient opacity-60" aria-hidden />
         <div className="relative space-y-6">
@@ -64,9 +65,13 @@ export default function EnginePage({ config }: EnginePageProps) {
       </motion.section>
 
       <motion.section
-        initial={{ opacity: 0, y: 20 }}
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ ...transition, delay: 0.08 }}
+        transition={{
+          ...transition,
+          duration: shouldReduceMotion ? 0 : transition.duration,
+          delay: shouldReduceMotion ? 0 : 0.08,
+        }}
         className="glass-panel p-8"
       >
         <div className="mb-6 space-y-2">

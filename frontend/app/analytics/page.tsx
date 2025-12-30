@@ -1,3 +1,5 @@
+"use client";
+
 import EnginePage from "@/components/EnginePage";
 import { engineBySlug } from "@/lib/engineConfig";
 

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "@/lib/framer-motion";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import type { EngineField, EngineResult } from "@/lib/engineConfig";
+import { ResultSkeleton } from "@/components/Skeletons";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -23,6 +24,7 @@ export default function EngineForm({ fields, submitLabel = "Generate insight", o
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<EngineResult | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     setValues(initialValues);
@@ -84,6 +86,7 @@ export default function EngineForm({ fields, submitLabel = "Generate insight", o
                     placeholder={field.placeholder}
                     value={values[field.name]}
                     onChange={(event) => setValues((prev) => ({ ...prev, [field.name]: event.target.value }))}
+                    aria-invalid={hasError}
                   />
                 ) : field.type === "select" ? (
                   <select
@@ -91,6 +94,7 @@ export default function EngineForm({ fields, submitLabel = "Generate insight", o
                     name={field.name}
                     value={values[field.name]}
                     onChange={(event) => setValues((prev) => ({ ...prev, [field.name]: event.target.value }))}
+                    aria-invalid={hasError}
                   >
                     <option value="">Select</option>
                     {field.options?.map((option) => (
@@ -107,6 +111,7 @@ export default function EngineForm({ fields, submitLabel = "Generate insight", o
                     placeholder={field.placeholder}
                     value={values[field.name]}
                     onChange={(event) => setValues((prev) => ({ ...prev, [field.name]: event.target.value }))}
+                    aria-invalid={hasError}
                   />
                 )}
                 {field.helper ? <span className="text-xs text-slate-500">{field.helper}</span> : null}
@@ -140,9 +145,9 @@ export default function EngineForm({ fields, submitLabel = "Generate insight", o
         <AnimatePresence>
           {submitError ? (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -10 }}
               className="flex items-start gap-3 rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-100"
               role="alert"
             >
@@ -154,19 +159,28 @@ export default function EngineForm({ fields, submitLabel = "Generate insight", o
       </form>
 
       <AnimatePresence mode="wait">
-        {result ? (
+        {loading ? (
+          <motion.aside
+            key="loading"
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -12 }}
+          >
+            <ResultSkeleton />
+          </motion.aside>
+        ) : result ? (
           <motion.aside
             key={result.title}
-            initial={{ opacity: 0, y: 12 }}
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            className="gradient-border space-y-6 p-6"
+            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -12 }}
+            className="result-panel space-y-6 p-6"
           >
-            <div className="space-y-3">
+            <div className="relative space-y-3">
               <h3 className="text-xl font-semibold text-white">{result.title}</h3>
               <p className="text-sm text-slate-300">{result.summary}</p>
             </div>
-            <div className="space-y-4">
+            <div className="relative space-y-4">
               {result.highlights.map((highlight) => (
                 <div key={highlight.label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{highlight.label}</p>
@@ -174,7 +188,7 @@ export default function EngineForm({ fields, submitLabel = "Generate insight", o
                 </div>
               ))}
             </div>
-            <div className="space-y-2">
+            <div className="relative space-y-2">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Next actions</p>
               <ul className="space-y-2 text-sm text-slate-200">
                 {result.nextSteps.map((step) => (
@@ -189,9 +203,9 @@ export default function EngineForm({ fields, submitLabel = "Generate insight", o
         ) : (
           <motion.aside
             key="empty"
-            initial={{ opacity: 0, y: 12 }}
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
+            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -12 }}
             className="flex h-full flex-col items-start justify-center rounded-3xl border border-dashed border-white/20 bg-white/5 p-6 text-sm text-slate-400"
           >
             <p className="text-base font-semibold text-slate-200">Results will appear here.</p>

@@ -4,6 +4,10 @@ import type { NextRequest } from "next/server";
 const SECURE_PROTO = "https";
 
 export function middleware(request: NextRequest) {
+  if (process.env.NODE_ENV !== "production") {
+    return NextResponse.next();
+  }
+
   const protoHeader = request.headers.get("x-forwarded-proto");
 
   if (protoHeader && protoHeader !== SECURE_PROTO) {
@@ -16,5 +20,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: "/:path*",
+  matcher: ["/((?!_next|_vercel|.*\\..*).*)"],
 };
