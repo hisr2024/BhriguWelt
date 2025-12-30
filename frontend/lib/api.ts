@@ -26,6 +26,11 @@ export type HealthResponse = {
   source?: string;
   ml?: unknown;
   data?: { principles_loaded?: number };
+  ai_provider_metadata?: {
+    configured?: boolean;
+    provider?: string;
+    api_base?: string;
+  };
   meta?: { mode?: "live" | "demo"; attempted_hosts?: string[] };
 };
 
@@ -542,6 +547,7 @@ function fallbackHealth(): HealthResponse {
     status: "ok",
     source: "Bhrigu Samhita (demo cache)",
     data: principlesLoaded ? { principles_loaded: principlesLoaded } : undefined,
+    ai_provider_metadata: { configured: false, provider: "unconfigured", api_base: "" },
     meta: { mode: "demo", attempted_hosts: BACKEND_HOSTS },
   };
 }

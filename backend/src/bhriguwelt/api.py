@@ -356,12 +356,14 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     def _handle_health(self) -> None:
         corpus = bhrigu_core.dataset()
         principles_loaded = len(corpus.get("principles") or [])
+        ai_support = ai_provider_metadata()
         self._send_json(
             {
                 "status": "ok",
                 "source": "Bhrigu Samhita",
                 "ml": get_ml_health(),
                 "data": {"principles_loaded": principles_loaded},
+                "ai_provider_metadata": ai_support,
             }
         )
 
