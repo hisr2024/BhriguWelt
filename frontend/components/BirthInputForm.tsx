@@ -231,29 +231,37 @@ export default function BirthInputForm() {
   const validate = (payload: BirthForm): ValidationState => {
     const feedback: ValidationState = {};
 
-    if (payload.birthDate) {
-      const year = Number(payload.birthDate.split("-")[0]);
-      if (year < 1900 || year > 2100 || !/^\d{4}-\d{2}-\d{2}$/.test(payload.birthDate)) {
-        feedback.dob = t("form.error.birthDate", "Use YYYY-MM-DD between 1900-2100.");
+    try {
+      if (payload.birthDate) {
+        const year = Number(payload.birthDate.split("-")[0]);
+        if (year < 1900 || year > 2100 || !/^\d{4}-\d{2}-\d{2}$/.test(payload.birthDate)) {
+          feedback.dob = t("form.error.birthDate", "Invalid birth date. Use YYYY-MM-DD between 1900-2100.");
+        }
       }
-    }
 
-    if (payload.birthTime && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(payload.birthTime)) {
-      feedback.tob = t("form.error.birthTime", "Use HH:MM in 24h format (e.g., 07:45)");
-    }
-
-    if (payload.birthPlace) {
-      if (payload.birthPlace.length < 3 || !payload.birthPlace.includes(",")) {
-        feedback.pob = t("form.error.birthPlace", "Add city and country (e.g., Jaipur, Bharat)");
+      if (payload.birthTime && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(payload.birthTime)) {
+        feedback.tob = t("form.error.birthTime", "Use HH:MM in 24h format (e.g., 07:45)");
       }
-    }
 
-    if (payload.lunarTithi && (!/^\d+$/.test(payload.lunarTithi) || Number(payload.lunarTithi) < 1 || Number(payload.lunarTithi) > 30)) {
-      feedback.dob = t("form.error.lunarTithi", "Lunar tithi must be 1-30.");
-    }
+      if (payload.birthPlace) {
+        if (payload.birthPlace.length < 3 || !payload.birthPlace.includes(",")) {
+          feedback.pob = t("form.error.birthPlace", "Add city and country (e.g., Jaipur, Bharat)");
+        }
+      }
 
-    if (payload.moonElement && !["water", "fire", "air", "earth", "ether"].includes(payload.moonElement.toLowerCase())) {
-      feedback.dob = t("form.error.moonElement", "Use water, fire, air, earth, or ether for moon element.");
+      if (
+        payload.lunarTithi &&
+        (!/^\d+$/.test(payload.lunarTithi) || Number(payload.lunarTithi) < 1 || Number(payload.lunarTithi) > 30)
+      ) {
+        feedback.dob = t("form.error.lunarTithi", "Lunar tithi must be 1-30.");
+      }
+
+      if (payload.moonElement && !["water", "fire", "air", "earth", "ether"].includes(payload.moonElement.toLowerCase())) {
+        feedback.dob = t("form.error.moonElement", "Use water, fire, air, earth, or ether for moon element.");
+      }
+    } catch (error) {
+      console.warn("Birth detail validation failed", error);
+      feedback.dob = t("form.error.birthDate", "Invalid birth date. Use YYYY-MM-DD between 1900-2100.");
     }
 
     return feedback;

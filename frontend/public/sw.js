@@ -1,3 +1,6 @@
+/* eslint-env serviceworker */
+/* global self, caches, fetch, URL */
+
 const CACHE_VERSION = "v1";
 const STATIC_CACHE = `bhriguwelt-static-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline";
