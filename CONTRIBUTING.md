@@ -7,6 +7,14 @@
 - **Safety first:** Do not collect credentials or PII beyond birth data required for predictions. See `SECURITY.md` for reporting vulnerabilities.
 - **Tests + docs:** Every change should have regression tests and accompanying documentation updates.
 
+## Issue templates
+Use the GitHub issue templates to keep triage consistent and actionable:
+- **Bug report:** `.github/ISSUE_TEMPLATE/bug_report.md`
+- **Feature request:** `.github/ISSUE_TEMPLATE/feature_request.md`
+- **Documentation request:** `.github/ISSUE_TEMPLATE/docs_request.md`
+
+Include links to the relevant API endpoints, UI routes, or manuscripts so maintainers can reproduce quickly.
+
 ## Development setup
 1. Clone the repo and install tools:
    - Backend: `python -m pip install -r backend/requirements.txt`

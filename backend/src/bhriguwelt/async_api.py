@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+from dataclasses import asdict
 from http import HTTPStatus
 from typing import Any, Dict
 
@@ -15,10 +16,12 @@ except Exception as exc:  # pragma: no cover - optional dependency
         "aiohttp is required for the async API server; install it from PyPI when network access is available."
     ) from exc
 
-from .api import RateLimiter, ResponseCache, handle_command
+from .api import RateLimiter, ResponseCache, handle_command, _request_from_payload
 from .bhrigu_core import bhrigu_core
 from .data_loader import persist_bhrigu_data
 from .feedback import feedback_analytics_snapshot, quarterly_reviews, record_feedback, serialize_entry
+from .horoscope import _snapshot_from_request
+from .kundli_generator import generate_kundli
 from .ml_service import get_ml_health, retrain_feedback_model
 from .profiles import (
     create_or_update_profile,
@@ -31,6 +34,7 @@ from .profiles import (
     analytics_snapshot,
 )
 from .chatbot import generate_chat_reply
+from .auth import decode_profile_token, issue_profile_token
 
 _ADMIN_TOKEN = os.environ.get("BHRIGUWELT_ADMIN_TOKEN")
 
@@ -45,7 +49,7 @@ def _add_cors_headers(response: web.Response) -> web.Response:
         {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, X-Admin-Token",
+            "Access-Control-Allow-Headers": "Content-Type, X-Admin-Token, Authorization",
         }
     )
     return response
@@ -77,7 +81,7 @@ class AsyncResponseCache(ResponseCache):
 
 
 def create_app() -> web.Application:
-    rate_limiter = RateLimiter()
+    rate_limiter = build_rate_limiter()
     cache = AsyncResponseCache()
 
     async def guard_rate_limit(request: web.Request) -> tuple[str, Dict[str, int]]:
@@ -95,6 +99,26 @@ def create_app() -> web.Application:
             )
             raise web.HTTPTooManyRequests(text=response.text, headers=response.headers)
         return client, meta_dict
+
+    def _extract_bearer_token(request: web.Request) -> str | None:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            return auth_header.replace("Bearer ", "", 1).strip()
+        return None
+
+    async def require_profile_claims(request: web.Request) -> Dict[str, Any]:
+        token = _extract_bearer_token(request)
+        if not token:
+            raise web.HTTPUnauthorized(text=_json_response({"message": "Bearer token required for profile access"}, status=HTTPStatus.UNAUTHORIZED).text)
+        try:
+            return await asyncio.to_thread(decode_profile_token, token)
+        except ValueError as exc:
+            raise web.HTTPUnauthorized(text=_json_response({"message": str(exc)}, status=HTTPStatus.UNAUTHORIZED).text)
+
+    def authorize_profile_access(profile, claims: Dict[str, Any]) -> bool:
+        if claims.get("role") == "admin":
+            return True
+        return bool(profile.user_id and claims.get("sub") == profile.user_id)
 
     async def handle_cached_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         key = _cache_key(command, payload)
@@ -244,6 +268,30 @@ def create_app() -> web.Application:
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
 
+    async def chart(request: web.Request) -> web.Response:
+        _, rate_meta = await guard_rate_limit(request)
+        payload = await request.json()
+        try:
+            request_payload = _request_from_payload(payload)
+        except ValueError as exc:
+            return _json_response({"message": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+        snapshot = _snapshot_from_request(request_payload)
+        kundli = await asyncio.to_thread(
+            generate_kundli,
+            snapshot,
+            weights=payload.get("weights"),
+            timezone_name=request_payload.timezone,
+        )
+        response = {
+            "rashi_chart": [asdict(item) for item in kundli.get("rashi_chart", [])],
+            "bhava_chart": [asdict(item) for item in kundli.get("bhava_chart", [])],
+            "dashas": [asdict(item) for item in kundli.get("dashas", [])],
+            "ephemeris_source": kundli.get("ephemeris_source"),
+        }
+        reply = _json_response(response)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
+
     async def core_wisdom(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
@@ -342,7 +390,19 @@ def create_app() -> web.Application:
 
     async def profiles_create(request: web.Request) -> web.Response:
         await guard_rate_limit(request)
+        claims = await require_profile_claims(request)
         payload = await request.json()
+        user_id = claims.get("sub")
+        if not user_id:
+            return _json_response({"message": "Token subject missing for profile access"}, status=HTTPStatus.FORBIDDEN)
+        payload["user_id"] = user_id
+        profile_id = payload.get("profile_id")
+        if profile_id:
+            profile = await asyncio.to_thread(get_profile, profile_id=int(profile_id))
+            if not profile:
+                return _json_response({"message": "Profile not found"}, status=HTTPStatus.NOT_FOUND)
+            if not authorize_profile_access(profile, claims):
+                return _json_response({"message": "Profile access forbidden"}, status=HTTPStatus.FORBIDDEN)
         try:
             profile = await resolve_profile(payload, allow_update_only=False)
         except ValueError as exc:
@@ -351,6 +411,7 @@ def create_app() -> web.Application:
 
     async def profiles_get(request: web.Request) -> web.Response:
         await guard_rate_limit(request)
+        claims = await require_profile_claims(request)
         payload = await request.json()
         profile_id = payload.get("profile_id")
         user_id = payload.get("user_id") or payload.get("session_id") or payload.get("session_key")
@@ -361,6 +422,8 @@ def create_app() -> web.Application:
         profile = await asyncio.to_thread(get_profile, profile_id=int(profile_id)) if profile_id else await asyncio.to_thread(get_profile, user_id=str(user_id))
         if not profile:
             return _json_response({"message": "Profile not found"}, status=HTTPStatus.NOT_FOUND)
+        if not authorize_profile_access(profile, claims):
+            return _json_response({"message": "Profile access forbidden"}, status=HTTPStatus.FORBIDDEN)
         alerts = [alert.to_dict() for alert in await asyncio.to_thread(upcoming_alerts, profile_id=profile.id)]
         session_id = payload.get("session_id") or "default"
         session = await asyncio.to_thread(fetch_session, profile.id, str(session_id))
@@ -368,6 +431,7 @@ def create_app() -> web.Application:
 
     async def profiles_list(request: web.Request) -> web.Response:  # pylint: disable=unused-argument
         await guard_rate_limit(request)
+        claims = await require_profile_claims(request)
         profile_id = request.query.get("profile_id")
         user_id = request.query.get("user_id")
         session_id = request.query.get("session_id") or request.query.get("session_key")
@@ -380,6 +444,8 @@ def create_app() -> web.Application:
             )
             if not profile:
                 return _json_response({"message": "Profile not found"}, status=HTTPStatus.NOT_FOUND)
+            if not authorize_profile_access(profile, claims):
+                return _json_response({"message": "Profile access forbidden"}, status=HTTPStatus.FORBIDDEN)
             alerts = [alert.to_dict() for alert in await asyncio.to_thread(upcoming_alerts, profile_id=profile.id)]
             session_key = session_id or "default"
             session = await asyncio.to_thread(fetch_session, profile.id, str(session_key))
@@ -390,11 +456,14 @@ def create_app() -> web.Application:
                     "session": session.to_dict() if session else None,
                 }
             )
+        if claims.get("role") != "admin":
+            return _json_response({"message": "Admin token required for full profile list"}, status=HTTPStatus.FORBIDDEN)
         profiles = [profile.to_dict() for profile in await asyncio.to_thread(list_profiles)]
         return _json_response({"profiles": profiles})
 
     async def alerts_create(request: web.Request) -> web.Response:
         await guard_rate_limit(request)
+        claims = await require_profile_claims(request)
         payload = await request.json()
         profile_id = payload.get("profile_id")
         user_id = payload.get("user_id")
@@ -409,6 +478,8 @@ def create_app() -> web.Application:
             profile = await asyncio.to_thread(get_profile, user_id=str(user_id))
         if not profile:
             return _json_response({"message": "Profile required to attach alerts"}, status=HTTPStatus.NOT_FOUND)
+        if not authorize_profile_access(profile, claims):
+            return _json_response({"message": "Profile access forbidden"}, status=HTTPStatus.FORBIDDEN)
         alert = await asyncio.to_thread(
             add_alert,
             profile_id=profile.id,
@@ -421,10 +492,18 @@ def create_app() -> web.Application:
 
     async def alerts_list(request: web.Request) -> web.Response:
         await guard_rate_limit(request)
+        claims = await require_profile_claims(request)
         profile_id = request.query.get("profile_id")
         if profile_id:
+            profile = await asyncio.to_thread(get_profile, profile_id=int(profile_id))
+            if not profile:
+                return _json_response({"message": "Profile not found"}, status=HTTPStatus.NOT_FOUND)
+            if not authorize_profile_access(profile, claims):
+                return _json_response({"message": "Profile access forbidden"}, status=HTTPStatus.FORBIDDEN)
             alerts = [alert.to_dict() for alert in await asyncio.to_thread(upcoming_alerts, profile_id=int(profile_id))]
         else:
+            if claims.get("role") != "admin":
+                return _json_response({"message": "Admin token required for all alerts"}, status=HTTPStatus.FORBIDDEN)
             alerts = await asyncio.to_thread(alerts_summary)
         return _json_response({"alerts": alerts})
 
@@ -482,6 +561,7 @@ def create_app() -> web.Application:
     app.router.add_route("POST", "/matchmaking/diagnostics", matchmaking_diagnostics)
     app.router.add_route("POST", "/calendar", calendar)
     app.router.add_route("POST", "/transits", transits)
+    app.router.add_route("POST", "/chart", chart)
     app.router.add_route("POST", "/core-wisdom", core_wisdom)
     app.router.add_route("POST", "/implementation-core", implementation_core)
     app.router.add_route("POST", "/core-engines", core_engines)
@@ -489,6 +569,8 @@ def create_app() -> web.Application:
     app.router.add_route("POST", "/chat", chat)
     app.router.add_route("GET", "/ws/chat", chat_socket)
     app.router.add_route("POST", "/profiles", profiles_create)
+    app.router.add_route("POST", "/profiles/register", profiles_register)
+    app.router.add_route("POST", "/profiles/token", profiles_token)
     app.router.add_route("POST", "/profiles/get", profiles_get)
     app.router.add_route("GET", "/profiles", profiles_list)
     app.router.add_route("POST", "/alerts", alerts_create)

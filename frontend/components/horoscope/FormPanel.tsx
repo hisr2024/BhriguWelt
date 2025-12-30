@@ -17,6 +17,10 @@ type Props = {
   isComplete: boolean;
   progressSteps: ProgressStep[];
   prefillNotice?: string | null;
+  voiceSupported: boolean;
+  isSpeaking: boolean;
+  onToggleVoiceGuidance: () => void;
+  voiceStatus: string;
   onChange: (field: keyof FormState, value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onAskBhrigu: () => void;
@@ -32,6 +36,10 @@ export default function FormPanel({
   isComplete,
   progressSteps,
   prefillNotice,
+  voiceSupported,
+  isSpeaking,
+  onToggleVoiceGuidance,
+  voiceStatus,
   onChange,
   onSubmit,
   onAskBhrigu,
@@ -47,6 +55,26 @@ export default function FormPanel({
         <div className="status-chip" aria-live="polite">
           {status === "success" ? "Reading ready" : "Awaiting details"}
         </div>
+      </div>
+      <div className="assistive-row" role="group" aria-label="Form guidance controls">
+        <button
+          type="button"
+          className={`assistive-chip ${isSpeaking ? "assistive-chip--active" : ""}`}
+          onClick={onToggleVoiceGuidance}
+          aria-pressed={isSpeaking}
+          aria-describedby={voiceSupported ? undefined : "voice-unsupported"}
+          disabled={!voiceSupported}
+        >
+          {isSpeaking ? "Stop voice guidance" : "Play voice guidance"}
+        </button>
+        <span className="assistive-value" aria-live="polite">
+          {voiceStatus}
+        </span>
+        {!voiceSupported ? (
+          <span id="voice-unsupported" className="microcopy">
+            Voice guidance is not supported in this browser.
+          </span>
+        ) : null}
       </div>
 
       {prefillNotice ? (

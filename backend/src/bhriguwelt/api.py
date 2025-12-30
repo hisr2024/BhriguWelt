@@ -15,6 +15,11 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from urllib.parse import urlparse, parse_qs
 
+try:
+    import redis
+except ImportError:  # pragma: no cover - optional dependency
+    redis = None
+
 from .bhrigu_core import bhrigu_core
 from .data_loader import persist_bhrigu_data
 from .calendar_conversion import convert_birth_details
@@ -57,6 +62,7 @@ from .kundli_generator import SIGNS, generate_kundli
 from .wisdom_aggregator import aggregate_wisdom_for_bot
 from .wisdom_bot import build_wisdom_bot_response
 from .future_directives import build_future_directives_engine
+from .auth import decode_profile_token, issue_profile_token
 
 _JSON_HEADER = ("Content-Type", "application/json; charset=utf-8")
 _ADMIN_TOKEN = os.environ.get("BHRIGUWELT_ADMIN_TOKEN")
@@ -120,6 +126,58 @@ class RateLimiter:
             self._tokens.clear()
 
 
+class RedisRateLimiter:
+    """Redis-backed fixed window rate limiter for distributed throttling."""
+
+    def __init__(
+        self,
+        *,
+        redis_client: "redis.Redis[Any] | None",
+        max_requests: int = 60,
+        window_seconds: int = 60,
+        key_prefix: str = "bhriguwelt:rate",
+    ) -> None:
+        if redis_client is None:
+            raise ValueError("redis_client is required")
+        self.redis = redis_client
+        self.max_requests = max_requests
+        self.window = window_seconds
+        self.key_prefix = key_prefix
+        self._fallback = RateLimiter(max_requests=max_requests, window_seconds=window_seconds)
+
+    def allow(self, key: str, *, with_metadata: bool = False) -> bool | tuple[bool, Dict[str, int]]:
+        redis_key = f"{self.key_prefix}:{key}"
+        try:
+            pipeline = self.redis.pipeline()
+            pipeline.incr(redis_key)
+            pipeline.ttl(redis_key)
+            count, ttl = pipeline.execute()
+            if ttl == -1:
+                self.redis.expire(redis_key, self.window)
+                ttl = self.window
+            elif ttl < 0:
+                ttl = self.window
+            allowed = int(count) <= self.max_requests
+            if not with_metadata:
+                return allowed
+            remaining = max(self.max_requests - int(count), 0)
+            metadata = {"remaining": remaining, "reset_in": max(int(ttl), 0)}
+            return allowed, metadata
+        except Exception:  # pragma: no cover - fallback to in-memory when Redis is unavailable
+            return self._fallback.allow(key, with_metadata=with_metadata)
+
+
+def build_rate_limiter(*, max_requests: int = 60, window_seconds: int = 60) -> RateLimiter | RedisRateLimiter:
+    redis_url = os.environ.get("REDIS_URL")
+    if redis_url and redis is not None:
+        try:
+            client = redis.Redis.from_url(redis_url, decode_responses=False)
+            return RedisRateLimiter(redis_client=client, max_requests=max_requests, window_seconds=window_seconds)
+        except Exception:  # pragma: no cover - safe fallback when Redis isn't reachable
+            return RateLimiter(max_requests=max_requests, window_seconds=window_seconds)
+    return RateLimiter(max_requests=max_requests, window_seconds=window_seconds)
+
+
 class ResponseCache:
     """Small in-memory cache for idempotent API responses."""
 
@@ -165,7 +223,7 @@ class ResponseCache:
 
 _AI_ENHANCED_COMMANDS = {"horoscope", "past-life", "future", "matchmaking"}
 _ai_narrative_cache = ResponseCache(ttl_seconds=900, max_entries=512)
-_ai_rate_limiter = RateLimiter(max_requests=30, window_seconds=60)
+_ai_rate_limiter = build_rate_limiter(max_requests=30, window_seconds=60)
 
 
 class BhriguAPIHandler(BaseHTTPRequestHandler):
@@ -196,6 +254,8 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/wisdom-bot"): "_handle_wisdom_bot",
         ("POST", "/chat"): "_handle_chat",
         ("POST", "/profiles"): "_handle_profiles",
+        ("POST", "/profiles/register"): "_handle_profile_register",
+        ("POST", "/profiles/token"): "_handle_profile_token",
         ("POST", "/profiles/get"): "_handle_profile_get",
         ("GET", "/profiles"): "_handle_profile_list",
         ("POST", "/alerts"): "_handle_alert_create",
@@ -206,7 +266,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/ml/retrain"): "_handle_ml_retrain",
     }
 
-    rate_limiter = RateLimiter()
+    rate_limiter = build_rate_limiter()
     cache = ResponseCache()
 
     def do_GET(self) -> None:  # pragma: no cover - exercised via route map
@@ -244,7 +304,14 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.NOT_FOUND, "Route not defined in Bhrigu Samhita server")
             return
         handler = getattr(self, handler_name)
-        handler()
+        try:
+            handler()
+        except ValueError as exc:
+            self.send_error(HTTPStatus.BAD_REQUEST, str(exc), explain="Request body failed validation")
+        except Exception as exc:  # pragma: no cover - defensive telemetry
+            capture_exception(exc, {"path": self.path, "method": method})
+            logger.exception("Unhandled server error", extra={"path": self.path, "method": method})
+            self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, "Unexpected server error")
 
     # Individual endpoint handlers -------------------------------------------------
     def _handle_health(self) -> None:
@@ -444,7 +511,24 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         self._send_json(response)
 
     def _handle_profiles(self) -> None:
+        claims = self._require_profile_claims()
+        if not claims:
+            return
         payload = self._read_json()
+        user_id = claims.get("sub")
+        if not user_id:
+            self.send_error(HTTPStatus.FORBIDDEN, "Token subject missing for profile access")
+            return
+        payload["user_id"] = user_id
+        profile_id = payload.get("profile_id")
+        if profile_id:
+            profile = get_profile(profile_id=int(profile_id))
+            if not profile:
+                self.send_error(HTTPStatus.NOT_FOUND, "Profile not found")
+                return
+            if not self._authorize_profile_access(profile, claims):
+                self.send_error(HTTPStatus.FORBIDDEN, "Profile access forbidden")
+                return
         try:
             profile = self._resolve_profile(payload, allow_update_only=False)
         except ValueError as exc:
@@ -452,7 +536,49 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             return
         self._send_json(profile.to_dict(), status=HTTPStatus.CREATED)
 
+    def _handle_profile_register(self) -> None:
+        payload = self._read_json()
+        try:
+            profile = self._resolve_profile(payload, allow_update_only=False)
+            token = issue_profile_token(user_id=str(profile.user_id), profile_id=profile.id)
+        except ValueError as exc:
+            self.send_error(HTTPStatus.BAD_REQUEST, str(exc))
+            return
+        except RuntimeError as exc:
+            self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, str(exc))
+            return
+        self._send_json({"profile": profile.to_dict(), "token": token}, status=HTTPStatus.CREATED)
+
+    def _handle_profile_token(self) -> None:
+        if not self._is_admin():
+            self.send_error(HTTPStatus.FORBIDDEN, "Admin token required for profile token issuance")
+            return
+        payload = self._read_json()
+        profile_id = payload.get("profile_id")
+        user_id = payload.get("user_id")
+        role = payload.get("role", "user")
+        if role not in {"user", "admin"}:
+            self.send_error(HTTPStatus.BAD_REQUEST, "role must be user or admin")
+            return
+        profile = None
+        if profile_id:
+            profile = get_profile(profile_id=int(profile_id))
+        elif user_id:
+            profile = get_profile(user_id=str(user_id))
+        if not profile:
+            self.send_error(HTTPStatus.NOT_FOUND, "Profile not found")
+            return
+        try:
+            token = issue_profile_token(user_id=str(profile.user_id), profile_id=profile.id, role=str(role))
+        except RuntimeError as exc:
+            self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, str(exc))
+            return
+        self._send_json({"token": token, "profile": profile.to_dict()})
+
     def _handle_profile_get(self) -> None:
+        claims = self._require_profile_claims()
+        if not claims:
+            return
         payload = self._read_json()
         profile_id = payload.get("profile_id")
         user_id = payload.get("user_id") or payload.get("session_id") or payload.get("session_key")
@@ -463,12 +589,18 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         if not profile:
             self.send_error(HTTPStatus.NOT_FOUND, "Profile not found")
             return
+        if not self._authorize_profile_access(profile, claims):
+            self.send_error(HTTPStatus.FORBIDDEN, "Profile access forbidden")
+            return
         alerts = [alert.to_dict() for alert in upcoming_alerts(profile_id=profile.id)]
         session_id = payload.get("session_id") or "default"
         session = fetch_session(profile.id, str(session_id))
         self._send_json({"profile": profile.to_dict(), "alerts": alerts, "session": session.to_dict() if session else None})
 
     def _handle_profile_list(self) -> None:
+        claims = self._require_profile_claims()
+        if not claims:
+            return
         profile_id = self._query_param("profile_id")
         user_id = self._query_param("user_id")
         session_id = self._query_param("session_id") or self._query_param("session_key")
@@ -478,6 +610,9 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             profile = get_profile(profile_id=int(profile_id)) if profile_id else get_profile(user_id=str(lookup_id))
             if not profile:
                 self.send_error(HTTPStatus.NOT_FOUND, "Profile not found")
+                return
+            if not self._authorize_profile_access(profile, claims):
+                self.send_error(HTTPStatus.FORBIDDEN, "Profile access forbidden")
                 return
             alerts = [alert.to_dict() for alert in upcoming_alerts(profile_id=profile.id)]
             session_key = session_id or "default"
@@ -491,10 +626,16 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             )
             return
 
+        if claims.get("role") != "admin":
+            self.send_error(HTTPStatus.FORBIDDEN, "Admin token required for full profile list")
+            return
         profiles = [profile.to_dict() for profile in list_profiles()]
         self._send_json({"profiles": profiles})
 
     def _handle_alert_create(self) -> None:
+        claims = self._require_profile_claims()
+        if not claims:
+            return
         payload = self._read_json()
         profile_id = payload.get("profile_id")
         user_id = payload.get("user_id")
@@ -511,15 +652,31 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         if not profile:
             self.send_error(HTTPStatus.NOT_FOUND, "Profile required to attach alerts")
             return
+        if not self._authorize_profile_access(profile, claims):
+            self.send_error(HTTPStatus.FORBIDDEN, "Profile access forbidden")
+            return
         alert = add_alert(profile_id=profile.id, label=str(label), event_time=str(event_time), notes=payload.get("notes"))
         upcoming = [item.to_dict() for item in upcoming_alerts(profile_id=profile.id)]
         self._send_json({"alert": alert.to_dict(), "upcoming": upcoming}, status=HTTPStatus.CREATED)
 
     def _handle_alerts_list(self) -> None:
+        claims = self._require_profile_claims()
+        if not claims:
+            return
         profile_id = self._query_param("profile_id")
         if profile_id:
+            profile = get_profile(profile_id=int(profile_id))
+            if not profile:
+                self.send_error(HTTPStatus.NOT_FOUND, "Profile not found")
+                return
+            if not self._authorize_profile_access(profile, claims):
+                self.send_error(HTTPStatus.FORBIDDEN, "Profile access forbidden")
+                return
             alerts = [alert.to_dict() for alert in upcoming_alerts(profile_id=int(profile_id))]
         else:
+            if claims.get("role") != "admin":
+                self.send_error(HTTPStatus.FORBIDDEN, "Admin token required for all alerts")
+                return
             alerts = alerts_summary()
         self._send_json({"alerts": alerts})
 
@@ -611,8 +768,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         try:
             return json.loads(raw_body.decode("utf-8"))
         except json.JSONDecodeError as exc:  # pragma: no cover - invalid client input
-            self.send_error(HTTPStatus.BAD_REQUEST, f"Malformed JSON: {exc}")
-            return {}
+            raise ValueError(f"Malformed JSON: {exc}") from exc
 
     def _send_json(
         self, data: Dict[str, Any], status: HTTPStatus = HTTPStatus.OK, headers: Dict[str, str] | None = None
@@ -631,7 +787,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     def _add_cors_headers(self) -> None:
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Admin-Token")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Admin-Token, Authorization")
 
     def _resolve_profile(self, payload: Dict[str, Any], allow_update_only: bool = True):
         profile_payload = payload.get("profile") if isinstance(payload.get("profile"), dict) else {}
@@ -674,6 +830,28 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         if not _ADMIN_TOKEN:
             return False
         return self.headers.get("X-Admin-Token") == _ADMIN_TOKEN
+
+    def _extract_bearer_token(self) -> str | None:
+        auth_header = self.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            return auth_header.replace("Bearer ", "", 1).strip()
+        return None
+
+    def _require_profile_claims(self) -> Dict[str, Any] | None:
+        token = self._extract_bearer_token()
+        if not token:
+            self.send_error(HTTPStatus.UNAUTHORIZED, "Bearer token required for profile access")
+            return None
+        try:
+            return decode_profile_token(token)
+        except ValueError as exc:
+            self.send_error(HTTPStatus.UNAUTHORIZED, str(exc))
+            return None
+
+    def _authorize_profile_access(self, profile, claims: Dict[str, Any]) -> bool:
+        if claims.get("role") == "admin":
+            return True
+        return bool(profile.user_id and claims.get("sub") == profile.user_id)
 
     def _cache_key(self, command: str, payload: Dict[str, Any]) -> str:
         serialized = json.dumps(payload or {}, sort_keys=True, ensure_ascii=False)
