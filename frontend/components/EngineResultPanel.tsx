@@ -62,7 +62,7 @@ export default function EngineResultPanel({ result, accent, engineTitle }: Engin
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-slate-300">
-                      <Icon className="h-4 w-4 text-indigo-300" />
+                      <Icon className="h-4 w-4 text-indigo-300" aria-hidden />
                       {highlight.label}
                       <Tooltip content="Highlighted from the engine signal blend." />
                     </div>
@@ -106,27 +106,31 @@ export default function EngineResultPanel({ result, accent, engineTitle }: Engin
         <div className="mt-6 flex flex-wrap gap-3">
           <button
             type="button"
-            className="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-indigo-400"
+            className="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-[0_14px_26px_rgba(79,70,229,0.45)] transition hover:bg-indigo-400"
+            aria-label="Save report"
           >
             Save report
             <ArrowUpRight className="h-4 w-4" />
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:border-white/30"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-100 transition hover:border-white/30"
+            aria-label="Share insights"
           >
             Share insights
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:border-white/30"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-100 transition hover:border-white/30"
+            aria-label="Export results as PDF"
           >
             Export PDF
             <ArrowDownToLine className="h-4 w-4" />
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:border-white/30"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-100 transition hover:border-white/30"
+            aria-label="Export results as CSV"
           >
             Export CSV
             <FileSpreadsheet className="h-4 w-4" />

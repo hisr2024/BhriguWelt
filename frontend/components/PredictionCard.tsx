@@ -576,6 +576,7 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
   const [animationsEnabled, setAnimationsEnabled] = useState(false);
   const [flipActive, setFlipActive] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
   const [fallbackCharts, setFallbackCharts] = useState<{ rashi: ChartHouse[]; bhava: ChartHouse[] }>({
     rashi: [],
     bhava: [],
@@ -638,17 +639,9 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
     .filter(Boolean)
     .join(" ");
 
-  const escapePdfText = (text: string) =>
-    text
-      .replace(/\\/g, "\\\\")
-      .replace(/\(/g, "\\(")
-      .replace(/\)/g, "\\)")
-      .replace(/\r?\n/g, " ");
-
-  const downloadPdf = useCallback(() => {
-    if (!sections.length) return;
-    setIsSaving(true);
-    const lines = [
+  const buildExportLines = useCallback(() => {
+    if (!sections.length) return [];
+    return [
       `${title} (${engine})`,
       seekerName ? `Seeker: ${seekerName}` : null,
       ...sections.flatMap((section) => [
@@ -658,7 +651,19 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
         ...(section.bullets ?? []),
       ]),
     ].filter(Boolean) as string[];
+  }, [engine, sections, seekerName, title]);
 
+  const escapePdfText = (text: string) =>
+    text
+      .replace(/\\/g, "\\\\")
+      .replace(/\(/g, "\\(")
+      .replace(/\)/g, "\\)")
+      .replace(/\r?\n/g, " ");
+
+  const downloadPdf = useCallback(() => {
+    const lines = buildExportLines();
+    if (!lines.length) return;
+    setIsSaving(true);
     const contentLines = lines.map((line) => escapePdfText(line));
     const streamParts = ["BT", "/F1 12 Tf", "50 780 Td"];
     contentLines.forEach((line, index) => {
@@ -703,7 +708,37 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
     anchor.click();
     URL.revokeObjectURL(url);
     setIsSaving(false);
-  }, [engine, sections, seekerName, title]);
+  }, [buildExportLines, engine]);
+
+  const downloadText = useCallback(() => {
+    const lines = buildExportLines();
+    if (!lines.length) return;
+    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${engine}-guidance.txt`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }, [buildExportLines, engine]);
+
+  const copySummary = useCallback(async () => {
+    const lines = buildExportLines();
+    if (!lines.length) return;
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setCopyStatus("copied");
+    } catch (error) {
+      console.error("Unable to copy summary", error);
+      setCopyStatus("failed");
+    }
+  }, [buildExportLines]);
+
+  useEffect(() => {
+    if (copyStatus === "idle") return;
+    const timeout = window.setTimeout(() => setCopyStatus("idle"), 2200);
+    return () => window.clearTimeout(timeout);
+  }, [copyStatus]);
 
   if (!payload || !sections.length) {
     return (
