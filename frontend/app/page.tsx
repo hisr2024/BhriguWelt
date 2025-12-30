@@ -9,7 +9,8 @@ import EngineCard from "@/components/EngineCard";
 import EngineDiscovery from "@/components/EngineDiscovery";
 import OnboardingTour from "@/components/OnboardingTour";
 
-const transition: Transition = { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] as Easing };
+const easeOutCurve: Easing = [0.25, 0.46, 0.45, 0.94];
+const transition: Transition = { duration: 0.45, ease: easeOutCurve };
 
 const quickAccess = [
   { href: "/horoscope", label: "Horoscope" },

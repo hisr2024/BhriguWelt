@@ -4,9 +4,8 @@ import { useState } from "react";
 import { motion, type Easing } from "framer-motion";
 import type { EngineResult } from "@/lib/engineConfig";
 
-const orbitTransition = { duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9] };
-const orbitSpin = { duration: 50, repeat: Infinity, ease: "linear" as const };
-const pulseTransition = { duration: 3.2, repeat: Infinity, ease: "easeInOut" as const };
+const orbitEase: Easing = [0.2, 0.65, 0.3, 0.9];
+const orbitTransition = { duration: 0.4, ease: orbitEase };
 
 type EngineInsightOrbitProps = {
   highlights: EngineResult["highlights"];

@@ -9,26 +9,8 @@ import VoiceInputButton from "@/components/VoiceInputButton";
 import EngineResultPanel from "@/components/EngineResultPanel";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const transition = { duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9] as Easing };
-
-const getSampleValue = (field: EngineField) => {
-  switch (field.type) {
-    case "email":
-      return "seer@bhriguwelt.ai";
-    case "date":
-      return "1994-08-12";
-    case "time":
-      return "07:30";
-    case "number":
-      return "6";
-    case "select":
-      return field.options?.[0] ?? "";
-    case "textarea":
-      return "Seeking clarity on upcoming milestones and growth.";
-    default:
-      return "Sample entry";
-  }
-};
+const easeOutCurve: Easing = [0.2, 0.65, 0.3, 0.9];
+const transition = { duration: 0.4, ease: easeOutCurve };
 
 type EngineFormProps = {
   fields: EngineField[];

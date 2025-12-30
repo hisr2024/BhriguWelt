@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import type { ComponentType } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, type Easing } from "framer-motion";
 import { ArrowUpRight, Info } from "lucide-react";
 import Tooltip from "@/components/Tooltip";
 
-const transition = { duration: 0.35, ease: [0.2, 0.65, 0.3, 0.9] as Easing };
+const easeOutCurve: Easing = [0.2, 0.65, 0.3, 0.9];
+const transition = { duration: 0.35, ease: easeOutCurve };
 
 type EngineCardProps = {
   engine: {

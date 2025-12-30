@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, type Easing } from "framer-motion";
 import { ArrowUpRight, Cpu, HelpCircle, Radar, Waves } from "lucide-react";
 import { engineBySlug } from "@/lib/engineConfig";
 import type { EngineResult } from "@/lib/engineConfig";
@@ -15,7 +15,7 @@ import EngineSwipeNavigator from "@/components/EngineSwipeNavigator";
 import EngineStatusPanel from "@/components/EngineStatusPanel";
 import EngineFeedbackForm from "@/components/EngineFeedbackForm";
 
-const easeOutCurve: [number, number, number, number] = [0, 0, 0.58, 1];
+const easeOutCurve: Easing = [0, 0, 0.58, 1];
 const transition = { duration: 0.45, ease: easeOutCurve };
 const staggerContainer = {
   hidden: {},
