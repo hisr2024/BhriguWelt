@@ -12,7 +12,7 @@ if [[ -f .env ]]; then
   set +a
 fi
 
-export PYTHONPATH="${PYTHONPATH:-${SCRIPT_DIR}/src}"
+export PYTHONPATH="${SCRIPT_DIR}/src${PYTHONPATH:+:${PYTHONPATH}}"
 export PORT="${PORT:-8000}"
 
 # Bootstrap the manuscript corpus to the configured path when running in
