@@ -2,13 +2,26 @@ services:
   - type: web
     name: bhriguwelt-backend
     env: python
+    plan: starter
     rootDir: backend
     pythonVersion: 3.11
-    plan: free
-    buildCommand: python -m pip install -r requirements.txt  # Changed from 'pip install'
-    startCommand: PYTHONPATH=src python -m bhriguwelt.api
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: ./start.sh
+    healthCheckPath: /health
     envVars:
       - key: PYTHONPATH
-        value: src
-    healthCheckPath: /health
-    autoDeploy: true
+        value: /opt/render/project/src/backend/src
+      - key: BHRIGUWELT_DATA_PATH
+        value: /opt/render/project/data/bhrigu_samhita_principles.yml
+      - key: BHRIGUWELT_ADMIN_TOKEN
+        generateValue: true
+      - key: BHRIGUWELT_JWT_SECRET
+        generateValue: true
+      - key: BHRIGUWELT_PROFILE_ENCRYPTION_KEY
+        value: REPLACE_WITH_BASE64_AES_KEY
+      - key: REDIS_URL
+        value: redis://:password@hostname:6379/0
+    disk:
+      name: bhriguwelt-data
+      mountPath: /opt/render/project/data
+      sizeGB: 1

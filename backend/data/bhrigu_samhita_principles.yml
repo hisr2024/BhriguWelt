@@ -1280,6 +1280,70 @@
         "co-living": 0.05,
         "impact-projects": 0.06
       }
+    },
+    {
+      "id": "MM-24",
+      "tradition": "northern",
+      "sutra_reference": "Kashi palm 102d",
+      "description": "Moon-Venus concord in trikonas with Jupiter blessing the lagna yields couples who restore learning monasteries and run digital pathshalas for diaspora students.",
+      "time_horizon": "long-term",
+      "base_weight": 0.62,
+      "pair_rules": [
+        {
+          "label": "Trikona Moon-Venus flow",
+          "primary_field": "moon_house",
+          "partner_field": "venus_house",
+          "comparator": "trine",
+          "weight": 0.55
+        },
+        {
+          "label": "Jupiter lagna guard",
+          "primary_field": "jupiter_house",
+          "partner_field": "ascendant_house",
+          "comparator": "equals",
+          "weight": 0.45
+        }
+      ],
+      "modern_modifiers": {
+        "education-platform": 0.06,
+        "open-source": 0.05,
+        "co-living": 0.04
+      }
+    },
+    {
+      "id": "MM-27",
+      "tradition": [
+        "southern-grantha",
+        "western-grantha"
+      ],
+      "sutra_reference": "Grantha scroll 27b",
+      "description": "Rahu-Mercury resonance across upachaya houses produces inventive couples who translate trade treaties and build bilingual product guilds.",
+      "time_horizon": "short-term",
+      "base_weight": 0.48,
+      "pair_rules": [
+        {
+          "label": "Rahu upachaya weave",
+          "primary_field": "rahu_house",
+          "partner_field": "rahu_house",
+          "comparator": "distance",
+          "max_difference": 3,
+          "weight": 0.5
+        },
+        {
+          "label": "Mercury commerce bridge",
+          "primary_field": "mercury_house",
+          "partner_field": "mercury_house",
+          "comparator": "distance",
+          "max_difference": 2,
+          "circular": true,
+          "weight": 0.5
+        }
+      ],
+      "modern_modifiers": {
+        "bilingual-startup": 0.07,
+        "remote-first": 0.05,
+        "trade-mediation": 0.05
+      }
     }
   ],
   "transit_rules": [
@@ -1383,6 +1447,55 @@
       },
       "influence": "Sudden detours and investigative travel; seek mentors before signing documents and use ritual pauses to avoid burnout.",
       "certainty": 0.73
+    },
+    {
+      "id": "TR-6",
+      "tradition": "northern",
+      "sutra_reference": "Bikaner gochar 33a",
+      "planet": "Jupiter",
+      "conditions": {
+        "jupiter_house": {
+          "any_of": [
+            2,
+            11
+          ]
+        },
+        "tithi_delta": {
+          "max": 4
+        },
+        "moon_element_shift": [
+          "earth",
+          "water"
+        ]
+      },
+      "influence": "Guild patronage expands and scholarship grants arrive; honor elders before accepting new councils.",
+      "certainty": 0.74
+    },
+    {
+      "id": "TR-7",
+      "tradition": [
+        "southern-grantha",
+        "universal"
+      ],
+      "sutra_reference": "Grantha palm 19b",
+      "planet": "Venus",
+      "conditions": {
+        "venus_house": {
+          "any_of": [
+            4,
+            9
+          ]
+        },
+        "saturn_retrograde": {
+          "equals": true
+        },
+        "tithi_delta": {
+          "min": 1,
+          "max": 5
+        }
+      },
+      "influence": "Restoration projects and aesthetic renovations prosper when aligned with community service and archival digitization.",
+      "certainty": 0.76
     }
   ]
 }

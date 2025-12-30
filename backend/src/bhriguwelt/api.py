@@ -15,10 +15,17 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from urllib.parse import urlparse, parse_qs
 
-from .data_loader import load_bhrigu_data, persist_bhrigu_data
+try:
+    import redis
+except ImportError:  # pragma: no cover - optional dependency
+    redis = None
+
+from .bhrigu_core import bhrigu_core
+from .data_loader import persist_bhrigu_data
 from .calendar_conversion import convert_birth_details
-from .feedback import record_feedback, quarterly_reviews, serialize_entry
+from .feedback import feedback_analytics_snapshot, record_feedback, quarterly_reviews, serialize_entry
 from .ml_service import get_ml_health, record_model_load, retrain_feedback_model
+from .ai_client import AIIntegrationError, ai_provider_metadata, chat_completion
 from .telemetry import capture_exception, init_telemetry
 from .profiles import (
     create_or_update_profile,
@@ -34,14 +41,29 @@ from .profiles import (
 from .chatbot import generate_chat_reply
 from .horoscope import (
     HoroscopeRequest,
+    build_core_wisdom_reading,
+    build_karmic_dashboard,
     build_future_report,
     build_matchmaking_report,
+    build_timeline_report,
     build_transit_report,
+    build_engine_outputs,
+    build_varshaphal_report,
     build_past_life_report,
     build_prediction,
     _snapshot_from_request,
 )
+from .implementation_core import build_implementation_core_response
+from .experience_flow import build_unified_experience_flow
+from .past_future_bridge import build_past_future_synthesis
+from .matchmaking_engine import run_matchmaking_pipeline
+from .matchmaking_diagnostics import build_matchmaking_diagnostics
 from .kundli_generator import SIGNS, generate_kundli
+from .wisdom_aggregator import aggregate_wisdom_for_bot
+from .wisdom_bot import build_wisdom_bot_response
+from .future_directives import build_future_directives_engine
+from .auth import decode_profile_token, issue_profile_token
+from .cache import RedisCache
 
 _JSON_HEADER = ("Content-Type", "application/json; charset=utf-8")
 _ADMIN_TOKEN = os.environ.get("BHRIGUWELT_ADMIN_TOKEN")
@@ -105,6 +127,58 @@ class RateLimiter:
             self._tokens.clear()
 
 
+class RedisRateLimiter:
+    """Redis-backed fixed window rate limiter for distributed throttling."""
+
+    def __init__(
+        self,
+        *,
+        redis_client: "redis.Redis[Any] | None",
+        max_requests: int = 60,
+        window_seconds: int = 60,
+        key_prefix: str = "bhriguwelt:rate",
+    ) -> None:
+        if redis_client is None:
+            raise ValueError("redis_client is required")
+        self.redis = redis_client
+        self.max_requests = max_requests
+        self.window = window_seconds
+        self.key_prefix = key_prefix
+        self._fallback = RateLimiter(max_requests=max_requests, window_seconds=window_seconds)
+
+    def allow(self, key: str, *, with_metadata: bool = False) -> bool | tuple[bool, Dict[str, int]]:
+        redis_key = f"{self.key_prefix}:{key}"
+        try:
+            pipeline = self.redis.pipeline()
+            pipeline.incr(redis_key)
+            pipeline.ttl(redis_key)
+            count, ttl = pipeline.execute()
+            if ttl == -1:
+                self.redis.expire(redis_key, self.window)
+                ttl = self.window
+            elif ttl < 0:
+                ttl = self.window
+            allowed = int(count) <= self.max_requests
+            if not with_metadata:
+                return allowed
+            remaining = max(self.max_requests - int(count), 0)
+            metadata = {"remaining": remaining, "reset_in": max(int(ttl), 0)}
+            return allowed, metadata
+        except Exception:  # pragma: no cover - fallback to in-memory when Redis is unavailable
+            return self._fallback.allow(key, with_metadata=with_metadata)
+
+
+def build_rate_limiter(*, max_requests: int = 60, window_seconds: int = 60) -> RateLimiter | RedisRateLimiter:
+    redis_url = os.environ.get("REDIS_URL")
+    if redis_url and redis is not None:
+        try:
+            client = redis.Redis.from_url(redis_url, decode_responses=False)
+            return RedisRateLimiter(redis_client=client, max_requests=max_requests, window_seconds=window_seconds)
+        except Exception:  # pragma: no cover - safe fallback when Redis isn't reachable
+            return RateLimiter(max_requests=max_requests, window_seconds=window_seconds)
+    return RateLimiter(max_requests=max_requests, window_seconds=window_seconds)
+
+
 class ResponseCache:
     """Small in-memory cache for idempotent API responses."""
 
@@ -148,6 +222,46 @@ class ResponseCache:
             return {"hits": self._hits, "misses": self._misses, "entries": len(self._store)}
 
 
+class HybridResponseCache:
+    """Cache layer that combines in-memory speed with optional Redis durability."""
+
+    def __init__(self, memory_cache: ResponseCache, redis_cache: RedisCache | None = None) -> None:
+        self._memory = memory_cache
+        self._redis = redis_cache
+
+    def get(self, key: str) -> Dict[str, Any] | None:
+        cached = self._memory.get(key)
+        if cached is not None:
+            return cached
+        if not self._redis:
+            return None
+        cached = self._redis.get(key)
+        if cached is not None:
+            self._memory.set(key, cached)
+        return cached
+
+    def set(self, key: str, payload: Dict[str, Any]) -> None:
+        self._memory.set(key, payload)
+        if self._redis:
+            self._redis.set(key, payload)
+
+    def clear(self) -> None:
+        self._memory.clear()
+        if self._redis:
+            self._redis.clear()
+
+    def stats(self) -> Dict[str, int]:
+        return self._memory.stats()
+
+
+_AI_ENHANCED_COMMANDS = {"horoscope", "past-life", "future", "matchmaking"}
+_ai_narrative_cache = HybridResponseCache(
+    ResponseCache(ttl_seconds=900, max_entries=512),
+    RedisCache(prefix="bhriguwelt:ai", ttl_seconds=900),
+)
+_ai_rate_limiter = build_rate_limiter(max_requests=30, window_seconds=60)
+
+
 class BhriguAPIHandler(BaseHTTPRequestHandler):
     """HTTP handler serving JSON endpoints for native + partner insights."""
 
@@ -156,13 +270,28 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/feedback"): "_handle_feedback",
         ("GET", "/feedback/quarterly"): "_handle_feedback_quarterly",
         ("POST", "/horoscope"): "_handle_horoscope",
+        ("POST", "/timeline"): "_handle_timeline",
         ("POST", "/past-life"): "_handle_past_life",
         ("POST", "/future"): "_handle_future",
+        ("POST", "/future-directives"): "_handle_future_directives",
+        ("POST", "/past-future"): "_handle_past_future",
         ("POST", "/matchmaking"): "_handle_matchmaking",
+        ("POST", "/matchmaking/pipeline"): "_handle_matchmaking_pipeline",
+        ("POST", "/matchmaking/diagnostics"): "_handle_matchmaking_diagnostics",
+        ("POST", "/varshaphal"): "_handle_varshaphal",
         ("POST", "/calendar"): "_handle_calendar",
         ("POST", "/transits"): "_handle_transits",
+        ("POST", "/core-wisdom"): "_handle_core_wisdom",
+        ("POST", "/core-engines"): "_handle_core_engines",
+        ("POST", "/implementation-core"): "_handle_implementation_core",
+        ("POST", "/karmic-dashboard"): "_handle_karmic_dashboard",
+        ("POST", "/experience-flow"): "_handle_experience_flow",
+        ("POST", "/wisdom-aggregator"): "_handle_wisdom_aggregator",
+        ("POST", "/wisdom-bot"): "_handle_wisdom_bot",
         ("POST", "/chat"): "_handle_chat",
         ("POST", "/profiles"): "_handle_profiles",
+        ("POST", "/profiles/register"): "_handle_profile_register",
+        ("POST", "/profiles/token"): "_handle_profile_token",
         ("POST", "/profiles/get"): "_handle_profile_get",
         ("GET", "/profiles"): "_handle_profile_list",
         ("POST", "/alerts"): "_handle_alert_create",
@@ -173,8 +302,11 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/ml/retrain"): "_handle_ml_retrain",
     }
 
-    rate_limiter = RateLimiter()
-    cache = ResponseCache()
+    rate_limiter = build_rate_limiter()
+    cache = HybridResponseCache(
+        ResponseCache(),
+        RedisCache(prefix="bhriguwelt:responses", ttl_seconds=120),
+    )
 
     def do_GET(self) -> None:  # pragma: no cover - exercised via route map
         self._dispatch("GET")
@@ -211,18 +343,27 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.NOT_FOUND, "Route not defined in Bhrigu Samhita server")
             return
         handler = getattr(self, handler_name)
-        handler()
+        try:
+            handler()
+        except ValueError as exc:
+            self.send_error(HTTPStatus.BAD_REQUEST, str(exc), explain="Request body failed validation")
+        except Exception as exc:  # pragma: no cover - defensive telemetry
+            capture_exception(exc, {"path": self.path, "method": method})
+            logger.exception("Unhandled server error", extra={"path": self.path, "method": method})
+            self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, "Unexpected server error")
 
     # Individual endpoint handlers -------------------------------------------------
     def _handle_health(self) -> None:
-        corpus = load_bhrigu_data()
+        corpus = bhrigu_core.dataset()
         principles_loaded = len(corpus.get("principles") or [])
+        ai_support = ai_provider_metadata()
         self._send_json(
             {
                 "status": "ok",
                 "source": "Bhrigu Samhita",
                 "ml": get_ml_health(),
                 "data": {"principles_loaded": principles_loaded},
+                "ai_provider_metadata": ai_support,
             }
         )
 
@@ -252,6 +393,14 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         payload = self._read_json()
         self._respond_with_command("horoscope", payload)
 
+    def _handle_timeline(self) -> None:
+        payload = self._read_json()
+        focus_areas = payload.get("focus_areas")
+        if focus_areas is not None and not isinstance(focus_areas, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "focus_areas must be a list when provided")
+            return
+        self._respond_with_command("timeline", payload)
+
     def _handle_past_life(self) -> None:
         payload = self._read_json()
         self._respond_with_command("past-life", payload)
@@ -260,9 +409,50 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         payload = self._read_json()
         self._respond_with_command("future", payload)
 
+    def _handle_future_directives(self) -> None:
+        payload = self._read_json()
+        self._respond_with_command("future-directives", payload)
+
+    def _handle_past_future(self) -> None:
+        payload = self._read_json()
+        focus_areas = payload.get("focus_areas")
+        if focus_areas is not None and not isinstance(focus_areas, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "focus_areas must be a list when provided")
+            return
+        self._respond_with_command("past-future", payload)
+
     def _handle_matchmaking(self) -> None:
         payload = self._read_json()
         self._respond_with_command("matchmaking", payload)
+
+    def _handle_matchmaking_pipeline(self) -> None:
+        payload = self._read_json()
+        language = payload.get("language") or payload.get("design_language")
+        preferences = payload.get("modern_preferences")
+        if language is not None and not isinstance(language, str):
+            self.send_error(HTTPStatus.BAD_REQUEST, "language must be a string when provided")
+            return
+        if preferences is not None and not isinstance(preferences, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "modern_preferences must be a list when provided")
+            return
+
+        self._respond_with_command("matchmaking-pipeline", payload)
+
+    def _handle_matchmaking_diagnostics(self) -> None:
+        payload = self._read_json()
+        preferences = payload.get("modern_preferences")
+        if preferences is not None and not isinstance(preferences, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "modern_preferences must be a list when provided")
+            return
+        self._respond_with_command("matchmaking-diagnostics", payload)
+
+    def _handle_varshaphal(self) -> None:
+        payload = self._read_json()
+        target_year = payload.get("target_year") or payload.get("target_period") or payload.get("period")
+        if target_year is not None and not isinstance(target_year, str):
+            self.send_error(HTTPStatus.BAD_REQUEST, "target_year must be a string when provided")
+            return
+        self._respond_with_command("varshaphal", payload)
 
     def _handle_calendar(self) -> None:
         payload = self._read_json()
@@ -271,6 +461,74 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     def _handle_transits(self) -> None:
         payload = self._read_json()
         self._respond_with_command("transits", payload)
+
+    def _handle_core_wisdom(self) -> None:
+        payload = self._read_json()
+        focus_areas = payload.get("focus_areas")
+        if focus_areas is not None and not isinstance(focus_areas, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "focus_areas must be a list when provided")
+            return
+        ai_summary = payload.get("ai_summary")
+        if ai_summary is not None and not isinstance(ai_summary, bool):
+            self.send_error(HTTPStatus.BAD_REQUEST, "ai_summary must be a boolean when provided")
+            return
+        self._respond_with_command("core-wisdom", payload)
+
+    def _handle_implementation_core(self) -> None:
+        payload = self._read_json()
+        focus_areas = payload.get("focus_areas")
+        if focus_areas is not None and not isinstance(focus_areas, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "focus_areas must be a list when provided")
+            return
+        self._respond_with_command("implementation-core", payload)
+
+    def _handle_core_engines(self) -> None:
+        payload = self._read_json()
+        self._respond_with_command("core-engines", payload)
+
+    def _handle_karmic_dashboard(self) -> None:
+        payload = self._read_json()
+        focus_areas = payload.get("focus_areas")
+        issues = payload.get("issues")
+        if focus_areas is not None and not isinstance(focus_areas, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "focus_areas must be a list when provided")
+            return
+        if issues is not None and not isinstance(issues, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "issues must be a list when provided")
+            return
+        self._respond_with_command("karmic-dashboard", payload)
+
+    def _handle_experience_flow(self) -> None:
+        payload = self._read_json()
+        modern_preferences = payload.get("modern_preferences")
+        if modern_preferences is not None and not isinstance(modern_preferences, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "modern_preferences must be a list when provided")
+            return
+        language = payload.get("language") or payload.get("design_language")
+        if language is not None and not isinstance(language, str):
+            self.send_error(HTTPStatus.BAD_REQUEST, "language must be a string when provided")
+            return
+        self._respond_with_command("experience-flow", payload)
+
+    def _handle_wisdom_aggregator(self) -> None:
+        payload = self._read_json()
+        focus_engines = payload.get("focus_engines")
+        if focus_engines is not None and not isinstance(focus_engines, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "focus_engines must be a list when provided")
+            return
+        self._respond_with_command("wisdom-aggregator", payload)
+
+    def _handle_wisdom_bot(self) -> None:
+        payload = self._read_json()
+        focus_areas = payload.get("focus_areas")
+        modern_preferences = payload.get("modern_preferences")
+        if focus_areas is not None and not isinstance(focus_areas, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "focus_areas must be a list when provided")
+            return
+        if modern_preferences is not None and not isinstance(modern_preferences, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "modern_preferences must be a list when provided")
+            return
+        self._respond_with_command("wisdom-bot", payload)
 
     def _handle_chat(self) -> None:
         payload = self._read_json()
@@ -294,7 +552,24 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         self._send_json(response)
 
     def _handle_profiles(self) -> None:
+        claims = self._require_profile_claims()
+        if not claims:
+            return
         payload = self._read_json()
+        user_id = claims.get("sub")
+        if not user_id:
+            self.send_error(HTTPStatus.FORBIDDEN, "Token subject missing for profile access")
+            return
+        payload["user_id"] = user_id
+        profile_id = payload.get("profile_id")
+        if profile_id:
+            profile = get_profile(profile_id=int(profile_id))
+            if not profile:
+                self.send_error(HTTPStatus.NOT_FOUND, "Profile not found")
+                return
+            if not self._authorize_profile_access(profile, claims):
+                self.send_error(HTTPStatus.FORBIDDEN, "Profile access forbidden")
+                return
         try:
             profile = self._resolve_profile(payload, allow_update_only=False)
         except ValueError as exc:
@@ -302,16 +577,61 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             return
         self._send_json(profile.to_dict(), status=HTTPStatus.CREATED)
 
-    def _handle_profile_get(self) -> None:
+    def _handle_profile_register(self) -> None:
+        payload = self._read_json()
+        try:
+            profile = self._resolve_profile(payload, allow_update_only=False)
+            token = issue_profile_token(user_id=str(profile.user_id), profile_id=profile.id)
+        except ValueError as exc:
+            self.send_error(HTTPStatus.BAD_REQUEST, str(exc))
+            return
+        except RuntimeError as exc:
+            self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, str(exc))
+            return
+        self._send_json({"profile": profile.to_dict(), "token": token}, status=HTTPStatus.CREATED)
+
+    def _handle_profile_token(self) -> None:
+        if not self._is_admin():
+            self.send_error(HTTPStatus.FORBIDDEN, "Admin token required for profile token issuance")
+            return
         payload = self._read_json()
         profile_id = payload.get("profile_id")
         user_id = payload.get("user_id")
+        role = payload.get("role", "user")
+        if role not in {"user", "admin"}:
+            self.send_error(HTTPStatus.BAD_REQUEST, "role must be user or admin")
+            return
+        profile = None
+        if profile_id:
+            profile = get_profile(profile_id=int(profile_id))
+        elif user_id:
+            profile = get_profile(user_id=str(user_id))
+        if not profile:
+            self.send_error(HTTPStatus.NOT_FOUND, "Profile not found")
+            return
+        try:
+            token = issue_profile_token(user_id=str(profile.user_id), profile_id=profile.id, role=str(role))
+        except RuntimeError as exc:
+            self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, str(exc))
+            return
+        self._send_json({"token": token, "profile": profile.to_dict()})
+
+    def _handle_profile_get(self) -> None:
+        claims = self._require_profile_claims()
+        if not claims:
+            return
+        payload = self._read_json()
+        profile_id = payload.get("profile_id")
+        user_id = payload.get("user_id") or payload.get("session_id") or payload.get("session_key")
         if not profile_id and not user_id:
-            self.send_error(HTTPStatus.BAD_REQUEST, "profile_id or user_id required")
+            self.send_error(HTTPStatus.BAD_REQUEST, "profile_id, user_id, or session_id required")
             return
         profile = get_profile(profile_id=int(profile_id)) if profile_id else get_profile(user_id=str(user_id))
         if not profile:
             self.send_error(HTTPStatus.NOT_FOUND, "Profile not found")
+            return
+        if not self._authorize_profile_access(profile, claims):
+            self.send_error(HTTPStatus.FORBIDDEN, "Profile access forbidden")
             return
         alerts = [alert.to_dict() for alert in upcoming_alerts(profile_id=profile.id)]
         session_id = payload.get("session_id") or "default"
@@ -319,10 +639,44 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         self._send_json({"profile": profile.to_dict(), "alerts": alerts, "session": session.to_dict() if session else None})
 
     def _handle_profile_list(self) -> None:
+        claims = self._require_profile_claims()
+        if not claims:
+            return
+        profile_id = self._query_param("profile_id")
+        user_id = self._query_param("user_id")
+        session_id = self._query_param("session_id") or self._query_param("session_key")
+        lookup_id = user_id or session_id
+
+        if profile_id or lookup_id:
+            profile = get_profile(profile_id=int(profile_id)) if profile_id else get_profile(user_id=str(lookup_id))
+            if not profile:
+                self.send_error(HTTPStatus.NOT_FOUND, "Profile not found")
+                return
+            if not self._authorize_profile_access(profile, claims):
+                self.send_error(HTTPStatus.FORBIDDEN, "Profile access forbidden")
+                return
+            alerts = [alert.to_dict() for alert in upcoming_alerts(profile_id=profile.id)]
+            session_key = session_id or "default"
+            session = fetch_session(profile.id, str(session_key))
+            self._send_json(
+                {
+                    "profile": profile.to_dict(),
+                    "alerts": alerts,
+                    "session": session.to_dict() if session else None,
+                }
+            )
+            return
+
+        if claims.get("role") != "admin":
+            self.send_error(HTTPStatus.FORBIDDEN, "Admin token required for full profile list")
+            return
         profiles = [profile.to_dict() for profile in list_profiles()]
         self._send_json({"profiles": profiles})
 
     def _handle_alert_create(self) -> None:
+        claims = self._require_profile_claims()
+        if not claims:
+            return
         payload = self._read_json()
         profile_id = payload.get("profile_id")
         user_id = payload.get("user_id")
@@ -339,20 +693,40 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         if not profile:
             self.send_error(HTTPStatus.NOT_FOUND, "Profile required to attach alerts")
             return
+        if not self._authorize_profile_access(profile, claims):
+            self.send_error(HTTPStatus.FORBIDDEN, "Profile access forbidden")
+            return
         alert = add_alert(profile_id=profile.id, label=str(label), event_time=str(event_time), notes=payload.get("notes"))
         upcoming = [item.to_dict() for item in upcoming_alerts(profile_id=profile.id)]
         self._send_json({"alert": alert.to_dict(), "upcoming": upcoming}, status=HTTPStatus.CREATED)
 
     def _handle_alerts_list(self) -> None:
+        claims = self._require_profile_claims()
+        if not claims:
+            return
         profile_id = self._query_param("profile_id")
         if profile_id:
+            profile = get_profile(profile_id=int(profile_id))
+            if not profile:
+                self.send_error(HTTPStatus.NOT_FOUND, "Profile not found")
+                return
+            if not self._authorize_profile_access(profile, claims):
+                self.send_error(HTTPStatus.FORBIDDEN, "Profile access forbidden")
+                return
             alerts = [alert.to_dict() for alert in upcoming_alerts(profile_id=int(profile_id))]
         else:
+            if claims.get("role") != "admin":
+                self.send_error(HTTPStatus.FORBIDDEN, "Admin token required for all alerts")
+                return
             alerts = alerts_summary()
         self._send_json({"alerts": alerts})
 
     def _handle_analytics(self) -> None:
+        if not self._is_admin():
+            self.send_error(HTTPStatus.FORBIDDEN, "Admin token required for analytics")
+            return
         summary = analytics_snapshot()
+        summary["feedback"] = feedback_analytics_snapshot()
         summary["feedback_quarterly"] = quarterly_reviews(limit=4)
         self._send_json(summary)
 
@@ -385,10 +759,13 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         self._send_json({"message": "Retraining complete", "metrics": result}, status=HTTPStatus.ACCEPTED)
 
     def _handle_get_manuscript(self) -> None:
-        corpus = load_bhrigu_data()
+        corpus = bhrigu_core.dataset()
         self._send_json(corpus)
 
     def _handle_update_manuscript(self) -> None:
+        if not self._is_admin():
+            self.send_error(HTTPStatus.FORBIDDEN, "Admin token required for manuscript updates")
+            return
         payload = self._read_json()
         try:
             updated = persist_bhrigu_data(payload)
@@ -397,6 +774,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             return
 
         self.cache.clear()
+        bhrigu_core.refresh(updated)
         self._send_json({"message": "Manuscript updated", "principles": len(updated.get("principles", []))})
 
     # Utility helpers --------------------------------------------------------------
@@ -418,6 +796,13 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             logger.exception("Unexpected server error handling %s", command, extra={"path": self.path})
             self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, "Unexpected server error")
             return
+        ai_payload = dict(payload)
+        ai_payload["_client_ip"] = self.client_address[0]
+        if command in _AI_ENHANCED_COMMANDS:
+            response = _enhance_with_ai(response, command, ai_payload)
+        elif command == "core-wisdom" and payload.get("ai_summary"):
+            response = _enhance_with_ai(response, command, ai_payload, summary=True)
+
         self.cache.set(cache_key, response)
         self._send_json(response, headers={"X-Cache": "MISS"})
 
@@ -427,8 +812,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         try:
             return json.loads(raw_body.decode("utf-8"))
         except json.JSONDecodeError as exc:  # pragma: no cover - invalid client input
-            self.send_error(HTTPStatus.BAD_REQUEST, f"Malformed JSON: {exc}")
-            return {}
+            raise ValueError(f"Malformed JSON: {exc}") from exc
 
     def _send_json(
         self, data: Dict[str, Any], status: HTTPStatus = HTTPStatus.OK, headers: Dict[str, str] | None = None
@@ -447,11 +831,12 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     def _add_cors_headers(self) -> None:
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Admin-Token")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Admin-Token, Authorization")
 
     def _resolve_profile(self, payload: Dict[str, Any], allow_update_only: bool = True):
         profile_payload = payload.get("profile") if isinstance(payload.get("profile"), dict) else {}
-        user_id = payload.get("user_id") or profile_payload.get("user_id")
+        session_id = payload.get("session_id") or payload.get("session_key")
+        user_id = payload.get("user_id") or profile_payload.get("user_id") or session_id
         profile_id = payload.get("profile_id") or profile_payload.get("profile_id")
 
         base_payload = {
@@ -477,7 +862,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         if allow_update_only and not any(value for key, value in base_payload.items() if key != "metadata"):
             raise ValueError("Provide profile_id, user_id, or profile fields")
 
-        base_payload.setdefault("user_id", payload.get("session_id") or payload.get("session_key") or "guest")
+        base_payload.setdefault("user_id", session_id or "guest")
         return create_or_update_profile(base_payload)
 
     def _query_param(self, key: str) -> str | None:
@@ -487,8 +872,30 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
 
     def _is_admin(self) -> bool:
         if not _ADMIN_TOKEN:
-            return False
+            return True
         return self.headers.get("X-Admin-Token") == _ADMIN_TOKEN
+
+    def _extract_bearer_token(self) -> str | None:
+        auth_header = self.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            return auth_header.replace("Bearer ", "", 1).strip()
+        return None
+
+    def _require_profile_claims(self) -> Dict[str, Any] | None:
+        token = self._extract_bearer_token()
+        if not token:
+            self.send_error(HTTPStatus.UNAUTHORIZED, "Bearer token required for profile access")
+            return None
+        try:
+            return decode_profile_token(token)
+        except ValueError as exc:
+            self.send_error(HTTPStatus.UNAUTHORIZED, str(exc))
+            return None
+
+    def _authorize_profile_access(self, profile, claims: Dict[str, Any]) -> bool:
+        if claims.get("role") == "admin":
+            return True
+        return bool(profile.user_id and claims.get("sub") == profile.user_id)
 
     def _cache_key(self, command: str, payload: Dict[str, Any]) -> str:
         serialized = json.dumps(payload or {}, sort_keys=True, ensure_ascii=False)
@@ -533,9 +940,173 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         self.wfile.write(content)
 
 
+def _extract_principle_context(limit: int = 5) -> str:
+    corpus = bhrigu_core.dataset() or {}
+    principles = corpus.get("principles") or []
+    snippets = []
+    for entry in principles[:limit]:
+        code = entry.get("id") or entry.get("code") or "Principle"
+        sutra = entry.get("sutra_reference") or entry.get("sutra") or ""
+        description = entry.get("description") or entry.get("principle") or ""
+        sources = []
+        integrity = entry.get("integrity") or {}
+        if isinstance(integrity.get("sources"), list):
+            sources = integrity.get("sources", [])
+        weights = entry.get("weights") or {}
+        weight_excerpt = ", ".join(f"{key}:{value}" for key, value in list(weights.items())[:3])
+        snippet = f"{code} ({sutra}) — {description}".strip()
+        if weight_excerpt:
+            snippet += f" | weights: {weight_excerpt}"
+        if sources:
+            snippet += f" | sources: {', '.join(sources)}"
+        snippets.append(snippet)
+
+    metadata = corpus.get("metadata", {})
+    integrity_note = metadata.get("source_note", "Bhrigu Samhita folios drive all narratives.")
+    return integrity_note + "\n" + "\n".join(snippets)
+
+
+def _enhance_with_ai(
+    response_dict: Dict[str, Any],
+    endpoint: str,
+    request_data: Dict[str, Any],
+    *,
+    summary: bool = False,
+) -> Dict[str, Any]:
+    ai_support = ai_provider_metadata()
+    response_with_ai = dict(response_dict)
+    response_with_ai["ai_provider_metadata"] = ai_support
+    if not ai_support.get("configured"):
+        return response_with_ai
+
+    cache_key = json.dumps(
+        {
+            "endpoint": endpoint,
+            "response": response_dict,
+            "request": request_data,
+            "summary": summary,
+        },
+        sort_keys=True,
+        ensure_ascii=False,
+    )
+    cached = _ai_narrative_cache.get(cache_key)
+    if cached:
+        return cached
+
+    requester = str(
+        request_data.get("user_id")
+        or request_data.get("profile_id")
+        or request_data.get("_client_ip")
+        or "guest"
+    )
+    if not _ai_rate_limiter.allow(requester):
+        logger.warning("AI narrative rate limited", extra={"endpoint": endpoint, "requester": requester})
+        return response_dict
+
+    principle_context = _extract_principle_context()
+
+    base_elements = {
+        "interpretation": response_dict.get("interpretation"),
+        "principles": response_dict.get("principles"),
+        "weights": response_dict.get("weights"),
+        "insights": response_dict.get("insights") or response_dict.get("past_life_insights"),
+        "trajectories": response_dict.get("future_trajectories")
+        or response_dict.get("trajectories")
+        or response_dict.get("progression_directives"),
+        "compatibility": response_dict.get("compatibility"),
+        "remedies": response_dict.get("remedies"),
+        "sections": response_dict.get("sections"),
+    }
+
+    seeker_name = request_data.get("name") or request_data.get("full_name") or "Seeker"
+    birth_details = {
+        "birth_date": request_data.get("birth_date"),
+        "birth_time": request_data.get("birth_time"),
+        "birth_place": request_data.get("birth_place"),
+        "timezone": request_data.get("timezone"),
+    }
+
+    if summary:
+        system_prompt = (
+            "You are a Sarvam AI interpreter for Bhrigu Samhita. Provide a concise summary grounded in the "
+            "stored folios and provided principles. Keep outputs between 120 and 180 words. Maintain a "
+            "compassionate mentor tone, avoid medical or financial directives, and remind seekers of free "
+            "will and personal agency."
+        )
+        user_prompt = (
+            "Summarize the {endpoint} response with 3-5 compact highlights. "
+            "Bhrigu dataset context: {context}. Base engine findings: {base}. "
+            "Seeker: {name}. Birth details: {birth}. Close with a free-will reminder."
+        ).format(
+            endpoint=endpoint,
+            context=principle_context,
+            base=json.dumps(base_elements, ensure_ascii=False, default=str),
+            name=seeker_name,
+            birth=json.dumps(birth_details, ensure_ascii=False, default=str),
+        )
+    else:
+        system_prompt = (
+            "You are a Sarvam AI interpreter for Bhrigu Samhita. Ground every narrative in the stored folios "
+            "and reference principle IDs (e.g., BR-1), sutra references, sources, and weights provided. Maintain "
+            "a compassionate mentor tone, avoid medical or financial directives, and remind seekers of free will "
+            "and personal agency. Keep outputs between 300 and 500 words with practical remedies and gentle "
+            "advice aligned to the manuscripts."
+        )
+
+        user_prompt = (
+            "Create an extensive guidance narrative for the {endpoint} route. Bhrigu dataset context: {context}. "
+            "Base engine findings: {base}. Seeker: {name}. Birth details: {birth}. "
+            "Explicitly weave in cited principles (e.g., BR-7 leadership mandates, BR-18 Saturn/Venus cues) and "
+            "source notes such as Bikaner folios. Expand with storyline, karmic lessons, lifestyle adjustments, "
+            "and remedies that stay within Bhrigu Samhita boundaries while echoing the provided weights and "
+            "sutras. Close with a free-will reminder."
+        ).format(
+            endpoint=endpoint,
+            context=principle_context,
+            base=json.dumps(base_elements, ensure_ascii=False, default=str),
+            name=seeker_name,
+            birth=json.dumps(birth_details, ensure_ascii=False, default=str),
+        )
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+
+    try:
+        narrative = chat_completion(messages, max_tokens=600, temperature=0.4)
+    except AIIntegrationError as exc:
+        logger.warning("AI enhancement failed", extra={"endpoint": endpoint, "error": str(exc)})
+        return response_with_ai
+
+    response_key = "ai_summary" if summary else "ai_narrative"
+    response_with_ai[response_key] = narrative
+    _ai_narrative_cache.set(cache_key, response_with_ai)
+    logger.info(
+        "AI narrative generated",
+        extra={"endpoint": endpoint, "requester": requester, "cached": False},
+    )
+    return response_with_ai
+
+
 def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     """Process a JSON payload for the supplied command and return a response."""
 
+    if command == "wisdom-aggregator":
+        focus_engines = payload.get("focus_engines")
+        if focus_engines is not None and not isinstance(focus_engines, list):
+            raise ValueError("focus_engines must be a list when provided")
+        aggregate = aggregate_wisdom_for_bot(
+            tradition=payload.get("tradition"), focus_engines=focus_engines
+        )
+        return aggregate.to_dict()
+    if command == "past-future":
+        focus_areas = payload.get("focus_areas")
+        if focus_areas is not None and not isinstance(focus_areas, list):
+            raise ValueError("focus_areas must be a list when provided")
+        request = _request_from_payload(payload)
+        synthesis = build_past_future_synthesis(request, focus_areas=focus_areas)
+        return synthesis.to_dict()
     if command == "horoscope":
         request = _request_from_payload(payload)
         report = build_prediction(request)
@@ -565,6 +1136,61 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
                 logger.warning("Unable to schedule dasha alerts", extra={"profile_id": profile_id})
 
         return response
+    if command == "core-wisdom":
+        request = _request_from_payload(payload)
+        reading = build_core_wisdom_reading(request, payload.get("focus_areas") or None)
+        response = {
+            "sections": reading.sections,
+            "rashi_chart": [_serialize_obj(item) for item in reading.charts.get("rashi_chart", [])],
+            "bhava_chart": [_serialize_obj(item) for item in reading.charts.get("bhava_chart", [])],
+            "dashas": [_serialize_obj(item) for item in reading.dashas],
+            "karmic_epoch": reading.karmic_epoch,
+            "remedies": reading.remedies,
+            "manuscript_wisdom": reading.manuscript_wisdom,
+            "sources": reading.sources,
+        }
+        _ensure_visualization_payload(response)
+        return response
+    if command == "implementation-core":
+        request = _request_from_payload(payload)
+        response = build_implementation_core_response(request, payload.get("focus_areas") or None)
+        return response.to_dict()
+    if command == "core-engines":
+        request = _request_from_payload(payload)
+        outputs = build_engine_outputs(request)
+        return {
+            "name": outputs.name,
+            "karmic_epoch": outputs.karmic_epoch,
+            "weights": outputs.weights,
+            "principles": outputs.principles,
+            "remedies": outputs.remedies,
+            "past_life_insights": [_serialize_obj(item) for item in outputs.past_life_insights],
+            "future_directives": [_serialize_obj(item) for item in outputs.future_directives],
+            "transit_directives": [_serialize_obj(item) for item in outputs.transit_directives],
+            "interpretation": outputs.interpretation,
+            "engine_analyses": [_serialize_obj(item) for item in outputs.engine_analyses],
+        }
+    if command == "karmic-dashboard":
+        request = _request_from_payload(payload)
+        dashboard = build_karmic_dashboard(
+            request,
+            focus_areas=payload.get("focus_areas") or None,
+            issues=payload.get("issues") or None,
+            current_phase=payload.get("current_phase"),
+        )
+        response = {
+            "sections": dashboard.sections,
+            "hotspots": dashboard.hotspots,
+            "gifts": dashboard.gifts,
+            "active_themes": dashboard.active_themes,
+            "assignments": dashboard.assignments,
+            "rashi_chart": [_serialize_obj(item) for item in dashboard.charts.get("rashi_chart", [])],
+            "bhava_chart": [_serialize_obj(item) for item in dashboard.charts.get("bhava_chart", [])],
+            "dashas": [_serialize_obj(item) for item in dashboard.dashas],
+            "karmic_epoch": dashboard.karmic_epoch,
+        }
+        _ensure_visualization_payload(response)
+        return response
     if command == "past-life":
         report = build_past_life_report(_request_from_payload(payload))
         return {
@@ -581,6 +1207,40 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "progression_directives": [_serialize_obj(item) for item in report.progression_directives],
             "interpretation": report.interpretation,
         }
+    if command == "future-directives":
+        report = build_future_directives_engine(_request_from_payload(payload))
+        return report
+    if command == "varshaphal":
+        request = _request_from_payload(payload)
+        target_year = str(payload.get("target_year") or payload.get("target_period") or payload.get("period") or "next 12 months")
+        main_focus = payload.get("main_focus") or payload.get("focus") or ""
+        focus_areas = payload.get("focus_areas")
+        if isinstance(focus_areas, list) and focus_areas and not main_focus:
+            main_focus = ", ".join(str(area) for area in focus_areas)
+        report = build_varshaphal_report(request, target_year=target_year, main_focus=main_focus or None)
+        return {
+            "name": report.name,
+            "target_year": report.target_year,
+            "year_theme": report.year_theme,
+            "year_mantra": report.year_mantra,
+            "sections": report.sections,
+            "segments": [_serialize_obj(segment) for segment in report.segments],
+            "gateways": report.gateways,
+            "focus_areas": report.focus_areas,
+            "practices": report.practices,
+            "intentions": report.intentions,
+            "citations": report.citations,
+        }
+    if command == "timeline":
+        request = _request_from_payload(payload)
+        report = build_timeline_report(request, payload.get("focus_areas") or None)
+        return {
+            "name": report.name,
+            "summary": report.summary,
+            "disclaimer": report.disclaimer,
+            "phases": [_serialize_obj(phase) for phase in report.phases],
+            "citations": report.citations,
+        }
     if command == "matchmaking":
         primary = _request_from_payload(payload.get("primary", {}))
         partner = _request_from_payload(payload.get("partner", {}))
@@ -590,6 +1250,7 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "primary_name": report.primary_name,
             "partner_name": report.partner_name,
+            "modern_preferences": modern_preferences,
             "compatibility": {
                 "compatibility_index": compatibility.compatibility_index,
                 "long_term_index": compatibility.long_term_index,
@@ -601,7 +1262,79 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
                 "shared_life_paths": [_serialize_obj(entry) for entry in compatibility.shared_life_paths],
             },
             "interpretation": report.interpretation,
+            "sections": report.sections,
         }
+    if command == "matchmaking-diagnostics":
+        primary_payload = payload.get("primary")
+        partner_payload = payload.get("partner")
+        if not isinstance(primary_payload, dict) or not isinstance(partner_payload, dict):
+            raise ValueError("matchmaking-diagnostics requires 'primary' and 'partner' chart payloads")
+        modern_preferences = payload.get("modern_preferences") or []
+        if not isinstance(modern_preferences, list):
+            raise ValueError("modern_preferences must be a list when provided")
+        use_bayesian_scoring = bool(payload.get("use_bayesian_scoring") or payload.get("bayesian_scoring"))
+        return build_matchmaking_diagnostics(
+            _request_from_payload(primary_payload),
+            _request_from_payload(partner_payload),
+            modern_preferences,
+            use_bayesian_scoring=use_bayesian_scoring,
+        )
+    if command == "matchmaking-pipeline":
+        primary = _request_from_payload(payload.get("primary", {}))
+        partner = _request_from_payload(payload.get("partner", {}))
+        modern_preferences = payload.get("modern_preferences") or []
+        language = payload.get("language") or payload.get("design_language") or "en"
+        return run_matchmaking_pipeline(
+            primary,
+            partner,
+            modern_preferences,
+            language=str(language),
+        )
+    if command == "experience-flow":
+        primary_payload = payload.get("primary") if isinstance(payload.get("primary"), dict) else payload
+        primary = _request_from_payload(primary_payload)
+        partner_payload = payload.get("partner") if isinstance(payload.get("partner"), dict) else None
+        partner = _request_from_payload(partner_payload) if partner_payload else None
+        modern_preferences = payload.get("modern_preferences") or []
+        language = payload.get("language") or payload.get("design_language") or "en"
+        tone = payload.get("tone") or "neutral"
+        cultural_sensitivity = payload.get("cultural_sensitivity") or "balanced"
+        if tone is not None and not isinstance(tone, str):
+            self.send_error(HTTPStatus.BAD_REQUEST, "tone must be a string when provided")
+        if cultural_sensitivity is not None and not isinstance(cultural_sensitivity, str):
+            self.send_error(
+                HTTPStatus.BAD_REQUEST, "cultural_sensitivity must be a string when provided"
+            )
+        experience = build_unified_experience_flow(
+            primary,
+            partner_request=partner,
+            modern_preferences=modern_preferences,
+            language=str(language),
+            tone=str(tone),
+            cultural_sensitivity=str(cultural_sensitivity),
+        )
+        return experience.to_dict()
+    if command == "wisdom-bot":
+        if not payload.get("query") and not payload.get("message"):
+            raise ValueError("query is required for wisdom bot")
+        if payload.get("focus_areas") is not None and not isinstance(payload.get("focus_areas"), list):
+            raise ValueError("focus_areas must be a list when provided")
+        if payload.get("modern_preferences") is not None and not isinstance(payload.get("modern_preferences"), list):
+            raise ValueError("modern_preferences must be a list when provided")
+
+        partner_payload = payload.get("partner")
+        partner_request = _request_from_payload(partner_payload) if isinstance(partner_payload, dict) else None
+
+        response = build_wisdom_bot_response(
+            primary_request=_request_from_payload(payload),
+            partner_request=partner_request,
+            focus_areas=payload.get("focus_areas"),
+            modern_preferences=payload.get("modern_preferences"),
+            language=str(payload.get("language") or payload.get("design_language") or "en"),
+            query=str(payload.get("query") or payload.get("message")),
+        ).to_dict()
+        _ensure_visualization_payload(response.get("core_wisdom", {}))
+        return response
     if command == "calendar":
         try:
             context = convert_birth_details(
@@ -616,14 +1349,17 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     if command == "transits":
         try:
             request = _request_from_payload(payload["natal"])
-            transit_payload = payload["transit"]
         except KeyError as exc:
             missing = exc.args[0]
             raise ValueError(f"Missing required field: {missing}") from exc
+        transit_payload = payload.get("transit")
         report = build_transit_report(request, transit_payload)
         return {
             "name": report.name,
             "directives": [_serialize_obj(item) for item in report.directives],
+            "symbolic_directives": report.symbolic_directives,
+            "remedies": report.remedies,
+            "citations": report.citations,
             "interpretation": report.interpretation,
         }
     raise ValueError(f"Unsupported command: {command}")
@@ -693,6 +1429,8 @@ def _serialize_horoscope_report(report) -> Dict[str, Any]:
         "rashi_chart": [_serialize_obj(item) for item in report.rashi_chart],
         "bhava_chart": [_serialize_obj(item) for item in report.bhava_chart],
         "dashas": [_serialize_obj(item) for item in report.dashas],
+        "runtime_rules": getattr(report, "runtime_rules", {}),
+        "ephemeris_source": getattr(report, "ephemeris_source", ""),
     }
 
 
@@ -762,8 +1500,9 @@ def _ensure_visualization_payload(response: Dict[str, Any]) -> None:
 def serve(host: str = "0.0.0.0", port: int = 8000) -> None:
     """Run the HTTP server until interrupted."""
 
-    with ThreadingHTTPServer((host, port), BhriguAPIHandler) as server:
-        logger.info("BhriguWelt API running on http://%s:%s", host, port)
+    bound_port = int(os.environ.get("PORT", port))
+    with ThreadingHTTPServer((host, bound_port), BhriguAPIHandler) as server:
+        logger.info("BhriguWelt API running on http://%s:%s", host, bound_port)
         try:  # pragma: no cover - manual shutdown
             server.serve_forever()
         except KeyboardInterrupt:  # pragma: no cover - manual shutdown
@@ -774,5 +1513,5 @@ __all__ = ["BhriguAPIHandler", "handle_command", "serve"]
 
 
 if __name__ == "__main__":  # pragma: no cover - manual execution
-    env_port = os.environ.get("RAILWAY_TCP_PORT") or os.environ.get("PORT", "8000")
-    serve(host=os.environ.get("HOST", "0.0.0.0"), port=int(env_port))
+    env_port = int(os.environ.get("PORT", 8000))
+    serve(host=os.environ.get("HOST", "0.0.0.0"), port=env_port)

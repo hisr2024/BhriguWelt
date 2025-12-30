@@ -1,8 +1,8 @@
 """Simple backup helper for the Bhrigu Samhita dataset.
 
 Creates a timestamped copy of the primary data file under ``backend/backups``.
-Designed to run without third-party dependencies so Railway/Render/Nixpacks
-pipelines can use it as-is.
+Designed to run without third-party dependencies so Railway/Nixpacks pipelines
+can use it as-is.
 """
 
 from __future__ import annotations

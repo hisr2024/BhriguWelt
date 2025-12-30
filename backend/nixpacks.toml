@@ -2,7 +2,7 @@ providers = ["python"]
 
 [variables]
 PYTHON_VERSION = "3.11"
-PYTHONPATH = "src"
+PYTHONPATH = "/app/src"
 
 [phases.setup]
 nixPkgs = ["python311", "python311Packages.pip"]
@@ -14,4 +14,4 @@ cmds = [
 ]
 
 [start]
-cmd = "./start.sh"
+cmd = "bash /app/start.sh"

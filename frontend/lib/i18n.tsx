@@ -18,21 +18,23 @@ const I18nContext = createContext<I18nContextValue>({
   availableLanguages: LANGUAGE_OPTIONS,
 });
 
-function resolveLanguage(preferred?: string): Language {
+function resolveLanguage(preferred?: string, allowNavigator = true): Language {
   const stored = preferred?.toLowerCase();
   const validCodes = new Set(LANGUAGE_OPTIONS.map((option) => option.code));
   if (stored && validCodes.has(stored as Language)) {
     return stored as Language;
   }
 
-  const browserLanguage = typeof navigator !== "undefined" ? navigator.language?.slice(0, 2) : undefined;
-  if (browserLanguage && validCodes.has(browserLanguage as Language)) {
-    return browserLanguage as Language;
-  }
-
   const defaultEnv = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE?.toLowerCase();
   if (defaultEnv && validCodes.has(defaultEnv as Language)) {
     return defaultEnv as Language;
+  }
+
+  if (allowNavigator && typeof navigator !== "undefined") {
+    const browserLanguage = navigator.language?.slice(0, 2);
+    if (browserLanguage && validCodes.has(browserLanguage as Language)) {
+      return browserLanguage as Language;
+    }
   }
 
   return "en";
@@ -52,13 +54,13 @@ function translate(lang: Language, key: string, fallback?: string): string {
 }
 
 export function TranslationProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLang] = useState<Language>(() => resolveLanguage(undefined));
+  const [lang, setLang] = useState<Language>(() => resolveLanguage(undefined, false));
 
   useEffect(() => {
     const stored = typeof window !== "undefined" ? localStorage.getItem("bhriguwelt.lang") : null;
-    if (stored) {
-      setLang(resolveLanguage(stored));
-    }
+    const preferred = stored || (typeof navigator !== "undefined" ? navigator.language?.slice(0, 2) : undefined);
+    const resolved = resolveLanguage(preferred);
+    setLang((current) => (current === resolved ? current : resolved));
   }, []);
 
   const setLanguage = (value: Language) => {
