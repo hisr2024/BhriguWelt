@@ -76,9 +76,13 @@ export default function EnginePage({ slug }: EnginePageProps) {
                   <h1 className="text-3xl font-semibold text-white sm:text-4xl">{config.description}</h1>
                   <p className="max-w-2xl text-sm text-slate-300">{config.cardDescription}</p>
                 </div>
-                <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${config.accent}`}>
+                <motion.div
+                  className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${config.accent}`}
+                  animate={{ y: [0, -5, 0] }}
+                  transition={{ duration: 4.5, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
+                >
                   <Icon className="h-6 w-6 text-white" />
-                </div>
+                </motion.div>
               </div>
               <div className="flex flex-wrap gap-3">
                 {config.features.map((feature) => (

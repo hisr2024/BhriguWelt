@@ -11,6 +11,25 @@ import EngineResultPanel from "@/components/EngineResultPanel";
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const transition = { duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9] };
 
+const getSampleValue = (field: EngineField) => {
+  switch (field.type) {
+    case "email":
+      return "seer@bhriguwelt.ai";
+    case "date":
+      return "1994-08-12";
+    case "time":
+      return "07:30";
+    case "number":
+      return "6";
+    case "select":
+      return field.options?.[0] ?? "";
+    case "textarea":
+      return "Seeking clarity on upcoming milestones and growth.";
+    default:
+      return "Sample entry";
+  }
+};
+
 type EngineFormProps = {
   fields: EngineField[];
   submitLabel?: string;
@@ -82,11 +101,24 @@ export default function EngineForm({
   const visibleFields = steps[activeStep] ?? fields;
   const isLastStep = activeStep === steps.length - 1;
   const requiredFields = useMemo(() => fields.filter((field) => field.required), [fields]);
+  const requiredCount = requiredFields.length;
+  const totalFields = fields.length;
   const completion = useMemo(() => {
     if (requiredFields.length === 0) return 0;
     const completed = requiredFields.filter((field) => values[field.name]?.trim()).length;
     return Math.round((completed / requiredFields.length) * 100);
   }, [requiredFields, values]);
+  const sampleValues = useMemo(
+    () =>
+      fields.reduce(
+        (acc, field) => ({
+          ...acc,
+          [field.name]: getSampleValue(field),
+        }),
+        {} as Record<string, string>,
+      ),
+    [fields],
+  );
 
   const validate = (fieldsToValidate: EngineField[] = fields) => {
     const nextErrors: Record<string, string> = { ...errors };
@@ -168,6 +200,12 @@ export default function EngineForm({
     setActiveStep(0);
   };
 
+  const handleFillSample = () => {
+    setValues(sampleValues);
+    setErrors({});
+    setActiveStep(0);
+  };
+
   return (
     <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
       <form className="space-y-6" onSubmit={handleSubmit} noValidate aria-busy={loading}>
@@ -208,6 +246,14 @@ export default function EngineForm({
               transition={transition}
             />
           </div>
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-300">
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+              {requiredCount} required · {totalFields} fields
+            </span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+              Avg. completion {Math.max(2, Math.ceil(totalFields / 2))} min
+            </span>
+          </div>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
@@ -222,6 +268,11 @@ export default function EngineForm({
               <label key={field.name} className="flex flex-col gap-2 text-sm text-slate-300" htmlFor={fieldId}>
                 <span className="flex items-center gap-2 font-medium text-slate-200">
                   {field.label}
+                  {field.required ? (
+                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[0.6rem] uppercase tracking-[0.2em] text-slate-400">
+                      Required
+                    </span>
+                  ) : null}
                   {field.helper ? <Tooltip content={field.helper} /> : null}
                 </span>
                 {field.type === "textarea" ? (
@@ -296,6 +347,8 @@ export default function EngineForm({
                   <span id={`${fieldId}-error`} className="text-xs text-red-400">
                     {errors[field.name]}
                   </span>
+                ) : field.helper ? (
+                  <span className="text-xs text-slate-500">{field.helper}</span>
                 ) : null}
               </label>
             );
@@ -319,6 +372,13 @@ export default function EngineForm({
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {loading ? "Processing" : isLastStep ? submitLabel : "Continue"}
+          </button>
+          <button
+            type="button"
+            onClick={handleFillSample}
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:border-white/30"
+          >
+            Autofill sample
           </button>
           <button
             type="button"
@@ -362,11 +422,12 @@ export default function EngineForm({
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            className="flex h-full flex-col items-start justify-center rounded-3xl border border-dashed border-white/20 bg-white/5 p-6 text-sm text-slate-400"
+            className="result-frame flex h-full flex-col items-start justify-center gap-3 border border-dashed border-white/20 bg-white/5 p-6 text-sm text-slate-400"
           >
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Results dock</p>
             <p className="text-base font-semibold text-slate-200">Results will appear here.</p>
-            <p className="mt-2 text-slate-400">Submit the form to view a highlighted report with interactive orbit cards.</p>
-            <div className={`mt-6 h-1.5 w-full rounded-full bg-gradient-to-r ${accent} opacity-60`} />
+            <p className="text-slate-400">Submit the form to view a highlighted report with interactive orbit cards.</p>
+            <div className={`mt-2 h-1.5 w-full rounded-full bg-gradient-to-r ${accent} opacity-60`} />
           </motion.aside>
         )}
       </AnimatePresence>

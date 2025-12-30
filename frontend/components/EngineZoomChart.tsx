@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { ZoomIn } from "lucide-react";
 
 const baseSignals = [65, 78, 52, 88, 71, 94, 60];
@@ -41,9 +42,11 @@ export default function EngineZoomChart({ accent }: EngineZoomChartProps) {
         {signals.map((value, index) => (
           <div key={`signal-${index}`} className="flex flex-col items-center gap-2">
             <div className="h-24 w-full rounded-full bg-white/5">
-              <div
+              <motion.div
                 className={`w-full rounded-full bg-gradient-to-t ${accent}`}
-                style={{ height: `${value}%` }}
+                initial={{ height: 0 }}
+                animate={{ height: `${value}%` }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
               />
             </div>
             <span className="text-[0.65rem] text-slate-400">S{index + 1}</span>
