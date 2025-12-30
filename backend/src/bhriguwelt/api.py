@@ -244,7 +244,14 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.NOT_FOUND, "Route not defined in Bhrigu Samhita server")
             return
         handler = getattr(self, handler_name)
-        handler()
+        try:
+            handler()
+        except ValueError as exc:
+            self.send_error(HTTPStatus.BAD_REQUEST, str(exc), explain="Request body failed validation")
+        except Exception as exc:  # pragma: no cover - defensive telemetry
+            capture_exception(exc, {"path": self.path, "method": method})
+            logger.exception("Unhandled server error", extra={"path": self.path, "method": method})
+            self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, "Unexpected server error")
 
     # Individual endpoint handlers -------------------------------------------------
     def _handle_health(self) -> None:
@@ -611,8 +618,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         try:
             return json.loads(raw_body.decode("utf-8"))
         except json.JSONDecodeError as exc:  # pragma: no cover - invalid client input
-            self.send_error(HTTPStatus.BAD_REQUEST, f"Malformed JSON: {exc}")
-            return {}
+            raise ValueError(f"Malformed JSON: {exc}") from exc
 
     def _send_json(
         self, data: Dict[str, Any], status: HTTPStatus = HTTPStatus.OK, headers: Dict[str, str] | None = None
