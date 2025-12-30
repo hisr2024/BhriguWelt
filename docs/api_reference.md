@@ -3,7 +3,9 @@
 Base URL defaults to `http://localhost:8000` when running `PYTHONPATH="$(pwd)/src" python -m bhriguwelt.api`.
 
 For machine-readable contracts, see `openapi.yaml` in this directory; it mirrors
-the validation rules and response shapes enforced by the CLI/API handlers.
+the validation rules and response shapes enforced by the CLI/API handlers. For
+an interactive playground powered by Swagger UI, jump to
+[`docs/api_playground.md`](./api_playground.md).
 
 ## Health
 - `GET /health` → `{ "status": "ok", "source": "Bhrigu Samhita" }`
