@@ -342,44 +342,51 @@ def create_app() -> web.Application:
             profile = await resolve_profile(payload, allow_update_only=False)
         except ValueError as exc:
             return _json_response({"message": str(exc)}, status=HTTPStatus.BAD_REQUEST)
-        reply = await asyncio.to_thread(generate_chat_reply, profile=profile, session_key=str(payload.get("session_id") or payload.get("session_key") or "default"), message=str(message))
+        session_key = payload.get("session_id") or payload.get("session_key") or "default"
+        reply = await asyncio.to_thread(
+            generate_chat_reply,
+            profile=profile,
+            session_key=str(session_key),
+            message=str(message),
+        )
         response = {"profile_id": profile.id, "user_id": profile.user_id, **reply}
         return _json_response(response)
 
-    async def profiles_register(request: web.Request) -> web.Response:
-        await guard_rate_limit(request)
-        payload = await request.json()
-        try:
-            profile = await resolve_profile(payload, allow_update_only=False)
-            token = await asyncio.to_thread(issue_profile_token, user_id=str(profile.user_id), profile_id=profile.id)
-        except ValueError as exc:
-            return _json_response({"message": str(exc)}, status=HTTPStatus.BAD_REQUEST)
-        except RuntimeError as exc:
-            return _json_response({"message": str(exc)}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
-        return _json_response({"profile": profile.to_dict(), "token": token}, status=HTTPStatus.CREATED)
+    async def chat_socket(request: web.Request) -> web.StreamResponse:
+        ws = web.WebSocketResponse(heartbeat=30.0)
+        await ws.prepare(request)
 
-    async def profiles_token(request: web.Request) -> web.Response:
-        await guard_rate_limit(request)
-        if not _ADMIN_TOKEN or request.headers.get("X-Admin-Token") != _ADMIN_TOKEN:
-            return _json_response({"message": "Admin token required for profile token issuance"}, status=HTTPStatus.FORBIDDEN)
-        payload = await request.json()
-        profile_id = payload.get("profile_id")
-        user_id = payload.get("user_id")
-        role = payload.get("role", "user")
-        if role not in {"user", "admin"}:
-            return _json_response({"message": "role must be user or admin"}, status=HTTPStatus.BAD_REQUEST)
-        profile = None
-        if profile_id:
-            profile = await asyncio.to_thread(get_profile, profile_id=int(profile_id))
-        elif user_id:
-            profile = await asyncio.to_thread(get_profile, user_id=str(user_id))
-        if not profile:
-            return _json_response({"message": "Profile not found"}, status=HTTPStatus.NOT_FOUND)
-        try:
-            token = await asyncio.to_thread(issue_profile_token, user_id=str(profile.user_id), profile_id=profile.id, role=str(role))
-        except RuntimeError as exc:
-            return _json_response({"message": str(exc)}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
-        return _json_response({"token": token, "profile": profile.to_dict()})
+        async for msg in ws:
+            if msg.type == web.WSMsgType.TEXT:
+                try:
+                    payload = json.loads(msg.data or "{}")
+                except json.JSONDecodeError:
+                    await ws.send_json({"error": "Invalid JSON payload"})
+                    continue
+
+                message = payload.get("message") or payload.get("query")
+                if not message:
+                    await ws.send_json({"error": "message is required for chat"})
+                    continue
+
+                try:
+                    profile = await resolve_profile(payload, allow_update_only=False)
+                except ValueError as exc:
+                    await ws.send_json({"error": str(exc)})
+                    continue
+
+                session_key = payload.get("session_id") or payload.get("session_key") or "default"
+                reply = await asyncio.to_thread(
+                    generate_chat_reply,
+                    profile=profile,
+                    session_key=str(session_key),
+                    message=str(message),
+                )
+                await ws.send_json({"profile_id": profile.id, "user_id": profile.user_id, **reply})
+            elif msg.type == web.WSMsgType.ERROR:
+                break
+
+        return ws
 
     async def profiles_create(request: web.Request) -> web.Response:
         await guard_rate_limit(request)
@@ -560,6 +567,7 @@ def create_app() -> web.Application:
     app.router.add_route("POST", "/core-engines", core_engines)
     app.router.add_route("POST", "/wisdom-aggregator", wisdom_aggregator)
     app.router.add_route("POST", "/chat", chat)
+    app.router.add_route("GET", "/ws/chat", chat_socket)
     app.router.add_route("POST", "/profiles", profiles_create)
     app.router.add_route("POST", "/profiles/register", profiles_register)
     app.router.add_route("POST", "/profiles/token", profiles_token)

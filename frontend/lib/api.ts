@@ -717,6 +717,7 @@ export async function submitAccuracyFeedback(feedback: FeedbackRequest) {
       rating: feedback.rating,
       seeker_name: feedback.seekerName,
       notes: feedback.notes?.trim(),
+      inputs: feedback.inputs,
     },
   });
 }

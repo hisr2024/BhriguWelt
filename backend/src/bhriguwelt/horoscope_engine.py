@@ -18,6 +18,7 @@ from .calculations import (
 )
 from .config import load_runtime_config
 from .data_loader import load_bhrigu_data
+from .remedy_personalization import personalize_remedies_with_feedback
 
 SUPPORTED_MOON_ELEMENTS = {"water", "fire", "air", "earth", "ether"}
 SUPPORTED_HOUSE_KEYS = {
@@ -305,7 +306,8 @@ def _personalize_remedies(
         scored.append(enriched)
     if not scored:
         return [dict(remedy) for remedy in remedies]
-    return sorted(scored, key=lambda entry: (-entry.get("relevance", 0.0), entry.get("id", "")))
+    ranked = sorted(scored, key=lambda entry: (-entry.get("relevance", 0.0), entry.get("id", "")))
+    return personalize_remedies_with_feedback(ranked, engine="horoscope", weights=weights)
 
 
 def _rank_principles(principles: Iterable[Mapping[str, object]], weights: Dict[str, float]) -> List[Dict[str, object]]:

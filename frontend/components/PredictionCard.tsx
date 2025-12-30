@@ -41,7 +41,7 @@ type HoroscopePayload = {
   interpretation_hi?: string;
   weights?: Record<string, number>;
   principles?: { sutra_reference?: string; description?: string }[];
-  remedies?: { sutra_reference?: string; description?: string }[];
+  remedies?: { id?: string; sutra_reference?: string; description?: string; relevance?: number }[];
   past_life_insights?: { narrative?: string; sutra_reference?: string }[];
   future_trajectories?: { focus?: string; window?: string }[];
   rashi_chart?: ChartHouse[];
@@ -101,6 +101,16 @@ const KundliCharts = dynamic(() => import("./KundliCharts"), {
     <div className="panel softly prediction-card__chart-loading" role="status" aria-live="polite">
       <p className="eyebrow">Chart render</p>
       <p className="muted">Orbiting wheels will appear as soon as the houses load.</p>
+    </div>
+  ),
+});
+
+const WebXRChart = dynamic(() => import("./WebXRChart"), {
+  ssr: false,
+  loading: () => (
+    <div className="panel softly prediction-card__chart-loading" role="status" aria-live="polite">
+      <p className="eyebrow">WebXR render</p>
+      <p className="muted">3D chart booting up for the immersive view.</p>
     </div>
   ),
 });
@@ -513,6 +523,16 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
   const { t } = useI18n();
   const sections = useMemo(() => buildSections(engine, payload), [engine, payload]);
   const horoscopePayload = engine === "horoscope" && typeof payload === "object" ? (payload as HoroscopePayload) : null;
+  const feedbackContext = useMemo(() => {
+    if (!payload || typeof payload !== "object") return undefined;
+    const typed = payload as HoroscopePayload;
+    const remedyIds = (typed.remedies || []).map((remedy) => remedy.id).filter(Boolean) as string[];
+    if (!typed.weights && !remedyIds.length) return undefined;
+    return {
+      weights: typed.weights,
+      remedyIds,
+    };
+  }, [payload]);
   const [animationsEnabled, setAnimationsEnabled] = useState(false);
   const [flipActive, setFlipActive] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -669,13 +689,16 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
         </div>
         <div className="insight-grid">{sections.map(renderSection)}</div>
         {horoscopePayload && (
-          <KundliCharts
-            rashiChart={horoscopePayload.rashi_chart?.length ? horoscopePayload.rashi_chart : fallbackCharts.rashi}
-            bhavaChart={horoscopePayload.bhava_chart?.length ? horoscopePayload.bhava_chart : fallbackCharts.bhava}
-            dashas={horoscopePayload.dashas}
-          />
+          <>
+            <KundliCharts
+              rashiChart={horoscopePayload.rashi_chart?.length ? horoscopePayload.rashi_chart : fallbackCharts.rashi}
+              bhavaChart={horoscopePayload.bhava_chart?.length ? horoscopePayload.bhava_chart : fallbackCharts.bhava}
+              dashas={horoscopePayload.dashas}
+            />
+            <WebXRChart rashiChart={horoscopePayload.rashi_chart ?? fallbackCharts.rashi} />
+          </>
         )}
-        {payload && <FeedbackPrompt engine={engine} seekerName={seekerName} />}
+        {payload && <FeedbackPrompt engine={engine} seekerName={seekerName} context={feedbackContext} />}
       </div>
     </section>
   );

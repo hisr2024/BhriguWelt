@@ -1,10 +1,11 @@
 'use client';
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
 import { ChatContext } from "@/types/chat";
 import { NatalChart } from "@/types/natal";
 import { useImmersiveFeedback } from "@/lib/immersive";
+import { resolveChatSocketUrl } from "@/lib/chatSocket";
 import { getProfileIdentifiers, persistProfileIdentifiers } from "@/lib/profileStorage";
 
 type Message = {
@@ -57,14 +58,18 @@ export default function BhriguChat({ chart }: Props) {
   const [userId, setUserId] = useState<string | undefined>();
   const [sessionKey, setSessionKey] = useState<string | undefined>();
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [socketStatus, setSocketStatus] = useState<"idle" | "connecting" | "connected" | "closed" | "error">("idle");
   const [isDockOpen, setIsDockOpen] = useState(true);
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
   const recognitionRef = useRef<any | null>(null);
   const speechSeedRef = useRef<string>("");
+  const socketRef = useRef<WebSocket | null>(null);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasHydratedRef = useRef(false);
   const { triggerSubmitFeedback } = useImmersiveFeedback();
+  const socketUrl = resolveChatSocketUrl();
 
   useEffect(() => {
     if (chart) {
@@ -220,6 +225,100 @@ export default function BhriguChat({ chart }: Props) {
     };
   }, []);
 
+  const applyChatResponse = useCallback(
+    (data: ChatResponse) => {
+      const reply =
+        data.reply?.trim() ||
+        "I’m here whenever you want to reflect on your Bhrigu chart or share more context.";
+
+      setMessages((prev) => [...prev, { role: "bot", content: reply }]);
+
+      if (data.chart) {
+        setCurrentChart(data.chart);
+      }
+
+      if (data.context || data.chart) {
+        setContext((prev) => {
+          const merged = { ...(prev ?? {}), ...(data.context ?? {}) };
+          const resolvedChart = data.chart || merged.lastChart;
+          if (resolvedChart) {
+            merged.lastChart = resolvedChart;
+          }
+          return Object.keys(merged).length ? merged : undefined;
+        });
+      }
+
+      if (data.profile_id || data.user_id || data.session_key) {
+        const nextSessionKey = data.session_key || sessionKey || getProfileIdentifiers().sessionKey;
+        persistProfileIdentifiers({
+          profileId: data.profile_id,
+          userId: data.user_id,
+          sessionKey: nextSessionKey,
+        });
+        if (data.profile_id) setProfileId(data.profile_id);
+        if (data.user_id) setUserId(data.user_id);
+        if (data.session_key) setSessionKey(data.session_key);
+      }
+
+      setIsSending(false);
+    },
+    [sessionKey],
+  );
+
+  useEffect(() => {
+    if (!socketUrl) return;
+
+    let shouldReconnect = true;
+
+    const connect = () => {
+      setSocketStatus("connecting");
+      const socket = new WebSocket(socketUrl);
+      socketRef.current = socket;
+
+      socket.onopen = () => {
+        setSocketStatus("connected");
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data) as ChatResponse & { error?: string };
+          if (payload.error) {
+            setStatusMessage(payload.error);
+            setIsSending(false);
+            return;
+          }
+          applyChatResponse(payload);
+        } catch (error) {
+          console.warn("Unable to parse chat socket payload", error);
+          setStatusMessage("Live chat update was malformed.");
+          setIsSending(false);
+        }
+      };
+
+      socket.onerror = () => {
+        setSocketStatus("error");
+      };
+
+      socket.onclose = () => {
+        setSocketStatus("closed");
+        if (shouldReconnect) {
+          reconnectTimerRef.current = setTimeout(connect, 3500);
+        }
+      };
+    };
+
+    connect();
+
+    return () => {
+      shouldReconnect = false;
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+      }
+      socketRef.current?.close();
+      socketRef.current = null;
+    };
+  }, [applyChatResponse, socketUrl]);
+
   const handleSend = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmed = input.trim();
@@ -240,6 +339,21 @@ export default function BhriguChat({ chart }: Props) {
     setStatusMessage(null);
 
     try {
+      const socket = socketRef.current;
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(
+          JSON.stringify({
+            message: trimmed,
+            chart: currentChart,
+            context,
+            user_id: userId,
+            profile_id: profileId,
+            session_key: activeSessionKey,
+          }),
+        );
+        return;
+      }
+
       const response = await fetch("/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -258,36 +372,7 @@ export default function BhriguChat({ chart }: Props) {
       }
 
       const data: ChatResponse = await response.json();
-      const reply = data.reply?.trim() ||
-        "I’m here whenever you want to reflect on your Bhrigu chart or share more context.";
-
-      setMessages((prev) => [...prev, { role: "bot", content: reply }]);
-
-      const nextChart = data.chart || currentChart;
-      const nextContext = data.context || context;
-      const mergedContext =
-        nextContext || context
-          ? { ...(context ?? {}), ...(nextContext ?? {}) }
-          : undefined;
-
-      if (nextChart) {
-        setCurrentChart(nextChart);
-      }
-
-      if (mergedContext || nextChart) {
-        setContext({ ...(mergedContext || {}), lastChart: nextChart ?? mergedContext?.lastChart });
-      }
-
-      if (data.profile_id || data.user_id || data.session_key) {
-        persistProfileIdentifiers({
-          profileId: data.profile_id,
-          userId: data.user_id,
-          sessionKey: data.session_key || activeSessionKey,
-        });
-        if (data.profile_id) setProfileId(data.profile_id);
-        if (data.user_id) setUserId(data.user_id);
-        if (data.session_key) setSessionKey(data.session_key);
-      }
+      applyChatResponse(data);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -298,7 +383,9 @@ export default function BhriguChat({ chart }: Props) {
       ]);
       setStatusMessage("Retry once your connection stabilizes or the backend wakes up.");
     } finally {
-      setIsSending(false);
+      if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+        setIsSending(false);
+      }
     }
   };
 
@@ -356,6 +443,12 @@ export default function BhriguChat({ chart }: Props) {
                 Share a question or reflection. I’ll weave your message with Bhrigu-inspired calm.
               </p>
             </div>
+            <span
+              className={`bhrigu-chat__status bhrigu-chat__status--${socketStatus}`.trim()}
+              aria-live="polite"
+            >
+              {socketStatus === "connected" ? "Live" : "Fallback"}
+            </span>
             <button type="button" className="bhrigu-chat__collapse" onClick={handleDockToggle}>
               Collapse
             </button>

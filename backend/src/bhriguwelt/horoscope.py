@@ -32,6 +32,7 @@ from .wisdom_sources import source_catalog
 from .engine_analyzers import EngineAnalysis, analyze_core_engines
 from .runtime_rule_generator import RuntimeRuleGenerator
 from .kundli_generator import DASHA_SEQUENCE, ChartHouse, DashaPeriod, generate_kundli
+from .remedy_personalization import personalize_remedies_with_feedback
 
 __all__ = [
     "HoroscopeRequest",
@@ -1941,7 +1942,8 @@ def _personalize_remedies(
     if not scored:
         return remedies
 
-    return sorted(scored, key=lambda entry: entry.get("relevance", 0.0), reverse=True)
+    ranked = sorted(scored, key=lambda entry: entry.get("relevance", 0.0), reverse=True)
+    return personalize_remedies_with_feedback(ranked, engine="horoscope", weights=weights)
 
 
 def _format_trait_label(trait: str) -> str:
