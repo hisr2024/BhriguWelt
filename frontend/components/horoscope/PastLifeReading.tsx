@@ -14,6 +14,8 @@ const FALLBACK_TAGLINES = [
   "Past-life bonds hint at compassionate leadership.",
 ];
 
+const easeOutCurve: [number, number, number, number] = [0, 0, 0.58, 1];
+
 type InsightRecord = {
   narrative: string;
   sutra_reference?: string;
@@ -246,7 +248,7 @@ export default function PastLifeReading({ chart, form }: Props) {
                   initial={reduceMotion ? "open" : "closed"}
                   animate="open"
                   exit={reduceMotion ? "open" : "closed"}
-                  transition={{ duration: reduceMotion ? 0 : 0.35, ease: "easeOut" }}
+                  transition={{ duration: reduceMotion ? 0 : 0.35, ease: easeOutCurve }}
                 >
                   <summary>
                     <div className="past-life-card__art" aria-hidden="true">

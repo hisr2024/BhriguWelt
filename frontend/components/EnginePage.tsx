@@ -2,17 +2,20 @@
 
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import type { EngineConfig, EngineResult } from "@/lib/engineConfig";
+import { engineBySlug } from "@/lib/engineConfig";
+import type { EngineResult } from "@/lib/engineConfig";
 import EngineForm from "@/components/EngineForm";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
-const transition = { duration: 0.45, ease: "easeOut" };
+const easeOutCurve: [number, number, number, number] = [0, 0, 0.58, 1];
+const transition = { duration: 0.45, ease: easeOutCurve };
 
 type EnginePageProps = {
-  config: EngineConfig;
+  slug: keyof typeof engineBySlug;
 };
 
-export default function EnginePage({ config }: EnginePageProps) {
+export default function EnginePage({ slug }: EnginePageProps) {
+  const config = engineBySlug[slug];
   const Icon = config.icon;
 
   const result = useMemo<EngineResult>(

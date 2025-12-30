@@ -37,6 +37,8 @@ const engineLinks = [
   { href: "/core-wisdom", label: "Core Wisdom" },
 ];
 
+const easeOutCurve: [number, number, number, number] = [0, 0, 0.58, 1];
+
 function ThemeToggle() {
   const { mode, cycleMode } = useThemeMode();
   const Icon = mode === "light" ? Sun : Moon;
@@ -155,7 +157,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
+          transition={{ duration: 0.35, ease: easeOutCurve }}
         >
           {children}
         </motion.main>
