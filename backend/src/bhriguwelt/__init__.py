@@ -31,6 +31,7 @@ from .horoscope import (
     build_cli_parser,
 )
 from .wisdom_bot import WisdomBotResponse, WisdomBotDownload, build_wisdom_bot_response
+from .wisdom_engine_generator import WisdomEngineResults, generate_engine_results
 
 __all__ = [
     "build_prediction",
@@ -69,6 +70,8 @@ __all__ = [
     "WisdomBotResponse",
     "WisdomBotDownload",
     "build_wisdom_bot_response",
+    "WisdomEngineResults",
+    "generate_engine_results",
     "parse_dsl",
     "compile_to_dataset",
     "apply_reweighting",

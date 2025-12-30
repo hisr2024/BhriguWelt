@@ -26,6 +26,7 @@ from .calculations import (
 from .config import load_runtime_config
 from .bhrigu_core import bhrigu_core
 from .core_wisdom_rules import core_wisdom_assets
+from .wisdom_sources import source_catalog
 from .engine_analyzers import EngineAnalysis, analyze_core_engines
 from .runtime_rule_generator import RuntimeRuleGenerator
 from .kundli_generator import generate_kundli
@@ -584,6 +585,12 @@ def _collect_bhrigu_texts(horoscope: HoroscopeReport, tradition: str) -> List[st
     def _append(entry: str | None) -> None:
         if entry and entry not in texts:
             texts.append(entry)
+
+    for source in source_catalog():
+        name = source.get("name")
+        description = source.get("description")
+        if name and description:
+            _append(f"Authentic source: {name} — {description}")
 
     for principle in horoscope.principles[:4] if horoscope.principles else []:
         description = principle.get("description")
