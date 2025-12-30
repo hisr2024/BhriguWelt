@@ -55,6 +55,7 @@ from .matchmaking_engine import run_matchmaking_pipeline
 from .kundli_generator import SIGNS, generate_kundli
 from .wisdom_aggregator import aggregate_wisdom_for_bot
 from .wisdom_bot import build_wisdom_bot_response
+from .future_directives import build_future_directives_engine
 
 _JSON_HEADER = ("Content-Type", "application/json; charset=utf-8")
 _ADMIN_TOKEN = os.environ.get("BHRIGUWELT_ADMIN_TOKEN")
@@ -176,6 +177,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/horoscope"): "_handle_horoscope",
         ("POST", "/past-life"): "_handle_past_life",
         ("POST", "/future"): "_handle_future",
+        ("POST", "/future-directives"): "_handle_future_directives",
         ("POST", "/past-future"): "_handle_past_future",
         ("POST", "/matchmaking"): "_handle_matchmaking",
         ("POST", "/matchmaking/pipeline"): "_handle_matchmaking_pipeline",
@@ -286,6 +288,10 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
     def _handle_future(self) -> None:
         payload = self._read_json()
         self._respond_with_command("future", payload)
+
+    def _handle_future_directives(self) -> None:
+        payload = self._read_json()
+        self._respond_with_command("future-directives", payload)
 
     def _handle_past_future(self) -> None:
         payload = self._read_json()
@@ -885,6 +891,9 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "progression_directives": [_serialize_obj(item) for item in report.progression_directives],
             "interpretation": report.interpretation,
         }
+    if command == "future-directives":
+        report = build_future_directives_engine(_request_from_payload(payload))
+        return report
     if command == "varshaphal":
         request = _request_from_payload(payload)
         target_year = str(payload.get("target_year") or payload.get("target_period") or payload.get("period") or "next 12 months")
