@@ -1,124 +1,132 @@
 "use client";
 
-import Link from "next/link";
+import { KundliChart } from "@/components/KundliChart";
+import { OnboardingDialog } from "@/components/OnboardingDialog";
+import { LinkButton } from "@/components/ui/LinkButton";
 
-import AnimatedLogo from "@/components/AnimatedLogo";
-import EngineGrid from "@/components/EngineGrid";
-import { motion } from "@/lib/framer-motion";
-
-const featureHighlights = [
+const engines = [
   {
-    title: "Glassmorphic Inputs",
-    description: "Minimalist, touch-first forms designed for frictionless cosmic queries.",
+    title: "Horoscope Engine",
+    description: "Panchanga-aligned intake with chart visuals and bilingual reading output.",
+    href: "/horoscope",
   },
   {
-    title: "Neon Results",
-    description: "Readable output cards with spotlighted sutra insights and key takeaways.",
+    title: "Past-Life Engine",
+    description: "Narrative regressions, sutra references, and karmic memory highlights.",
+    href: "/past-life",
   },
   {
-    title: "Ambient Motion",
-    description: "Subtle motion cues powered by Framer Motion for modern engagement.",
+    title: "Future Engine",
+    description: "Trajectory map, milestone tracker, and long-range planning prompts.",
+    href: "/future",
+  },
+  {
+    title: "Matchmaking Engine",
+    description: "Dual-profile compatibility with modern preference tags and clarity metrics.",
+    href: "/matchmaking",
+  },
+  {
+    title: "Śaka Calendar",
+    description: "Global calendar conversions with culturally grounded guidance.",
+    href: "/calendar",
+  },
+  {
+    title: "Studio Insights",
+    description: "Chart + chat studio for real-time Bhrigu consultation.",
+    href: "/studio/insights",
   },
 ];
 
 export default function HomePage() {
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-6 pb-20 pt-12">
-      <section className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-neon-radial p-8 shadow-cosmic md:p-12">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="relative z-10 grid gap-8 md:grid-cols-[1.2fr_0.8fr] md:items-center"
-        >
-          <div>
-            <div className="badge">Gen Z cosmic studio</div>
-            <h1 className="mt-6 text-4xl font-semibold leading-tight md:text-5xl">
-              BhriguWelt is your neon portal to 13 celestial engines.
-            </h1>
-            <p className="mt-4 text-base text-white/70">
-              Dark, cosmic, and crafted for modern seekers. Run your chart, map your future, match charts,
-              and track every ritual in a single minimalist experience.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-4">
-              <Link
-                href="/horoscope"
-                className="rounded-full bg-neon-cyan/20 px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white shadow-neon transition hover:bg-neon-cyan/30"
-              >
-                Launch Engines
-              </Link>
-              <Link
-                href="/chat"
-                className="rounded-full border border-white/20 px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white/80 transition hover:border-white/40"
-              >
-                Talk to Bhrigu
-              </Link>
-            </div>
+    <div className="flex flex-col gap-10">
+      <OnboardingDialog />
+      <section className="grid gap-8 rounded-3xl border border-slate-800 bg-hero-gradient p-6 md:grid-cols-[1.2fr_0.8fr]">
+        <div className="flex flex-col gap-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-200">Bhrigu Welt Studio</p>
+          <h1 className="text-fluid-2xl font-semibold text-white">
+            Explore the Bhrigu Samhita engines—built for mobile seekers, powered by real-time charting.
+          </h1>
+          <p className="text-sm text-slate-200">
+            A modern sanctuary for horoscope, past-life, future, matchmaking, and calendar insights. Designed with touch-first
+            gestures, responsive dashboards, and a PWA-ready experience.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <LinkButton href="/horoscope">Start with Horoscope</LinkButton>
+            <LinkButton href="/studio/insights" variant="ghost">
+              Enter Studio
+            </LinkButton>
           </div>
-          <div className="flex flex-col items-center gap-6">
-            <AnimatedLogo size="lg" />
-            <div className="glass-panel w-full p-6 text-sm text-white/70">
-              <p className="uppercase tracking-[0.3em] text-neon-cyan">Live snapshot</p>
-              <p className="mt-3 text-base text-white">
-                13 engines active · 5,421 insights cached · 0ms jitter for your next reading.
-              </p>
-            </div>
-          </div>
-        </motion.div>
+        </div>
+        <div className="flex items-center justify-center">
+          <KundliChart />
+        </div>
       </section>
 
-      <section className="grid gap-6 md:grid-cols-3">
-        {featureHighlights.map((feature) => (
-          <motion.div
-            key={feature.title}
-            className="glass-panel p-6"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
+      <section className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-3xl border border-slate-800 bg-card-gradient p-6">
+          <h2 className="text-fluid-lg font-semibold">Quick guidance</h2>
+          <p className="mt-2 text-sm text-slate-300">
+            Jump into an engine and keep the outputs centered. Each workflow is tuned for small screens and full functionality.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <LinkButton href="/past-life">Past-Life</LinkButton>
+            <LinkButton href="/future" variant="ghost">
+              Future
+            </LinkButton>
+            <LinkButton href="/matchmaking" variant="ghost">
+              Matchmaking
+            </LinkButton>
+          </div>
+          <div className="mt-6 grid gap-4 rounded-2xl border border-slate-700 bg-slate-950/60 p-4 text-xs text-slate-300">
+            <div className="flex items-center justify-between">
+              <span>Touch gestures</span>
+              <span className="font-semibold text-amber-200">Swipe to open menu</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>PWA ready</span>
+              <span className="font-semibold text-emerald-200">Installable experience</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Live engines</span>
+              <span className="font-semibold text-sky-200">Backend + offline fallback</span>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-3xl border border-slate-800 bg-card-gradient p-6">
+          <h3 className="text-lg font-semibold">Live previews</h3>
+          <ul className="mt-4 grid gap-3 text-sm text-slate-200">
+            <li className="flex items-start gap-2">
+              <span className="text-amber-200">◆</span>
+              Mobile-first cards keep inputs and results legible in portrait mode.
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-200">◆</span>
+              Results stay anchored with sticky action bars and clear status signals.
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-200">◆</span>
+              Engine outputs map to charts, future timelines, and matchmaking scores.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section className="grid gap-6 md:grid-cols-2">
+        {engines.map((engine) => (
+          <Link
+            key={engine.title}
+            href={engine.href}
+            className="group rounded-3xl border border-slate-800 bg-card-gradient p-5 transition hover:border-amber-300/60"
           >
-            <h3 className="text-lg font-semibold">{feature.title}</h3>
-            <p className="mt-2 text-sm text-white/70">{feature.description}</p>
-          </motion.div>
+            <h3 className="text-lg font-semibold text-white group-hover:text-amber-200">{engine.title}</h3>
+            <p className="mt-2 text-sm text-slate-300">{engine.description}</p>
+            <span className="mt-4 inline-flex text-xs font-semibold uppercase tracking-[0.25em] text-amber-200">
+              Open engine
+            </span>
+          </Link>
         ))}
       </section>
-
-      <section className="space-y-6">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-white/40">All engines</p>
-            <h2 className="mt-2 text-3xl font-semibold">Explore every cosmic capability</h2>
-          </div>
-          <Link href="/dashboard" className="text-sm font-semibold text-neon-cyan">
-            View dashboard →
-          </Link>
-        </div>
-        <EngineGrid />
-      </section>
-
-      <section className="glass-panel p-8 md:p-12">
-        <div className="grid gap-8 md:grid-cols-[1.2fr_0.8fr]">
-          <div>
-            <p className="badge">Full journey</p>
-            <h2 className="mt-4 text-3xl font-semibold">Inputs. Outputs. Ritual-ready clarity.</h2>
-            <p className="mt-4 text-sm text-white/70">
-              Every engine is structured for clarity: clean input portals, instant API calls, and elegantly
-              displayed responses. The experience remains performant across mobile, tablet, and widescreen
-              formats.
-            </p>
-          </div>
-          <div className="space-y-4">
-            <div className="glass-panel p-5">
-              <p className="text-sm uppercase tracking-[0.3em] text-white/50">Inputs</p>
-              <p className="mt-2 text-sm text-white/70">Names, dates, coordinates, and preferences captured in glass UI.</p>
-            </div>
-            <div className="glass-panel p-5">
-              <p className="text-sm uppercase tracking-[0.3em] text-white/50">Outputs</p>
-              <p className="mt-2 text-sm text-white/70">Narratives, timelines, dashboards, and alerts styled for clarity.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
+    </div>
   );
 }

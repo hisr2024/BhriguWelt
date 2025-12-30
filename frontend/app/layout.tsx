@@ -1,25 +1,42 @@
-import type { Metadata } from "next";
-import type { ReactNode } from "react";
-import { Inter, Poppins } from "next/font/google";
-
-import Navigation from "@/components/Navigation";
-
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const poppins = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-poppins" });
+import { AppShell } from "@/components/AppShell";
 
 export const metadata: Metadata = {
-  title: "BhriguWelt — Cosmic Intelligence",
-  description: "Gen Z ready Bhrigu Samhita experience with neon, glass, and cosmic guidance.",
+  title: "BhriguWelt",
+  description: "Bhrigu Samhita engines for horoscope, past-life, future, matchmaking, and calendar insights.",
+  manifest: "/manifest.json",
+  applicationName: "BhriguWelt",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "BhriguWelt",
+  },
+  icons: {
+    icon: "/logo.svg",
+  },
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export const viewport: Viewport = {
+  themeColor: "#0f172a",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.variable} ${poppins.variable} font-inter`}>
-        <Navigation />
-        {children}
+    <html lang="en">
+      <body className="text-slate-100">
+        <a href="#main" className="skip-link">
+          Skip to content
+        </a>
+        <AppShell>
+          <main id="main" tabIndex={-1} className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-4 py-10 sm:px-6">
+            {children}
+          </main>
+        </AppShell>
       </body>
     </html>
   );
