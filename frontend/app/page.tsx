@@ -1,11 +1,11 @@
 'use client';
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, type Transition } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { engineCards } from "@/lib/engineConfig";
 
-const transition = { duration: 0.5, ease: "easeOut" };
+const transition: Transition = { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] };
 
 export default function HomePage() {
   return (

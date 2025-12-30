@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "prebuild": "rm -f app/chat/route.ts app/chat/route.tsx app/chat/route.js",
-    "build": "NEXT_IGNORE_INCORRECT_LOCKFILE=1 next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint . --ext .ts,.tsx",
     "type-check": "tsc --noEmit",
