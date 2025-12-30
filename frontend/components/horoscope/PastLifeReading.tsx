@@ -92,6 +92,13 @@ export default function PastLifeReading({ chart, form }: Props) {
   const shareText = useMemo(() => buildShareText(form.name, insights), [form.name, insights]);
   const revealTotal = insights.length;
   const revealReadyCount = Math.min(Math.max(visibleCount, 0), revealTotal);
+  const cardVariants = useMemo(
+    () => ({
+      closed: { opacity: 0, y: 12 },
+      open: { opacity: 1, y: 0 },
+    }),
+    []
+  );
 
   useEffect(() => {
     return () => {
@@ -235,10 +242,11 @@ export default function PastLifeReading({ chart, form }: Props) {
                   key={`${insight.narrative}-${index}`}
                   className="past-life-card"
                   role="listitem"
-                  initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-                  animate={reduceMotion ? false : { opacity: 1, y: 0 }}
-                  exit={reduceMotion ? false : { opacity: 0, y: 12 }}
-                  transition={{ duration: 0.35, ease: "easeOut" }}
+                  variants={cardVariants}
+                  initial={reduceMotion ? "open" : "closed"}
+                  animate="open"
+                  exit={reduceMotion ? "open" : "closed"}
+                  transition={{ duration: reduceMotion ? 0 : 0.35, ease: "easeOut" }}
                 >
                   <summary>
                     <div className="past-life-card__art" aria-hidden="true">
