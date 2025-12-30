@@ -250,6 +250,9 @@ class TransitReport:
 
     name: str
     directives: List[TransitDirective]
+    symbolic_directives: List[str]
+    remedies: List[Dict]
+    citations: List[str]
     interpretation: str
 
 
@@ -449,23 +452,50 @@ def build_future_report(request: HoroscopeRequest) -> FutureReport:
     )
 
 
-def build_transit_report(request: HoroscopeRequest, transit_payload: Dict[str, str]) -> TransitReport:
+def build_transit_report(request: HoroscopeRequest, transit_payload: Dict[str, str] | None = None) -> TransitReport:
     if not request.consent_for_date_predictions:
         raise ValueError("User consent required for date-based predictions")
 
+    runtime_config = load_runtime_config()
     core_bundle = bhrigu_core.application_bundle(request.tradition)
-    _ensure_bhrigu_data_available(core_bundle, ("transit_rules",), request.tradition)
+    _ensure_bhrigu_data_available(core_bundle, ("principles", "transit_rules", "remedies"), request.tradition)
     snapshot = _snapshot_from_request(request)
+    principles = core_bundle.get("principles", [])
     transit_rules = core_bundle.get("transit_rules", [])
-    transit_dt = normalize_birth_datetime(
-        transit_payload["transit_date"], transit_payload["transit_time"], timezone_name=transit_payload.get("timezone")
-    )
-    natal_dt = normalize_birth_datetime(request.birth_date, request.birth_time, timezone_name=transit_payload.get("timezone"))
+    remedies = core_bundle.get("remedies", [])
+    weights = score_principles(snapshot, principles, runtime_config)
+
+    if transit_payload:
+        transit_dt = normalize_birth_datetime(
+            transit_payload["transit_date"], transit_payload["transit_time"], timezone_name=transit_payload.get("timezone")
+        )
+        timezone = transit_payload.get("timezone")
+    else:
+        now = datetime.utcnow()
+        transit_dt = normalize_birth_datetime(
+            now.date().isoformat(), now.time().isoformat(timespec="minutes"), timezone_name=request.timezone
+        )
+        timezone = request.timezone
+
+    natal_dt = normalize_birth_datetime(request.birth_date, request.birth_time, timezone_name=timezone)
     transit_details = derive_transit_snapshot(natal_dt, transit_dt)
     directives = evaluate_transits(snapshot, transit_details, transit_rules)
+    symbolic_directives = [
+        f"{directive.planet} transit — {directive.influence} ({directive.reference})" for directive in directives
+    ]
+    personalized_remedies = _personalize_remedies(remedies, weights, snapshot, runtime_config)
+    citations = sorted(
+        {
+            *(directive.reference for directive in directives if directive.reference),
+            *(remedy.get("sutra_reference") for remedy in personalized_remedies if remedy.get("sutra_reference")),
+        }
+    )
     return TransitReport(
         name=request.name,
         directives=directives,
+        symbolic_directives=symbolic_directives,
+        remedies=personalized_remedies,
+        citations=citations,
         interpretation=_compose_transit_interpretation(directives, transit_dt),
     )
 
