@@ -25,6 +25,7 @@ type EngineCardProps = {
 
 export default function EngineCard({ engine, index }: EngineCardProps) {
   const Icon = engine.icon;
+  const shouldReduceMotion = useReducedMotion();
 
   return (
     <motion.article
@@ -36,9 +37,21 @@ export default function EngineCard({ engine, index }: EngineCardProps) {
     >
       <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${engine.accent} opacity-0 transition group-hover:opacity-100`} />
       <div className="relative flex items-center justify-between gap-3">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-white shadow-glow">
+        <motion.span
+          className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-white shadow-glow"
+          animate={
+            shouldReduceMotion
+              ? undefined
+              : {
+                  y: [0, -6, 0],
+                  rotate: [0, 3, 0],
+                }
+          }
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          whileHover={shouldReduceMotion ? undefined : { scale: 1.05, rotate: 6 }}
+        >
           <Icon className="h-7 w-7" />
-        </span>
+        </motion.span>
         <div className="flex items-center gap-2">
           <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
             {engine.category}
