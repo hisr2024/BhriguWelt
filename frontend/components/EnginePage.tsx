@@ -6,7 +6,7 @@ import type { EngineConfig, EngineResult } from "@/lib/engineConfig";
 import EngineForm from "@/components/EngineForm";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
-const transition = { duration: 0.45, ease: "easeOut" };
+const transition = { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] };
 
 type EnginePageProps = {
   config: EngineConfig;
