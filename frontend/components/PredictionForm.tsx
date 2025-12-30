@@ -31,11 +31,13 @@ export default function PredictionForm({ engine, title, description, onRequestSt
   const [payload, setPayload] = useState<unknown>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [retryAttempts, setRetryAttempts] = useState(0);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const errorRef = useRef<HTMLDivElement | null>(null);
   const lastSuccessfulPayloadRef = useRef<unknown>(null);
   const { triggerSubmitFeedback } = useImmersiveFeedback();
   const { sakaState } = useSakaContext();
   const fallbackPayload = useMemo(() => getPredictionFallback(engine), [engine]);
+  const voiceSupported = typeof window !== "undefined" && "speechSynthesis" in window;
 
   useEffect(() => {
     const stored = loadBirthDetails();
@@ -77,6 +79,53 @@ export default function PredictionForm({ engine, title, description, onRequestSt
       setInfo(`${sakaHelper} Applied to ${engine} request.`);
     }
   }, [engine, sakaState.details?.birthDate, sakaState.details?.birthPlace, sakaState.details?.birthTime, sakaState.houseGrid, sakaState.sakaDate]);
+
+  useEffect(() => {
+    return () => {
+      if (!voiceSupported) return;
+      window.speechSynthesis?.cancel();
+    };
+  }, [voiceSupported]);
+
+  const voiceStatus = useMemo(() => {
+    if (!voiceSupported) return "Voice guidance unavailable.";
+    if (isSpeaking) return "Voice guidance is playing.";
+    if (!details.name || !details.birthDate || !details.birthTime || !details.birthPlace) {
+      return "Add the missing fields to continue.";
+    }
+    return "Ready to request insights.";
+  }, [details.birthDate, details.birthPlace, details.birthTime, details.name, isSpeaking, voiceSupported]);
+
+  const voiceScript = useMemo(() => {
+    const missing: string[] = [];
+    if (!details.name) missing.push("name");
+    if (!details.birthDate) missing.push("birth date");
+    if (!details.birthTime) missing.push("birth time");
+    if (!details.birthPlace) missing.push("birth place");
+    const missingLine = missing.length ? `Missing ${missing.join(", ")}.` : "All required fields are present.";
+    return `${title} form guidance. ${missingLine} Select tradition and planetary houses if known. Press Fetch insights when ready.`;
+  }, [details.birthDate, details.birthPlace, details.birthTime, details.name, title]);
+
+  const toggleVoiceGuidance = () => {
+    if (!voiceSupported) return;
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+
+    if (isSpeaking) {
+      synth.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(voiceScript);
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    synth.cancel();
+    synth.speak(utterance);
+    setIsSpeaking(true);
+  };
 
   const validateDetails = (payload: BirthDetails): string | null => {
     if (!payload.birthDate || !/^\d{4}-\d{2}-\d{2}$/.test(payload.birthDate)) {
@@ -239,6 +288,26 @@ export default function PredictionForm({ engine, title, description, onRequestSt
           <p className="muted" id={`${engine}-helper`}>
             {description || t("form.helper", "Complete every detail to keep remedies precise.")}
           </p>
+          <div className="assistive-row" role="group" aria-label="Form voice guidance controls">
+            <button
+              type="button"
+              className={`assistive-chip ${isSpeaking ? "assistive-chip--active" : ""}`}
+              onClick={toggleVoiceGuidance}
+              aria-pressed={isSpeaking}
+              aria-describedby={voiceSupported ? undefined : `${engine}-voice-unsupported`}
+              disabled={!voiceSupported}
+            >
+              {isSpeaking ? "Stop voice guidance" : "Play voice guidance"}
+            </button>
+            <span className="assistive-value" aria-live="polite">
+              {voiceStatus}
+            </span>
+            {!voiceSupported ? (
+              <span id={`${engine}-voice-unsupported`} className="microcopy">
+                Voice guidance is not supported in this browser.
+              </span>
+            ) : null}
+          </div>
           <BackendHealthNotice />
           {retryAttempts > 0 ? (
             <p className="microcopy" aria-live="polite">

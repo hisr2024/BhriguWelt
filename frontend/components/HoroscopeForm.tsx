@@ -156,9 +156,11 @@ export default function HoroscopeForm() {
   const [status, setStatus] = useState<FormStatus>("idle");
   const [validations, setValidations] = useState<ValidationState>({});
   const [prefillNotice, setPrefillNotice] = useState<string | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const { triggerSubmitFeedback } = useImmersiveFeedback();
   const { sakaState } = useSakaContext();
+  const voiceSupported = typeof window !== "undefined" && "speechSynthesis" in window;
 
   const normalizedBackend = useMemo(() => {
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
@@ -257,6 +259,47 @@ export default function HoroscopeForm() {
       } satisfies TimeframeLink;
     });
   }, [chart, hasNarrative, houseFoundation?.length, timeframeAnchors]);
+
+  const voiceStatus = useMemo(() => {
+    if (!voiceSupported) return "Voice guidance unavailable.";
+    if (isSpeaking) return "Voice guidance is playing.";
+    if (missingFields.length) return `Missing ${missingFields.join(", ")}.`;
+    if (Object.keys(validations).length) return "Fix the highlighted fields to proceed.";
+    return "Ready to generate your reading.";
+  }, [isSpeaking, missingFields, validations, voiceSupported]);
+
+  const voiceScript = useMemo(() => {
+    const header = "Horoscope form guidance.";
+    const missing = missingFields.length ? `Missing ${missingFields.join(", ")}.` : "All required fields are present.";
+    const validationNotes = Object.values(validations).length
+      ? `Validation reminders: ${Object.values(validations).join(" ")}`
+      : "No validation errors found.";
+    const progress = progressSteps
+      .map((step) => `${step.title}: ${step.status === "complete" ? "done" : step.status === "active" ? "in progress" : "next"}.`)
+      .join(" ");
+    return `${header} ${missing} ${validationNotes} ${progress} When ready, press Generate reading to create the chart.`;
+  }, [missingFields, progressSteps, validations]);
+
+  const toggleVoiceGuidance = () => {
+    if (!voiceSupported) return;
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+
+    if (isSpeaking) {
+      synth.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(voiceScript);
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    synth.cancel();
+    synth.speak(utterance);
+    setIsSpeaking(true);
+  };
 
   const handleChange = (field: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -569,6 +612,13 @@ export default function HoroscopeForm() {
     }
   }, [missingFields, validations]);
 
+  useEffect(() => {
+    return () => {
+      if (!voiceSupported) return;
+      window.speechSynthesis?.cancel();
+    };
+  }, [voiceSupported]);
+
   return (
     <section className="horo-board" aria-label="Horoscope creation">
       <div className="horo-layout">
@@ -583,6 +633,10 @@ export default function HoroscopeForm() {
             isComplete={hasRequiredDetails}
             progressSteps={progressSteps}
             prefillNotice={prefillNotice}
+            voiceSupported={voiceSupported}
+            isSpeaking={isSpeaking}
+            onToggleVoiceGuidance={toggleVoiceGuidance}
+            voiceStatus={voiceStatus}
             onChange={handleChange}
             onSubmit={handleSubmit}
             onAskBhrigu={handleAskBhrigu}
