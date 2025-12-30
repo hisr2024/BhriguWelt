@@ -5,12 +5,12 @@ import { usePwaPrompt } from "@/components/hooks/usePwaPrompt";
 import { Button } from "@/components/ui/Button";
 
 const links = [
-  { href: "/", label: "Dashboard" },
-  { href: "/horoscope", label: "Horoscope" },
-  { href: "/past-life", label: "Past Life" },
-  { href: "/future", label: "Future" },
-  { href: "/matchmaking", label: "Matchmaking" },
-  { href: "/calendar", label: "Calendar" },
+  { href: "/", label: "Overview" },
+  { href: "/engines", label: "Engines" },
+  { href: "/engines/horoscope", label: "Horoscope" },
+  { href: "/engines/future", label: "Future" },
+  { href: "/engines/matchmaking", label: "Matchmaking" },
+  { href: "/engines/calendar", label: "Calendar" },
   { href: "/studio/insights", label: "Studio" },
 ];
 

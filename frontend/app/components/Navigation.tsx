@@ -7,10 +7,10 @@ import LanguageToggle from "./LanguageToggle";
 
 const navLinks = [
   { label: "Home", href: "/" },
-  { label: "Dashboard", href: "/studio/insights" },
-  { label: "Horoscope", href: "/horoscope" },
-  { label: "Calendar", href: "/calendar" },
-  { label: "Matchmaking", href: "/matchmaking" },
+  { label: "Engine directory", href: "/engines" },
+  { label: "Studio", href: "/studio/insights" },
+  { label: "Analytics", href: "/engines/analytics" },
+  { label: "Alerts", href: "/engines/alerts" },
 ];
 
 export default function Navigation() {

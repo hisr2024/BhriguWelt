@@ -5,7 +5,7 @@ import { EngineMeta } from "@/components/engineData";
 export default function EngineCard({ engine }: { engine: EngineMeta }) {
   return (
     <Link
-      href={`/${engine.slug}`}
+      href={`/engines/${engine.slug}`}
       className="glass-panel glow-ring flex h-full flex-col justify-between gap-6 p-6 transition hover:-translate-y-1"
     >
       <div>
