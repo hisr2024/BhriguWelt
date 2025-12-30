@@ -17,6 +17,14 @@ type ChatResponse = {
   chart?: NatalChart;
   context?: ChatContext;
   session?: { transcript?: { role?: string; content?: string }[] };
+  profile?: {
+    id?: number;
+    user_id?: string;
+    full_name?: string;
+    date_of_birth?: string;
+    time_of_birth?: string;
+    place_of_birth?: string;
+  };
   profile_id?: number;
   user_id?: string;
   session_key?: string;
@@ -105,8 +113,31 @@ export default function BhriguChat({ chart }: Props) {
         if (transcriptMessages.length) {
           setMessages([BASE_MESSAGE, ...transcriptMessages]);
         }
-        if (payload.profile_id) setProfileId(payload.profile_id);
-        if (payload.user_id) setUserId(payload.user_id);
+        const hydratedProfileId = payload.profile?.id ?? payload.profile_id;
+        const hydratedUserId = payload.profile?.user_id ?? payload.user_id;
+
+        if (payload.profile?.full_name || payload.profile?.date_of_birth) {
+          setContext((prev) => ({
+            ...prev,
+            birthDetails: {
+              name: payload.profile?.full_name || prev?.birthDetails?.name || "",
+              dateOfBirth: payload.profile?.date_of_birth || prev?.birthDetails?.dateOfBirth || "",
+              timeOfBirth: payload.profile?.time_of_birth || prev?.birthDetails?.timeOfBirth || "",
+              placeOfBirth: payload.profile?.place_of_birth || prev?.birthDetails?.placeOfBirth || "",
+            },
+          }));
+        }
+
+        if (hydratedProfileId || hydratedUserId) {
+          persistProfileIdentifiers({
+            profileId: hydratedProfileId,
+            userId: hydratedUserId,
+            sessionKey: storedSession,
+          });
+        }
+
+        if (hydratedProfileId) setProfileId(hydratedProfileId);
+        if (hydratedUserId) setUserId(hydratedUserId);
       } catch (error) {
         console.warn("Unable to hydrate chat session", error);
         setStatusMessage("Chat history will sync after the backend reconnects.");
