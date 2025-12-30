@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type Easing } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ArrowDownToLine, ArrowUpRight, FileSpreadsheet, Flame, ShieldCheck, Sparkles, Star, Wand2 } from "lucide-react";
 import type { EngineResult } from "@/lib/engineConfig";
 import Tooltip from "@/components/Tooltip";
@@ -8,7 +8,15 @@ import EngineInsightOrbit from "@/components/EngineInsightOrbit";
 import EngineZoomChart from "@/components/EngineZoomChart";
 
 const highlightIcons = [Sparkles, Flame, ShieldCheck, Star, Wand2];
-const transition = { duration: 0.45, ease: [0.2, 0.65, 0.3, 0.9] as Easing };
+const transition = { duration: 0.45, ease: [0.2, 0.65, 0.3, 0.9] };
+const staggerContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
+const staggerItem = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition },
+};
 
 type EngineResultPanelProps = {
   result: EngineResult;
@@ -17,6 +25,8 @@ type EngineResultPanelProps = {
 };
 
 export default function EngineResultPanel({ result, accent, engineTitle }: EngineResultPanelProps) {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <motion.aside
       key={result.title}
@@ -26,26 +36,29 @@ export default function EngineResultPanel({ result, accent, engineTitle }: Engin
       transition={transition}
       className="space-y-6"
     >
-      <div className="result-frame relative overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70 p-6">
+      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70 p-6 sm:p-8">
         <div className={`absolute inset-0 bg-gradient-to-br ${accent} opacity-70`} aria-hidden />
-        <div className="relative space-y-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-200">{engineTitle} results</p>
-              <h3 className="text-2xl font-semibold text-white">{result.title}</h3>
-              <p className="max-w-2xl text-sm text-slate-100/80">{result.summary}</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-xs font-semibold uppercase tracking-[0.25em] text-slate-200">
-              Prime highlights
-            </div>
+        <div className="relative space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-200">{engineTitle} results</p>
+          <h3 className="text-2xl font-semibold text-white">{result.title}</h3>
+          <p className="max-w-2xl text-sm text-slate-100/80">{result.summary}</p>
+          <div className="flex flex-wrap gap-3 text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-slate-200/80">
+            <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1">Priority insights</span>
+            <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1">Readable view</span>
+            <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1">Action-ready</span>
           </div>
         </div>
-        <div className="relative mt-6 grid gap-4 md:grid-cols-2" aria-label="Result highlights">
+        <motion.div className="relative mt-6 grid gap-4" variants={staggerContainer} initial="hidden" animate="show">
           {result.highlights.map((highlight, index) => {
             const Icon = highlightIcons[index % highlightIcons.length];
             const confidence = 70 + index * 8;
             return (
-              <div key={highlight.label} className="result-highlight rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+              <motion.div
+                key={highlight.label}
+                variants={staggerItem}
+                whileHover={shouldReduceMotion ? undefined : { y: -4 }}
+                className="rounded-2xl border border-white/10 bg-slate-950/60 p-4"
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-slate-300">
@@ -68,23 +81,28 @@ export default function EngineResultPanel({ result, accent, engineTitle }: Engin
               </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </div>
 
       <EngineInsightOrbit highlights={result.highlights} accent={accent} />
 
       <EngineZoomChart accent={accent} />
 
-      <div className="rounded-3xl border border-white/10 bg-slate-950/80 p-6 shadow-[0_24px_50px_rgba(2,6,23,0.45)]">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-300">Recommended next steps</p>
-        <ul className="mt-4 space-y-2 text-sm text-slate-100">
+      <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-6 sm:p-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Recommended next steps</p>
+        <motion.ul
+          className="mt-4 grid gap-3 text-sm text-slate-200 md:grid-cols-2"
+          variants={staggerContainer}
+          initial="hidden"
+          animate="show"
+        >
           {result.nextSteps.map((step) => (
-            <li key={step} className="flex items-center gap-2">
+            <motion.li key={step} variants={staggerItem} className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-indigo-400" aria-hidden />
               {step}
-            </li>
+            </motion.li>
           ))}
-        </ul>
+        </motion.ul>
         <div className="mt-6 flex flex-wrap gap-3">
           <button
             type="button"

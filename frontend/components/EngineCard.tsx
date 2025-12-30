@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { ComponentType } from "react";
-import { motion, type Easing } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ArrowUpRight, Info } from "lucide-react";
 import Tooltip from "@/components/Tooltip";
 
@@ -24,12 +24,7 @@ type EngineCardProps = {
 
 export default function EngineCard({ engine, index }: EngineCardProps) {
   const Icon = engine.icon;
-  const floatTransition = {
-    duration: 5.5 + index * 0.25,
-    repeat: Infinity,
-    repeatType: "mirror" as const,
-    ease: "easeInOut",
-  };
+  const shouldReduceMotion = useReducedMotion();
 
   return (
     <motion.article
@@ -43,8 +38,16 @@ export default function EngineCard({ engine, index }: EngineCardProps) {
       <div className="relative flex items-center justify-between gap-3">
         <motion.span
           className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-white shadow-glow"
-          animate={{ y: [0, -4, 0] }}
-          transition={floatTransition}
+          animate={
+            shouldReduceMotion
+              ? undefined
+              : {
+                  y: [0, -6, 0],
+                  rotate: [0, 3, 0],
+                }
+          }
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          whileHover={shouldReduceMotion ? undefined : { scale: 1.05, rotate: 6 }}
         >
           <Icon className="h-7 w-7" />
         </motion.span>
