@@ -7,6 +7,7 @@ import type { EngineField, EngineResult } from "@/lib/engineConfig";
 import Tooltip from "@/components/Tooltip";
 import VoiceInputButton from "@/components/VoiceInputButton";
 import EngineResultPanel from "@/components/EngineResultPanel";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const easeStandard: [number, number, number, number] = [0.2, 0.65, 0.3, 0.9];
@@ -90,6 +91,25 @@ export default function EngineForm({
     const completed = requiredFields.filter((field) => values[field.name]?.trim()).length;
     return Math.round((completed / requiredFields.length) * 100);
   }, [requiredFields, values]);
+  const getSampleValue = (field: EngineField) => {
+    if (field.placeholder) return field.placeholder;
+    switch (field.type) {
+      case "email":
+        return "you@example.com";
+      case "number":
+        return "1";
+      case "date":
+        return "2000-01-01";
+      case "time":
+        return "12:00";
+      case "select":
+        return field.options?.[0] ?? "";
+      case "textarea":
+        return "Share any additional context.";
+      default:
+        return "Sample response";
+    }
+  };
   const sampleValues = useMemo(
     () =>
       fields.reduce(
@@ -397,7 +417,9 @@ export default function EngineForm({
 
       <AnimatePresence mode="wait">
         {result ? (
-          <EngineResultPanel result={result} accent={accent} engineTitle={engineTitle} />
+          <ErrorBoundary>
+            <EngineResultPanel result={result} accent={accent} engineTitle={engineTitle} />
+          </ErrorBoundary>
         ) : (
           <motion.aside
             key="empty"

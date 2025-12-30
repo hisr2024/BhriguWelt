@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { motion, type Easing } from "framer-motion";
+import type { Easing } from "framer-motion";
 import { ArrowUpRight, Cpu, HelpCircle, Radar, Waves } from "lucide-react";
 import { engineBySlug } from "@/lib/engineConfig";
 import type { EngineResult } from "@/lib/engineConfig";
@@ -14,8 +14,10 @@ import EngineBottomNav from "@/components/EngineBottomNav";
 import EngineSwipeNavigator from "@/components/EngineSwipeNavigator";
 import EngineStatusPanel from "@/components/EngineStatusPanel";
 import EngineFeedbackForm from "@/components/EngineFeedbackForm";
+import { motion, useReducedMotion } from "@/lib/framer-motion";
 
 const easeOutCurve: Easing = [0, 0, 0.58, 1];
+const easeInOutCurve: Easing = [0.42, 0, 0.58, 1];
 const transition = { duration: 0.45, ease: easeOutCurve };
 const staggerContainer = {
   hidden: {},
@@ -95,7 +97,7 @@ export default function EnginePage({ slug }: EnginePageProps) {
                           rotate: [0, 4, 0],
                         }
                   }
-                  transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{ duration: 7, repeat: Infinity, ease: easeInOutCurve }}
                   whileHover={shouldReduceMotion ? undefined : { scale: 1.06, rotate: 8 }}
                 >
                   <Icon className="h-6 w-6 text-white" />

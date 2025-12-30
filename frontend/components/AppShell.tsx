@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion, type Easing } from "framer-motion";
+import type { Easing } from "framer-motion";
 import {
   Bell,
   CalendarDays,
@@ -15,6 +15,7 @@ import {
   Sun,
 } from "lucide-react";
 import GdprConsentBanner from "@/components/GdprConsentBanner";
+import { AnimatePresence, motion, useReducedMotion } from "@/lib/framer-motion";
 import { useThemeMode } from "@/lib/themeContext";
 import { engineConfigs } from "@/lib/engineConfig";
 
@@ -33,6 +34,7 @@ const engineLinks = engineConfigs.map((engine) => ({
 }));
 
 const easeOutCurve: Easing = [0, 0, 0.58, 1];
+const easeInOutCurve: Easing = [0.42, 0, 0.58, 1];
 
 function ThemeToggle() {
   const { mode, cycleMode } = useThemeMode();
@@ -72,7 +74,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     ? undefined
     : {
         duration: 4.2,
-        ease: "easeInOut",
+        ease: easeInOutCurve,
         repeat: Infinity,
       };
 

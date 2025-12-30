@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from "react";
+import type { Easing } from "framer-motion";
 
 import { ChartHouse } from "@/types/astro";
 import { motion, useReducedMotion } from "@/lib/framer-motion";
@@ -19,6 +20,7 @@ type Props = {
 };
 
 const normalizeToken = (value?: string) => (value || "").toLowerCase().replace(/[^a-z]/g, "");
+const easeOutCurve: Easing = [0, 0, 0.58, 1];
 
 export default function TransitOverlayChart({ title = "Natal chart", houses, transits = [] }: Props) {
   const [zoom, setZoom] = useState(1);
@@ -61,7 +63,7 @@ export default function TransitOverlayChart({ title = "Natal chart", houses, tra
     visible: (index: number) => ({
       opacity: 1,
       scale: 1,
-      transition: { delay: index * 0.03, duration: 0.35, ease: [0, 0, 0.58, 1] },
+      transition: { delay: index * 0.03, duration: 0.35, ease: easeOutCurve },
     }),
   };
 
