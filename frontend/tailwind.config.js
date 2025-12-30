@@ -30,10 +30,6 @@ module.exports = {
         neon: "0 0 30px rgba(77, 238, 234, 0.4)",
         pulse: "0 0 45px rgba(139, 92, 246, 0.35)",
       },
-      fontFamily: {
-        inter: ["var(--font-inter)", "system-ui", "sans-serif"],
-        poppins: ["var(--font-poppins)", "system-ui", "sans-serif"],
-      },
       animation: {
         float: "float 6s ease-in-out infinite",
         orbit: "orbit 14s linear infinite",
