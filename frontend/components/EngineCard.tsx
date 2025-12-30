@@ -8,7 +8,7 @@ import Tooltip from "@/components/Tooltip";
 import { motion, useReducedMotion } from "@/lib/framer-motion";
 
 const easeInOutCurve: Easing = [0.42, 0, 0.58, 1];
-const transition = { duration: 0.35, ease: "easeOut" };
+const transition = { duration: 0.35, ease: easeInOutCurve };
 
 type EngineCardProps = {
   engine: {
