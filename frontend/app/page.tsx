@@ -26,6 +26,24 @@ const quickLinks = [
   },
 ];
 
+const experienceLinks = [
+  {
+    title: "Webapp Experience",
+    description: "Navigate every engine, dashboard, and session flow in the full studio.",
+    href: "/webapp",
+  },
+  {
+    title: "Marketing Website",
+    description: "High-converting storytelling for seekers, families, and mentors.",
+    href: "/marketing",
+  },
+  {
+    title: "Mobile App",
+    description: "Native-first guidance with offline mode, alerts, and one-handed rituals.",
+    href: "/mobile",
+  },
+];
+
 export default function HomePage() {
   return (
     <main id="main" tabIndex={-1} className="mx-auto flex max-w-6xl flex-col gap-16 px-6 py-12">
@@ -88,6 +106,37 @@ export default function HomePage() {
             </span>
           </Link>
         ))}
+      </section>
+
+      <section className="rounded-3xl border border-white/10 bg-card-gradient p-8">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Platform experiences</p>
+            <h2 className="mt-3 text-2xl font-semibold">Create for web, marketing, and mobile</h2>
+            <p className="mt-3 text-sm text-slate-300">
+              Launch the full BhriguWelt ecosystem with a cohesive webapp, premium marketing site, and native mobile
+              rituals built around the same manuscript intelligence.
+            </p>
+          </div>
+          <Link href="/marketing" className="rounded-full bg-aurora px-5 py-2 text-sm font-semibold text-slate-900">
+            Explore platform
+          </Link>
+        </div>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {experienceLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="group rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:border-aurora/50"
+            >
+              <h3 className="text-lg font-semibold text-white group-hover:text-aurora">{link.title}</h3>
+              <p className="mt-2 text-sm text-slate-300">{link.description}</p>
+              <span className="mt-4 inline-flex text-xs uppercase tracking-[0.3em] text-slate-400">
+                See blueprint →
+              </span>
+            </Link>
+          ))}
+        </div>
       </section>
 
     </main>
