@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-slate-950 text-slate-100 antialiased;
+  font-family: var(--font-inter);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-playfair);
+}
+
+* {
+  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-aurora/80 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950;
+}
+
+.skip-link {
+  @apply sr-only focus:not-sr-only focus:absolute focus:left-6 focus:top-6 focus:z-50 focus:rounded-full focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-sm;
+}
