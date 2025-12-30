@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Bell,
   CalendarDays,
@@ -59,6 +59,27 @@ function ThemeToggle() {
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
+
+  const logoAnimation = shouldReduceMotion
+    ? undefined
+    : {
+        y: [0, -4, 0],
+        rotate: [0, -4, 0],
+        boxShadow: [
+          "0 0 0 rgba(129,140,248,0)",
+          "0 0 18px rgba(129,140,248,0.35)",
+          "0 0 0 rgba(129,140,248,0)",
+        ],
+      };
+
+  const logoTransition = shouldReduceMotion
+    ? undefined
+    : {
+        duration: 4.2,
+        ease: "easeInOut",
+        repeat: Infinity,
+      };
 
   useEffect(() => {
     setMenuOpen(false);
@@ -78,9 +99,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/80 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
           <Link href="/" className="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.3em] text-white">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-xs font-bold shadow-glow">
+            <motion.span
+              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-xs font-bold shadow-glow"
+              animate={logoAnimation}
+              transition={logoTransition}
+            >
               BW
-            </span>
+            </motion.span>
             BhriguWelt
           </Link>
           <nav className="hidden items-center gap-2 lg:flex" aria-label="Primary">
