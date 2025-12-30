@@ -177,6 +177,14 @@ def create_app() -> web.Application:
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
 
+    async def matchmaking_diagnostics(request: web.Request) -> web.Response:
+        _, rate_meta = await guard_rate_limit(request)
+        payload = await request.json()
+        response = await handle_cached_command("matchmaking-diagnostics", payload)
+        reply = _json_response(response)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
+
     async def calendar(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
@@ -358,6 +366,7 @@ def create_app() -> web.Application:
     app.router.add_route("POST", "/future-directives", future_directives)
     app.router.add_route("POST", "/varshaphal", varshaphal)
     app.router.add_route("POST", "/matchmaking", matchmaking)
+    app.router.add_route("POST", "/matchmaking/diagnostics", matchmaking_diagnostics)
     app.router.add_route("POST", "/calendar", calendar)
     app.router.add_route("POST", "/transits", transits)
     app.router.add_route("POST", "/core-wisdom", core_wisdom)
