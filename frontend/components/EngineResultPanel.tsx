@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, type Easing } from "framer-motion";
 import { ArrowDownToLine, ArrowUpRight, FileSpreadsheet, Flame, ShieldCheck, Sparkles, Star, Wand2 } from "lucide-react";
 import type { EngineResult } from "@/lib/engineConfig";
 import Tooltip from "@/components/Tooltip";
@@ -8,7 +8,7 @@ import EngineInsightOrbit from "@/components/EngineInsightOrbit";
 import EngineZoomChart from "@/components/EngineZoomChart";
 
 const highlightIcons = [Sparkles, Flame, ShieldCheck, Star, Wand2];
-const transition = { duration: 0.45, ease: [0.2, 0.65, 0.3, 0.9] };
+const transition = { duration: 0.45, ease: [0.2, 0.65, 0.3, 0.9] as Easing };
 
 type EngineResultPanelProps = {
   result: EngineResult;
