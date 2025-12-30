@@ -2374,6 +2374,12 @@ textarea:focus {
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.2), 0 0 24px rgba(34, 211, 238, 0.12);
 }
 
+.timeline__node--phase {
+  opacity: 0;
+  transform: translateY(16px) scale(0.98);
+  animation: timelineReveal 0.7s ease forwards;
+}
+
 .timeline__orb {
   position: absolute;
   top: 8px;
@@ -2489,6 +2495,121 @@ textarea:focus {
 
 .timeline--fuchsia {
   background: linear-gradient(90deg, rgba(244, 114, 182, 0.1), rgba(217, 70, 239, 0.06));
+}
+
+.future-shell {
+  display: grid;
+  gap: 24px;
+}
+
+.future-hero {
+  display: grid;
+  gap: 12px;
+}
+
+.future-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.future-toggle {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 600;
+}
+
+.future-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.future-timeline {
+  display: grid;
+  gap: 16px;
+}
+
+.future-progress {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.future-progress__bar {
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.9), rgba(236, 72, 153, 0.9));
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.4);
+}
+
+.future-progress__meta {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.future-milestones {
+  display: grid;
+  gap: 10px;
+}
+
+.future-milestone {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.future-milestone__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.future-milestone__label {
+  font-weight: 600;
+}
+
+.future-chat {
+  display: grid;
+  gap: 12px;
+}
+
+@keyframes timelineReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (min-width: 960px) {
+  .future-grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    align-items: start;
+  }
+}
+
+@media (max-width: 720px) {
+  .future-actions {
+    align-items: stretch;
+  }
 }
 
 .horo-explorer {

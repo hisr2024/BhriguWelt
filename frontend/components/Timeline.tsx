@@ -18,9 +18,10 @@ type TimelineEvent = {
 type TimelineProps = {
   events: TimelineEvent[];
   accent?: "aqua" | "pink" | "amber" | "fuchsia";
+  animatePhases?: boolean;
 };
 
-export default function Timeline({ events, accent = "aqua" }: TimelineProps) {
+export default function Timeline({ events, accent = "aqua", animatePhases = false }: TimelineProps) {
   const accentClass = useMemo(() => `timeline timeline--${accent}`, [accent]);
   const [activeIndex, setActiveIndex] = useState(0);
   const touchStartX = useRef<number | null>(null);
@@ -135,9 +136,10 @@ export default function Timeline({ events, accent = "aqua" }: TimelineProps) {
         {events.map((event, index) => (
           <article
             key={event.title}
-            className={`timeline__node ${index === activeIndex ? "timeline__node--active" : ""}`}
+            className={`timeline__node ${animatePhases ? "timeline__node--phase" : ""} ${index === activeIndex ? "timeline__node--active" : ""}`.trim()}
             role="listitem"
             aria-current={index === activeIndex ? "true" : undefined}
+            style={animatePhases ? { animationDelay: `${index * 120}ms` } : undefined}
           >
             <div className="timeline__orb" aria-hidden="true">
               <span className="timeline__pulse" />
@@ -190,8 +192,9 @@ export default function Timeline({ events, accent = "aqua" }: TimelineProps) {
           return (
             <article
               key={event.title}
-              className={`timeline__node ${index === activeIndex ? "timeline__node--active" : ""}`}
+              className={`timeline__node ${animatePhases ? "timeline__node--phase" : ""} ${index === activeIndex ? "timeline__node--active" : ""}`.trim()}
               role="listitem"
+              style={animatePhases ? { animationDelay: `${index * 140}ms` } : undefined}
             >
               <div className="timeline__orb" aria-hidden="true">
                 <span className="timeline__pulse" />

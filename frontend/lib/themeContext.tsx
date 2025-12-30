@@ -30,6 +30,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.body.dataset.theme = mode;
+    document.body.dataset.contrast = mode === "high-contrast" ? "high" : "normal";
     document.documentElement.dataset.theme = mode;
     document.documentElement.style.colorScheme = mode === "light" ? "light" : "dark";
     window?.localStorage?.setItem("bhrigu.theme", mode);
