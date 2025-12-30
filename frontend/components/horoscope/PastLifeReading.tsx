@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { getFallbackSample } from "@/lib/api";
 import { ChartResponse, FormState } from "./types";
 
@@ -74,6 +75,8 @@ function buildShareText(name: string, insights: InsightRecord[]) {
 
 export default function PastLifeReading({ chart, form }: Props) {
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(0);
+  const reduceMotion = useReducedMotion();
   const fallbackSample = useMemo(() => getFallbackSample("/past-life"), []);
 
   const insights = useMemo<InsightRecord[]>(() => {
@@ -87,6 +90,8 @@ export default function PastLifeReading({ chart, form }: Props) {
   }, [chart, fallbackSample]);
 
   const shareText = useMemo(() => buildShareText(form.name, insights), [form.name, insights]);
+  const revealTotal = insights.length;
+  const revealReadyCount = Math.min(Math.max(visibleCount, 0), revealTotal);
 
   useEffect(() => {
     return () => {
@@ -94,6 +99,14 @@ export default function PastLifeReading({ chart, form }: Props) {
       window.speechSynthesis?.cancel();
     };
   }, []);
+
+  useEffect(() => {
+    if (!chart) {
+      setVisibleCount(0);
+      return;
+    }
+    setVisibleCount((prev) => Math.min(Math.max(prev || 2, 1), revealTotal || 2));
+  }, [chart, revealTotal]);
 
   const handleShare = async () => {
     if (typeof window === "undefined") return;
@@ -150,6 +163,14 @@ export default function PastLifeReading({ chart, form }: Props) {
     setIsSpeaking(true);
   };
 
+  const handleRevealNext = () => {
+    setVisibleCount((prev) => Math.min(prev + 1, revealTotal));
+  };
+
+  const handleRevealAll = () => {
+    setVisibleCount(revealTotal);
+  };
+
   return (
     <section className="past-life-panel" aria-label="Past-life story cards">
       <div className="past-life-panel__head">
@@ -180,28 +201,65 @@ export default function PastLifeReading({ chart, form }: Props) {
             </div>
           </div>
 
-          <div className="past-life-cards" role="list">
-            {insights.map((insight, index) => (
-              <details key={`${insight.narrative}-${index}`} className="past-life-card" role="listitem">
-                <summary>
-                  <div className="past-life-card__art" aria-hidden="true">
-                    <span className="past-life-card__orb" />
-                    <span className="past-life-card__spark" />
+          <div className="past-life-reveal" role="status" aria-live="polite">
+            <div>
+              <strong>Unlocked scenes</strong>
+              <p className="microcopy">
+                {revealReadyCount} of {revealTotal} scenes revealed.
+              </p>
+            </div>
+            <div className="past-life-reveal__actions">
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={handleRevealNext}
+                disabled={revealReadyCount >= revealTotal}
+              >
+                Reveal next scene
+              </button>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={handleRevealAll}
+                disabled={revealReadyCount >= revealTotal}
+              >
+                Reveal all
+              </button>
+            </div>
+          </div>
+
+          <div className="past-life-cards" role="list" aria-label="Past-life scenes">
+            <AnimatePresence>
+              {insights.slice(0, revealReadyCount).map((insight, index) => (
+                <motion.details
+                  key={`${insight.narrative}-${index}`}
+                  className="past-life-card"
+                  role="listitem"
+                  initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+                  animate={reduceMotion ? false : { opacity: 1, y: 0 }}
+                  exit={reduceMotion ? false : { opacity: 0, y: 12 }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
+                >
+                  <summary>
+                    <div className="past-life-card__art" aria-hidden="true">
+                      <span className="past-life-card__orb" />
+                      <span className="past-life-card__spark" />
+                    </div>
+                    <div>
+                      <p className="microcopy">Scene {index + 1}</p>
+                      <strong>{insight.epoch || insight.role || "Karmic echo"}</strong>
+                    </div>
+                    <span className="pill">Expand</span>
+                  </summary>
+                  <div className="past-life-card__body">
+                    <p>{insight.narrative}</p>
+                    {insight.sutra_reference ? (
+                      <p className="microcopy">Sutra: {insight.sutra_reference}</p>
+                    ) : null}
                   </div>
-                  <div>
-                    <p className="microcopy">Scene {index + 1}</p>
-                    <strong>{insight.epoch || insight.role || "Karmic echo"}</strong>
-                  </div>
-                  <span className="pill">Expand</span>
-                </summary>
-                <div className="past-life-card__body">
-                  <p>{insight.narrative}</p>
-                  {insight.sutra_reference ? (
-                    <p className="microcopy">Sutra: {insight.sutra_reference}</p>
-                  ) : null}
-                </div>
-              </details>
-            ))}
+                </motion.details>
+              ))}
+            </AnimatePresence>
           </div>
 
           <div className="past-life-guidance">
@@ -210,7 +268,7 @@ export default function PastLifeReading({ chart, form }: Props) {
               <p className="muted">Move through each scene slowly; pause and reflect before the next card.</p>
             </div>
             <div className="past-life-steps">
-              {insights.map((insight, index) => (
+              {insights.slice(0, revealReadyCount).map((insight, index) => (
                 <div key={`${insight.narrative}-step-${index}`} className="past-life-step">
                   <span className="pill">{index + 1}</span>
                   <p className="microcopy">{insight.epoch || "Symbolic chapter"}</p>

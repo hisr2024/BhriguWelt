@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import { areMicroAnimationsAllowed } from "@/lib/immersive";
 import { ChartHouse, DashaPeriod } from "@/types/astro";
@@ -72,6 +73,7 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
   const [constellationHint, setConstellationHint] = useState("Pinch or scroll to zoom constellations");
   const constellationRef = useRef<SVGSVGElement | null>(null);
   const zoomHandleRef = useRef<{ zoom: D3Zoom; svg: D3Selection } | null>(null);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     const refresh = () => setAnimateCharts(areMicroAnimationsAllowed());
@@ -469,98 +471,149 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
     const radius = 135;
     const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
     const overlays = houses[0]?.bhrigu_notes || [];
+    const shouldAnimate = animate && !reduceMotion;
+    const houseVariants = {
+      hidden: { opacity: 0, scale: 0.96 },
+      visible: (index: number) => ({
+        opacity: 1,
+        scale: 1,
+        transition: { delay: index * 0.04, duration: 0.45, ease: "easeOut" },
+      }),
+    };
+
+    const renderHouseGroup = (house: ChartHouse, index: number) => {
+      const startAngle = (house.index - 1) * 30 - 90;
+      const endAngle = startAngle + 30;
+      const midAngle = startAngle + 15;
+      const x1 = center + radius * Math.cos(toRadians(startAngle));
+      const y1 = center + radius * Math.sin(toRadians(startAngle));
+      const x2 = center + radius * Math.cos(toRadians(endAngle));
+      const y2 = center + radius * Math.sin(toRadians(endAngle));
+      const textX = center + (radius - 32) * Math.cos(toRadians(midAngle));
+      const textY = center + (radius - 32) * Math.sin(toRadians(midAngle));
+
+      return (
+        <motion.g
+          key={house.index}
+          className="house-hit"
+          onClick={() => {
+            setActiveDetail(buildHouseDetail(house));
+            setInterpretationLayer("interpretations");
+          }}
+          variants={shouldAnimate ? houseVariants : undefined}
+          initial={shouldAnimate ? "hidden" : undefined}
+          animate={shouldAnimate ? "visible" : undefined}
+          custom={index}
+          style={{ transformOrigin: `${center}px ${center}px` }}
+        >
+          <line x1={center} y1={center} x2={x1} y2={y1} className="kundli-spoke" />
+          {house.index === 12 && <line x1={center} y1={center} x2={x2} y2={y2} className="kundli-spoke" />}
+          <text x={textX} y={textY} textAnchor="middle" className="kundli-label">
+            {house.index}
+            <tspan x={textX} dy="1.1em" className="kundli-sign">
+              {house.sign}
+            </tspan>
+            {renderOccupants(house, textX)}
+          </text>
+        </motion.g>
+      );
+    };
 
     return (
-      <div className={`kundli-card ${animate ? "kundli-card--animated" : ""}`}>
+      <motion.div
+        className={`kundli-card ${animate ? "kundli-card--animated" : ""}`}
+        initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
+        animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
         <header className="section-heading">
           <p className="eyebrow">{label}</p>
           <h4>{houses.length ? readyLabel : "Awaiting birth details"}</h4>
         </header>
         {houses.length > 0 ? (
           <>
-            <svg
+            <motion.svg
               className="kundli-svg"
               viewBox={`0 0 ${size} ${size}`}
               role="img"
               aria-label={`${label} twelve-house wheel`}
               preserveAspectRatio="xMidYMid meet"
+              initial={shouldAnimate ? { opacity: 0 } : false}
+              animate={shouldAnimate ? { opacity: 1 } : false}
+              transition={{ duration: 0.6, ease: "easeOut" }}
             >
-              <circle cx={center} cy={center} r={radius} className="kundli-ring" />
-              {houses.map((house) => {
-                const startAngle = (house.index - 1) * 30 - 90;
-                const endAngle = startAngle + 30;
-                const midAngle = startAngle + 15;
-                const x1 = center + radius * Math.cos(toRadians(startAngle));
-                const y1 = center + radius * Math.sin(toRadians(startAngle));
-                const x2 = center + radius * Math.cos(toRadians(endAngle));
-                const y2 = center + radius * Math.sin(toRadians(endAngle));
-                const textX = center + (radius - 32) * Math.cos(toRadians(midAngle));
-                const textY = center + (radius - 32) * Math.sin(toRadians(midAngle));
-                return (
-                  <g
-                    key={house.index}
-                    className="house-hit"
-                    onClick={() => {
-                      setActiveDetail(buildHouseDetail(house));
-                      setInterpretationLayer("interpretations");
-                    }}
-                  >
-                    <line x1={center} y1={center} x2={x1} y2={y1} className="kundli-spoke" />
-                    {house.index === 12 && <line x1={center} y1={center} x2={x2} y2={y2} className="kundli-spoke" />}
-                    <text x={textX} y={textY} textAnchor="middle" className="kundli-label">
-                      {house.index}
-                      <tspan x={textX} dy="1.1em" className="kundli-sign">
-                        {house.sign}
-                      </tspan>
-                      {renderOccupants(house, textX)}
-                    </text>
-                  </g>
-                );
-              })}
-              <circle cx={center} cy={center} r={48} className="kundli-core" />
-              <text x={center} y={center} textAnchor="middle" className="kundli-center">
+              <motion.circle
+                cx={center}
+                cy={center}
+                r={radius}
+                className="kundli-ring"
+                initial={shouldAnimate ? { opacity: 0 } : false}
+                animate={shouldAnimate ? { opacity: 1 } : false}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+              />
+              {houses.map((house, index) => renderHouseGroup(house, index))}
+              <motion.circle
+                cx={center}
+                cy={center}
+                r={48}
+                className="kundli-core"
+                initial={shouldAnimate ? { opacity: 0, scale: 0.9 } : false}
+                animate={shouldAnimate ? { opacity: 1, scale: 1 } : false}
+                transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+              />
+              <motion.text
+                x={center}
+                y={center}
+                textAnchor="middle"
+                className="kundli-center"
+                initial={shouldAnimate ? { opacity: 0 } : false}
+                animate={shouldAnimate ? { opacity: 1 } : false}
+                transition={{ duration: 0.45, delay: 0.3 }}
+              >
                 Bhrigu
-              </text>
-            </svg>
+              </motion.text>
+            </motion.svg>
             <div className="kundli-visual">
-              <svg width={size} height={size} role="img" aria-label={`${label} twelve-house wheel`}>
-                <circle cx={center} cy={center} r={radius} className="kundli-ring" />
-                {houses.map((house) => {
-                  const startAngle = (house.index - 1) * 30 - 90;
-                  const endAngle = startAngle + 30;
-                  const midAngle = startAngle + 15;
-                  const x1 = center + radius * Math.cos(toRadians(startAngle));
-                  const y1 = center + radius * Math.sin(toRadians(startAngle));
-                  const x2 = center + radius * Math.cos(toRadians(endAngle));
-                  const y2 = center + radius * Math.sin(toRadians(endAngle));
-                  const textX = center + (radius - 32) * Math.cos(toRadians(midAngle));
-                  const textY = center + (radius - 32) * Math.sin(toRadians(midAngle));
-                  return (
-                    <g
-                      key={house.index}
-                      className="house-hit"
-                      onClick={() => {
-                        setActiveDetail(buildHouseDetail(house));
-                        setInterpretationLayer("interpretations");
-                      }}
-                    >
-                      <line x1={center} y1={center} x2={x1} y2={y1} className="kundli-spoke" />
-                      {house.index === 12 && <line x1={center} y1={center} x2={x2} y2={y2} className="kundli-spoke" />}
-                      <text x={textX} y={textY} textAnchor="middle" className="kundli-label">
-                        {house.index}
-                        <tspan x={textX} dy="1.1em" className="kundli-sign">
-                          {house.sign}
-                        </tspan>
-                        {renderOccupants(house, textX)}
-                      </text>
-                    </g>
-                  );
-                })}
-                <circle cx={center} cy={center} r={48} className="kundli-core" />
-                <text x={center} y={center} textAnchor="middle" className="kundli-center">
+              <motion.svg
+                width={size}
+                height={size}
+                role="img"
+                aria-label={`${label} twelve-house wheel`}
+                initial={shouldAnimate ? { opacity: 0 } : false}
+                animate={shouldAnimate ? { opacity: 1 } : false}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+              >
+                <motion.circle
+                  cx={center}
+                  cy={center}
+                  r={radius}
+                  className="kundli-ring"
+                  initial={shouldAnimate ? { opacity: 0 } : false}
+                  animate={shouldAnimate ? { opacity: 1 } : false}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                />
+                {houses.map((house, index) => renderHouseGroup(house, index))}
+                <motion.circle
+                  cx={center}
+                  cy={center}
+                  r={48}
+                  className="kundli-core"
+                  initial={shouldAnimate ? { opacity: 0, scale: 0.9 } : false}
+                  animate={shouldAnimate ? { opacity: 1, scale: 1 } : false}
+                  transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+                />
+                <motion.text
+                  x={center}
+                  y={center}
+                  textAnchor="middle"
+                  className="kundli-center"
+                  initial={shouldAnimate ? { opacity: 0 } : false}
+                  animate={shouldAnimate ? { opacity: 1 } : false}
+                  transition={{ duration: 0.45, delay: 0.3 }}
+                >
                   Bhrigu
-                </text>
-              </svg>
+                </motion.text>
+              </motion.svg>
               {animate && (
                 <div className="kundli-orbits" aria-hidden="true">
                   <span className="kundli-planet kundli-planet--inner" />
@@ -568,18 +621,27 @@ export default function KundliCharts({ rashiChart = [], bhavaChart = [], dashas 
                 </div>
               )}
             </div>
-            {overlays.length > 0 && detailLevel === "advanced" && (
-              <ul className="kudos-list" style={{ marginTop: "0.75rem" }}>
-                {overlays.map((note) => (
-                  <li key={note}>{note}</li>
-                ))}
-              </ul>
-            )}
+            <AnimatePresence>
+              {overlays.length > 0 && detailLevel === "advanced" && (
+                <motion.ul
+                  className="kudos-list"
+                  style={{ marginTop: "0.75rem" }}
+                  initial={shouldAnimate ? { opacity: 0, y: 12 } : false}
+                  animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+                  exit={shouldAnimate ? { opacity: 0, y: 12 } : false}
+                  transition={{ duration: 0.3 }}
+                >
+                  {overlays.map((note) => (
+                    <li key={note}>{note}</li>
+                  ))}
+                </motion.ul>
+              )}
+            </AnimatePresence>
           </>
         ) : (
           <p className="muted">Charts render after the API responds.</p>
         )}
-      </div>
+      </motion.div>
     );
   };
 
