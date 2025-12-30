@@ -1,7 +1,7 @@
 # Primary backend dependencies. Update with `pip-compile backend/requirements.in --output-file backend/requirements.txt`.
 pytz==2025.2
 geopy==2.4.1
-timezonefinder==6.4.1
+timezonefinder==8.1.0
 # Upgrade scikit-learn for Python 3.13 compatibility
 scikit-learn==1.5.2
 pandas==2.3.3
