@@ -1,209 +1,199 @@
 'use client';
 
-import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { useI18n, type Language } from "@/lib/i18n";
-import { theme } from "@/lib/theme";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Bell,
+  CalendarDays,
+  ChartLine,
+  Compass,
+  LayoutDashboard,
+  MessageCircle,
+  Moon,
+  Sun,
+} from "lucide-react";
 import GdprConsentBanner from "@/components/GdprConsentBanner";
-
-type Props = {
-  children: React.ReactNode;
-};
+import { useThemeMode } from "@/lib/themeContext";
 
 const navLinks = [
-  { href: "/", key: "nav.home", fallback: "Home" },
-  { href: "/dashboard", key: "nav.dashboard", fallback: "Dashboard" },
-  { href: "/studio", key: "nav.studio", fallback: "Studio" },
-  { href: "/calendar", key: "nav.calendar", fallback: "Śaka calendar" },
-  { href: "/horoscope", key: "nav.horoscope", fallback: "Horoscope" },
-  { href: "/past-life", key: "nav.past", fallback: "Past lives" },
-  { href: "/future", key: "nav.future", fallback: "Future" },
-  { href: "/core-wisdom", key: "nav.coreWisdom", fallback: "Core wisdom" },
-  { href: "/matchmaking", key: "nav.matchmaking", fallback: "Matchmaking" },
+  { href: "/", label: "Home", icon: Compass },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/chat", label: "Chat", icon: MessageCircle },
+  { href: "/alerts", label: "Alerts", icon: Bell },
+  { href: "/analytics", label: "Analytics", icon: ChartLine },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays },
 ];
 
-function LanguageToggle() {
-  const { lang, setLang, availableLanguages } = useI18n();
+const engineLinks = [
+  { href: "/horoscope", label: "Horoscope" },
+  { href: "/past-life", label: "Past Life" },
+  { href: "/future", label: "Future" },
+  { href: "/matchmaking", label: "Matchmaking" },
+  { href: "/timeline", label: "Timeline" },
+  { href: "/varshaphal", label: "Varshaphal" },
+  { href: "/transits", label: "Transits" },
+  { href: "/core-wisdom", label: "Core Wisdom" },
+];
+
+function ThemeToggle() {
+  const { mode, cycleMode } = useThemeMode();
+  const Icon = mode === "light" ? Sun : Moon;
+
   return (
-    <label className="language-toggle" aria-label="Language toggle">
-      <span className="sr-only">Language</span>
-      <select value={lang} onChange={(event) => setLang(event.target.value as Language)}>
-        {availableLanguages.map((option) => (
-          <option key={option.code} value={option.code}>
-            {option.nativeLabel} ({option.label})
-          </option>
-        ))}
-      </select>
-    </label>
+    <button
+      type="button"
+      onClick={cycleMode}
+      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-slate-200 transition hover:border-white/30 hover:text-white dark:text-slate-200"
+      aria-label="Toggle theme"
+    >
+      <Icon className="h-4 w-4" />
+      {mode === "light" ? "Light" : mode === "high-contrast" ? "Focus" : "Dark"}
+    </button>
   );
 }
 
-function Shell({ children }: Props) {
-  const { t } = useI18n();
+export default function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
-    const closeOnResize = () => setMenuOpen(false);
-    window.addEventListener("resize", closeOnResize);
-    return () => window.removeEventListener("resize", closeOnResize);
-  }, []);
+    setMenuOpen(false);
+  }, [pathname]);
 
-  useEffect(() => {
-    const handleClickHaptics = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (!target) {
-        return;
-      }
-      const hapticTarget = target.closest("[data-haptic]");
-      if (hapticTarget && "vibrate" in navigator) {
-        navigator.vibrate(12);
-      }
-    };
-
-    document.addEventListener("click", handleClickHaptics);
-    return () => document.removeEventListener("click", handleClickHaptics);
-  }, []);
-
-  useEffect(() => {
-    const handleTouchStart = (event: TouchEvent) => {
-      const touch = event.touches[0];
-      if (!touch) {
-        return;
-      }
-      touchStart.current = { x: touch.clientX, y: touch.clientY };
-    };
-
-    const handleTouchEnd = (event: TouchEvent) => {
-      const start = touchStart.current;
-      const touch = event.changedTouches[0];
-      touchStart.current = null;
-      if (!start || !touch) {
-        return;
-      }
-      const deltaX = touch.clientX - start.x;
-      const deltaY = touch.clientY - start.y;
-      const isHorizontalSwipe = Math.abs(deltaX) > 60 && Math.abs(deltaY) < 40;
-      if (!isHorizontalSwipe) {
-        return;
-      }
-      if (!menuOpen && start.x < 40 && deltaX > 0) {
-        setMenuOpen(true);
-        if ("vibrate" in navigator) {
-          navigator.vibrate(18);
-        }
-      } else if (menuOpen && deltaX < 0) {
-        setMenuOpen(false);
-        if ("vibrate" in navigator) {
-          navigator.vibrate(18);
-        }
-      }
-    };
-
-    window.addEventListener("touchstart", handleTouchStart, { passive: true });
-    window.addEventListener("touchend", handleTouchEnd);
-    return () => {
-      window.removeEventListener("touchstart", handleTouchStart);
-      window.removeEventListener("touchend", handleTouchEnd);
-    };
-  }, [menuOpen]);
+  const mainKey = useMemo(() => pathname, [pathname]);
 
   return (
-    <>
-      <a href="#main" className="skip-link">
-        {t("nav.skip", "Skip to content")}
+    <div className="min-h-screen bg-hero-gradient">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-indigo-500 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold"
+      >
+        Skip to content
       </a>
 
-      <header className="topbar" aria-label="Site header">
-        <Link href="/" className="brand" aria-label={t("nav.home", "Home")}>
-          <span className="brand-mark" style={{ background: theme.gradients.brand }} aria-hidden />
-          BhriguWelt
-        </Link>
-        <button
-          type="button"
-          className="nav-toggle"
-          aria-expanded={menuOpen}
-          aria-controls="primary-navigation"
-          data-haptic="light"
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          {menuOpen ? "Close" : "Menu"}
-        </button>
-        <nav id="primary-navigation" className={menuOpen ? "is-open" : ""} aria-label="Main">
-          <ul>
-            {navLinks.map((link) => (
-              <li key={link.href}>
-                <Link href={link.href} onClick={() => setMenuOpen(false)}>
-                  {t(link.key, link.fallback)}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-        <div className="topbar__actions">
-          <LanguageToggle />
-          <Link className="button-link" href="/matchmaking" data-haptic="light">
-            {t("nav.cta", "Start a session")}
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/80 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
+          <Link href="/" className="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.3em] text-white">
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-xs font-bold shadow-glow">
+              BW
+            </span>
+            BhriguWelt
           </Link>
+          <nav className="hidden items-center gap-2 lg:flex" aria-label="Primary">
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white"
+                >
+                  <Icon className="h-4 w-4" />
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/10 lg:hidden"
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-expanded={menuOpen}
+              aria-controls="mobile-navigation"
+            >
+              {menuOpen ? "Close" : "Menu"}
+            </button>
+          </div>
+        </div>
+        <div
+          id="mobile-navigation"
+          className={`border-t border-white/10 bg-slate-950/90 px-5 py-4 sm:px-8 lg:hidden ${
+            menuOpen ? "block" : "hidden"
+          }`}
+        >
+          <div className="grid gap-2">
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <Icon className="h-4 w-4" />
+                    {link.label}
+                  </span>
+                  <span aria-hidden>→</span>
+                </Link>
+              );
+            })}
+            <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+              {engineLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-slate-200"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       </header>
 
-      <main id="main" className="page-shell" tabIndex={-1}>
-        {children}
-      </main>
+      <AnimatePresence mode="wait">
+        <motion.main
+          key={mainKey}
+          id="main"
+          className="mx-auto w-full max-w-6xl px-5 pb-16 pt-10 sm:px-8"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -12 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+        >
+          {children}
+        </motion.main>
+      </AnimatePresence>
 
       <GdprConsentBanner />
 
-      <footer className="footer" aria-label="Footer">
-        <div>
-          <p className="eyebrow">Bharat-centred Jyotish</p>
-          <h3>{t("nav.tagline", "Quiet guidance across every stage of life.")}</h3>
-          <p className="muted">{t("nav.desc", "Readable predictions, Śaka-ready conversions, and heartfelt remedies in one space.")}</p>
-          <div className="footer-brand">
-            <Image src="/logo.svg" alt="" width={28} height={28} loading="lazy" aria-hidden />
-            <span className="muted">Offline-ready PWA experiences</span>
+      <footer className="border-t border-white/10 bg-slate-950/70">
+        <div className="mx-auto grid w-full max-w-6xl gap-8 px-5 py-12 text-sm text-slate-300 sm:px-8 lg:grid-cols-[1.4fr_1fr_1fr]">
+          <div className="space-y-4">
+            <p className="chip">Astrology Intelligence</p>
+            <h3 className="text-2xl font-semibold text-white">A dark-first workspace for every BhriguWelt engine.</h3>
+            <p className="text-slate-400">
+              Seamless inputs, rich results, and a mobile-first surface that keeps guidance clear and focused.
+            </p>
+          </div>
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Core Engines</p>
+            <div className="grid gap-2">
+              {engineLinks.map((link) => (
+                <Link key={link.href} href={link.href} className="text-slate-300 transition hover:text-white">
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Operations</p>
+            <div className="grid gap-2">
+              {navLinks.map((link) => (
+                <Link key={link.href} href={link.href} className="text-slate-300 transition hover:text-white">
+                  {link.label}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
-        <div>
-          <p className="eyebrow">{t("footer.bot", "Bhrigu Wisdom Bot")}</p>
-          <h4>{t("footer.bot.title", "Ask about horoscopes, past lives, the future, and matchmaking.")}</h4>
-          <ul className="soft-list">
-            <li>{t("footer.bot.horoscope", "Direct answers for your current horoscope queries.")}</li>
-            <li>{t("footer.bot.past", "Reflections on past lives shaped by our stored core wisdoms.")}</li>
-            <li>{t("footer.bot.future", "Forward-looking predictions rooted in Jyotish guidance.")}</li>
-            <li>{t("footer.bot.matchmaking", "Matchmaking insights grounded in the repository's teachings.")}</li>
-          </ul>
-          <p className="muted">{t("footer.bot.desc", "Every reply is drawn from the preserved corpus of Bhrigu knowledge.")}</p>
-        </div>
-        <div className="footer-links">
-          {navLinks.map((link) => (
-            <Link key={link.href} href={link.href}>
-              {t(link.key, link.fallback)}
-            </Link>
-          ))}
-          <Link href="/">{t("nav.home", "Home")}</Link>
-        </div>
       </footer>
-    </>
+    </div>
   );
-}
-
-export default function AppShell({ children }: Props) {
-  useEffect(() => {
-    if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
-      return;
-    }
-
-    const registerServiceWorker = () => {
-      navigator.serviceWorker.register("/sw.js").catch(() => {
-        // Registration failure should not block the UI.
-      });
-    };
-
-    window.addEventListener("load", registerServiceWorker);
-    return () => window.removeEventListener("load", registerServiceWorker);
-  }, []);
-
-  return <Shell>{children}</Shell>;
 }

@@ -11,13 +11,13 @@ type ThemeContextValue = {
 };
 
 const ThemeContext = createContext<ThemeContextValue>({
-  mode: "light",
+  mode: "dark",
   setMode: () => undefined,
   cycleMode: () => undefined,
 });
 
 function readStoredMode(): ThemeMode {
-  if (typeof window === "undefined") return "light";
+  if (typeof window === "undefined") return "dark";
   const stored = window.localStorage.getItem("bhrigu.theme") as ThemeMode | null;
   if (stored && ["light", "dark", "high-contrast"].includes(stored)) return stored;
   const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
@@ -29,10 +29,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof document === "undefined") return;
-    document.body.dataset.theme = mode;
-    document.body.dataset.contrast = mode === "high-contrast" ? "high" : "normal";
-    document.documentElement.dataset.theme = mode;
-    document.documentElement.style.colorScheme = mode === "light" ? "light" : "dark";
+    const root = document.documentElement;
+    root.classList.toggle("dark", mode !== "light");
+    root.classList.toggle("light", mode === "light");
+    root.classList.toggle("contrast", mode === "high-contrast");
+    document.body.classList.toggle("light", mode === "light");
+    root.style.colorScheme = mode === "light" ? "light" : "dark";
     window?.localStorage?.setItem("bhrigu.theme", mode);
   }, [mode]);
 
