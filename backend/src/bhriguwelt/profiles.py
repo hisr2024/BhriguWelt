@@ -5,7 +5,7 @@ import json
 import os
 import sqlite3
 from dataclasses import dataclass, asdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
@@ -402,15 +402,39 @@ def alerts_summary(limit: int = 10) -> List[Dict[str, Any]]:
     return [dict(row) for row in rows]
 
 
-def analytics_snapshot() -> Dict[str, Any]:
+def analytics_snapshot(window_days: int = 30) -> Dict[str, Any]:
+    cutoff = _timestamp(datetime.utcnow() - timedelta(days=window_days))
     with _connect() as connection:
         profile_count = connection.execute("SELECT COUNT(*) FROM profiles").fetchone()[0]
         alert_count = connection.execute("SELECT COUNT(*) FROM alerts").fetchone()[0]
         session_count = connection.execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
+        recent_profiles = connection.execute(
+            "SELECT COUNT(*) FROM profiles WHERE created_at >= ?",
+            (cutoff,),
+        ).fetchone()[0]
+        recent_sessions = connection.execute(
+            "SELECT COUNT(*) FROM sessions WHERE updated_at >= ?",
+            (cutoff,),
+        ).fetchone()[0]
+        sessions_with_transcript = connection.execute(
+            "SELECT COUNT(*) FROM sessions WHERE transcript_json != '[]'"
+        ).fetchone()[0]
     return {
         "profiles": profile_count,
         "alerts": alert_count,
         "sessions": session_count,
+        "profiles_overview": {
+            "total": profile_count,
+            "recent_window_days": window_days,
+            "recent": recent_profiles,
+        },
+        "sessions_overview": {
+            "total": session_count,
+            "recent_window_days": window_days,
+            "recent": recent_sessions,
+            "with_transcript": sessions_with_transcript,
+        },
+        "alerts_overview": {"total": alert_count},
     }
 
 

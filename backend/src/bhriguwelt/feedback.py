@@ -5,7 +5,7 @@ import json
 import os
 import sqlite3
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -208,6 +208,65 @@ def serialize_entry(entry: FeedbackEntry) -> Dict[str, object]:
     return asdict(entry)
 
 
+def feedback_analytics(window_days: int = 30, latest_limit: int = 5) -> Dict[str, Any]:
+    cutoff = datetime.utcnow() - timedelta(days=window_days)
+    cutoff_value = _timestamp(cutoff)
+    with _connect() as connection:
+        totals = connection.execute(
+            "SELECT COUNT(*) AS submissions, AVG(rating) AS average_rating FROM feedback"
+        ).fetchone()
+        recent_count = connection.execute(
+            "SELECT COUNT(*) AS submissions FROM feedback WHERE created_at >= ?",
+            (cutoff_value,),
+        ).fetchone()
+        by_engine_rows = connection.execute(
+            """
+            SELECT engine,
+                   COUNT(*) AS submissions,
+                   AVG(rating) AS average_rating,
+                   SUM(CASE WHEN rating >= 4 THEN 1 ELSE 0 END) AS promoters
+            FROM feedback
+            GROUP BY engine
+            ORDER BY submissions DESC
+            """
+        ).fetchall()
+        latest_rows = connection.execute(
+            """
+            SELECT id, engine, rating, seeker_name, notes, created_at
+            FROM feedback
+            ORDER BY created_at DESC
+            LIMIT ?
+            """,
+            (latest_limit,),
+        ).fetchall()
+    return {
+        "total": totals["submissions"],
+        "average_rating": round(totals["average_rating"], 2) if totals["average_rating"] is not None else None,
+        "recent_window_days": window_days,
+        "recent_submissions": recent_count["submissions"],
+        "by_engine": [
+            {
+                "engine": row["engine"],
+                "submissions": row["submissions"],
+                "average_rating": round(row["average_rating"], 2) if row["average_rating"] is not None else None,
+                "promoters": row["promoters"] or 0,
+            }
+            for row in by_engine_rows
+        ],
+        "latest": [
+            {
+                "id": row["id"],
+                "engine": row["engine"],
+                "rating": row["rating"],
+                "seeker_name": row["seeker_name"],
+                "notes": row["notes"],
+                "created_at": row["created_at"],
+            }
+            for row in latest_rows
+        ],
+    }
+
+
 def load_feedback_dataframe(limit: int | None = None):
     """Load feedback (including inputs) into a pandas DataFrame for ML training.
 
@@ -235,4 +294,11 @@ def load_feedback_dataframe(limit: int | None = None):
     return frame
 
 
-__all__ = ["FeedbackEntry", "record_feedback", "quarterly_reviews", "serialize_entry", "load_feedback_dataframe"]
+__all__ = [
+    "FeedbackEntry",
+    "record_feedback",
+    "quarterly_reviews",
+    "serialize_entry",
+    "feedback_analytics",
+    "load_feedback_dataframe",
+]
