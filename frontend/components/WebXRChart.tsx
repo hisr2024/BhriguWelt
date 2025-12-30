@@ -164,7 +164,12 @@ export default function WebXRChart({ rashiChart = [] }: Props) {
     (gl: WebGLRenderingContext, positionBuffer: WebGLBuffer) => {
       const points = chartPoints.length
         ? chartPoints
-        : Array.from({ length: 12 }, (_, index) => ({ index: index + 1, occupants: [] } as ChartHouse));
+        : Array.from({ length: 12 }, (_, index) => ({
+            index: index + 1,
+            sign: "Unknown",
+            occupants: [],
+            bhrigu_notes: [],
+          }));
       const positions: number[] = [];
       points.forEach((house, idx) => {
         const angle = (idx / points.length) * Math.PI * 2;
