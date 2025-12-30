@@ -17,6 +17,10 @@ type Props = {
   isComplete: boolean;
   progressSteps: ProgressStep[];
   prefillNotice?: string | null;
+  voiceSupported: boolean;
+  isSpeaking: boolean;
+  onToggleVoiceGuidance: () => void;
+  voiceStatus: string;
   onChange: (field: keyof FormState, value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onAskBhrigu: () => void;
@@ -32,6 +36,10 @@ export default function FormPanel({
   isComplete,
   progressSteps,
   prefillNotice,
+  voiceSupported,
+  isSpeaking,
+  onToggleVoiceGuidance,
+  voiceStatus,
   onChange,
   onSubmit,
   onAskBhrigu,
@@ -47,6 +55,26 @@ export default function FormPanel({
         <div className="status-chip" aria-live="polite">
           {status === "success" ? "Reading ready" : "Awaiting details"}
         </div>
+      </div>
+      <div className="assistive-row" role="group" aria-label="Form guidance controls">
+        <button
+          type="button"
+          className={`assistive-chip ${isSpeaking ? "assistive-chip--active" : ""}`}
+          onClick={onToggleVoiceGuidance}
+          aria-pressed={isSpeaking}
+          aria-describedby={voiceSupported ? undefined : "voice-unsupported"}
+          disabled={!voiceSupported}
+        >
+          {isSpeaking ? "Stop voice guidance" : "Play voice guidance"}
+        </button>
+        <span className="assistive-value" aria-live="polite">
+          {voiceStatus}
+        </span>
+        {!voiceSupported ? (
+          <span id="voice-unsupported" className="microcopy">
+            Voice guidance is not supported in this browser.
+          </span>
+        ) : null}
       </div>
 
       {prefillNotice ? (
@@ -113,6 +141,38 @@ export default function FormPanel({
               onChange={(event) => onChange("placeOfBirth", event.target.value)}
               required
             />
+          </div>
+        </div>
+
+        <div className="field-row field-row--split">
+          <div className="field">
+            <label htmlFor="horoscope-lunar-tithi">Lunar tithi (1-30)</label>
+            <input
+              id="horoscope-lunar-tithi"
+              name="lunarTithi"
+              type="number"
+              min={1}
+              max={30}
+              placeholder="e.g. 12"
+              value={form.lunarTithi || ""}
+              onChange={(event) => onChange("lunarTithi", event.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="horoscope-moon-element">Moon element</label>
+            <select
+              id="horoscope-moon-element"
+              name="moonElement"
+              value={form.moonElement || ""}
+              onChange={(event) => onChange("moonElement", event.target.value)}
+            >
+              <option value="">Select element</option>
+              <option value="water">Water</option>
+              <option value="fire">Fire</option>
+              <option value="air">Air</option>
+              <option value="earth">Earth</option>
+              <option value="ether">Ether</option>
+            </select>
           </div>
         </div>
 

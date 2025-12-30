@@ -808,6 +808,100 @@ textarea:focus {
   align-items: center;
 }
 
+.calendar-map {
+  margin-top: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.calendar-map__canvas {
+  min-height: 220px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 148, 148, 0.3);
+  background: linear-gradient(140deg, rgba(240, 240, 246, 0.7), rgba(230, 230, 238, 0.45));
+}
+
+.calendar-map__meta {
+  display: grid;
+  gap: 10px;
+}
+
+.calendar-map__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.calendar-wheel {
+  margin-top: 16px;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+}
+
+.calendar-wheel__ring {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  border: 1px solid rgba(148, 148, 148, 0.3);
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.9), rgba(233, 233, 240, 0.7));
+}
+
+.calendar-wheel__tick {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 10px;
+  background: rgba(90, 90, 110, 0.6);
+  transform-origin: center -98px;
+  transform: rotate(var(--tick-rotation));
+}
+
+.calendar-wheel__marker {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #4c5fff;
+  box-shadow: 0 0 12px rgba(76, 95, 255, 0.6);
+  transform: rotate(var(--wheel-rotation)) translateY(-94px);
+}
+
+.calendar-wheel__center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 4px;
+  padding: 24px;
+}
+
+.calendar-wheel__legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 12px;
+}
+
+.calendar-wheel__legend-item {
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(150, 150, 160, 0.35);
+  color: rgba(70, 70, 90, 0.9);
+}
+
+.calendar-wheel__legend-item.is-active {
+  border-color: rgba(76, 95, 255, 0.5);
+  background: rgba(76, 95, 255, 0.12);
+  color: rgba(50, 60, 130, 0.95);
+}
+
 .house-sign {
   font-weight: 700;
   color: #2f3740;
@@ -1156,6 +1250,10 @@ textarea:focus {
   background: linear-gradient(90deg, rgba(255, 165, 228, 0.06), rgba(255, 255, 255, 0.02));
 }
 
+.timeline--fuchsia {
+  background: linear-gradient(90deg, rgba(244, 114, 182, 0.08), rgba(217, 70, 239, 0.04));
+}
+
 .timeline__house-band {
   overflow-x: auto;
   margin: 8px 0;
@@ -1475,6 +1573,218 @@ textarea:focus {
   transform: translateY(-4px) scale(1.02);
 }
 
+.matchmaking-energy {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 1.25rem;
+}
+
+.matchmaking-energy__header h3 {
+  margin: 0;
+}
+
+.matchmaking-energy__field {
+  position: relative;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 18px;
+  background: linear-gradient(140deg, rgba(15, 23, 42, 0.8), rgba(30, 64, 175, 0.16));
+  overflow: hidden;
+  min-height: 150px;
+}
+
+.matchmaking-energy--ready .matchmaking-energy__field {
+  border-color: rgba(94, 234, 212, 0.4);
+}
+
+.matchmaking-energy__field--active {
+  box-shadow: 0 18px 40px rgba(94, 234, 212, 0.2);
+}
+
+.matchmaking-energy__layer {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(12px);
+  opacity: 0.55;
+  animation: cosmicFloat 6s ease-in-out infinite;
+}
+
+.matchmaking-energy__layer--primary {
+  width: 220px;
+  height: 220px;
+  left: -40px;
+  top: -40px;
+  background: radial-gradient(circle, rgba(248, 113, 113, 0.6), transparent 60%);
+}
+
+.matchmaking-energy__layer--partner {
+  width: 220px;
+  height: 220px;
+  right: -30px;
+  top: -30px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.6), transparent 60%);
+  animation-delay: 1.2s;
+}
+
+.matchmaking-energy__layer--core {
+  width: 280px;
+  height: 280px;
+  left: 50%;
+  top: 30px;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.4), transparent 60%);
+  animation: cosmicFloatCenter 7s ease-in-out infinite;
+}
+
+.matchmaking-energy__content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 8px;
+}
+
+.matchmaking-energy__labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 600;
+}
+
+.matchmaking-energy__metrics {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.matchmaking-energy__overlays {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.matchmaking-energy__tag {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 12px;
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.matchmaking-save {
+  display: grid;
+  gap: 6px;
+  margin-top: 0.75rem;
+}
+
+.checkbox-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.matchmaking-cards {
+  margin-top: 1.5rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.matchmaking-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.matchmaking-card {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.matchmaking-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+}
+
+.matchmaking-card__toggle {
+  width: 100%;
+  padding: 16px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.matchmaking-card__metric {
+  font-weight: 700;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.matchmaking-card__body {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0 16px;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+
+.matchmaking-card.is-open .matchmaking-card__body {
+  max-height: 420px;
+  opacity: 1;
+  padding: 0 16px 16px;
+}
+
+.matchmaking-card__body ul {
+  margin: 8px 0 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 6px;
+}
+
+.matchmaking-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.disclaimer {
+  opacity: 0.85;
+}
+
+@keyframes cosmicFloat {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.02);
+  }
+}
+
+@keyframes cosmicFloatCenter {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-6px) scale(1.02);
+  }
+}
+
+body[data-animations="off"] .matchmaking-energy__layer {
+  animation: none;
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -1485,5 +1795,4 @@ textarea:focus {
     transform: translateY(0);
   }
 }
-
 

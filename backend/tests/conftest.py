@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 import threading
 import trace
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Iterable, List, Set
 
@@ -15,6 +16,7 @@ if str(SRC_PATH) not in sys.path:  # pragma: no cover - import side effect
     sys.path.insert(0, str(SRC_PATH))
 
 _TRACE_KEY = "_cov_tracer"
+_HAS_PYTEST_COV = find_spec("pytest_cov") is not None
 
 
 def _discover_py_files(paths: Iterable[str]) -> List[Path]:
@@ -29,6 +31,8 @@ def _discover_py_files(paths: Iterable[str]) -> List[Path]:
 
 
 def pytest_addoption(parser):  # pragma: no cover - exercised via CLI
+    if _HAS_PYTEST_COV:
+        return
     parser.addoption("--cov", action="append", default=[], help="Paths to measure coverage for")
     parser.addoption(
         "--cov-report",
@@ -39,6 +43,8 @@ def pytest_addoption(parser):  # pragma: no cover - exercised via CLI
 
 
 def pytest_configure(config):  # pragma: no cover - exercised via CLI
+    if _HAS_PYTEST_COV:
+        return
     cov_targets = config.getoption("--cov")
     if cov_targets:
         tracer = trace.Trace(count=True, trace=False, ignoredirs=[sys.prefix, sys.exec_prefix])
@@ -46,6 +52,8 @@ def pytest_configure(config):  # pragma: no cover - exercised via CLI
 
 
 def pytest_sessionstart(session):  # pragma: no cover - exercised via CLI
+    if _HAS_PYTEST_COV:
+        return
     tracer = getattr(session.config, _TRACE_KEY, None)
     if tracer:
         sys.settrace(tracer.globaltrace)
@@ -53,6 +61,8 @@ def pytest_sessionstart(session):  # pragma: no cover - exercised via CLI
 
 
 def pytest_sessionfinish(session, exitstatus):  # pragma: no cover - exercised via CLI
+    if _HAS_PYTEST_COV:
+        return
     tracer = getattr(session.config, _TRACE_KEY, None)
     if not tracer:
         return

@@ -65,11 +65,11 @@ Design language and interaction blueprint for a serene, minimalistic, and univer
 - **Gen-Z polish:** sparkles/glow when hovering over planets; micro-delay ripple when switching tabs; maintain WCAG contrast.
 
 ## Past Lives (Symbolic)
-- **Tone:** reflective, mythic narratives with soft ancient-scroll textures behind cards and subtle golden geometry overlays.
-- **Presentation:** story mode carousel; each card shows 2–3 lines of symbolic text and a minimal illustration silhouette.
-- **Transitions:** slow cross-fades between cards; background ambience slightly warmer. Include clear disclaimer: “Symbolic guidance, not literal history.”
-- **Interactions:** “Swipe to reveal past chapter” on mobile; arrow/scroll on desktop. Progress indicator uses dots or a slender line.
-- **Safety:** reminder modal on first entry clarifying symbolic intent; option to mute story-specific audio.
+- **Content:** cards show 2–3 lines of symbolic guidance only; avoid narrative flourishes or scenic copy.
+- **Layout:** carousel with minimal illustration silhouettes; progress indicator uses dots or a slender line.
+- **Navigation:** “Swipe to reveal past chapter” on mobile; arrow/scroll on desktop.
+- **Disclosure:** persistent disclaimer: “Symbolic guidance, not literal history.”
+- **Safety:** reminder modal on first entry clarifying symbolic intent; option to mute module-specific audio.
 
 ## Future Directives (Symbolic Guidance)
 - **Cards:** modern stacked cards with icon + theme title (e.g., Growth, Emotional Balance, Dharma, Clarity).

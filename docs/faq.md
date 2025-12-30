@@ -1,7 +1,7 @@
 # Frequently Asked Questions
 
 ## How do I point the UI to my backend?
-Set `NEXT_PUBLIC_BACKEND_URL` in `.env.local` inside `frontend/` to your Render or Railway deployment. Restart `npm run dev` after updating.
+Set `NEXT_PUBLIC_BACKEND_URL` in `.env.local` inside `frontend/` to your Railway deployment. Restart `npm run dev` after updating.
 
 ## Why am I seeing rate limits?
 Both the threaded and async Python APIs include a per-client token bucket. If you receive HTTP 429, wait a minute or reduce concurrent calls.
