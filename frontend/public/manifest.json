@@ -1,12 +1,14 @@
 {
   "name": "BhriguWelt Experiences",
   "short_name": "BhriguWelt",
-  "description": "Modern web and mobile ready UI for Bhrigu Samhita-powered experiences.",
-  "start_url": "/",
+  "description": "Offline-ready, standalone astrology experiences powered by the Bhrigu Samhita.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f7f4ec",
-  "theme_color": "#f7f4ec",
+  "background_color": "#0b1017",
+  "theme_color": "#0b1017",
   "orientation": "portrait",
+  "display_override": ["standalone", "minimal-ui"],
   "icons": [
     {
       "src": "/logo.svg",

@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
+import Providers from "./providers";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "BhriguWelt Experiences",
   description: "Modern web and mobile ready UI for the Bhrigu Samhita-powered horoscope, future, past life, matchmaking, and calendar engines.",
   manifest: "/manifest.json",
-  themeColor: "#f7f4ec",
   icons: {
     icon: "/logo.svg",
     apple: "/logo.svg",
@@ -19,16 +26,18 @@ export const metadata: Metadata = {
 };
 
 export const viewport = {
-  themeColor: "#f7f4ec",
+  themeColor: "#0b1017",
   width: "device-width",
   initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body className="app-body">
-        <AppShell>{children}</AppShell>
+        <Providers>
+          <AppShell>{children}</AppShell>
+        </Providers>
       </body>
     </html>
   );
