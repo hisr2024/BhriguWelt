@@ -584,33 +584,40 @@ def build_core_wisdom_reading(
     manuscript_excerpt = "; ".join(manuscript_wisdom) if manuscript_wisdom else "The folios highlight steady discipline."
 
     sections = {
-        "Seeker Snapshot": (
-            f"Name: {request.name}. Birth: {request.birth_date} at {request.birth_time} in {request.birth_place}. "
+        "1": (
+            "Seeker Snapshot: "
+            f"Name {request.name}. Birth {request.birth_date} at {request.birth_time} in {request.birth_place}. "
             f"Focus areas: {focus_summary}."
         ),
-        "Karmic Insights": (
+        "2": (
+            "Karmic Insights: "
             f"Karmic epoch — {horoscope.karmic_epoch}. "
             f"Primary currents include {', '.join(sorted(horoscope.weights, key=horoscope.weights.get, reverse=True)[:3])}."
         ),
-        "Birth Chart Overview": (
+        "3": (
+            "Birth Chart Overview: "
             "Manuscript-backed interpretation: "
             f"{horoscope.interpretation}"
         ),
-        "Life Area Focus": (
+        "4": (
+            "Life Area Focus: "
             f"Strengths — {', '.join(strengths) or 'resilience and curiosity'}. "
             f"Challenges — {', '.join(challenges) or 'balancing intuition with action'}. "
             f"Key remedies from the folios: {remedy_text}"
         ),
-        "Manuscript Wisdom": (
+        "5": (
+            "Manuscript Wisdom: "
             "Anchors from the Bhrigu folios: "
             f"{manuscript_excerpt}"
         ),
-        "Future Tendencies": _future_tendencies(horoscope.future_trajectories),
-        "Dharma Guidance": (
+        "6": "Future Tendencies: " + _future_tendencies(horoscope.future_trajectories),
+        "7": (
+            "Dharma Guidance: "
             f"{_guidance_summary(horoscope.remedies, horoscope.future_trajectories)} "
             "Hold steady discipline, align effort with higher duty, and revisit intentions weekly."
         ),
-        "Closing Blessing": (
+        "8": (
+            "Closing Blessing: "
             "Tendencies guide you, but choices shape outcomes. "
             "Take what resonates, leave the rest, and proceed with compassion."
         ),
@@ -1275,14 +1282,17 @@ def _resolve_varshaphal_months(target_year: str, timezone_name: str | None) -> L
         anchor = date(today.year, today.month, day)
 
     month_windows: List[tuple[str, List[str], datetime]] = []
-    for offset in range(12):
-        month_date = _add_months(anchor, offset)
-        month_label = month_date.strftime("%b %Y")
+    for offset in range(0, 12, 3):
+        quarter_start = _add_months(anchor, offset)
+        quarter_months = [_add_months(quarter_start, index) for index in range(3)]
+        month_labels = [month.strftime("%b") for month in quarter_months]
+        month_range = f"{quarter_months[0].strftime('%b')}–{quarter_months[-1].strftime('%b %Y')}"
+        transit_date = quarter_months[1].isoformat()
         month_windows.append(
             (
-                month_label,
-                [month_date.strftime("%b")],
-                normalize_birth_datetime(month_date.isoformat(), "12:00", timezone_name=timezone_name),
+                month_range,
+                month_labels,
+                normalize_birth_datetime(transit_date, "12:00", timezone_name=timezone_name),
             )
         )
     return month_windows
@@ -1874,6 +1884,36 @@ def _collect_timeline_citations(horoscope: HoroscopeReport, tradition: str) -> L
     if horoscope.dashas:
         citations.append("Dashas derived via Vimshottari sequence; antardashas proportionally scaled.")
     return citations[:5]
+
+
+def _collect_varshaphal_citations(
+    horoscope: HoroscopeReport,
+    tradition: str,
+    transit_rules: Sequence[Dict[str, object]] | None,
+) -> List[str]:
+    citations: List[str] = []
+    citations.extend(_collect_bhrigu_texts(horoscope, tradition)[:3])
+
+    normalized_tradition = (tradition or "universal").lower()
+    for rule in transit_rules or []:
+        if not isinstance(rule, dict):
+            continue
+        rule_tradition = str(rule.get("tradition") or "").lower()
+        if rule_tradition and rule_tradition not in {"universal", normalized_tradition}:
+            continue
+        reference = rule.get("sutra_reference") or rule.get("id") or "Transit rule"
+        influence = rule.get("influence") or "Transit guidance recorded."
+        citations.append(f"{reference}: {influence}")
+        if len(citations) >= 6:
+            break
+
+    if horoscope.dashas:
+        citations.append("Vimshottari dasha cadence used to sequence monthly focus areas.")
+
+    if not citations:
+        citations.append("Bhrigu Samhita manuscripts referenced for Varshaphal alignment.")
+
+    return citations[:6]
 
 
 def _matches_remedy_rule(value, rule) -> bool:
