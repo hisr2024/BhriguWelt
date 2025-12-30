@@ -12,6 +12,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        aurora: "#9ef0ff",
         cosmic: {
           900: "#060816",
           800: "#0b1024",
