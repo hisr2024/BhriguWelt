@@ -1,0 +1,9 @@
+{
+  "name": "BhriguWelt Design System Generator",
+  "id": "com.bhriguwelt.design-system",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "editorType": ["figma"],
+  "capabilities": [],
+  "enableProposedApi": false
+}

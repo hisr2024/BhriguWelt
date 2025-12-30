@@ -7,7 +7,7 @@ Follow this hands-on flow to make your first change to BhriguWelt.
 - From `frontend/`, run `npm install` to pull the Next.js toolchain.
 
 ## 2. Run the stacks
-- Backend: `cd backend && PYTHONPATH=src python -m bhriguwelt.api` for the threaded server or `python -m bhriguwelt.async_api` for the async server.
+- Backend: `cd backend && PYTHONPATH="$(pwd)/src" python -m bhriguwelt.api` for the threaded server or `python -m bhriguwelt.async_api` for the async server.
 - Frontend: `cd frontend && NEXT_PUBLIC_BACKEND_URL=http://localhost:8000 npm run dev`.
 
 ## 3. Make a change

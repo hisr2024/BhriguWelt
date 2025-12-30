@@ -154,6 +154,24 @@ export function buildHoroscopePayload(payload: FormState) {
   return basePayload;
 }
 
+export function buildChatPayload(payload: FormState) {
+  const trimmedName = payload.name.trim();
+  const trimmedPlace = payload.placeOfBirth.trim();
+  const summary = `Generate a natal chart and gentle interpretation for ${trimmedName} born on ${payload.dateOfBirth} at ${payload.timeOfBirth} in ${trimmedPlace}.`;
+
+  return {
+    message: summary,
+    context: {
+      birthDetails: {
+        name: trimmedName,
+        dateOfBirth: payload.dateOfBirth,
+        timeOfBirth: payload.timeOfBirth,
+        placeOfBirth: trimmedPlace,
+      },
+    },
+  };
+}
+
 export async function postChart(path: string, payload: FormState, baseUrl?: string) {
   const normalizedBase = baseUrl ? baseUrl.replace(/\/$/, "") : "";
   const url = normalizedBase ? `${normalizedBase}${path}` : path;
@@ -163,6 +181,25 @@ export async function postChart(path: string, payload: FormState, baseUrl?: stri
       "Content-Type": "application/json",
     },
     body: JSON.stringify(buildHoroscopePayload(payload)),
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Request to ${path} failed`);
+  }
+
+  return (await response.json()) as ChartResponse;
+}
+
+export async function postChatFallback(path: string, payload: FormState, baseUrl?: string) {
+  const normalizedBase = baseUrl ? baseUrl.replace(/\/$/, "") : "";
+  const url = normalizedBase ? `${normalizedBase}${path}` : path;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(buildChatPayload(payload)),
   });
 
   if (!response.ok) {
