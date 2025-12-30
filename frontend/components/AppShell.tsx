@@ -13,6 +13,7 @@ import {
   Moon,
   Sun,
 } from "lucide-react";
+import BackendHealthNotice from "@/components/BackendHealthNotice";
 import GdprConsentBanner from "@/components/GdprConsentBanner";
 import { AnimatePresence, motion, useReducedMotion } from "@/lib/framer-motion";
 import { getButtonMotion, getFloatAnimation, pageTransition, pageVariants } from "@/lib/animations";
@@ -190,6 +191,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           exit="exit"
           transition={pageTransition}
         >
+          <div className="mb-6">
+            <BackendHealthNotice />
+          </div>
           {children}
         </motion.main>
       </AnimatePresence>

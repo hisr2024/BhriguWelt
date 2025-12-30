@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 
 const steps = [
@@ -21,6 +21,7 @@ const steps = [
 export default function OnboardingTour() {
   const [activeStep, setActiveStep] = useState(0);
   const [open, setOpen] = useState(false);
+  const progress = Math.round(((activeStep + 1) / steps.length) * 100);
 
   const handleNext = () => {
     if (activeStep === steps.length - 1) {
@@ -41,6 +42,10 @@ export default function OnboardingTour() {
             Move through a curated tutorial that explains where to find engines, how to submit forms, and how to export
             reports.
           </p>
+          <div className="vibe-progress">
+            <div className="vibe-progress__bar" style={{ "--progress": `${progress}%` } as CSSProperties} />
+          </div>
+          <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{progress}% tour ready</p>
         </div>
         <button
           type="button"
@@ -88,14 +93,23 @@ export default function OnboardingTour() {
               </div>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={handleNext}
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/20"
-          >
-            {activeStep === steps.length - 1 ? "Finish tour" : "Next step"}
-            <ArrowRight className="h-4 w-4" />
-          </button>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleNext}
+              className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/20"
+            >
+              {activeStep === steps.length - 1 ? "Finish tour" : "Next step"}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+              onClick={() => setOpen(false)}
+            >
+              Remind me later
+            </button>
+          </div>
         </div>
       ) : null}
     </section>

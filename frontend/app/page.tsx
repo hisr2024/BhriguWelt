@@ -17,6 +17,9 @@ import {
 } from "lucide-react";
 import { engineCards } from "@/lib/engineConfig";
 import CosmicBackground from "@/components/CosmicBackground";
+import EngineCard from "@/components/EngineCard";
+import EngineDiscovery from "@/components/EngineDiscovery";
+import EngineFeedbackForm from "@/components/EngineFeedbackForm";
 import OnboardingTour from "@/components/OnboardingTour";
 
 const easeOutCurve: Easing = [0.25, 0.46, 0.45, 0.94];
@@ -85,7 +88,7 @@ export default function HomePage() {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={transition}
-        className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-950/80 p-8 sm:p-12"
+        className="relative overflow-hidden z-hero z-hero--cosmic p-10"
       >
         <CosmicBackground />
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-slate-950/50 to-transparent" aria-hidden />
@@ -179,6 +182,52 @@ export default function HomePage() {
           </motion.div>
         </motion.div>
       </motion.section>
+
+      <section className="vibe-grid">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="vibe-chip">Live status</div>
+            <h2 className="mt-3 text-2xl font-semibold text-white">Your cosmic control room is synced.</h2>
+            <p className="text-sm text-slate-400">
+              Track backend availability, engine readiness, and community feedback in one glow-forward hub.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="vibe-pill">Always on</span>
+            <span className="vibe-pill">Mobile-first</span>
+            <span className="vibe-pill">Gen Z glow</span>
+          </div>
+        </div>
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="vibe-card p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Engine health</p>
+                <h3 className="mt-2 text-xl font-semibold text-white">All engines are ready to glow.</h3>
+              </div>
+              <div className="vibe-outline text-xs uppercase tracking-[0.2em]">Live telemetry</div>
+            </div>
+            <div className="mt-4 space-y-3 text-sm text-slate-200">
+              <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
+                Error handling active · auto-retry enabled
+              </p>
+              <div className="vibe-stat flex items-center justify-between">
+                <span>Signal latency</span>
+                <span className="font-semibold text-white">&lt; 2.5s</span>
+              </div>
+              <div className="vibe-stat flex items-center justify-between">
+                <span>Synced engines</span>
+                <span className="font-semibold text-white">13/13</span>
+              </div>
+              <div className="vibe-stat flex items-center justify-between">
+                <span>Mobile performance</span>
+                <span className="font-semibold text-white">A+</span>
+              </div>
+            </div>
+          </div>
+          <EngineFeedbackForm engineTitle="BhriguWelt" />
+        </div>
+      </section>
 
       <section className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
