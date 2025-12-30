@@ -37,4 +37,8 @@ PY
   fi
 fi
 
+if [[ "${BHRIGU_ASYNC_API:-1}" == "1" ]]; then
+  exec python -m bhriguwelt.async_api
+fi
+
 exec python -m bhriguwelt.api

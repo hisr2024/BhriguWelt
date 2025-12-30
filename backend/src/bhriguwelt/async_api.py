@@ -294,9 +294,51 @@ def create_app() -> web.Application:
             profile = await resolve_profile(payload, allow_update_only=False)
         except ValueError as exc:
             return _json_response({"message": str(exc)}, status=HTTPStatus.BAD_REQUEST)
-        reply = await asyncio.to_thread(generate_chat_reply, profile=profile, session_key=str(payload.get("session_id") or payload.get("session_key") or "default"), message=str(message))
+        session_key = payload.get("session_id") or payload.get("session_key") or "default"
+        reply = await asyncio.to_thread(
+            generate_chat_reply,
+            profile=profile,
+            session_key=str(session_key),
+            message=str(message),
+        )
         response = {"profile_id": profile.id, "user_id": profile.user_id, **reply}
         return _json_response(response)
+
+    async def chat_socket(request: web.Request) -> web.StreamResponse:
+        ws = web.WebSocketResponse(heartbeat=30.0)
+        await ws.prepare(request)
+
+        async for msg in ws:
+            if msg.type == web.WSMsgType.TEXT:
+                try:
+                    payload = json.loads(msg.data or "{}")
+                except json.JSONDecodeError:
+                    await ws.send_json({"error": "Invalid JSON payload"})
+                    continue
+
+                message = payload.get("message") or payload.get("query")
+                if not message:
+                    await ws.send_json({"error": "message is required for chat"})
+                    continue
+
+                try:
+                    profile = await resolve_profile(payload, allow_update_only=False)
+                except ValueError as exc:
+                    await ws.send_json({"error": str(exc)})
+                    continue
+
+                session_key = payload.get("session_id") or payload.get("session_key") or "default"
+                reply = await asyncio.to_thread(
+                    generate_chat_reply,
+                    profile=profile,
+                    session_key=str(session_key),
+                    message=str(message),
+                )
+                await ws.send_json({"profile_id": profile.id, "user_id": profile.user_id, **reply})
+            elif msg.type == web.WSMsgType.ERROR:
+                break
+
+        return ws
 
     async def profiles_create(request: web.Request) -> web.Response:
         await guard_rate_limit(request)
@@ -445,6 +487,7 @@ def create_app() -> web.Application:
     app.router.add_route("POST", "/core-engines", core_engines)
     app.router.add_route("POST", "/wisdom-aggregator", wisdom_aggregator)
     app.router.add_route("POST", "/chat", chat)
+    app.router.add_route("GET", "/ws/chat", chat_socket)
     app.router.add_route("POST", "/profiles", profiles_create)
     app.router.add_route("POST", "/profiles/get", profiles_get)
     app.router.add_route("GET", "/profiles", profiles_list)

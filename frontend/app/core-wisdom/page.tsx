@@ -19,6 +19,10 @@ const KundliCharts = dynamic(() => import("@/components/KundliCharts"), {
   ),
 });
 
+const WebXRChart = dynamic(() => import("@/components/WebXRChart"), {
+  ssr: false,
+});
+
 const SECTION_ORDER = ["1", "2", "3", "4", "5", "6", "7", "8"];
 
 const hasRequiredDetails = (details: BirthDetails) =>
@@ -235,6 +239,7 @@ export default function CoreWisdomPage() {
           bhavaChart={payload?.bhava_chart ?? []}
           dashas={payload?.dashas ?? []}
         />
+        <WebXRChart rashiChart={payload?.rashi_chart ?? []} />
       </section>
     </div>
   );

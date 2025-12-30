@@ -2730,7 +2730,7 @@ textarea:focus {
 
 .bhrigu-chat__header {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: start;
   gap: 12px;
 }
@@ -2752,6 +2752,30 @@ textarea:focus {
 
 .bhrigu-chat__title {
   margin: 4px 0 6px;
+}
+
+.bhrigu-chat__status {
+  align-self: flex-start;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  background: rgba(99, 102, 241, 0.15);
+  color: #c7d2fe;
+  border: 1px solid rgba(129, 140, 248, 0.4);
+}
+
+.bhrigu-chat__status--connected {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #bbf7d0;
+}
+
+.bhrigu-chat__status--error {
+  background: rgba(248, 113, 113, 0.16);
+  border-color: rgba(248, 113, 113, 0.5);
+  color: #fecaca;
 }
 
 .bhrigu-chat__collapse {
@@ -3346,5 +3370,71 @@ textarea:focus {
   .varshaphal-remedy {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+.webxr-chart {
+  display: grid;
+  gap: 16px;
+}
+
+.webxr-chart__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.webxr-chart__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.webxr-chart__surface {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr);
+  align-items: stretch;
+}
+
+.webxr-chart__canvas {
+  width: 100%;
+  min-height: 320px;
+  border-radius: 16px;
+  border: 1px solid rgba(129, 140, 248, 0.3);
+  background: radial-gradient(circle at top, rgba(30, 64, 175, 0.35), rgba(8, 12, 24, 0.9));
+}
+
+.webxr-chart__legend {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.6);
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.webxr-chart__legend-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+  color: rgba(226, 232, 240, 0.85);
+}
+
+.webxr-chart__legend-index {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(148, 163, 184, 0.9);
+}
+
+@media (max-width: 960px) {
+  .webxr-chart__surface {
+    grid-template-columns: 1fr;
   }
 }
