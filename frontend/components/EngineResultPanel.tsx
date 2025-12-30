@@ -1,15 +1,24 @@
 "use client";
 
-import { motion, type Easing } from "framer-motion";
+import type { Easing } from "framer-motion";
 import { ArrowDownToLine, ArrowUpRight, FileSpreadsheet, Flame, ShieldCheck, Sparkles, Star, Wand2 } from "lucide-react";
 import type { EngineResult } from "@/lib/engineConfig";
 import Tooltip from "@/components/Tooltip";
 import EngineInsightOrbit from "@/components/EngineInsightOrbit";
 import EngineZoomChart from "@/components/EngineZoomChart";
+import { motion, useReducedMotion } from "@/lib/framer-motion";
 
 const highlightIcons = [Sparkles, Flame, ShieldCheck, Star, Wand2];
 const easeStandard: [number, number, number, number] = [0.2, 0.65, 0.3, 0.9];
 const transition = { duration: 0.45, ease: easeStandard };
+const staggerContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
+const staggerItem = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition },
+};
 
 type EngineResultPanelProps = {
   result: EngineResult;

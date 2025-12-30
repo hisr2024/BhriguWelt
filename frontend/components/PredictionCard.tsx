@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import type { Easing } from "framer-motion";
 import { HOUSE_FOCUSES, deriveChartHouses } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
 import { areMicroAnimationsAllowed } from "@/lib/immersive";
@@ -27,9 +28,10 @@ type InsightSection = {
 };
 
 const DEFAULT_DETAIL_LEVEL: "beginner" | "advanced" = "advanced";
+const easeStandard: Easing = [0.2, 0.65, 0.3, 0.9];
 const sectionVariants = {
   hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9] } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: easeStandard } },
 };
 const sectionGridVariants = {
   hidden: {},

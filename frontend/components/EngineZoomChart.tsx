@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import type { Easing } from "framer-motion";
 import { ZoomIn } from "lucide-react";
 
 import { AnimatePresence, motion, useReducedMotion } from "@/lib/framer-motion";
 
 const baseSignals = [65, 78, 52, 88, 71, 94, 60];
+const easeOutCurve: Easing = [0, 0, 0.58, 1];
 
 type EngineZoomChartProps = {
   accent: string;
@@ -14,10 +15,14 @@ type EngineZoomChartProps = {
 
 export default function EngineZoomChart({ accent }: EngineZoomChartProps) {
   const [zoom, setZoom] = useState(1);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const shouldReduceMotion = useReducedMotion();
 
-  const signals = useMemo(() => baseSignals.map((value) => Math.min(100, Math.round(value * zoom))), [zoom]);
-  const shouldAnimate = !reduceMotion;
+  const signals = useMemo(
+    () => baseSignals.map((value) => Math.min(100, Math.round(value * zoom))),
+    [zoom]
+  );
+  const shouldAnimate = !shouldReduceMotion;
   const activeSignal = hoveredIndex !== null ? { value: signals[hoveredIndex], index: hoveredIndex } : null;
 
   const chartVariants = {
@@ -34,7 +39,7 @@ export default function EngineZoomChart({ accent }: EngineZoomChartProps) {
     visible: (index: number) => ({
       opacity: 1,
       scaleY: 1,
-      transition: { delay: index * 0.04, duration: 0.4, ease: [0, 0, 0.58, 1] },
+      transition: { delay: index * 0.04, duration: 0.4, ease: easeOutCurve },
     }),
   };
 
@@ -75,7 +80,9 @@ export default function EngineZoomChart({ accent }: EngineZoomChartProps) {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
           >
-            <p className="text-[0.6rem] uppercase tracking-[0.3em] text-slate-400">Signal {activeSignal.index + 1}</p>
+            <p className="text-[0.6rem] uppercase tracking-[0.3em] text-slate-400">
+              Signal {activeSignal.index + 1}
+            </p>
             <p className="text-sm font-semibold text-white">{activeSignal.value}% intensity</p>
           </motion.div>
         ) : null}
@@ -87,13 +94,24 @@ export default function EngineZoomChart({ accent }: EngineZoomChartProps) {
         animate={shouldAnimate ? "visible" : false}
       >
         {signals.map((value, index) => (
-          <div key={`signal-${index}`} className="flex flex-col items-center gap-2">
+          <motion.div
+            key={`signal-${index}`}
+            className="flex flex-col items-center gap-2"
+            variants={shouldAnimate ? barVariants : undefined}
+            custom={index}
+            onMouseEnter={() => setHoveredIndex(index)}
+            onMouseLeave={() => setHoveredIndex(null)}
+            onFocus={() => setHoveredIndex(index)}
+            onBlur={() => setHoveredIndex(null)}
+            tabIndex={0}
+            role="group"
+          >
             <div className="h-24 w-full rounded-full bg-white/5">
               <motion.div
                 className={`w-full rounded-full bg-gradient-to-t ${accent}`}
                 initial={shouldReduceMotion ? undefined : { height: "0%" }}
                 animate={{ height: `${value}%` }}
-                transition={{ duration: 0.5, delay: index * 0.04, ease: "easeOut" }}
+                transition={{ duration: 0.5, delay: index * 0.04, ease: easeOutCurve }}
               />
             </div>
             <span className="text-[0.65rem] text-slate-400">S{index + 1}</span>
