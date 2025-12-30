@@ -4,9 +4,12 @@
 ![Frontend CI](https://github.com/BhriguWelt/BhriguWelt/actions/workflows/frontend.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 
-![Homepage preview](docs/media/homepage-preview.svg)
-
 [Demo video (loom placeholder)](https://example.com/bhriguwelt-demo.mp4)
+
+## Screenshots
+
+![Homepage preview](docs/media/homepage-preview.svg)
+![Offline mode preview](docs/media/offline-preview.svg)
 
 BhriguWelt is a full-stack scaffold for delivering astrology experiences whose
 entire knowledge base is sourced from the **Bhrigu Samhita** corpus. The
@@ -115,6 +118,17 @@ generation, chat clarifications, and dasha reminders.
 - **Frontend health:** `cd frontend && npm run lint && npm run type-check && npx playwright test` before opening a PR. The
   CI badges above mirror the same checks.
 
+### Docker-based local development
+
+Spin up the full stack with Docker Compose when you want a reproducible local environment:
+
+1. `docker compose up --build` to start the backend on `http://localhost:8000` and the frontend on
+   `http://localhost:3000`.
+2. Set `BHRIGUWELT_ADMIN_TOKEN` in your shell before running compose if you need `/analytics` or `/ml/retrain`.
+3. Update `NEXT_PUBLIC_BACKEND_URL` in the `docker-compose.yml` service definition if you want the frontend to target a
+   different API host.
+4. Stop the stack with `docker compose down`.
+
 ### Local setup + smoke tests
 
 1. Use Python 3.11 (the repo ships a `.tool-versions` pin for mise/pyenv) so `scikit-learn` installs from wheels instead of
@@ -140,11 +154,21 @@ generation, chat clarifications, and dasha reminders.
    `curl -X POST $NEXT_PUBLIC_BACKEND_URL/profiles/get -d '{"user_id":"<value from localStorage>","session_id":"default"}' -H 'Content-Type: application/json'`.
 4. Run `npm run lint && npm run type-check` before shipping UI changes; the same checks run in CI.
 
+## GitHub Copilot guidance
+
+The repository includes Copilot guidance in `.github/copilot-instructions.md` so suggestions stay aligned with the
+backend/ frontend split, API error patterns, and UI conventions. Enable GitHub Copilot in your editor and keep the
+instructions file open when prompting for larger changes.
+
 ## Deployment readiness (Railway + Vercel)
 
 No live instances are bundled with the repository; you must deploy the backend
 and frontend yourself. Follow the steps below to get an endpoint ready for web
 and mobile clients:
+
+For detailed deployment guides (Railway, Vercel, and operational checklists), see
+[`docs/deployment.md`](docs/deployment.md) and the rollback notes in
+[`docs/backup_and_recovery.md`](docs/backup_and_recovery.md).
 
 1. **Backend → Railway**: Deploy the backend as a Python service and let the
    Nixpacks config supply Python 3.11 and `pip`:
@@ -159,7 +183,7 @@ and mobile clients:
    - Ensure both `start.sh` scripts are executable (`chmod +x start.sh` at the
      repo root and inside `backend/`) before triggering a deploy so Nixpacks can
      invoke the wrapper successfully.
-   - Add `PYTHONPATH=src` as an environment variable and confirm `/health`
+   - Add `PYTHONPATH="$(pwd)/src"` as an environment variable and confirm `/health`
      returns `{ "status": "ok" }`. See `docs/deployment.md` for the
      click-by-click flow plus the Railpack/Nixpacks notes.
 
@@ -171,7 +195,7 @@ and mobile clients:
      service is using the `python -m pip install -r requirements.txt` build
      command and that `./start.sh` is executable (`chmod +x start.sh`).
 
-3. **Local parity**: Run `PYTHONPATH=src python -m bhriguwelt.api` inside
+3. **Local parity**: Run `PYTHONPATH="$(pwd)/src" python -m bhriguwelt.api` inside
    `backend/`, export `NEXT_PUBLIC_BACKEND_URL=http://localhost:8000`, and run
    `npm run dev` from `frontend/` to mirror the hosted topology without needing
    cloud accounts.
@@ -190,7 +214,7 @@ and mobile clients:
 2. Generate a horoscope prediction sourced from the Bhrigu Samhita wisdom:
 
    ```bash
-   export PYTHONPATH=src
+   export PYTHONPATH="$(pwd)/src"
    python -m bhriguwelt.horoscope horoscope \
        --name "Asha" \
        --birth-date 1995-05-18 \
@@ -228,7 +252,7 @@ and mobile clients:
    HTTP server (documented below), and the `/frontend` Next.js experience calls
    it out of the box (see the Frontend quick start below). If you extend the
    backend, remember to run the pytest suite from inside
-   `backend/` with `PYTHONPATH=src pytest` so the package layout mirrors
+   `backend/` with `PYTHONPATH="$(pwd)/src" pytest` so the package layout mirrors
    production usage. To validate the web bundle, run `npm run lint` and `npm run
    type-check` from within `frontend/` after pointing
    `NEXT_PUBLIC_BACKEND_URL` at your chosen backend.
@@ -240,7 +264,7 @@ clients. Launch it from the backend workspace:
 
 ```bash
 cd backend
-PYTHONPATH=src python -m bhriguwelt.api
+PYTHONPATH="$(pwd)/src" python -m bhriguwelt.api
 ```
 
 Endpoints:
@@ -260,7 +284,7 @@ frontend/mobile layers can present manuscripts alongside insights.
 - A concise OpenAPI spec lives at `docs/openapi.yaml` and mirrors the
   validation rules enforced by the CLI/API handlers for `/health`, `/horoscope`,
   `/past-life`, `/future`, `/matchmaking`, and `/calendar`.
-- A dataset backup helper is available via `cd backend && PYTHONPATH=src python
+- A dataset backup helper is available via `cd backend && PYTHONPATH="$(pwd)/src" python
   scripts/backup_data.py`, which writes timestamped copies into
   `backend/backups/` for safe archival.
 - Frontend telemetry is opt-in through `NEXT_PUBLIC_SENTRY_DSN`; without the
@@ -303,7 +327,7 @@ plus notes on mobile packaging.
 ## CI/CD
 
 GitHub Actions guardrails ship with the repo:
-- `Backend CI` runs pytest with `PYTHONPATH=src`.
+- `Backend CI` runs pytest with `PYTHONPATH="$(pwd)/src"`.
 - `Frontend CI` installs dependencies, lints, and type-checks with Node 18.
 
 ## API reference and docs

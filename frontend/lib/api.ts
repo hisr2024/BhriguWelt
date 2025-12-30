@@ -20,19 +20,23 @@ function hasBackendHostConfigured() {
   return BACKEND_HOSTS.length > 0;
 }
 
-let backendReachable: boolean | null = null;
 let loggedDemoFallback = false;
 export type HealthResponse = {
   status?: string;
   source?: string;
   ml?: unknown;
   data?: { principles_loaded?: number };
+  ai_provider_metadata?: {
+    configured?: boolean;
+    provider?: string;
+    api_base?: string;
+  };
   meta?: { mode?: "live" | "demo"; attempted_hosts?: string[] };
 };
 
 type DetailedError = Error & { hint?: string; status?: number };
-const FALLBACK_RESPONSES: Record<string, unknown> = {
-  "/horoscope": {
+
+const FALLBACK_HOROSCOPE = {
     name: "Fallback seeker",
     interpretation: "Bhrigu folios speak of a seeker whose service-oriented Mars and calm moon weave compassion with steady leadership.",
     interpretation_hi: "भृगु पांडुलिपि बताती है कि सेवा प्रधान मंगल और शांत चंद्रमा करुणा के साथ स्थिर नेतृत्व देते हैं।",
@@ -107,6 +111,26 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
       { lord: "Venus", start: "2007-12-30", end: "2027-12-22", anchor_rule: "Scholarly Pursuits activated (0.76)" },
       { lord: "Sun", start: "2027-12-22", end: "2033-12-20", anchor_rule: "Ancestral Calling activated (0.92)" },
     ],
+};
+
+const FALLBACK_RESPONSES: Record<string, unknown> = {
+  "/horoscope": FALLBACK_HOROSCOPE,
+  "/core-wisdom": {
+    sections: {
+      "1": "Restatement of User Query & Birth Data: Fallback seeker. Birth: 1995-08-18 at 06:30 in Jaipur, Bharat. Focus areas: general life balance.",
+      "2": "Disclaimer & Orientation: This is a Bhrigu Samhita–inspired spiritual reading. It offers tendencies, not certainties, and is not medical, legal, or financial advice.",
+      "3": "Birth Chart Overview: Karmic epoch — Bhrigu epoch: activation of Mars mandates for infrastructural service. Dominant currents include intuitive dreams, infrastructural success, and ancestral calling with manuscript-backed interpretation.",
+      "4": "Detailed Life Area Analysis: Strengths — intuitive dreams, infrastructural success. Challenges — balancing intuition with action. Key remedies from the folios: Light a copper lamp at dawn while reciting Om Brighave Namah to stabilize mind and memory.",
+      "5": "Time-Based Future Tendencies: Multi-decade leadership on smart-city logistics with ancestral blessings.",
+      "6": "Consolidated Strengths, Challenges & Cautions: Strengths — intuitive dreams, infrastructural success. Challenges — guarding energy leaks. Cautions — honor pacing and protect focus during intense transit windows.",
+      "7": "Bhrigu-Style Guidance & Remedies: Keep discipline steady, prioritize service rituals, and maintain a dawn lamp practice.",
+      "8": "Closing & Reminder of Free Will: Tendencies guide you, but choices shape outcomes. Take what resonates, leave the rest, and proceed with compassion.",
+    },
+    rashi_chart: FALLBACK_HOROSCOPE.rashi_chart,
+    bhava_chart: FALLBACK_HOROSCOPE.bhava_chart,
+    dashas: FALLBACK_HOROSCOPE.dashas,
+    karmic_epoch: FALLBACK_HOROSCOPE.karmic_epoch,
+    remedies: FALLBACK_HOROSCOPE.remedies,
   },
   "/past-life": {
     name: "Fallback seeker",
@@ -158,6 +182,110 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
         completion: 35,
         planet: "Venus",
         icon: "♀",
+      },
+    ],
+  },
+  "/timeline": {
+    updated_at: "2024-06-01",
+    phases: [
+      {
+        id: "phase-1",
+        title: "Ascendant grounding",
+        window: "Phase 1 • Weeks 1-6",
+        house: 1,
+        detail: "Anchor identity, routines, and body vitality as the ascendant stabilizes.",
+        progress: 42,
+        planet: "Sun",
+        icon: "☉",
+        milestones: [
+          { label: "Morning ritual cadence", completion: 55, note: "Set sunrise start times and breathwork." },
+          { label: "Body vitality audit", completion: 38, note: "Track sleep, hydration, and stamina markers." },
+        ],
+        reminders_url: "/calendar",
+      },
+      {
+        id: "phase-2",
+        title: "Resource harmonics",
+        window: "Phase 2 • Months 2-4",
+        house: 2,
+        detail: "Balance wealth flow, family responsibilities, and speech alignment.",
+        progress: 58,
+        planet: "Venus",
+        icon: "♀",
+        milestones: [
+          { label: "Savings buffer", completion: 62, note: "Allocate steady reserves for 90 days." },
+          { label: "Family cadence check-in", completion: 46, note: "Schedule key family conversations." },
+        ],
+        reminders_url: "/calendar",
+      },
+      {
+        id: "phase-3",
+        title: "Learning pilgrimages",
+        window: "Phase 3 • Months 4-7",
+        house: 5,
+        detail: "Reignite study, creativity, and mentoring aligned to the 5th house.",
+        progress: 36,
+        planet: "Jupiter",
+        icon: "♃",
+        milestones: [
+          { label: "Course enrollment", completion: 40, note: "Commit to a focused learning track." },
+          { label: "Mentor outreach", completion: 32, note: "Identify a teacher and book sessions." },
+        ],
+        reminders_url: "/calendar",
+      },
+      {
+        id: "phase-4",
+        title: "Partnership vows",
+        window: "Phase 4 • Months 7-10",
+        house: 7,
+        detail: "Clarify collaboration agreements and strengthen harmony in alliances.",
+        progress: 24,
+        planet: "Moon",
+        icon: "☾",
+        milestones: [
+          { label: "Collaborator sync", completion: 22, note: "Define meeting rhythm and shared KPIs." },
+          { label: "Shared ritual calendar", completion: 28, note: "Plan shared check-ins for key dates." },
+        ],
+        reminders_url: "/calendar",
+      },
+      {
+        id: "phase-5",
+        title: "Dharma expansion",
+        window: "Phase 5 • Months 10-12",
+        house: 9,
+        detail: "Prepare for travel, publishing, and philosophical commitments.",
+        progress: 12,
+        planet: "Mars",
+        icon: "♂",
+        milestones: [
+          { label: "Travel blueprint", completion: 10, note: "Outline retreats or pilgrimages." },
+          { label: "Teaching outline", completion: 18, note: "Draft a syllabus or public offering." },
+        ],
+        reminders_url: "/calendar",
+      },
+    ],
+  },
+  "/transits": {
+    name: "Fallback seeker",
+    interpretation: "Current transits emphasize steady pacing, boundary setting, and focus on restorative rituals.",
+    directives: [
+      {
+        reference: "TR-11",
+        influence: "Saturn transit emphasizes discipline and boundaries in daily routines.",
+        certainty: 0.74,
+        planet: "Saturn",
+      },
+      {
+        reference: "TR-18",
+        influence: "Jupiter transit uplifts study, mentorship, and expansion in dharmic duties.",
+        certainty: 0.66,
+        planet: "Jupiter",
+      },
+      {
+        reference: "TR-22",
+        influence: "Moon transit highlights emotional resets and nourishment cycles.",
+        certainty: 0.58,
+        planet: "Moon",
       },
     ],
   },
@@ -344,14 +472,11 @@ async function fetchFromHosts(path: string, init?: RequestInit) {
         errors.push(message || `${target} responded with ${response.status}`);
         continue;
       }
-      backendReachable = true;
       return response;
     } catch (error) {
       errors.push(error instanceof Error ? error.message : String(error));
     }
   }
-
-  backendReachable = false;
 
   const errorMessage = errors.length
     ? errors.join(" | ")
@@ -422,6 +547,7 @@ function fallbackHealth(): HealthResponse {
     status: "ok",
     source: "Bhrigu Samhita (demo cache)",
     data: principlesLoaded ? { principles_loaded: principlesLoaded } : undefined,
+    ai_provider_metadata: { configured: false, provider: "unconfigured", api_base: "" },
     meta: { mode: "demo", attempted_hosts: BACKEND_HOSTS },
   };
 }
@@ -455,84 +581,61 @@ function mapCalendarDetails(input: CalendarDetails) {
 }
 
 async function getJson<TResponse>(path: string, fallbackKey?: string) {
-  let response: Response;
   const fallback = fallbackKey ? FALLBACK_RESPONSES[fallbackKey] : undefined;
 
-  if (backendReachable === false && fallback) {
-    if (!loggedDemoFallback) {
-      console.warn("Backend previously unreachable; using demo responses until a backend responds.");
-      loggedDemoFallback = true;
-    }
-    return fallback as TResponse;
-  }
-
   try {
-    response = await fetchFromHosts(path);
+    const response = await fetchFromHosts(path);
+    return (await response.json()) as TResponse;
   } catch (networkError) {
     if (fallback) {
       console.warn(`Using offline Bhrigu fallback for ${path}`, networkError);
-      backendReachable = false;
       return fallback as TResponse;
     }
     throw networkError;
   }
-
-  return (await response.json()) as TResponse;
 }
 
 async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
-  let response: Response;
   const fallback = FALLBACK_RESPONSES[path];
 
-  if (backendReachable === false && fallback) {
+  const errors: (Error | DetailedError)[] = [];
+
+  for (const host of BACKEND_HOSTS) {
+    const url = `${host}${path}`;
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        errors.push(normalizeBackendError(text, response.status));
+        continue;
+      }
+
+      try {
+        return (await response.json()) as TResponse;
+      } catch (parseError) {
+        errors.push(parseError instanceof Error ? parseError : new Error(String(parseError)));
+        continue;
+      }
+    } catch (networkError) {
+      errors.push(networkError instanceof Error ? networkError : new Error(String(networkError)));
+    }
+  }
+
+  if (fallback) {
+    console.warn(`Using offline Bhrigu fallback for ${path}`, errors[errors.length - 1]);
     if (!loggedDemoFallback) {
-      console.warn("Backend previously unreachable; using demo responses until a backend responds.");
       loggedDemoFallback = true;
     }
     return fallback as TResponse;
   }
 
-  try {
-    response = await fetchFromHosts(path, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      if (fallback) {
-        console.warn(`Using offline Bhrigu fallback for ${path} after ${response.status}`);
-        backendReachable = false;
-        return fallback as TResponse;
-      }
-
-      const text = await response.text();
-      throw normalizeBackendError(text, response.status);
-    }
-  } catch (networkError) {
-    if (fallback) {
-      console.warn(`Using offline Bhrigu fallback for ${path}`, networkError);
-      backendReachable = false;
-      return fallback as TResponse;
-    }
-
-    const reason = networkError instanceof Error ? networkError.message : "Unknown error";
-    const hostList = BACKEND_HOSTS.join(", ") || BACKEND_URL || "(not configured)";
-    throw new Error(
-      `${reason}. Unable to reach the Bhrigu backend at ${hostList}${path}. ` +
-        "Set NEXT_PUBLIC_BACKEND_URL to your deployed Python API (or NEXT_PUBLIC_BACKEND_FALLBACK_URL for a backup) to restore live predictions.",
-    );
-  }
-
-  try {
-    return (await response.json()) as TResponse;
-  } catch (parseError) {
-    if (fallback) {
-      console.warn(`Using offline Bhrigu fallback for ${path} after parse failure`, parseError);
-      return fallback as TResponse;
-    }
-    throw parseError;
-  }
+  if (errors.length) throw errors[errors.length - 1];
+  throw new Error(`Unable to reach the Bhrigu backend at ${BACKEND_HOSTS.join(", ") || BACKEND_URL || "(not configured)"}${path}`);
 }
 
 export async function requestPrediction(engine: PredictionEngine, details: BirthDetails) {
@@ -540,8 +643,43 @@ export async function requestPrediction(engine: PredictionEngine, details: Birth
   return postJson({ path, body: mapBirthDetails(details) });
 }
 
+export async function requestCoreWisdom(details: BirthDetails, focusAreas?: string[]) {
+  const payload = {
+    ...mapBirthDetails(details),
+    ...(focusAreas?.length ? { focus_areas: focusAreas } : {}),
+  };
+  return postJson({ path: "/core-wisdom", body: payload });
+}
+
+export async function requestTransits(
+  details: BirthDetails,
+  transit: { transitDate: string; transitTime: string; timezone?: string },
+) {
+  const transitPayload = {
+    transit_date: transit.transitDate,
+    transit_time: transit.transitTime,
+    ...(transit.timezone ? { timezone: transit.timezone } : {}),
+  };
+  return postJson({
+    path: "/transits",
+    body: {
+      natal: mapBirthDetails(details),
+      transit: transitPayload,
+    },
+  });
+}
+
 export async function getFutureProgress() {
   return getJson<FutureProgressResponse>("/future-progress", "/future-progress");
+}
+
+export async function getTimeline() {
+  return getJson("/timeline", "/timeline");
+}
+
+export async function getVarshaphal(year?: number) {
+  const query = typeof year === "number" ? `?year=${year}` : "";
+  return getJson(`/varshaphal${query}`, "/varshaphal");
 }
 
 export async function requestMatchmaking(
@@ -575,6 +713,7 @@ export async function submitAccuracyFeedback(feedback: FeedbackRequest) {
       rating: feedback.rating,
       seeker_name: feedback.seekerName,
       notes: feedback.notes?.trim(),
+      inputs: feedback.inputs,
     },
   });
 }
@@ -627,7 +766,6 @@ export async function sendChatMessage(payload: {
 export async function checkBackendHealth(): Promise<HealthResponse> {
   try {
     if (isBrowserOffline() || !hasBackendHostConfigured()) {
-      backendReachable = false;
       return fallbackHealth();
     }
     const response = await fetchFromHosts("/health");
@@ -638,7 +776,6 @@ export async function checkBackendHealth(): Promise<HealthResponse> {
     };
   } catch (error) {
     console.warn("Falling back to cached demo responses for health check", error);
-    backendReachable = false;
     return fallbackHealth();
   }
 }

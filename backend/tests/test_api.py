@@ -87,8 +87,8 @@ def test_handle_command_calendar_returns_saka_payload():
         "calendar",
         dict(birth_date="2024-03-21", birth_time="05:30", birth_place="Prayagraj"),
     )
-    assert response["saka_date"]["year"] == 1946
-    assert response["conversion_factor_years"] == 78
+    assert response["Śaka Date"]["Year"] == 1946
+    assert response["Reference Notes"]["Conversion Factor Years"] == 78
 
 
 def test_ensure_visualization_payload_pads_missing_charts():

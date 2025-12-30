@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Sequence
 from .bhrigu_core import bhrigu_core
 from .engine_analyzers import analyze_core_engines
 from .engine_interpreters import interpret_bhrigu_wisdom
+from .wisdom_sources import source_catalog
 
 
 def _representative_entries(entries: Sequence[Dict[str, Any]], *, limit: int = 3) -> List[str]:
@@ -71,11 +72,33 @@ class EngineWisdomDigest:
 
 
 @dataclass
+class ManuscriptAggregate:
+    """Unified manuscript digest across every wisdom engine."""
+
+    tradition: str
+    engine_count: int
+    entry_count: int
+    sutra_references: List[str]
+    representative_entries: List[str]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "tradition": self.tradition,
+            "engine_count": self.engine_count,
+            "entry_count": self.entry_count,
+            "sutra_references": list(self.sutra_references),
+            "representative_entries": list(self.representative_entries),
+        }
+
+
+@dataclass
 class WisdomBotAggregate:
     """Fully operational payload for wisdom-bot style experiences."""
 
     tradition: str
     manuscript: Dict[str, Any]
+    manuscript_aggregate: ManuscriptAggregate
+    source_catalog: List[Dict[str, str]]
     engines: List[EngineWisdomDigest]
     analyses: List[Dict[str, Any]]
     interpretations: List[Dict[str, Any]]
@@ -85,6 +108,8 @@ class WisdomBotAggregate:
         return {
             "tradition": self.tradition,
             "manuscript": dict(self.manuscript),
+            "manuscript_aggregate": self.manuscript_aggregate.to_dict(),
+            "source_catalog": [dict(source) for source in self.source_catalog],
             "engines": [engine.to_dict() for engine in self.engines],
             "analyses": [dict(analysis) for analysis in self.analyses],
             "interpretations": [dict(interpretation) for interpretation in self.interpretations],
@@ -128,6 +153,20 @@ def aggregate_wisdom_for_bot(
             )
         )
 
+    combined_entries: List[Dict[str, Any]] = []
+    for digest in engine_digests:
+        entries = dataset.get(digest.engine, []) if isinstance(dataset, dict) else []
+        if isinstance(entries, list):
+            combined_entries.extend([entry for entry in entries if isinstance(entry, dict)])
+
+    manuscript_aggregate = ManuscriptAggregate(
+        tradition=normalized_tradition,
+        engine_count=len(engine_digests),
+        entry_count=len(combined_entries),
+        sutra_references=_unique_references(combined_entries),
+        representative_entries=_representative_entries(combined_entries, limit=5),
+    )
+
     metadata = dataset.get("metadata", {}) if isinstance(dataset, dict) else {}
     assurance = (
         "Wisdom compiled directly from the cached Bhrigu Samhita corpus; each"
@@ -143,6 +182,8 @@ def aggregate_wisdom_for_bot(
             "integrity": metadata.get("integrity", {}),
             "source_note": metadata.get("source_note", "Aligned to the preserved Bhrigu folios."),
         },
+        manuscript_aggregate=manuscript_aggregate,
+        source_catalog=source_catalog(),
         engines=engine_digests,
         analyses=[analysis.to_dict() for analysis in analyses],
         interpretations=interpretations,
@@ -150,4 +191,9 @@ def aggregate_wisdom_for_bot(
     )
 
 
-__all__ = ["EngineWisdomDigest", "WisdomBotAggregate", "aggregate_wisdom_for_bot"]
+__all__ = [
+    "EngineWisdomDigest",
+    "ManuscriptAggregate",
+    "WisdomBotAggregate",
+    "aggregate_wisdom_for_bot",
+]

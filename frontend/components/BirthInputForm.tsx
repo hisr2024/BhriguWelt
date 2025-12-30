@@ -157,6 +157,47 @@ export default function BirthInputForm() {
     return hints;
   }, [completionScore, confidenceScore, missingFields, validations.dob, validations.pob, validations.tob]);
 
+  const precisionChecklist = useMemo(() => {
+    const items: Array<{ id: string; text: string; tone: "warning" | "positive" }> = [];
+    if (validations.dob) {
+      items.push({ id: "dob", text: `Date check: ${validations.dob}`, tone: "warning" });
+    }
+    if (validations.tob) {
+      items.push({ id: "tob", text: `Time check: ${validations.tob}`, tone: "warning" });
+    }
+    if (validations.pob) {
+      items.push({ id: "pob", text: `Place check: ${validations.pob}`, tone: "warning" });
+    }
+    if (!mapPreview) {
+      items.push({ id: "map", text: "Map pin not set yet — tap the map to anchor the chart.", tone: "warning" });
+    }
+    if (!details.timezone) {
+      items.push({ id: "timezone", text: "Timezone will auto-detect once your device shares a locale.", tone: "warning" });
+    }
+    if (!items.length) {
+      items.push({ id: "all-clear", text: "All precision checks look aligned. Ready to compute the houses.", tone: "positive" });
+    }
+    return items;
+  }, [details.timezone, mapPreview, validations.dob, validations.pob, validations.tob]);
+
+  const immersionCues = useMemo(
+    () => [
+      {
+        id: "voice",
+        text: voiceGuidance ? "Voice guidance is active for step-by-step prompts." : "Enable voice guidance for spoken prompts.",
+      },
+      {
+        id: "gesture",
+        text: gestureMode ? "Gesture prompts are on for quick map actions." : "Enable gesture prompts for quick map actions.",
+      },
+      {
+        id: "comfort",
+        text: assistiveMode ? "Comfort font and focus rings are boosted." : "Toggle comfort font for relaxed reading.",
+      },
+    ],
+    [assistiveMode, gestureMode, voiceGuidance],
+  );
+
   const updateMapFromCoords = useCallback(
     (lat: number, lng: number) => {
       setMapPreview(`${lat.toFixed(3)}, ${lng.toFixed(3)}`);
@@ -190,29 +231,37 @@ export default function BirthInputForm() {
   const validate = (payload: BirthForm): ValidationState => {
     const feedback: ValidationState = {};
 
-    if (payload.birthDate) {
-      const year = Number(payload.birthDate.split("-")[0]);
-      if (year < 1900 || year > 2100 || !/^\d{4}-\d{2}-\d{2}$/.test(payload.birthDate)) {
-        feedback.dob = t("form.error.birthDate", "Use YYYY-MM-DD between 1900-2100.");
+    try {
+      if (payload.birthDate) {
+        const year = Number(payload.birthDate.split("-")[0]);
+        if (year < 1900 || year > 2100 || !/^\d{4}-\d{2}-\d{2}$/.test(payload.birthDate)) {
+          feedback.dob = t("form.error.birthDate", "Invalid birth date. Use YYYY-MM-DD between 1900-2100.");
+        }
       }
-    }
 
-    if (payload.birthTime && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(payload.birthTime)) {
-      feedback.tob = t("form.error.birthTime", "Use HH:MM in 24h format (e.g., 07:45)");
-    }
-
-    if (payload.birthPlace) {
-      if (payload.birthPlace.length < 3 || !payload.birthPlace.includes(",")) {
-        feedback.pob = t("form.error.birthPlace", "Add city and country (e.g., Jaipur, Bharat)");
+      if (payload.birthTime && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(payload.birthTime)) {
+        feedback.tob = t("form.error.birthTime", "Use HH:MM in 24h format (e.g., 07:45)");
       }
-    }
 
-    if (payload.lunarTithi && (!/^\d+$/.test(payload.lunarTithi) || Number(payload.lunarTithi) < 1 || Number(payload.lunarTithi) > 30)) {
-      feedback.dob = t("form.error.lunarTithi", "Lunar tithi must be 1-30.");
-    }
+      if (payload.birthPlace) {
+        if (payload.birthPlace.length < 3 || !payload.birthPlace.includes(",")) {
+          feedback.pob = t("form.error.birthPlace", "Add city and country (e.g., Jaipur, Bharat)");
+        }
+      }
 
-    if (payload.moonElement && !["water", "fire", "air", "earth", "ether"].includes(payload.moonElement.toLowerCase())) {
-      feedback.dob = t("form.error.moonElement", "Use water, fire, air, earth, or ether for moon element.");
+      if (
+        payload.lunarTithi &&
+        (!/^\d+$/.test(payload.lunarTithi) || Number(payload.lunarTithi) < 1 || Number(payload.lunarTithi) > 30)
+      ) {
+        feedback.dob = t("form.error.lunarTithi", "Lunar tithi must be 1-30.");
+      }
+
+      if (payload.moonElement && !["water", "fire", "air", "earth", "ether"].includes(payload.moonElement.toLowerCase())) {
+        feedback.dob = t("form.error.moonElement", "Use water, fire, air, earth, or ether for moon element.");
+      }
+    } catch (error) {
+      console.warn("Birth detail validation failed", error);
+      feedback.dob = t("form.error.birthDate", "Invalid birth date. Use YYYY-MM-DD between 1900-2100.");
     }
 
     return feedback;
@@ -517,6 +566,20 @@ export default function BirthInputForm() {
             <p className="microcopy">Auto-Śaka conversion and map checks raise accuracy.</p>
           </div>
         </div>
+        <div className="immersion-panel" role="status" aria-live="polite">
+          <div>
+            <p className="eyebrow">Immersive layer</p>
+            <h3>Cosmic guidance stays gentle</h3>
+            <p className="microcopy">
+              Subtle constellations, voice cues, and touch hints respond to your settings while staying accessible for every age.
+            </p>
+          </div>
+          <ul className="immersion-panel__list">
+            {immersionCues.map((cue) => (
+              <li key={cue.id}>{cue.text}</li>
+            ))}
+          </ul>
+        </div>
       </header>
 
       <form className="birth-input__form" onSubmit={handleSubmit} aria-busy={loading}>
@@ -542,6 +605,21 @@ export default function BirthInputForm() {
             <p className="microcopy">{infoBanner}</p>
           </div>
         ) : null}
+        <div className="precision-panel" role="status" aria-live="polite">
+          <div>
+            <p className="eyebrow">Cosmic precision</p>
+            <h3>Accuracy guardrails</h3>
+            <p className="microcopy">We surface gentle corrections so the chart stays true without feeling strict.</p>
+          </div>
+          <ul className="precision-panel__list">
+            {precisionChecklist.map((item) => (
+              <li key={item.id} className={`precision-panel__item precision-panel__item--${item.tone}`}>
+                <span className="precision-dot" aria-hidden />
+                <span>{item.text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
         <div className="field-row">
           <div className="field">
             <label htmlFor="birth-dob">Date of birth</label>

@@ -20,6 +20,7 @@ def _sample_snapshot() -> CelestialSnapshot:
         mars_house=3,
         saturn_house=4,
         venus_house=5,
+        rahu_house=9,
         ketu_house=6,
         mercury_house=7,
         jupiter_house=8,

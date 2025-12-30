@@ -1,21 +1,23 @@
 FROM python:3.10-slim
 
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app/src
+
 WORKDIR /app
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends bash \
+  && apt-get install -y --no-install-recommends bash ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Ensure module resolution matches local development without a custom start command.
-ENV PYTHONPATH=/app/src
-RUN chmod +x start.sh
+# Railway maps traffic to $PORT, so advertise the default app port and let the
+# platform override it when necessary.
+ENV PORT=8000
+EXPOSE 8000
 
-# Use the start script as an entrypoint so custom Railway commands (e.g. PYTHONPATH=src)
-# are treated as arguments instead of replacement executables. This keeps the service
-# bootable even when the platform start command is misconfigured.
-ENTRYPOINT ["./start.sh"]
+CMD ["python", "-m", "bhriguwelt.api"]

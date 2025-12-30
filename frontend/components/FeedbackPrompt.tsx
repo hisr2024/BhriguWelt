@@ -16,9 +16,13 @@ const ratingLabels: Record<number, string> = {
 interface Props {
   engine: ResultEngine;
   seekerName?: string;
+  context?: {
+    weights?: Record<string, number>;
+    remedyIds?: string[];
+  };
 }
 
-export default function FeedbackPrompt({ engine, seekerName }: Props) {
+export default function FeedbackPrompt({ engine, seekerName, context }: Props) {
   const [rating, setRating] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
@@ -43,7 +47,18 @@ export default function FeedbackPrompt({ engine, seekerName }: Props) {
     setError(null);
 
     try {
-      await submitAccuracyFeedback({ engine, rating, notes, seekerName });
+      await submitAccuracyFeedback({
+        engine,
+        rating,
+        notes,
+        seekerName,
+        inputs: context
+          ? {
+              weights: context.weights,
+              remedies: context.remedyIds,
+            }
+          : undefined,
+      });
       setStatus("success");
       setNotes("");
     } catch (err) {

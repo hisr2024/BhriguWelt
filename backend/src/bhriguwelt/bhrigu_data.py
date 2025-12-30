@@ -645,9 +645,9 @@ MATCHMAKING_CRITERIA: List[Dict[str, Any]] = [
        'weight': 0.4}],
   'sutra_reference': 'Sharada palm 77c',
   'time_horizon': 'long-term',
-  'tradition': 'universal'},
+ 'tradition': 'universal'},
  {'base_weight': 0.4,
-  'description': 'Venus stewardship and Mars missions must complement to support Bhrigu's "digital '
+  'description': "Venus stewardship and Mars missions must complement to support Bhrigu's \"digital "
                  'grihastha" households that balance art, finance, and product roadmaps.',
   'id': 'MM-8',
   'modern_modifiers': {'arts-collab': 0.05, 'creative-startup': 0.05, 'startup-ops': 0.07},
@@ -671,17 +671,13 @@ MATCHMAKING_CRITERIA: List[Dict[str, Any]] = [
 
 
 def as_dict() -> Dict[str, Any]:
-    data_path = Path(__file__).resolve().parents[2] / "data" / "bhrigu_samhita_principles.yml"
-    try:
-        with data_path.open() as fp:
-            return json.load(fp)
-    except Exception:
-        return {
-            'metadata': METADATA,
-            'principles': PRINCIPLES,
-            'remedies': REMEDIES,
-            'past_life_engines': PAST_LIFE_ENGINES,
-            'future_engines': FUTURE_ENGINES,
-            'transit_rules': TRANSIT_RULES,
-            'matchmaking_criteria': MATCHMAKING_CRITERIA,
-        }
+    return {
+        "metadata": METADATA,
+        "principles": PRINCIPLES,
+        "past_life_engines": PAST_LIFE_ENGINES,
+        "future_engines": FUTURE_ENGINES,
+        "remedies": REMEDIES,
+        "transit_rules": TRANSIT_RULES,
+        "matchmaking_criteria": MATCHMAKING_CRITERIA,
+    }
+

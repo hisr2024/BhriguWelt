@@ -328,6 +328,464 @@ paths:
                         - "Venus houses sit within two steps of each other, supporting creative collaboration and shared aesthetic projects."
                     interpretation: "Composite compatibility index: 72.50%. Synastry overlay Moon element resonance: 84% harmony (Closer elemental balance signals intuitive understanding of moods and needs.)."
 
+  /matchmaking/pipeline:
+    post:
+      summary: Matchmaking pipeline with analyser/interpreter output
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                primary:
+                  $ref: '#/components/schemas/HoroscopeRequest'
+                partner:
+                  $ref: '#/components/schemas/HoroscopeRequest'
+                modern_preferences:
+                  type: array
+                  items:
+                    type: string
+                language:
+                  type: string
+      responses:
+        "200":
+          description: Compatibility report with pipeline metadata
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /matchmaking/diagnostics:
+    post:
+      summary: Compatibility diagnostics and dosha analysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                primary:
+                  $ref: '#/components/schemas/HoroscopeRequest'
+                partner:
+                  $ref: '#/components/schemas/HoroscopeRequest'
+                modern_preferences:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Diagnostic breakdown
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /future-directives:
+    post:
+      summary: Prioritized future directives
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HoroscopeRequest'
+      responses:
+        "200":
+          description: Directive highlights
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /past-future:
+    post:
+      summary: Linked past/future synthesis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/HoroscopeRequest'
+                - type: object
+                  properties:
+                    focus_areas:
+                      type: array
+                      items:
+                        type: string
+      responses:
+        "200":
+          description: Synthesis narrative
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /varshaphal:
+    post:
+      summary: Solar return highlights
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HoroscopeRequest'
+      responses:
+        "200":
+          description: Varshaphal summary
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /transits:
+    post:
+      summary: Transit overlays and guidance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HoroscopeRequest'
+      responses:
+        "200":
+          description: Transit report
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /core-wisdom:
+    post:
+      summary: Core wisdom digest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/HoroscopeRequest'
+                - type: object
+                  properties:
+                    ai_summary:
+                      type: boolean
+      responses:
+        "200":
+          description: Core wisdom payload
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /core-engines:
+    post:
+      summary: Aggregated engine outputs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HoroscopeRequest'
+      responses:
+        "200":
+          description: Engine outputs
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /implementation-core:
+    post:
+      summary: Implementation core guidance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HoroscopeRequest'
+      responses:
+        "200":
+          description: Implementation guidance
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /karmic-dashboard:
+    post:
+      summary: Dashboard-friendly insight summary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HoroscopeRequest'
+      responses:
+        "200":
+          description: Dashboard payload
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /experience-flow:
+    post:
+      summary: Unified engine experience flow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HoroscopeRequest'
+      responses:
+        "200":
+          description: Experience flow payload
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /wisdom-aggregator:
+    post:
+      summary: Wisdom aggregation response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/HoroscopeRequest'
+                - type: object
+                  properties:
+                    query:
+                      type: string
+      responses:
+        "200":
+          description: Aggregated wisdom
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /wisdom-bot:
+    post:
+      summary: Wisdom bot response with AI summary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/HoroscopeRequest'
+                - type: object
+                  properties:
+                    query:
+                      type: string
+                    focus_areas:
+                      type: array
+                      items:
+                        type: string
+                    partner:
+                      $ref: '#/components/schemas/HoroscopeRequest'
+                    modern_preferences:
+                      type: array
+                      items:
+                        type: string
+                    language:
+                      type: string
+      responses:
+        "200":
+          description: Wisdom bot payload
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /chat:
+    post:
+      summary: Bhrigu chat with session memory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                session_id:
+                  type: string
+                user_id:
+                  type: string
+                profile_id:
+                  type: integer
+      responses:
+        "200":
+          description: Chat response with session transcript
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /profiles/register:
+    post:
+      summary: Register or update a profile and issue a token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Profile and bearer token
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /profiles:
+    post:
+      summary: Create or update a profile (requires bearer token)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Profile payload
+          content:
+            application/json:
+              schema:
+                type: object
+    get:
+      summary: List profiles (admin token required)
+      responses:
+        "200":
+          description: Profile list
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /profiles/get:
+    post:
+      summary: Fetch a profile + session transcript (requires bearer token)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Profile + session data
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /profiles/token:
+    post:
+      summary: Issue a bearer token (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Token payload
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /alerts:
+    post:
+      summary: Create an alert (requires bearer token)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Alert payload
+          content:
+            application/json:
+              schema:
+                type: object
+    get:
+      summary: List alerts (profile owner or admin)
+      responses:
+        "200":
+          description: Alert list
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /analytics:
+    get:
+      summary: Admin analytics snapshot
+      responses:
+        "200":
+          description: Analytics summary
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /manuscript:
+    get:
+      summary: Fetch Bhrigu corpus
+      responses:
+        "200":
+          description: Manuscript payload
+          content:
+            application/json:
+              schema:
+                type: object
+    post:
+      summary: Update Bhrigu corpus (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Update status
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /ml/retrain:
+    post:
+      summary: Retrain feedback model (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "202":
+          description: Retraining accepted
+          content:
+            application/json:
+              schema:
+                type: object
+
   /timeline:
     post:
       summary: Generate five-phase karmic roadmap

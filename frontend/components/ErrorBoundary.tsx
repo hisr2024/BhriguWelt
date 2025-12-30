@@ -26,9 +26,12 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   render() {
     if (this.state.hasError) {
       return (
-        <div className="inline-banner inline-banner--error" role="alert">
-          <strong>Something went wrong.</strong>
-          <p className="microcopy">
+        <div
+          className="rounded-3xl border border-red-500/40 bg-red-500/10 p-6 text-sm text-red-100"
+          role="alert"
+        >
+          <strong className="text-base">Something went wrong.</strong>
+          <p className="mt-2 text-red-100/80">
             {this.state.message || "Please reload the page or try again in a moment."}
           </p>
         </div>

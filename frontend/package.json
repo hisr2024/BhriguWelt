@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "rm -f app/chat/route.ts app/chat/route.tsx app/chat/route.js",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ext .ts,.tsx",
@@ -21,8 +22,11 @@
     "@types/node": "20.17.9",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
+    "autoprefixer": "^10.4.21",
     "eslint": "9.39.1",
-    "eslint-config-next": "16.0.3",
+    "eslint-config-next": "16.0.10",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
     "typescript": "5.9.3"
   },
   "overrides": {

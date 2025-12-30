@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import math
 import os
 from dataclasses import dataclass
@@ -24,12 +25,11 @@ except Exception:  # pragma: no cover - offline or sandboxed environments
 from .astronomical_calculations import auto_snapshot_kwargs, derive_transit_snapshot, normalize_birth_datetime
 from .config import load_runtime_config
 
-_DISABLE_ML_WEIGHTING = os.environ.get("BHRIGUWELT_DISABLE_ML_WEIGHTING", "").lower() in {
-    "1",
-    "true",
-    "yes",
-    "on",
-}
+log = logging.getLogger(__name__)
+
+def _ml_disabled() -> bool:
+    flag = os.environ.get("BHRIGUWELT_DISABLE_ML_WEIGHTING", "").lower()
+    return flag in {"1", "true", "yes", "on"}
 
 
 @dataclass
@@ -51,7 +51,6 @@ class CelestialSnapshot:
     ketu_house: int
     mercury_house: int
     jupiter_house: int
-    ascendant_house: int
     rahu_aspects_ascendant: bool
     saturn_retrograde: bool
 
@@ -70,12 +69,10 @@ class CelestialSnapshot:
         rahu_house: int | None = None,
         rahu_aspects_ascendant: bool | None = None,
         tradition: str | None = None,
-        moon_house: int | None = None,
         ascendant_house: int | None = None,
         ketu_house: int | None = None,
         mercury_house: int | None = None,
         jupiter_house: int | None = None,
-        ascendant_house: int | None = None,
         saturn_retrograde: bool | None = None,
         latitude: float | None = None,
         longitude: float | None = None,
@@ -102,7 +99,6 @@ class CelestialSnapshot:
             "ketu_house": ketu_house,
             "mercury_house": mercury_house,
             "jupiter_house": jupiter_house,
-            "ascendant_house": ascendant_house,
             "rahu_aspects_ascendant": rahu_aspects_ascendant,
             "saturn_retrograde": saturn_retrograde,
         }
@@ -136,7 +132,6 @@ class CelestialSnapshot:
             ketu_house=int(baseline["ketu_house"]),
             mercury_house=int(baseline["mercury_house"]),
             jupiter_house=int(baseline["jupiter_house"]),
-            ascendant_house=int(baseline["ascendant_house"]),
             rahu_aspects_ascendant=bool(baseline["rahu_aspects_ascendant"]),
             saturn_retrograde=bool(baseline["saturn_retrograde"]),
         )
@@ -282,7 +277,7 @@ def score_principles(
 
     resolved: Dict[str, Dict[str, object]] = {}
     ml_active = _ml_runtime_enabled(scoring_config)
-    model = _ml_model(scoring_config)
+    model = _ml_model(scoring_config) if ml_active else None
 
     for principle in principles:
         if not _tradition_allows(principle, snapshot.tradition):
@@ -312,7 +307,7 @@ def score_principles(
         for key, value in weights.items():
             posterior = _bayesian_weight(float(value), alpha, beta)
             features = _feature_vector_from_snapshot(snapshot, posterior, modifier, principle_context)
-            ml_score = _ml_weight_score(model, features)
+            ml_score = _ml_weight_score(model, features) if ml_active else posterior
             blended = _blend_scores(posterior, ml_score, scoring_config, ml_active)
             lifted_modifier = _apply_ml_lift(modifier, ml_score, scoring_config, ml_active)
             combined = round(min(1.0, blended * lifted_modifier), 2)
@@ -343,11 +338,35 @@ def evaluate_past_life(snapshot: CelestialSnapshot, engines: List[Dict]) -> List
     """Select the most resonant past-life narratives from Bhrigu engines."""
 
     insights: List[PastLifeInsight] = []
+    mismatches_logged = 0
+    log.debug(
+        "Evaluating past-life engines",
+        extra={"tradition": snapshot.tradition, "engine_count": len(engines)},
+    )
     for engine in engines:
         if not _tradition_allows(engine, snapshot.tradition):
+            if mismatches_logged < 5:
+                log.debug(
+                    "Engine skipped due to tradition",
+                    extra={"engine_id": engine.get("id"), "tradition": engine.get("tradition")},
+                )
+                mismatches_logged += 1
             continue
-        confidence = _score_conditions(snapshot, engine.get("conditions", {}), engine.get("confidence", 0.6))
+        conditions = engine.get("conditions", {})
+        base_confidence = engine.get("confidence", 0.6)
+        ratio = _condition_ratio(snapshot, normalize_conditions(conditions))
+        confidence = round(base_confidence * ratio, 2)
         if confidence <= 0:
+            if mismatches_logged < 5:
+                log.debug(
+                    "Engine conditions did not match",
+                    extra={
+                        "engine_id": engine.get("id"),
+                        "ratio": ratio,
+                        "reasons": _condition_mismatches(snapshot, conditions),
+                    },
+                )
+                mismatches_logged += 1
             continue
         insights.append(
             PastLifeInsight(
@@ -388,11 +407,35 @@ def evaluate_future_directives(
     """
 
     directives: List[FutureTrajectory] = []
+    mismatches_logged = 0
+    log.debug(
+        "Evaluating future engines",
+        extra={"tradition": snapshot.tradition, "engine_count": len(engines)},
+    )
     for engine in engines:
         if not _tradition_allows(engine, snapshot.tradition):
+            if mismatches_logged < 5:
+                log.debug(
+                    "Future engine skipped due to tradition",
+                    extra={"engine_id": engine.get("id"), "tradition": engine.get("tradition")},
+                )
+                mismatches_logged += 1
             continue
-        certainty = _score_conditions(snapshot, engine.get("conditions", {}), engine.get("certainty", 0.65))
+        conditions = engine.get("conditions", {})
+        base_certainty = engine.get("certainty", 0.65)
+        ratio = _condition_ratio(snapshot, normalize_conditions(conditions))
+        certainty = round(base_certainty * ratio, 2)
         if certainty <= 0:
+            if mismatches_logged < 5:
+                log.debug(
+                    "Future engine conditions did not match",
+                    extra={
+                        "engine_id": engine.get("id"),
+                        "ratio": ratio,
+                        "reasons": _condition_mismatches(snapshot, conditions),
+                    },
+                )
+                mismatches_logged += 1
             continue
         directives.append(
             FutureTrajectory(
@@ -734,17 +777,20 @@ def _element_scalar(element: str) -> float:
 
 
 def _benchmark_path(scoring_config: Dict[str, object]) -> Path:
+    package_root = Path(__file__).resolve().parents[2]
+    default = package_root / "tests" / "data" / "benchmark_charts.json"
+    project_root = Path(__file__).resolve().parents[3]
+    fallback = project_root / "tests" / "data" / "benchmark_charts.json"
+
     configured = scoring_config.get("benchmark_data_path")
     if configured:
-        candidate = Path(str(configured))
-        if candidate.exists():
+        candidate = Path(str(configured)).resolve()
+        if candidate.exists() and candidate.name == default.name:
             return candidate
-    package_root = Path(__file__).resolve().parents[2]
-    bundled = package_root / "tests" / "data" / "benchmark_charts.json"
-    if bundled.exists():
-        return bundled
-    project_root = Path(__file__).resolve().parents[3]
-    return project_root / "tests" / "data" / "benchmark_charts.json"
+
+    if default.exists():
+        return default
+    return fallback
 
 
 @lru_cache(maxsize=None)
@@ -926,6 +972,9 @@ def _load_persisted_model(scoring_config: Dict[str, object]) -> Any | None:
 
 
 def _ml_runtime_enabled(scoring_config: Dict[str, object]) -> bool:
+    if _ml_disabled():
+        return False
+
     env_flag = os.getenv("BHRIGU_ML_ENABLED")
     if env_flag is not None:
         return env_flag.strip().lower() not in {"", "0", "false", "off"}
@@ -954,7 +1003,7 @@ def _logistic_model(scoring_config: Dict[str, object]) -> Any:
     features, labels = _training_matrix(scoring_config)
     trained_parameters: Dict[str, object] | None = scoring_config.get("ml_trained_parameters")  # type: ignore[assignment]
 
-    if _DISABLE_ML_WEIGHTING:
+    if _ml_disabled():
         trained_parameters = None
 
     if trained_parameters:
@@ -1048,7 +1097,7 @@ def _ml_weight_score(model: Any, features: List[float]) -> float:
 
 def _blend_scores(posterior: float, ml_score: float, scoring_config: Dict[str, object], ml_active: bool) -> float:
     if not ml_active:
-        return (posterior + ml_score) / 2
+        return posterior
 
     blend_ratio = float(scoring_config.get("ml_blend_ratio", 0.55))
     anchor = float(scoring_config.get("ml_anchor", 0.5))
@@ -1147,23 +1196,42 @@ def _score_conditions(snapshot: CelestialSnapshot, conditions: Dict, base_value:
     if not conditions:
         return round(base_value, 2)
 
-    ratio = _condition_ratio(snapshot, conditions)
+    ratio = _condition_ratio(snapshot, normalize_conditions(conditions))
     return round(base_value * ratio, 2)
+
+
+def _condition_mismatches(snapshot: CelestialSnapshot, conditions: Dict) -> List[str]:
+    normalized = normalize_conditions(conditions)
+    reasons: List[str] = []
+
+    for field, rule in normalized.items():
+        value = getattr(snapshot, field, None)
+        if value is None:
+            reasons.append(f"{field}=None")
+            continue
+
+        if not _matches_rule(value, rule):
+            reasons.append(f"{field}={value} ! {rule}")
+
+    return reasons
 
 
 def _condition_ratio(snapshot: CelestialSnapshot, conditions: Dict) -> float:
     """Return match ratio using a NumPy fast-path when available."""
 
+    if not conditions:
+        return 1.0
+
     results: List[bool] = []
     for field, rule in conditions.items():
-        try:
-            value = getattr(snapshot, field)
-        except AttributeError as exc:
-            raise ValueError(f"Snapshot missing field required by rule: {field}") from exc
+        value = getattr(snapshot, field, None)
+        if value is None:
+            results.append(False)
+            continue
         results.append(_matches_rule(value, rule))
 
     if not results:
-        return 1.0
+        return 0.0
 
     if np is not None:
         array = np.fromiter((1.0 if match else 0.0 for match in results), dtype=float)
@@ -1183,6 +1251,8 @@ def _safe_ratio(numerator: float, denominator: float) -> float:
 
 def _matches_rule(value, rule) -> bool:
     if isinstance(rule, dict):
+        if value is None:
+            return False
         equals = rule.get("equals")
         if equals is not None and value != equals:
             return False

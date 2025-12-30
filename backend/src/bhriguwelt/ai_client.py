@@ -104,6 +104,7 @@ def ai_provider_metadata() -> Dict[str, Any]:
         "coverage": [
             "wisdom-bot",
             "chat",
+            "horoscope",
             "core_wisdom",
             "core-wisdom",
             "analyzers",
@@ -114,11 +115,13 @@ def ai_provider_metadata() -> Dict[str, Any]:
             "past_life",
             "past-life",
             "past_future",
+            "past-future",
             "matchmaking",
             "future-json",
             "past-life-json",
             "core-wisdom-json",
         ],
+        "sarvam_contract": sarvam_integration_contract(),
         "source_requirements": {
             "future-json": "Trajectory JSON plus Sarvam/OpenAI-compatible summarization",
             "past-life-json": "Stored karmic insights JSON available to analyzers/interpreters",

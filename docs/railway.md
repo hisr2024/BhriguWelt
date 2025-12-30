@@ -36,7 +36,7 @@ present, so HOST/PORT stay aligned between Railway and your local environment.
 ## 3) Environment variables
 Add the following variables to the Service:
 
-- `PYTHONPATH=src`
+- `PYTHONPATH="$(pwd)/src"`
 - `BHRIGUWELT_ADMIN_TOKEN=<choose-a-strong-token>` (needed for `/ml/retrain`)
 - Optional toggles:
   - `BHRIGU_ML_ENABLED=1` to force ML weighting in production

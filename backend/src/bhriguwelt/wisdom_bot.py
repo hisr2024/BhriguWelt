@@ -177,6 +177,24 @@ def _shareable_markdown(
     flow: Dict[str, Any],
     focus_areas: List[str],
 ) -> str:
+    def _chart_table(title: str, chart: Sequence[Dict[str, Any]]) -> List[str]:
+        lines: List[str] = [f"### {title}", "", "| House | Sign | Occupants | Bhrigu Notes |", "| --- | --- | --- | --- |"]
+        if not chart:
+            lines.append("| — | — | Chart pending | Chart pending |")
+            lines.append("")
+            return lines
+
+        for house in chart:
+            if not isinstance(house, dict):
+                continue
+            occupants = ", ".join(house.get("occupants") or [])
+            notes = ", ".join(house.get("bhrigu_notes") or [])
+            lines.append(
+                f"| {house.get('index', '—')} | {house.get('sign', '—')} | {occupants or '—'} | {notes or '—'} |"
+            )
+        lines.append("")
+        return lines
+
     lines: List[str] = [
         f"# Bhrigu Wisdom Bot — {request.name}",
         "", f"**Query:** {query}",
@@ -198,6 +216,12 @@ def _shareable_markdown(
         for text in sources:
             lines.append(f"- {text}")
         lines.append("")
+
+    rashi_chart = core_wisdom_sections.get("rashi_chart") if isinstance(core_wisdom_sections, dict) else []
+    bhava_chart = core_wisdom_sections.get("bhava_chart") if isinstance(core_wisdom_sections, dict) else []
+    lines.extend(["## Charts", ""])
+    lines.extend(_chart_table("Rashi Chart", rashi_chart if isinstance(rashi_chart, list) else []))
+    lines.extend(_chart_table("Bhava Chart", bhava_chart if isinstance(bhava_chart, list) else []))
 
     lines.extend([
         "## Analyser and Interpreter Alignment",
