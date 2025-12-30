@@ -35,30 +35,30 @@ export default function HomePage() {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={transition}
-        className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-950/80 p-10"
+        className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-950/80 p-6 sm:p-10"
       >
         <CosmicBackground />
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950/80 via-slate-950/30 to-transparent" aria-hidden />
         <div className="relative grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
           <div className="space-y-6">
             <div className="chip">BhriguWelt Engines</div>
-            <h1 className="text-4xl font-semibold text-white sm:text-5xl">
+            <h1 className="text-fluid-2xl font-semibold text-white">
               A cosmic command center for every BhriguWelt experience.
             </h1>
-            <p className="max-w-2xl text-base text-slate-300">
+            <p className="max-w-2xl text-fluid-base text-slate-300">
               Fluid, minimalist workflows for 13 engines with immersive motion, glowing results, and intuitive interactions.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
                 href="/dashboard"
-                className="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400"
+                className="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400 touch-manipulation active:scale-95"
               >
                 Open dashboard
                 <ArrowUpRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/chat"
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:border-white/30"
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:border-white/30 touch-manipulation active:scale-95"
               >
                 Start chat
                 <ArrowRight className="h-4 w-4" />
@@ -77,8 +77,8 @@ export default function HomePage() {
           </div>
           <div className="relative space-y-4 rounded-3xl border border-white/10 bg-slate-950/70 p-6">
             <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Today’s pulse</p>
-            <h2 className="text-2xl font-semibold text-white">Lunar clarity with rising intuition.</h2>
-            <p className="text-sm text-slate-300">
+            <h2 className="text-fluid-lg font-semibold text-white">Lunar clarity with rising intuition.</h2>
+            <p className="text-fluid-sm text-slate-300">
               Track live signals, transits, and personalized rituals across every engine with instant feedback.
             </p>
             <div className="grid gap-2 text-sm text-slate-200">
@@ -105,22 +105,22 @@ export default function HomePage() {
       <section className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-semibold text-white">Quick launch</h2>
-            <p className="text-sm text-slate-400">Jump into popular engines or swipe on mobile for instant access.</p>
+            <h2 className="text-fluid-lg font-semibold text-white">Quick launch</h2>
+            <p className="text-fluid-sm text-slate-400">Jump into popular engines or swipe on mobile for instant access.</p>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs">
+          <div className="flex w-full gap-2 overflow-x-auto pb-1 text-xs sm:w-auto sm:flex-wrap">
             {quickAccess.map((engine) => (
               <Link
                 key={engine.href}
                 href={engine.href}
-                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-slate-200 transition hover:border-white/30"
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-slate-200 transition hover:border-white/30 touch-manipulation active:scale-95"
               >
                 {engine.label}
               </Link>
             ))}
           </div>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {engineCards.slice(0, 6).map((engine, index) => (
             <EngineCard key={engine.slug} engine={engine} index={index} />
           ))}

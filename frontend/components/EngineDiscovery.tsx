@@ -41,8 +41,8 @@ export default function EngineDiscovery({ engines }: EngineDiscoveryProps) {
     <section className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-white">All engines</h2>
-          <p className="text-sm text-slate-400">Search, filter, and explore every engine in seconds.</p>
+          <h2 className="text-fluid-lg font-semibold text-white">All engines</h2>
+          <p className="text-fluid-sm text-slate-400">Search, filter, and explore every engine in seconds.</p>
         </div>
         <div className="flex items-center gap-2 text-xs">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-slate-200">
@@ -73,13 +73,13 @@ export default function EngineDiscovery({ engines }: EngineDiscoveryProps) {
             </button>
           ) : null}
         </label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-full gap-2 overflow-x-auto pb-1 sm:flex-wrap">
           {categories.map((item) => (
             <button
               key={item}
               type="button"
               onClick={() => setCategory(item)}
-              className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition ${
+              className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition touch-manipulation active:scale-95 ${
                 category === item
                   ? "border-indigo-400 bg-indigo-500/20 text-white"
                   : "border-white/10 bg-white/5 text-slate-300 hover:border-white/30"
@@ -90,7 +90,7 @@ export default function EngineDiscovery({ engines }: EngineDiscoveryProps) {
           ))}
         </div>
       </div>
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
         {filteredEngines.map((engine, index) => (
           <EngineCard key={engine.slug} engine={engine} index={index} />
         ))}
