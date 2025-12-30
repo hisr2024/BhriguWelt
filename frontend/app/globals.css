@@ -3,13 +3,13 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
-  --aurora: #9ef0ff;
+  color-scheme: light;
+  --aurora: #a7f3d0;
 }
 
 body {
-  background-color: #020617;
-  color: #ffffff;
+  background-color: #f8f7ff;
+  color: #1f2937;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -34,21 +34,21 @@ body {
 
 @layer utilities {
   .bg-hero-gradient {
-    background: radial-gradient(circle at top, rgba(94, 234, 212, 0.25), transparent 55%),
-      radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.18), transparent 45%),
-      linear-gradient(180deg, #05060d 0%, #0b1224 100%);
+    background: radial-gradient(circle at top, rgba(167, 243, 208, 0.55), transparent 55%),
+      radial-gradient(circle at 80% 20%, rgba(196, 181, 253, 0.5), transparent 45%),
+      linear-gradient(180deg, #fdfcff 0%, #eef2ff 100%);
   }
 
   .bg-card-gradient {
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.75));
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(237, 233, 254, 0.85));
   }
 
   .bg-cosmic-radial {
-    background: radial-gradient(circle at top, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.05));
+    background: radial-gradient(circle at top, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.2));
   }
 
   .shadow-glow {
-    box-shadow: 0 30px 70px -45px rgba(148, 210, 255, 0.7);
+    box-shadow: 0 30px 70px -45px rgba(167, 243, 208, 0.65);
   }
 
   .text-aurora {
