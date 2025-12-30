@@ -6,6 +6,9 @@ context = "backend"
 [variables]
 PYTHONPATH = "/app/src"
 PYTHONUNBUFFERED = "1"
+BHRIGUWELT_JWT_SECRET = "REPLACE_WITH_JWT_SECRET"
+BHRIGUWELT_PROFILE_ENCRYPTION_KEY = "REPLACE_WITH_BASE64_AES_KEY"
+REDIS_URL = "redis://:password@hostname:6379/0"
 
 [deploy]
 startCommand = "python -m bhriguwelt.api"

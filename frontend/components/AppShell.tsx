@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Providers from "@/app/providers";
 import { useI18n, type Language } from "@/lib/i18n";
 import { theme } from "@/lib/theme";
+import GdprConsentBanner from "@/components/GdprConsentBanner";
 
 type Props = {
   children: React.ReactNode;
@@ -90,6 +91,8 @@ function Shell({ children }: Props) {
       <main id="main" className="page-shell" tabIndex={-1}>
         {children}
       </main>
+
+      <GdprConsentBanner />
 
       <footer className="footer" aria-label="Footer">
         <div>

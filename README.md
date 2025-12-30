@@ -115,6 +115,17 @@ generation, chat clarifications, and dasha reminders.
 - **Frontend health:** `cd frontend && npm run lint && npm run type-check && npx playwright test` before opening a PR. The
   CI badges above mirror the same checks.
 
+### Docker-based local development
+
+Spin up the full stack with Docker Compose when you want a reproducible local environment:
+
+1. `docker compose up --build` to start the backend on `http://localhost:8000` and the frontend on
+   `http://localhost:3000`.
+2. Set `BHRIGUWELT_ADMIN_TOKEN` in your shell before running compose if you need `/analytics` or `/ml/retrain`.
+3. Update `NEXT_PUBLIC_BACKEND_URL` in the `docker-compose.yml` service definition if you want the frontend to target a
+   different API host.
+4. Stop the stack with `docker compose down`.
+
 ### Local setup + smoke tests
 
 1. Use Python 3.11 (the repo ships a `.tool-versions` pin for mise/pyenv) so `scikit-learn` installs from wheels instead of
@@ -139,6 +150,12 @@ generation, chat clarifications, and dasha reminders.
    `localStorage` and replays the transcript on reload. You can inspect the synced session with
    `curl -X POST $NEXT_PUBLIC_BACKEND_URL/profiles/get -d '{"user_id":"<value from localStorage>","session_id":"default"}' -H 'Content-Type: application/json'`.
 4. Run `npm run lint && npm run type-check` before shipping UI changes; the same checks run in CI.
+
+## GitHub Copilot guidance
+
+The repository includes Copilot guidance in `.github/copilot-instructions.md` so suggestions stay aligned with the
+backend/ frontend split, API error patterns, and UI conventions. Enable GitHub Copilot in your editor and keep the
+instructions file open when prompting for larger changes.
 
 ## Deployment readiness (Railway + Vercel)
 
