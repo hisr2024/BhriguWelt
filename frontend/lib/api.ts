@@ -261,6 +261,30 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
       },
     ],
   },
+  "/transits": {
+    name: "Fallback seeker",
+    interpretation: "Current transits emphasize steady pacing, boundary setting, and focus on restorative rituals.",
+    directives: [
+      {
+        reference: "TR-11",
+        influence: "Saturn transit emphasizes discipline and boundaries in daily routines.",
+        certainty: 0.74,
+        planet: "Saturn",
+      },
+      {
+        reference: "TR-18",
+        influence: "Jupiter transit uplifts study, mentorship, and expansion in dharmic duties.",
+        certainty: 0.66,
+        planet: "Jupiter",
+      },
+      {
+        reference: "TR-22",
+        influence: "Moon transit highlights emotional resets and nourishment cycles.",
+        certainty: 0.58,
+        planet: "Moon",
+      },
+    ],
+  },
   "/matchmaking": {
     primary_name: "Fallback seeker",
     partner_name: "Partner seeker",
@@ -637,6 +661,11 @@ export async function getFutureProgress() {
 
 export async function getTimeline() {
   return getJson("/timeline", "/timeline");
+}
+
+export async function getVarshaphal(year?: number) {
+  const query = typeof year === "number" ? `?year=${year}` : "";
+  return getJson(`/varshaphal${query}`, "/varshaphal");
 }
 
 export async function requestMatchmaking(

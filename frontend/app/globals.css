@@ -737,6 +737,12 @@ body[data-animations="off"] .prediction-card__body {
   fill: #4c5b66;
 }
 
+.kundli-transit {
+  font-size: 0.65rem;
+  fill: #d97757;
+  font-weight: 600;
+}
+
 .kundli-core {
   fill: #1f2a33;
   opacity: 0.95;
@@ -2937,4 +2943,149 @@ textarea:focus {
   justify-content: space-between;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+.varshaphal-page {
+  gap: 2rem;
+}
+
+.varshaphal-hero {
+  display: grid;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.varshaphal-hero__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.varshaphal-hero__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.varshaphal-year {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 220px;
+}
+
+.varshaphal-year select {
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(20, 17, 14, 0.9);
+  color: inherit;
+  font-size: 1rem;
+}
+
+.varshaphal-overview__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.varshaphal-meter {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.varshaphal-meter__label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.varshaphal-meter__track {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.varshaphal-meter__track span {
+  position: absolute;
+  inset: 0;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(120deg, #e4c17e, #c67cff);
+}
+
+.varshaphal-timeline__rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(240px, 1fr);
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.varshaphal-timeline__card {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1.25rem;
+  display: grid;
+  gap: 0.75rem;
+  background: rgba(15, 13, 11, 0.92);
+  box-shadow: var(--card-shadow);
+}
+
+.varshaphal-months__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.varshaphal-month {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.varshaphal-month__header {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.varshaphal-month__highlights {
+  display: grid;
+  gap: 0.5rem;
+  padding-left: 1.1rem;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.95rem;
+}
+
+.varshaphal-remedies {
+  display: grid;
+  gap: 0.85rem;
+  padding-top: 0.4rem;
+}
+
+.varshaphal-remedy {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 0.8rem;
+}
+
+@media (min-width: 960px) {
+  .varshaphal-hero {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .varshaphal-remedy {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

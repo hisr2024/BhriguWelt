@@ -14,6 +14,7 @@ const tools = [
   { title: "Future guidance", href: "/future", note: "Care" },
   { title: "Core wisdom", href: "/core-wisdom", note: "Digest" },
   { title: "Timeline", href: "/timeline", note: "Journey" },
+  { title: "Varshaphal", href: "/varshaphal", note: "Solar return" },
   { title: "Matchmaking", href: "/matchmaking", note: "Connections" },
 ];
 

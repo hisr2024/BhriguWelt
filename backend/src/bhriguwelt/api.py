@@ -359,6 +359,10 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         if focus_areas is not None and not isinstance(focus_areas, list):
             self.send_error(HTTPStatus.BAD_REQUEST, "focus_areas must be a list when provided")
             return
+        ai_summary = payload.get("ai_summary")
+        if ai_summary is not None and not isinstance(ai_summary, bool):
+            self.send_error(HTTPStatus.BAD_REQUEST, "ai_summary must be a boolean when provided")
+            return
         self._respond_with_command("core-wisdom", payload)
 
     def _handle_implementation_core(self) -> None:
@@ -556,6 +560,8 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ai_payload["_client_ip"] = self.client_address[0]
         if command in _AI_ENHANCED_COMMANDS:
             response = _enhance_with_ai(response, command, ai_payload)
+        elif command == "core-wisdom" and payload.get("ai_summary"):
+            response = _enhance_with_ai(response, command, ai_payload, summary=True)
 
         self.cache.set(cache_key, response)
         self._send_json(response, headers={"X-Cache": "MISS"})
@@ -698,7 +704,13 @@ def _extract_principle_context(limit: int = 5) -> str:
     return integrity_note + "\n" + "\n".join(snippets)
 
 
-def _enhance_with_ai(response_dict: Dict[str, Any], endpoint: str, request_data: Dict[str, Any]) -> Dict[str, Any]:
+def _enhance_with_ai(
+    response_dict: Dict[str, Any],
+    endpoint: str,
+    request_data: Dict[str, Any],
+    *,
+    summary: bool = False,
+) -> Dict[str, Any]:
     ai_support = ai_provider_metadata()
     response_with_ai = dict(response_dict)
     response_with_ai["ai_provider_metadata"] = ai_support
@@ -710,6 +722,7 @@ def _enhance_with_ai(response_dict: Dict[str, Any], endpoint: str, request_data:
             "endpoint": endpoint,
             "response": response_dict,
             "request": request_data,
+            "summary": summary,
         },
         sort_keys=True,
         ensure_ascii=False,
@@ -751,28 +764,47 @@ def _enhance_with_ai(response_dict: Dict[str, Any], endpoint: str, request_data:
         "timezone": request_data.get("timezone"),
     }
 
-    system_prompt = (
-        "You are a Sarvam AI interpreter for Bhrigu Samhita. Ground every narrative in the stored folios "
-        "and reference principle IDs (e.g., BR-1), sutra references, sources, and weights provided. Maintain "
-        "a compassionate mentor tone, avoid medical or financial directives, and remind seekers of free will "
-        "and personal agency. Keep outputs between 300 and 500 words with practical remedies and gentle "
-        "advice aligned to the manuscripts."
-    )
+    if summary:
+        system_prompt = (
+            "You are a Sarvam AI interpreter for Bhrigu Samhita. Provide a concise summary grounded in the "
+            "stored folios and provided principles. Keep outputs between 120 and 180 words. Maintain a "
+            "compassionate mentor tone, avoid medical or financial directives, and remind seekers of free "
+            "will and personal agency."
+        )
+        user_prompt = (
+            "Summarize the {endpoint} response with 3-5 compact highlights. "
+            "Bhrigu dataset context: {context}. Base engine findings: {base}. "
+            "Seeker: {name}. Birth details: {birth}. Close with a free-will reminder."
+        ).format(
+            endpoint=endpoint,
+            context=principle_context,
+            base=json.dumps(base_elements, ensure_ascii=False, default=str),
+            name=seeker_name,
+            birth=json.dumps(birth_details, ensure_ascii=False, default=str),
+        )
+    else:
+        system_prompt = (
+            "You are a Sarvam AI interpreter for Bhrigu Samhita. Ground every narrative in the stored folios "
+            "and reference principle IDs (e.g., BR-1), sutra references, sources, and weights provided. Maintain "
+            "a compassionate mentor tone, avoid medical or financial directives, and remind seekers of free will "
+            "and personal agency. Keep outputs between 300 and 500 words with practical remedies and gentle "
+            "advice aligned to the manuscripts."
+        )
 
-    user_prompt = (
-        "Create an extensive guidance narrative for the {endpoint} route. Bhrigu dataset context: {context}. "
-        "Base engine findings: {base}. Seeker: {name}. Birth details: {birth}. "
-        "Explicitly weave in cited principles (e.g., BR-7 leadership mandates, BR-18 Saturn/Venus cues) and "
-        "source notes such as Bikaner folios. Expand with storyline, karmic lessons, lifestyle adjustments, "
-        "and remedies that stay within Bhrigu Samhita boundaries while echoing the provided weights and "
-        "sutras. Close with a free-will reminder."
-    ).format(
-        endpoint=endpoint,
-        context=principle_context,
-        base=json.dumps(base_elements, ensure_ascii=False, default=str),
-        name=seeker_name,
-        birth=json.dumps(birth_details, ensure_ascii=False, default=str),
-    )
+        user_prompt = (
+            "Create an extensive guidance narrative for the {endpoint} route. Bhrigu dataset context: {context}. "
+            "Base engine findings: {base}. Seeker: {name}. Birth details: {birth}. "
+            "Explicitly weave in cited principles (e.g., BR-7 leadership mandates, BR-18 Saturn/Venus cues) and "
+            "source notes such as Bikaner folios. Expand with storyline, karmic lessons, lifestyle adjustments, "
+            "and remedies that stay within Bhrigu Samhita boundaries while echoing the provided weights and "
+            "sutras. Close with a free-will reminder."
+        ).format(
+            endpoint=endpoint,
+            context=principle_context,
+            base=json.dumps(base_elements, ensure_ascii=False, default=str),
+            name=seeker_name,
+            birth=json.dumps(birth_details, ensure_ascii=False, default=str),
+        )
 
     messages = [
         {"role": "system", "content": system_prompt},
@@ -785,7 +817,8 @@ def _enhance_with_ai(response_dict: Dict[str, Any], endpoint: str, request_data:
         logger.warning("AI enhancement failed", extra={"endpoint": endpoint, "error": str(exc)})
         return response_with_ai
 
-    response_with_ai["ai_narrative"] = narrative
+    response_key = "ai_summary" if summary else "ai_narrative"
+    response_with_ai[response_key] = narrative
     _ai_narrative_cache.set(cache_key, response_with_ai)
     logger.info(
         "AI narrative generated",
@@ -851,6 +884,8 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "dashas": [_serialize_obj(item) for item in reading.dashas],
             "karmic_epoch": reading.karmic_epoch,
             "remedies": reading.remedies,
+            "manuscript_wisdom": reading.manuscript_wisdom,
+            "sources": reading.sources,
         }
         _ensure_visualization_payload(response)
         return response
@@ -932,6 +967,7 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "focus_areas": report.focus_areas,
             "practices": report.practices,
             "intentions": report.intentions,
+            "citations": report.citations,
         }
     if command == "timeline":
         request = _request_from_payload(payload)
@@ -1051,14 +1087,17 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     if command == "transits":
         try:
             request = _request_from_payload(payload["natal"])
-            transit_payload = payload["transit"]
         except KeyError as exc:
             missing = exc.args[0]
             raise ValueError(f"Missing required field: {missing}") from exc
+        transit_payload = payload.get("transit")
         report = build_transit_report(request, transit_payload)
         return {
             "name": report.name,
             "directives": [_serialize_obj(item) for item in report.directives],
+            "symbolic_directives": report.symbolic_directives,
+            "remedies": report.remedies,
+            "citations": report.citations,
             "interpretation": report.interpretation,
         }
     raise ValueError(f"Unsupported command: {command}")
