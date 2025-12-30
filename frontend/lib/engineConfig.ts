@@ -383,6 +383,7 @@ export const engineCards = engineConfigs.map((engine) => ({
   description: engine.cardDescription,
   features: engine.features,
   icon: engine.icon,
+  accent: engine.accent,
 }));
 
 export const engineBySlug = engineConfigs.reduce<Record<string, EngineConfig>>((acc, engine) => {

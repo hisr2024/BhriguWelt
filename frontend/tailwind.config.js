@@ -23,6 +23,9 @@ module.exports = {
           "radial-gradient(circle at top, rgba(99,102,241,0.25), transparent 45%), radial-gradient(circle at 20% 20%, rgba(236,72,153,0.2), transparent 40%), linear-gradient(135deg, rgba(15,23,42,1) 0%, rgba(2,6,23,1) 100%)",
         "card-gradient": "linear-gradient(135deg, rgba(30,41,59,0.95) 0%, rgba(15,23,42,0.95) 100%)",
         "result-gradient": "linear-gradient(135deg, rgba(14,116,144,0.35) 0%, rgba(59,130,246,0.25) 45%, rgba(217,70,239,0.2) 100%)",
+        "cosmic-radial":
+          "radial-gradient(circle at 20% 20%, rgba(99,102,241,0.2), transparent 40%), radial-gradient(circle at 80% 10%, rgba(236,72,153,0.25), transparent 45%), radial-gradient(circle at 50% 80%, rgba(14,165,233,0.18), transparent 45%)",
+        "cosmic-glow": "radial-gradient(circle, rgba(99,102,241,0.3), transparent 65%)",
       },
     },
   },
