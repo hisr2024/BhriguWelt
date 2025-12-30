@@ -14,6 +14,7 @@ import {
   Moon,
   Sun,
 } from "lucide-react";
+import BackendHealthNotice from "@/components/BackendHealthNotice";
 import GdprConsentBanner from "@/components/GdprConsentBanner";
 import { AnimatePresence, motion, useReducedMotion } from "@/lib/framer-motion";
 import { useThemeMode } from "@/lib/themeContext";
@@ -181,6 +182,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           exit={{ opacity: 0, y: -12 }}
           transition={{ duration: 0.35, ease: easeOutCurve }}
         >
+          <div className="mb-6">
+            <BackendHealthNotice />
+          </div>
           {children}
         </motion.main>
       </AnimatePresence>

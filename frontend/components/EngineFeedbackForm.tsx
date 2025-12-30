@@ -12,6 +12,29 @@ type EngineFeedbackFormProps = {
 export default function EngineFeedbackForm({ engineTitle }: EngineFeedbackFormProps) {
   const [rating, setRating] = useState<number | null>(null);
   const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    if (!rating) {
+      setError("Pick a star rating before sharing feedback.");
+      setStatus("error");
+      return;
+    }
+
+    setStatus("submitting");
+    setError(null);
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 650));
+      setStatus("success");
+      setMessage("");
+    } catch (submitError) {
+      const messageText = submitError instanceof Error ? submitError.message : "Unable to save feedback right now.";
+      setError(messageText);
+      setStatus("error");
+    }
+  };
 
   return (
     <section className="rounded-3xl border border-white/10 bg-slate-950/70 p-6">
@@ -27,7 +50,11 @@ export default function EngineFeedbackForm({ engineTitle }: EngineFeedbackFormPr
           <button
             key={value}
             type="button"
-            onClick={() => setRating(value)}
+            onClick={() => {
+              setRating(value);
+              setStatus("idle");
+              setError(null);
+            }}
             className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition ${
               rating === value
                 ? "border-indigo-400 bg-indigo-500/20 text-white"
@@ -50,10 +77,16 @@ export default function EngineFeedbackForm({ engineTitle }: EngineFeedbackFormPr
       </label>
       <button
         type="button"
-        className="mt-4 inline-flex items-center gap-2 rounded-full bg-indigo-500 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-indigo-400"
+        onClick={handleSubmit}
+        disabled={status === "submitting"}
+        className="mt-4 inline-flex items-center gap-2 rounded-full bg-indigo-500 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:bg-indigo-500/60"
       >
-        Submit feedback
+        {status === "submitting" ? "Submitting..." : "Submit feedback"}
       </button>
+      <div className="mt-3 space-y-2 text-xs" aria-live="polite">
+        {status === "success" && <p className="text-emerald-200">Feedback saved. Thank you for the insight!</p>}
+        {error && <p className="text-rose-200">{error}</p>}
+      </div>
     </section>
   );
 }
