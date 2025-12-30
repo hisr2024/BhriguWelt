@@ -26,6 +26,17 @@ module.exports = {
       boxShadow: {
         glow: "0 0 30px rgba(99, 102, 241, 0.35)",
       },
+      fontSize: {
+        "fluid-sm": "clamp(0.85rem, 0.8rem + 0.35vw, 1rem)",
+        "fluid-base": "clamp(1rem, 0.95rem + 0.5vw, 1.125rem)",
+        "fluid-lg": "clamp(1.25rem, 1.1rem + 0.8vw, 1.5rem)",
+        "fluid-xl": "clamp(1.6rem, 1.2rem + 1.6vw, 2.4rem)",
+        "fluid-2xl": "clamp(2rem, 1.5rem + 2.4vw, 3rem)",
+      },
+      spacing: {
+        "safe-bottom": "env(safe-area-inset-bottom)",
+        "safe-top": "env(safe-area-inset-top)",
+      },
       backgroundImage: {
         "hero-gradient":
           "radial-gradient(circle at top, rgba(99,102,241,0.25), transparent 45%), radial-gradient(circle at 20% 20%, rgba(236,72,153,0.2), transparent 40%), linear-gradient(135deg, rgba(15,23,42,1) 0%, rgba(2,6,23,1) 100%)",
