@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev --no-turbo",
     "prebuild": "rm -f app/chat/route.ts app/chat/route.tsx app/chat/route.js",
-    "build": "NEXT_IGNORE_INCORRECT_LOCKFILE=1 next build --webpack",
+    "build": "NEXT_TELEMETRY_DISABLED=1 next build",
     "start": "next start",
     "lint": "eslint . --ext .ts,.tsx",
     "type-check": "tsc --noEmit",
