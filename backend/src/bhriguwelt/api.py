@@ -18,7 +18,7 @@ from urllib.parse import urlparse, parse_qs
 from .bhrigu_core import bhrigu_core
 from .data_loader import persist_bhrigu_data
 from .calendar_conversion import convert_birth_details
-from .feedback import record_feedback, quarterly_reviews, serialize_entry
+from .feedback import feedback_analytics_snapshot, record_feedback, quarterly_reviews, serialize_entry
 from .ml_service import get_ml_health, record_model_load, retrain_feedback_model
 from .ai_client import AIIntegrationError, ai_provider_metadata, chat_completion
 from .telemetry import capture_exception, init_telemetry
@@ -485,7 +485,11 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         self._send_json({"alerts": alerts})
 
     def _handle_analytics(self) -> None:
+        if not self._is_admin():
+            self.send_error(HTTPStatus.FORBIDDEN, "Admin token required for analytics")
+            return
         summary = analytics_snapshot()
+        summary["feedback"] = feedback_analytics_snapshot()
         summary["feedback_quarterly"] = quarterly_reviews(limit=4)
         self._send_json(summary)
 

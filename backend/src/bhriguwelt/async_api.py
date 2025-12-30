@@ -18,7 +18,7 @@ except Exception as exc:  # pragma: no cover - optional dependency
 from .api import RateLimiter, ResponseCache, handle_command
 from .bhrigu_core import bhrigu_core
 from .data_loader import persist_bhrigu_data
-from .feedback import quarterly_reviews, record_feedback, serialize_entry
+from .feedback import feedback_analytics_snapshot, quarterly_reviews, record_feedback, serialize_entry
 from .ml_service import get_ml_health, retrain_feedback_model
 from .profiles import (
     create_or_update_profile,
@@ -330,8 +330,11 @@ def create_app() -> web.Application:
             alerts = await asyncio.to_thread(alerts_summary)
         return _json_response({"alerts": alerts})
 
-    async def analytics(_: web.Request) -> web.Response:
+    async def analytics(request: web.Request) -> web.Response:
+        if not _ADMIN_TOKEN or request.headers.get("X-Admin-Token") != _ADMIN_TOKEN:
+            return _json_response({"message": "Admin token required for analytics"}, status=HTTPStatus.FORBIDDEN)
         snapshot = await asyncio.to_thread(analytics_snapshot)
+        snapshot["feedback"] = await asyncio.to_thread(feedback_analytics_snapshot)
         snapshot["feedback_quarterly"] = await asyncio.to_thread(quarterly_reviews, 4)
         return _json_response(snapshot)
 

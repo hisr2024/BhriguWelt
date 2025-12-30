@@ -402,15 +402,79 @@ def alerts_summary(limit: int = 10) -> List[Dict[str, Any]]:
     return [dict(row) for row in rows]
 
 
+def _session_turn_count(raw: str | None) -> int:
+    transcript = _decode_transcript(raw)
+    return len(transcript)
+
+
 def analytics_snapshot() -> Dict[str, Any]:
     with _connect() as connection:
         profile_count = connection.execute("SELECT COUNT(*) FROM profiles").fetchone()[0]
         alert_count = connection.execute("SELECT COUNT(*) FROM alerts").fetchone()[0]
         session_count = connection.execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
+        profiles_created_7d = connection.execute(
+            "SELECT COUNT(*) FROM profiles WHERE created_at >= datetime('now', '-7 days')"
+        ).fetchone()[0]
+        profiles_updated_24h = connection.execute(
+            "SELECT COUNT(*) FROM profiles WHERE updated_at >= datetime('now', '-1 day')"
+        ).fetchone()[0]
+        sessions_active_7d = connection.execute(
+            "SELECT COUNT(*) FROM sessions WHERE updated_at >= datetime('now', '-7 days')"
+        ).fetchone()[0]
+        recent_profiles = connection.execute(
+            """
+            SELECT id, user_id, full_name, created_at, updated_at
+            FROM profiles
+            ORDER BY updated_at DESC
+            LIMIT 5
+            """
+        ).fetchall()
+        recent_sessions = connection.execute(
+            """
+            SELECT profile_id, session_key, transcript_json, updated_at
+            FROM sessions
+            ORDER BY updated_at DESC
+            LIMIT 5
+            """
+        ).fetchall()
+        session_transcripts = connection.execute("SELECT transcript_json FROM sessions").fetchall()
+
+    session_turns = [_session_turn_count(row["transcript_json"]) for row in session_transcripts]
+    average_turns = round(sum(session_turns) / len(session_turns), 2) if session_turns else 0
+
     return {
-        "profiles": profile_count,
-        "alerts": alert_count,
-        "sessions": session_count,
+        "profiles": {
+            "total": profile_count,
+            "created_last_7_days": profiles_created_7d,
+            "updated_last_24_hours": profiles_updated_24h,
+            "recent": [
+                {
+                    "id": row["id"],
+                    "user_id": row["user_id"],
+                    "full_name": row["full_name"],
+                    "created_at": row["created_at"],
+                    "updated_at": row["updated_at"],
+                }
+                for row in recent_profiles
+            ],
+        },
+        "alerts": {
+            "total": alert_count,
+        },
+        "sessions": {
+            "total": session_count,
+            "active_last_7_days": sessions_active_7d,
+            "average_turns": average_turns,
+            "recent": [
+                {
+                    "profile_id": row["profile_id"],
+                    "session_key": row["session_key"],
+                    "turns": _session_turn_count(row["transcript_json"]),
+                    "updated_at": row["updated_at"],
+                }
+                for row in recent_sessions
+            ],
+        },
     }
 
 
