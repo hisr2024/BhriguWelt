@@ -1,8 +1,8 @@
-\"use client\";
+"use client";
 
-import Link from \"next/link\";
-import { usePwaPrompt } from \"@/components/hooks/usePwaPrompt\";
-import { Button } from \"@/components/ui/Button\";
+import Link from "next/link";
+import { usePwaPrompt } from "@/components/hooks/usePwaPrompt";
+import { Button } from "@/components/ui/Button";
 
 const links = [
   { href: "/", label: "Dashboard" },
