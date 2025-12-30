@@ -1,163 +1,124 @@
-import AnimatedLogo from "../components/AnimatedLogo";
-import FeatureCard from "../components/FeatureCard";
+"use client";
 
-const features = [
+import Link from "next/link";
+
+import AnimatedLogo from "@/components/AnimatedLogo";
+import EngineGrid from "@/components/EngineGrid";
+import { motion } from "@/lib/framer-motion";
+
+const featureHighlights = [
   {
-    title: "Unified insight engine",
-    description:
-      "Coordinate horoscope, past-life, and future guidance in one session, with a narrative summary that never overwhelms newcomers.",
+    title: "Glassmorphic Inputs",
+    description: "Minimalist, touch-first forms designed for frictionless cosmic queries.",
   },
   {
-    title: "Inclusive multilingual responses",
-    description:
-      "Every result is optimized for clear English and refined Hindi, with room to add regional voices so global seekers feel seen.",
+    title: "Neon Results",
+    description: "Readable output cards with spotlighted sutra insights and key takeaways.",
   },
   {
-    title: "Action-ready next steps",
-    description:
-      "Receive precise, compassionate recommendations that translate manuscripts into modern routines, checkpoints, and mentoring cues.",
+    title: "Ambient Motion",
+    description: "Subtle motion cues powered by Framer Motion for modern engagement.",
   },
 ];
 
-const inputs = [
-  {
-    eyebrow: "Inputs",
-    title: "Birth profile intake",
-    description:
-      "Collect name, birth date, time, and place with friendly form guidance and inclusive reminders for uncertain time windows.",
-  },
-  {
-    eyebrow: "Inputs",
-    title: "Intent & question prompts",
-    description:
-      "Capture what the seeker wants most—relationships, career, or wellbeing—so the engine can tailor outputs without bias.",
-  },
-  {
-    eyebrow: "Inputs",
-    title: "Contextual preferences",
-    description:
-      "Let users choose tone, language, and delivery style with accessible toggles that support screen readers and keyboard flow.",
-  },
-];
-
-const outputs = [
-  "Personalized manuscript summary with human-first phrasing",
-  "Clear karmic timeline with next-step signals",
-  "Charts, highlights, and shareable insights",
-  "Guided prompts for follow-up questions",
-];
-
-const engines = [
-  {
-    eyebrow: "Engine",
-    title: "Horoscope intelligence",
-    description: "Precise Panchanga alignment and chart-based reasoning for daily clarity.",
-  },
-  {
-    eyebrow: "Engine",
-    title: "Past-life narratives",
-    description: "Contextual storytelling that honors tradition while staying sensitive to lived experiences.",
-  },
-  {
-    eyebrow: "Engine",
-    title: "Future guidance",
-    description: "Actionable projections translated into timelines, rituals, and growth milestones.",
-  },
-  {
-    eyebrow: "Engine",
-    title: "Matchmaking harmony",
-    description: "Dual-profile compatibility analysis with inclusive partnership language.",
-  },
-];
-
-export default function Home() {
+export default function HomePage() {
   return (
-    <div id="top" className="app-shell">
-      <section className="hero">
-        <div>
-          <p className="engine-badge">World-class Bhrigu guidance</p>
-          <h1 className="hero-title">Illuminate destiny with graceful, human-first astrology.</h1>
-          <p className="hero-subtitle">
-            BhriguWelt blends ancient manuscripts with modern accessibility. Experience gentle motion, supportive
-            typography, and empathetic color so every seeker feels welcomed and guided.
-          </p>
-          <div className="hero-actions">
-            <a className="button primary" href="#outputs">
-              View live outputs
-            </a>
-            <a className="button secondary" href="#features">
-              Explore features
-            </a>
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-6 pb-20 pt-12">
+      <section className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-neon-radial p-8 shadow-cosmic md:p-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="relative z-10 grid gap-8 md:grid-cols-[1.2fr_0.8fr] md:items-center"
+        >
+          <div>
+            <div className="badge">Gen Z cosmic studio</div>
+            <h1 className="mt-6 text-4xl font-semibold leading-tight md:text-5xl">
+              BhriguWelt is your neon portal to 13 celestial engines.
+            </h1>
+            <p className="mt-4 text-base text-white/70">
+              Dark, cosmic, and crafted for modern seekers. Run your chart, map your future, match charts,
+              and track every ritual in a single minimalist experience.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <Link
+                href="/horoscope"
+                className="rounded-full bg-neon-cyan/20 px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white shadow-neon transition hover:bg-neon-cyan/30"
+              >
+                Launch Engines
+              </Link>
+              <Link
+                href="/chat"
+                className="rounded-full border border-white/20 px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white/80 transition hover:border-white/40"
+              >
+                Talk to Bhrigu
+              </Link>
+            </div>
+          </div>
+          <div className="flex flex-col items-center gap-6">
+            <AnimatedLogo size="lg" />
+            <div className="glass-panel w-full p-6 text-sm text-white/70">
+              <p className="uppercase tracking-[0.3em] text-neon-cyan">Live snapshot</p>
+              <p className="mt-3 text-base text-white">
+                13 engines active · 5,421 insights cached · 0ms jitter for your next reading.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
+      <section className="grid gap-6 md:grid-cols-3">
+        {featureHighlights.map((feature) => (
+          <motion.div
+            key={feature.title}
+            className="glass-panel p-6"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <h3 className="text-lg font-semibold">{feature.title}</h3>
+            <p className="mt-2 text-sm text-white/70">{feature.description}</p>
+          </motion.div>
+        ))}
+      </section>
+
+      <section className="space-y-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-sm uppercase tracking-[0.3em] text-white/40">All engines</p>
+            <h2 className="mt-2 text-3xl font-semibold">Explore every cosmic capability</h2>
+          </div>
+          <Link href="/dashboard" className="text-sm font-semibold text-neon-cyan">
+            View dashboard →
+          </Link>
+        </div>
+        <EngineGrid />
+      </section>
+
+      <section className="glass-panel p-8 md:p-12">
+        <div className="grid gap-8 md:grid-cols-[1.2fr_0.8fr]">
+          <div>
+            <p className="badge">Full journey</p>
+            <h2 className="mt-4 text-3xl font-semibold">Inputs. Outputs. Ritual-ready clarity.</h2>
+            <p className="mt-4 text-sm text-white/70">
+              Every engine is structured for clarity: clean input portals, instant API calls, and elegantly
+              displayed responses. The experience remains performant across mobile, tablet, and widescreen
+              formats.
+            </p>
+          </div>
+          <div className="space-y-4">
+            <div className="glass-panel p-5">
+              <p className="text-sm uppercase tracking-[0.3em] text-white/50">Inputs</p>
+              <p className="mt-2 text-sm text-white/70">Names, dates, coordinates, and preferences captured in glass UI.</p>
+            </div>
+            <div className="glass-panel p-5">
+              <p className="text-sm uppercase tracking-[0.3em] text-white/50">Outputs</p>
+              <p className="mt-2 text-sm text-white/70">Narratives, timelines, dashboards, and alerts styled for clarity.</p>
+            </div>
           </div>
         </div>
-        <AnimatedLogo />
       </section>
-
-      <section id="features" className="section">
-        <div className="section-header">
-          <h2 className="section-title">A luminous experience from input to insight</h2>
-          <p className="section-description">
-            Every screen is designed to highlight the app’s strongest capabilities—capturing precise inputs, rendering
-            charts, and delivering outcomes that inspire action.
-          </p>
-        </div>
-        <div className="card-grid">
-          {features.map((feature) => (
-            <FeatureCard key={feature.title} title={feature.title} description={feature.description} />
-          ))}
-        </div>
-      </section>
-
-      <section id="inputs" className="section">
-        <div className="section-header">
-          <h2 className="section-title">Thoughtful inputs for trusted outcomes</h2>
-          <p className="section-description">
-            Inclusive design keeps every form approachable while ensuring the engines receive the details they need to
-            respond with precision.
-          </p>
-        </div>
-        <div className="card-grid">
-          {inputs.map((input) => (
-            <FeatureCard key={input.title} eyebrow={input.eyebrow} title={input.title} description={input.description} />
-          ))}
-        </div>
-      </section>
-
-      <section id="outputs" className="section">
-        <div className="section-header">
-          <h2 className="section-title">Outputs that feel ready to share</h2>
-          <p className="section-description">
-            A soft, high-contrast palette and clear hierarchy keep results readable, while hover and focus states bring
-            attention to the most important recommendations.
-          </p>
-        </div>
-        <ul className="output-list" aria-label="Output highlights">
-          {outputs.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </section>
-
-      <section id="engines" className="section">
-        <div className="section-header">
-          <h2 className="section-title">Powered by BhriguWelt engines</h2>
-          <p className="section-description">
-            Each engine is tuned for accuracy, accessibility, and reassurance—so guidance lands with clarity and care.
-          </p>
-        </div>
-        <div className="card-grid">
-          {engines.map((engine) => (
-            <FeatureCard key={engine.title} eyebrow={engine.eyebrow} title={engine.title} description={engine.description} />
-          ))}
-        </div>
-      </section>
-
-      <footer className="site-footer">
-        <p>
-          BhriguWelt respects every journey. Designed with inclusive language, accessible contrast, and calm motion so
-          every seeker can engage with confidence.
-        </p>
-      </footer>
-    </div>
+    </main>
   );
 }

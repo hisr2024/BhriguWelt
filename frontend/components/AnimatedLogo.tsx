@@ -1,65 +1,38 @@
 "use client";
 
-import Image from "next/image";
-import { motion, useReducedMotion } from "../lib/framer-motion";
-import { getFloatAnimation } from "../lib/animations";
+import { motion } from "@/lib/framer-motion";
 
 type AnimatedLogoProps = {
-  size?: "small" | "large";
+  size?: "sm" | "md" | "lg";
 };
 
-export default function AnimatedLogo({ size = "large" }: AnimatedLogoProps) {
-  const reduceMotion = useReducedMotion();
-  const floatAnimation = getFloatAnimation(reduceMotion, { y: 6, rotate: 6, duration: 6.4 });
+const sizeMap = {
+  sm: "h-10 w-10",
+  md: "h-14 w-14",
+  lg: "h-20 w-20",
+};
 
-  const orbitAnimation = reduceMotion
-    ? undefined
-    : {
-        rotate: 360,
-      };
-
-  const orbitTransition = reduceMotion
-    ? undefined
-    : {
-        duration: 24,
-        repeat: Infinity,
-        ease: "linear",
-      };
-
-  const glowAnimation = reduceMotion
-    ? undefined
-    : {
-        opacity: [0.6, 1, 0.6],
-        scale: [0.96, 1.05, 0.96],
-      };
-
-  const glowTransition = reduceMotion
-    ? undefined
-    : {
-        duration: 4.8,
-        repeat: Infinity,
-        ease: "easeInOut",
-      };
-
+export default function AnimatedLogo({ size = "md" }: AnimatedLogoProps) {
   return (
-    <div className="logo-stack" style={size === "small" ? { width: "72px" } : undefined}>
+    <div className={`relative ${sizeMap[size]} flex items-center justify-center`}>
       <motion.div
-        className="logo-glow"
-        animate={glowAnimation}
-        transition={glowTransition}
-        aria-hidden="true"
+        className="absolute inset-0 rounded-full border border-neon-cyan/40 shadow-neon"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 16, repeat: Infinity, ease: "linear" }}
       />
-      <motion.div className="logo-orbit" animate={orbitAnimation} transition={orbitTransition} aria-hidden="true">
-        <span className="logo-orbit__dot" />
-      </motion.div>
       <motion.div
-        className="logo-mark"
-        animate={floatAnimation.animate}
-        transition={floatAnimation.transition}
-        whileHover={reduceMotion ? undefined : { scale: 1.03, rotate: 1.5 }}
-      >
-        <Image src="/logo.svg" alt="BhriguWelt" width={220} height={220} priority={size === "large"} />
-      </motion.div>
+        className="absolute inset-2 rounded-full border border-neon-purple/40"
+        animate={{ rotate: -360 }}
+        transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+      />
+      <motion.div
+        className="absolute inset-4 rounded-full bg-gradient-to-br from-neon-cyan/30 via-neon-purple/20 to-neon-pink/30 blur"
+        animate={{ opacity: [0.6, 1, 0.6], scale: [1, 1.08, 1] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <div className="relative z-10 flex h-2/3 w-2/3 items-center justify-center rounded-full bg-cosmic-700/80 text-lg font-semibold text-white">
+        BW
+      </div>
     </div>
   );
 }
