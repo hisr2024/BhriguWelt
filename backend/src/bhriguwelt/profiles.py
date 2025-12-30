@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import importlib.util
 import json
 import logging
 import os
@@ -12,7 +13,19 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+if importlib.util.find_spec("cryptography"):
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+else:
+
+    class AESGCM:  # type: ignore[no-redef]
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            raise RuntimeError("cryptography is required for profile encryption")
+
+        def encrypt(self, *args: object, **kwargs: object) -> bytes:
+            raise RuntimeError("cryptography is required for profile encryption")
+
+        def decrypt(self, *args: object, **kwargs: object) -> bytes:
+            raise RuntimeError("cryptography is required for profile encryption")
 
 _DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "profiles.db"
 _ENCRYPTION_PREFIX = "enc::"

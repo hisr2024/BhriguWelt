@@ -3,10 +3,27 @@
 from __future__ import annotations
 
 import os
+import importlib.util
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict
 
-import jwt
+if importlib.util.find_spec("jwt"):
+    import jwt
+else:
+
+    class _JwtStubError(Exception):
+        """Fallback error for missing PyJWT dependency."""
+
+    class jwt:  # type: ignore[no-redef]
+        PyJWTError = _JwtStubError
+
+        @staticmethod
+        def encode(*args: object, **kwargs: object) -> str:
+            raise RuntimeError("PyJWT is required for profile authentication")
+
+        @staticmethod
+        def decode(*args: object, **kwargs: object) -> Dict[str, Any]:
+            raise RuntimeError("PyJWT is required for profile authentication")
 
 _JWT_ISSUER = "bhriguwelt"
 _JWT_AUDIENCE = "bhriguwelt-profiles"
