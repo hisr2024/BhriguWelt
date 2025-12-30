@@ -193,6 +193,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/karmic-dashboard"): "_handle_karmic_dashboard",
         ("POST", "/experience-flow"): "_handle_experience_flow",
         ("POST", "/wisdom-aggregator"): "_handle_wisdom_aggregator",
+        ("POST", "/wisdom-bot"): "_handle_wisdom_bot",
         ("POST", "/chat"): "_handle_chat",
         ("POST", "/profiles"): "_handle_profiles",
         ("POST", "/profiles/get"): "_handle_profile_get",
@@ -408,6 +409,18 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.BAD_REQUEST, "focus_engines must be a list when provided")
             return
         self._respond_with_command("wisdom-aggregator", payload)
+
+    def _handle_wisdom_bot(self) -> None:
+        payload = self._read_json()
+        focus_areas = payload.get("focus_areas")
+        modern_preferences = payload.get("modern_preferences")
+        if focus_areas is not None and not isinstance(focus_areas, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "focus_areas must be a list when provided")
+            return
+        if modern_preferences is not None and not isinstance(modern_preferences, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "modern_preferences must be a list when provided")
+            return
+        self._respond_with_command("wisdom-bot", payload)
 
     def _handle_chat(self) -> None:
         payload = self._read_json()
