@@ -8,8 +8,8 @@ import EngineInsightOrbit from "@/components/EngineInsightOrbit";
 import EngineZoomChart from "@/components/EngineZoomChart";
 
 const highlightIcons = [Sparkles, Flame, ShieldCheck, Star, Wand2];
-const easeOutCurve: Easing = [0.2, 0.65, 0.3, 0.9];
-const transition = { duration: 0.45, ease: easeOutCurve };
+const easeStandard: [number, number, number, number] = [0.2, 0.65, 0.3, 0.9];
+const transition = { duration: 0.45, ease: easeStandard };
 
 type EngineResultPanelProps = {
   result: EngineResult;

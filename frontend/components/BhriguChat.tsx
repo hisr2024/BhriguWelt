@@ -36,25 +36,6 @@ type Props = {
   chart?: NatalChart;
 };
 
-type SpeechRecognitionAlternative = { transcript: string };
-type SpeechRecognitionResultLike = { 0: SpeechRecognitionAlternative; length: number };
-type SpeechRecognitionResultListLike = ArrayLike<SpeechRecognitionResultLike>;
-type SpeechRecognitionEventLike = Event & { results: SpeechRecognitionResultListLike };
-type SpeechRecognitionInstance = {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
-  onerror: ((event: Event) => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-};
-type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
-type SpeechRecognitionWindow = typeof window & {
-  SpeechRecognition?: SpeechRecognitionConstructor;
-  webkitSpeechRecognition?: SpeechRecognitionConstructor;
-};
 
 const GUIDE_NAME = "Bhrigu Samhita Guide";
 const GUIDE_GLYPH = "◐";
@@ -84,7 +65,7 @@ export default function BhriguChat({ chart }: Props) {
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
-  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const speechSeedRef = useRef<string>("");
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -183,8 +164,7 @@ export default function BhriguChat({ chart }: Props) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const speechWindow = window as SpeechRecognitionWindow;
-    const SpeechRecognition = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) return;
 
@@ -192,7 +172,7 @@ export default function BhriguChat({ chart }: Props) {
     recognition.lang = "en-US";
     recognition.interimResults = true;
     recognition.continuous = false;
-    recognition.onresult = (event: SpeechRecognitionEventLike) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       const transcript = Array.from(event.results)
         .map((result) => result[0]?.transcript ?? "")
         .join("")
