@@ -26,13 +26,6 @@ const quickLinks = [
   },
 ];
 
-const highlights = [
-  "Four-language guidance with instant toggle",
-  "Kundli charts remain perfectly square on mobile",
-  "Onboarding glossary for every ritual term",
-  "Bhrigu-style chat transcripts for follow-up clarity",
-];
-
 export default function HomePage() {
   return (
     <main id="main" tabIndex={-1} className="mx-auto flex max-w-6xl flex-col gap-16 px-6 py-12">
@@ -97,26 +90,6 @@ export default function HomePage() {
         ))}
       </section>
 
-      <section className="rounded-3xl border border-white/10 bg-card-gradient p-8">
-        <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Final polish</p>
-            <h2 className="mt-2 text-fluid-xl">Every feature showcased, every ritual guided.</h2>
-            <p className="mt-3 text-sm text-slate-300">
-              The UX now balances clarity and mysticism with accessible navigation, responsive cards, and
-              accessible labels for screen readers and multi-language seekers.
-            </p>
-          </div>
-          <ul className="grid gap-3 text-sm text-slate-200">
-            {highlights.map((item) => (
-              <li key={item} className="flex items-start gap-3">
-                <span className="mt-1 h-2 w-2 rounded-full bg-aurora" />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
     </main>
   );
 }
