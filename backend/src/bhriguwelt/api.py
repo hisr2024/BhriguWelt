@@ -52,6 +52,7 @@ from .implementation_core import build_implementation_core_response
 from .experience_flow import build_unified_experience_flow
 from .past_future_bridge import build_past_future_synthesis
 from .matchmaking_engine import run_matchmaking_pipeline
+from .matchmaking_diagnostics import build_matchmaking_diagnostics
 from .kundli_generator import SIGNS, generate_kundli
 from .wisdom_aggregator import aggregate_wisdom_for_bot
 from .wisdom_bot import build_wisdom_bot_response
@@ -175,12 +176,14 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         ("POST", "/feedback"): "_handle_feedback",
         ("GET", "/feedback/quarterly"): "_handle_feedback_quarterly",
         ("POST", "/horoscope"): "_handle_horoscope",
+        ("POST", "/timeline"): "_handle_timeline",
         ("POST", "/past-life"): "_handle_past_life",
         ("POST", "/future"): "_handle_future",
         ("POST", "/future-directives"): "_handle_future_directives",
         ("POST", "/past-future"): "_handle_past_future",
         ("POST", "/matchmaking"): "_handle_matchmaking",
         ("POST", "/matchmaking/pipeline"): "_handle_matchmaking_pipeline",
+        ("POST", "/matchmaking/diagnostics"): "_handle_matchmaking_diagnostics",
         ("POST", "/varshaphal"): "_handle_varshaphal",
         ("POST", "/calendar"): "_handle_calendar",
         ("POST", "/transits"): "_handle_transits",
@@ -281,6 +284,14 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
         payload = self._read_json()
         self._respond_with_command("horoscope", payload)
 
+    def _handle_timeline(self) -> None:
+        payload = self._read_json()
+        focus_areas = payload.get("focus_areas")
+        if focus_areas is not None and not isinstance(focus_areas, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "focus_areas must be a list when provided")
+            return
+        self._respond_with_command("timeline", payload)
+
     def _handle_past_life(self) -> None:
         payload = self._read_json()
         self._respond_with_command("past-life", payload)
@@ -317,6 +328,14 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
             return
 
         self._respond_with_command("matchmaking-pipeline", payload)
+
+    def _handle_matchmaking_diagnostics(self) -> None:
+        payload = self._read_json()
+        preferences = payload.get("modern_preferences")
+        if preferences is not None and not isinstance(preferences, list):
+            self.send_error(HTTPStatus.BAD_REQUEST, "modern_preferences must be a list when provided")
+            return
+        self._respond_with_command("matchmaking-diagnostics", payload)
 
     def _handle_varshaphal(self) -> None:
         payload = self._read_json()
@@ -922,6 +941,7 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "summary": report.summary,
             "disclaimer": report.disclaimer,
             "phases": [_serialize_obj(phase) for phase in report.phases],
+            "citations": report.citations,
         }
     if command == "matchmaking":
         primary = _request_from_payload(payload.get("primary", {}))
@@ -946,6 +966,21 @@ def handle_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "interpretation": report.interpretation,
             "sections": report.sections,
         }
+    if command == "matchmaking-diagnostics":
+        primary_payload = payload.get("primary")
+        partner_payload = payload.get("partner")
+        if not isinstance(primary_payload, dict) or not isinstance(partner_payload, dict):
+            raise ValueError("matchmaking-diagnostics requires 'primary' and 'partner' chart payloads")
+        modern_preferences = payload.get("modern_preferences") or []
+        if not isinstance(modern_preferences, list):
+            raise ValueError("modern_preferences must be a list when provided")
+        use_bayesian_scoring = bool(payload.get("use_bayesian_scoring") or payload.get("bayesian_scoring"))
+        return build_matchmaking_diagnostics(
+            _request_from_payload(primary_payload),
+            _request_from_payload(partner_payload),
+            modern_preferences,
+            use_bayesian_scoring=use_bayesian_scoring,
+        )
     if command == "matchmaking-pipeline":
         primary = _request_from_payload(payload.get("primary", {}))
         partner = _request_from_payload(payload.get("partner", {}))

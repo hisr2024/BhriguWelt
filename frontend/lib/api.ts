@@ -161,6 +161,86 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
       },
     ],
   },
+  "/timeline": {
+    updated_at: "2024-06-01",
+    phases: [
+      {
+        id: "phase-1",
+        title: "Ascendant grounding",
+        window: "Phase 1 • Weeks 1-6",
+        house: 1,
+        detail: "Anchor identity, routines, and body vitality as the ascendant stabilizes.",
+        progress: 42,
+        planet: "Sun",
+        icon: "☉",
+        milestones: [
+          { label: "Morning ritual cadence", completion: 55, note: "Set sunrise start times and breathwork." },
+          { label: "Body vitality audit", completion: 38, note: "Track sleep, hydration, and stamina markers." },
+        ],
+        reminders_url: "/calendar",
+      },
+      {
+        id: "phase-2",
+        title: "Resource harmonics",
+        window: "Phase 2 • Months 2-4",
+        house: 2,
+        detail: "Balance wealth flow, family responsibilities, and speech alignment.",
+        progress: 58,
+        planet: "Venus",
+        icon: "♀",
+        milestones: [
+          { label: "Savings buffer", completion: 62, note: "Allocate steady reserves for 90 days." },
+          { label: "Family cadence check-in", completion: 46, note: "Schedule key family conversations." },
+        ],
+        reminders_url: "/calendar",
+      },
+      {
+        id: "phase-3",
+        title: "Learning pilgrimages",
+        window: "Phase 3 • Months 4-7",
+        house: 5,
+        detail: "Reignite study, creativity, and mentoring aligned to the 5th house.",
+        progress: 36,
+        planet: "Jupiter",
+        icon: "♃",
+        milestones: [
+          { label: "Course enrollment", completion: 40, note: "Commit to a focused learning track." },
+          { label: "Mentor outreach", completion: 32, note: "Identify a teacher and book sessions." },
+        ],
+        reminders_url: "/calendar",
+      },
+      {
+        id: "phase-4",
+        title: "Partnership vows",
+        window: "Phase 4 • Months 7-10",
+        house: 7,
+        detail: "Clarify collaboration agreements and strengthen harmony in alliances.",
+        progress: 24,
+        planet: "Moon",
+        icon: "☾",
+        milestones: [
+          { label: "Collaborator sync", completion: 22, note: "Define meeting rhythm and shared KPIs." },
+          { label: "Shared ritual calendar", completion: 28, note: "Plan shared check-ins for key dates." },
+        ],
+        reminders_url: "/calendar",
+      },
+      {
+        id: "phase-5",
+        title: "Dharma expansion",
+        window: "Phase 5 • Months 10-12",
+        house: 9,
+        detail: "Prepare for travel, publishing, and philosophical commitments.",
+        progress: 12,
+        planet: "Mars",
+        icon: "♂",
+        milestones: [
+          { label: "Travel blueprint", completion: 10, note: "Outline retreats or pilgrimages." },
+          { label: "Teaching outline", completion: 18, note: "Draft a syllabus or public offering." },
+        ],
+        reminders_url: "/calendar",
+      },
+    ],
+  },
   "/matchmaking": {
     primary_name: "Fallback seeker",
     partner_name: "Partner seeker",
@@ -525,6 +605,10 @@ export async function requestPrediction(engine: PredictionEngine, details: Birth
 
 export async function getFutureProgress() {
   return getJson<FutureProgressResponse>("/future-progress", "/future-progress");
+}
+
+export async function getTimeline() {
+  return getJson("/timeline", "/timeline");
 }
 
 export async function requestMatchmaking(

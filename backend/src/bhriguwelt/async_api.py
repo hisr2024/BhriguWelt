@@ -137,6 +137,17 @@ def create_app() -> web.Application:
         reply.headers.update({"X-Cache-Hits": str(cache.stats()["hits"]), "X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
 
+    async def timeline(request: web.Request) -> web.Response:
+        _, rate_meta = await guard_rate_limit(request)
+        payload = await request.json()
+        focus_areas = payload.get("focus_areas")
+        if focus_areas is not None and not isinstance(focus_areas, list):
+            return _json_response({"message": "focus_areas must be a list when provided"}, status=HTTPStatus.BAD_REQUEST)
+        response = await handle_cached_command("timeline", payload)
+        reply = _json_response(response)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
+
     async def past_life(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
@@ -173,6 +184,14 @@ def create_app() -> web.Application:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
         response = await handle_cached_command("matchmaking", payload)
+        reply = _json_response(response)
+        reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
+        return reply
+
+    async def matchmaking_diagnostics(request: web.Request) -> web.Response:
+        _, rate_meta = await guard_rate_limit(request)
+        payload = await request.json()
+        response = await handle_cached_command("matchmaking-diagnostics", payload)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -353,11 +372,13 @@ def create_app() -> web.Application:
     app.router.add_route("POST", "/feedback", feedback)
     app.router.add_route("GET", "/feedback/quarterly", feedback_quarterly)
     app.router.add_route("POST", "/horoscope", horoscope)
+    app.router.add_route("POST", "/timeline", timeline)
     app.router.add_route("POST", "/past-life", past_life)
     app.router.add_route("POST", "/future", future)
     app.router.add_route("POST", "/future-directives", future_directives)
     app.router.add_route("POST", "/varshaphal", varshaphal)
     app.router.add_route("POST", "/matchmaking", matchmaking)
+    app.router.add_route("POST", "/matchmaking/diagnostics", matchmaking_diagnostics)
     app.router.add_route("POST", "/calendar", calendar)
     app.router.add_route("POST", "/transits", transits)
     app.router.add_route("POST", "/core-wisdom", core_wisdom)
