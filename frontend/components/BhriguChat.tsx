@@ -62,6 +62,8 @@ export default function BhriguChat({ chart }: Props) {
     setProfileId(storedProfileId);
     setSessionKey(storedSession);
 
+    let isMounted = true;
+
     const hydrateSession = async () => {
       try {
         const params = new URLSearchParams({ user_id: storedUserId, session_key: storedSession });
@@ -70,6 +72,9 @@ export default function BhriguChat({ chart }: Props) {
           throw new Error(await response.text());
         }
         const payload: ChatResponse = await response.json();
+
+        if (!isMounted) return;
+
         const transcriptMessages: Message[] = (payload.session?.transcript || [])
           .filter((entry) => entry.content)
           .map((entry) => ({ role: entry.role === "user" ? "user" : "bot", content: entry.content || "" }));
@@ -80,12 +85,17 @@ export default function BhriguChat({ chart }: Props) {
         if (payload.profile_id) setProfileId(payload.profile_id);
         if (payload.user_id) setUserId(payload.user_id);
       } catch (error) {
+        if (!isMounted) return;
         console.warn("Unable to hydrate chat session", error);
         setStatusMessage("Chat history will sync after the backend reconnects.");
       }
     };
 
     void hydrateSession();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
