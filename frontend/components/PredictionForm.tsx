@@ -142,7 +142,7 @@ export default function PredictionForm({ engine, title, description, onRequestSt
     onRequestStart?.();
     setLoading(true);
     emitFlowEvent("start", { name: details.name, birthDate: details.birthDate });
-    const isOffline = typeof navigator !== "undefined" && navigator && !navigator.onLine;
+    const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
 
     const validationIssue = validateDetails(details);
     if (validationIssue) {
@@ -315,7 +315,7 @@ export default function PredictionForm({ engine, title, description, onRequestSt
                 <label htmlFor={`${engine}-moon-element`}>{t("form.moonElement", "Moon element")}</label>
                 <select
                   id={`${engine}-moon-element`}
-                  value={details.moonElement}
+                  value={details.moonElement ?? "water"}
                   onChange={(event) => setDetails({ ...details, moonElement: event.target.value })}
                 >
                   <option value="water">Water</option>
@@ -365,7 +365,7 @@ export default function PredictionForm({ engine, title, description, onRequestSt
                   type="number"
                   min={0}
                   max={12}
-                  value={details.ketuHouse || "0"}
+                  value={details.ketuHouse ?? "0"}
                   onChange={(event) => setDetails({ ...details, ketuHouse: event.target.value })}
                 />
               </div>
@@ -376,7 +376,7 @@ export default function PredictionForm({ engine, title, description, onRequestSt
                   type="number"
                   min={0}
                   max={12}
-                  value={details.mercuryHouse || "0"}
+                  value={details.mercuryHouse ?? "0"}
                   onChange={(event) => setDetails({ ...details, mercuryHouse: event.target.value })}
                 />
               </div>
@@ -387,7 +387,7 @@ export default function PredictionForm({ engine, title, description, onRequestSt
                   type="number"
                   min={0}
                   max={12}
-                  value={details.jupiterHouse || "0"}
+                  value={details.jupiterHouse ?? "0"}
                   onChange={(event) => setDetails({ ...details, jupiterHouse: event.target.value })}
                 />
               </div>
