@@ -11,16 +11,16 @@ export default function FuturePage() {
       </div>
       <div className="card highlight">
         <p className="eyebrow">Featured tool</p>
-        <h2>Future Outlook</h2>
-        <p className="muted">Generate a focused forecast aligned to your current cycle.</p>
+        <h2>Future Outlook + Past-Life Context</h2>
+        <p className="muted">Link future milestones with past-life patterns for clear guidance.</p>
       </div>
       <div className="panel__content">
         <JourneyRail />
         <div className="panel__content--stacked">
           <PredictionForm
-            engine="future"
-            title="Future outlook"
-            description="Generate predictions and align next steps with dasha timing."
+            engine="past-future"
+            title="Future outlook with past-life context"
+            description="Generate predictions and align next steps with karmic background."
           />
         </div>
       </div>
