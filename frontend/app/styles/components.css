@@ -536,9 +536,28 @@
 
 .panel__content {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1rem;
+  gap: 1.5rem;
   align-items: start;
+}
+
+.tool-group {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.tool-group__header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.tool-group__header p {
+  margin: 0.2rem 0 0;
+}
+
+.tool-group__grid {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
 }
 
 .tool-card {
@@ -549,6 +568,12 @@
   min-height: 240px;
   border: 1px solid rgba(234, 223, 206, 0.9);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.tool-card--compact {
+  padding: 0.65rem;
+  min-height: 140px;
+  gap: 0.6rem;
 }
 
 .tool-card::before {
@@ -593,6 +618,10 @@
   gap: 1rem;
 }
 
+.tool-card--compact .tool-card__header {
+  gap: 0.6rem;
+}
+
 .tool-card__body {
   display: grid;
   gap: 0.4rem;
@@ -602,6 +631,14 @@
   margin: 0;
 }
 
+.tool-card--compact .tool-card__body h3 {
+  font-size: 0.9rem;
+}
+
+.tool-card--compact .tool-card__body p {
+  font-size: 0.74rem;
+}
+
 .tool-card__footer {
   display: flex;
   align-items: baseline;
@@ -609,6 +646,10 @@
   gap: 0.75rem;
   font-size: 0.85rem;
   color: #4f4436;
+}
+
+.tool-card--compact .tool-card__footer {
+  font-size: 0.66rem;
 }
 
 .tool-card__cta {
@@ -632,9 +673,24 @@
   overflow: hidden;
 }
 
+.tool-card--compact .tool-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
 .tool-logo__icon {
   font-size: 1.6rem;
   animation: toolFloat 3.6s ease-in-out infinite;
+}
+
+.tool-card--compact .tool-logo__icon {
+  font-size: 1rem;
+}
+
+.tool-card--compact .pill {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.65rem;
 }
 
 .tool-logo__halo {
