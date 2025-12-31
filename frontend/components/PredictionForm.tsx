@@ -225,35 +225,39 @@ export default function PredictionForm({ engine, title, description, onRequestSt
 
   return (
     <section aria-labelledby={`${engine}-heading`}>
-      <form onSubmit={handleSubmit} aria-busy={loading} aria-describedby={`${engine}-helper`}>
-        <header className="section-heading">
-          <p className="eyebrow">{t("form.subtitle", "Bhrigu Samhita aligned")}</p>
-          <h2 id={`${engine}-heading`}>{title}</h2>
-          <p className="muted" id={`${engine}-helper`}>
-            {description || t("form.helper", "Complete every detail to keep remedies precise.")}
-          </p>
-          <BackendHealthNotice />
-          {retryAttempts > 0 ? (
-            <p className="microcopy" aria-live="polite">
-              Retrying... attempt {retryAttempts + 1} of {MAX_RETRIES + 1}
+      <div className="prediction-form__layout">
+        <div className="card prediction-form__input">
+          <header className="section-heading">
+            <p className="eyebrow">Data input</p>
+            <h2 id={`${engine}-heading`}>{title}</h2>
+            <p className="muted" id={`${engine}-helper`}>
+              {description || t("form.helper", "Complete every detail to keep remedies precise.")}
             </p>
-          ) : null}
-          {info ? (
-            <p className="microcopy" aria-live="polite">{info}</p>
-          ) : null}
-        </header>
-        <div className="form-grid">
-          <div>
-            <label htmlFor={`${engine}-name`}>{t("form.name", "Full name")}</label>
-            <input
-              id={`${engine}-name`}
-              name="name"
-              required
-              value={details.name}
-              onChange={(event) => setDetails({ ...details, name: event.target.value })}
-              autoComplete="name"
-            />
-          </div>
+            <BackendHealthNotice />
+            {retryAttempts > 0 ? (
+              <p className="microcopy" aria-live="polite">
+                Retrying... attempt {retryAttempts + 1} of {MAX_RETRIES + 1}
+              </p>
+            ) : null}
+            {info ? (
+              <p className="microcopy" aria-live="polite">
+                {info}
+              </p>
+            ) : null}
+          </header>
+          <form onSubmit={handleSubmit} aria-busy={loading} aria-describedby={`${engine}-helper`}>
+            <div className="form-grid">
+              <div>
+                <label htmlFor={`${engine}-name`}>{t("form.name", "Full name")}</label>
+                <input
+                  id={`${engine}-name`}
+                  name="name"
+                  required
+                  value={details.name}
+                  onChange={(event) => setDetails({ ...details, name: event.target.value })}
+                  autoComplete="name"
+                />
+              </div>
           <div>
             <label htmlFor={`${engine}-birth-date`}>{t("form.birthDate", "Birth date (YYYY-MM-DD)")}</label>
             <input
@@ -413,19 +417,24 @@ export default function PredictionForm({ engine, title, description, onRequestSt
             </select>
           </div>
         </div>
-        <div className="form-actions">
-          <button type="submit" disabled={loading} aria-label={t("form.submit", "Fetch insights")}>
-            {loading ? t("form.loading", "Consulting Bhrigu...") : t("form.submit", "Fetch insights")}
-          </button>
-          <span className="muted">{t("form.accessibility", "All guidance references the cited Bhrigu Samhita folios.")}</span>
+            </div>
+            <div className="form-actions">
+              <button type="submit" disabled={loading} aria-label={t("form.submit", "Fetch insights")}>
+                {loading ? t("form.loading", "Consulting Bhrigu...") : t("form.submit", "Fetch insights")}
+              </button>
+              <span className="muted">
+                {t("form.accessibility", "All guidance references the cited Bhrigu Samhita folios.")}
+              </span>
+            </div>
+            {error && (
+              <div className="error-banner" role="alert" aria-live="assertive" tabIndex={-1} ref={errorRef}>
+                {t("form.error", error)}
+              </div>
+            )}
+          </form>
         </div>
-        {error && (
-          <div className="error-banner" role="alert" aria-live="assertive" tabIndex={-1} ref={errorRef}>
-            {t("form.error", error)}
-          </div>
-        )}
-      </form>
-      <PredictionCard title={`${title} result`} payload={payload} engine={engine} seekerName={details.name} />
+        <PredictionCard title={`${title} result`} payload={payload} engine={engine} seekerName={details.name} />
+      </div>
     </section>
   );
 }

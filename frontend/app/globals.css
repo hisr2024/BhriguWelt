@@ -577,6 +577,21 @@ body[data-contrast="high"] .serene-hero {
   border-color: #e8decf;
 }
 
+.prediction-form__layout {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.prediction-form__input {
+  padding: 1.25rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.prediction-form__input .section-heading {
+  margin: 0;
+}
+
 .prediction-card__body {
   transform-style: preserve-3d;
   transition: transform 0.9s ease, box-shadow 0.3s ease;
@@ -609,6 +624,13 @@ body[data-animations="off"] .prediction-card__body {
   }
   100% {
     transform: rotateY(0deg);
+  }
+}
+
+@media (min-width: 960px) {
+  .prediction-form__layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
   }
 }
 

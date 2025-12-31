@@ -152,7 +152,10 @@ export default function HoroscopeForm() {
   const fallbackInterpretation = useMemo(() => buildFallbackInterpretation(), []);
   const fallbackChartSample = useMemo(() => getFallbackSample("/horoscope") as ChartResponse | null, []);
 
-  const isComplete = useMemo(() => Object.values(form).every(Boolean), [form]);
+  const isComplete = useMemo(
+    () => Boolean(form.name && form.dateOfBirth && form.timeOfBirth && form.placeOfBirth),
+    [form.name, form.dateOfBirth, form.placeOfBirth, form.timeOfBirth],
+  );
   const missingFields = useMemo(
     () =>
       ([
