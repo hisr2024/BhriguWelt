@@ -646,7 +646,12 @@ function fallbackHealth(): HealthResponse {
   };
 }
 
-function mapBirthDetails(input: BirthDetails) {
+function mapBirthDetails(
+  input: BirthDetails,
+  options?: {
+    consentForDatePredictions?: boolean;
+  },
+) {
   return {
     name: input.name.trim(),
     birth_date: input.birthDate,
@@ -663,6 +668,7 @@ function mapBirthDetails(input: BirthDetails) {
     mercury_house: Number(input.mercuryHouse || 0),
     jupiter_house: Number(input.jupiterHouse || 0),
     saturn_retrograde: Boolean(input.saturnRetrograde),
+    ...(options?.consentForDatePredictions ? { consent_for_date_predictions: true } : {}),
   };
 }
 
@@ -734,7 +740,8 @@ async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
 
 export async function requestPrediction(engine: PredictionEngine, details: BirthDetails) {
   const path = `/${engine}`;
-  return postJson({ path, body: mapBirthDetails(details) });
+  const consentForDatePredictions = engine === "future";
+  return postJson({ path, body: mapBirthDetails(details, { consentForDatePredictions }) });
 }
 
 export async function requestExperienceFlow(
@@ -748,7 +755,7 @@ export async function requestExperienceFlow(
   },
 ) {
   const payload: Record<string, unknown> = {
-    ...mapBirthDetails(details),
+    ...mapBirthDetails(details, { consentForDatePredictions: true }),
     ...(options?.language ? { language: options.language } : {}),
     ...(options?.tone ? { tone: options.tone } : {}),
     ...(options?.culturalSensitivity ? { cultural_sensitivity: options.culturalSensitivity } : {}),
