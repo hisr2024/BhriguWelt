@@ -42,6 +42,9 @@ export function HeroSection() {
         </div>
       </div>
       <div className="serene-hero__visuals">
+        <div className="monogram monogram--hero" aria-hidden>
+          <span className="monogram__letter">B</span>
+        </div>
         <div
           className="aether-visual"
           role="img"

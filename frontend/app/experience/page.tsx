@@ -146,13 +146,18 @@ export default function ExperiencePage() {
       </section>
 
       <section id="dashboard" className="ui-panel">
-        <header className="panel-header">
+        <header className="panel-header panel-header--dashboard">
           <div>
             <p className="eyebrow">Interpretation dashboard</p>
             <h2>Sectioned clarity</h2>
             <p className="muted">Cards with micro-animations and gradient highlights keep the reading serene and legible.</p>
           </div>
-          <span className="badge">Calm motion</span>
+          <div className="panel-header__aside">
+            <span className="badge">Calm motion</span>
+            <div className="monogram monogram--dashboard" aria-hidden>
+              <span className="monogram__letter">B</span>
+            </div>
+          </div>
         </header>
         <div className="panel-grid">
           <div className="stacked-cards">
