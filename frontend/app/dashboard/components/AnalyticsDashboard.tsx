@@ -178,6 +178,11 @@ export default function AnalyticsDashboard() {
         <p className="eyebrow">Dashboard</p>
         <h1>All 13 tools</h1>
         <p className="muted">Professional access to every experience in one place.</p>
+        <div className="subtle-pill-row" aria-live="polite">
+          <span className={`pill tool-card__status tool-card__status--${healthTone}`}>
+            {healthLabel}
+          </span>
+        </div>
       </div>
       <div className="panel__content">
         {toolGroups.map((group) => (
