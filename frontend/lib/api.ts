@@ -1,4 +1,5 @@
 import { BirthDetails, CalendarDetails, PredictionEngine, ResultEngine } from "@/types/astro";
+import type { AnalyticsSnapshot } from "@/lib/analytics";
 import { FeedbackRequest, QuarterlySummaryResponse } from "@/types/feedback";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
@@ -896,9 +897,9 @@ export async function fetchQuarterlyReviews() {
   return getJson<QuarterlySummaryResponse>("/feedback/quarterly", "/feedback/quarterly");
 }
 
-export async function fetchAnalyticsSnapshot() {
+export async function fetchAnalyticsSnapshot(): Promise<AnalyticsSnapshot> {
   const headers = ADMIN_TOKEN ? { "X-Admin-Token": ADMIN_TOKEN } : undefined;
-  return getJsonWithHeaders("/analytics", headers);
+  return getJsonWithHeaders<AnalyticsSnapshot>("/analytics", headers);
 }
 
 export async function fetchManuscript() {

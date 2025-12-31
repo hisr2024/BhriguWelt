@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import Link from "next/link";
 
 import { checkBackendHealth } from "@/lib/api";
 
@@ -110,6 +111,139 @@ const insightTiles = [
   {
     title: "Manuscript Citations",
     description: "Inline citations anchor every prediction to scripture.",
+  },
+];
+
+type ToolCard = {
+  name: string;
+  href: string;
+  logo: string;
+  gradient: string;
+  glow: string;
+};
+
+type ToolGroup = {
+  title: string;
+  description: string;
+  tools: ToolCard[];
+};
+
+const toolGroups: ToolGroup[] = [
+  {
+    title: "Karmic Tools",
+    description: "Core charting tools that keep the karmic reading anchored.",
+    tools: [
+      {
+        name: "Birth chart",
+        href: "/birth-chart",
+        logo: "🪷",
+        gradient: "linear-gradient(135deg, #a855f7, #6366f1)",
+        glow: "rgba(168, 85, 247, 0.35)",
+      },
+      {
+        name: "Transits",
+        href: "/transits",
+        logo: "🪐",
+        gradient: "linear-gradient(135deg, #38bdf8, #0ea5e9)",
+        glow: "rgba(14, 165, 233, 0.35)",
+      },
+      {
+        name: "Moon phases",
+        href: "/moon-phases",
+        logo: "🌙",
+        gradient: "linear-gradient(135deg, #f472b6, #ec4899)",
+        glow: "rgba(236, 72, 153, 0.3)",
+      },
+      {
+        name: "Horoscope",
+        href: "/horoscope",
+        logo: "🔮",
+        gradient: "linear-gradient(135deg, #22d3ee, #0ea5e9)",
+        glow: "rgba(14, 165, 233, 0.35)",
+      },
+    ],
+  },
+  {
+    title: "Forecasting",
+    description: "Forward-looking experiences for timelines, futures, and insights.",
+    tools: [
+      {
+        name: "Daily insights",
+        href: "/daily-insights",
+        logo: "📜",
+        gradient: "linear-gradient(135deg, #f59e0b, #f97316)",
+        glow: "rgba(249, 115, 22, 0.35)",
+      },
+      {
+        name: "Future arcs",
+        href: "/future",
+        logo: "✨",
+        gradient: "linear-gradient(135deg, #4ade80, #22c55e)",
+        glow: "rgba(34, 197, 94, 0.35)",
+      },
+      {
+        name: "Past life",
+        href: "/past-life",
+        logo: "🕯️",
+        gradient: "linear-gradient(135deg, #f97316, #fb7185)",
+        glow: "rgba(244, 63, 94, 0.3)",
+      },
+      {
+        name: "Experience",
+        href: "/experience",
+        logo: "🧭",
+        gradient: "linear-gradient(135deg, #60a5fa, #38bdf8)",
+        glow: "rgba(59, 130, 246, 0.3)",
+      },
+      {
+        name: "Analytics",
+        href: "/analytics",
+        logo: "📈",
+        gradient: "linear-gradient(135deg, #818cf8, #6366f1)",
+        glow: "rgba(99, 102, 241, 0.35)",
+      },
+    ],
+  },
+  {
+    title: "Rituals & Alignment",
+    description: "Remedies, meditations, and ritual utilities to ground outcomes.",
+    tools: [
+      {
+        name: "Remedies",
+        href: "/remedies",
+        logo: "🪔",
+        gradient: "linear-gradient(135deg, #f43f5e, #fb7185)",
+        glow: "rgba(244, 63, 94, 0.35)",
+      },
+      {
+        name: "Meditations",
+        href: "/meditations",
+        logo: "🧘",
+        gradient: "linear-gradient(135deg, #34d399, #22c55e)",
+        glow: "rgba(34, 197, 94, 0.3)",
+      },
+      {
+        name: "Karma reset",
+        href: "/karma-reset",
+        logo: "🌀",
+        gradient: "linear-gradient(135deg, #2dd4bf, #14b8a6)",
+        glow: "rgba(20, 184, 166, 0.3)",
+      },
+      {
+        name: "Calendar",
+        href: "/calendar",
+        logo: "📆",
+        gradient: "linear-gradient(135deg, #fcd34d, #f59e0b)",
+        glow: "rgba(245, 158, 11, 0.3)",
+      },
+      {
+        name: "Matchmaking",
+        href: "/matchmaking",
+        logo: "💞",
+        gradient: "linear-gradient(135deg, #fb7185, #f472b6)",
+        glow: "rgba(236, 72, 153, 0.3)",
+      },
+    ],
   },
 ];
 

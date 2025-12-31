@@ -11,7 +11,7 @@ type Props = {
 };
 
 function useChart(
-  canvas: RefObject<HTMLCanvasElement>,
+  canvas: RefObject<HTMLCanvasElement | null>,
   configFactory: (Chart: typeof import("chart.js/auto")) => Record<string, unknown>,
   deps: unknown[],
 ) {
