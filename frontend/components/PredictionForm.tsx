@@ -427,7 +427,7 @@ export default function PredictionForm({ engine, title, description, onRequestSt
             </div>
             {error && (
               <div className="error-banner" role="alert" aria-live="assertive" tabIndex={-1} ref={errorRef}>
-                {t("form.error", error)}
+                {error}
               </div>
             )}
           </form>
