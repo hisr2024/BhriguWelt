@@ -29,13 +29,13 @@ export const ritualCards = [
     title: "Śaka calendar ready",
     body: "Convert Gregorian to Śaka quietly before sharing remedies or timings.",
     action: "Open converter",
-    href: "#calendar-conversion",
+    href: "/calendar",
   },
   {
     title: "Kindred matches",
     body: "Explore compatibility as a calm flow with factors, not noise.",
     action: "Start matchmaking",
-    href: "#matchmaking",
+    href: "/matchmaking",
   },
 ];
 

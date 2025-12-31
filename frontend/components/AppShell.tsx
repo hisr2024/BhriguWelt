@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Providers from "@/app/providers";
+import BhriguChat from "@/components/BhriguChat";
 import { useI18n } from "@/lib/i18n";
 import { theme } from "@/lib/theme";
 
@@ -71,6 +72,10 @@ function Shell({ children }: Props) {
       <main id="main" className="page-shell" tabIndex={-1}>
         {children}
       </main>
+
+      <aside className="chat-dock" data-bhrigu-chat aria-label="Bhrigu Samhita chat dock">
+        <BhriguChat />
+      </aside>
 
       <footer className="footer" aria-label="Footer">
         <div>

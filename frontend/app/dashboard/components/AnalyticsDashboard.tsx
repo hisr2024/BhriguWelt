@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
+
+import { checkBackendHealth } from "@/lib/api";
 
 const toolGroups = [
   {
@@ -10,7 +13,7 @@ const toolGroups = [
     tools: [
       {
         name: "Birth Chart",
-        href: "/dashboard?tool=birth-chart",
+        href: "/birth-chart",
         description: "Decode planetary placements and chart signatures.",
         logo: "🪐",
         gradient: "linear-gradient(145deg, #e0e7ff, #c7d2fe)",
@@ -26,7 +29,7 @@ const toolGroups = [
       },
       {
         name: "Transits",
-        href: "/dashboard?tool=transits",
+        href: "/transits",
         description: "Monitor real-time shifts across the sky.",
         logo: "🛰️",
         gradient: "linear-gradient(145deg, #dbeafe, #bfdbfe)",
@@ -34,7 +37,7 @@ const toolGroups = [
       },
       {
         name: "Moon Phases",
-        href: "/dashboard?tool=moon-phases",
+        href: "/moon-phases",
         description: "Visualize phase shifts and favorable windows.",
         logo: "🌙",
         gradient: "linear-gradient(145deg, #f3e8ff, #ddd6fe)",
@@ -48,7 +51,7 @@ const toolGroups = [
     tools: [
       {
         name: "Remedies",
-        href: "/dashboard?tool=remedies",
+        href: "/remedies",
         description: "Personalized rituals, chants, and gemstones.",
         logo: "🕯️",
         gradient: "linear-gradient(145deg, #ffedd5, #fed7aa)",
@@ -56,7 +59,7 @@ const toolGroups = [
       },
       {
         name: "Meditations",
-        href: "/dashboard?tool=meditations",
+        href: "/meditations",
         description: "Audio journeys tuned to planetary hours.",
         logo: "🎧",
         gradient: "linear-gradient(145deg, #cffafe, #a5f3fc)",
@@ -72,7 +75,7 @@ const toolGroups = [
       },
       {
         name: "Daily Insights",
-        href: "/dashboard?tool=daily-insights",
+        href: "/daily-insights",
         description: "Quick hits of wisdom for the day ahead.",
         logo: "📝",
         gradient: "linear-gradient(145deg, #fef9c3, #fde68a)",
@@ -135,6 +138,40 @@ const toolGroups = [
 ];
 
 export default function AnalyticsDashboard() {
+  const [healthLabel, setHealthLabel] = useState("Operational");
+  const [healthTone, setHealthTone] = useState<"live" | "demo" | "offline">("demo");
+
+  useEffect(() => {
+    let mounted = true;
+    const loadHealth = async () => {
+      try {
+        const health = await checkBackendHealth();
+        if (!mounted) return;
+        if (health.meta?.mode === "demo") {
+          setHealthLabel("Operational · Demo");
+          setHealthTone("demo");
+          return;
+        }
+        if (health.status === "ok") {
+          setHealthLabel("Operational");
+          setHealthTone("live");
+          return;
+        }
+        setHealthLabel("Degraded");
+        setHealthTone("offline");
+      } catch {
+        if (!mounted) return;
+        setHealthLabel("Offline");
+        setHealthTone("offline");
+      }
+    };
+
+    void loadHealth();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <section className="panel">
       <div className="section-heading">
@@ -168,7 +205,9 @@ export default function AnalyticsDashboard() {
                       <span className="tool-logo__icon">{tool.logo}</span>
                       <span className="tool-logo__spark" />
                     </div>
-                    <span className="pill">Ready now</span>
+                    <span className={`pill tool-card__status tool-card__status--${healthTone}`}>
+                      {healthLabel}
+                    </span>
                   </div>
                   <div className="tool-card__body">
                     <h3>{tool.name}</h3>
