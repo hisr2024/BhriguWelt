@@ -1,3 +1,4 @@
+import type { AnalyticsSnapshot } from "@/lib/analytics";
 import { BirthDetails, CalendarDetails, PredictionEngine, ResultEngine } from "@/types/astro";
 import { FeedbackRequest, QuarterlySummaryResponse } from "@/types/feedback";
 
@@ -898,7 +899,7 @@ export async function fetchQuarterlyReviews() {
 
 export async function fetchAnalyticsSnapshot() {
   const headers = ADMIN_TOKEN ? { "X-Admin-Token": ADMIN_TOKEN } : undefined;
-  return getJsonWithHeaders("/analytics", headers);
+  return getJsonWithHeaders<AnalyticsSnapshot>("/analytics", headers);
 }
 
 export async function fetchManuscript() {
