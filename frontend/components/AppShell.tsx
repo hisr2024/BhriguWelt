@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Providers from "@/app/providers";
 import BhriguChat from "@/components/BhriguChat";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type Language } from "@/lib/i18n";
 import { theme } from "@/lib/theme";
 
 type Props = {
@@ -17,7 +17,7 @@ const navLinks = [
 ];
 
 function Shell({ children }: Props) {
-  const { t } = useI18n();
+  const { t, lang, setLang, availableLanguages } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -25,6 +25,30 @@ function Shell({ children }: Props) {
     window.addEventListener("resize", closeOnResize);
     return () => window.removeEventListener("resize", closeOnResize);
   }, []);
+
+  const handleLanguageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setLang(event.target.value as Language);
+  };
+
+  const languageToggle = (
+    <div className="language-toggle">
+      <label className="sr-only" htmlFor="language-select">
+        {t("nav.language", "Language")}
+      </label>
+      <select
+        id="language-select"
+        value={lang}
+        onChange={handleLanguageChange}
+        aria-label={t("nav.language", "Language")}
+      >
+        {availableLanguages.map((option) => (
+          <option key={option.code} value={option.code}>
+            {option.nativeLabel}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
 
   return (
     <>
@@ -47,6 +71,7 @@ function Shell({ children }: Props) {
           >
             {menuOpen ? "Close" : "Menu"}
           </button>
+          {languageToggle}
           <Link className="button-link soft" href="/dashboard">
             {t("nav.cta", "Open dashboard")}
           </Link>
@@ -63,6 +88,7 @@ function Shell({ children }: Props) {
           </ul>
         </nav>
         <div className="topbar__actions">
+          {languageToggle}
           <Link className="button-link soft" href="/dashboard">
             {t("nav.cta", "Open dashboard")}
           </Link>
