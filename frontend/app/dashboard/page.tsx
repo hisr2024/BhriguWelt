@@ -4,8 +4,7 @@ import AnalyticsDashboard from "./components/AnalyticsDashboard";
 
 export const metadata: Metadata = {
   title: "Analytics Dashboard | BhriguWelt",
-  description:
-    "Interactive analytics dashboard covering engine inputs, outputs, and real-time performance insights.",
+  description: "Dashboard with every tool in one place.",
 };
 
 export default function DashboardPage() {

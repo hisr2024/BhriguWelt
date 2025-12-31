@@ -3,10 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Providers from "@/app/providers";
-import { useI18n, type Language } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { theme } from "@/lib/theme";
-import OnboardingModal from "./OnboardingModal";
-import ExperienceToolbar from "./ExperienceToolbar";
 
 type Props = {
   children: React.ReactNode;
@@ -14,28 +12,8 @@ type Props = {
 
 const navLinks = [
   { href: "/", key: "nav.home", fallback: "Home" },
-  { href: "/calendar", key: "nav.calendar", fallback: "Śaka calendar" },
-  { href: "/horoscope", key: "nav.horoscope", fallback: "Horoscope" },
-  { href: "/past-life", key: "nav.past", fallback: "Past lives" },
-  { href: "/future", key: "nav.future", fallback: "Future" },
-  { href: "/matchmaking", key: "nav.matchmaking", fallback: "Matchmaking" },
+  { href: "/dashboard", key: "nav.dashboard", fallback: "Dashboard" },
 ];
-
-function LanguageToggle() {
-  const { lang, setLang, availableLanguages } = useI18n();
-  return (
-    <label className="language-toggle" aria-label="Language toggle">
-      <span className="sr-only">Language</span>
-      <select value={lang} onChange={(event) => setLang(event.target.value as Language)}>
-        {availableLanguages.map((option) => (
-          <option key={option.code} value={option.code}>
-            {option.nativeLabel} ({option.label})
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
 
 function Shell({ children }: Props) {
   const { t } = useI18n();
@@ -53,8 +31,6 @@ function Shell({ children }: Props) {
         {t("nav.skip", "Skip to content")}
       </a>
 
-      <OnboardingModal />
-
       <header className="topbar" aria-label="Site header">
         <Link href="/" className="brand" aria-label={t("nav.home", "Home")}>
           <span className="brand-mark" style={{ background: theme.gradients.brand }} aria-hidden />
@@ -70,8 +46,8 @@ function Shell({ children }: Props) {
           >
             {menuOpen ? "Close" : "Menu"}
           </button>
-          <Link className="button-link soft" href="/matchmaking">
-            {t("nav.cta", "Start a session")}
+          <Link className="button-link soft" href="/dashboard">
+            {t("nav.cta", "Open dashboard")}
           </Link>
         </div>
         <nav id="primary-navigation" className={menuOpen ? "is-open" : ""} aria-label="Main">
@@ -86,29 +62,11 @@ function Shell({ children }: Props) {
           </ul>
         </nav>
         <div className="topbar__actions">
-          <LanguageToggle />
-          <Link className="button-link soft" href="/matchmaking">
-            {t("nav.cta", "Start a session")}
+          <Link className="button-link soft" href="/dashboard">
+            {t("nav.cta", "Open dashboard")}
           </Link>
         </div>
       </header>
-
-      <div className="topbar__touch-row" role="group" aria-label={t("nav.quick.label", "Quick jump for forms")}>
-        <Link className="touch-chip" href="/experience#birth" aria-label={t("nav.quick.birth", "Birth input section")}>
-          {t("nav.quick.birth", "Birth input")}
-        </Link>
-        <Link className="touch-chip" href="/experience#chart" aria-label={t("nav.quick.chart", "Chart section")}>
-          {t("nav.quick.chart", "Chart")}
-        </Link>
-        <Link className="touch-chip" href="/horoscope" aria-label={t("nav.quick.horoscope", "Interpretations section")}>
-          {t("nav.quick.horoscope", "Interpretations")}
-        </Link>
-        <Link className="touch-chip" href="/matchmaking" aria-label={t("nav.quick.matchmaking", "Matchmaking section")}>
-          {t("nav.quick.matchmaking", "Matchmaking")}
-        </Link>
-      </div>
-
-      <ExperienceToolbar />
 
       <main id="main" className="page-shell" tabIndex={-1}>
         {children}
@@ -116,10 +74,8 @@ function Shell({ children }: Props) {
 
       <footer className="footer" aria-label="Footer">
         <div>
-          <p className="eyebrow">Bharat-centred Jyotish</p>
-          <h3>{t("nav.tagline", "Quiet guidance across every stage of life.")}</h3>
-          <p className="muted">{t("nav.desc", "Readable predictions, Śaka-ready conversions, and heartfelt remedies in one space.")}</p>
-          <p className="microcopy">UI/UX Frontend version • 20 December 2025</p>
+          <p className="eyebrow">BhriguWelt</p>
+          <h3>{t("nav.tagline", "Focused tools, calm presentation.")}</h3>
         </div>
         <div className="footer-links">
           {navLinks.map((link) => (

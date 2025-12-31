@@ -2,43 +2,17 @@
 
 import Link from "next/link";
 
-import { heroCopy } from "@/lib/copy";
-import { useI18n } from "@/lib/i18n";
-import { rhythmTracks } from "./sectionData";
-
 export function HeroSection() {
-  const { t } = useI18n();
-  const { heroBody } = heroCopy;
-
   return (
     <section className="serene-hero" id="overview">
       <div className="serene-hero__copy">
-        <p className="eyebrow">Bharatcentric • Minimal</p>
-        <h1>{t("hero.title", "BhriguWelt, now quietly reset")}</h1>
-        <p className="muted hero-lede">
-          {t(
-            "hero.body",
-            heroBody ||
-              "A soft astrology workspace to collect details, convert calendars, and share bilingual remedies without clutter."
-          )}
-        </p>
+        <p className="eyebrow">Animated home • Logo</p>
+        <h1>BhriguWelt Studio</h1>
+        <p className="muted hero-lede">Android & Graphic Designer</p>
         <div className="hero-actions">
-          <Link href="#birth-details" className="button-link">
-            {t("hero.cta.horoscope", "Begin horoscope")}
+          <Link href="/dashboard" className="button-link">
+            Open Dashboard
           </Link>
-          <Link href="#matchmaking" className="ghost-button">
-            {t("hero.cta.matchmaking", "Check compatibility")}
-          </Link>
-        </div>
-        <div className="subtle-pill-row">
-          <span className="pill">Śaka friendly</span>
-          <span className="pill">English + हिंदी</span>
-          <span className="pill">PDF ready</span>
-        </div>
-        <div className="geometry-breath">
-          <span className="pill ghost">Cosmic geometry kept light</span>
-          <span className="pill ghost">Pastel gradients, warm + cool</span>
-          <span className="pill ghost">Nature-led layouts</span>
         </div>
       </div>
       <div className="serene-hero__visuals">
@@ -58,25 +32,6 @@ export function HeroSection() {
           <span className="aether-geometry" aria-hidden />
           <span className="aether-leaf" aria-hidden />
           <span className="aether-leaf delay" aria-hidden />
-        </div>
-        <div className="listening-card" aria-label="Soothing music">
-          <p className="eyebrow">Serene music</p>
-          <h3>Let the session breathe</h3>
-          <p className="muted">Layer soft water, wind, chimes, and bells beneath your readings.</p>
-          <div className="sound-grid" role="list">
-            {rhythmTracks.map((track, index) => (
-              <div key={track.src} className="audio-tile" role="listitem">
-                <div>
-                  <strong>{track.title}</strong>
-                  <p className="microcopy">{track.description}</p>
-                </div>
-                <audio controls autoPlay={index === 0} loop preload="auto" aria-label={track.title}>
-                  <source src={track.src} type="audio/mpeg" />
-                  Your browser does not support the audio element.
-                </audio>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </section>
