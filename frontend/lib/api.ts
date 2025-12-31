@@ -1,4 +1,3 @@
-import type { AnalyticsSnapshot } from "@/lib/analytics";
 import { BirthDetails, CalendarDetails, PredictionEngine, ResultEngine } from "@/types/astro";
 import type { AnalyticsSnapshot } from "@/lib/analytics";
 import { FeedbackRequest, QuarterlySummaryResponse } from "@/types/feedback";
