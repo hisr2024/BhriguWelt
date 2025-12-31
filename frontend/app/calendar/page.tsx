@@ -1,113 +1,52 @@
-"use client";
-
-import { useState } from "react";
-import type { ChangeEvent, FormEvent } from "react";
-
-const backendBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-
-type CalendarResponse = {
-  gregorian?: string;
-  bharat_traditional?: string;
-};
+import Link from "next/link";
+import CalendarForm from "@/components/CalendarForm";
 
 export default function CalendarPage() {
-  const [formState, setFormState] = useState({
-    birthDate: "",
-    birthTime: "",
-    birthPlace: "",
-  });
-  const [result, setResult] = useState<CalendarResponse | null>(null);
-  const [status, setStatus] = useState("Convert a moment into Śaka calendar context.");
-
-  const handleChange = (field: keyof typeof formState) => (event: ChangeEvent<HTMLInputElement>) => {
-    setFormState((prev) => ({ ...prev, [field]: event.target.value }));
-  };
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setStatus("Converting calendar…");
-    try {
-      const response = await fetch(`${backendBaseUrl}/calendar`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          birth_date: formState.birthDate,
-          birth_time: formState.birthTime,
-          birth_place: formState.birthPlace,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Unable to convert calendar.");
-      }
-
-      const data = (await response.json()) as CalendarResponse;
-      setResult(data);
-      setStatus("Calendar conversion complete.");
-    } catch (err) {
-      setStatus("Calendar conversion unavailable. Please retry later.");
-    }
-  };
-
   return (
-    <main id="main" tabIndex={-1} className="mx-auto flex max-w-5xl flex-col gap-10 px-6 py-12">
-      <section className="rounded-3xl border border-white/10 bg-card-gradient p-8">
-        <h1 className="text-fluid-xl font-semibold">Śaka Calendar Converter</h1>
-        <p className="mt-3 text-sm text-slate-300">
-          Align Gregorian dates with traditional lunar markers for ritual planning and family calendars.
+    <div className="stack">
+      <div className="hero">
+        <p className="eyebrow">Śaka calendar • Conversion lab</p>
+        <h1>Always anchor onboarding to the Hindu calendar and IST.</h1>
+        <p className="muted" style={{ maxWidth: "760px" }}>
+          Convert Gregorian birth details into Śaka-aligned payloads before calling any engine.
         </p>
-        <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
-          <label className="grid gap-2 text-sm">
-            Birth date
-            <input
-              type="date"
-              value={formState.birthDate}
-              onChange={handleChange("birthDate")}
-              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
-              required
-            />
-          </label>
-          <label className="grid gap-2 text-sm">
-            Birth time
-            <input
-              type="time"
-              value={formState.birthTime}
-              onChange={handleChange("birthTime")}
-              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
-              required
-            />
-          </label>
-          <label className="grid gap-2 text-sm">
-            Birth place
-            <input
-              value={formState.birthPlace}
-              onChange={handleChange("birthPlace")}
-              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3"
-              required
-            />
-          </label>
-          <button
-            type="submit"
-            className="mt-2 rounded-full bg-aurora px-6 py-3 text-sm font-semibold text-slate-900"
-          >
-            Convert date
-          </button>
-        </form>
-      </section>
+        <div className="hero-actions">
+          <Link href="/" className="button-link" style={{ background: "rgba(255,255,255,0.08)" }}>
+            Back to studio hub
+          </Link>
+        </div>
+      </div>
 
-      <section className="rounded-3xl border border-white/10 bg-card-gradient p-8">
-        <p role="status" className="text-sm text-aurora">
-          {status}
-        </p>
-        <div className="mt-4 grid gap-3 text-sm text-slate-200">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            Gregorian: {result?.gregorian || "Pending"}
+      <section className="card-grid">
+        <div className="card highlight">
+          <div className="section-heading">
+            <p className="eyebrow">Live experience</p>
+            <h2>Gregorian → Śaka converter</h2>
+            <p>Use this before invoking horoscope, future, past-life, or matchmaking endpoints.</p>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            Śaka: {result?.bharat_traditional || "Pending"}
+          <CalendarForm />
+        </div>
+        <div className="card">
+          <div className="section-heading">
+            <p className="eyebrow">Engine alignment</p>
+            <h2>Accurate conversions</h2>
           </div>
+          <ul className="kudos-list">
+            <li>
+              <span className="badge">Consistency</span>
+              <span>All predictions align to the same Śaka context your backend expects.</span>
+            </li>
+            <li>
+              <span className="badge">Global-ready</span>
+              <span>Great for non-IST users—the converter returns IST in the payload.</span>
+            </li>
+            <li>
+              <span className="badge">UX friendly</span>
+              <span>Minimal inputs, high clarity for any onboarding step.</span>
+            </li>
+          </ul>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
