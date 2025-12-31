@@ -839,6 +839,11 @@
   transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
+.analytics-toggle:focus-visible {
+  outline: 2px solid rgba(75, 0, 130, 0.6);
+  outline-offset: 2px;
+}
+
 .analytics-toggle[aria-pressed="true"] {
   border-color: rgba(217, 151, 87, 0.8);
   background: linear-gradient(135deg, rgba(255, 153, 51, 0.15), rgba(75, 0, 130, 0.1));
@@ -1080,6 +1085,11 @@
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
+.remedy-tile:focus-within {
+  outline: 2px solid rgba(75, 0, 130, 0.5);
+  outline-offset: 2px;
+}
+
 .remedy-tile:hover {
   transform: translateY(-2px);
   box-shadow: 0 16px 28px rgba(0, 0, 0, 0.08);
@@ -1170,6 +1180,20 @@
   }
   50% {
     box-shadow: 0 0 16px rgba(255, 153, 51, 0.4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mandala-ring,
+  .analytics-bar__fill,
+  .timeline-item__arc,
+  .remedy-icon {
+    animation: none;
+  }
+
+  .analytics-toggle,
+  .remedy-tile {
+    transition: none;
   }
 }
 

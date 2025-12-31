@@ -153,6 +153,7 @@ export default function AnalyticsDashboard() {
     <section
       className={`panel analytics-dashboard ${isHighContrast ? "analytics-dashboard--contrast" : ""}`}
       aria-label="Bhrigu analytics flagship dashboard"
+      lang={isHindi ? "hi" : "en"}
     >
       <div className="analytics-hero">
         <div className="analytics-hero__copy">
@@ -175,6 +176,7 @@ export default function AnalyticsDashboard() {
                 type="button"
                 className="analytics-toggle"
                 aria-pressed={isHindi}
+                aria-label="Toggle Hindi language mode"
                 onClick={() => setIsHindi((value) => !value)}
               >
                 {isHindi ? "हिन्दी" : "English"}
@@ -183,6 +185,7 @@ export default function AnalyticsDashboard() {
                 type="button"
                 className="analytics-toggle"
                 aria-pressed={isHighContrast}
+                aria-label="Toggle high contrast mode"
                 onClick={() => setIsHighContrast((value) => !value)}
               >
                 {isHighContrast ? "Standard contrast" : "High contrast"}
