@@ -801,13 +801,27 @@ export async function getFutureProgress() {
   return getJson<FutureProgressResponse>("/future-progress", "/future-progress");
 }
 
-export async function getTimeline() {
-  return getJson("/timeline", "/timeline");
+export async function requestTimeline(details: BirthDetails, focusAreas?: string[]) {
+  const payload = {
+    ...mapBirthDetails(details),
+    ...(focusAreas?.length ? { focus_areas: focusAreas } : {}),
+  };
+  return postJson({ path: "/timeline", body: payload });
 }
 
-export async function getVarshaphal(year?: number) {
-  const query = typeof year === "number" ? `?year=${year}` : "";
-  return getJson(`/varshaphal${query}`, "/varshaphal");
+export async function requestVarshaphal(
+  details: BirthDetails,
+  options?: {
+    year?: number | string;
+    focus?: string;
+  },
+) {
+  const payload = {
+    ...mapBirthDetails(details),
+    ...(options?.year ? { target_year: String(options.year) } : {}),
+    ...(options?.focus ? { main_focus: options.focus } : {}),
+  };
+  return postJson({ path: "/varshaphal", body: payload });
 }
 
 export async function requestMatchmaking(
