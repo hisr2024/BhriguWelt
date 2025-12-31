@@ -101,9 +101,34 @@ def _house_from_longitude(longitude_value: float) -> int:
 
 
 def _ascendant_house(sun_long: float, dt: datetime, longitude: float | None = None) -> int:
+    """Calculate ascendant house using proper sidereal time calculations.
+
+    This follows Vedic astrology principles where the ascendant (Lagna) is determined
+    by the zodiac sign rising on the eastern horizon at the time of birth.
+    """
     utc_dt = dt.astimezone(timezone.utc)
-    rotation_offset = (utc_dt.hour * 60 + utc_dt.minute) / 4.0
-    ascendant_long = (sun_long + rotation_offset + (longitude or 0.0)) % 360
+
+    # Calculate local sidereal time (LST) in hours
+    # LST = GST + (longitude in degrees / 15)
+    # GST = 18.697374558 + 24.06570982441908 * D (where D is days since J2000.0)
+    j2000 = datetime(2000, 1, 1, 12, tzinfo=timezone.utc)
+    delta_days = (utc_dt - j2000).total_seconds() / 86400.0
+
+    gst_hours = 18.697374558 + 24.06570982441908 * delta_days
+    gst_hours = gst_hours % 24  # Normalize to 24-hour cycle
+
+    # Convert longitude to hours (15 degrees = 1 hour)
+    longitude_hours = (longitude or 0.0) / 15.0
+    lst_hours = (gst_hours + longitude_hours) % 24
+
+    # Convert LST to degrees (1 hour = 15 degrees)
+    lst_degrees = lst_hours * 15.0
+
+    # The ascendant longitude is approximately the LST in degrees
+    # Apply sidereal correction (ayanamsa)
+    ayanamsa = 23.856 + (delta_days / 36525.0) * 0.014  # Lahiri ayanamsa
+    ascendant_long = (lst_degrees - ayanamsa) % 360
+
     return _house_from_longitude(ascendant_long)
 
 
@@ -184,7 +209,17 @@ def derive_lunar_details(dt: datetime, latitude: float | None = None, longitude:
 
     saturn_phase = sin(2 * pi * (delta_days / 378.09))
     saturn_retrograde = saturn_phase < 0
-    rahu_aspects_ascendant = (ketu_long % 60) < 20
+
+    # Rahu aspects 5th, 7th, and 9th houses from its position
+    # Calculate if Rahu aspects the ascendant house
+    rahu_aspects_ascendant = False
+    aspect_houses = [5, 7, 9]  # Rahu's special aspects
+    for aspect in aspect_houses:
+        # Calculate the house Rahu is aspecting
+        aspected_house = ((rahu_house - 1 + aspect) % 12) + 1
+        if aspected_house == ascendant_house:
+            rahu_aspects_ascendant = True
+            break
 
     return {
         "lunar_tithi": lunar_tithi,
@@ -388,6 +423,8 @@ def _swisseph_lunar_details(dt: datetime, latitude: float | None = None, longitu
         ut_dt.hour + ut_dt.minute / 60.0,
         swe.GREG_CAL,
     )
+
+    # Calculate planetary longitudes using Swiss Ephemeris
     sun_long = swe.calc_ut(jd, swe.SUN)[0][0]
     moon_long, moon_speed = swe.calc_ut(jd, swe.MOON)[0][:2]
     mars_long, mars_speed = swe.calc_ut(jd, swe.MARS)[0][:2]
@@ -398,9 +435,20 @@ def _swisseph_lunar_details(dt: datetime, latitude: float | None = None, longitu
     rahu_long = swe.calc_ut(jd, swe.TRUE_NODE)[0][0]
     ketu_long = (rahu_long + 180) % 360
 
+    # Calculate ascendant using house cusps from Swiss Ephemeris
+    # Use Placidus house system (most common in Vedic astrology)
+    if latitude is not None and longitude is not None:
+        house_cusps, ascmc = swe.houses(jd, clamped_lat, clamped_lon, b"P")
+        ascendant_long = ascmc[0]  # Ascendant is the first element
+    else:
+        # Fallback to sidereal time calculation if coordinates not available
+        ascendant_long = _ascendant_house(sun_long, dt, longitude=longitude) * 30 - 15
+
+    # Calculate lunar tithi and moon element
     lunar_tithi = int(((moon_long - sun_long) % 360) // 12) + 1
     moon_element = _element_from_longitude(moon_long)
 
+    # Calculate house positions for all planets
     mars_house = _house_from_longitude(mars_long)
     saturn_house = _house_from_longitude(saturn_long)
     venus_house = _house_from_longitude(venus_long)
@@ -409,10 +457,20 @@ def _swisseph_lunar_details(dt: datetime, latitude: float | None = None, longitu
     moon_house = _house_from_longitude(moon_long)
     mercury_house = _house_from_longitude(mercury_long)
     jupiter_house = _house_from_longitude(jupiter_long)
-    ascendant_house = _house_from_longitude(sun_long)
+    ascendant_house = _house_from_longitude(ascendant_long)
 
+    # Determine Saturn retrograde status
     saturn_retrograde = saturn_speed < 0
-    rahu_aspects_ascendant = (rahu_long % 60) < 20
+
+    # Calculate Rahu aspects on ascendant using proper Vedic aspects
+    # Rahu aspects 5th, 7th, and 9th houses from its position
+    rahu_aspects_ascendant = False
+    aspect_houses = [5, 7, 9]  # Rahu's special aspects
+    for aspect in aspect_houses:
+        aspected_house = ((rahu_house - 1 + aspect) % 12) + 1
+        if aspected_house == ascendant_house:
+            rahu_aspects_ascendant = True
+            break
 
     return {
         "lunar_tithi": lunar_tithi,
@@ -425,8 +483,7 @@ def _swisseph_lunar_details(dt: datetime, latitude: float | None = None, longitu
         "moon_house": moon_house,
         "mercury_house": mercury_house,
         "jupiter_house": jupiter_house,
-        "moon_house": _house_from_longitude(moon_long),
-        "ascendant_house": _ascendant_house(sun_long, dt, longitude=longitude),
+        "ascendant_house": ascendant_house,
         "saturn_retrograde": saturn_retrograde,
         "rahu_aspects_ascendant": rahu_aspects_ascendant,
     }
