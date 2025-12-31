@@ -86,6 +86,16 @@ export const journeyTimeline = [
     progressLabel: "Ease",
     houseIndex: 4,
   },
+  {
+    title: "Mid-December alignment",
+    window: "Mid-Dec 15, 2025",
+    houseAnchor: "2nd house",
+    detail: "Revisit values and resources with a steady, grounded ritual reset.",
+    planet: "☿",
+    progress: 62,
+    progressLabel: "Clarity",
+    houseIndex: 2,
+  },
 ];
 
 export const DEMO_CHART: ChartHouse[] = [
