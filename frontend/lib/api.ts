@@ -3,6 +3,7 @@ import { FeedbackRequest, QuarterlySummaryResponse } from "@/types/feedback";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
 const BACKEND_FALLBACK_URL = process.env.NEXT_PUBLIC_BACKEND_FALLBACK_URL || "";
+const ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_TOKEN?.trim() || "";
 const BACKEND_HOSTS = Array.from(
   new Set(
     [BACKEND_URL, BACKEND_FALLBACK_URL]
@@ -721,6 +722,11 @@ async function getJson<TResponse>(path: string, fallbackKey?: string) {
   }
 }
 
+async function getJsonWithHeaders<TResponse>(path: string, headers?: Record<string, string>) {
+  const response = await fetchFromHosts(path, headers ? { headers } : undefined);
+  return (await response.json()) as TResponse;
+}
+
 async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
   const fallback = FALLBACK_RESPONSES[path];
 
@@ -888,6 +894,15 @@ export async function submitAccuracyFeedback(feedback: FeedbackRequest) {
 
 export async function fetchQuarterlyReviews() {
   return getJson<QuarterlySummaryResponse>("/feedback/quarterly", "/feedback/quarterly");
+}
+
+export async function fetchAnalyticsSnapshot() {
+  const headers = ADMIN_TOKEN ? { "X-Admin-Token": ADMIN_TOKEN } : undefined;
+  return getJsonWithHeaders("/analytics", headers);
+}
+
+export async function fetchManuscript() {
+  return getJson<Record<string, unknown>>("/manuscript");
 }
 
 export async function upsertProfile(
