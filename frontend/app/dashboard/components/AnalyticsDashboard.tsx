@@ -191,7 +191,7 @@ export default function AnalyticsDashboard() {
                 <Link
                   key={tool.href}
                   href={tool.href}
-                  className="card softly tool-card tool-card--compact"
+                  className="card tool-card tool-card--compact tool-card--minimal"
                   style={
                     {
                       "--tool-gradient": tool.gradient,
@@ -199,23 +199,13 @@ export default function AnalyticsDashboard() {
                     } as CSSProperties
                   }
                 >
-                  <div className="tool-card__header">
+                  <div className="tool-card__minimal">
                     <div className="tool-logo" aria-hidden="true">
                       <span className="tool-logo__halo" />
                       <span className="tool-logo__icon">{tool.logo}</span>
                       <span className="tool-logo__spark" />
                     </div>
-                    <span className={`pill tool-card__status tool-card__status--${healthTone}`}>
-                      {healthLabel}
-                    </span>
-                  </div>
-                  <div className="tool-card__body">
-                    <h3>{tool.name}</h3>
-                    <p className="muted">{tool.description}</p>
-                  </div>
-                  <div className="tool-card__footer">
-                    <span className="tool-card__cta">Launch app</span>
-                    <span className="tool-card__hint">Opens {tool.name}</span>
+                    <h3 className="tool-card__label">{tool.name}</h3>
                   </div>
                 </Link>
               ))}

@@ -604,6 +604,35 @@
   z-index: 1;
 }
 
+.tool-card--minimal {
+  min-height: 110px;
+  background: #ffffff;
+  border-color: rgba(214, 200, 180, 0.9);
+  box-shadow: none;
+}
+
+.tool-card--minimal::before,
+.tool-card--minimal::after {
+  display: none;
+}
+
+.tool-card--minimal .tool-logo {
+  box-shadow: none;
+}
+
+.tool-card__minimal {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tool-card__label {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2933;
+}
+
 .tool-card:hover,
 .tool-card:focus-visible {
   transform: translateY(-4px);
