@@ -14,6 +14,9 @@ type Props = {
 const navLinks = [
   { href: "/", key: "nav.home", fallback: "Home" },
   { href: "/dashboard", key: "nav.dashboard", fallback: "Dashboard" },
+  { href: "/analytics-tools", key: "nav.analytics", fallback: "Analytics Tools" },
+  { href: "/birth-chart", key: "nav.birthChart", fallback: "Birth Chart" },
+  { href: "/nadi-jyotisha", key: "nav.nadiJyotisha", fallback: "Nadi Jyotisha" },
 ];
 
 function Shell({ children }: Props) {
