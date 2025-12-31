@@ -111,6 +111,14 @@ def test_http_future_round_trip():
         assert data.get("trajectories"), "Future response missing trajectories"
 
 
+def test_http_future_progress_snapshot():
+    with running_server() as address:
+        status, data, _ = _get("/future-progress", address)
+        assert status == 200
+        assert "karmic_resolution" in data
+        assert isinstance(data.get("milestones"), list)
+
+
 def test_http_karmic_dashboard_round_trip():
     with running_server() as address:
         status, data, _ = _post("/karmic-dashboard", _payload(), address)

@@ -12,7 +12,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Lock
 from time import monotonic
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 from urllib.parse import urlparse, parse_qs
 
 try:
@@ -267,6 +267,7 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
 
     routes: Dict[Tuple[str, str], str] = {
         ("GET", "/health"): "_handle_health",
+        ("GET", "/future-progress"): "_handle_future_progress",
         ("POST", "/feedback"): "_handle_feedback",
         ("GET", "/feedback/quarterly"): "_handle_feedback_quarterly",
         ("POST", "/horoscope"): "_handle_horoscope",
@@ -366,6 +367,9 @@ class BhriguAPIHandler(BaseHTTPRequestHandler):
                 "ai_provider_metadata": ai_support,
             }
         )
+
+    def _handle_future_progress(self) -> None:
+        self._send_json(_build_future_progress_snapshot())
 
     def _handle_feedback(self) -> None:
         payload = self._read_json()
@@ -964,6 +968,73 @@ def _extract_principle_context(limit: int = 5) -> str:
     metadata = corpus.get("metadata", {})
     integrity_note = metadata.get("source_note", "Bhrigu Samhita folios drive all narratives.")
     return integrity_note + "\n" + "\n".join(snippets)
+
+
+def _build_future_progress_snapshot(limit: int = 3) -> Dict[str, Any]:
+    corpus = bhrigu_core.dataset() or {}
+    principles = [entry for entry in corpus.get("principles") or [] if isinstance(entry, dict)]
+
+    planets = [
+        ("Sun", "☉"),
+        ("Moon", "☾"),
+        ("Mars", "♂"),
+        ("Mercury", "☿"),
+        ("Jupiter", "♃"),
+        ("Venus", "♀"),
+        ("Saturn", "♄"),
+        ("Rahu", "☊"),
+        ("Ketu", "☋"),
+    ]
+
+    milestones: List[Dict[str, Any]] = []
+    weight_values: List[float] = []
+
+    for index, principle in enumerate(principles[:limit]):
+        weights = principle.get("weights") or {}
+        top_key = None
+        top_value = None
+        if isinstance(weights, dict) and weights:
+            def _weight_value(value: Any) -> float:
+                try:
+                    return float(value)
+                except (TypeError, ValueError):
+                    return 0.0
+
+            top_key, top_value = max(weights.items(), key=lambda item: _weight_value(item[1]))
+            try:
+                weight_values.append(float(top_value))
+            except (TypeError, ValueError):
+                pass
+
+        label = (
+            str(top_key).replace("_", " ").title()
+            if top_key
+            else str(principle.get("id") or "Karmic milestone")
+        )
+        completion = 60
+        if top_value is not None:
+            try:
+                completion = int(max(20, min(98, float(top_value) * 100)))
+            except (TypeError, ValueError):
+                completion = 60
+
+        house = (index * 4) % 12 + 1
+        planet, icon = planets[index % len(planets)]
+        milestones.append(
+            {
+                "house": house,
+                "label": label,
+                "completion": completion,
+                "planet": planet,
+                "icon": icon,
+            }
+        )
+
+    karmic_resolution = 60
+    if weight_values:
+        karmic_resolution = int(max(40, min(98, sum(weight_values) / len(weight_values) * 100)))
+
+    return {"karmic_resolution": karmic_resolution, "milestones": milestones}
 
 
 def _enhance_with_ai(
