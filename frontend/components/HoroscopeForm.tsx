@@ -2,13 +2,12 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
-import { HOUSE_FOCUSES, deriveChartHouses } from "@/lib/houseGrid";
+import { deriveChartHouses } from "@/lib/houseGrid";
 import { getFallbackSample } from "@/lib/api";
 import { useImmersiveFeedback } from "@/lib/immersive";
 import { theme } from "@/lib/theme";
 import { CalendarDetails } from "@/types/astro";
-import { NatalChart } from "@/types/natal";
-import { deriveHousePlacements, formatHouseNarrative, useSakaContext } from "@/lib/sakaContext";
+import { deriveHousePlacements, useSakaContext } from "@/lib/sakaContext";
 
 import FormPanel from "./horoscope/FormPanel";
 import ReadingPanel from "./horoscope/ReadingPanel";
@@ -37,24 +36,6 @@ type ValidationState = {
   dob?: string;
   tob?: string;
   pob?: string;
-};
-
-type HouseAnchor = {
-  house: number;
-  sign: string;
-  focus: string;
-};
-
-type ProgressStep = {
-  title: string;
-  description: string;
-  status: "pending" | "active" | "complete";
-};
-
-type TimeframeLink = {
-  label: string;
-  summary: string;
-  progress: number;
 };
 
 const HOROSCOPE_PENDING_SUMMARY = "Based on your inputs, a full reading is pending backend connection.";
@@ -142,9 +123,8 @@ export default function HoroscopeForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [endpoint, setEndpoint] = useState<string | null>(null);
-  const [status, setStatus] = useState<FormStatus>("idle");
+  const [, setStatus] = useState<FormStatus>("idle");
   const [validations, setValidations] = useState<ValidationState>({});
-  const [prefillNotice, setPrefillNotice] = useState<string | null>(null);
 
   const { triggerSubmitFeedback } = useImmersiveFeedback();
   const { sakaState } = useSakaContext();
@@ -170,75 +150,6 @@ export default function HoroscopeForm() {
   const formattedChart = useMemo(() => (chart ? JSON.stringify(chart, null, 2) : ""), [chart]);
   const hasNarrative = Boolean(interpretation.english || interpretation.hindi);
   const fallbackNarrative = interpretation.raw || formattedChart || "No interpretation available";
-  const houseFoundation = useMemo<HouseAnchor[] | null>(() => {
-    if (!chart || !isNatalChart(chart)) return null;
-    const natalChart = chart as NatalChart;
-    return HOUSE_FOCUSES.map((focus, index) => {
-      const houseNumber = index + 1;
-      const house = natalChart.chart.houses.find((entry) => entry.number === houseNumber);
-      const sign = house?.sign || natalChart.chart.ascendant?.sign || "—";
-      return { house: houseNumber, sign, focus } satisfies HouseAnchor;
-    });
-  }, [chart]);
-  const timeframeAnchors = useMemo(() => {
-    const anchors = [
-      { label: "Daily", houseIndex: 1 },
-      { label: "Weekly", houseIndex: 3 },
-      { label: "Monthly", houseIndex: 6 },
-      { label: "Yearly", houseIndex: 10 },
-    ];
-
-    return anchors.map((anchor) => {
-      const foundation = houseFoundation?.find((item) => item.house === anchor.houseIndex);
-      return {
-        ...anchor,
-        focus: foundation?.focus || HOUSE_FOCUSES[anchor.houseIndex - 1],
-        sign: foundation?.sign,
-      };
-    });
-  }, [houseFoundation]);
-  const progressSteps = useMemo<ProgressStep[]>(() => {
-    const steps: ProgressStep[] = [
-      {
-        title: "Birth details captured",
-        description: "Name, date, time, and place locked in.",
-        status: isComplete ? "complete" : "active",
-      },
-      {
-        title: "Chart generated",
-        description: "Planets and houses mapped in one view.",
-        status: chart ? "complete" : isComplete && loading ? "active" : "pending",
-      },
-      {
-        title: "12-house foundation",
-        description: "House lords and focuses paired to your ascendant.",
-        status: houseFoundation ? "complete" : chart ? "active" : "pending",
-      },
-      {
-        title: "Timeframe guidance",
-        description: "Daily to yearly pathways linked to the base chart.",
-        status: hasNarrative ? "complete" : chart ? "active" : "pending",
-      },
-    ];
-
-    return steps;
-  }, [chart, hasNarrative, houseFoundation, isComplete, loading]);
-
-  const timeframeLinks = useMemo<TimeframeLink[]>(() => {
-    return timeframeAnchors.map((anchor) => {
-      const hasFoundation = Boolean(chart && houseFoundation?.length);
-      const progress = !chart ? 0 : hasNarrative ? 90 : hasFoundation ? 65 : 40;
-      const summary = hasFoundation
-        ? `${anchor.label} guidance tied to house ${anchor.houseIndex} (${anchor.sign || "—"}) • ${anchor.focus}`
-        : `${anchor.label} guidance waits for chart foundation`;
-
-      return {
-        label: anchor.label,
-        summary,
-        progress,
-      } satisfies TimeframeLink;
-    });
-  }, [chart, hasNarrative, houseFoundation?.length, timeframeAnchors]);
 
   const handleChange = (field: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -402,14 +313,59 @@ export default function HoroscopeForm() {
     }
   };
 
-  const handleAskBhrigu = () => {
+  const buildShareText = () => {
+    const segments = [interpretation.summary, interpretation.english, interpretation.hindi].filter(Boolean);
+    return segments.length ? segments.join("\n\n") : fallbackNarrative;
+  };
+
+  const handleShareResults = async () => {
     if (!chart || typeof window === "undefined") return;
-    const event = new CustomEvent("bhrigu:open-chat", { detail: { chart } });
-    window.dispatchEvent(event);
-    const chatDock = document.querySelector("[data-bhrigu-chat]");
-    if (chatDock instanceof HTMLElement) {
-      chatDock.scrollIntoView({ behavior: "smooth", block: "start" });
+    const text = buildShareText();
+    if (!text) return;
+
+    if ("share" in navigator) {
+      try {
+        await navigator.share({ title: "BhriguWelt reading", text });
+        return;
+      } catch (error) {
+        console.warn("[HoroscopeForm] Share cancelled", error);
+      }
     }
+
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (error) {
+        console.warn("[HoroscopeForm] Clipboard write failed", error);
+      }
+    }
+  };
+
+  const handlePlayVoice = () => {
+    if (typeof window === "undefined") return;
+    const text = buildShareText();
+    if (!text) return;
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+
+    if (synth.speaking) synth.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voices = synth.getVoices();
+    const preferredVoice =
+      voices.find((voice) => /en-in/i.test(voice.lang)) ||
+      voices.find((voice) => /en-us/i.test(voice.lang)) ||
+      voices.find((voice) => /en/i.test(voice.lang)) ||
+      voices[0];
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+      utterance.lang = preferredVoice.lang;
+    } else {
+      utterance.lang = "en-IN";
+    }
+
+    utterance.rate = 0.98;
+    synth.speak(utterance);
   };
 
   const handleDownloadPdf = () => {
@@ -489,7 +445,6 @@ export default function HoroscopeForm() {
           ? placements.rahuAspectsAscendant
           : prev.rahuAspectsAscendant,
     }));
-    setPrefillNotice(formatHouseNarrative(sakaState.houseGrid, sakaState.sakaDate));
   }, [sakaState.details?.birthDate, sakaState.details?.birthPlace, sakaState.details?.birthTime, sakaState.houseGrid, sakaState.sakaDate]);
 
   useEffect(() => {
@@ -503,17 +458,12 @@ export default function HoroscopeForm() {
       <div className="horo-layout">
         <FormPanel
           form={form}
-          status={status}
           loading={loading}
           endpoint={endpoint}
           error={error}
           isComplete={isComplete}
-          progressSteps={progressSteps}
-          prefillNotice={prefillNotice}
           onChange={handleChange}
           onSubmit={handleSubmit}
-          onAskBhrigu={handleAskBhrigu}
-          onDownloadPdf={handleDownloadPdf}
         />
 
         <ReadingPanel
@@ -522,8 +472,8 @@ export default function HoroscopeForm() {
           interpretation={interpretation}
           hasNarrative={hasNarrative}
           fallbackNarrative={fallbackNarrative}
-          timeframes={timeframeLinks}
-          onAskBhrigu={handleAskBhrigu}
+          onShare={handleShareResults}
+          onPlayVoice={handlePlayVoice}
           onDownloadPdf={handleDownloadPdf}
         />
       </div>
