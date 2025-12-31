@@ -16,7 +16,17 @@ except Exception as exc:  # pragma: no cover - optional dependency
         "aiohttp is required for the async API server; install it from PyPI when network access is available."
     ) from exc
 
-from .api import RateLimiter, ResponseCache, handle_command, _request_from_payload, build_rate_limiter
+from .api import (
+    RateLimiter,
+    ResponseCache,
+    handle_command,
+    _request_from_payload,
+    build_rate_limiter,
+    _AI_ENHANCED_COMMANDS,
+    _enhance_with_ai,
+    _build_future_progress_snapshot,
+)
+from .ai_client import ai_provider_metadata
 from .bhrigu_core import bhrigu_core
 from .data_loader import persist_bhrigu_data
 from .feedback import feedback_analytics_snapshot, quarterly_reviews, record_feedback, serialize_entry
@@ -120,12 +130,18 @@ def create_app() -> web.Application:
             return True
         return bool(profile.user_id and claims.get("sub") == profile.user_id)
 
-    async def handle_cached_command(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle_cached_command(command: str, payload: Dict[str, Any], client_id: str) -> Dict[str, Any]:
         key = _cache_key(command, payload)
         cached = await cache.get(key)
         if cached is not None:
             return cached
         response = await asyncio.to_thread(handle_command, command, payload)
+        ai_payload = dict(payload)
+        ai_payload["_client_ip"] = client_id
+        if command in _AI_ENHANCED_COMMANDS:
+            response = await asyncio.to_thread(_enhance_with_ai, response, command, ai_payload)
+        elif command == "core-wisdom" and payload.get("ai_summary"):
+            response = await asyncio.to_thread(_enhance_with_ai, response, command, ai_payload, summary=True)
         await cache.set(key, response)
         return response
 
@@ -162,7 +178,21 @@ def create_app() -> web.Application:
         return await asyncio.to_thread(create_or_update_profile, base_payload)
 
     async def health(_: web.Request) -> web.Response:
-        return _json_response({"status": "ok", "source": "Bhrigu Samhita", "ml": get_ml_health()})
+        corpus = bhrigu_core.dataset()
+        principles_loaded = len(corpus.get("principles") or [])
+        return _json_response(
+            {
+                "status": "ok",
+                "source": "Bhrigu Samhita",
+                "ml": get_ml_health(),
+                "data": {"principles_loaded": principles_loaded},
+                "ai_provider_metadata": ai_provider_metadata(),
+            }
+        )
+
+    async def future_progress(request: web.Request) -> web.Response:
+        await guard_rate_limit(request)
+        return _json_response(_build_future_progress_snapshot())
 
     async def feedback(request: web.Request) -> web.Response:
         await guard_rate_limit(request)
@@ -188,7 +218,7 @@ def create_app() -> web.Application:
     async def horoscope(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
-        response = await handle_cached_command("horoscope", payload)
+        response = await handle_cached_command("horoscope", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-Cache-Hits": str(cache.stats()["hits"]), "X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -199,7 +229,7 @@ def create_app() -> web.Application:
         focus_areas = payload.get("focus_areas")
         if focus_areas is not None and not isinstance(focus_areas, list):
             return _json_response({"message": "focus_areas must be a list when provided"}, status=HTTPStatus.BAD_REQUEST)
-        response = await handle_cached_command("timeline", payload)
+        response = await handle_cached_command("timeline", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -207,7 +237,7 @@ def create_app() -> web.Application:
     async def past_life(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
-        response = await handle_cached_command("past-life", payload)
+        response = await handle_cached_command("past-life", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -215,7 +245,7 @@ def create_app() -> web.Application:
     async def future(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
-        response = await handle_cached_command("future", payload)
+        response = await handle_cached_command("future", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -223,7 +253,7 @@ def create_app() -> web.Application:
     async def future_directives(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
-        response = await handle_cached_command("future-directives", payload)
+        response = await handle_cached_command("future-directives", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -231,7 +261,7 @@ def create_app() -> web.Application:
     async def varshaphal(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
-        response = await handle_cached_command("varshaphal", payload)
+        response = await handle_cached_command("varshaphal", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -239,7 +269,7 @@ def create_app() -> web.Application:
     async def matchmaking(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
-        response = await handle_cached_command("matchmaking", payload)
+        response = await handle_cached_command("matchmaking", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -247,7 +277,7 @@ def create_app() -> web.Application:
     async def matchmaking_diagnostics(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
-        response = await handle_cached_command("matchmaking-diagnostics", payload)
+        response = await handle_cached_command("matchmaking-diagnostics", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -263,7 +293,7 @@ def create_app() -> web.Application:
             return _json_response(
                 {"message": "modern_preferences must be a list when provided"}, status=HTTPStatus.BAD_REQUEST
             )
-        response = await handle_cached_command("matchmaking-pipeline", payload)
+        response = await handle_cached_command("matchmaking-pipeline", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -271,7 +301,7 @@ def create_app() -> web.Application:
     async def calendar(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
-        response = await handle_cached_command("calendar", payload)
+        response = await handle_cached_command("calendar", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -279,7 +309,7 @@ def create_app() -> web.Application:
     async def transits(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
-        response = await handle_cached_command("transits", payload)
+        response = await handle_cached_command("transits", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -313,7 +343,7 @@ def create_app() -> web.Application:
         payload = await request.json()
         if payload.get("focus_areas") is not None and not isinstance(payload.get("focus_areas"), list):
             return _json_response({"message": "focus_areas must be a list when provided"}, status=HTTPStatus.BAD_REQUEST)
-        response = await handle_cached_command("core-wisdom", payload)
+        response = await handle_cached_command("core-wisdom", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -323,7 +353,7 @@ def create_app() -> web.Application:
         payload = await request.json()
         if payload.get("focus_areas") is not None and not isinstance(payload.get("focus_areas"), list):
             return _json_response({"message": "focus_areas must be a list when provided"}, status=HTTPStatus.BAD_REQUEST)
-        response = await handle_cached_command("implementation-core", payload)
+        response = await handle_cached_command("implementation-core", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -331,7 +361,7 @@ def create_app() -> web.Application:
     async def core_engines(request: web.Request) -> web.Response:
         _, rate_meta = await guard_rate_limit(request)
         payload = await request.json()
-        response = await handle_cached_command("core-engines", payload)
+        response = await handle_cached_command("core-engines", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -345,7 +375,7 @@ def create_app() -> web.Application:
             return _json_response({"message": "focus_areas must be a list when provided"}, status=HTTPStatus.BAD_REQUEST)
         if issues is not None and not isinstance(issues, list):
             return _json_response({"message": "issues must be a list when provided"}, status=HTTPStatus.BAD_REQUEST)
-        response = await handle_cached_command("karmic-dashboard", payload)
+        response = await handle_cached_command("karmic-dashboard", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -357,7 +387,7 @@ def create_app() -> web.Application:
             return _json_response(
                 {"message": "focus_engines must be a list when provided"}, status=HTTPStatus.BAD_REQUEST
             )
-        response = await handle_cached_command("wisdom-aggregator", payload)
+        response = await handle_cached_command("wisdom-aggregator", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -373,7 +403,7 @@ def create_app() -> web.Application:
             return _json_response(
                 {"message": "modern_preferences must be a list when provided"}, status=HTTPStatus.BAD_REQUEST
             )
-        response = await handle_cached_command("wisdom-bot", payload)
+        response = await handle_cached_command("wisdom-bot", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -397,7 +427,7 @@ def create_app() -> web.Application:
             return _json_response(
                 {"message": "cultural_sensitivity must be a string when provided"}, status=HTTPStatus.BAD_REQUEST
             )
-        response = await handle_cached_command("experience-flow", payload)
+        response = await handle_cached_command("experience-flow", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -408,7 +438,7 @@ def create_app() -> web.Application:
         focus_areas = payload.get("focus_areas")
         if focus_areas is not None and not isinstance(focus_areas, list):
             return _json_response({"message": "focus_areas must be a list when provided"}, status=HTTPStatus.BAD_REQUEST)
-        response = await handle_cached_command("past-future", payload)
+        response = await handle_cached_command("past-future", payload, client)
         reply = _json_response(response)
         reply.headers.update({"X-RateLimit-Remaining": str(rate_meta.get("remaining", 0))})
         return reply
@@ -667,6 +697,7 @@ def create_app() -> web.Application:
 
     app = web.Application()
     app.router.add_route("GET", "/health", health)
+    app.router.add_route("GET", "/future-progress", future_progress)
     app.router.add_route("POST", "/feedback", feedback)
     app.router.add_route("GET", "/feedback/quarterly", feedback_quarterly)
     app.router.add_route("POST", "/horoscope", horoscope)

@@ -50,3 +50,17 @@ async def _hit_health_endpoint():
 
 def test_health_endpoint_async():
     asyncio.run(_hit_health_endpoint())
+
+
+async def _hit_future_progress_endpoint():
+    async with TestServer(create_app()) as server:
+        async with TestClient(server) as client:
+            resp = await client.get("/future-progress")
+            assert resp.status == HTTPStatus.OK
+            payload = await resp.json()
+            assert "karmic_resolution" in payload
+            assert isinstance(payload.get("milestones"), list)
+
+
+def test_future_progress_endpoint_async():
+    asyncio.run(_hit_future_progress_endpoint())
