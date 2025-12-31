@@ -142,6 +142,28 @@ const FALLBACK_FUTURE = {
   ],
 };
 
+const FALLBACK_CORE_WISDOM = {
+  sections: {
+    "1": "Restatement of User Query & Birth Data: Fallback seeker. Birth: 1995-08-18 at 06:30 in Jaipur, Bharat. Focus areas: general life balance.",
+    "2": "Disclaimer & Orientation: This is a Bhrigu Samhita–inspired spiritual reading. It offers tendencies, not certainties, and is not medical, legal, or financial advice.",
+    "3": "Birth Chart Overview: Karmic epoch — Bhrigu epoch: activation of Mars mandates for infrastructural service. Dominant currents include intuitive dreams, infrastructural success, and ancestral calling with manuscript-backed interpretation.",
+    "4": "Detailed Life Area Analysis: Strengths — intuitive dreams, infrastructural success. Challenges — balancing intuition with action. Key remedies from the folios: Light a copper lamp at dawn while reciting Om Brighave Namah to stabilize mind and memory.",
+    "5": "Time-Based Future Tendencies: Multi-decade leadership on smart-city logistics with ancestral blessings.",
+    "6": "Consolidated Strengths, Challenges & Cautions: Strengths — intuitive dreams, infrastructural success. Challenges — guarding energy leaks. Cautions — honor pacing and protect focus during intense transit windows.",
+    "7": "Bhrigu-Style Guidance & Remedies: Keep discipline steady, prioritize service rituals, and maintain a dawn lamp practice.",
+    "8": "Closing & Reminder of Free Will: Tendencies guide you, but choices shape outcomes. Take what resonates, leave the rest, and proceed with compassion.",
+  },
+  rashi_chart: FALLBACK_HOROSCOPE.rashi_chart,
+  bhava_chart: FALLBACK_HOROSCOPE.bhava_chart,
+  dashas: FALLBACK_HOROSCOPE.dashas,
+  karmic_epoch: FALLBACK_HOROSCOPE.karmic_epoch,
+  remedies: FALLBACK_HOROSCOPE.remedies,
+  charts: {
+    rashi_chart: FALLBACK_HOROSCOPE.rashi_chart,
+    bhava_chart: FALLBACK_HOROSCOPE.bhava_chart,
+  },
+};
+
 const FALLBACK_TIMELINE = {
   updated_at: "2024-06-01",
   phases: [
@@ -307,21 +329,23 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
     language_layer: { tone: "gentle", accent: "bhrigu", primary_language: "en" },
   },
   "/core-wisdom": {
-    sections: {
-      "1": "Restatement of User Query & Birth Data: Fallback seeker. Birth: 1995-08-18 at 06:30 in Jaipur, Bharat. Focus areas: general life balance.",
-      "2": "Disclaimer & Orientation: This is a Bhrigu Samhita–inspired spiritual reading. It offers tendencies, not certainties, and is not medical, legal, or financial advice.",
-      "3": "Birth Chart Overview: Karmic epoch — Bhrigu epoch: activation of Mars mandates for infrastructural service. Dominant currents include intuitive dreams, infrastructural success, and ancestral calling with manuscript-backed interpretation.",
-      "4": "Detailed Life Area Analysis: Strengths — intuitive dreams, infrastructural success. Challenges — balancing intuition with action. Key remedies from the folios: Light a copper lamp at dawn while reciting Om Brighave Namah to stabilize mind and memory.",
-      "5": "Time-Based Future Tendencies: Multi-decade leadership on smart-city logistics with ancestral blessings.",
-      "6": "Consolidated Strengths, Challenges & Cautions: Strengths — intuitive dreams, infrastructural success. Challenges — guarding energy leaks. Cautions — honor pacing and protect focus during intense transit windows.",
-      "7": "Bhrigu-Style Guidance & Remedies: Keep discipline steady, prioritize service rituals, and maintain a dawn lamp practice.",
-      "8": "Closing & Reminder of Free Will: Tendencies guide you, but choices shape outcomes. Take what resonates, leave the rest, and proceed with compassion.",
+    ...FALLBACK_CORE_WISDOM,
+  },
+  "/past-future": {
+    seeker: {
+      name: "Fallback seeker",
+      birth_date: "1995-08-18",
+      birth_time: "06:30",
+      birth_place: "Jaipur, Bharat",
+      tradition: "universal",
     },
-    rashi_chart: FALLBACK_HOROSCOPE.rashi_chart,
-    bhava_chart: FALLBACK_HOROSCOPE.bhava_chart,
-    dashas: FALLBACK_HOROSCOPE.dashas,
-    karmic_epoch: FALLBACK_HOROSCOPE.karmic_epoch,
-    remedies: FALLBACK_HOROSCOPE.remedies,
+    past_life: FALLBACK_PAST_LIFE,
+    future: FALLBACK_FUTURE,
+    core_wisdom: FALLBACK_CORE_WISDOM,
+    predictions: [],
+    ai_summary:
+      "Past-life echoes and future directives are connected here for a grounded, compassionate outlook.",
+    ai_support: { configured: false, provider: "offline", api_base: "" },
   },
   "/past-life": FALLBACK_PAST_LIFE,
   "/future": FALLBACK_FUTURE,
@@ -505,6 +529,7 @@ export type FallbackPath =
   | "/horoscope"
   | "/past-life"
   | "/future"
+  | "/past-future"
   | "/matchmaking"
   | "/calendar"
   | "/karmic-dashboard";
@@ -520,6 +545,7 @@ export function getPredictionFallback(engine: ResultEngine) {
     horoscope: "/horoscope",
     "past-life": "/past-life",
     future: "/future",
+    "past-future": "/past-future",
     matchmaking: "/matchmaking",
     calendar: "/calendar",
     "karmic-dashboard": "/karmic-dashboard",
@@ -740,7 +766,7 @@ async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
 
 export async function requestPrediction(engine: PredictionEngine, details: BirthDetails) {
   const path = `/${engine}`;
-  const consentForDatePredictions = engine === "future";
+  const consentForDatePredictions = engine === "future" || engine === "past-future";
   return postJson({ path, body: mapBirthDetails(details, { consentForDatePredictions }) });
 }
 

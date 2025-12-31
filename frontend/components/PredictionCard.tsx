@@ -62,6 +62,34 @@ type FuturePayload = {
   trajectories?: { focus?: string; window?: string; certainty?: number }[];
 };
 
+type CoreWisdomRemedy = {
+  description?: string;
+  interpretation?: string;
+  sutra_reference?: string;
+};
+
+type CoreWisdomPayload = {
+  sections?: Record<string, string>;
+  karmic_epoch?: string;
+  remedies?: CoreWisdomRemedy[];
+  charts?: {
+    rashi_chart?: ChartHouse[];
+    bhava_chart?: ChartHouse[];
+  };
+  rashi_chart?: ChartHouse[];
+  bhava_chart?: ChartHouse[];
+  dashas?: DashaPeriod[];
+};
+
+type PastFuturePayload = {
+  seeker?: { name?: string };
+  past_life?: PastLifePayload;
+  future?: FuturePayload;
+  core_wisdom?: CoreWisdomPayload;
+  predictions?: Array<{ narrative?: string; focus?: string; window?: string }>;
+  ai_summary?: string;
+};
+
 type SynastryOverlay = {
   label?: string;
   theme?: string;
@@ -342,6 +370,84 @@ function interpretFuture(payload: FuturePayload): InsightSection[] {
   return sections;
 }
 
+function interpretPastFuture(payload: PastFuturePayload): InsightSection[] {
+  const sections: InsightSection[] = [];
+  const seekerName = payload.seeker?.name;
+
+  if (payload.ai_summary) {
+    sections.push({
+      heading: seekerName ? `${seekerName}'s connected guidance` : "Connected guidance",
+      english: payload.ai_summary,
+    });
+  }
+
+  if (payload.past_life) {
+    const pastSections = interpretPastLife(payload.past_life);
+    if (pastSections.length) {
+      sections.push(
+        ...pastSections.map((section) => ({
+          ...section,
+          heading: `Past life · ${section.heading}`,
+        })),
+      );
+    }
+  }
+
+  if (payload.future) {
+    const futureSections = interpretFuture(payload.future);
+    if (futureSections.length) {
+      sections.push(
+        ...futureSections.map((section) => ({
+          ...section,
+          heading: `Future outlook · ${section.heading}`,
+        })),
+      );
+    }
+  }
+
+  if (payload.core_wisdom?.karmic_epoch) {
+    sections.push({
+      heading: "Core wisdom · Karmic epoch",
+      english: payload.core_wisdom.karmic_epoch,
+    });
+  }
+
+  if (payload.core_wisdom?.sections) {
+    const wisdomLines = Object.entries(payload.core_wisdom.sections)
+      .slice(0, 3)
+      .map(([, value]) => value)
+      .filter(Boolean);
+    if (wisdomLines.length) {
+      sections.push({
+        heading: "Core wisdom · Highlights",
+        english: wisdomLines.join(" "),
+      });
+    }
+  }
+
+  if (payload.core_wisdom?.remedies?.length) {
+    const remedyBullets = payload.core_wisdom.remedies
+      .map((remedy) => remedy.description || remedy.interpretation)
+      .filter((value): value is string => Boolean(value));
+    if (remedyBullets.length) {
+      sections.push({
+        heading: "Core wisdom · Remedies",
+        english: "Rituals and grounding practices to support your timeline.",
+        bullets: remedyBullets.slice(0, 4),
+      });
+    }
+  }
+
+  if (!sections.length && seekerName) {
+    sections.push({
+      heading: "Connected guidance",
+      english: `${seekerName}'s connected past-life and future outlook is loading.`,
+    });
+  }
+
+  return sections;
+}
+
 function interpretMatchmaking(payload: MatchmakingPayload): InsightSection[] {
   const sections: InsightSection[] = [];
   const pairLabel = payload.primary_name && payload.partner_name ? `${payload.primary_name} & ${payload.partner_name}` : "The pair";
@@ -502,6 +608,8 @@ function buildSections(engine: ResultEngine, payload: unknown): InsightSection[]
       return interpretPastLife(payload as PastLifePayload);
     case "future":
       return interpretFuture(payload as FuturePayload);
+    case "past-future":
+      return interpretPastFuture(payload as PastFuturePayload);
     case "matchmaking":
       return interpretMatchmaking(payload as MatchmakingPayload);
     case "calendar":
@@ -518,8 +626,29 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
   const sections = useMemo(() => buildSections(engine, payload), [engine, payload]);
   const chartPayload =
     payload && typeof payload === "object"
-      ? (payload as { rashi_chart?: ChartHouse[]; bhava_chart?: ChartHouse[]; dashas?: DashaPeriod[] })
+      ? (payload as {
+          rashi_chart?: ChartHouse[];
+          bhava_chart?: ChartHouse[];
+          dashas?: DashaPeriod[];
+          core_wisdom?: CoreWisdomPayload;
+        })
       : null;
+  const pastFutureCharts =
+    chartPayload?.core_wisdom?.charts ??
+    (chartPayload?.core_wisdom
+      ? {
+          rashi_chart: chartPayload.core_wisdom.rashi_chart,
+          bhava_chart: chartPayload.core_wisdom.bhava_chart,
+        }
+      : undefined);
+  const resolvedChartPayload =
+    engine === "past-future" && pastFutureCharts
+      ? {
+          rashi_chart: pastFutureCharts.rashi_chart,
+          bhava_chart: pastFutureCharts.bhava_chart,
+          dashas: chartPayload?.core_wisdom?.dashas,
+        }
+      : chartPayload;
   const [animationsEnabled, setAnimationsEnabled] = useState(false);
   const [flipActive, setFlipActive] = useState(false);
   const [fallbackCharts, setFallbackCharts] = useState<{ rashi: ChartHouse[]; bhava: ChartHouse[] }>({
@@ -596,11 +725,16 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
           <p className="muted">{t("results.helperRaw", "Narratives are ready to share—no JSON needed.")}</p>
         </div>
         <div className="insight-grid">{sections.map(renderSection)}</div>
-        {chartPayload && (chartPayload.rashi_chart?.length || chartPayload.bhava_chart?.length) ? (
+        {resolvedChartPayload &&
+        (resolvedChartPayload.rashi_chart?.length || resolvedChartPayload.bhava_chart?.length) ? (
           <KundliCharts
-            rashiChart={chartPayload.rashi_chart?.length ? chartPayload.rashi_chart : fallbackCharts.rashi}
-            bhavaChart={chartPayload.bhava_chart?.length ? chartPayload.bhava_chart : fallbackCharts.bhava}
-            dashas={chartPayload.dashas}
+            rashiChart={
+              resolvedChartPayload.rashi_chart?.length ? resolvedChartPayload.rashi_chart : fallbackCharts.rashi
+            }
+            bhavaChart={
+              resolvedChartPayload.bhava_chart?.length ? resolvedChartPayload.bhava_chart : fallbackCharts.bhava
+            }
+            dashas={resolvedChartPayload.dashas}
           />
         ) : null}
         {payload && <FeedbackPrompt engine={engine} seekerName={seekerName} />}

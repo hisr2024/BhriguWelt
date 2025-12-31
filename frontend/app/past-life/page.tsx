@@ -11,15 +11,15 @@ export default function PastLifePage() {
       </div>
       <div className="card highlight">
         <p className="eyebrow">Featured tool</p>
-        <h2>Past-Life Reading</h2>
-        <p className="muted">Generate a focused narrative rooted in Bhrigu folios.</p>
+        <h2>Past-Life + Future Outlook</h2>
+        <p className="muted">Connect past-life themes with future directives for a unified reading.</p>
       </div>
       <div className="panel__content">
         <JourneyRail />
         <PredictionForm
-          engine="past-life"
-          title="Past-life insights"
-          description="Capture birth details to unlock soul memory themes and gentle closure rituals."
+          engine="past-future"
+          title="Past-life insights + future outlook"
+          description="Capture birth details to connect karmic echoes with upcoming windows and remedies."
         />
       </div>
     </section>
