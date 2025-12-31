@@ -335,10 +335,12 @@ function interpretPastLife(payload: PastLifePayload): InsightSection[] {
     });
   }
 
-  if (!sections.length && payload.name) {
+  if (!sections.length) {
     sections.push({
       heading: "Past-life journey",
-      english: `${payload.name}'s arc will appear once the manuscript insights load.`,
+      english: payload.name
+        ? `${payload.name}'s arc will appear once the manuscript insights load.`
+        : "Past-life karmic echoes are being processed from the Bhrigu Samhita folios.",
     });
   }
 
@@ -367,6 +369,14 @@ function interpretFuture(payload: FuturePayload): InsightSection[] {
       collapsible: payload.trajectories.length > 2,
     });
   }
+
+  if (!sections.length) {
+    sections.push({
+      heading: "Future outlook",
+      english: "Future directives are being compiled from the Bhrigu Samhita manuscripts and planetary transits.",
+    });
+  }
+
   return sections;
 }
 
@@ -383,26 +393,32 @@ function interpretPastFuture(payload: PastFuturePayload): InsightSection[] {
 
   if (payload.past_life) {
     const pastSections = interpretPastLife(payload.past_life);
-    if (pastSections.length) {
-      sections.push(
-        ...pastSections.map((section) => ({
-          ...section,
-          heading: `Past life · ${section.heading}`,
-        })),
-      );
-    }
+    sections.push(
+      ...pastSections.map((section) => ({
+        ...section,
+        heading: `Past life · ${section.heading}`,
+      })),
+    );
+  } else {
+    sections.push({
+      heading: "Past life · Karmic echoes",
+      english: "Past-life insights are being retrieved from the Bhrigu Samhita manuscripts.",
+    });
   }
 
   if (payload.future) {
     const futureSections = interpretFuture(payload.future);
-    if (futureSections.length) {
-      sections.push(
-        ...futureSections.map((section) => ({
-          ...section,
-          heading: `Future outlook · ${section.heading}`,
-        })),
-      );
-    }
+    sections.push(
+      ...futureSections.map((section) => ({
+        ...section,
+        heading: `Future outlook · ${section.heading}`,
+      })),
+    );
+  } else {
+    sections.push({
+      heading: "Future outlook · Directives",
+      english: "Future trajectories are being compiled from planetary transits and manuscript wisdom.",
+    });
   }
 
   if (payload.core_wisdom?.karmic_epoch) {
@@ -438,10 +454,12 @@ function interpretPastFuture(payload: PastFuturePayload): InsightSection[] {
     }
   }
 
-  if (!sections.length && seekerName) {
+  if (!sections.length) {
     sections.push({
       heading: "Connected guidance",
-      english: `${seekerName}'s connected past-life and future outlook is loading.`,
+      english: seekerName
+        ? `${seekerName}'s connected past-life and future outlook is loading.`
+        : "Your connected past-life and future outlook is being generated from the Bhrigu Samhita wisdom.",
     });
   }
 
