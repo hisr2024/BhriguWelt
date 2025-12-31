@@ -258,165 +258,164 @@ export default function PredictionForm({ engine, title, description, onRequestSt
                   autoComplete="name"
                 />
               </div>
-          <div>
-            <label htmlFor={`${engine}-birth-date`}>{t("form.birthDate", "Birth date (YYYY-MM-DD)")}</label>
-            <input
-              id={`${engine}-birth-date`}
-              type="date"
-              required
-              value={details.birthDate}
-              onChange={(event) => setDetails({ ...details, birthDate: event.target.value })}
-            />
-          </div>
-          <div>
-            <label htmlFor={`${engine}-birth-time`}>{t("form.birthTime", "Birth time (HH:MM)")}</label>
-            <input
-              id={`${engine}-birth-time`}
-              type="time"
-              required
-              value={details.birthTime}
-              onChange={(event) => setDetails({ ...details, birthTime: event.target.value })}
-            />
-          </div>
-          <div>
-            <label htmlFor={`${engine}-birth-place`}>{t("form.birthPlace", "Birth place")}</label>
-            <input
-              id={`${engine}-birth-place`}
-              required
-              value={details.birthPlace}
-              onChange={(event) => setDetails({ ...details, birthPlace: event.target.value })}
-            />
-          </div>
-          <div>
-            <label htmlFor={`${engine}-tradition`}>{t("form.tradition", "Tradition focus")}</label>
-            <select
-              id={`${engine}-tradition`}
-              value={details.tradition || "universal"}
-              onChange={(event) => setDetails({ ...details, tradition: event.target.value })}
-            >
-              <option value="universal">{t("tradition.universal", "Universal")}</option>
-              <option value="northern">{t("tradition.northern", "Northern")}</option>
-              <option value="southern-grantha">{t("tradition.southern", "Southern (Grantha)")}</option>
-              <option value="western-grantha">{t("tradition.western", "Western Grantha")}</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor={`${engine}-lunar-tithi`}>{t("form.lunarTithi", "Lunar tithi")}</label>
-            <input
-              id={`${engine}-lunar-tithi`}
-              type="number"
-              min={1}
-              max={30}
-              value={details.lunarTithi}
-              onChange={(event) => setDetails({ ...details, lunarTithi: event.target.value })}
-            />
-          </div>
-          <div>
-            <label htmlFor={`${engine}-moon-element`}>{t("form.moonElement", "Moon element")}</label>
-            <select
-              id={`${engine}-moon-element`}
-              value={details.moonElement}
-              onChange={(event) => setDetails({ ...details, moonElement: event.target.value })}
-            >
-              <option value="water">Water</option>
-              <option value="fire">Fire</option>
-              <option value="air">Air</option>
-              <option value="earth">Earth</option>
-              <option value="ether">Ether</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor={`${engine}-mars-house`}>{t("form.marsHouse", "Mars house")}</label>
-            <input
-              id={`${engine}-mars-house`}
-              type="number"
-              min={1}
-              max={12}
-              value={details.marsHouse}
-              onChange={(event) => setDetails({ ...details, marsHouse: event.target.value })}
-            />
-          </div>
-          <div>
-            <label htmlFor={`${engine}-saturn-house`}>{t("form.saturnHouse", "Saturn house")}</label>
-            <input
-              id={`${engine}-saturn-house`}
-              type="number"
-              min={1}
-              max={12}
-              value={details.saturnHouse}
-              onChange={(event) => setDetails({ ...details, saturnHouse: event.target.value })}
-            />
-          </div>
-          <div>
-            <label htmlFor={`${engine}-venus-house`}>{t("form.venusHouse", "Venus house")}</label>
-            <input
-              id={`${engine}-venus-house`}
-              type="number"
-              min={1}
-              max={12}
-              value={details.venusHouse}
-              onChange={(event) => setDetails({ ...details, venusHouse: event.target.value })}
-            />
-          </div>
-          <div>
-            <label htmlFor={`${engine}-ketu-house`}>{t("form.ketuHouse", "Ketu house (0 if unknown)")}</label>
-            <input
-              id={`${engine}-ketu-house`}
-              type="number"
-              min={0}
-              max={12}
-              value={details.ketuHouse || "0"}
-              onChange={(event) => setDetails({ ...details, ketuHouse: event.target.value })}
-            />
-          </div>
-          <div>
-            <label htmlFor={`${engine}-mercury-house`}>{t("form.mercuryHouse", "Mercury house (0 if unknown)")}</label>
-            <input
-              id={`${engine}-mercury-house`}
-              type="number"
-              min={0}
-              max={12}
-              value={details.mercuryHouse || "0"}
-              onChange={(event) => setDetails({ ...details, mercuryHouse: event.target.value })}
-            />
-          </div>
-          <div>
-            <label htmlFor={`${engine}-jupiter-house`}>{t("form.jupiterHouse", "Jupiter house (0 if unknown)")}</label>
-            <input
-              id={`${engine}-jupiter-house`}
-              type="number"
-              min={0}
-              max={12}
-              value={details.jupiterHouse || "0"}
-              onChange={(event) => setDetails({ ...details, jupiterHouse: event.target.value })}
-            />
-          </div>
-          <div>
-            <label htmlFor={`${engine}-rahu`}>{t("form.rahu", "Rahu aspects ascendant")}</label>
-            <select
-              id={`${engine}-rahu`}
-              value={details.rahuAspectsAscendant ? "yes" : "no"}
-              onChange={(event) =>
-                setDetails({ ...details, rahuAspectsAscendant: event.target.value === "yes" })
-              }
-              aria-label={t("form.rahu", "Rahu aspects ascendant")}
-            >
-              <option value="no">{t("form.no", "No")}</option>
-              <option value="yes">{t("form.yes", "Yes")}</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor={`${engine}-saturn-retrograde`}>{t("form.saturnRetrograde", "Saturn retrograde")}</label>
-            <select
-              id={`${engine}-saturn-retrograde`}
-              value={details.saturnRetrograde ? "yes" : "no"}
-              onChange={(event) => setDetails({ ...details, saturnRetrograde: event.target.value === "yes" })}
-            >
-              <option value="no">{t("form.no", "No")}</option>
-              <option value="yes">{t("form.yes", "Yes")}</option>
-            </select>
-          </div>
-        </div>
+              <div>
+                <label htmlFor={`${engine}-birth-date`}>{t("form.birthDate", "Birth date (YYYY-MM-DD)")}</label>
+                <input
+                  id={`${engine}-birth-date`}
+                  type="date"
+                  required
+                  value={details.birthDate}
+                  onChange={(event) => setDetails({ ...details, birthDate: event.target.value })}
+                />
+              </div>
+              <div>
+                <label htmlFor={`${engine}-birth-time`}>{t("form.birthTime", "Birth time (HH:MM)")}</label>
+                <input
+                  id={`${engine}-birth-time`}
+                  type="time"
+                  required
+                  value={details.birthTime}
+                  onChange={(event) => setDetails({ ...details, birthTime: event.target.value })}
+                />
+              </div>
+              <div>
+                <label htmlFor={`${engine}-birth-place`}>{t("form.birthPlace", "Birth place")}</label>
+                <input
+                  id={`${engine}-birth-place`}
+                  required
+                  value={details.birthPlace}
+                  onChange={(event) => setDetails({ ...details, birthPlace: event.target.value })}
+                />
+              </div>
+              <div>
+                <label htmlFor={`${engine}-tradition`}>{t("form.tradition", "Tradition focus")}</label>
+                <select
+                  id={`${engine}-tradition`}
+                  value={details.tradition || "universal"}
+                  onChange={(event) => setDetails({ ...details, tradition: event.target.value })}
+                >
+                  <option value="universal">{t("tradition.universal", "Universal")}</option>
+                  <option value="northern">{t("tradition.northern", "Northern")}</option>
+                  <option value="southern-grantha">{t("tradition.southern", "Southern (Grantha)")}</option>
+                  <option value="western-grantha">{t("tradition.western", "Western Grantha")}</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor={`${engine}-lunar-tithi`}>{t("form.lunarTithi", "Lunar tithi")}</label>
+                <input
+                  id={`${engine}-lunar-tithi`}
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={details.lunarTithi}
+                  onChange={(event) => setDetails({ ...details, lunarTithi: event.target.value })}
+                />
+              </div>
+              <div>
+                <label htmlFor={`${engine}-moon-element`}>{t("form.moonElement", "Moon element")}</label>
+                <select
+                  id={`${engine}-moon-element`}
+                  value={details.moonElement}
+                  onChange={(event) => setDetails({ ...details, moonElement: event.target.value })}
+                >
+                  <option value="water">Water</option>
+                  <option value="fire">Fire</option>
+                  <option value="air">Air</option>
+                  <option value="earth">Earth</option>
+                  <option value="ether">Ether</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor={`${engine}-mars-house`}>{t("form.marsHouse", "Mars house")}</label>
+                <input
+                  id={`${engine}-mars-house`}
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={details.marsHouse}
+                  onChange={(event) => setDetails({ ...details, marsHouse: event.target.value })}
+                />
+              </div>
+              <div>
+                <label htmlFor={`${engine}-saturn-house`}>{t("form.saturnHouse", "Saturn house")}</label>
+                <input
+                  id={`${engine}-saturn-house`}
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={details.saturnHouse}
+                  onChange={(event) => setDetails({ ...details, saturnHouse: event.target.value })}
+                />
+              </div>
+              <div>
+                <label htmlFor={`${engine}-venus-house`}>{t("form.venusHouse", "Venus house")}</label>
+                <input
+                  id={`${engine}-venus-house`}
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={details.venusHouse}
+                  onChange={(event) => setDetails({ ...details, venusHouse: event.target.value })}
+                />
+              </div>
+              <div>
+                <label htmlFor={`${engine}-ketu-house`}>{t("form.ketuHouse", "Ketu house (0 if unknown)")}</label>
+                <input
+                  id={`${engine}-ketu-house`}
+                  type="number"
+                  min={0}
+                  max={12}
+                  value={details.ketuHouse || "0"}
+                  onChange={(event) => setDetails({ ...details, ketuHouse: event.target.value })}
+                />
+              </div>
+              <div>
+                <label htmlFor={`${engine}-mercury-house`}>{t("form.mercuryHouse", "Mercury house (0 if unknown)")}</label>
+                <input
+                  id={`${engine}-mercury-house`}
+                  type="number"
+                  min={0}
+                  max={12}
+                  value={details.mercuryHouse || "0"}
+                  onChange={(event) => setDetails({ ...details, mercuryHouse: event.target.value })}
+                />
+              </div>
+              <div>
+                <label htmlFor={`${engine}-jupiter-house`}>{t("form.jupiterHouse", "Jupiter house (0 if unknown)")}</label>
+                <input
+                  id={`${engine}-jupiter-house`}
+                  type="number"
+                  min={0}
+                  max={12}
+                  value={details.jupiterHouse || "0"}
+                  onChange={(event) => setDetails({ ...details, jupiterHouse: event.target.value })}
+                />
+              </div>
+              <div>
+                <label htmlFor={`${engine}-rahu`}>{t("form.rahu", "Rahu aspects ascendant")}</label>
+                <select
+                  id={`${engine}-rahu`}
+                  value={details.rahuAspectsAscendant ? "yes" : "no"}
+                  onChange={(event) =>
+                    setDetails({ ...details, rahuAspectsAscendant: event.target.value === "yes" })
+                  }
+                  aria-label={t("form.rahu", "Rahu aspects ascendant")}
+                >
+                  <option value="no">{t("form.no", "No")}</option>
+                  <option value="yes">{t("form.yes", "Yes")}</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor={`${engine}-saturn-retrograde`}>{t("form.saturnRetrograde", "Saturn retrograde")}</label>
+                <select
+                  id={`${engine}-saturn-retrograde`}
+                  value={details.saturnRetrograde ? "yes" : "no"}
+                  onChange={(event) => setDetails({ ...details, saturnRetrograde: event.target.value === "yes" })}
+                >
+                  <option value="no">{t("form.no", "No")}</option>
+                  <option value="yes">{t("form.yes", "Yes")}</option>
+                </select>
+              </div>
             </div>
             <div className="form-actions">
               <button type="submit" disabled={loading} aria-label={t("form.submit", "Fetch insights")}>
