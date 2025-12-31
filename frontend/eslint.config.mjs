@@ -19,7 +19,13 @@ export default [
   ...tseslint.configs.recommended,
   nextPlugin.configs.recommended,
   {
-    files: ["**/*.{ts,tsx}", "app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "src/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
+    files: [
+      "**/*.{js,jsx,ts,tsx}",
+      "app/**/*.{js,jsx,ts,tsx}",
+      "components/**/*.{js,jsx,ts,tsx}",
+      "src/**/*.{js,jsx,ts,tsx}",
+      "lib/**/*.{js,jsx,ts,tsx}",
+    ],
     languageOptions: {
       parserOptions: {
         project: "./tsconfig.json",
