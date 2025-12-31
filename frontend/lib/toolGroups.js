@@ -1,0 +1,111 @@
+export const toolGroups = [
+  {
+    title: "Foundational readings",
+    description: "Anchor your journey with birth-based, past, and future insight layers.",
+    tools: [
+      {
+        name: "Birth Chart",
+        href: "/birth-chart",
+        gradient: "linear-gradient(135deg, #fef3c7, #fde68a)",
+        glow: "rgba(251, 191, 36, 0.35)",
+        logo: "🗺️",
+      },
+      {
+        name: "Horoscope",
+        href: "/horoscope",
+        gradient: "linear-gradient(135deg, #e0f2fe, #bae6fd)",
+        glow: "rgba(56, 189, 248, 0.35)",
+        logo: "🌙",
+      },
+      {
+        name: "Past Life",
+        href: "/past-life",
+        gradient: "linear-gradient(135deg, #fee2e2, #fecaca)",
+        glow: "rgba(248, 113, 113, 0.35)",
+        logo: "🔥",
+      },
+      {
+        name: "Future",
+        href: "/future",
+        gradient: "linear-gradient(135deg, #ede9fe, #ddd6fe)",
+        glow: "rgba(167, 139, 250, 0.35)",
+        logo: "🔭",
+      },
+    ],
+  },
+  {
+    title: "Guidance & planning",
+    description: "Map timing, relationships, and key milestones with interactive tools.",
+    tools: [
+      {
+        name: "Calendar",
+        href: "/calendar",
+        gradient: "linear-gradient(135deg, #fce7f3, #fbcfe8)",
+        glow: "rgba(244, 114, 182, 0.35)",
+        logo: "📅",
+      },
+      {
+        name: "Transits",
+        href: "/transits",
+        gradient: "linear-gradient(135deg, #dcfce7, #bbf7d0)",
+        glow: "rgba(74, 222, 128, 0.35)",
+        logo: "🛰️",
+      },
+      {
+        name: "Matchmaking",
+        href: "/matchmaking",
+        gradient: "linear-gradient(135deg, #fef9c3, #fde047)",
+        glow: "rgba(250, 204, 21, 0.35)",
+        logo: "💞",
+      },
+      {
+        name: "Daily Insights",
+        href: "/daily-insights",
+        gradient: "linear-gradient(135deg, #e2e8f0, #cbd5f5)",
+        glow: "rgba(148, 163, 184, 0.35)",
+        logo: "🗓️",
+      },
+      {
+        name: "Experience",
+        href: "/experience",
+        gradient: "linear-gradient(135deg, #cffafe, #a5f3fc)",
+        glow: "rgba(34, 211, 238, 0.35)",
+        logo: "✨",
+      },
+    ],
+  },
+  {
+    title: "Rituals & renewal",
+    description: "Sustain momentum with lunar rhythms, remedies, and restorative rituals.",
+    tools: [
+      {
+        name: "Remedies",
+        href: "/remedies",
+        gradient: "linear-gradient(135deg, #ecfccb, #d9f99d)",
+        glow: "rgba(163, 230, 53, 0.35)",
+        logo: "🪔",
+      },
+      {
+        name: "Meditations",
+        href: "/meditations",
+        gradient: "linear-gradient(135deg, #e0e7ff, #c7d2fe)",
+        glow: "rgba(129, 140, 248, 0.35)",
+        logo: "🧘",
+      },
+      {
+        name: "Moon Phases",
+        href: "/moon-phases",
+        gradient: "linear-gradient(135deg, #f3f4f6, #e5e7eb)",
+        glow: "rgba(156, 163, 175, 0.35)",
+        logo: "🌒",
+      },
+      {
+        name: "Karma Reset",
+        href: "/karma-reset",
+        gradient: "linear-gradient(135deg, #ffedd5, #fed7aa)",
+        glow: "rgba(251, 146, 60, 0.35)",
+        logo: "🧿",
+      },
+    ],
+  },
+];

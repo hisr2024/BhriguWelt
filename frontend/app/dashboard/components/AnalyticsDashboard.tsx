@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
+import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 
 import { checkBackendHealth } from "@/lib/api";
+import { toolGroups } from "@/lib/toolGroups";
 
 const karmicEpochs = [
   {

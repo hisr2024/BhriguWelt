@@ -59,8 +59,14 @@ test("analytics dashboard highlights the tool inventory", async ({ page }) => {
   await page.goto("/dashboard");
 
   await expect(page.getByRole("heading", { name: "All 13 tools" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Foundational readings" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Guidance & planning" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Rituals & renewal" })).toBeVisible();
   await expect(page.locator(".tool-card")).toHaveCount(13);
   await expect(page.getByText(/Operational/i)).toBeVisible();
+
+  await page.getByRole("heading", { name: "Horoscope" }).click();
+  await expect(page).toHaveURL(/\/horoscope$/);
 });
 
 test("birth chart surfaces folio citations from backend payloads", async ({ page }) => {
