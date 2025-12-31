@@ -1,5 +1,5 @@
+import HoroscopeForm from "@/components/HoroscopeForm";
 import JourneyRail from "@/components/JourneyRail";
-import PredictionForm from "@/components/PredictionForm";
 
 export default function BirthChartPage() {
   return (
@@ -18,22 +18,10 @@ export default function BirthChartPage() {
           Generate your complete natal chart with Rashi (sign) and Bhava (house) divisions, Vimshottari Dasha periods,
           planetary positions, and extensive interpretations based on Bhrigu Samhita principles.
         </p>
-        <ul className="kudos-list">
-          <li>Interactive Rashi (Zodiac) Chart with planetary positions</li>
-          <li>Bhava (House) Chart showing life areas and influences</li>
-          <li>Vimshottari Dasha timeline with planetary periods</li>
-          <li>Detailed interpretations of houses, planets, and their interactions</li>
-          <li>Karmic insights and remedial measures</li>
-          <li>Past life influences and future trajectory guidance</li>
-        </ul>
       </div>
       <div className="panel__content">
         <JourneyRail />
-        <PredictionForm
-          engine="horoscope"
-          title="Birth Chart Results"
-          description="Enter accurate birth details below to generate your complete natal chart with extensive results including Rashi chart, Bhava chart, Dasha periods, interpretations, and karmic insights."
-        />
+        <HoroscopeForm />
       </div>
     </section>
   );

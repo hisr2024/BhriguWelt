@@ -131,7 +131,7 @@ type ToolGroup = {
 const toolGroups: ToolGroup[] = [
   {
     title: "Core charts",
-    description: "Anchor the overview with foundational charting tools.",
+    description: "",
     tools: [
       {
         name: "Birth chart",
@@ -142,7 +142,7 @@ const toolGroups: ToolGroup[] = [
       },
       {
         name: "Analytics",
-        href: "/analytics",
+        href: "/analytics-tools",
         logo: "📈",
         gradient: "linear-gradient(130deg, #f472b6, #fb7185)",
         glow: "0 0 24px rgba(244, 114, 182, 0.45)",
@@ -165,7 +165,7 @@ const toolGroups: ToolGroup[] = [
   },
   {
     title: "Guidance & forecasts",
-    description: "Daily, future, and compatibility guidance at a glance.",
+    description: "",
     tools: [
       {
         name: "Daily insights",
@@ -206,7 +206,7 @@ const toolGroups: ToolGroup[] = [
   },
   {
     title: "Rituals & healing",
-    description: "Healing journeys, meditations, and ancestral resets.",
+    description: "",
     tools: [
       {
         name: "Remedies",
