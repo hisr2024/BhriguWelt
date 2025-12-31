@@ -6,8 +6,8 @@ type Props = {
   interpretation: Interpretation;
   hasNarrative: boolean;
   fallbackNarrative: string;
-  timeframes: { label: string; summary: string; progress: number }[];
-  onAskBhrigu: () => void;
+  onShare: () => void;
+  onPlayVoice: () => void;
   onDownloadPdf: () => void;
 };
 
@@ -17,8 +17,8 @@ export default function ReadingPanel({
   interpretation,
   hasNarrative,
   fallbackNarrative,
-  timeframes,
-  onAskBhrigu,
+  onShare,
+  onPlayVoice,
   onDownloadPdf,
 }: Props) {
   return (
@@ -37,25 +37,11 @@ export default function ReadingPanel({
 
       {chart ? (
         <div className="reading-surface">
-          <div className="reading-toolbar">
-            <div>
-              <strong>{form.name || "Reader"}</strong>
-            </div>
-            <div className="toolbar-actions">
-              <button type="button" className="ghost-button" onClick={onAskBhrigu}>
-                Ask in chat
-              </button>
-              <button type="button" className="ghost-button" onClick={onDownloadPdf}>
-                Save PDF
-              </button>
-            </div>
-          </div>
-
-          <div className="interpretation-grid">
+          <div className="interpretation-stack">
             <div className="interpretation-canvas">
               <div className="canvas-head">
                 <div>
-                  <h3 className="canvas-title">Interpretation</h3>
+                  <h3 className="canvas-title">{form.name ? `${form.name}'s reading` : "Interpretation"}</h3>
                 </div>
                 {interpretation.summary ? <span className="pill">{interpretation.summary}</span> : null}
               </div>
@@ -83,28 +69,23 @@ export default function ReadingPanel({
               )}
             </div>
 
-            <aside className="interpretation-notes">
-              <h4>Share or download</h4>
-              <ul>
-                <li>Save PDF</li>
-                <li>Send to chat</li>
-                <li>Bilingual ready</li>
-              </ul>
-              <div className="progress-rail" aria-label="Timeframe linkage">
-                {timeframes.map((timeframe) => (
-                  <div key={timeframe.label} className="progress-step progress-step--active">
-                    <div className="progress-step__head">
-                      <span className="pill">{timeframe.label}</span>
-                      <strong>{Math.round(timeframe.progress)}% linked</strong>
-                    </div>
-                    <p className="microcopy">{timeframe.summary}</p>
-                    <div className="progress-meter" role="img" aria-label={`${timeframe.label} ${timeframe.progress}% linked`}>
-                      <span className="progress-meter__bar" style={{ width: `${timeframe.progress}%` }} />
-                    </div>
-                  </div>
-                ))}
+            <div className="results-actions" aria-label="Share or export results">
+              <div>
+                <h4>Share the results</h4>
+                <p className="microcopy">Export, share, or listen to the reading in a modern voice.</p>
               </div>
-            </aside>
+              <div className="results-actions__buttons">
+                <button type="button" className="ghost-button" onClick={onShare}>
+                  Share results
+                </button>
+                <button type="button" className="ghost-button" onClick={onPlayVoice}>
+                  Play modern voice
+                </button>
+                <button type="button" className="ghost-button" onClick={onDownloadPdf}>
+                  Download PDF
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       ) : (

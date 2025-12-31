@@ -8,8 +8,7 @@
 
 .horo-layout {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .horo-panel {
@@ -119,24 +118,9 @@
   padding: 0.85rem;
 }
 
-.reading-toolbar {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.toolbar-actions {
-  display: inline-flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.interpretation-grid {
+.interpretation-stack {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 0.85rem;
+  gap: 1rem;
 }
 
 .interpretation-canvas {
@@ -179,6 +163,21 @@
   border-radius: 12px;
   padding: 0.75rem;
   background: rgba(255, 255, 255, 0.6);
+}
+
+.results-actions {
+  border: 1px dashed #e3d8c4;
+  border-radius: 12px;
+  padding: 0.85rem;
+  background: rgba(255, 255, 255, 0.7);
+  display: grid;
+  gap: 0.6rem;
+}
+
+.results-actions__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .reading-placeholder {

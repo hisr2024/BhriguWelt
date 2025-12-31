@@ -1,41 +1,25 @@
 import { FormEvent } from "react";
 
-import { FormState, FormStatus } from "./types";
-
-type ProgressStep = {
-  title: string;
-  description: string;
-  status: "pending" | "active" | "complete";
-};
+import { FormState } from "./types";
 
 type Props = {
   form: FormState;
-  status: FormStatus;
   loading: boolean;
   endpoint: string | null;
   error: string | null;
   isComplete: boolean;
-  progressSteps: ProgressStep[];
-  prefillNotice?: string | null;
   onChange: (field: keyof FormState, value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  onAskBhrigu: () => void;
-  onDownloadPdf: () => void;
 };
 
 export default function FormPanel({
   form,
-  status,
   loading,
   endpoint,
   error,
   isComplete,
-  progressSteps,
-  prefillNotice,
   onChange,
   onSubmit,
-  onAskBhrigu,
-  onDownloadPdf,
 }: Props) {
   return (
     <div className="horo-panel horo-panel--form">
@@ -44,19 +28,7 @@ export default function FormPanel({
           <p className="pill">Essentials</p>
           <h2>Input once.</h2>
         </div>
-        <div className="status-chip" aria-live="polite">
-          {status === "success" ? "Reading ready" : "Awaiting details"}
-        </div>
       </div>
-
-      {prefillNotice ? (
-        <div className="inline-banner" role="status">
-          <div>
-            <strong>Śaka calendar applied</strong>
-            <p className="microcopy">{prefillNotice}</p>
-          </div>
-        </div>
-      ) : null}
 
       <form className="horo-form" onSubmit={onSubmit} aria-busy={loading}>
         <div className="field-row">
@@ -129,40 +101,6 @@ export default function FormPanel({
             <p className="microcopy">{error}</p>
           </div>
         ) : null}
-
-        {status === "success" ? (
-          <div className="inline-banner inline-banner--success" role="status">
-            <div>
-              <strong>Reading captured.</strong>
-            </div>
-            <div className="banner-actions">
-              <button type="button" className="ghost-button" onClick={onAskBhrigu}>
-                Ask in chat
-              </button>
-              <button type="button" className="ghost-button" onClick={onDownloadPdf}>
-                Download PDF
-              </button>
-            </div>
-          </div>
-        ) : null}
-
-        <div className="progress-rail" aria-label="Horoscope generation progress">
-          {progressSteps.map((step) => (
-            <div key={step.title} className={`progress-step progress-step--${step.status}`}>
-              <div className="progress-step__head">
-                <span className="pill">{step.status === "complete" ? "Done" : step.status === "active" ? "Now" : "Next"}</span>
-                <strong>{step.title}</strong>
-              </div>
-              <p className="microcopy">{step.description}</p>
-              <div className="progress-meter" role="img" aria-label={`${step.title} ${step.status}`}>
-                <span
-                  className="progress-meter__bar"
-                  style={{ width: step.status === "complete" ? "100%" : step.status === "active" ? "65%" : "25%" }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
       </form>
     </div>
   );
