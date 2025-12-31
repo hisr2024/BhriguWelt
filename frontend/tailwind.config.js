@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 /* eslint-disable no-undef */
+/* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-env node */
 
 module.exports = {
