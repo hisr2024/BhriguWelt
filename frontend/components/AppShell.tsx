@@ -119,6 +119,7 @@ function Shell({ children }: Props) {
           <p className="eyebrow">Bharat-centred Jyotish</p>
           <h3>{t("nav.tagline", "Quiet guidance across every stage of life.")}</h3>
           <p className="muted">{t("nav.desc", "Readable predictions, Śaka-ready conversions, and heartfelt remedies in one space.")}</p>
+          <p className="microcopy">UI/UX Frontend version • 20 December 2025</p>
         </div>
         <div className="footer-links">
           {navLinks.map((link) => (
