@@ -101,6 +101,18 @@ type CalendarPayload = {
   };
 };
 
+type KarmicDashboardPayload = {
+  sections?: Record<string, string>;
+  hotspots?: { title?: string; description?: string; action?: string }[];
+  gifts?: { title?: string; description?: string; action?: string }[];
+  active_themes?: string[];
+  assignments?: string[];
+  rashi_chart?: ChartHouse[];
+  bhava_chart?: ChartHouse[];
+  dashas?: DashaPeriod[];
+  karmic_epoch?: string;
+};
+
 const KundliCharts = dynamic(() => import("./KundliCharts"), {
   ssr: false,
   loading: () => (
@@ -381,6 +393,62 @@ function interpretCalendar(payload: CalendarPayload): InsightSection[] {
   return sections;
 }
 
+function interpretKarmicDashboard(payload: KarmicDashboardPayload): InsightSection[] {
+  const sections: InsightSection[] = [];
+
+  if (payload.karmic_epoch) {
+    sections.push({
+      heading: "Karmic epoch",
+      english: payload.karmic_epoch,
+    });
+  }
+
+  if (payload.sections) {
+    Object.entries(payload.sections).forEach(([key, value]) => {
+      sections.push({
+        heading: key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
+        english: value,
+      });
+    });
+  }
+
+  if (payload.active_themes?.length) {
+    sections.push({
+      heading: "Active themes",
+      english: "Current karmic themes guiding your reset.",
+      bullets: payload.active_themes,
+    });
+  }
+
+  if (payload.hotspots?.length) {
+    sections.push({
+      heading: "Karmic hotspots",
+      english: "Areas calling for extra care and grounding.",
+      bullets: payload.hotspots.map(
+        (item) => `${item.title || "Hotspot"}${item.description ? ` — ${item.description}` : ""}`,
+      ),
+    });
+  }
+
+  if (payload.gifts?.length) {
+    sections.push({
+      heading: "Karmic gifts",
+      english: "Supportive zones to lean on during the reset.",
+      bullets: payload.gifts.map((item) => `${item.title || "Gift"}${item.description ? ` — ${item.description}` : ""}`),
+    });
+  }
+
+  if (payload.assignments?.length) {
+    sections.push({
+      heading: "Suggested assignments",
+      english: "Micro-steps for the next 30–90 days.",
+      bullets: payload.assignments,
+    });
+  }
+
+  return sections.length ? sections : interpretFallback(payload as Record<string, unknown>);
+}
+
 function deriveTimeframeAnchorsFromChart(houses?: ChartHouse[]): TimeframeAnchor[] {
   const anchors = [
     { label: "Daily", houseIndex: 1 },
@@ -438,6 +506,8 @@ function buildSections(engine: ResultEngine, payload: unknown): InsightSection[]
       return interpretMatchmaking(payload as MatchmakingPayload);
     case "calendar":
       return interpretCalendar(payload as CalendarPayload);
+    case "karmic-dashboard":
+      return interpretKarmicDashboard(payload as KarmicDashboardPayload);
     default:
       return interpretFallback(payload as Record<string, unknown>);
   }
@@ -446,7 +516,10 @@ function buildSections(engine: ResultEngine, payload: unknown): InsightSection[]
 export default function PredictionCard({ title, payload, engine, seekerName }: Props) {
   const { t } = useI18n();
   const sections = useMemo(() => buildSections(engine, payload), [engine, payload]);
-  const horoscopePayload = engine === "horoscope" && typeof payload === "object" ? (payload as HoroscopePayload) : null;
+  const chartPayload =
+    payload && typeof payload === "object"
+      ? (payload as { rashi_chart?: ChartHouse[]; bhava_chart?: ChartHouse[]; dashas?: DashaPeriod[] })
+      : null;
   const [animationsEnabled, setAnimationsEnabled] = useState(false);
   const [flipActive, setFlipActive] = useState(false);
   const [fallbackCharts, setFallbackCharts] = useState<{ rashi: ChartHouse[]; bhava: ChartHouse[] }>({
@@ -523,13 +596,13 @@ export default function PredictionCard({ title, payload, engine, seekerName }: P
           <p className="muted">{t("results.helperRaw", "Narratives are ready to share—no JSON needed.")}</p>
         </div>
         <div className="insight-grid">{sections.map(renderSection)}</div>
-        {horoscopePayload && (
+        {chartPayload && (chartPayload.rashi_chart?.length || chartPayload.bhava_chart?.length) ? (
           <KundliCharts
-            rashiChart={horoscopePayload.rashi_chart?.length ? horoscopePayload.rashi_chart : fallbackCharts.rashi}
-            bhavaChart={horoscopePayload.bhava_chart?.length ? horoscopePayload.bhava_chart : fallbackCharts.bhava}
-            dashas={horoscopePayload.dashas}
+            rashiChart={chartPayload.rashi_chart?.length ? chartPayload.rashi_chart : fallbackCharts.rashi}
+            bhavaChart={chartPayload.bhava_chart?.length ? chartPayload.bhava_chart : fallbackCharts.bhava}
+            dashas={chartPayload.dashas}
           />
-        )}
+        ) : null}
         {payload && <FeedbackPrompt engine={engine} seekerName={seekerName} />}
       </div>
     </section>

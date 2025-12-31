@@ -1,4 +1,5 @@
-import Link from "next/link";
+import HoroscopeForm from "@/components/HoroscopeForm";
+import JourneyRail from "@/components/JourneyRail";
 
 export default function HoroscopePage() {
   return (
@@ -6,11 +7,19 @@ export default function HoroscopePage() {
       <div className="section-heading">
         <p className="eyebrow">Horoscope</p>
         <h1>Horoscope</h1>
-        <p className="muted">Short and clear guidance.</p>
+        <p className="muted">Generate charts and read calm, grounded insights.</p>
       </div>
-      <Link href="/dashboard" className="button-link soft">
-        Back to dashboard
-      </Link>
+      <div className="card highlight">
+        <p className="eyebrow">Featured tool</p>
+        <h2>Holistic Horoscope</h2>
+        <p className="muted">Start here to generate your natal chart and core guidance.</p>
+      </div>
+      <div className="panel__content">
+        <JourneyRail />
+        <div className="panel__content--stacked">
+          <HoroscopeForm />
+        </div>
+      </div>
     </section>
   );
 }

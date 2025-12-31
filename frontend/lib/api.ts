@@ -110,11 +110,202 @@ const FALLBACK_HOROSCOPE = {
       { lord: "Ketu", start: "2000-01-01", end: "2007-12-30", anchor_rule: "Infrastructural Success activated (1.08)" },
       { lord: "Venus", start: "2007-12-30", end: "2027-12-22", anchor_rule: "Scholarly Pursuits activated (0.76)" },
       { lord: "Sun", start: "2027-12-22", end: "2033-12-20", anchor_rule: "Ancestral Calling activated (0.92)" },
-    ],
+  ],
+};
+
+const FALLBACK_PAST_LIFE = {
+  name: "Fallback seeker",
+  interpretation: "Earlier lifetimes show healing work along sacred rivers with vows that continue into this birth.",
+  interpretation_hi: "पूर्व जन्मों में पवित्र नदियों के किनारे चिकित्सा सेवा की प्रतिज्ञा दिखती है जो इस जन्म में भी जारी है।",
+  insights: [
+    {
+      engine_id: "PL-DEMO",
+      sutra_reference: "Sharada bundle demo",
+      narrative: "The seeker served as a healer along the Narmada and returns to continue medical seva.",
+      confidence: 0.82,
+    },
+  ],
+};
+
+const FALLBACK_FUTURE = {
+  name: "Fallback seeker",
+  interpretation: "The folios point toward disciplined study, community mentorship, and health rituals over the coming decades.",
+  interpretation_hi: "आने वाले दशकों में अनुशासित अध्ययन, समुदाय का मार्गदर्शन और स्वास्थ्य अनुष्ठान प्राथमिक हैं।",
+  trajectories: [
+    {
+      engine_id: "FU-DEMO",
+      sutra_reference: "Pune folio demo",
+      focus: "Multi-decade leadership on smart-city logistics with ancestral blessings.",
+      window: "Years 28-52",
+      certainty: 0.8,
+    },
+  ],
+};
+
+const FALLBACK_TIMELINE = {
+  updated_at: "2024-06-01",
+  phases: [
+    {
+      id: "phase-1",
+      title: "Ascendant grounding",
+      window: "Phase 1 • Weeks 1-6",
+      house: 1,
+      detail: "Anchor identity, routines, and body vitality as the ascendant stabilizes.",
+      progress: 42,
+      planet: "Sun",
+      icon: "☉",
+      milestones: [
+        { label: "Morning ritual cadence", completion: 55, note: "Set sunrise start times and breathwork." },
+        { label: "Body vitality audit", completion: 38, note: "Track sleep, hydration, and stamina markers." },
+      ],
+      reminders_url: "/calendar",
+    },
+    {
+      id: "phase-2",
+      title: "Resource harmonics",
+      window: "Phase 2 • Months 2-4",
+      house: 2,
+      detail: "Balance wealth flow, family responsibilities, and speech alignment.",
+      progress: 58,
+      planet: "Venus",
+      icon: "♀",
+      milestones: [
+        { label: "Savings buffer", completion: 62, note: "Allocate steady reserves for 90 days." },
+        { label: "Family cadence check-in", completion: 46, note: "Schedule key family conversations." },
+      ],
+      reminders_url: "/calendar",
+    },
+    {
+      id: "phase-3",
+      title: "Learning pilgrimages",
+      window: "Phase 3 • Months 4-7",
+      house: 5,
+      detail: "Reignite study, creativity, and mentoring aligned to the 5th house.",
+      progress: 36,
+      planet: "Jupiter",
+      icon: "♃",
+      milestones: [
+        { label: "Course enrollment", completion: 40, note: "Commit to a focused learning track." },
+        { label: "Mentor outreach", completion: 32, note: "Identify a teacher and book sessions." },
+      ],
+      reminders_url: "/calendar",
+    },
+    {
+      id: "phase-4",
+      title: "Partnership vows",
+      window: "Phase 4 • Months 7-10",
+      house: 7,
+      detail: "Clarify collaboration agreements and strengthen harmony in alliances.",
+      progress: 24,
+      planet: "Moon",
+      icon: "☾",
+      milestones: [
+        { label: "Collaborator sync", completion: 22, note: "Define meeting rhythm and shared KPIs." },
+        { label: "Shared ritual calendar", completion: 28, note: "Plan shared check-ins for key dates." },
+      ],
+      reminders_url: "/calendar",
+    },
+    {
+      id: "phase-5",
+      title: "Dharma expansion",
+      window: "Phase 5 • Months 10-12",
+      house: 9,
+      detail: "Prepare for travel, publishing, and philosophical commitments.",
+      progress: 12,
+      planet: "Mars",
+      icon: "♂",
+      milestones: [
+        { label: "Travel blueprint", completion: 10, note: "Outline retreats or pilgrimages." },
+        { label: "Teaching outline", completion: 18, note: "Draft a syllabus or public offering." },
+      ],
+      reminders_url: "/calendar",
+    },
+  ],
 };
 
 const FALLBACK_RESPONSES: Record<string, unknown> = {
   "/horoscope": FALLBACK_HOROSCOPE,
+  "/karmic-dashboard": {
+    sections: {
+      "Karmic Overview": "A reset moment calls for steadier routines and compassionate boundaries.",
+      "Release Cycle": "Lighten obligations tied to outdated expectations and focus on restorative rituals.",
+      "Renewal Focus": "Strengthen daily discipline with sunrise journaling and breath-centered practices.",
+    },
+    hotspots: [
+      {
+        title: "Relationship karma",
+        description: "Clarify expectations before offering commitments.",
+        action: "Hold a weekly check-in ritual.",
+      },
+      {
+        title: "Work-life balance",
+        description: "Rebalance energy outflow with grounded nourishment.",
+        action: "Protect two evenings for rest.",
+      },
+    ],
+    gifts: [
+      {
+        title: "Ancestral support",
+        description: "Elders offer guidance when approached with humility.",
+        action: "Offer gratitude on Fridays.",
+      },
+    ],
+    active_themes: ["Service-driven leadership", "Boundary setting", "Grounded wellness"],
+    assignments: [
+      "Begin a sunrise grounding ritual for 14 days.",
+      "Declutter one space each week to lighten karmic load.",
+      "Schedule a devotion practice with water offerings.",
+    ],
+    rashi_chart: FALLBACK_HOROSCOPE.rashi_chart,
+    bhava_chart: FALLBACK_HOROSCOPE.bhava_chart,
+    dashas: FALLBACK_HOROSCOPE.dashas,
+    karmic_epoch: FALLBACK_HOROSCOPE.karmic_epoch,
+  },
+  "/experience-flow": {
+    seeker: {
+      name: "Fallback seeker",
+      birth_date: "1995-08-18",
+      birth_time: "06:30",
+      birth_place: "Jaipur, Bharat",
+      tradition: "universal",
+    },
+    horoscope: FALLBACK_HOROSCOPE,
+    past_life: FALLBACK_PAST_LIFE,
+    future: FALLBACK_FUTURE,
+    timeline: FALLBACK_TIMELINE,
+    matchmaking: null,
+    analyzers: [
+      { title: "Corpus validation", summary: "Bhrigu rules align with core chart placements." },
+      { title: "Remedy readiness", summary: "Remedial steps are aligned with the lunar cycle." },
+    ],
+    interpretations: [
+      { title: "Chart essence", summary: FALLBACK_HOROSCOPE.interpretation },
+      { title: "Guidance arc", summary: FALLBACK_HOROSCOPE.karmic_epoch },
+    ],
+    briefings: [
+      { title: "Experience tone", summary: "Calm, steady, and supportive." },
+      { title: "Next steps", summary: "Invite the seeker to reflect on one theme at a time." },
+    ],
+    ai_support: { configured: false, provider: "offline", api_base: "" },
+    visuals: {
+      flowchart_steps: [
+        "Capture birth details → validate folios",
+        "Generate horoscope, past-life, and future narratives",
+        "Render charts and timelines for the seeker",
+        "Deliver remedies with compassionate context",
+      ],
+      timelines: [
+        { label: "Ascendant grounding", window: "Phase 1 • Weeks 1-6", intensity: 42, sutra_reference: "Demo folio" },
+        { label: "Learning pilgrimages", window: "Phase 3 • Months 4-7", intensity: 36, sutra_reference: "Demo folio" },
+      ],
+      compatibility: null,
+      charts: {
+        rashi_chart: FALLBACK_HOROSCOPE.rashi_chart,
+        bhava_chart: FALLBACK_HOROSCOPE.bhava_chart,
+      },
+    },
+    language_layer: { tone: "gentle", accent: "bhrigu", primary_language: "en" },
+  },
   "/core-wisdom": {
     sections: {
       "1": "Restatement of User Query & Birth Data: Fallback seeker. Birth: 1995-08-18 at 06:30 in Jaipur, Bharat. Focus areas: general life balance.",
@@ -132,33 +323,8 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
     karmic_epoch: FALLBACK_HOROSCOPE.karmic_epoch,
     remedies: FALLBACK_HOROSCOPE.remedies,
   },
-  "/past-life": {
-    name: "Fallback seeker",
-    interpretation: "Earlier lifetimes show healing work along sacred rivers with vows that continue into this birth.",
-    interpretation_hi: "पूर्व जन्मों में पवित्र नदियों के किनारे चिकित्सा सेवा की प्रतिज्ञा दिखती है जो इस जन्म में भी जारी है।",
-    insights: [
-      {
-        engine_id: "PL-DEMO",
-        sutra_reference: "Sharada bundle demo",
-        narrative: "The seeker served as a healer along the Narmada and returns to continue medical seva.",
-        confidence: 0.82,
-      },
-    ],
-  },
-  "/future": {
-    name: "Fallback seeker",
-    interpretation: "The folios point toward disciplined study, community mentorship, and health rituals over the coming decades.",
-    interpretation_hi: "आने वाले दशकों में अनुशासित अध्ययन, समुदाय का मार्गदर्शन और स्वास्थ्य अनुष्ठान प्राथमिक हैं।",
-    trajectories: [
-      {
-        engine_id: "FU-DEMO",
-        sutra_reference: "Pune folio demo",
-        focus: "Multi-decade leadership on smart-city logistics with ancestral blessings.",
-        window: "Years 28-52",
-        certainty: 0.8,
-      },
-    ],
-  },
+  "/past-life": FALLBACK_PAST_LIFE,
+  "/future": FALLBACK_FUTURE,
   "/future-progress": {
     karmic_resolution: 62,
     milestones: [
@@ -185,86 +351,7 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
       },
     ],
   },
-  "/timeline": {
-    updated_at: "2024-06-01",
-    phases: [
-      {
-        id: "phase-1",
-        title: "Ascendant grounding",
-        window: "Phase 1 • Weeks 1-6",
-        house: 1,
-        detail: "Anchor identity, routines, and body vitality as the ascendant stabilizes.",
-        progress: 42,
-        planet: "Sun",
-        icon: "☉",
-        milestones: [
-          { label: "Morning ritual cadence", completion: 55, note: "Set sunrise start times and breathwork." },
-          { label: "Body vitality audit", completion: 38, note: "Track sleep, hydration, and stamina markers." },
-        ],
-        reminders_url: "/calendar",
-      },
-      {
-        id: "phase-2",
-        title: "Resource harmonics",
-        window: "Phase 2 • Months 2-4",
-        house: 2,
-        detail: "Balance wealth flow, family responsibilities, and speech alignment.",
-        progress: 58,
-        planet: "Venus",
-        icon: "♀",
-        milestones: [
-          { label: "Savings buffer", completion: 62, note: "Allocate steady reserves for 90 days." },
-          { label: "Family cadence check-in", completion: 46, note: "Schedule key family conversations." },
-        ],
-        reminders_url: "/calendar",
-      },
-      {
-        id: "phase-3",
-        title: "Learning pilgrimages",
-        window: "Phase 3 • Months 4-7",
-        house: 5,
-        detail: "Reignite study, creativity, and mentoring aligned to the 5th house.",
-        progress: 36,
-        planet: "Jupiter",
-        icon: "♃",
-        milestones: [
-          { label: "Course enrollment", completion: 40, note: "Commit to a focused learning track." },
-          { label: "Mentor outreach", completion: 32, note: "Identify a teacher and book sessions." },
-        ],
-        reminders_url: "/calendar",
-      },
-      {
-        id: "phase-4",
-        title: "Partnership vows",
-        window: "Phase 4 • Months 7-10",
-        house: 7,
-        detail: "Clarify collaboration agreements and strengthen harmony in alliances.",
-        progress: 24,
-        planet: "Moon",
-        icon: "☾",
-        milestones: [
-          { label: "Collaborator sync", completion: 22, note: "Define meeting rhythm and shared KPIs." },
-          { label: "Shared ritual calendar", completion: 28, note: "Plan shared check-ins for key dates." },
-        ],
-        reminders_url: "/calendar",
-      },
-      {
-        id: "phase-5",
-        title: "Dharma expansion",
-        window: "Phase 5 • Months 10-12",
-        house: 9,
-        detail: "Prepare for travel, publishing, and philosophical commitments.",
-        progress: 12,
-        planet: "Mars",
-        icon: "♂",
-        milestones: [
-          { label: "Travel blueprint", completion: 10, note: "Outline retreats or pilgrimages." },
-          { label: "Teaching outline", completion: 18, note: "Draft a syllabus or public offering." },
-        ],
-        reminders_url: "/calendar",
-      },
-    ],
-  },
+  "/timeline": FALLBACK_TIMELINE,
   "/transits": {
     name: "Fallback seeker",
     interpretation: "Current transits emphasize steady pacing, boundary setting, and focus on restorative rituals.",
@@ -414,7 +501,13 @@ const FALLBACK_RESPONSES: Record<string, unknown> = {
   },
 };
 
-export type FallbackPath = "/horoscope" | "/past-life" | "/future" | "/matchmaking" | "/calendar";
+export type FallbackPath =
+  | "/horoscope"
+  | "/past-life"
+  | "/future"
+  | "/matchmaking"
+  | "/calendar"
+  | "/karmic-dashboard";
 
 export function getFallbackSample(path: FallbackPath) {
   const sample = FALLBACK_RESPONSES[path];
@@ -429,6 +522,7 @@ export function getPredictionFallback(engine: ResultEngine) {
     future: "/future",
     matchmaking: "/matchmaking",
     calendar: "/calendar",
+    "karmic-dashboard": "/karmic-dashboard",
   };
 
   const path = pathMap[engine];
@@ -641,6 +735,33 @@ async function postJson<TResponse, TBody>({ path, body }: FetchOptions<TBody>) {
 export async function requestPrediction(engine: PredictionEngine, details: BirthDetails) {
   const path = `/${engine}`;
   return postJson({ path, body: mapBirthDetails(details) });
+}
+
+export async function requestExperienceFlow(
+  details: BirthDetails,
+  options?: {
+    language?: string;
+    tone?: string;
+    culturalSensitivity?: string;
+    modernPreferences?: string[];
+    partner?: BirthDetails;
+  },
+) {
+  const payload: Record<string, unknown> = {
+    ...mapBirthDetails(details),
+    ...(options?.language ? { language: options.language } : {}),
+    ...(options?.tone ? { tone: options.tone } : {}),
+    ...(options?.culturalSensitivity ? { cultural_sensitivity: options.culturalSensitivity } : {}),
+  };
+
+  if (options?.modernPreferences?.length) {
+    payload.modern_preferences = options.modernPreferences;
+  }
+  if (options?.partner) {
+    payload.partner = mapBirthDetails(options.partner);
+  }
+
+  return postJson({ path: "/experience-flow", body: payload });
 }
 
 export async function requestCoreWisdom(details: BirthDetails, focusAreas?: string[]) {
