@@ -8,6 +8,7 @@ from aiohttp.test_utils import TestClient, TestServer
 
 from bhriguwelt.async_api import create_app
 from bhriguwelt.api import RateLimiter, ResponseCache
+from bhriguwelt.bhrigu_data import as_dict as bhrigu_dict
 
 
 async def _run_rate_limiter_flow():
@@ -64,3 +65,16 @@ async def _hit_future_progress_endpoint():
 
 def test_future_progress_endpoint_async():
     asyncio.run(_hit_future_progress_endpoint())
+
+
+async def _hit_manuscript_endpoint():
+    async with TestServer(create_app()) as server:
+        async with TestClient(server) as client:
+            resp = await client.get("/manuscript")
+            assert resp.status == HTTPStatus.OK
+            payload = await resp.json()
+            assert payload["principles"] == bhrigu_dict()["principles"]
+
+
+def test_manuscript_endpoint_matches_bhrigu_data():
+    asyncio.run(_hit_manuscript_endpoint())
