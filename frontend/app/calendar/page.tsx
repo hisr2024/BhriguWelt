@@ -1,4 +1,5 @@
-import Link from "next/link";
+import CalendarForm from "@/components/CalendarForm";
+import JourneyRail from "@/components/JourneyRail";
 
 export default function CalendarPage() {
   return (
@@ -6,11 +7,17 @@ export default function CalendarPage() {
       <div className="section-heading">
         <p className="eyebrow">Calendar</p>
         <h1>Calendar</h1>
-        <p className="muted">Simple date support.</p>
+        <p className="muted">Convert Gregorian records into Śaka timing with instant guidance.</p>
       </div>
-      <Link href="/dashboard" className="button-link soft">
-        Back to dashboard
-      </Link>
+      <div className="card highlight">
+        <p className="eyebrow">Featured tool</p>
+        <h2>Śaka Calendar Converter</h2>
+        <p className="muted">Align birth records with lunar timing and ritual dates.</p>
+      </div>
+      <div className="panel__content">
+        <JourneyRail />
+        <CalendarForm />
+      </div>
     </section>
   );
 }

@@ -86,6 +86,6 @@ export interface MatchmakingDetails {
   modernPreferences: string;
 }
 
-export type PredictionEngine = "horoscope" | "past-life" | "future";
+export type PredictionEngine = "horoscope" | "past-life" | "future" | "karmic-dashboard";
 
 export type ResultEngine = PredictionEngine | "matchmaking" | "calendar";
