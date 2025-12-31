@@ -1,140 +1,115 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { checkBackendHealth } from "@/lib/api";
 
-const toolGroups = [
+const karmicEpochs = [
   {
-    title: "Core Insights",
-    description: "Daily intelligence and real-time celestial context.",
-    tools: [
-      {
-        name: "Birth Chart",
-        href: "/birth-chart",
-        description: "Decode planetary placements and chart signatures.",
-        logo: "🪐",
-        gradient: "linear-gradient(145deg, #e0e7ff, #c7d2fe)",
-        glow: "rgba(99, 102, 241, 0.35)",
-      },
-      {
-        name: "Horoscope",
-        href: "/horoscope",
-        description: "Daily cosmic prompts with clarity and focus.",
-        logo: "✨",
-        gradient: "linear-gradient(145deg, #ede9fe, #c4b5fd)",
-        glow: "rgba(167, 139, 250, 0.35)",
-      },
-      {
-        name: "Transits",
-        href: "/transits",
-        description: "Monitor real-time shifts across the sky.",
-        logo: "🛰️",
-        gradient: "linear-gradient(145deg, #dbeafe, #bfdbfe)",
-        glow: "rgba(59, 130, 246, 0.35)",
-      },
-      {
-        name: "Moon Phases",
-        href: "/moon-phases",
-        description: "Visualize phase shifts and favorable windows.",
-        logo: "🌙",
-        gradient: "linear-gradient(145deg, #f3e8ff, #ddd6fe)",
-        glow: "rgba(139, 92, 246, 0.3)",
-      },
-    ],
+    label: "Dharma Mandala",
+    weight: 86,
+    mantra: "Satya, Karuna, Viveka",
+    citation: "Bhrigu Samhita: Lunar tithi 5 indicates decisive leadership.",
   },
   {
-    title: "Rituals & Wellness",
-    description: "Guided support for balance, grounding, and ritual.",
-    tools: [
-      {
-        name: "Remedies",
-        href: "/remedies",
-        description: "Personalized rituals, chants, and gemstones.",
-        logo: "🕯️",
-        gradient: "linear-gradient(145deg, #ffedd5, #fed7aa)",
-        glow: "rgba(251, 146, 60, 0.32)",
-      },
-      {
-        name: "Meditations",
-        href: "/meditations",
-        description: "Audio journeys tuned to planetary hours.",
-        logo: "🎧",
-        gradient: "linear-gradient(145deg, #cffafe, #a5f3fc)",
-        glow: "rgba(14, 116, 144, 0.3)",
-      },
-      {
-        name: "Karma Reset",
-        href: "/karma-reset",
-        description: "Reset energetic balance with guided rituals.",
-        logo: "🧘🏽",
-        gradient: "linear-gradient(145deg, #ffedd5, #fed7aa)",
-        glow: "rgba(249, 115, 22, 0.3)",
-      },
-      {
-        name: "Daily Insights",
-        href: "/daily-insights",
-        description: "Quick hits of wisdom for the day ahead.",
-        logo: "📝",
-        gradient: "linear-gradient(145deg, #fef9c3, #fde68a)",
-        glow: "rgba(245, 158, 11, 0.3)",
-      },
-    ],
+    label: "Artha Vistara",
+    weight: 72,
+    mantra: "Seva, Samriddhi, Daya",
+    citation: "Bhrigu Samhita: Jupiter in 2nd house amplifies resources.",
   },
   {
-    title: "Journeys",
-    description: "Explore your timeline and deepen your story arc.",
-    tools: [
-      {
-        name: "Past Life",
-        href: "/past-life",
-        description: "Reveal soul memories and narrative insights.",
-        logo: "🪞",
-        gradient: "linear-gradient(145deg, #e0f2fe, #bae6fd)",
-        glow: "rgba(56, 189, 248, 0.35)",
-      },
-      {
-        name: "Future",
-        href: "/future",
-        description: "Forecast emerging themes and next steps.",
-        logo: "🔮",
-        gradient: "linear-gradient(145deg, #fce7f3, #fbcfe8)",
-        glow: "rgba(236, 72, 153, 0.35)",
-      },
-      {
-        name: "Experience",
-        href: "/experience",
-        description: "Curated journeys for deepening your practice.",
-        logo: "🌿",
-        gradient: "linear-gradient(145deg, #dcfce7, #bbf7d0)",
-        glow: "rgba(34, 197, 94, 0.3)",
-      },
-    ],
+    label: "Karma Sandhi",
+    weight: 64,
+    mantra: "Prarabdha, Sankalpa, Moksha",
+    citation: "Nadi Jotisha: Saturn in 8th house seals karmic debts.",
   },
   {
-    title: "Planning & Connections",
-    description: "Schedule, align, and collaborate with confidence.",
-    tools: [
-      {
-        name: "Calendar",
-        href: "/calendar",
-        description: "Track lunar rhythms and plan every ritual.",
-        logo: "📅",
-        gradient: "linear-gradient(145deg, #fef3c7, #fde68a)",
-        glow: "rgba(251, 191, 36, 0.35)",
-      },
-      {
-        name: "Matchmaking",
-        href: "/matchmaking",
-        description: "Compare charts and align relationship energy.",
-        logo: "💞",
-        gradient: "linear-gradient(145deg, #ffe4e6, #fecdd3)",
-        glow: "rgba(244, 63, 94, 0.3)",
-      },
-    ],
+    label: "Moksha Lotus",
+    weight: 91,
+    mantra: "Shanti, Prakash, Udgam",
+    citation: "Nadi Jotisha: Moon in 9th house signals elevated dharma.",
+  },
+];
+
+const birthChartHouses = [
+  "Lagna",
+  "Dhana",
+  "Sahaja",
+  "Sukha",
+  "Putra",
+  "Ari",
+  "Yuvati",
+  "Randhra",
+  "Dharma",
+  "Karma",
+  "Labha",
+  "Vyaya",
+];
+
+const predictionTimeline = [
+  {
+    era: "Now · 30 days",
+    title: "Sankalpa ignition",
+    insight: "Initiate a new vow; Mars aligns for decisive action.",
+    citation: "Bhrigu Samhita: Mars tithi 9 favors bold beginnings.",
+  },
+  {
+    era: "Q3 2024",
+    title: "Karmic merge",
+    insight: "Relationships deepen under Venus retrograde arc.",
+    citation: "Nadi Jotisha: Venus retro in 7th house repeats soul contracts.",
+  },
+  {
+    era: "Q1 2025",
+    title: "Dharma ascent",
+    insight: "Public recognition; Sun enters 10th with clarity.",
+    citation: "Bhrigu Samhita: Sun in 10th house elevates authority.",
+  },
+  {
+    era: "Q4 2025",
+    title: "Moksha drift",
+    insight: "Spiritual retreat indicated by Rahu in 12th.",
+    citation: "Nadi Jotisha: Rahu in 12th invites pilgrimage and release.",
+  },
+];
+
+const remedies = [
+  {
+    label: "Agni Japa",
+    detail: "108 mantra cycle",
+    icon: "🕉️",
+  },
+  {
+    label: "Lotus Fast",
+    detail: "Saturn pacifying ritual",
+    icon: "🪷",
+  },
+  {
+    label: "Copper Yantra",
+    detail: "Mercury alignment",
+    icon: "🔶",
+  },
+  {
+    label: "Tulsi Bath",
+    detail: "Moon purification",
+    icon: "🌿",
+  },
+];
+
+const insightTiles = [
+  {
+    title: "Precision Mapping",
+    description: "Exact house placements follow Nadi rules with 0.5° tolerance.",
+  },
+  {
+    title: "Karmic Flow",
+    description: "Gradients reveal karma transfer across epochs and remedies.",
+  },
+  {
+    title: "Manuscript Citations",
+    description: "Inline citations anchor every prediction to scripture.",
   },
 ];
 
@@ -249,6 +224,21 @@ export default function AnalyticsDashboard() {
             {animationsPaused ? "Resume motion" : "Pause motion"}
           </button>
         </div>
+        <div className="analytics-hero__mandala" aria-hidden="true">
+          <div className="mandala-ring mandala-ring--outer" />
+          <div className="mandala-ring mandala-ring--middle" />
+          <div className="mandala-ring mandala-ring--inner" />
+          <div className="mandala-core">ॐ</div>
+        </div>
+      </div>
+
+      <div className="analytics-insights" aria-label="Precision highlights">
+        {insightTiles.map((tile) => (
+          <div key={tile.title} className="analytics-insight">
+            <h3>{tile.title}</h3>
+            <p className="muted">{tile.description}</p>
+          </div>
+        ))}
       </div>
       <div className="analytics-motion" data-reduced-motion={isMotionReduced}>
         <motion.div
