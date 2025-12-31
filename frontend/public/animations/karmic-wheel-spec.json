@@ -1,0 +1,31 @@
+{
+  "name": "karmic-wheel-spin",
+  "description": "Nadi-style birth chart rotation synced to tithi offsets and slow Saturn transits.",
+  "timing": {
+    "tithiSeconds": 28,
+    "saturnCycleSeconds": 46,
+    "revealEase": [0.22, 1, 0.36, 1]
+  },
+  "layers": [
+    {
+      "id": "outer-ring",
+      "type": "rotate",
+      "degrees": 360,
+      "duration": 28,
+      "repeat": "infinite",
+      "easing": "linear"
+    },
+    {
+      "id": "inner-ring",
+      "type": "rotate",
+      "degrees": -360,
+      "duration": 46,
+      "repeat": "infinite",
+      "easing": "linear"
+    }
+  ],
+  "accessibility": {
+    "pauseToggle": true,
+    "prefersReducedMotion": "static"
+  }
+}

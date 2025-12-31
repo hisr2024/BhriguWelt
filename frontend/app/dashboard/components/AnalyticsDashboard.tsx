@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 
 import { checkBackendHealth } from "@/lib/api";
 
@@ -115,8 +116,63 @@ const insightTiles = [
 export default function AnalyticsDashboard() {
   const [healthLabel, setHealthLabel] = useState("Operational");
   const [healthTone, setHealthTone] = useState<"live" | "demo" | "offline">("demo");
-  const [isHindi, setIsHindi] = useState(false);
-  const [isHighContrast, setIsHighContrast] = useState(false);
+  const [animationsPaused, setAnimationsPaused] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
+  const isMotionReduced = prefersReducedMotion || animationsPaused;
+
+  const karmicSegments = [
+    { label: "Tithi 02", value: "Dwitiya", hue: "#c084fc" },
+    { label: "Saturn Cycle", value: "28 yr slow turn", hue: "#38bdf8" },
+    { label: "Nadi Gate", value: "Sushumna", hue: "#fbbf24" },
+  ];
+
+  const timelineArcs = [
+    {
+      label: "Samhita arc",
+      range: "2025 · 2027",
+      hue: "#f472b6",
+      path: "M12 160 C 90 30, 170 30, 248 160",
+    },
+    {
+      label: "Ancestral echo",
+      range: "2027 · 2029",
+      hue: "#60a5fa",
+      path: "M12 180 C 90 50, 170 50, 248 180",
+    },
+    {
+      label: "Nadi ascent",
+      range: "2029 · 2032",
+      hue: "#34d399",
+      path: "M12 200 C 90 70, 170 70, 248 200",
+    },
+  ];
+
+  const remedyIcons = [
+    { label: "Lotus bloom", hint: "Water element remedy", emoji: "🪷" },
+    { label: "Conch resonance", hint: "Air + ether uplift", emoji: "🐚" },
+    { label: "Sacred flame", hint: "Fire purification", emoji: "🔥" },
+  ];
+
+  const manuscriptInsights = [
+    {
+      id: "moon-watery",
+      title: "Moon in watery rashi",
+      copy: "5s reveal aligned to lunar tide forecasts.",
+      timing: 5,
+    },
+    {
+      id: "saturn-gate",
+      title: "Saturn transit gate",
+      copy: "Slow rotation mirrors karmic patience cycles.",
+      timing: 3.6,
+    },
+    {
+      id: "nadi-lock",
+      title: "Nadi alignment lock",
+      copy: "Precision pulse when chart angle hits 27°.",
+      timing: 3,
+    },
+  ];
 
   useEffect(() => {
     let mounted = true;
@@ -150,48 +206,23 @@ export default function AnalyticsDashboard() {
   }, []);
 
   return (
-    <section
-      className={`panel analytics-dashboard ${isHighContrast ? "analytics-dashboard--contrast" : ""}`}
-      aria-label="Bhrigu analytics flagship dashboard"
-      lang={isHindi ? "hi" : "en"}
-    >
-      <div className="analytics-hero">
-        <div className="analytics-hero__copy">
-          <p className="eyebrow">Flagship Analytics</p>
-          <h1>{isHindi ? "कर्मिक विश्लेषण मंडल" : "Karmic Analytics Mandala"}</h1>
-          <p className="muted">
-            {isHindi
-              ? "भृगु संहिता की विरासत और नाड़ी ज्योतिष की सटीकता के साथ भविष्यवाणियों का अनावरण करें।"
-              : "Reveal predictions with Bhrigu Samhita lineage and Nadi Jotisha precision."}
-          </p>
-          <div className="analytics-hero__actions">
-            <div className="subtle-pill-row" aria-live="polite">
-              <span className={`pill tool-card__status tool-card__status--${healthTone}`}>
-                {healthLabel}
-              </span>
-              <span className="pill">A/B ready · Animated mandala</span>
-            </div>
-            <div className="analytics-toggle-row" role="group" aria-label="Display toggles">
-              <button
-                type="button"
-                className="analytics-toggle"
-                aria-pressed={isHindi}
-                aria-label="Toggle Hindi language mode"
-                onClick={() => setIsHindi((value) => !value)}
-              >
-                {isHindi ? "हिन्दी" : "English"}
-              </button>
-              <button
-                type="button"
-                className="analytics-toggle"
-                aria-pressed={isHighContrast}
-                aria-label="Toggle high contrast mode"
-                onClick={() => setIsHighContrast((value) => !value)}
-              >
-                {isHighContrast ? "Standard contrast" : "High contrast"}
-              </button>
-            </div>
-          </div>
+    <section className="panel">
+      <div className="section-heading">
+        <p className="eyebrow">Dashboard</p>
+        <h1>All 13 tools</h1>
+        <p className="muted">Professional access to every experience in one place.</p>
+        <div className="subtle-pill-row" aria-live="polite">
+          <span className={`pill tool-card__status tool-card__status--${healthTone}`}>
+            {healthLabel}
+          </span>
+          <button
+            type="button"
+            className="pill motion-toggle"
+            aria-pressed={animationsPaused}
+            onClick={() => setAnimationsPaused((prev) => !prev)}
+          >
+            {animationsPaused ? "Resume motion" : "Pause motion"}
+          </button>
         </div>
         <div className="analytics-hero__mandala" aria-hidden="true">
           <div className="mandala-ring mandala-ring--outer" />
@@ -209,154 +240,218 @@ export default function AnalyticsDashboard() {
           </div>
         ))}
       </div>
-
-      <div className="analytics-grid">
-        <article className="analytics-card" aria-label="Karmic epoch chart">
-          <header className="analytics-card__header">
-            <div>
-              <p className="eyebrow">Karmic Epoch</p>
-              <h2>{isHindi ? "कर्मिक भार" : "Karmic Weighting"}</h2>
-            </div>
-            <span className="pill">Mandala bars</span>
-          </header>
-          <div className="analytics-bars" role="list">
-            {karmicEpochs.map((epoch) => (
-              <div key={epoch.label} className="analytics-bar" role="listitem">
-                <div className="analytics-bar__meta">
-                  <div>
-                    <h3>{epoch.label}</h3>
-                    <p className="muted">{epoch.mantra}</p>
-                  </div>
-                  <span className="analytics-bar__value" aria-hidden="true">
-                    {epoch.weight}%
-                  </span>
-                </div>
-                <div
-                  className="analytics-bar__track"
-                  role="img"
-                  aria-label={`${epoch.label} karmic weight ${epoch.weight}%`}
-                >
-                  <span className="analytics-bar__fill" style={{ width: `${epoch.weight}%` }} />
-                </div>
-                <span className="analytics-tooltip" role="note">
-                  {epoch.citation}
-                </span>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="analytics-card analytics-card--wheel" aria-label="Nadi birth chart">
-          <header className="analytics-card__header">
-            <div>
-              <p className="eyebrow">Birth Chart</p>
-              <h2>{isHindi ? "नाड़ी ग्रह चक्र" : "Nadi Planetary Wheel"}</h2>
-            </div>
-            <span className="pill">Exact house placements</span>
-          </header>
-          <div className="birth-wheel" role="img" aria-label="Nadi style wheel with 12 houses">
-            {birthChartHouses.map((house, index) => (
-              <span
-                key={house}
-                className="birth-wheel__house"
-                style={{ "--house-index": index } as CSSProperties}
-              >
-                {house}
-              </span>
-            ))}
-            <div className="birth-wheel__center">
-              <p className="sanskrit-cite">नाड़ी 0.5°</p>
-              <span className="muted">Precision locked</span>
+      <div className="analytics-motion" data-reduced-motion={isMotionReduced}>
+        <motion.div
+          className="analytics-card karmic-wheel-card"
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: isMotionReduced ? 0 : 0.7, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="karmic-wheel">
+            <motion.div
+              className="karmic-wheel__ring"
+              animate={isMotionReduced ? { rotate: 0 } : { rotate: 360 }}
+              transition={{
+                duration: 28,
+                repeat: isMotionReduced ? 0 : Infinity,
+                ease: "linear",
+              }}
+            />
+            <motion.div
+              className="karmic-wheel__inner"
+              animate={isMotionReduced ? { rotate: 0 } : { rotate: -360 }}
+              transition={{
+                duration: 46,
+                repeat: isMotionReduced ? 0 : Infinity,
+                ease: "linear",
+              }}
+            />
+            <div className="karmic-wheel__center">
+              <p className="eyebrow">Karmic wheel</p>
+              <h3>Nadi birth chart rotation</h3>
+              <p className="muted">Synced to current tithi cycle.</p>
             </div>
           </div>
-          <p className="analytics-caption">
-            {isHindi
-              ? "प्रत्येक भाव नाड़ी नियमों के अनुसार अंकित है।"
-              : "Each house is placed per Nadi rules with manuscript-aligned degrees."}
-          </p>
-        </article>
-
-        <article className="analytics-card analytics-card--timeline" aria-label="Predictions timeline">
-          <header className="analytics-card__header">
-            <div>
-              <p className="eyebrow">Predictions Timeline</p>
-              <h2>{isHindi ? "भविष्यवाणी पथ" : "Fate Trajectory"}</h2>
-            </div>
-            <span className="pill">Animated arcs</span>
-          </header>
-          <div className="timeline">
-            {predictionTimeline.map((item) => (
-              <div key={item.era} className="timeline-item">
-                <div className="timeline-item__header">
-                  <span className="timeline-item__era">{item.era}</span>
-                  <span className="timeline-item__arc" aria-hidden="true" />
-                </div>
-                <h3>{item.title}</h3>
-                <p className="muted">{item.insight}</p>
-                <span className="analytics-tooltip" role="note">
-                  {item.citation}
-                </span>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="analytics-card analytics-card--remedies" aria-label="Remedies and rituals">
-          <header className="analytics-card__header">
-            <div>
-              <p className="eyebrow">Remedies</p>
-              <h2>{isHindi ? "उपाय अनुष्ठान" : "Ritual Alignments"}</h2>
-            </div>
-            <span className="pill">Animated glyphs</span>
-          </header>
-          <div className="remedy-grid">
-            {remedies.map((remedy) => (
-              <div key={remedy.label} className="remedy-tile" role="group" aria-label={remedy.label}>
-                <span className="remedy-icon" aria-hidden="true">
-                  {remedy.icon}
-                </span>
+          <div className="karmic-wheel__meta">
+            {karmicSegments.map((segment) => (
+              <div key={segment.label} className="karmic-wheel__stat">
+                <span className="karmic-wheel__dot" style={{ background: segment.hue }} />
                 <div>
-                  <h3>{remedy.label}</h3>
-                  <p className="muted">{remedy.detail}</p>
+                  <p className="karmic-wheel__label">{segment.label}</p>
+                  <p className="karmic-wheel__value">{segment.value}</p>
                 </div>
               </div>
             ))}
           </div>
-          <div className="analytics-caption">
-            <span className="sanskrit-cite">“यथा कर्म तथा फलम्”</span>
-            <span className="muted">Remedy cards animate on hover for engagement tests.</span>
+        </motion.div>
+
+        <motion.div
+          className="analytics-card timeline-card"
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: isMotionReduced ? 0 : 0.7, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="timeline-card__header">
+            <div>
+              <p className="eyebrow">Timeline trajectories</p>
+              <h3>Future arcs from Samhita engines</h3>
+            </div>
+            <span className="pill">5s reveal</span>
           </div>
-        </article>
+          <svg className="timeline-card__chart" viewBox="0 0 260 220" role="img">
+            <title>Timeline trajectories expanding across future windows</title>
+            {timelineArcs.map((arc, index) => (
+              <motion.path
+                key={arc.label}
+                d={arc.path}
+                stroke={arc.hue}
+                strokeWidth="6"
+                strokeLinecap="round"
+                fill="none"
+                initial={{ pathLength: 0, opacity: 0 }}
+                whileInView={{ pathLength: 1, opacity: 1 }}
+                viewport={{ once: true, amount: 0.6 }}
+                transition={{
+                  duration: isMotionReduced ? 0 : 5,
+                  delay: isMotionReduced ? 0 : index * 0.4,
+                  ease: [0.12, 0.9, 0.24, 1],
+                }}
+              />
+            ))}
+          </svg>
+          <div className="timeline-card__legend">
+            {timelineArcs.map((arc) => (
+              <div key={arc.label} className="timeline-card__item">
+                <span className="timeline-card__dot" style={{ background: arc.hue }} />
+                <div>
+                  <p>{arc.label}</p>
+                  <span className="muted">{arc.range}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        <motion.div
+          className="analytics-card remedy-card"
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: isMotionReduced ? 0 : 0.7, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="remedy-card__header">
+            <p className="eyebrow">Remedy morphs</p>
+            <h3>Elemental icons in ritual bloom</h3>
+          </div>
+          <div className="remedy-card__icons">
+            {remedyIcons.map((remedy, index) => (
+              <motion.div
+                key={remedy.label}
+                className="remedy-card__icon"
+                animate={
+                  isMotionReduced
+                    ? { scale: 1, rotate: 0 }
+                    : {
+                        scale: [1, 1.08, 1],
+                        rotate: [0, index % 2 === 0 ? 6 : -6, 0],
+                        borderRadius: ["28%", "48%", "28%"],
+                      }
+                }
+                transition={{
+                  duration: 4.2,
+                  repeat: isMotionReduced ? 0 : Infinity,
+                  ease: [0.16, 1, 0.3, 1],
+                  delay: index * 0.3,
+                }}
+              >
+                <span aria-hidden="true">{remedy.emoji}</span>
+                <div>
+                  <p>{remedy.label}</p>
+                  <span className="muted">{remedy.hint}</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       </div>
 
-      <div className="analytics-validation" aria-label="UX validation tests">
-        <div className="validation-card">
-          <h3>{isHindi ? "उपयोगकर्ता प्रवाह परीक्षण" : "User flow simulation"}</h3>
-          <p className="muted">
-            {isHindi
-              ? "जन्म डेटा इनपुट से अंतर्दृष्टि तक स्पष्ट मार्ग दिखाता है।"
-              : "Seeker enters birth data and reaches insights with guided prompts."}
-          </p>
-          <span className="pill">Step-by-step clarity</span>
-        </div>
-        <div className="validation-card">
-          <h3>{isHindi ? "ए/बी डिजाइन तुलना" : "A/B design comparison"}</h3>
-          <p className="muted">
-            {isHindi
-              ? "स्टैटिक बनाम एनिमेटेड मंडल; लक्ष्य 90% एंगेजमेंट।"
-              : "Static vs animated mandala; target 90% preference for motion."}
-          </p>
-          <span className="pill">Engagement benchmark</span>
-        </div>
-        <div className="validation-card">
-          <h3>{isHindi ? "स्टाइल गाइड और आइकन" : "Style guide & iconography"}</h3>
-          <p className="muted">
-            {isHindi
-              ? "इंटर बॉडी टेक्स्ट और नोतो सेरिफ़ उद्धरण।"
-              : "Inter for body, Noto Serif for citations, SVG icon set ready."}
-          </p>
-          <span className="pill">Figma + Illustrator</span>
-        </div>
+      <div className="analytics-insights">
+        {manuscriptInsights.map((insight) => (
+          <motion.div
+            key={insight.id}
+            className="manuscript-card"
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{
+              duration: isMotionReduced ? 0 : insight.timing,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            whileHover={isMotionReduced ? undefined : { y: -4 }}
+          >
+            <div className="manuscript-card__header">
+              <p className="eyebrow">Manuscript insight</p>
+              <span className="pill">Hover to reveal</span>
+            </div>
+            <h3>{insight.title}</h3>
+            <motion.div
+              className="manuscript-card__popup"
+              initial={{ opacity: 0, y: 10 }}
+              whileHover={{ opacity: 1, y: 0 }}
+              transition={{ duration: isMotionReduced ? 0 : 0.4 }}
+            >
+              <p>{insight.copy}</p>
+            </motion.div>
+          </motion.div>
+        ))}
+      </div>
+      <div className="panel__content">
+        {toolGroups.map((group) => (
+          <motion.div
+            key={group.title}
+            className="tool-group"
+            initial={{ opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: isMotionReduced ? 0 : 0.6, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="tool-group__header">
+              <h2>{group.title}</h2>
+              <p className="muted">{group.description}</p>
+            </div>
+            <div className="tool-group__grid">
+              {group.tools.map((tool) => (
+                <motion.div
+                  key={tool.href}
+                  whileHover={isMotionReduced ? undefined : { y: -6 }}
+                  transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <Link
+                    href={tool.href}
+                    className="card tool-card tool-card--compact tool-card--minimal"
+                    style={
+                      {
+                        "--tool-gradient": tool.gradient,
+                        "--tool-glow": tool.glow,
+                      } as CSSProperties
+                    }
+                  >
+                    <div className="tool-card__minimal">
+                      <div className="tool-logo" aria-hidden="true">
+                        <span className="tool-logo__halo" />
+                        <span className="tool-logo__icon">{tool.logo}</span>
+                        <span className="tool-logo__spark" />
+                      </div>
+                      <h3 className="tool-card__label">{tool.name}</h3>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        ))}
       </div>
     </section>
   );
