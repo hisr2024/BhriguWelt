@@ -1,0 +1,1086 @@
+{
+  "test_metadata": {
+    "profile_name": "Test Profile 3 - Senior Individual",
+    "test_timestamp": "2026-01-01T18:24:06.591293",
+    "core_generation_time_seconds": 2.093121
+  },
+  "request": {
+    "name": "Rajesh Patel",
+    "birth_date": "1960-11-08",
+    "birth_time": "06:15",
+    "birth_place": "Ahmedabad, India",
+    "timezone": "Asia/Kolkata",
+    "tradition": "universal"
+  },
+  "response": {
+    "name": "Rajesh Patel",
+    "karmic_epoch": "Bhrigu epoch: treasury karma resurfacing with Venusian polish.",
+    "weights": {
+      "past_life_clarity": 0.77,
+      "intuitive_dreams": 0.75,
+      "scholarly_pursuits": 0.69,
+      "career_command": 0.65,
+      "infrastructural_success": 0.6,
+      "karmic_debts": 0.47,
+      "wealth_activation": 0.64,
+      "ancestral_calling": 0.59,
+      "speech_refinement": 0.54,
+      "spiritual_detachment": 0.62,
+      "dream_recall": 0.58,
+      "matchmaking_insight": 0.6,
+      "conciliatory_skill": 0.58,
+      "resilience": 0.62,
+      "network_effects": 0.6,
+      "language_mastery": 0.56,
+      "venture_success": 0.58,
+      "retreat_facilitation": 0.58,
+      "moksha_drive": 0.6,
+      "public_speaking": 0.59,
+      "civic_tech": 0.6,
+      "courage": 0.57,
+      "data_stewardship": 0.58,
+      "open_knowledge": 0.59,
+      "collaboration": 0.58,
+      "heritage_archives": 0.63,
+      "leadership": 0.56,
+      "ancestral_pride": 0.55,
+      "global_collab": 0.59,
+      "marriage_endurance": 0.57,
+      "bridge_building": 0.58,
+      "translation_gift": 0.58,
+      "archive_care": 0.57,
+      "commentary_revival": 0.6,
+      "disaster_response": 0.55,
+      "ethical_wealth": 0.58,
+      "bilingual_fluency": 0.59,
+      "pilgrimage_service": 0.54,
+      "panchang_audit": 0.63,
+      "publication_success": 0.59,
+      "community_trust": 0.58,
+      "education_call": 0.54
+    },
+    "principles": [
+      {
+        "id": "BR-1",
+        "tradition": "universal",
+        "sutra_reference": "Bikaner folio 12b",
+        "description": "When the native's Moon occupies a watery rashi and receives Jupiter's auspicious glance, the Bhrigu Samhita proclaims a life steeped in intuitive wisdom and prior-life scholarship. Such individuals recall fragments of their most recent birth while meditating near rivers.",
+        "panchang_context": {
+          "tithi": "Purnima",
+          "nakshatra": "Revati",
+          "weekday": "Monday",
+          "lunar_month": "Phalguna",
+          "ayanamsha_reference": "Lahiri"
+        },
+        "weights": {
+          "past_life_clarity": 0.82,
+          "intuitive_dreams": 0.76,
+          "scholarly_pursuits": 0.63
+        },
+        "integrity": {
+          "sources": [
+            "Bikaner folio 12b",
+            "Sharada marginalia 3"
+          ],
+          "reviewed_at": "2025-02-01",
+          "checksum": "65040d845f7ca27630cc453ee2302ca560cd5df714669b574a6bac7124b41bff"
+        }
+      },
+      {
+        "id": "BR-7",
+        "tradition": "northern",
+        "sutra_reference": "Kashi palm 44a",
+        "description": "Bhrigu states that a native born on the fifth lunar tithi with Mars in the tenth bhava carries a karmic mandate for decisive leadership. Their future predictions emphasize infrastructure, fort-building, and digital architecture in the current age.",
+        "panchang_context": {
+          "tithi": "Panchami",
+          "nakshatra": "Magha",
+          "weekday": "Tuesday",
+          "ayanamsha_reference": "Lahiri"
+        },
+        "weights": {
+          "career_command": 0.91,
+          "infrastructural_success": 0.78,
+          "karmic_debts": 0.35
+        },
+        "integrity": {
+          "sources": [
+            "Kashi palm 44a",
+            "Northern commentary 5"
+          ],
+          "reviewed_at": "2025-02-01",
+          "checksum": "0901ffbfd90b9e4b47f734c58e65ca963d41024e365eebc4ab9cb8483d325a73"
+        }
+      },
+      {
+        "id": "BR-18",
+        "tradition": "western-grantha",
+        "sutra_reference": "Pune Modi folio 3c",
+        "description": "If Saturn and Venus conjoin in the second bhava while Rahu aspects the Ascendant, Bhrigu records significant ancestral wealth that awakens after the 32nd year. The past-life narrative speaks of a treasurer in the Gupta courts entrusted with gem inventories.",
+        "panchang_context": {
+          "tithi": "Dwadashi",
+          "nakshatra": "Uttara Ashadha",
+          "weekday": "Friday",
+          "ayanamsha_reference": "Raman"
+        },
+        "weights": {
+          "wealth_activation": 0.88,
+          "ancestral_calling": 0.74,
+          "speech_refinement": 0.57
+        },
+        "integrity": {
+          "sources": [
+            "Pune Modi folio 3c",
+            "Grantha copper corroboration"
+          ],
+          "reviewed_at": "2025-02-01",
+          "checksum": "b8d4b84928ec38712023c20c00991d5e18138b7e0b9f65f3643a57e296d58364"
+        }
+      },
+      {
+        "id": "BR-19",
+        "tradition": "southern-grantha",
+        "sutra_reference": "Grantha palm 19b",
+        "description": "Ketu residing in the twelfth bhava with a waxing Moon in a watery rashi indicates a contemplative mendicant in prior births. The manuscript notes clairvoyant dreams and strong detachment from material pursuits.",
+        "panchang_context": {
+          "tithi": "Shukla Dwitiya",
+          "nakshatra": "Rohini",
+          "weekday": "Monday",
+          "lunar_month": "Vaishakha"
+        },
+        "weights": {
+          "past_life_clarity": 0.69,
+          "spiritual_detachment": 0.81,
+          "dream_recall": 0.72
+        },
+        "integrity": {
+          "sources": [
+            "Grantha palm 19b"
+          ],
+          "reviewed_at": "2025-02-01",
+          "checksum": "0b015df72fda3fde4ed94f06ede0892a60bec244d4a1d92fe6ae63b2d3041b76"
+        }
+      },
+      {
+        "id": "BR-22",
+        "tradition": "northern",
+        "sutra_reference": "Bikaner folio 27a",
+        "description": "Mercury conjoined with Jupiter in the fifth bhava yields matchmaking acumen and scriptural fluency. The folio remarks on skilled interpreters who reconcile families through scholarship.",
+        "panchang_context": {
+          "tithi": "Shukla Panchami",
+          "nakshatra": "Hasta",
+          "weekday": "Thursday"
+        },
+        "weights": {
+          "matchmaking_insight": 0.77,
+          "scholarly_pursuits": 0.68,
+          "conciliatory_skill": 0.71
+        },
+        "integrity": {
+          "sources": [
+            "Bikaner folio 27a",
+            "Oral recital 12"
+          ],
+          "reviewed_at": "2025-02-01",
+          "checksum": "7b01348f0c0a57aa2f01c1761db3d69f003d034337fd9da9e767eae688cfaf4b"
+        }
+      },
+      {
+        "id": "BR-30",
+        "tradition": "universal",
+        "sutra_reference": "Bharuch copper 30c",
+        "description": "Retrograde Saturn aspecting Mars in a kendra signals rigorous patience and disciplined rebuilding after setbacks. Bhrigu aligns this with infrastructural resilience and long-term karma clearing.",
+        "panchang_context": {
+          "tithi": "Krishna Ashtami",
+          "nakshatra": "Moola",
+          "weekday": "Saturday"
+        },
+        "weights": {
+          "resilience": 0.83,
+          "infrastructural_success": 0.66,
+          "karmic_debts": 0.49
+        },
+        "integrity": {
+          "sources": [
+            "Bharuch copper 30c"
+          ],
+          "reviewed_at": "2025-02-01",
+          "checksum": "4c56db728bacc9e2fec73d18f4a86e17546d53d93e7781241b2c1ab87d6aae94"
+        }
+      },
+      {
+        "id": "BR-38",
+        "tradition": "western-grantha",
+        "sutra_reference": "Grantha copper 38c",
+        "description": "Venus in the eleventh with Rahu conjoining Mercury indicates digital patronage networks and multilingual product releases blessed by Bhrigu.",
+        "panchang_context": {
+          "tithi": "Shukla Ekadashi",
+          "nakshatra": "Swati",
+          "weekday": "Friday"
+        },
+        "weights": {
+          "network_effects": 0.77,
+          "language_mastery": 0.64,
+          "venture_success": 0.72
+        },
+        "integrity": {
+          "sources": [
+            "Grantha copper 38c",
+            "Pune Modi cross-verse"
+          ],
+          "reviewed_at": "2025-02-01",
+          "checksum": "fff385dab6be52cbbfc8a949dc0d387f5274de55fdecb9566f5f7895cefec365"
+        }
+      },
+      {
+        "id": "BR-41",
+        "tradition": "southern-grantha",
+        "sutra_reference": "Tanjore palm 41d",
+        "description": "Ketu in trine to Moon while Saturn retrogrades through a moksha bhava yields vivid dream visitations from rishis and strong retreat leadership.",
+        "panchang_context": {
+          "tithi": "Krishna Chaturdashi",
+          "nakshatra": "Bharani",
+          "weekday": "Monday"
+        },
+        "weights": {
+          "dream_recall": 0.83,
+          "retreat_facilitation": 0.71,
+          "moksha_drive": 0.78
+        },
+        "integrity": {
+          "sources": [
+            "Tanjore palm 41d"
+          ],
+          "reviewed_at": "2025-02-01",
+          "checksum": "0d5529b5d6ef904e5c6ff5d5e3b7b2f5da7890331a3bf9381c8e89e3764a1fac"
+        }
+      },
+      {
+        "id": "BR-46",
+        "tradition": "northern",
+        "sutra_reference": "Kashi folio 46b",
+        "description": "Mars in the third with exalted Sun grants bold communicators who champion civic technology; Bhrigu prescribes hackathon-style seva.",
+        "panchang_context": {
+          "tithi": "Shukla Navami",
+          "nakshatra": "Uttara Phalguni",
+          "weekday": "Sunday"
+        },
+        "weights": {
+          "public_speaking": 0.74,
+          "civic_tech": 0.79,
+          "courage": 0.68
+        },
+        "integrity": {
+          "sources": [
+            "Kashi folio 46b",
+            "Railway copy annotation"
+          ],
+          "reviewed_at": "2025-02-01",
+          "checksum": "9e0c0bf2a5234ec2848a0eaa6e99c4cf4cb569770717d44e1918034bed3f0bce"
+        }
+      },
+      {
+        "id": "BR-52",
+        "tradition": "universal",
+        "sutra_reference": "Bharuch copper 52a",
+        "description": "Moon in an airy sign receiving Ketu's aspect promises strong data literacy and karmic duty to steward open knowledge commons.",
+        "panchang_context": {
+          "tithi": "Shukla Saptami",
+          "nakshatra": "Dhanishta",
+          "weekday": "Wednesday"
+        },
+        "weights": {
+          "data_stewardship": 0.73,
+          "open_knowledge": 0.75,
+          "collaboration": 0.7
+        },
+        "integrity": {
+          "sources": [
+            "Bharuch copper 52a"
+          ],
+          "reviewed_at": "2025-02-01",
+          "checksum": "4e6c18e86137baa25043674e7acde79420042977de122576281a1cf918b0e87a"
+        }
+      },
+      {
+        "id": "BR-68",
+        "tradition": "southern-grantha",
+        "sutra_reference": "Grantha scroll 68f",
+        "description": "When Moon transits Magha with exalted Jupiter, Bhrigu assigns royal restoration duties and digital heritage archiving in this age.",
+        "panchang_context": {
+          "tithi": "Shukla Dwadasi",
+          "nakshatra": "Magha",
+          "weekday": "Thursday",
+          "ayanamsha_reference": "Lahiri"
+        },
+        "weights": {
+          "heritage_archives": 0.84,
+          "leadership": 0.66,
+          "ancestral_pride": 0.62
+        },
+        "integrity": {
+          "sources": [
+            "Grantha scroll 68f",
+            "Royal archive rubric"
+          ],
+          "reviewed_at": "2025-02-01",
+          "checksum": "cc9f04eb0378d1542b8c51c7f3e1cd22a11729995541249578387125b440ddf3"
+        }
+      },
+      {
+        "id": "BR-72",
+        "tradition": "universal",
+        "sutra_reference": "Composite oral 72",
+        "description": "Rahu in the seventh receiving Jupiter's aspect produces cross-cultural alliances and long-term global collaborations when honored with sincerity.",
+        "panchang_context": {
+          "tithi": "Amavasya",
+          "nakshatra": "Shatabhisha",
+          "weekday": "Saturday"
+        },
+        "weights": {
+          "global_collab": 0.76,
+          "marriage_endurance": 0.69,
+          "bridge_building": 0.71
+        },
+        "integrity": {
+          "sources": [
+            "Composite oral 72"
+          ],
+          "reviewed_at": "2025-02-01",
+          "checksum": "a96a61841b3b2b791c25393c426141f9cdad22965f76c27610c1000188853b81"
+        }
+      },
+      {
+        "id": "BR-73",
+        "tradition": "northern",
+        "sutra_reference": "Bikaner folio 45d",
+        "description": "Ketu in the twelfth bhava with Mercury fortified in the fourth yields monastic translators who balance solitude with community archives. Bhrigu notes their ability to sustain daily meditation alongside rigorous record keeping.",
+        "panchang_context": {
+          "tithi": "Krishna Navami",
+          "nakshatra": "Mrigashira",
+          "weekday": "Tuesday"
+        },
+        "weights": {
+          "spiritual_detachment": 0.84,
+          "translation_gift": 0.72,
+          "archive_care": 0.67
+        },
+        "integrity": {
+          "sources": [
+            "Bikaner folio 45d"
+          ],
+          "reviewed_at": "2025-02-01",
+          "checksum": "59433077c0a590b4703d7ba5ac16e18f69e165e3e0395d0080f474fd10be12d4"
+        }
+      },
+      {
+        "id": "BR-74",
+        "tradition": "northern",
+        "sutra_reference": "Kashi palm 82b",
+        "description": "Mercury receiving Jupiter's aspect in dual signs produces interpreters who revive commentaries lost to floods. The folio links their service to rebuilding temple libraries after monsoon damage.",
+        "panchang_context": {
+          "tithi": "Shukla Dashami",
+          "nakshatra": "Punarvasu",
+          "weekday": "Wednesday"
+        },
+        "weights": {
+          "commentary_revival": 0.78,
+          "scholarly_pursuits": 0.73,
+          "disaster_response": 0.61
+        },
+        "integrity": {
+          "sources": [
+            "Kashi palm 82b",
+            "Flood relief annotation"
+          ],
+          "reviewed_at": "2025-02-01",
+          "checksum": "739c1251412054927be4b8fb610f527f40db4f03f8d4bbcc2dd8d0803d4039ca"
+        }
+      },
+      {
+        "id": "BR-75",
+        "tradition": "western-grantha",
+        "sutra_reference": "Pune Modi folio 25c",
+        "description": "A waxing Moon conjoined with Jupiter while Ketu guards the twelfth bhava inspires bilingual scribes who preserve merchant guild ledgers. The Modi annotation ties their karma to ethical accounting in border towns.",
+        "panchang_context": {
+          "tithi": "Shukla Tritiya",
+          "nakshatra": "Anuradha",
+          "weekday": "Monday",
+          "lunar_month": "Margashirsha"
+        },
+        "weights": {
+          "ethical_wealth": 0.71,
+          "bilingual_fluency": 0.76,
+          "pilgrimage_service": 0.58
+        },
+        "integrity": {
+          "sources": [
+            "Pune Modi folio 25c",
+            "Merchant ledger appendix"
+          ],
+          "reviewed_at": "2025-02-01",
+          "checksum": "ad1ad31e7f69910b5fe929c1e8cf1b84df982d2143307b52d377339914c4b827"
+        }
+      },
+      {
+        "id": "BR-88",
+        "tradition": [
+          "universal",
+          "northern"
+        ],
+        "sutra_reference": "Bharuch copper 88b",
+        "description": "A native born under Shravana with exalted Moon and Saturn in kendra earns stewardship over Panchang publication and calendrical dispute resolution. The manuscript urges algorithmic checks before releasing almanacs.",
+        "panchang_context": {
+          "tithi": "Shukla Dwadashi",
+          "nakshatra": "Shravana",
+          "weekday": "Friday",
+          "ayanamsha_reference": "Lahiri"
+        },
+        "weights": {
+          "panchang_audit": 0.85,
+          "publication_success": 0.74,
+          "community_trust": 0.7
+        },
+        "integrity": {
+          "sources": [
+            "Bharuch copper 88b",
+            "Kashi Panchang ledger"
+          ],
+          "reviewed_at": "2025-02-10",
+          "checksum": "aefbf7fa7977923e1243d00ad414c418b857f161bc027072feba61a48f199125"
+        }
+      },
+      {
+        "id": "BR-92",
+        "tradition": "western-grantha",
+        "sutra_reference": "Pune Modi folio 92a",
+        "description": "When Mars retrogrades through the eleventh while Moon holds Hasta, the text highlights engineers who blend solar microgrids with village astrology schools. Remedies invoke Panchang-aligned build schedules.",
+        "panchang_context": {
+          "tithi": "Krishna Panchami",
+          "nakshatra": "Hasta",
+          "weekday": "Sunday",
+          "season": "Sharad"
+        },
+        "weights": {
+          "infrastructural_success": 0.81,
+          "community_trust": 0.66,
+          "education_call": 0.59
+        },
+        "integrity": {
+          "sources": [
+            "Pune Modi folio 92a",
+            "Solar pilot margin note"
+          ],
+          "reviewed_at": "2025-02-10",
+          "checksum": "b46e96018bb3e59cdd1494f3b7b6fc04dbd864f9a80fa534cd93c72781beb0c4"
+        }
+      }
+    ],
+    "remedies": [
+      {
+        "id": "REM-31",
+        "tradition": "southern-grantha",
+        "sutra_reference": "Grantha scroll 68f",
+        "description": "When heritage projects arise, plant a neem sapling near ancestral land and chant the Aditya Hridayam to stabilize leadership karma.",
+        "personalize_for": [
+          "heritage_archives",
+          "leadership"
+        ],
+        "relevance": 0.81,
+        "matched_targets": [
+          "heritage_archives",
+          "leadership"
+        ]
+      },
+      {
+        "id": "REM-42",
+        "tradition": "universal",
+        "sutra_reference": "Bikaner folio 47a",
+        "description": "Immerse a copper Ketu yantra in flowing water on Amavasya while reciting the Aditya Hridayam to steady ancestral archives and activate infrastructural vows recorded by Bhrigu.",
+        "base_relevance": 0.6,
+        "conditions": {
+          "ketu_house": {
+            "equals": 12
+          },
+          "moon_element": {
+            "any_of": [
+              "water",
+              "ether"
+            ]
+          },
+          "mars_house": {
+            "equals": 10
+          }
+        },
+        "personalize_for": [
+          "wealth_activation",
+          "career_command",
+          "heritage_archives"
+        ],
+        "relevance": 0.53,
+        "matched_targets": [
+          "wealth_activation",
+          "career_command",
+          "heritage_archives"
+        ]
+      },
+      {
+        "id": "REM-3",
+        "tradition": "universal",
+        "sutra_reference": "Grantha leaf 9a",
+        "description": "Offer clarified butter lamps to Maharishi Bhrigu on Thursdays while reciting the Sanskrit seed-syllable \"Bhrim\" to neutralize karmic debt tied to paternal lineages.",
+        "relevance": 0.5
+      },
+      {
+        "id": "REM-9",
+        "tradition": "northern",
+        "sutra_reference": "Bikaner folio 21c",
+        "description": "Meditate at dawn facing east with a copper yantra inscribed with the syllables \"Om Brighave Namah\" to restore continuity of memory between incarnations.",
+        "relevance": 0.5
+      },
+      {
+        "id": "REM-14",
+        "tradition": "southern-grantha",
+        "sutra_reference": "Grantha palm 22d",
+        "description": "Offer sandal paste to a Ketu yantra on Tuesdays while reciting the mantra \"Om Ketave Namah\" to cool restless dreams and guide moksha quests.",
+        "relevance": 0.5
+      },
+      {
+        "id": "REM-20",
+        "tradition": "universal",
+        "sutra_reference": "Kashi palm 63b",
+        "description": "Donate copper vessels to riverfront temples during Shukla Paksha to harmonize retrograde Saturn lessons with compassionate service.",
+        "relevance": 0.5
+      },
+      {
+        "id": "REM-28",
+        "tradition": "northern",
+        "sutra_reference": "Northern Bhrigu bundle 5a",
+        "description": "For researchers handling fragile manuscripts, Bhrigu prescribes sandal paste offerings to Saraswati on Wednesdays before cataloguing.",
+        "personalize_for": [
+          "research_partners",
+          "standards_authorship"
+        ],
+        "relevance": 0.5
+      }
+    ],
+    "past_life_insights": [
+      {
+        "engine_id": "PL-27",
+        "sutra_reference": "Bharuch copper folio 27d",
+        "narrative": "The native safeguarded Ayurvedic clinics along the Narmada river and now returns to continue that medical seva with photographic memory.",
+        "confidence": 0.59
+      },
+      {
+        "engine_id": "PL-72",
+        "sutra_reference": "Grantha palm 72d",
+        "narrative": "Past-life memories surface as choreographed rituals and archival instincts to protect dance notation, now digitized for modern students.",
+        "confidence": 0.49
+      },
+      {
+        "engine_id": "PL-75",
+        "sutra_reference": "Bharuch copper 75c",
+        "narrative": "Prior births involved recording maritime treaties; the native now gravitates to coastal research labs and blockchain customs registries.",
+        "confidence": 0.46
+      },
+      {
+        "engine_id": "PL-51",
+        "sutra_reference": "Grantha leaf 51b",
+        "narrative": "The Samhita describes a court musician entrusted with temple treasury who now incarnates to restore sacred soundscapes.",
+        "confidence": 0.35
+      },
+      {
+        "engine_id": "PL-79",
+        "sutra_reference": "Composite oral 79",
+        "narrative": "Prior incarnations rebuilt aqueducts after droughts; the native now stewards climate tech and community-owned water grids.",
+        "confidence": 0.27
+      },
+      {
+        "engine_id": "PL-76",
+        "sutra_reference": "Grantha scroll 76e",
+        "narrative": "The folio praises tantric accountants balancing mantra rites with cooperative finance; those instincts now fuel ethical fintech design.",
+        "confidence": 0.26
+      },
+      {
+        "engine_id": "PL-77",
+        "sutra_reference": "Grantha palm 77c",
+        "narrative": "Past duties involved courier networks for dynastic councils; in this age the native excels at secure communications and zero-knowledge archives.",
+        "confidence": 0.24
+      },
+      {
+        "engine_id": "PL-80",
+        "sutra_reference": "Grantha leaf 80b",
+        "narrative": "The folio honors a sky-watcher who standardized star charts for merchant alliances; today they revive that service via open-data observatories.",
+        "confidence": 0.24
+      },
+      {
+        "engine_id": "PL-78",
+        "sutra_reference": "Sharada bundle 78a",
+        "narrative": "The Samhita depicts a treaty-drafter fluent in multiple scripts; they return to harmonize cross-border collaborations and digital DAO charters.",
+        "confidence": 0.23
+      }
+    ],
+    "future_trajectories": [
+      {
+        "engine_id": "FU-40",
+        "sutra_reference": "Bikaner folio 33f",
+        "focus": "Expect grants for climate-resilient desalination labs and pilgrim healthcare drones funded by philanthropic guilds.",
+        "window": "Years 18-40",
+        "certainty": 0.73
+      },
+      {
+        "engine_id": "FU-63",
+        "sutra_reference": "Kashi palm 63f",
+        "focus": "Expect restoration roles for heritage districts and compliance labs once Saturn circles back, with funding tied to karmic restitution projects.",
+        "window": "Saturn return epochs",
+        "certainty": 0.52
+      },
+      {
+        "engine_id": "FU-55",
+        "sutra_reference": "Grantha palm 55c",
+        "focus": "Expect invitations to lead silence retreats, curate dream circles, and mentor seekers on detachment disciplines.",
+        "window": "Years 24-48",
+        "certainty": 0.25
+      }
+    ],
+    "interpretation": "Rajesh Patel of Ahmedabad, India, bearing lucid ancestral memory (0.77) Dominant Bhrigu currents: past life clarity (0.77), intuitive dreams (0.75). Past-life recall per Bharuch copper folio 27d: The native safeguarded Ayurvedic clinics along the Narmada river and now returns to continue that medical seva with photographic memory. (confidence 0.59). Future mandate from Bikaner folio 33f: Expect grants for climate-resilient desalination labs and pilgrim healthcare drones funded by philanthropic guilds. in Years 18-40 with certainty 0.73. Remedy anchors: REM-31, REM-42 from the folios. Remedies are textual transmissions; validate with a qualified practitioner before acting. the folios honor your lineage. Bhrigu epoch: treasury karma resurfacing with Venusian polish.\n\nCOMPREHENSIVE LIFE SCAN - Based on Bhrigu Samhita Astrological Analysis\n============================================================================\n\nMARRIAGE PROSPECTS: Long-lasting Committed Union - Post-marriage years 5-15. The cosmic indicators suggest Saturn's influence brings stability, commitment, and longevity to marriage. While the relationship may have initial challenges or require patience, it...\nSUCCESS TRAJECTORY: Jupiter Expansion Phase - Major Career Growth during Ages 28-52. Peak achievements expected in Jupiter's favorable placement indicates a golden period of expansion and recognition. This is your time for major career advancement, educational achi...\nRISKY PERIODS: Primary caution advised during Ages 29-36, 58-65 - Saturn Testing Period - Delays and Hard Lessons. Vigilance needed for Saturn's placement brings periods of testing, delays, and hard-earned lessons. These are not punishments but opportuniti...\nMAJOR TRANSITIONS: Life-defining shift at Age 36-55 (19-year period) - Saturn Mahadasha Entry - Responsibility and Maturity. This marks Entry into Saturn's major period marks a significant life transition toward greater responsibility, maturity, and struct...\n\nOVERALL LIFE PATTERN: Your birth chart reveals a life of significant events, both challenging and triumphant. The cosmic blueprint shows a journey of spiritual evolution through material experiences. Success periods are balanced with learning phases, creating a holistic path toward wisdom and fulfillment. Pay attention to the timing guidance and use remedies during difficult periods. Your life's main events are orchestrated by karmic patterns that ultimately lead to liberation and purpose fulfillment.\n\n═══ MARRIAGE AND RELATIONSHIPS ═══\n\nLong-lasting Committed Union (Post-marriage years 5-15)Certainty: 82% | Reference: Bhrigu Samhita Folio 156, Verse 18\nSaturn's influence brings stability, commitment, and longevity to marriage. While the relationship may have initial challenges or require patience, it will stand the test of time. This is a partnership built on duty, respect, and gradual deepening of bonds.\nAstrological Indicators: Saturn in house 10, Long-term stability pattern\n--------------------------------------------------------------------------------\nEmotionally Deep Partnership (Throughout marriage)Certainty: 78% | Reference: Bhrigu Samhita Folio 73, Verse 12\nWater moon element indicates a deeply emotional and intuitive connection with your spouse. Marriage will be characterized by strong emotional bonds, empathy, and nurturing. You seek a partner who understands your emotional depths and provides a safe harbor.\nAstrological Indicators: Water moon element, Emotional nature emphasis\n--------------------------------------------------------------------------------\nMarriage Through Personal Growth (Ages 26-32)Certainty: 72% | Reference: Bhrigu Samhita Folio 148, Verse 15\nVenus placement suggests marriage after personal achievements. The union will occur when you have established yourself professionally or spiritually. Partner may be met through work or social circles.\nAstrological Indicators: Venus in house 11, Self-development emphasis\n--------------------------------------------------------------------------------\n\n═══ SUCCESS AND ACHIEVEMENTS ═══\n\nJupiter Expansion Phase - Major Career Growth (Ages 28-52)Certainty: 88% | Reference: Bhrigu Samhita Folio 182, Verse 34\nJupiter's favorable placement indicates a golden period of expansion and recognition. This is your time for major career advancement, educational achievements, or business growth. Expect opportunities from unexpected sources, mentorship from senior figures, and recognition of your talents. Financial growth accompanies professional success during this period. Take bold steps as the cosmic forces support your ambitions.\nAstrological Indicators: Jupiter in house 10, Benefic expansion aspect, Career house activation\n--------------------------------------------------------------------------------\nLeadership Ascension Period (Ages 30-45)Certainty: 83% | Reference: Bhrigu Samhita Folio 189, Verse 21\nThe Sun's powerful position indicates rise to positions of authority and leadership. You are destined to lead, whether in corporate hierarchies, entrepreneurial ventures, or community service. People naturally look to you for guidance and direction. This period brings recognition from authority figures and establishment of your reputation as a trusted leader in your field.\nAstrological Indicators: Sun in house 1, Leadership qualities emphasized, Authority house activation\n--------------------------------------------------------------------------------\nCompetitive Edge and Entrepreneurial Victory (Ages 25-38)Certainty: 76% | Reference: Bhrigu Samhita Folio 195, Verse 14\nMars placement empowers you to overcome competitors and succeed in challenging environments. This is an excellent period for entrepreneurship, competitive fields, sports, or any domain requiring courage and decisive action. You will win battles others shy away from and emerge victorious in competitive situations. Your determination becomes your greatest asset.\nAstrological Indicators: Mars in house 3, Competitive strength, Victory in challenges\n--------------------------------------------------------------------------------\nMulti-Decade Prosperity Arc (Ages 28-65)Certainty: 74% | Reference: Bhrigu Samhita Folio 208, Verse 29\nYour chart reveals a sustained arc of prosperity spanning multiple decades. Success builds progressively with each achievement creating a foundation for the next. While there may be temporary setbacks, the overall trajectory is upward. Ancestral blessings and karmic merit support your journey toward fulfillment and material-spiritual balance.\nAstrological Indicators: Multiple benefic influences, Karmic support pattern, Progressive growth trajectory\n--------------------------------------------------------------------------------\n\n═══ RISKY PERIODS AND CAUTIONS ═══\n\nSaturn Testing Period - Delays and Hard Lessons (Ages 29-36, 58-65) [Severity: MODERATE]Certainty: 85% | Reference: Bhrigu Samhita Folio 228, Verse 22\nSaturn's placement brings periods of testing, delays, and hard-earned lessons. These are not punishments but opportunities for character building and karmic resolution. Expect obstacles that require patience, perseverance, and discipline to overcome. Progress will be slow but steady. What you build during this time will have lasting foundations. Avoid shortcuts and maintain ethical standards even under pressure.\nWarning Indicators: Saturn in house 10, Testing and delay pattern, Character building phase\nProtective Remedies: Saturday service to elders and needy; Offering black sesame seeds; Chanting Shani mantras; Practice patience and discipline\n--------------------------------------------------------------------------------\nRahu Shadow Period - Illusion and Confusion Risk (Ages 18-27, 42-51) [Severity: MODERATE]Certainty: 81% | Reference: Bhrigu Samhita Folio 223, Verse 16\nRahu's influence on the ascendant creates periods of confusion, illusion, and misdirection. During this time, things may not be as they appear. Be cautious of deceptive people, unrealistic schemes, or situations that promise more than they deliver. Avoid major decisions during peak Rahu periods without thorough investigation. Focus on grounding practices and seek counsel from trusted advisors.\nWarning Indicators: Rahu aspects ascendant, Illusion and confusion pattern, Deception vulnerability\nProtective Remedies: Saturday fasting and meditation; Offer water to Shiva on Mondays; Chant Rahu beej mantra: Om Bhram Bhreem Bhroum Sah Rahave Namah; Practice discernment and verification; Donate mustard oil on Saturdays\n--------------------------------------------------------------------------------\n\n═══ MAJOR LIFE TRANSITIONS ═══\n\nSaturn Mahadasha Entry - Responsibility and Maturity (Age 36-55 (19-year period))Certainty: 86% | Reference: Bhrigu Samhita Folio 178, Verse 25\nEntry into Saturn's major period marks a significant life transition toward greater responsibility, maturity, and structure. This is a sobering period that demands discipline and hard work. Youthful freedoms give way to adult duties. Career becomes serious, relationships deepen or end, and life's true purpose becomes clearer. While challenging, this period builds the foundation for lasting success and spiritual growth.\nTransition Indicators: Dasha transition to Saturn, Maturity phase activation, Responsibility increase\n--------------------------------------------------------------------------------\nMid-Life Spiritual Awakening (Ages 40-48)Certainty: 81% | Reference: Bhrigu Samhita Folio 268, Verse 31\nThe mid-life period (typically ages 40-48) brings a significant shift from outer achievement to inner meaning. Questions about life purpose, legacy, and spiritual truth become prominent. This may trigger career changes, relationship reevaluations, or spiritual seeking. While it can be destabilizing, this transition leads to authentic living aligned with your true dharma. Embrace the questions and allow yourself to evolve.\nTransition Indicators: Mid-life dasha transition, Spiritual awakening pattern, Purpose reevaluation\n--------------------------------------------------------------------------------\nElder Wisdom Phase - Teaching and Legacy (Ages 60+)Certainty: 77% | Reference: Bhrigu Samhita Folio 273, Verse 18\nEntry into the elder phase (typically after age 60) marks a transition from doing to being, from achievement to wisdom sharing. You become a teacher, mentor, and guide for younger generations. This is a time of spiritual deepening, grandparenting, and legacy building. Material pursuits naturally give way to spiritual practices and service. Your life experience becomes valuable wisdom to share with others.\nTransition Indicators: Elder phase entry, Wisdom sharing emphasis, Legacy building period\n--------------------------------------------------------------------------------\n\n================================================================================\nNOTE: All timings and predictions are based on Bhrigu Samhita astrological principles\nand should be used as guidance for informed decision-making. Karmic patterns can be\ninfluenced by free will, spiritual practices, and conscious choices.\n================================================================================",
+    "rashi_chart": [
+      {
+        "index": 1,
+        "sign": "Aries",
+        "occupants": [
+          "Asc"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 2,
+        "sign": "Taurus",
+        "occupants": [
+          "Mercury"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 3,
+        "sign": "Gemini",
+        "occupants": [
+          "Mars"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 4,
+        "sign": "Cancer",
+        "occupants": [
+          "Moon"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 5,
+        "sign": "Leo",
+        "occupants": [
+          "—"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 6,
+        "sign": "Virgo",
+        "occupants": [
+          "—"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 7,
+        "sign": "Libra",
+        "occupants": [
+          "—"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 8,
+        "sign": "Scorpio",
+        "occupants": [
+          "Sun"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 9,
+        "sign": "Sagittarius",
+        "occupants": [
+          "Rahu",
+          "Ketu"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 10,
+        "sign": "Capricorn",
+        "occupants": [
+          "Jupiter",
+          "Saturn"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 11,
+        "sign": "Aquarius",
+        "occupants": [
+          "Venus"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 12,
+        "sign": "Pisces",
+        "occupants": [
+          "—"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      }
+    ],
+    "bhava_chart": [
+      {
+        "index": 1,
+        "sign": "Taurus",
+        "occupants": [
+          "Asc"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 2,
+        "sign": "Gemini",
+        "occupants": [
+          "Mercury"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 3,
+        "sign": "Cancer",
+        "occupants": [
+          "Mars"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 4,
+        "sign": "Leo",
+        "occupants": [
+          "Moon"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 5,
+        "sign": "Virgo",
+        "occupants": [
+          "—"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 6,
+        "sign": "Libra",
+        "occupants": [
+          "—"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 7,
+        "sign": "Scorpio",
+        "occupants": [
+          "—"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 8,
+        "sign": "Sagittarius",
+        "occupants": [
+          "Sun"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 9,
+        "sign": "Capricorn",
+        "occupants": [
+          "Rahu",
+          "Ketu"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 10,
+        "sign": "Aquarius",
+        "occupants": [
+          "Jupiter",
+          "Saturn"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 11,
+        "sign": "Pisces",
+        "occupants": [
+          "Venus"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      },
+      {
+        "index": 12,
+        "sign": "Aries",
+        "occupants": [
+          "—"
+        ],
+        "bhrigu_notes": [
+          "Past Life Clarity activated (0.77)",
+          "Intuitive Dreams activated (0.75)"
+        ]
+      }
+    ],
+    "dashas": [
+      {
+        "lord": "Jupiter",
+        "start": "1960-11-08",
+        "end": "1961-08-27",
+        "anchor_rule": "Calculated from lunar nakshatra"
+      },
+      {
+        "lord": "Saturn",
+        "start": "1961-08-27",
+        "end": "1980-08-26",
+        "anchor_rule": "Calculated from lunar nakshatra"
+      },
+      {
+        "lord": "Mercury",
+        "start": "1980-08-26",
+        "end": "1997-08-27",
+        "anchor_rule": "Calculated from lunar nakshatra"
+      },
+      {
+        "lord": "Ketu",
+        "start": "1997-08-27",
+        "end": "2004-08-26",
+        "anchor_rule": "Calculated from lunar nakshatra"
+      },
+      {
+        "lord": "Venus",
+        "start": "2004-08-26",
+        "end": "2024-08-26",
+        "anchor_rule": "Calculated from lunar nakshatra"
+      }
+    ],
+    "runtime_rules": {
+      "ephemeris_source": "Mean motions fallback",
+      "rules": [
+        {
+          "rule_id": "BR-JU-10",
+          "planet": "Jupiter",
+          "house": 10,
+          "confidence": 0.88,
+          "narrative": "Jupiter in House 10 (Career & status) tends to express wisdom, dharma, wealth-growth, children through profession, authority, reputation, actions.",
+          "applied_modifiers": [
+            "CONFIDENCE_RAFT",
+            "ETHICAL_GUARDRAIL",
+            "DASHA_TIMER",
+            "REFLECTION_ANCHOR"
+          ]
+        },
+        {
+          "rule_id": "BR-SA-10",
+          "planet": "Saturn",
+          "house": 10,
+          "confidence": 0.78,
+          "narrative": "Saturn in House 10 (Career & status) tends to express karma, delay, discipline, labor through profession, authority, reputation, actions.",
+          "applied_modifiers": [
+            "CONFIDENCE_RAFT",
+            "ETHICAL_GUARDRAIL",
+            "DASHA_TIMER",
+            "REFLECTION_ANCHOR",
+            "CONFLICT:house_overlap"
+          ]
+        },
+        {
+          "rule_id": "BR-SU-08",
+          "planet": "Sun",
+          "house": 8,
+          "confidence": 0.76,
+          "narrative": "Sun in House 8 (Change & longevity) tends to express authority, identity, government, vitality through crises, occult, inheritance, transformations.",
+          "applied_modifiers": [
+            "CONFIDENCE_RAFT",
+            "ETHICAL_GUARDRAIL",
+            "DASHA_TIMER",
+            "REFLECTION_ANCHOR"
+          ]
+        },
+        {
+          "rule_id": "BR-MO-04",
+          "planet": "Moon",
+          "house": 4,
+          "confidence": 0.76,
+          "narrative": "Moon in House 4 (Home & peace) tends to express mind, emotions, public, fluids through mother, property, education, inner comfort.",
+          "applied_modifiers": [
+            "CONFIDENCE_RAFT",
+            "ETHICAL_GUARDRAIL",
+            "DASHA_TIMER",
+            "REFLECTION_ANCHOR"
+          ]
+        },
+        {
+          "rule_id": "BR-MA-03",
+          "planet": "Mars",
+          "house": 3,
+          "confidence": 0.76,
+          "narrative": "Mars in House 3 (Effort & siblings) tends to express action, courage, conflict, engineering through courage, communication, skills, short travel.",
+          "applied_modifiers": [
+            "CONFIDENCE_RAFT",
+            "ETHICAL_GUARDRAIL",
+            "DASHA_TIMER",
+            "REFLECTION_ANCHOR"
+          ]
+        },
+        {
+          "rule_id": "BR-ME-02",
+          "planet": "Mercury",
+          "house": 2,
+          "confidence": 0.76,
+          "narrative": "Mercury in House 2 (Wealth & speech) tends to express intellect, speech, trade, skills through family, savings, food, voice, values.",
+          "applied_modifiers": [
+            "CONFIDENCE_RAFT",
+            "ETHICAL_GUARDRAIL",
+            "DASHA_TIMER",
+            "REFLECTION_ANCHOR"
+          ]
+        },
+        {
+          "rule_id": "BR-VE-11",
+          "planet": "Venus",
+          "house": 11,
+          "confidence": 0.76,
+          "narrative": "Venus in House 11 (Gains & networks) tends to express relationships, comforts, arts, pleasures through income, friends, fulfilment, ambitions.",
+          "applied_modifiers": [
+            "CONFIDENCE_RAFT",
+            "ETHICAL_GUARDRAIL",
+            "DASHA_TIMER",
+            "REFLECTION_ANCHOR"
+          ]
+        },
+        {
+          "rule_id": "BR-RA-09",
+          "planet": "Rahu",
+          "house": 9,
+          "confidence": 0.76,
+          "narrative": "Rahu in House 9 (Fortune & dharma) tends to express desire, disruption, foreign, unconventional through teachers, luck, long travel, faith.",
+          "applied_modifiers": [
+            "CONFIDENCE_RAFT",
+            "ETHICAL_GUARDRAIL",
+            "DASHA_TIMER",
+            "REFLECTION_ANCHOR"
+          ]
+        },
+        {
+          "rule_id": "BR-KE-03",
+          "planet": "Ketu",
+          "house": 3,
+          "confidence": 0.66,
+          "narrative": "Ketu in House 3 (Effort & siblings) tends to express detachment, intuition, spirituality, cuts through courage, communication, skills, short travel.",
+          "applied_modifiers": [
+            "CONFIDENCE_RAFT",
+            "ETHICAL_GUARDRAIL",
+            "DASHA_TIMER",
+            "REFLECTION_ANCHOR",
+            "CONFLICT:house_overlap"
+          ]
+        }
+      ],
+      "narrative": "Using Mean motions fallback, active rules: Jupiter in house 10 (0.88); Saturn in house 10 (0.78); Sun in house 8 (0.76). Current dasha emphasis: Jupiter. No mitigations provided; leaning on reflective prompts. User effort set to balanced; priorities: none recorded. Reflect with: Pause before key decisions, Seek counsel from trusted mentors.",
+      "personalization": {
+        "choices": {},
+        "mitigation_flags": [],
+        "effort_level": "balanced",
+        "reflection_prompts": [
+          "Pause before key decisions",
+          "Seek counsel from trusted mentors"
+        ]
+      }
+    },
+    "ephemeris_source": "Mean motions fallback"
+  }
+}

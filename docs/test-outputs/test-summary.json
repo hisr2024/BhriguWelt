@@ -1,0 +1,45 @@
+{
+  "test_run_timestamp": "2026-01-01T18:24:06.594237",
+  "total_tests": 3,
+  "successful_tests": 3,
+  "failed_tests": 0,
+  "ai_configured": false,
+  "results": [
+    {
+      "profile_name": "Test Profile 1 - Young Adult",
+      "output_file": "/home/user/BhriguWelt/docs/test-outputs/birth-horo-test-profile-1---young-adult.json",
+      "file_size_kb": 42.9091796875,
+      "core_duration": 2.208179,
+      "has_detailed_chart": false,
+      "schema_valid": null,
+      "personality_themes_count": 0,
+      "yearwise_events_count": 0,
+      "description": "24-year-old, early career phase, modern urban background",
+      "success": true
+    },
+    {
+      "profile_name": "Test Profile 2 - Middle-Aged Professional",
+      "output_file": "/home/user/BhriguWelt/docs/test-outputs/birth-horo-test-profile-2---middle-aged-professional.json",
+      "file_size_kb": 39.69140625,
+      "core_duration": 2.080379,
+      "has_detailed_chart": false,
+      "schema_valid": null,
+      "personality_themes_count": 0,
+      "yearwise_events_count": 0,
+      "description": "39-year-old, established career, family phase",
+      "success": true
+    },
+    {
+      "profile_name": "Test Profile 3 - Senior Individual",
+      "output_file": "/home/user/BhriguWelt/docs/test-outputs/birth-horo-test-profile-3---senior-individual.json",
+      "file_size_kb": 46.0087890625,
+      "core_duration": 2.093121,
+      "has_detailed_chart": false,
+      "schema_valid": null,
+      "personality_themes_count": 0,
+      "yearwise_events_count": 0,
+      "description": "64-year-old, retirement phase, life reflection",
+      "success": true
+    }
+  ]
+}
