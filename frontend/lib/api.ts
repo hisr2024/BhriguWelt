@@ -1,4 +1,4 @@
-import { BirthDetails, CalendarDetails, PredictionEngine, ResultEngine } from "@/types/astro";
+import { BirthDetails, CalendarDetails, CalendarPayload, PredictionEngine, ResultEngine } from "@/types/astro";
 import type { AnalyticsSnapshot } from "@/lib/analytics";
 import { FeedbackRequest, QuarterlySummaryResponse } from "@/types/feedback";
 
@@ -876,8 +876,8 @@ export async function requestMatchmaking(
   });
 }
 
-export async function requestCalendar(details: CalendarDetails) {
-  return postJson({ path: "/calendar", body: mapCalendarDetails(details) });
+export async function requestCalendar(details: CalendarDetails): Promise<CalendarPayload> {
+  return postJson<CalendarPayload, unknown>({ path: "/calendar", body: mapCalendarDetails(details) });
 }
 
 export async function submitAccuracyFeedback(feedback: FeedbackRequest) {

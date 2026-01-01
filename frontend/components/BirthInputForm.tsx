@@ -5,11 +5,12 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import { requestCalendar } from "@/lib/api";
 import { deriveHouseGrid, HouseSummary } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
-import { BirthDetails } from "@/types/astro";
+import { BirthDetails, CalendarPayload } from "@/types/astro";
 import { useImmersiveFeedback } from "@/lib/immersive";
 import BackendHealthNotice from "@/components/BackendHealthNotice";
 import { saveBirthDetails } from "@/lib/birthStorage";
 import { DEFAULT_BIRTH_DETAILS } from "@/lib/birthDefaults";
+import { convertSakaDatePayload } from "@/lib/sakaContext";
 
 type BirthForm = BirthDetails;
 
@@ -229,8 +230,8 @@ export default function BirthInputForm() {
     setLoading(true);
     try {
       const response = await requestCalendar(details);
-      const sakaDate = typeof response === "object" && response && "saka_date" in response ? response.saka_date : undefined;
-      const sakaValue = (sakaDate as { year?: number; month?: string; day?: number } | undefined) || {};
+      const sakaDate = convertSakaDatePayload(response.saka_date);
+      const sakaValue = sakaDate || {};
       setSakaLabel(
         sakaValue.year
           ? `Śaka ${sakaValue.year} ${sakaValue.month ?? ""} ${sakaValue.day ?? ""}`.trim()

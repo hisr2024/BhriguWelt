@@ -11,7 +11,8 @@ import { useImmersiveFeedback } from "@/lib/immersive";
 import PredictionCard from "./PredictionCard";
 import BackendHealthNotice from "@/components/BackendHealthNotice";
 import { loadBirthDetails, onBirthDetails, saveBirthDetails } from "@/lib/birthStorage";
-import { deriveHousePlacements, useSakaContext } from "@/lib/sakaContext";
+import { deriveHousePlacements, useSakaContext, convertSakaDatePayload } from "@/lib/sakaContext";
+import { CalendarPayload, SakaDatePayload } from "@/types/astro";
 
 const TRANSIT_ORBITS = [
   {
@@ -100,12 +101,12 @@ export default function CalendarForm() {
     const cached = conversionCache.get(cacheKey);
     if (cached && source === "auto") {
       // Use cached result without API call
-      const response = cached;
-      const sakaDate = typeof response === "object" && response && "saka_date" in response ? response.saka_date : undefined;
+      const response = cached as CalendarPayload;
+      const sakaDate = convertSakaDatePayload(response.saka_date);
       const derivedGrid = deriveHouseGrid(
         details,
-        (sakaDate as { month?: string } | undefined)?.month,
-        (sakaDate as { day?: number } | undefined)?.day,
+        sakaDate?.month,
+        sakaDate?.day,
       );
 
       // Batch all state updates together (React 18 automatic batching)
@@ -115,7 +116,7 @@ export default function CalendarForm() {
 
       updateSaka({
         details,
-        sakaDate: sakaDate as { year?: number; month?: string; day?: number },
+        sakaDate,
         houseGrid: derivedGrid,
         payload: response,
       });
@@ -140,11 +141,11 @@ export default function CalendarForm() {
       conversionCache.set(cacheKey, response);
       lastCacheKeyRef.current = cacheKey;
 
-      const sakaDate = typeof response === "object" && response && "saka_date" in response ? response.saka_date : undefined;
+      const sakaDate = convertSakaDatePayload(response.saka_date);
       const derivedGrid = deriveHouseGrid(
         details,
-        (sakaDate as { month?: string } | undefined)?.month,
-        (sakaDate as { day?: number } | undefined)?.day,
+        sakaDate?.month,
+        sakaDate?.day,
       );
 
       // Batch all state updates together
@@ -154,14 +155,14 @@ export default function CalendarForm() {
 
       updateSaka({
         details,
-        sakaDate: sakaDate as { year?: number; month?: string; day?: number },
+        sakaDate,
         houseGrid: derivedGrid,
         payload: response,
       });
 
       const placements = deriveHousePlacements(
         derivedGrid,
-        (sakaDate as { day?: number } | undefined)?.day,
+        sakaDate?.day,
       );
 
       // Compute sakaLabel inline to avoid useMemo dependency
@@ -173,8 +174,8 @@ export default function CalendarForm() {
         {
           ...details,
           ...placements,
-          sakaMonth: (sakaDate as { month?: string } | undefined)?.month,
-          sakaDay: (sakaDate as { day?: number } | undefined)?.day,
+          sakaMonth: sakaDate?.month,
+          sakaDay: sakaDate?.day,
           houseGrid: derivedGrid,
           sakaLabel: sakaLabel,
         },
@@ -212,7 +213,7 @@ export default function CalendarForm() {
   // Compute sakaLabel from payload
   const sakaLabel = useMemo(() => {
     if (!payload || typeof payload !== "object" || !("saka_date" in payload)) return "Śaka conversion ready";
-    const sakaDate = (payload as { saka_date?: { year?: number; month?: string; day?: number } }).saka_date;
+    const sakaDate = convertSakaDatePayload((payload as CalendarPayload).saka_date);
     if (!sakaDate) return "Śaka conversion ready";
     return `Śaka ${sakaDate.year ?? ""} ${sakaDate.month ?? ""} ${sakaDate.day ?? ""}`.trim();
   }, [payload]);
