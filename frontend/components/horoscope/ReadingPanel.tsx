@@ -3,6 +3,105 @@ import DetailedChartPanel from "./DetailedChartPanel";
 import { ChartResponse, FormState, Interpretation } from "./types";
 import "./detailed-chart.css";
 
+// Helper to validate life_areas structure
+function isLifeArea(obj: unknown): boolean {
+  if (!obj || typeof obj !== 'object') return false;
+  const area = obj as Record<string, unknown>;
+  return (
+    Array.isArray(area.strengths) &&
+    Array.isArray(area.challenges) &&
+    Array.isArray(area.turning_points) &&
+    typeof area.guidance === 'string'
+  );
+}
+
+// Type guard to check if an object matches the DetailedChart interface
+function isDetailedChart(obj: unknown): obj is {
+  correlation_id: string;
+  chart_summary: string;
+  key_personality_themes: string[];
+  life_areas: {
+    career: {
+      strengths: string[];
+      challenges: string[];
+      turning_points: string[];
+      guidance: string;
+    };
+    relationships: {
+      strengths: string[];
+      challenges: string[];
+      turning_points: string[];
+      guidance: string;
+    };
+    health: {
+      strengths: string[];
+      challenges: string[];
+      turning_points: string[];
+      guidance: string;
+    };
+    finances: {
+      strengths: string[];
+      challenges: string[];
+      turning_points: string[];
+      guidance: string;
+    };
+    spirituality: {
+      strengths: string[];
+      challenges: string[];
+      turning_points: string[];
+      guidance: string;
+    };
+  };
+  yogas_or_bhrigu_indicators: Array<{
+    principle_id: string;
+    name: string;
+    description: string;
+    sutra_reference: string;
+  }>;
+  yearwise_major_events: Array<{
+    year: number;
+    themes: string[];
+    likely_events: string[];
+    cautions: string[];
+    supports: string[];
+  }>;
+  confidence_notes: string;
+  schema_valid?: boolean;
+  retry_count?: number;
+} {
+  if (!obj || typeof obj !== 'object') return false;
+  const chart = obj as Record<string, unknown>;
+  
+  // Check basic fields
+  if (
+    typeof chart.correlation_id !== 'string' ||
+    typeof chart.chart_summary !== 'string' ||
+    !Array.isArray(chart.key_personality_themes) ||
+    typeof chart.confidence_notes !== 'string' ||
+    !Array.isArray(chart.yogas_or_bhrigu_indicators) ||
+    !Array.isArray(chart.yearwise_major_events)
+  ) {
+    return false;
+  }
+  
+  // Check life_areas structure
+  const lifeAreas = chart.life_areas;
+  if (!lifeAreas || typeof lifeAreas !== 'object') return false;
+  
+  const areas = lifeAreas as Record<string, unknown>;
+  if (
+    !isLifeArea(areas.career) ||
+    !isLifeArea(areas.relationships) ||
+    !isLifeArea(areas.health) ||
+    !isLifeArea(areas.finances) ||
+    !isLifeArea(areas.spirituality)
+  ) {
+    return false;
+  }
+  
+  return true;
+}
+
 type Props = {
   chart: ChartResponse | null;
   form: FormState;
@@ -77,7 +176,7 @@ export default function ReadingPanel({
               const detailedChart = typeof chart === 'object' && chart && 'detailed_chart' in chart
                 ? chart.detailed_chart
                 : null;
-              return detailedChart ? <DetailedChartPanel detailedChart={detailedChart} name={form.name} /> : null;
+              return detailedChart && isDetailedChart(detailedChart) ? <DetailedChartPanel detailedChart={detailedChart} name={form.name} /> : null;
             })()}
 
             {/* Year-wise Life Events Timeline */}
