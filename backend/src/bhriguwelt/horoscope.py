@@ -33,6 +33,7 @@ from .engine_analyzers import EngineAnalysis, analyze_core_engines
 from .runtime_rule_generator import RuntimeRuleGenerator
 from .kundli_generator import DASHA_SEQUENCE, ChartHouse, DashaPeriod, generate_kundli
 from .remedy_personalization import personalize_remedies_with_feedback
+from .life_events_analyzer import analyze_life_events, format_life_events_interpretation, LifeEventsReport
 
 __all__ = [
     "HoroscopeRequest",
@@ -151,6 +152,8 @@ class HoroscopeReport:
     dashas: List[DashaPeriod]
     runtime_rules: Dict[str, object]
     ephemeris_source: str
+    life_events_report: LifeEventsReport | None = None
+    interpretation_hi: str | None = None
 
 
 @dataclass
@@ -384,6 +387,25 @@ def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
 
     kundli = generate_kundli(snapshot, weights, timezone_name=request.timezone)
 
+    # Analyze major life events
+    life_events_report = analyze_life_events(snapshot, request.birth_date)
+    life_events_interpretation = format_life_events_interpretation(life_events_report)
+
+    # Compose comprehensive interpretation including life events
+    base_interpretation = _compose_horoscope_interpretation(
+        karmic_epoch,
+        weights,
+        past_life_insights,
+        future_trajectories,
+        remedies,
+        request.name,
+        request.birth_place,
+        runtime_config.get("interpretation", {}),
+    )
+
+    # Combine base interpretation with detailed life events analysis
+    full_interpretation = f"{base_interpretation}\n\n{life_events_interpretation}"
+
     return HoroscopeReport(
         name=request.name,
         karmic_epoch=karmic_epoch,
@@ -392,21 +414,13 @@ def build_prediction(request: HoroscopeRequest) -> HoroscopeReport:
         remedies=remedies,
         past_life_insights=past_life_insights,
         future_trajectories=future_trajectories,
-        interpretation=_compose_horoscope_interpretation(
-            karmic_epoch,
-            weights,
-            past_life_insights,
-            future_trajectories,
-            remedies,
-            request.name,
-            request.birth_place,
-            runtime_config.get("interpretation", {}),
-        ),
+        interpretation=full_interpretation,
         rashi_chart=kundli["rashi_chart"],
         bhava_chart=kundli["bhava_chart"],
         dashas=kundli["dashas"],
         runtime_rules=runtime_rules,
         ephemeris_source=chart_result.ephemeris_source,
+        life_events_report=life_events_report,
     )
 
 

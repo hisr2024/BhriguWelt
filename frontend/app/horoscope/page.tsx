@@ -6,13 +6,19 @@ export default function HoroscopePage() {
     <section className="panel">
       <div className="section-heading">
         <p className="eyebrow">Horoscope</p>
-        <h1>Horoscope</h1>
-        <p className="muted">Generate charts and read calm, grounded insights.</p>
+        <h1>Horoscope with Life Events Analysis</h1>
+        <p className="muted">
+          Detailed birth chart analysis with major life events: Marriage, Success, Risky Periods,
+          Downward Trends, and Transformational Milestones based on Bhrigu Samhita principles.
+        </p>
       </div>
       <div className="card highlight">
         <p className="eyebrow">Featured tool</p>
-        <h2>Holistic Horoscope</h2>
-        <p className="muted">Start here to generate your natal chart and core guidance.</p>
+        <h2>Holistic Horoscope & Life Scan</h2>
+        <p className="muted">
+          Generate your natal chart with comprehensive life events analysis. Get detailed insights
+          into marriage prospects, career success, challenging periods, and major life transitions.
+        </p>
       </div>
       <div className="panel__content">
         <JourneyRail />
