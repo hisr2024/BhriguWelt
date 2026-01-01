@@ -145,8 +145,24 @@ export default function DailyVrishaphal() {
       setLastGenerated(dailyInsights.generated_at);
       cacheInsights(dailyInsights);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to generate daily insights';
+      let message = err instanceof Error ? err.message : 'Unable to generate daily insights';
+
+      // Provide more helpful error messages based on error type
+      if (message.includes('405') || message.includes('Method Not Allowed')) {
+        message = 'Backend service temporarily unavailable. Using cached demo insights.';
+        console.warn('Daily Insights: 405 error - backend may not be running. Showing fallback data.');
+      } else if (message.includes('404') || message.includes('Not Found')) {
+        message = 'Daily insights service not configured. Using demo insights.';
+      } else if (message.includes('offline') || message.includes('network')) {
+        message = 'Network connection issue. Using cached insights.';
+      }
+
       setError(message);
+
+      // Log for debugging but don't show technical details to user
+      if (err instanceof Error && err.message !== message) {
+        console.error('Daily Insights error details:', err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -242,14 +258,29 @@ export default function DailyVrishaphal() {
 
       {error && (
         <div className="card error-card">
+          <h4>ℹ️ Notice</h4>
           <p className="error-message">{error}</p>
-          <button
-            type="button"
-            onClick={() => window.location.href = '/horoscope'}
-            className="ghost-button small"
-          >
-            Set Birth Details
-          </button>
+          <div className="error-actions">
+            <button
+              type="button"
+              onClick={() => generateInsights(true)}
+              className="ghost-button small"
+              disabled={loading}
+            >
+              🔄 Retry
+            </button>
+            <button
+              type="button"
+              onClick={() => window.location.href = '/horoscope'}
+              className="ghost-button small"
+            >
+              Set Birth Details
+            </button>
+          </div>
+          <p className="microcopy" style={{ marginTop: 'var(--space-2)' }}>
+            💡 If backend service is unavailable, the app will use demo insights for demonstration purposes.
+            For personalized readings, ensure your backend server is running.
+          </p>
         </div>
       )}
 
@@ -406,9 +437,20 @@ export default function DailyVrishaphal() {
           padding: var(--space-4);
         }
 
+        .error-card h4 {
+          margin-top: 0;
+          margin-bottom: var(--space-2);
+        }
+
         .error-message {
           margin-bottom: var(--space-3);
           color: var(--color-neon-pink);
+        }
+
+        .error-actions {
+          display: flex;
+          gap: var(--space-2);
+          flex-wrap: wrap;
         }
 
         .loading-card {
