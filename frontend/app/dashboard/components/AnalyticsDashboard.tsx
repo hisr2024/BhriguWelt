@@ -134,11 +134,11 @@ const toolGroups: ToolGroup[] = [
     description: "",
     tools: [
       {
-        name: "Birth Chart & Horoscope",
+        name: "Birth chart",
         href: "/birth-chart",
-        logo: "⭐",
-        gradient: "linear-gradient(130deg, #818cf8, #facc15)",
-        glow: "0 0 24px rgba(250, 204, 21, 0.45)",
+        logo: "♈",
+        gradient: "linear-gradient(130deg, #818cf8, #22d3ee)",
+        glow: "0 0 24px rgba(56, 189, 248, 0.4)",
       },
       {
         name: "Analytics",
@@ -173,6 +173,13 @@ const toolGroups: ToolGroup[] = [
         logo: "🗓️",
         gradient: "linear-gradient(130deg, #f59e0b, #f97316)",
         glow: "0 0 24px rgba(249, 115, 22, 0.4)",
+      },
+      {
+        name: "Horoscope",
+        href: "/horoscope",
+        logo: "✨",
+        gradient: "linear-gradient(130deg, #f472b6, #facc15)",
+        glow: "0 0 24px rgba(250, 204, 21, 0.45)",
       },
       {
         name: "Future",
