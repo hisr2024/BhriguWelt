@@ -102,10 +102,13 @@ export default function DailyVrishaphal() {
       return;
     }
 
-    // Ensure name is present (use a default if needed)
-    const validBirthDetails: BirthDetails = {
+    // Ensure all required properties are present
+    const validBirthDetails = {
       ...birthDetails,
       name: birthDetails.name || 'Seeker',
+      birthDate: birthDetails.birthDate!,
+      birthTime: birthDetails.birthTime!,
+      birthPlace: birthDetails.birthPlace!,
     } as BirthDetails;
 
     setLoading(true);
