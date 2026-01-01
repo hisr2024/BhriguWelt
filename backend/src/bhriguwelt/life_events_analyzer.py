@@ -331,8 +331,9 @@ def _analyze_risky_periods(snapshot: CelestialSnapshot, birth_year: int) -> List
             remedies=[
                 "Saturday fasting and meditation",
                 "Offer water to Shiva on Mondays",
-                "Wear hessonite garnet (consult expert)",
-                "Practice discernment and verification"
+                "Chant Rahu beej mantra: Om Bhram Bhreem Bhroum Sah Rahave Namah",
+                "Practice discernment and verification",
+                "Donate mustard oil on Saturdays"
             ]
         ))
 
@@ -419,8 +420,9 @@ def _analyze_risky_periods(snapshot: CelestialSnapshot, birth_year: int) -> List
             remedies=[
                 "Meditation and spiritual practices",
                 "Donate to spiritual institutions",
-                "Wear cat's eye (consult expert)",
-                "Accept change as spiritual growth"
+                "Chant Ketu beej mantra: Om Shram Shreem Shroum Sah Ketave Namah",
+                "Accept change as spiritual growth",
+                "Observe fasts on Tuesdays"
             ]
         ))
 
