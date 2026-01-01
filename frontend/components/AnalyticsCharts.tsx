@@ -34,6 +34,7 @@ function useChart(
       mounted = false;
       if (chart) chart.destroy();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }
 
