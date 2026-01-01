@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { loadBirthDetails } from '@/lib/birthStorage';
 import { requestVarshaphal } from '@/lib/api';
+import { BirthDetails } from '@/types/astro';
 import BackendHealthNotice from './BackendHealthNotice';
 
 type DailyInsightSection = {
@@ -101,6 +102,15 @@ export default function DailyVrishaphal() {
       return;
     }
 
+    // Ensure all required properties are present
+    const validBirthDetails = {
+      ...birthDetails,
+      name: birthDetails.name || 'Seeker',
+      birthDate: birthDetails.birthDate!,
+      birthTime: birthDetails.birthTime!,
+      birthPlace: birthDetails.birthPlace!,
+    } as BirthDetails;
+
     setLoading(true);
     setError(null);
 
@@ -108,13 +118,7 @@ export default function DailyVrishaphal() {
       const todayDate = getTodayDateString();
 
       // Request varshaphal (yearly/daily predictions) from backend
-      const response = await requestVarshaphal({
-        name: birthDetails.name || 'Seeker',
-        dateOfBirth: birthDetails.birthDate,
-        timeOfBirth: birthDetails.birthTime,
-        placeOfBirth: birthDetails.birthPlace,
-        targetDate: todayDate,
-      });
+      const response = await requestVarshaphal(validBirthDetails);
 
       // Transform backend response into our daily insights format
       const dailyInsights: DailyVrishaphalResponse = {

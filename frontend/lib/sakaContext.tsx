@@ -2,10 +2,26 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 
-import { CalendarDetails } from "@/types/astro";
+import { CalendarDetails, SakaDatePayload } from "@/types/astro";
 import { HouseSummary } from "./houseGrid";
 
 type SakaDate = { year?: number; month?: string; monthIndex?: number; day?: number; leapYear?: boolean };
+
+/**
+ * Converts a SakaDatePayload from the API (snake_case) to SakaDate (camelCase) for internal use.
+ * Handles cases where the payload may be undefined or have missing properties.
+ */
+export function convertSakaDatePayload(payload: SakaDatePayload | undefined): SakaDate | undefined {
+  if (!payload) return undefined;
+  
+  return {
+    year: payload.year,
+    month: payload.month,
+    monthIndex: payload.month_index,
+    day: payload.day,
+    leapYear: payload.leap_year,
+  };
+}
 
 type SakaState = {
   details?: CalendarDetails;
