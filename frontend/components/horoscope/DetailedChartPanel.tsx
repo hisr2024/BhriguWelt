@@ -104,7 +104,7 @@ export function isDetailedChart(value: unknown): value is DetailedChart {
 }
 
 interface Props {
-  detailedChart: DetailedChart | null;
+  detailedChart: DetailedChart;
   name?: string;
 }
 
@@ -169,10 +169,6 @@ const LifeAreaSection: React.FC<{
 
 export default function DetailedChartPanel({ detailedChart, name }: Props) {
   const [activeTab, setActiveTab] = useState<'overview' | 'life-areas' | 'timeline' | 'yogas'>('overview');
-
-  if (!detailedChart) {
-    return null;
-  }
 
   return (
     <div className="detailed-chart-panel">
