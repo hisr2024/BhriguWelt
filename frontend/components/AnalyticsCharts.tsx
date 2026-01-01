@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type RefObject } from "react";
+import { motion } from "framer-motion";
 import type { AggregatedWeight, KarmicMetric, TransitPosition } from "@/lib/analytics";
 
 type Props = {
@@ -12,7 +13,7 @@ type Props = {
 
 function useChart(
   canvas: RefObject<HTMLCanvasElement | null>,
-  configFactory: (Chart: typeof import("chart.js/auto")) => Record<string, unknown>,
+  configFactory: (ChartModule: typeof import("chart.js/auto")) => Record<string, unknown>,
   deps: unknown[],
 ) {
   useEffect(() => {
@@ -20,11 +21,11 @@ function useChart(
     let mounted = true;
 
     const load = async () => {
-      const module = await import("chart.js/auto");
+      const chartModule = await import("chart.js/auto");
       if (!mounted || !canvas.current) return;
-      const config = configFactory(module);
+      const config = configFactory(chartModule);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      chart = new (module.default as any)(canvas.current, config);
+      chart = new (chartModule.default as any)(canvas.current, config);
     };
 
     load();
@@ -33,7 +34,6 @@ function useChart(
       mounted = false;
       if (chart) chart.destroy();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }
 
@@ -154,28 +154,153 @@ export default function AnalyticsCharts({ karmicMetrics, elementBalance, transit
     [principleWeights],
   );
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20, scale: 0.95 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: 0.5,
+      },
+    },
+  };
+
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <div className="card">
-        <h3>Karmic resonance radar</h3>
-        <p className="muted">Weighted by core wisdom metrics and Nadi overlays.</p>
-        <canvas ref={karmicCanvas} className="mt-4 w-full" />
-      </div>
-      <div className="card">
-        <h3>Elemental balance</h3>
-        <p className="muted">Rashi distribution summarized from the natal chart.</p>
-        <canvas ref={elementsCanvas} className="mt-4 w-full" />
-      </div>
-      <div className="card">
-        <h3>Transit overlay</h3>
-        <p className="muted">Exact planetary degrees for transit precision.</p>
-        <canvas ref={transitCanvas} className="mt-4 w-full" />
-      </div>
-      <div className="card">
-        <h3>Samhita principle weights</h3>
-        <p className="muted">Aggregate weights computed from bhrigu_data corpus.</p>
-        <canvas ref={weightsCanvas} className="mt-4 w-full" />
-      </div>
-    </div>
+    <motion.div
+      className="grid gap-6 lg:grid-cols-2"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div className="card analytics-card" variants={cardVariants} whileHover={{ scale: 1.02 }}>
+        <div className="card-header">
+          <div className="icon-wrapper karmic-icon">🔮</div>
+          <div>
+            <h3>Karmic resonance radar</h3>
+            <p className="muted">Weighted by core wisdom metrics and Nadi overlays.</p>
+          </div>
+        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3, duration: 0.6 }}
+        >
+          <canvas ref={karmicCanvas} className="mt-4 w-full" />
+        </motion.div>
+      </motion.div>
+      
+      <motion.div className="card analytics-card" variants={cardVariants} whileHover={{ scale: 1.02 }}>
+        <div className="card-header">
+          <div className="icon-wrapper elements-icon">🌊</div>
+          <div>
+            <h3>Elemental balance</h3>
+            <p className="muted">Rashi distribution summarized from the natal chart.</p>
+          </div>
+        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
+        >
+          <canvas ref={elementsCanvas} className="mt-4 w-full" />
+        </motion.div>
+      </motion.div>
+      
+      <motion.div className="card analytics-card" variants={cardVariants} whileHover={{ scale: 1.02 }}>
+        <div className="card-header">
+          <div className="icon-wrapper transit-icon">🌟</div>
+          <div>
+            <h3>Transit overlay</h3>
+            <p className="muted">Exact planetary degrees for transit precision.</p>
+          </div>
+        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.5, duration: 0.6 }}
+        >
+          <canvas ref={transitCanvas} className="mt-4 w-full" />
+        </motion.div>
+      </motion.div>
+      
+      <motion.div className="card analytics-card" variants={cardVariants} whileHover={{ scale: 1.02 }}>
+        <div className="card-header">
+          <div className="icon-wrapper weights-icon">⚖️</div>
+          <div>
+            <h3>Samhita principle weights</h3>
+            <p className="muted">Aggregate weights computed from bhrigu_data corpus.</p>
+          </div>
+        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.6, duration: 0.6 }}
+        >
+          <canvas ref={weightsCanvas} className="mt-4 w-full" />
+        </motion.div>
+      </motion.div>
+
+      <style jsx>{`
+        .analytics-card {
+          background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(14, 165, 233, 0.05));
+          border: 1px solid rgba(139, 92, 246, 0.2);
+          transition: all 0.3s ease;
+        }
+
+        .analytics-card:hover {
+          border-color: rgba(139, 92, 246, 0.4);
+          box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
+        }
+
+        .card-header {
+          display: flex;
+          align-items: flex-start;
+          gap: 1rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .icon-wrapper {
+          font-size: 2rem;
+          padding: 0.5rem;
+          border-radius: 0.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          animation: float 3s ease-in-out infinite;
+        }
+
+        .karmic-icon {
+          background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(167, 139, 250, 0.2));
+        }
+
+        .elements-icon {
+          background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(34, 197, 94, 0.2));
+        }
+
+        .transit-icon {
+          background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(6, 182, 212, 0.2));
+        }
+
+        .weights-icon {
+          background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.2));
+        }
+
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-5px); }
+        }
+      `}</style>
+    </motion.div>
   );
 }
