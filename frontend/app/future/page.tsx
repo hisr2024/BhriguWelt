@@ -11,16 +11,19 @@ export default function FuturePage() {
       </div>
       <div className="card highlight">
         <p className="eyebrow">Featured tool</p>
-        <h2>Future Outlook + Past-Life Context</h2>
-        <p className="muted">Link future milestones with past-life patterns for clear guidance.</p>
+        <h2>Future Trajectory Analysis</h2>
+        <p className="muted">
+          Forward-looking predictions for your life path. Year-wise and phase-wise guidance
+          based purely on future planetary transits and Bhrigu predictive principles.
+        </p>
       </div>
       <div className="panel__content">
         <JourneyRail />
         <div className="panel__content--stacked">
           <PredictionForm
-            engine="past-future"
-            title="Future outlook with past-life context"
-            description="Generate predictions and align next steps with karmic background."
+            engine="future"
+            title="Future Outlook Predictions"
+            description="Generate year-wise predictions and upcoming life milestones. This analysis is strictly forward-looking with no past-life references."
           />
         </div>
       </div>
