@@ -1,5 +1,5 @@
 import LifeEventsTimeline, { LifeEventsReport } from "../LifeEventsTimeline";
-import DetailedChartPanel from "./DetailedChartPanel";
+import DetailedChartPanel, { isDetailedChart } from "./DetailedChartPanel";
 import { ChartResponse, FormState, Interpretation } from "./types";
 import "./detailed-chart.css";
 
@@ -77,7 +77,24 @@ export default function ReadingPanel({
               const detailedChart = typeof chart === 'object' && chart && 'detailed_chart' in chart
                 ? chart.detailed_chart
                 : null;
-              return detailedChart ? <DetailedChartPanel detailedChart={detailedChart} name={form.name} /> : null;
+              
+              // Validate detailedChart structure using type guard
+              if (detailedChart && isDetailedChart(detailedChart)) {
+                return <DetailedChartPanel detailedChart={detailedChart} name={form.name} />;
+              }
+              
+              // Log invalid detailedChart in development mode only
+              if (detailedChart && process.env.NODE_ENV !== 'production') {
+                console.warn('[ReadingPanel] Invalid or incomplete detailedChart structure:', {
+                  hasData: !!detailedChart,
+                  isObject: typeof detailedChart === 'object',
+                  keys: detailedChart && typeof detailedChart === 'object' 
+                    ? Object.keys(detailedChart) 
+                    : [],
+                });
+              }
+              
+              return null;
             })()}
 
             {/* Year-wise Life Events Timeline */}

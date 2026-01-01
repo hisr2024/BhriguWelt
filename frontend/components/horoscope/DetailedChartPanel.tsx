@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 
-interface LifeArea {
+export interface LifeArea {
   strengths: string[];
   challenges: string[];
   turning_points: string[];
   guidance: string;
 }
 
-interface YearwiseEvent {
+export interface YearwiseEvent {
   year: number;
   themes: string[];
   likely_events: string[];
@@ -15,14 +15,14 @@ interface YearwiseEvent {
   supports: string[];
 }
 
-interface BhriguIndicator {
+export interface BhriguIndicator {
   principle_id: string;
   name: string;
   description: string;
   sutra_reference: string;
 }
 
-interface DetailedChart {
+export interface DetailedChart {
   correlation_id: string;
   chart_summary: string;
   key_personality_themes: string[];
@@ -40,8 +40,71 @@ interface DetailedChart {
   retry_count?: number;
 }
 
+/**
+ * Type guard to validate if an unknown value is a valid DetailedChart
+ */
+export function isDetailedChart(value: unknown): value is DetailedChart {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const chart = value as Record<string, unknown>;
+
+  // Check required string fields
+  if (typeof chart.correlation_id !== 'string' || !chart.correlation_id) {
+    return false;
+  }
+  if (typeof chart.chart_summary !== 'string' || !chart.chart_summary) {
+    return false;
+  }
+  if (typeof chart.confidence_notes !== 'string') {
+    return false;
+  }
+
+  // Check key_personality_themes is an array of strings
+  if (!Array.isArray(chart.key_personality_themes) || chart.key_personality_themes.length === 0) {
+    return false;
+  }
+  if (!chart.key_personality_themes.every((t: unknown) => typeof t === 'string')) {
+    return false;
+  }
+
+  // Check life_areas structure
+  if (!chart.life_areas || typeof chart.life_areas !== 'object') {
+    return false;
+  }
+
+  const lifeAreas = chart.life_areas as Record<string, unknown>;
+  const requiredAreas = ['career', 'relationships', 'health', 'finances', 'spirituality'];
+  
+  for (const area of requiredAreas) {
+    if (!lifeAreas[area] || typeof lifeAreas[area] !== 'object') {
+      return false;
+    }
+    const areaObj = lifeAreas[area] as Record<string, unknown>;
+    if (!Array.isArray(areaObj.strengths) || 
+        !Array.isArray(areaObj.challenges) || 
+        !Array.isArray(areaObj.turning_points) ||
+        typeof areaObj.guidance !== 'string') {
+      return false;
+    }
+  }
+
+  // Check yogas_or_bhrigu_indicators is an array
+  if (!Array.isArray(chart.yogas_or_bhrigu_indicators)) {
+    return false;
+  }
+
+  // Check yearwise_major_events is an array
+  if (!Array.isArray(chart.yearwise_major_events)) {
+    return false;
+  }
+
+  return true;
+}
+
 interface Props {
-  detailedChart: DetailedChart | null;
+  detailedChart: DetailedChart;
   name?: string;
 }
 
@@ -106,10 +169,6 @@ const LifeAreaSection: React.FC<{
 
 export default function DetailedChartPanel({ detailedChart, name }: Props) {
   const [activeTab, setActiveTab] = useState<'overview' | 'life-areas' | 'timeline' | 'yogas'>('overview');
-
-  if (!detailedChart) {
-    return null;
-  }
 
   return (
     <div className="detailed-chart-panel">
