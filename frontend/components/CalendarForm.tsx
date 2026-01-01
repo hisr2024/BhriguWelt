@@ -6,13 +6,12 @@ import { helperCopy } from "@/lib/copy";
 import { deriveHouseGrid, HouseSummary } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
 import { captureClientError } from "@/lib/telemetry";
-import { CalendarDetails } from "@/types/astro";
+import { CalendarDetails, CalendarPayload } from "@/types/astro";
 import { useImmersiveFeedback } from "@/lib/immersive";
 import PredictionCard from "./PredictionCard";
 import BackendHealthNotice from "@/components/BackendHealthNotice";
 import { loadBirthDetails, onBirthDetails, saveBirthDetails } from "@/lib/birthStorage";
 import { deriveHousePlacements, useSakaContext, convertSakaDatePayload } from "@/lib/sakaContext";
-import { CalendarPayload, SakaDatePayload } from "@/types/astro";
 
 const TRANSIT_ORBITS = [
   {

@@ -5,7 +5,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import { requestCalendar } from "@/lib/api";
 import { deriveHouseGrid, HouseSummary } from "@/lib/houseGrid";
 import { useI18n } from "@/lib/i18n";
-import { BirthDetails, CalendarPayload } from "@/types/astro";
+import { BirthDetails } from "@/types/astro";
 import { useImmersiveFeedback } from "@/lib/immersive";
 import BackendHealthNotice from "@/components/BackendHealthNotice";
 import { saveBirthDetails } from "@/lib/birthStorage";
