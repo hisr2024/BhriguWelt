@@ -284,3 +284,83 @@ def test_response_cache_expires_between_requests(monkeypatch):
             assert data.get("call") == 2, "Cache should expire after TTL"
     finally:
         api.BhriguAPIHandler.cache = original_cache
+
+
+def test_http_analytics_snapshot():
+    """Test GET /analytics endpoint returns proper analytics structure."""
+    with running_server() as address:
+        status, data, headers = _get("/analytics", address)
+        assert status == 200, f"Expected 200, got {status}"
+        assert "profiles" in data, "Response should contain 'profiles' key"
+        assert "sessions" in data, "Response should contain 'sessions' key"
+        assert "alerts" in data, "Response should contain 'alerts' key"
+
+        # Check profiles structure
+        profiles = data["profiles"]
+        assert "total" in profiles
+        assert "created_last_7_days" in profiles
+        assert "updated_last_24_hours" in profiles
+        assert "recent" in profiles
+        assert isinstance(profiles["recent"], list)
+
+        # Check sessions structure
+        sessions = data["sessions"]
+        assert "total" in sessions
+        assert "active_last_7_days" in sessions
+        assert "average_turns" in sessions
+        assert "recent" in sessions
+        assert isinstance(sessions["recent"], list)
+
+        # Check alerts structure
+        alerts = data["alerts"]
+        assert "total" in alerts
+
+        # Check feedback is included
+        assert "feedback" in data
+
+        # Verify content type
+        assert headers.get("Content-Type") == "application/json; charset=utf-8"
+
+
+def test_http_manuscript_fetch():
+    """Test GET /manuscript endpoint returns Bhrigu corpus."""
+    with running_server() as address:
+        status, data, headers = _get("/manuscript", address)
+        assert status == 200, f"Expected 200, got {status}"
+        assert "principles" in data, "Manuscript should contain 'principles'"
+        assert isinstance(data["principles"], list), "Principles should be a list"
+
+        # Verify content type
+        assert headers.get("Content-Type") == "application/json; charset=utf-8"
+
+        # If there are principles, check their structure
+        if data["principles"]:
+            principle = data["principles"][0]
+            assert "id" in principle or "sutra_reference" in principle
+
+
+def test_http_analytics_requires_admin_token(monkeypatch):
+    """Test that /analytics enforces admin token when configured."""
+    monkeypatch.setenv("BHRIGUWELT_ADMIN_TOKEN", "test-admin-secret")
+    try:
+        # Reload the module to pick up the new env var
+        import importlib
+        importlib.reload(api)
+
+        with running_server() as address:
+            # Without token should return 403
+            status, data, _ = _get("/analytics", address)
+            assert status == 403, "Should require admin token"
+
+            # With token in header should succeed
+            connection = http.client.HTTPConnection(*address)
+            connection.request("GET", "/analytics", headers={"X-Admin-Token": "test-admin-secret"})
+            response = connection.getresponse()
+            connection.close()
+            assert response.status == 200, "Should succeed with valid admin token"
+    finally:
+        # Clean up
+        import os
+        if "BHRIGUWELT_ADMIN_TOKEN" in os.environ:
+            del os.environ["BHRIGUWELT_ADMIN_TOKEN"]
+        importlib.reload(api)
