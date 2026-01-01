@@ -1,15 +1,15 @@
 {
-  "test_run_timestamp": "2026-01-01T18:24:06.594237",
+  "test_run_timestamp": "2026-01-01T21:43:28.359090",
   "total_tests": 3,
   "successful_tests": 3,
   "failed_tests": 0,
-  "ai_configured": false,
+  "ai_configured": true,
   "results": [
     {
       "profile_name": "Test Profile 1 - Young Adult",
       "output_file": "/home/user/BhriguWelt/docs/test-outputs/birth-horo-test-profile-1---young-adult.json",
-      "file_size_kb": 42.9091796875,
-      "core_duration": 2.208179,
+      "file_size_kb": 45.1259765625,
+      "core_duration": 2.455519,
       "has_detailed_chart": false,
       "schema_valid": null,
       "personality_themes_count": 0,
@@ -20,8 +20,8 @@
     {
       "profile_name": "Test Profile 2 - Middle-Aged Professional",
       "output_file": "/home/user/BhriguWelt/docs/test-outputs/birth-horo-test-profile-2---middle-aged-professional.json",
-      "file_size_kb": 39.69140625,
-      "core_duration": 2.080379,
+      "file_size_kb": 41.908203125,
+      "core_duration": 1.995003,
       "has_detailed_chart": false,
       "schema_valid": null,
       "personality_themes_count": 0,
@@ -32,8 +32,8 @@
     {
       "profile_name": "Test Profile 3 - Senior Individual",
       "output_file": "/home/user/BhriguWelt/docs/test-outputs/birth-horo-test-profile-3---senior-individual.json",
-      "file_size_kb": 46.0087890625,
-      "core_duration": 2.093121,
+      "file_size_kb": 48.224609375,
+      "core_duration": 1.98217,
       "has_detailed_chart": false,
       "schema_valid": null,
       "personality_themes_count": 0,
