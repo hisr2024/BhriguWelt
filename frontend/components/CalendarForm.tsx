@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { requestCalendar } from "@/lib/api";
 import { helperCopy } from "@/lib/copy";
 import { deriveHouseGrid, HouseSummary } from "@/lib/houseGrid";
@@ -34,6 +34,13 @@ const TRANSIT_ORBITS = [
   },
 ];
 
+// Session-level cache to prevent redundant API calls and flickering
+const conversionCache = new Map<string, unknown>();
+
+function createCacheKey(details: CalendarDetails): string {
+  return `${details.birthDate}|${details.birthTime}|${details.birthPlace}`;
+}
+
 export default function CalendarForm() {
   const { t } = useI18n();
   const helperText = helperCopy.calendar;
@@ -50,6 +57,7 @@ export default function CalendarForm() {
   const errorRef = useRef<HTMLDivElement | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const requestIdRef = useRef(0);
+  const lastCacheKeyRef = useRef<string>("");
   const { triggerSubmitFeedback } = useImmersiveFeedback();
   const { updateSaka } = useSakaContext();
 
@@ -78,37 +86,89 @@ export default function CalendarForm() {
     }
   }, [error]);
 
-  const handleSubmit = async (event?: FormEvent<HTMLFormElement>, source: "auto" | "manual" = "manual") => {
+  const handleSubmit = useCallback(async (event?: FormEvent<HTMLFormElement>, source: "auto" | "manual" = "manual") => {
     event?.preventDefault();
-    if (source === "manual") {
-      triggerSubmitFeedback();
+
+    // Check cache first to prevent redundant calls
+    const cacheKey = createCacheKey(details);
+    if (cacheKey === lastCacheKeyRef.current && source === "auto") {
+      // Already processed this exact input, skip
+      return;
     }
-    if (source === "manual") {
-      setError(null);
-    }
-    const requestId = ++requestIdRef.current;
-    setLoading(true);
-    try {
-      const response = await requestCalendar(details);
-      if (requestId !== requestIdRef.current) return;
-      setPayload(response);
+
+    // Check session cache
+    const cached = conversionCache.get(cacheKey);
+    if (cached && source === "auto") {
+      // Use cached result without API call
+      const response = cached;
       const sakaDate = typeof response === "object" && response && "saka_date" in response ? response.saka_date : undefined;
       const derivedGrid = deriveHouseGrid(
         details,
         (sakaDate as { month?: string } | undefined)?.month,
         (sakaDate as { day?: number } | undefined)?.day,
       );
+
+      // Batch all state updates together (React 18 automatic batching)
+      setPayload(response);
       setHouseGrid(derivedGrid);
+      setAutoTriggered(true);
+
       updateSaka({
         details,
         sakaDate: sakaDate as { year?: number; month?: string; day?: number },
         houseGrid: derivedGrid,
         payload: response,
       });
+
+      lastCacheKeyRef.current = cacheKey;
+      return;
+    }
+
+    if (source === "manual") {
+      triggerSubmitFeedback();
+      setError(null);
+    }
+
+    const requestId = ++requestIdRef.current;
+    setLoading(true);
+
+    try {
+      const response = await requestCalendar(details);
+      if (requestId !== requestIdRef.current) return;
+
+      // Cache the response
+      conversionCache.set(cacheKey, response);
+      lastCacheKeyRef.current = cacheKey;
+
+      const sakaDate = typeof response === "object" && response && "saka_date" in response ? response.saka_date : undefined;
+      const derivedGrid = deriveHouseGrid(
+        details,
+        (sakaDate as { month?: string } | undefined)?.month,
+        (sakaDate as { day?: number } | undefined)?.day,
+      );
+
+      // Batch all state updates together
+      setPayload(response);
+      setHouseGrid(derivedGrid);
+      setAutoTriggered(source === "auto");
+
+      updateSaka({
+        details,
+        sakaDate: sakaDate as { year?: number; month?: string; day?: number },
+        houseGrid: derivedGrid,
+        payload: response,
+      });
+
       const placements = deriveHousePlacements(
         derivedGrid,
         (sakaDate as { day?: number } | undefined)?.day,
       );
+
+      // Compute sakaLabel inline to avoid useMemo dependency
+      const sakaLabel = sakaDate
+        ? `Śaka ${sakaDate.year ?? ""} ${sakaDate.month ?? ""} ${sakaDate.day ?? ""}`.trim()
+        : "Śaka conversion ready";
+
       saveBirthDetails(
         {
           ...details,
@@ -120,7 +180,6 @@ export default function CalendarForm() {
         },
         { autoSubmit: true },
       );
-      setAutoTriggered(source === "auto");
     } catch (err) {
       if (requestId !== requestIdRef.current) return;
       const message = err instanceof Error ? err.message : "Unable to convert date";
@@ -133,8 +192,9 @@ export default function CalendarForm() {
         setLoading(false);
       }
     }
-  };
+  }, [details, triggerSubmitFeedback, updateSaka]);
 
+  // Debounced auto-submit on input changes
   useEffect(() => {
     if (!details.birthDate || !details.birthTime || !details.birthPlace) return;
 
@@ -147,8 +207,9 @@ export default function CalendarForm() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [details]);
+  }, [details, handleSubmit]);
 
+  // Compute sakaLabel from payload
   const sakaLabel = useMemo(() => {
     if (!payload || typeof payload !== "object" || !("saka_date" in payload)) return "Śaka conversion ready";
     const sakaDate = (payload as { saka_date?: { year?: number; month?: string; day?: number } }).saka_date;

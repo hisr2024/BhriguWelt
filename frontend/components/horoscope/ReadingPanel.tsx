@@ -1,3 +1,4 @@
+import LifeEventsTimeline, { LifeEventsReport } from "../LifeEventsTimeline";
 import { ChartResponse, FormState, Interpretation } from "./types";
 
 type Props = {
@@ -68,6 +69,14 @@ export default function ReadingPanel({
                 </section>
               )}
             </div>
+
+            {/* Year-wise Life Events Timeline */}
+            {(() => {
+              const lifeEventsReport = typeof chart === 'object' && chart && 'life_events_report' in chart
+                ? (chart.life_events_report as LifeEventsReport)
+                : null;
+              return lifeEventsReport ? <LifeEventsTimeline report={lifeEventsReport} /> : null;
+            })()}
 
             <div className="results-actions" aria-label="Share or export results">
               <div>

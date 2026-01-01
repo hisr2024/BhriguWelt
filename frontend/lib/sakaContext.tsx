@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 
 import { CalendarDetails } from "@/types/astro";
 import { HouseSummary } from "./houseGrid";
@@ -37,13 +37,23 @@ const SakaContext = createContext<SakaContextType | undefined>(undefined);
 export function SakaProvider({ children }: { children: React.ReactNode }) {
   const [sakaState, setSakaState] = useState<SakaState>({});
 
+  // Memoize callbacks separately to prevent context value recreation
+  const updateSaka = useCallback((state: SakaState) => {
+    setSakaState((prev) => ({ ...prev, ...state }));
+  }, []);
+
+  const clearSaka = useCallback(() => {
+    setSakaState({});
+  }, []);
+
+  // Only recreate context value when callbacks change (they won't due to useCallback)
   const value = useMemo<SakaContextType>(
     () => ({
       sakaState,
-      updateSaka: (state) => setSakaState((prev) => ({ ...prev, ...state })),
-      clearSaka: () => setSakaState({}),
+      updateSaka,
+      clearSaka,
     }),
-    [sakaState],
+    [sakaState, updateSaka, clearSaka],
   );
 
   return <SakaContext.Provider value={value}>{children}</SakaContext.Provider>;
