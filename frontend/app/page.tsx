@@ -1,3 +1,5 @@
+'use client';
+
 import HoroscopeForm from "@/components/HoroscopeForm";
 
 export default function HomePage() {

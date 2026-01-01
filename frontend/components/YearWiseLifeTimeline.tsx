@@ -44,9 +44,9 @@ export default function YearWiseLifeTimeline() {
 
   useEffect(() => {
     const stored = loadBirthDetails();
-    if (stored && stored.birthDate && stored.birthTime && stored.birthPlace) {
-      setBirthDetails(stored);
-      void fetchTimeline(stored);
+    if (stored && stored.name && stored.birthDate && stored.birthTime && stored.birthPlace) {
+      setBirthDetails(stored as BirthDetails);
+      void fetchTimeline(stored as BirthDetails);
     }
   }, []);
 
