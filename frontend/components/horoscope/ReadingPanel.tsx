@@ -1,5 +1,7 @@
 import LifeEventsTimeline, { LifeEventsReport } from "../LifeEventsTimeline";
+import DetailedChartPanel from "./DetailedChartPanel";
 import { ChartResponse, FormState, Interpretation } from "./types";
+import "./detailed-chart.css";
 
 type Props = {
   chart: ChartResponse | null;
@@ -69,6 +71,14 @@ export default function ReadingPanel({
                 </section>
               )}
             </div>
+
+            {/* Detailed Chart Panel with comprehensive analysis */}
+            {(() => {
+              const detailedChart = typeof chart === 'object' && chart && 'detailed_chart' in chart
+                ? chart.detailed_chart
+                : null;
+              return detailedChart ? <DetailedChartPanel detailedChart={detailedChart} name={form.name} /> : null;
+            })()}
 
             {/* Year-wise Life Events Timeline */}
             {(() => {

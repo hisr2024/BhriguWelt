@@ -26,6 +26,7 @@ from .calendar_conversion import convert_birth_details
 from .feedback import feedback_analytics_snapshot, record_feedback, quarterly_reviews, serialize_entry
 from .ml_service import get_ml_health, record_model_load, retrain_feedback_model
 from .ai_client import AIIntegrationError, ai_provider_metadata, chat_completion
+from .detailed_chart_generator import generate_detailed_chart
 from .telemetry import capture_exception, init_telemetry
 from .profiles import (
     create_or_update_profile,
@@ -1073,6 +1074,55 @@ def _enhance_with_ai(
     if not _ai_rate_limiter.allow(requester):
         logger.warning("AI narrative rate limited", extra={"endpoint": endpoint, "requester": requester})
         return response_dict
+
+    # Use detailed chart generator for horoscope endpoint
+    if endpoint == "horoscope" and not summary:
+        try:
+            tradition = request_data.get("tradition", "universal")
+            detailed_result = generate_detailed_chart(response_dict, request_data, tradition)
+
+            # Add detailed chart data to response
+            response_with_ai["detailed_chart"] = {
+                "correlation_id": detailed_result.correlation_id,
+                "chart_summary": detailed_result.chart_summary,
+                "key_personality_themes": detailed_result.key_personality_themes,
+                "life_areas": detailed_result.life_areas,
+                "yogas_or_bhrigu_indicators": detailed_result.yogas_or_bhrigu_indicators,
+                "yearwise_major_events": detailed_result.yearwise_major_events,
+                "confidence_notes": detailed_result.confidence_notes,
+                "schema_valid": detailed_result.schema_valid,
+                "retry_count": detailed_result.retry_count,
+            }
+
+            # Add enhanced narrative from detailed chart
+            response_with_ai["ai_narrative"] = detailed_result.raw_response
+
+            # Log metrics
+            logger.info(
+                "Detailed chart generated",
+                extra={
+                    "endpoint": endpoint,
+                    "requester": requester,
+                    "correlation_id": detailed_result.correlation_id,
+                    "prompt_length": detailed_result.prompt_length,
+                    "response_length": detailed_result.response_length,
+                    "schema_valid": detailed_result.schema_valid,
+                    "retry_count": detailed_result.retry_count,
+                    "cached": False,
+                },
+            )
+
+            _ai_narrative_cache.set(cache_key, response_with_ai)
+            return response_with_ai
+
+        except Exception as exc:
+            logger.error(
+                "Detailed chart generation failed",
+                extra={"endpoint": endpoint, "error": str(exc)},
+                exc_info=True,
+            )
+            # Fall through to legacy AI enhancement
+            pass
 
     principle_context = _extract_principle_context()
 
