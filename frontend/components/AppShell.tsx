@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Providers from "@/app/providers";
 import BhriguChat from "@/components/BhriguChat";
-import AnimatedLogo from "@/components/AnimatedLogo";
 import { useI18n, type Language } from "@/lib/i18n";
 import { theme } from "@/lib/theme";
 
@@ -62,10 +61,8 @@ function Shell({ children }: Props) {
 
       <header className="topbar" aria-label="Site header">
         <Link href="/" className="brand" aria-label={t("nav.home", "Home")}>
-          <div className="brand-logo-container">
-            <AnimatedLogo />
-          </div>
-          <span className="brand-text">BhriguWelt</span>
+          <span className="brand-mark" style={{ background: theme.gradients.brand }} aria-hidden />
+          BhriguWelt
         </Link>
         <div className="topbar__mobile">
           <button
