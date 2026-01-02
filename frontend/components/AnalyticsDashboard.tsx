@@ -451,26 +451,29 @@ export default function AnalyticsDashboard({ userId }: Props) {
                   <p className="card-subtitle">Pancha Mahabhuta distribution</p>
                 </div>
                 <div className="element-grid">
-                  {elementBalance.length > 0 ? (
-                    elementBalance.map((element, idx) => (
+                  {Object.entries(elementBalance).map(([key, value], idx) => {
+                    const elementConfig = {
+                      fire: { icon: "🔥", label: "Fire" },
+                      water: { icon: "💧", label: "Water" },
+                      air: { icon: "🌫️", label: "Air" },
+                      earth: { icon: "🌍", label: "Earth" },
+                    };
+                    const config = elementConfig[key as keyof typeof elementConfig];
+                    return (
                       <motion.div
-                        key={element.id}
+                        key={key}
                         className="element-item"
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: idx * 0.1 }}
                         whileHover={{ scale: 1.05 }}
                       >
-                        <div className="element-icon">{["🔥", "💧", "🌫️", "🌍", "✨"][idx % 5]}</div>
-                        <div className="element-name">{element.label}</div>
-                        <div className="element-value">{Math.round(element.value * 100)}%</div>
+                        <div className="element-icon">{config.icon}</div>
+                        <div className="element-name">{config.label}</div>
+                        <div className="element-value">{value}</div>
                       </motion.div>
-                    ))
-                  ) : (
-                    <div className="empty-state">
-                      <p>Loading element balance...</p>
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
               </motion.div>
             </div>
@@ -570,18 +573,18 @@ export default function AnalyticsDashboard({ userId }: Props) {
                 <p className="card-subtitle">Current planetary transits and their effects</p>
               </div>
               <div className="transit-content">
-                {transitOverlay.length > 0 ? (
+                {transitOverlay.positions.length > 0 ? (
                   <div className="transit-grid">
-                    {transitOverlay.map((transit, idx) => (
+                    {transitOverlay.positions.map((transit, idx) => (
                       <motion.div
-                        key={transit.id}
+                        key={idx}
                         className="transit-item"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: idx * 0.1 }}
                       >
-                        <div className="transit-label">{transit.label}</div>
-                        <div className="transit-value">{transit.value}</div>
+                        <div className="transit-label">{transit.planet}</div>
+                        <div className="transit-value">{transit.degree}°</div>
                       </motion.div>
                     ))}
                   </div>
