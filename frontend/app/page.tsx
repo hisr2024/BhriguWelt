@@ -189,7 +189,7 @@ export default function HomePage() {
               <strong>Experience Nadi Jyotisha:</strong> Explore our comprehensive Nadi analysis 
               to discover your past lives, future trajectory, and karmic relationships.
             </p>
-            <Link href="/nadi-jyotisha" className="button-link primary">
+            <Link href="/nadi-jyotisha" className="button-link">
               Explore Nadi Jyotisha →
             </Link>
           </div>
