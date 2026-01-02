@@ -1,4 +1,3 @@
-import JourneyRail from "@/components/JourneyRail";
 import MatchmakingForm from "@/components/MatchmakingForm";
 
 export default function MatchmakingPage() {
@@ -15,7 +14,6 @@ export default function MatchmakingPage() {
         <p className="muted">Compare two charts and surface harmony indicators.</p>
       </div>
       <div className="panel__content">
-        <JourneyRail />
         <MatchmakingForm />
       </div>
     </section>

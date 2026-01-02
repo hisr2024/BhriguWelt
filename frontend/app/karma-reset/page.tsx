@@ -1,4 +1,3 @@
-import JourneyRail from "@/components/JourneyRail";
 import PredictionForm from "@/components/PredictionForm";
 
 export default function KarmaResetPage() {
@@ -15,7 +14,6 @@ export default function KarmaResetPage() {
         <p className="muted">Identify hotspots and receive guided reset assignments.</p>
       </div>
       <div className="panel__content">
-        <JourneyRail />
         <PredictionForm
           engine="karmic-dashboard"
           title="Karma reset dashboard"

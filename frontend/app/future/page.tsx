@@ -1,4 +1,3 @@
-import JourneyRail from "@/components/JourneyRail";
 import PredictionForm from "@/components/PredictionForm";
 
 export default function FuturePage() {
@@ -18,7 +17,6 @@ export default function FuturePage() {
         </p>
       </div>
       <div className="panel__content">
-        <JourneyRail />
         <div className="panel__content--stacked">
           <PredictionForm
             engine="future"
