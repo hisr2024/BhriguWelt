@@ -6,7 +6,6 @@ import Providers from "@/app/providers";
 import BhriguChat from "@/components/BhriguChat";
 import AnimatedLogo from "@/components/AnimatedLogo";
 import { useI18n, type Language } from "@/lib/i18n";
-import { theme } from "@/lib/theme";
 
 type Props = {
   children: React.ReactNode;
@@ -14,10 +13,10 @@ type Props = {
 
 const navLinks = [
   { href: "/", key: "nav.home", fallback: "Home" },
+  { href: "/birth-chart", key: "nav.birthChart", fallback: "Birth Chart & Horoscope" },
+  { href: "/nadi-jyotisha", key: "nav.nadiJyotisha", fallback: "Nadi Jyotisha" },
   { href: "/dashboard", key: "nav.dashboard", fallback: "Dashboard" },
   { href: "/analytics-tools", key: "nav.analytics", fallback: "Analytics Tools" },
-  { href: "/birth-chart", key: "nav.birthChart", fallback: "Birth Chart" },
-  { href: "/nadi-jyotisha", key: "nav.nadiJyotisha", fallback: "Nadi Jyotisha" },
 ];
 
 function Shell({ children }: Props) {
