@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import YearSpecificQuery from './YearSpecificQuery';
 
 export interface LifeArea {
   strengths: string[];
@@ -168,13 +169,14 @@ const LifeAreaSection: React.FC<{
 };
 
 export default function DetailedChartPanel({ detailedChart, name }: Props) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'life-areas' | 'timeline' | 'yogas'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'life-areas' | 'timeline' | 'yogas'>('timeline');
 
   return (
     <div className="detailed-chart-panel">
       <div className="panel-header">
-        <h3>📊 Comprehensive Birth Chart Analysis</h3>
-        {name && <p className="seeker-name">{name}'s Detailed Reading</p>}
+        <h3>📅 Birth Chart & Lifetime Predictions</h3>
+        {name && <p className="seeker-name">{name}'s Detailed Horoscope</p>}
+        <p className="panel-subtitle">Focus on Important Events & Life Milestones</p>
         {detailedChart.correlation_id && (
           <p className="correlation-id">
             <small>Correlation ID: {detailedChart.correlation_id}</small>
@@ -182,8 +184,14 @@ export default function DetailedChartPanel({ detailedChart, name }: Props) {
         )}
       </div>
 
-      {/* Tab Navigation */}
+      {/* Tab Navigation - Reordered to emphasize timeline */}
       <div className="tab-navigation">
+        <button
+          className={`tab ${activeTab === 'timeline' ? 'active' : ''}`}
+          onClick={() => setActiveTab('timeline')}
+        >
+          📅 Important Life Events
+        </button>
         <button
           className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
           onClick={() => setActiveTab('overview')}
@@ -195,12 +203,6 @@ export default function DetailedChartPanel({ detailedChart, name }: Props) {
           onClick={() => setActiveTab('life-areas')}
         >
           Life Areas
-        </button>
-        <button
-          className={`tab ${activeTab === 'timeline' ? 'active' : ''}`}
-          onClick={() => setActiveTab('timeline')}
-        >
-          Year-wise Timeline
         </button>
         <button
           className={`tab ${activeTab === 'yogas' ? 'active' : ''}`}
@@ -278,62 +280,73 @@ export default function DetailedChartPanel({ detailedChart, name }: Props) {
 
         {activeTab === 'timeline' && (
           <div className="timeline-tab">
-            <p className="tab-intro">
-              Major events and themes predicted for different years/ages based on your chart:
-            </p>
+            <div className="tab-intro-banner">
+              <h4>🎯 Lifetime Important Events & Milestones</h4>
+              <p>
+                Year-wise analysis of major life events based on your birth chart. 
+                Each period highlights important transitions, opportunities, and challenges 
+                according to Bhrigu Samhita principles.
+              </p>
+            </div>
             <div className="timeline-container">
-              {detailedChart.yearwise_major_events.map((event, idx) => (
-                <div key={idx} className="timeline-event">
-                  <div className="event-year">
-                    <span className="year-badge">{event.year}</span>
+              {detailedChart.yearwise_major_events.map((event, idx) => {
+                // Determine if this is an important/highlighted event
+                const isImportant = event.likely_events && event.likely_events.length > 0;
+                
+                return (
+                  <div key={idx} className={`timeline-event ${isImportant ? 'important-event' : ''}`}>
+                    <div className="event-year">
+                      <span className="year-badge">{event.year}</span>
+                      {isImportant && <span className="importance-marker">★ Important</span>}
+                    </div>
+                    <div className="event-content">
+                      {event.themes && event.themes.length > 0 && (
+                        <div className="event-section themes-section">
+                          <h5>🎯 Life Themes</h5>
+                          <ul>
+                            {event.themes.map((theme, i) => (
+                              <li key={i}>{theme}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {event.likely_events && event.likely_events.length > 0 && (
+                        <div className="event-section important-section">
+                          <h5>⭐ Important Events</h5>
+                          <ul className="important-events-list">
+                            {event.likely_events.map((evt, i) => (
+                              <li key={i} className="important-event-item">{evt}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {event.cautions && event.cautions.length > 0 && (
+                        <div className="event-section caution-section">
+                          <h5>⚠️ Areas of Caution</h5>
+                          <ul>
+                            {event.cautions.map((caution, i) => (
+                              <li key={i}>{caution}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {event.supports && event.supports.length > 0 && (
+                        <div className="event-section support-section">
+                          <h5>🌟 Supportive Factors</h5>
+                          <ul>
+                            {event.supports.map((support, i) => (
+                              <li key={i}>{support}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="event-content">
-                    {event.themes && event.themes.length > 0 && (
-                      <div className="event-section">
-                        <h5>🎯 Themes</h5>
-                        <ul>
-                          {event.themes.map((theme, i) => (
-                            <li key={i}>{theme}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {event.likely_events && event.likely_events.length > 0 && (
-                      <div className="event-section">
-                        <h5>📅 Likely Events</h5>
-                        <ul>
-                          {event.likely_events.map((evt, i) => (
-                            <li key={i}>{evt}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {event.cautions && event.cautions.length > 0 && (
-                      <div className="event-section">
-                        <h5>⚠️ Cautions</h5>
-                        <ul>
-                          {event.cautions.map((caution, i) => (
-                            <li key={i}>{caution}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {event.supports && event.supports.length > 0 && (
-                      <div className="event-section">
-                        <h5>🌟 Supports</h5>
-                        <ul>
-                          {event.supports.map((support, i) => (
-                            <li key={i}>{support}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -364,6 +377,9 @@ export default function DetailedChartPanel({ detailedChart, name }: Props) {
           </div>
         )}
       </div>
+
+      {/* Future Feature: Year-Specific Questions */}
+      <YearSpecificQuery enabled={false} />
 
       {/* Debug Info (only show if schema invalid) */}
       {detailedChart.schema_valid === false && (

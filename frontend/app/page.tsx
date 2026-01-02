@@ -70,7 +70,7 @@ export default function HomePage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.8 }}
           >
-            Year-wise Life Predictions based on Ancient Bhrigu Samhita
+            Lifetime Predictions with Focus on Important Events
           </motion.p>
           <motion.p 
             className="muted"
@@ -78,8 +78,9 @@ export default function HomePage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.8 }}
           >
-            Comprehensive life analysis including year-wise major events, marriage prospects,
-            success periods, challenging phases, and transformational milestones.
+            Comprehensive life analysis focusing on major life events, marriage timing,
+            career milestones, transformational periods, and important year-wise predictions
+            based on Ancient Bhrigu Samhita principles.
           </motion.p>
         </motion.div>
 
@@ -135,14 +136,14 @@ export default function HomePage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.8 }}
           >
-            Complete Life Analysis
+            Focus on Important Life Events
           </motion.p>
           <motion.h2
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.9 }}
           >
-            📅 Year-wise Predictions & Major Life Events
+            ⭐ Detailed Lifetime Predictions & Major Milestones
           </motion.h2>
           <motion.p 
             className="muted"
@@ -150,10 +151,10 @@ export default function HomePage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 1.0 }}
           >
-            Enter your birth details to receive a detailed horoscope with year-by-year analysis
-            of major life events. This traditional Bharatiya horoscope includes marriage timings,
-            career milestones, risky periods, and auspicious phases — all grounded in
-            Bhrigu Samhita principles.
+            Enter your birth details to receive a comprehensive horoscope focusing on important 
+            life events. Get detailed year-by-year analysis of major milestones including marriage 
+            timing, career breakthroughs, property acquisition, children, health transitions, 
+            and spiritual awakening — all grounded in Bhrigu Samhita principles.
           </motion.p>
         </motion.div>
 
@@ -162,7 +163,7 @@ export default function HomePage() {
         </motion.div>
 
         <motion.div className="card info-card" variants={itemVariants}>
-          <h3>🔮 What You'll Receive</h3>
+          <h3>⭐ Important Life Events You'll Discover</h3>
           <motion.ul 
             className="benefits-list"
             initial="hidden"
@@ -178,28 +179,36 @@ export default function HomePage() {
           >
             {[
               {
-                title: "Year-wise Life Timeline:",
-                desc: "Major events predicted for each year of your life",
+                title: "Marriage & Relationships:",
+                desc: "Timing, characteristics, and important relationship milestones",
               },
               {
-                title: "Marriage Prospects:",
-                desc: "Timing and characteristics of marriage events",
+                title: "Career Breakthroughs:",
+                desc: "Job changes, promotions, and professional achievements",
               },
               {
-                title: "Success Periods:",
-                desc: "Career achievements and financial growth phases",
+                title: "Children & Family:",
+                desc: "Family expansion and important parenting phases",
               },
               {
-                title: "Risky Periods:",
-                desc: "Challenging times requiring caution",
+                title: "Property & Assets:",
+                desc: "Major purchases, investments, and asset acquisition timing",
               },
               {
-                title: "Transformational Milestones:",
-                desc: "Major life transitions and spiritual growth",
+                title: "Health Transitions:",
+                desc: "Important health events and wellness milestones",
               },
               {
-                title: "Bhrigu-based Remedies:",
-                desc: "Personalized rituals and guidance",
+                title: "Financial Milestones:",
+                desc: "Wealth accumulation periods and major financial events",
+              },
+              {
+                title: "Spiritual Awakening:",
+                desc: "Transformational periods and spiritual growth phases",
+              },
+              {
+                title: "Life Challenges:",
+                desc: "Critical periods requiring caution and preparation",
               },
             ].map((benefit, idx) => (
               <motion.li

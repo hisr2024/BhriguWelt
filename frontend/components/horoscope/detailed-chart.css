@@ -80,6 +80,36 @@
   border-radius: 4px;
 }
 
+/* Tab intro banner - enhanced for important events */
+.tab-intro-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.tab-intro-banner h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.tab-intro-banner p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  opacity: 0.95;
+}
+
+.panel-subtitle {
+  font-size: 0.95rem;
+  color: #6c757d;
+  margin: 0.5rem 0;
+  font-style: italic;
+}
+
 /* Overview Tab */
 .overview-tab section {
   margin-bottom: 2rem;
@@ -262,10 +292,38 @@
   padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+/* Important event highlighting */
+.timeline-event.important-event {
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+  border-left: 5px solid #ffa726;
+  box-shadow: 0 4px 8px rgba(255, 167, 38, 0.2);
+}
+
+.timeline-event:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
 }
 
 .event-year {
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.importance-marker {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #ffa726;
+  color: white;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  white-space: nowrap;
 }
 
 .year-badge {
@@ -295,6 +353,43 @@
   font-size: 0.95rem;
   margin-bottom: 0.5rem;
   color: #495057;
+  font-weight: 600;
+}
+
+/* Enhanced styling for different event sections */
+.event-section.themes-section {
+  border-left: 3px solid #667eea;
+  padding-left: 0.75rem;
+}
+
+.event-section.important-section {
+  background: rgba(255, 167, 38, 0.1);
+  padding: 0.75rem;
+  border-radius: 6px;
+  border-left: 4px solid #ffa726;
+}
+
+.event-section.caution-section {
+  background: rgba(220, 53, 69, 0.05);
+  padding: 0.75rem;
+  border-radius: 6px;
+  border-left: 4px solid #dc3545;
+}
+
+.event-section.support-section {
+  background: rgba(40, 167, 69, 0.05);
+  padding: 0.75rem;
+  border-radius: 6px;
+  border-left: 4px solid #28a745;
+}
+
+.important-events-list {
+  margin-top: 0.5rem;
+}
+
+.important-event-item {
+  font-weight: 500;
+  color: #f57c00;
 }
 
 .event-section ul {
