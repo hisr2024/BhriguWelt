@@ -39,6 +39,13 @@ const AnalyticsCharts = dynamic(() => import("@/components/AnalyticsCharts"), {
 
 const refreshIntervalMs = 15000;
 
+const ELEMENT_CONFIG = {
+  fire: { icon: "🔥", label: "Fire" },
+  water: { icon: "💧", label: "Water" },
+  air: { icon: "🌫️", label: "Air" },
+  earth: { icon: "🌍", label: "Earth" },
+} as const;
+
 type Props = {
   userId: string;
 };
@@ -452,13 +459,8 @@ export default function AnalyticsDashboard({ userId }: Props) {
                 </div>
                 <div className="element-grid">
                   {Object.entries(elementBalance).map(([key, value], idx) => {
-                    const elementConfig = {
-                      fire: { icon: "🔥", label: "Fire" },
-                      water: { icon: "💧", label: "Water" },
-                      air: { icon: "🌫️", label: "Air" },
-                      earth: { icon: "🌍", label: "Earth" },
-                    };
-                    const config = elementConfig[key as keyof typeof elementConfig];
+                    const config = ELEMENT_CONFIG[key as keyof typeof ELEMENT_CONFIG];
+                    if (!config) return null;
                     return (
                       <motion.div
                         key={key}
