@@ -1,5 +1,4 @@
 import CoreWisdomPanel from "@/components/CoreWisdomPanel";
-import JourneyRail from "@/components/JourneyRail";
 
 export default function MeditationsPage() {
   return (
@@ -15,7 +14,6 @@ export default function MeditationsPage() {
         <p className="muted">Receive meditation prompts rooted in lunar and planetary focus areas.</p>
       </div>
       <div className="panel__content">
-        <JourneyRail />
         <CoreWisdomPanel
           eyebrow="Meditation flow"
           title="Meditation guidance"

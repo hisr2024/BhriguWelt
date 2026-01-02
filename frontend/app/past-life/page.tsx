@@ -1,4 +1,3 @@
-import JourneyRail from "@/components/JourneyRail";
 import PredictionForm from "@/components/PredictionForm";
 
 export default function PastLifePage() {
@@ -18,7 +17,6 @@ export default function PastLifePage() {
         </p>
       </div>
       <div className="panel__content">
-        <JourneyRail />
         <PredictionForm
           engine="past-life"
           title="Past-Life Karmic Analysis"

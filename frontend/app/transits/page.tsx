@@ -1,4 +1,3 @@
-import JourneyRail from "@/components/JourneyRail";
 import TransitsForm from "@/components/TransitsForm";
 
 export default function TransitsPage() {
@@ -15,7 +14,6 @@ export default function TransitsPage() {
         <p className="muted">Compare natal and current skies with actionable rituals.</p>
       </div>
       <div className="panel__content">
-        <JourneyRail />
         <TransitsForm />
       </div>
     </section>

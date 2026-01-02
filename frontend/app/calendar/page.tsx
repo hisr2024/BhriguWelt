@@ -1,5 +1,4 @@
 import CalendarForm from "@/components/CalendarForm";
-import JourneyRail from "@/components/JourneyRail";
 
 export default function CalendarPage() {
   return (
@@ -15,7 +14,6 @@ export default function CalendarPage() {
         <p className="muted">Align birth records with lunar timing and ritual dates.</p>
       </div>
       <div className="panel__content">
-        <JourneyRail />
         <CalendarForm />
       </div>
     </section>

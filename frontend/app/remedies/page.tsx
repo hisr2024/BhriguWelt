@@ -1,5 +1,4 @@
 import CoreWisdomPanel from "@/components/CoreWisdomPanel";
-import JourneyRail from "@/components/JourneyRail";
 
 export default function RemediesPage() {
   return (
@@ -15,7 +14,6 @@ export default function RemediesPage() {
         <p className="muted">Surface chants, gems, and rituals tailored to your chart.</p>
       </div>
       <div className="panel__content">
-        <JourneyRail />
         <CoreWisdomPanel
           eyebrow="Remedy compass"
           title="Remedies and ritual guidance"

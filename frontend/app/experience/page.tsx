@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import JourneyRail from "@/components/JourneyRail";
 import { requestExperienceFlow } from "@/lib/api";
 import { DEFAULT_BIRTH_DETAILS } from "@/lib/birthDefaults";
 import { loadBirthDetails, onBirthDetails, StoredBirthDetails } from "@/lib/birthStorage";
@@ -91,7 +90,6 @@ export default function ExperiencePage() {
         <p className="muted">Build the unified narrative sequence across horoscope, past, and future.</p>
       </div>
       <div className="panel__content">
-        <JourneyRail />
         <div className="panel__content--stacked">
           <div className="card softly">
             <div className="section-heading">
