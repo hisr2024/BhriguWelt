@@ -166,35 +166,40 @@ def _build_detailed_prompt(
 3. DETAILED with rich, meaningful content (NO brief summaries or placeholders)
 4. PRACTICAL with actionable guidance
 5. COMPASSIONATE with a mentor's tone
+6. FOCUSED on IMPORTANT LIFE EVENTS and LIFETIME PREDICTIONS
 
 CRITICAL REQUIREMENTS:
 - Output MUST be valid JSON matching the schema EXACTLY
 - Each life area (career, relationships, health, finances, spirituality) MUST have:
   * At least 3-5 specific strengths
   * At least 3-5 specific challenges
-  * At least 2-4 turning points
+  * At least 2-4 turning points WITH SPECIFIC TIMING
   * Detailed guidance paragraph (minimum 100 words)
-- Include at least 5-10 year-wise predictions
+- Include at least 8-15 year-wise predictions covering IMPORTANT LIFE EVENTS:
+  * Marriage, career success, children, property, major transitions
+  * Health challenges, financial milestones, spiritual awakening
+  * Each event should be SPECIFIC and DETAILED, not vague
+  * Focus on MAJOR MILESTONES and TRANSFORMATIONAL PERIODS
 - Reference specific Bhrigu principles (BR-1, BR-7, etc.) with sutra references
 - NO medical diagnoses, NO financial advice (only general guidance)
 - Remind of free will and personal agency
 
 SCHEMA:
 {
-  "chart_summary": "3-5 sentence overview",
+  "chart_summary": "3-5 sentence overview focusing on lifetime trajectory",
   "key_personality_themes": ["theme 1 with description", "theme 2 with description", ...],
   "life_areas": {
-    "career": {"strengths": [...], "challenges": [...], "turning_points": [...], "guidance": "..."},
-    "relationships": {"strengths": [...], "challenges": [...], "turning_points": [...], "guidance": "..."},
-    "health": {"strengths": [...], "challenges": [...], "turning_points": [...], "guidance": "..."},
-    "finances": {"strengths": [...], "challenges": [...], "turning_points": [...], "guidance": "..."},
-    "spirituality": {"strengths": [...], "challenges": [...], "turning_points": [...], "guidance": "..."}
+    "career": {"strengths": [...], "challenges": [...], "turning_points": ["with years/ages"], "guidance": "detailed 100+ words"},
+    "relationships": {"strengths": [...], "challenges": [...], "turning_points": ["with years/ages"], "guidance": "detailed 100+ words"},
+    "health": {"strengths": [...], "challenges": [...], "turning_points": ["with years/ages"], "guidance": "detailed 100+ words"},
+    "finances": {"strengths": [...], "challenges": [...], "turning_points": ["with years/ages"], "guidance": "detailed 100+ words"},
+    "spirituality": {"strengths": [...], "challenges": [...], "turning_points": ["with years/ages"], "guidance": "detailed 100+ words"}
   },
   "yogas_or_bhrigu_indicators": [
     {"principle_id": "BR-X", "name": "...", "description": "...", "sutra_reference": "..."}
   ],
   "yearwise_major_events": [
-    {"year": 2025, "themes": [...], "likely_events": [...], "cautions": [...], "supports": [...]}
+    {"year": 2025, "themes": ["major life themes"], "likely_events": ["SPECIFIC important events like marriage, job change, etc."], "cautions": ["specific warnings"], "supports": ["supporting factors"]}
   ],
   "confidence_notes": "Explanation of signals used and certainty level"
 }
@@ -224,19 +229,28 @@ BASE ENGINE ANALYSIS:
 BASE INTERPRETATION:
 {interpretation[:1000] if interpretation else 'No base interpretation available'}
 
-INSTRUCTIONS:
-1. Create a rich, detailed chart_summary (3-5 sentences) weaving together the key themes
+INSTRUCTIONS - FOCUS ON IMPORTANT LIFETIME EVENTS:
+1. Create a rich, detailed chart_summary (3-5 sentences) focusing on the LIFETIME TRAJECTORY and MAJOR THEMES
 2. Identify 5-8 key_personality_themes from the weights and principles
 3. For each life area (career, relationships, health, finances, spirituality):
    - List 3-5 specific strengths based on weights and principles
    - List 3-5 specific challenges to be aware of
-   - Identify 2-4 likely turning_points with approximate timing
-   - Write detailed guidance (100+ words) with practical steps
+   - Identify 2-4 likely turning_points with SPECIFIC YEARS OR AGE RANGES (e.g., "Around age 28-30", "Year 2027-2028")
+   - Write detailed guidance (120+ words) with practical, actionable steps
 4. Extract yogas_or_bhrigu_indicators from the principles data (reference BR-X IDs and sutras)
-5. Generate 5-10 yearwise_major_events covering different life phases
+5. Generate 8-15 yearwise_major_events covering IMPORTANT LIFE MILESTONES:
+   - Marriage and relationships (timing, characteristics)
+   - Career breakthroughs and job changes
+   - Children and family expansion
+   - Property and major purchases
+   - Health challenges or improvements
+   - Financial windfalls or losses
+   - Spiritual awakening or transformation
+   - Each year should have SPECIFIC likely_events (not just themes)
+   - Focus on years with SIGNIFICANT ACTIVITY, skip routine years
 6. Add confidence_notes explaining what astrological signals were used
 
-Output ONLY valid JSON. Be detailed and comprehensive - this is NOT a summary, but a full reading."""
+Output ONLY valid JSON. Be EXTREMELY DETAILED - focus on IMPORTANT LIFE EVENTS and MAJOR MILESTONES, not routine occurrences."""
 
     return system_prompt, user_prompt
 
