@@ -17,6 +17,7 @@ import {
   type AnalyticsSnapshot,
   type ManuscriptPrinciple,
 } from "@/lib/analytics";
+import { easeOut } from "@/lib/animations";
 
 const AnalyticsCharts = dynamic(() => import("@/components/AnalyticsCharts"), {
   ssr: false,
@@ -152,7 +153,7 @@ export default function AnalyticsDashboard({ userId }: Props) {
       scale: 1,
       transition: {
         duration: 0.4,
-        ease: "easeOut",
+        ease: easeOut,
       },
     },
   };
@@ -501,7 +502,7 @@ export default function AnalyticsDashboard({ userId }: Props) {
                           className="principle-bar"
                           initial={{ width: 0 }}
                           animate={{ width: `${Math.round(weight.value * 100)}%` }}
-                          transition={{ delay: idx * 0.08 + 0.3, duration: 0.8, ease: "easeOut" }}
+                          transition={{ delay: idx * 0.08 + 0.3, duration: 0.8, ease: easeOut }}
                         />
                       </div>
                       <p className="principle-citation">{weight.citation}</p>
