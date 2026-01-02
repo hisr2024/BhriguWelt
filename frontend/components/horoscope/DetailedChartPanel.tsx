@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import YearSpecificQuery from './YearSpecificQuery';
 
 export interface LifeArea {
   strengths: string[];
@@ -376,6 +377,9 @@ export default function DetailedChartPanel({ detailedChart, name }: Props) {
           </div>
         )}
       </div>
+
+      {/* Future Feature: Year-Specific Questions */}
+      <YearSpecificQuery enabled={false} />
 
       {/* Debug Info (only show if schema invalid) */}
       {detailedChart.schema_valid === false && (
