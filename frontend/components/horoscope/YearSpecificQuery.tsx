@@ -56,7 +56,8 @@ export default function YearSpecificQuery({ birthDate, onQuerySubmit, enabled = 
   };
 
   const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 50 }, (_, i) => currentYear + i);
+  const PREDICTION_YEARS_AHEAD = 50;
+  const yearOptions = Array.from({ length: PREDICTION_YEARS_AHEAD }, (_, i) => currentYear + i);
 
   return (
     <div className="year-specific-query">
