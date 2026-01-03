@@ -1,10 +1,13 @@
 {
   "framework": "nextjs",
-  "installCommand": "npm install",
-  "buildCommand": "npm run build --workspace=legacy/frontend",
-  "outputDirectory": "legacy/frontend/.next",
+  "installCommand": "cd frontend && npm install",
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/.next",
+  "devCommand": "cd frontend && npm run dev",
   "env": {
-    "NEXT_PUBLIC_BACKEND_URL": "https://bhriguwelt-production.up.railway.app",
+    "NEXT_PUBLIC_API_URL": "@bhriguwelt-api-url",
+    "NEXT_PUBLIC_APP_NAME": "BhriguWelt",
+    "NEXT_PUBLIC_APP_DESCRIPTION": "Discover Your Soul's Journey Through Vedic Astrology",
     "NEXT_TELEMETRY_DISABLED": "1"
   },
   "regions": ["iad1", "sfo1", "fra1"]
