@@ -12,18 +12,62 @@ import GenZCard from '../components/GenZCard';
 import GenZButton from '../components/GenZButton';
 import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
+import { useEncryptionKey } from '@/lib/hooks/useEncryptedStorage';
+import { getItem, STORES } from '@/lib/storage';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
   const [birthDetails, setBirthDetails] = useState<any>(null);
+  const { encryptionKey, isSetup, isLoading: encryptionLoading } = useEncryptionKey();
+  const router = useRouter();
 
+  // Redirect to passcode setup if encryption not configured
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const details = localStorage.getItem('birthDetails');
-      if (details) {
-        setBirthDetails(JSON.parse(details));
-      }
+    if (!encryptionLoading && !isSetup) {
+      router.push('/setup-passcode');
     }
-  }, []);
+  }, [encryptionLoading, isSetup, router]);
+
+  // Redirect to unlock if not unlocked
+  useEffect(() => {
+    if (!encryptionLoading && isSetup && !encryptionKey) {
+      router.push('/unlock');
+    }
+  }, [encryptionLoading, isSetup, encryptionKey, router]);
+
+  // Load birth details from encrypted IndexedDB
+  useEffect(() => {
+    if (encryptionKey) {
+      loadBirthDetails();
+    }
+  }, [encryptionKey]);
+
+  const loadBirthDetails = async () => {
+    if (!encryptionKey) return;
+
+    try {
+      const profile = await getItem(STORES.PROFILES, 'current_profile', encryptionKey);
+      if (profile) {
+        setBirthDetails({
+          date_of_birth: profile.dateOfBirth,
+          time_of_birth: profile.timeOfBirth,
+          place_of_birth: profile.placeOfBirth,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading birth details:', error);
+    }
+  };
+
+  // Show loading while checking encryption status
+  if (encryptionLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <AnimatedBackground />
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
 
   const widgets = [
     {

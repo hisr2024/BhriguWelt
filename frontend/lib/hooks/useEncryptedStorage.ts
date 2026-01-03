@@ -18,12 +18,13 @@ import {
 import type { Profile, Report, WisdomCard, AppSettings } from '../types';
 
 /**
- * Hook for managing the encryption key in session
+ * Hook for managing the encryption key in session with auto-lock
  */
-export function useEncryptionKey() {
+export function useEncryptionKey(autoLockTimeoutMinutes: number = 5) {
   const [encryptionKey, setEncryptionKey] = useState<CryptoKey | null>(null);
   const [isSetup, setIsSetup] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [lastActivity, setLastActivity] = useState<number>(Date.now());
 
   useEffect(() => {
     checkSetup();
@@ -40,10 +41,47 @@ export function useEncryptionKey() {
     }
   };
 
+  // Track user activity for auto-lock
+  useEffect(() => {
+    const handleActivity = () => {
+      setLastActivity(Date.now());
+    };
+
+    // Listen to user interactions
+    const events = ['mousedown', 'keydown', 'touchstart', 'scroll', 'mousemove'];
+    events.forEach(event => {
+      window.addEventListener(event, handleActivity);
+    });
+
+    return () => {
+      events.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+    };
+  }, []);
+
+  // Auto-lock timer
+  useEffect(() => {
+    if (!encryptionKey || autoLockTimeoutMinutes <= 0) return;
+
+    const checkLockTimeout = setInterval(() => {
+      const inactiveTime = Date.now() - lastActivity;
+      const timeoutMs = autoLockTimeoutMinutes * 60 * 1000;
+
+      if (inactiveTime >= timeoutMs) {
+        console.log('Auto-locking due to inactivity');
+        setEncryptionKey(null);
+      }
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(checkLockTimeout);
+  }, [encryptionKey, lastActivity, autoLockTimeoutMinutes]);
+
   const unlockWithPasscode = async (passcode: string) => {
     try {
       const key = await getEncryptionKey(passcode);
       setEncryptionKey(key);
+      setLastActivity(Date.now());
       return true;
     } catch (error) {
       console.error('Error unlocking with passcode:', error);
@@ -51,9 +89,9 @@ export function useEncryptionKey() {
     }
   };
 
-  const lock = () => {
+  const lock = useCallback(() => {
     setEncryptionKey(null);
-  };
+  }, []);
 
   return {
     encryptionKey,
@@ -62,6 +100,7 @@ export function useEncryptionKey() {
     isUnlocked: !!encryptionKey,
     unlockWithPasscode,
     lock,
+    lastActivity,
   };
 }
 

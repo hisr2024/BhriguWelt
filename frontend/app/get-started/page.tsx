@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Sparkles, Calendar, Clock, MapPin, ArrowRight, Shield, Zap } from 'lucide-react';
@@ -10,6 +10,8 @@ import GenZButton from '../components/GenZButton';
 import GenZCard from '../components/GenZCard';
 import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
+import { useEncryptionKey } from '@/lib/hooks/useEncryptedStorage';
+import { setItem, STORES } from '@/lib/storage';
 
 export default function GetStartedPage() {
   const router = useRouter();
@@ -21,20 +23,61 @@ export default function GetStartedPage() {
     time_of_birth: '',
     place_of_birth: '',
   });
+  const { encryptionKey, isSetup, isLoading: encryptionLoading } = useEncryptionKey();
+
+  // Redirect to passcode setup if encryption not configured
+  useEffect(() => {
+    if (!encryptionLoading && !isSetup) {
+      router.push('/setup-passcode');
+    }
+  }, [encryptionLoading, isSetup, router]);
+
+  // Redirect to unlock if not unlocked
+  useEffect(() => {
+    if (!encryptionLoading && isSetup && !encryptionKey) {
+      router.push('/unlock');
+    }
+  }, [encryptionLoading, isSetup, encryptionKey, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!encryptionKey) {
+      setError('Please unlock the app first');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
       const result = await astrologyAPI.calculateBirthChart(formData);
 
-      // Store in localStorage for other pages
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('birthDetails', JSON.stringify(formData));
-        localStorage.setItem('birthChart', JSON.stringify(result.data));
-      }
+      // Store in encrypted IndexedDB
+      const profileData = {
+        name: formData.place_of_birth, // Use place as temporary name
+        dateOfBirth: formData.date_of_birth,
+        timeOfBirth: formData.time_of_birth,
+        placeOfBirth: formData.place_of_birth,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Save profile (encrypted)
+      await setItem(STORES.PROFILES, 'current_profile', profileData, encryptionKey);
+
+      // Save birth chart data as a report (encrypted)
+      const reportData = {
+        profileId: 1, // Current profile
+        type: 'birth-chart',
+        title: 'Birth Chart',
+        data: result.data,
+        generatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      await setItem(STORES.REPORTS, 'current_birth_chart', reportData, encryptionKey);
 
       // Redirect to dashboard
       router.push('/dashboard');
@@ -44,6 +87,16 @@ export default function GetStartedPage() {
       setLoading(false);
     }
   };
+
+  // Show loading while checking encryption status
+  if (encryptionLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <AnimatedBackground />
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
 
   const isStepValid = () => {
     if (step === 1) return formData.date_of_birth !== '';
