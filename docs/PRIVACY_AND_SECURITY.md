@@ -324,7 +324,8 @@ For honesty and transparency:
 
 - **4 digits**: 10,000 possible combinations - Good for casual protection
 - **6 digits**: 1,000,000 combinations - Better for sensitive data
-- **8+ digits**: 100,000,000+ combinations - Strongest protection
+- **8 digits**: 100,000,000 combinations - Strongest protection
+- **10+ digits**: 10,000,000,000+ combinations - Maximum security
 
 We recommend 6 digits as a balance between security and memorability.
 
@@ -579,9 +580,10 @@ If multiple people use the same device:
 
 ### If You Have Questions
 
-- 📚 **Documentation**: See [User Guide](./user_guide.md) for how-to instructions
+- 📚 **Documentation**: See [docs/README.md](./README.md) for complete documentation index
+- 📖 **User Guide**: See [User Guide](./user_guide.md) for general how-to instructions
 - 💬 **Community**: GitHub Discussions (no personal data, please!)
-- 📧 **Security concerns**: security@bhriguwelt.com
+- 📧 **Privacy & Security concerns**: security@bhriguwelt.com
 
 ### If You Find a Security Issue
 
