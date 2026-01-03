@@ -295,20 +295,35 @@ export interface AIMode {
   consentTimestamp?: string;
 }
 
+export interface AIBirthData {
+  zodiac_sign?: string;
+  nakshatra?: string;
+  moon_sign?: string;
+  ascendant?: string;
+  planetary_positions?: Record<string, any>;
+  houses?: string[];
+  dasha_period?: string;
+  yogas?: string[];
+  doshas?: string[];
+  elements?: string;
+  qualities?: string;
+  karmic_number?: number;
+}
+
 export interface AIComposeRequest {
   report_section: string;
-  birth_data: any;
+  birth_data: AIBirthData;
 }
 
 export interface AIChatRequest {
   message: string;
-  birth_data: any;
+  birth_data: AIBirthData;
   conversation_history?: Array<{ role: string; content: string }>;
 }
 
 export interface AISummarizeRequest {
   report_data: string;
-  birth_data: any;
+  birth_data: AIBirthData;
   summary_type?: 'overview' | 'key_insights' | 'action_items' | 'detailed';
 }
 

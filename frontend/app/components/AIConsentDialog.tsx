@@ -41,7 +41,7 @@ export default function AIConsentDialog({
 
   const handleAccept = () => {
     if (!acknowledged) {
-      alert('Please acknowledge that you have read and understood the privacy information.');
+      // Show inline error instead of alert
       return;
     }
     
@@ -166,6 +166,11 @@ export default function AIConsentDialog({
                     for AI-enhanced insights.
                   </span>
                 </label>
+                {!acknowledged && (
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    ⚠️ Please check the box above to enable AI features
+                  </p>
+                )}
               </div>
 
               {/* Actions */}

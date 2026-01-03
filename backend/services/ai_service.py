@@ -6,6 +6,7 @@ import os
 from typing import Dict, Any, List, Optional
 from services.sarvam_ai import sarvam_ai
 from middleware.sanitizer import RequestSanitizer
+from middleware.ai_constants import PII_FIELDS
 import logging
 
 logger = logging.getLogger(__name__)
@@ -155,14 +156,8 @@ class AIService:
         Validate that no PII is present in data
         Raises ValueError if PII detected
         """
-        forbidden_fields = [
-            'name', 'email', 'phone', 'address',
-            'birth_location', 'place_of_birth',
-            'exact_time', 'date_of_birth', 'time_of_birth',
-            'latitude', 'longitude', 'city', 'country'
-        ]
-        
-        for field in forbidden_fields:
+        # Use centralized PII fields list
+        for field in PII_FIELDS:
             if field in data:
                 raise ValueError(f"PII field '{field}' should not be present")
     

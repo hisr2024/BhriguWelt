@@ -8,6 +8,7 @@ import os
 
 from middleware.sanitizer import RequestSanitizer, sanitize_ai_request
 from middleware.rate_limiter import setup_rate_limiter
+from middleware.ai_constants import PII_FIELDS
 from services.sarvam_ai import sarvam_ai
 from services.ai_service import AIService
 
@@ -91,10 +92,8 @@ def compose_report():
         # Sanitize birth data - remove all PII
         sanitized_data = RequestSanitizer.sanitize_for_ai(birth_data)
         
-        # Validate that no PII is present
-        forbidden_fields = ['name', 'email', 'phone', 'address', 'birth_location', 
-                           'place_of_birth', 'exact_time', 'date_of_birth', 'time_of_birth']
-        for field in forbidden_fields:
+        # Validate that no PII is present (using centralized list)
+        for field in PII_FIELDS:
             if field in sanitized_data:
                 return jsonify({
                     'error': 'Security error',

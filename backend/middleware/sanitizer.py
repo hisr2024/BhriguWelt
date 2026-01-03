@@ -7,6 +7,7 @@ from typing import Dict, Any, List
 from flask import request, make_response
 from functools import wraps
 import html
+from middleware.ai_constants import ALLOWED_ASTROLOGICAL_FIELDS, PII_FIELDS
 
 
 class RequestSanitizer:
@@ -41,24 +42,9 @@ class RequestSanitizer:
         Sanitize birth data for AI API calls
         Remove all PII, keep only astrological data
         """
-        # Allowed fields only (no PII)
-        allowed_fields = [
-            'zodiac_sign',
-            'nakshatra',
-            'moon_sign',
-            'ascendant',
-            'planetary_positions',
-            'houses',
-            'dasha_period',
-            'yogas',
-            'doshas',
-            'elements',
-            'qualities',
-            'karmic_number'
-        ]
-        
+        # Use centralized allowed fields list
         sanitized = {}
-        for field in allowed_fields:
+        for field in ALLOWED_ASTROLOGICAL_FIELDS:
             if field in birth_data:
                 value = birth_data[field]
                 
