@@ -27,6 +27,54 @@ Include links to the relevant API endpoints, UI routes, or manuscripts so mainta
 - Frontend: use TypeScript, functional React components, and Next.js conventions.
 - Avoid adding try/except around imports per repo guidance.
 
+## Security practices
+**All contributors must follow these security guidelines:**
+
+### Data Privacy
+- **Never log or transmit PII**: Birth data (name, exact location, birth time) must be sanitized before any external API calls
+- **Encryption first**: All user data stored in IndexedDB or SQLite must be encrypted at rest
+- **Key management**: Encryption keys derived from user passcode, never stored persistently
+- **See**: `SECURITY_ARCHITECTURE.md` for complete threat model and mitigation strategies
+
+### API Security
+- **Rate limiting**: Implement rate limits on all public endpoints (see `backend/middleware/rate_limiter.py`)
+- **Input validation**: Sanitize all user inputs before processing (see `backend/middleware/sanitizer.py`)
+- **CORS**: Use strict origin configuration, never `*` in production
+- **Headers**: Apply security headers (CSP, HSTS, X-Frame-Options) via middleware
+- **See**: `SARVAM_AI_INTEGRATION.md` for AI API security guidelines
+
+### Frontend Security
+- **No secrets in code**: API keys and secrets must never be in frontend bundle
+- **WebCrypto only**: Use browser's native WebCrypto API, not custom encryption
+- **XSS prevention**: React's auto-escaping + CSP headers. Never use `dangerouslySetInnerHTML` with user content
+- **Service worker**: Only cache public assets, never sensitive data in service worker scope
+- **Session management**: Implement auto-lock timeout and clear keys on lock
+
+### Backend Security
+- **Environment variables**: Store all secrets in `.env` files, never commit to git
+- **Request sanitization**: Remove PII before forwarding to AI APIs
+- **Response validation**: Validate and sanitize all AI responses before returning to client
+- **Error handling**: Never expose stack traces or internal errors in API responses
+- **Logging**: Log security events but never log sensitive data (passcodes, keys, PII)
+
+### Code Review Checklist
+Before submitting a PR with security-sensitive changes:
+- [ ] Run `gh-advisory-database` for dependency vulnerabilities (if adding dependencies)
+- [ ] No hardcoded secrets or API keys in code
+- [ ] All user inputs validated and sanitized
+- [ ] Encryption keys not stored persistently
+- [ ] PII removed before external API calls
+- [ ] Rate limiting applied to new endpoints
+- [ ] Security headers configured
+- [ ] Error messages don't leak sensitive information
+- [ ] Logs don't contain PII or secrets
+- [ ] Documentation updated with security implications
+
+### Reporting Security Issues
+- **Never** open public GitHub issues for security vulnerabilities
+- Email: `security@bhriguwelt.com` with details and reproduction steps
+- See `SECURITY.md` for our responsible disclosure policy
+
 ## Design tools
 - Ideation happens in **Figma** for flows, wireframes, and UI mocks.
 - Attach Figma links or screenshots to PRs when altering core layouts so reviewers can trace visual intent.
