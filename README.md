@@ -105,11 +105,13 @@ BhriguWelt/
 │   │   └── ui/             # Screens, widgets, theme
 │   ├── assets/             # Cities DB, wisdom cards, fonts
 │   └── test/               # Unit and widget tests
-├── legacy/                  ← ⚠️ ARCHIVED: Cloud components (optional)
-│   ├── backend/            # Python Flask API (Render)
-│   ├── frontend/           # Next.js web UI (Vercel)
-│   └── MIGRATION_NOTES.md  # Cloud decommissioning guide
-└── docs/                    # Documentation
+├── frontend/               ← Current Next.js PWA (offline-first)
+├── backend/                ← Current Flask backend (secure API)
+├── archive/                ← ⚠️ ARCHIVED: Legacy cloud components
+│   ├── legacy_backend/     # OLD: Python Flask API (Render)
+│   ├── legacy_frontend/    # OLD: Next.js web UI (Vercel)
+│   └── MIGRATION_NOTES.md  # Legacy component details
+└── docs/                   # Documentation
 ```
 
 ---
@@ -204,27 +206,34 @@ flutter test test/unit/interpretation_engine_test.dart
 
 ---
 
-## 🗂️ Legacy Cloud Components (Optional)
+## 🗂️ Archived Legacy Components
 
-The `/legacy/` directory contains the original cloud-based architecture (Python backend + Next.js frontend) that was deployed to Render and Vercel. **These components are no longer required for the mobile app.**
+The `/archive/` directory contains the original cloud-based architecture (Python backend + Next.js frontend) that was previously deployed to Render and Vercel. **These components have been archived and are no longer required.**
 
-### Why Legacy?
+### Current Architecture
 
-The mobile app provides all functionality **100% offline**:
-- ✅ Astrological calculations → Native Dart engine
-- ✅ User profiles → Encrypted local SQLite
+The project now has three main components:
+- **Mobile App** (`/mobile/soul_journey/`) - 100% offline Flutter app (PRIMARY)
+- **Frontend** (`/frontend/`) - Offline-first Next.js PWA
+- **Backend** (`/backend/`) - Secure Flask API with rate limiting
+
+### Why Were Components Archived?
+
+The mobile app and modern PWA provide all functionality with superior security:
+- ✅ Astrological calculations → Native Dart engine / offline computation
+- ✅ User profiles → Encrypted local SQLite (SQLCipher)
 - ✅ Wisdom cards → Bundled JSON + local DB
 - ✅ Reports → Local generation and rendering
-- ✅ Data persistence → Encrypted local storage
+- ✅ Data persistence → Encrypted device-local storage
 
-### Migrating from Cloud
+### Migrating from Legacy Cloud Deployments
 
-If you have existing user data in the legacy backend:
+If you have existing user data in legacy cloud backends:
 
-1. Export from backend: `cd legacy/backend && python scripts/export_profiles.py`
+1. Export from backend: `cd archive/legacy_backend && python scripts/export_profiles.py`
 2. Import to mobile app: Use "Import Data" feature (requires PIN)
 
-See `/legacy/MIGRATION_NOTES.md` for detailed migration guide.
+See `/archive/MIGRATION_NOTES.md` and root `/MIGRATION_NOTES.md` for detailed migration guides.
 
 ---
 
