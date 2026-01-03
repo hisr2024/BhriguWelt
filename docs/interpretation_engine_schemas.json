@@ -1,0 +1,534 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bhriguwelt.com/schemas/interpretation-engine.json",
+  "title": "Interpretation Engine Schemas",
+  "description": "JSON Schema definitions for the Soul Journey Interpretation Engine",
+  
+  "definitions": {
+    
+    "ProfileInput": {
+      "type": "object",
+      "title": "Profile Input Schema",
+      "description": "User input data for report generation",
+      "required": ["name", "dob", "time", "place"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Full name of the person",
+          "minLength": 1,
+          "maxLength": 100,
+          "examples": ["Arjun", "Priya Sharma", "John Smith"]
+        },
+        "dob": {
+          "type": "string",
+          "description": "Date of birth in ISO 8601 format (YYYY-MM-DD)",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "examples": ["1990-05-14", "1985-12-25", "2000-01-01"]
+        },
+        "time": {
+          "type": "string",
+          "description": "Time of birth in 24-hour format (HH:MM)",
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+          "examples": ["08:15", "14:30", "23:59", "00:00"]
+        },
+        "place": {
+          "type": "string",
+          "description": "Place of birth (city, country)",
+          "minLength": 1,
+          "maxLength": 200,
+          "examples": ["Delhi, India", "New York, USA", "London, UK"]
+        }
+      },
+      "additionalProperties": false
+    },
+    
+    "ProfileModel": {
+      "type": "object",
+      "title": "Profile Model Schema",
+      "description": "Internal profile representation after parsing",
+      "required": ["id", "name", "dateOfBirth", "timeOfBirth", "placeOfBirth", "createdAt", "updatedAt"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "UUID v4 identifier",
+          "format": "uuid",
+          "examples": ["a3f5e7d9-1b2c-4d5e-9f8a-7b6c5d4e3f2a"]
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "description": "Date of birth ISO timestamp",
+          "format": "date-time"
+        },
+        "timeOfBirth": {
+          "type": "string",
+          "description": "Time of birth (HH:MM)",
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+        },
+        "placeOfBirth": {
+          "type": "string",
+          "description": "Place of birth",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "latitude": {
+          "type": "number",
+          "description": "Latitude coordinate",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": "number",
+          "description": "Longitude coordinate",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "timezone": {
+          "type": "string",
+          "description": "IANA timezone identifier",
+          "examples": ["Asia/Kolkata", "America/New_York", "Europe/London"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    
+    "WisdomCard": {
+      "type": "object",
+      "title": "Wisdom Card Schema",
+      "description": "Ancient wisdom knowledge unit with matching conditions",
+      "required": ["id", "tradition", "topic", "tags", "conditions", "ruleText", "outputTemplate", "priority", "createdAt"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier (UUID)",
+          "format": "uuid"
+        },
+        "tradition": {
+          "type": "string",
+          "description": "Source tradition",
+          "enum": ["Bhrigu Samhita", "Nadi Jyotisha", "Vedic", "Tantric", "Buddhist"],
+          "examples": ["Bhrigu Samhita", "Nadi Jyotisha"]
+        },
+        "topic": {
+          "type": "string",
+          "description": "Primary topic/category",
+          "enum": [
+            "soul_signature",
+            "past_life",
+            "present",
+            "future",
+            "career",
+            "health",
+            "relationships",
+            "marriage",
+            "remedies",
+            "spiritual"
+          ]
+        },
+        "tags": {
+          "type": "array",
+          "description": "Searchable keywords",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "examples": [["fire", "leadership", "courage"], ["water", "healing", "emotion"]]
+        },
+        "conditions": {
+          "$ref": "#/definitions/CardConditions"
+        },
+        "ruleText": {
+          "type": "string",
+          "description": "Human-readable rule description",
+          "minLength": 1,
+          "maxLength": 500,
+          "examples": ["Fire souls are born leaders with warrior energy"]
+        },
+        "outputTemplate": {
+          "type": "string",
+          "description": "Output text template with {{variable}} placeholders",
+          "minLength": 1,
+          "maxLength": 2000,
+          "examples": ["**Ancient Wisdom:** Your {{element}} nature makes you a natural leader."]
+        },
+        "priority": {
+          "type": "integer",
+          "description": "Matching priority (0-10, higher = more important)",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 5
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    
+    "CardConditions": {
+      "type": "object",
+      "title": "Card Conditions Schema",
+      "description": "Matching conditions for wisdom cards",
+      "properties": {
+        "minAge": {
+          "type": "integer",
+          "description": "Minimum age (inclusive)",
+          "minimum": 0,
+          "maximum": 120,
+          "examples": [25, 40, 60]
+        },
+        "maxAge": {
+          "type": "integer",
+          "description": "Maximum age (inclusive)",
+          "minimum": 0,
+          "maximum": 120,
+          "examples": [30, 50, 75]
+        },
+        "zodiacSigns": {
+          "type": "array",
+          "description": "Matching zodiac signs",
+          "items": {
+            "type": "string",
+            "enum": [
+              "Aries", "Taurus", "Gemini", "Cancer",
+              "Leo", "Virgo", "Libra", "Scorpio",
+              "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+            ]
+          },
+          "uniqueItems": true,
+          "examples": [["Aries", "Leo", "Sagittarius"], ["Taurus", "Virgo"]]
+        },
+        "nakshatras": {
+          "type": "array",
+          "description": "Matching nakshatras (lunar mansions)",
+          "items": {
+            "type": "string",
+            "enum": [
+              "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira",
+              "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha",
+              "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati",
+              "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha",
+              "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha",
+              "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "elements": {
+          "type": "array",
+          "description": "Matching elements",
+          "items": {
+            "type": "string",
+            "enum": ["Fire", "Earth", "Air", "Water", "Ether"]
+          },
+          "uniqueItems": true,
+          "examples": [["Fire"], ["Earth", "Water"]]
+        },
+        "lifePhases": {
+          "type": "array",
+          "description": "Matching life phases",
+          "items": {
+            "type": "string",
+            "enum": [
+              "Childhood (0-12)",
+              "Youth (13-24)",
+              "Adulthood (25-48)",
+              "Maturity (49-72)",
+              "Wisdom (73+)"
+            ]
+          },
+          "uniqueItems": true,
+          "examples": [["Adulthood (25-48)"], ["Maturity (49-72)", "Wisdom (73+)"]]
+        },
+        "customConditions": {
+          "type": "object",
+          "description": "Custom key-value matching conditions",
+          "additionalProperties": true,
+          "examples": [
+            {"karmicNumber": [2, 6, 9]},
+            {"archetype": "The Mystic Seeker"}
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    
+    "Features": {
+      "type": "object",
+      "title": "Extracted Features Schema",
+      "description": "Derived features from profile data",
+      "required": [
+        "age", "zodiacSign", "nakshatra", "element",
+        "lifePhase", "archetype", "karmicNumber",
+        "birthMonth", "birthDay", "birthYear"
+      ],
+      "properties": {
+        "age": {
+          "type": "integer",
+          "description": "Current age in years",
+          "minimum": 0,
+          "maximum": 120
+        },
+        "zodiacSign": {
+          "type": "string",
+          "description": "Western zodiac sign",
+          "enum": [
+            "Aries", "Taurus", "Gemini", "Cancer",
+            "Leo", "Virgo", "Libra", "Scorpio",
+            "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+          ]
+        },
+        "nakshatra": {
+          "type": "string",
+          "description": "Vedic lunar mansion",
+          "enum": [
+            "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira",
+            "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha",
+            "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati",
+            "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha",
+            "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha",
+            "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"
+          ]
+        },
+        "element": {
+          "type": "string",
+          "description": "Dominant elemental nature",
+          "enum": ["Fire", "Earth", "Air", "Water", "Ether"]
+        },
+        "lifePhase": {
+          "type": "string",
+          "description": "Current life stage",
+          "enum": [
+            "Childhood (0-12)",
+            "Youth (13-24)",
+            "Adulthood (25-48)",
+            "Maturity (49-72)",
+            "Wisdom (73+)"
+          ]
+        },
+        "archetype": {
+          "type": "string",
+          "description": "Soul essence archetype",
+          "enum": [
+            "The Mystic Seeker",
+            "The Warrior of Light",
+            "The Healing Sage",
+            "The Divine Artist",
+            "The Sacred Teacher",
+            "The Compassionate Healer",
+            "The Visionary Leader",
+            "The Silent Monk"
+          ]
+        },
+        "karmicNumber": {
+          "type": "integer",
+          "description": "Numerological karmic path number",
+          "enum": [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 22, 33]
+        },
+        "birthMonth": {
+          "type": "integer",
+          "description": "Birth month (1-12)",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "birthDay": {
+          "type": "integer",
+          "description": "Birth day (1-31)",
+          "minimum": 1,
+          "maximum": 31
+        },
+        "birthYear": {
+          "type": "integer",
+          "description": "Birth year",
+          "minimum": 1900,
+          "maximum": 2100
+        }
+      },
+      "additionalProperties": false
+    },
+    
+    "ReportModel": {
+      "type": "object",
+      "title": "Report Model Schema",
+      "description": "Complete 7-page Soul Journey report",
+      "required": [
+        "id", "profileId", "generatedAt",
+        "soulSignature", "pastLifeThreads", "presentKarmicPhase",
+        "futureOutlook", "relationshipsKarma", "remediesPractices",
+        "completeSummary"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Report UUID",
+          "format": "uuid"
+        },
+        "profileId": {
+          "type": "string",
+          "description": "Reference to profile UUID",
+          "format": "uuid"
+        },
+        "generatedAt": {
+          "type": "string",
+          "description": "Generation timestamp",
+          "format": "date-time"
+        },
+        "soulSignature": {
+          "$ref": "#/definitions/ReportPage"
+        },
+        "pastLifeThreads": {
+          "$ref": "#/definitions/ReportPage"
+        },
+        "presentKarmicPhase": {
+          "$ref": "#/definitions/ReportPage"
+        },
+        "futureOutlook": {
+          "$ref": "#/definitions/ReportPage"
+        },
+        "relationshipsKarma": {
+          "$ref": "#/definitions/ReportPage"
+        },
+        "remediesPractices": {
+          "$ref": "#/definitions/ReportPage"
+        },
+        "completeSummary": {
+          "$ref": "#/definitions/ReportPage"
+        }
+      },
+      "additionalProperties": false
+    },
+    
+    "ReportPage": {
+      "type": "object",
+      "title": "Report Page Schema",
+      "description": "Single page of a report with structured content",
+      "required": ["title", "content"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Page title/heading",
+          "minLength": 1,
+          "maxLength": 200,
+          "examples": ["Soul Signature", "Past Life Threads"]
+        },
+        "content": {
+          "type": "string",
+          "description": "Main narrative content (markdown supported)",
+          "minLength": 1,
+          "maxLength": 10000
+        },
+        "bulletPoints": {
+          "type": "array",
+          "description": "Key points list",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "highlights": {
+          "type": "object",
+          "description": "Key-value pairs for highlighted insights",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "examples": [
+            {"Life Purpose": "To embody Earth qualities", "Soul Gift": "Natural builder"}
+          ]
+        },
+        "timeline": {
+          "type": "array",
+          "description": "Year-by-year timeline events (for future page)",
+          "items": {
+            "$ref": "#/definitions/TimelineEvent"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "description": "Cautionary notes",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "blessings": {
+          "type": "array",
+          "description": "Positive affirmations",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    
+    "TimelineEvent": {
+      "type": "object",
+      "title": "Timeline Event Schema",
+      "description": "Single year event in future timeline",
+      "required": ["year", "title", "description", "isPositive"],
+      "properties": {
+        "year": {
+          "type": "integer",
+          "description": "Year (e.g., 2024, 2025)",
+          "minimum": 2020,
+          "maximum": 2100
+        },
+        "title": {
+          "type": "string",
+          "description": "Event title",
+          "minLength": 1,
+          "maxLength": 200,
+          "examples": ["Year of Growth and Expansion", "Year of Transformation"]
+        },
+        "description": {
+          "type": "string",
+          "description": "Event description",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "isPositive": {
+          "type": "boolean",
+          "description": "Whether this is a positive or challenging year"
+        },
+        "recommendations": {
+          "type": "array",
+          "description": "Recommended actions for this year",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "examples": [
+            ["Initiate new projects", "Expand connections"],
+            ["Practice patience", "Strengthen spiritual practices"]
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
