@@ -2,15 +2,12 @@
   "name": "bhriguwelt-monorepo",
   "private": true,
   "workspaces": [
-    "frontend",
-    "legacy/frontend"
+    "frontend"
   ],
   "scripts": {
     "dev": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build",
-    "start": "cd frontend && npm run start",
-    "dev:legacy": "cd legacy/frontend && npm run dev",
-    "build:legacy": "cd legacy/frontend && npm run build"
+    "start": "cd frontend && npm run start"
   },
   "dependencies": {
     "react": "19.2.0",
