@@ -1,0 +1,35 @@
+# Core Framework
+flask==3.0.0
+flask-cors==4.0.0
+gunicorn==21.2.0
+
+# Database & Auth
+flask-sqlalchemy==3.1.1
+flask-migrate==4.0.5
+flask-jwt-extended==4.6.0
+python-dotenv==1.0.0
+
+# Astrology Calculations
+ephem==4.1.5
+pytz==2024.1
+python-dateutil==2.9.0
+geopy==2.4.1
+timezonefinder==8.1.0
+swisseph==2.10.3.1
+
+# AI & ML
+openai==1.12.0
+anthropic==0.18.0
+requests==2.31.0
+
+# Data Processing
+pandas==2.2.0
+numpy==1.26.4
+
+# Validation & Serialization
+marshmallow==3.21.0
+pydantic==2.6.0
+
+# Utilities
+redis==5.0.1
+celery==5.3.6

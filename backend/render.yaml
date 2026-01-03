@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: bhriguwelt-api
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 4 --timeout 120
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: SARVAM_AI_API_KEY
+        sync: false
+      - key: SARVAM_AI_BASE_URL
+        value: https://api.sarvam.ai/v1
+      - key: FRONTEND_URL
+        value: https://bhriguwelt.vercel.app
+    healthCheckPath: /health
+    autoDeploy: true
