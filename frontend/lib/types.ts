@@ -101,17 +101,28 @@ export type WisdomCategory =
   | 'general';
 
 export interface WisdomCard {
-  id?: number;
+  id?: string;
   title: string;
-  content: string;
+  tradition?: string;
   category: WisdomCategory;
   tags: string[];
+  content: string;
+  interpretation?: string;
+  remedy?: string;
+  conditions?: {
+    zodiac_signs?: string[];
+    elements?: string[];
+    planets?: string[];
+    nakshatras?: string[];
+    houses?: number[];
+  };
+  priority?: number;
   source?: string;
   author?: string;
   isFavorite?: boolean;
   readCount?: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Settings types
