@@ -12,6 +12,17 @@ from datetime import datetime
 # Load environment variables
 load_dotenv()
 
+# Security: Ensure critical environment variables are set in production
+FLASK_ENV = os.getenv('FLASK_ENV', 'development')
+IS_PRODUCTION = FLASK_ENV == 'production'
+
+if IS_PRODUCTION:
+    # Enforce strict security in production
+    required_vars = ['SECRET_KEY', 'JWT_SECRET_KEY', 'FRONTEND_URL']
+    missing_vars = [var for var in required_vars if not os.getenv(var)]
+    if missing_vars:
+        raise RuntimeError(f"Production mode requires environment variables: {', '.join(missing_vars)}")
+
 # Initialize Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -19,8 +30,27 @@ app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///bhriguwelt.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Initialize extensions
-CORS(app, origins=[os.getenv('FRONTEND_URL', '*')])
+# Initialize CORS with strict origin checking
+# In production, FRONTEND_URL must be set (checked above)
+# In development, allow localhost origins only
+FRONTEND_URL = os.getenv('FRONTEND_URL')
+if IS_PRODUCTION and FRONTEND_URL:
+    allowed_origins = [FRONTEND_URL]
+else:
+    # Development: Allow localhost with common ports
+    allowed_origins = [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://localhost:5173',
+        'http://127.0.0.1:3000',
+    ]
+
+CORS(app,
+     origins=allowed_origins,
+     supports_credentials=True,
+     allow_headers=['Content-Type', 'Authorization'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+
 jwt = JWTManager(app)
 
 # Import routes

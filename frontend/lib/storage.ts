@@ -125,6 +125,56 @@ export async function clearDB(): Promise<void> {
 }
 
 /**
+ * Secure wipe - completely destroys all data and encryption setup
+ * WARNING: This is irreversible and will delete ALL user data
+ */
+export async function secureWipe(): Promise<void> {
+  try {
+    // Clear all data from IndexedDB
+    await clearDB();
+
+    // Close the database connection
+    closeDB();
+
+    // Delete the entire database
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.deleteDatabase(DB_NAME);
+
+      request.onsuccess = () => {
+        console.log('Database deleted successfully');
+        resolve();
+      };
+
+      request.onerror = () => {
+        reject(new Error('Failed to delete database'));
+      };
+
+      request.onblocked = () => {
+        console.warn('Database deletion blocked - close all tabs');
+        reject(new Error('Database deletion blocked'));
+      };
+    });
+  } catch (error) {
+    throw new Error(`Secure wipe failed: ${error}`);
+  }
+}
+
+/**
+ * Reset encryption - clears encryption metadata but preserves unencrypted data
+ * Use this to change passcode or reset encryption setup
+ */
+export async function resetEncryption(): Promise<void> {
+  try {
+    await deleteItem(STORES.METADATA, 'encryptionSalt');
+    await deleteItem(STORES.METADATA, 'encryptionTest');
+    await deleteItem(STORES.METADATA, 'passcodeHash');
+    await deleteItem(STORES.METADATA, 'setupComplete');
+  } catch (error) {
+    throw new Error(`Failed to reset encryption: ${error}`);
+  }
+}
+
+/**
  * Store encrypted data
  */
 export async function setItem(
