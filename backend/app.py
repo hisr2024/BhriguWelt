@@ -70,7 +70,8 @@ from routes import (
     life_events_routes,
     karmic_remedies_routes,
     predictions_routes,
-    user_routes
+    user_routes,
+    ai_routes
 )
 
 # Register blueprints
@@ -83,6 +84,7 @@ app.register_blueprint(life_events_routes.bp)
 app.register_blueprint(karmic_remedies_routes.bp)
 app.register_blueprint(predictions_routes.bp)
 app.register_blueprint(user_routes.bp)
+app.register_blueprint(ai_routes.bp)
 
 @app.route('/')
 def index():
@@ -101,7 +103,8 @@ def index():
             'life_events': '/api/life-events',
             'karmic_remedies': '/api/karmic-remedies',
             'predictions': '/api/predictions',
-            'users': '/api/users'
+            'users': '/api/users',
+            'ai': '/api/ai'
         }
     })
 

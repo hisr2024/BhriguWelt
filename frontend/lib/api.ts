@@ -287,3 +287,118 @@ export const predictionsAPI = {
     return response.data;
   },
 };
+
+// AI Features API
+export interface AIMode {
+  mode: 'offline' | 'hybrid' | 'conversational';
+  consent: boolean;
+  consentTimestamp?: string;
+}
+
+export interface AIBirthData {
+  zodiac_sign?: string;
+  nakshatra?: string;
+  moon_sign?: string;
+  ascendant?: string;
+  planetary_positions?: Record<string, any>;
+  houses?: string[];
+  dasha_period?: string;
+  yogas?: string[];
+  doshas?: string[];
+  elements?: string;
+  qualities?: string;
+  karmic_number?: number;
+}
+
+export interface AIComposeRequest {
+  report_section: string;
+  birth_data: AIBirthData;
+}
+
+export interface AIChatRequest {
+  message: string;
+  birth_data: AIBirthData;
+  conversation_history?: Array<{ role: string; content: string }>;
+}
+
+export interface AISummarizeRequest {
+  report_data: string;
+  birth_data: AIBirthData;
+  summary_type?: 'overview' | 'key_insights' | 'action_items' | 'detailed';
+}
+
+export const aiAPI = {
+  /**
+   * Get AI consent information and requirements
+   */
+  getConsentInfo: async () => {
+    const response = await api.get('/api/ai/consent');
+    return response.data;
+  },
+
+  /**
+   * Check AI service status
+   */
+  getStatus: async () => {
+    const response = await api.get('/api/ai/status');
+    return response.data;
+  },
+
+  /**
+   * Refine report section using AI
+   * Requires AI consent header
+   */
+  composeReport: async (data: AIComposeRequest, aiMode: AIMode) => {
+    if (!aiMode.consent) {
+      throw new Error('AI consent required');
+    }
+    
+    const response = await api.post('/api/ai/compose', data, {
+      headers: {
+        'X-AI-Consent': 'granted',
+        'X-AI-Mode': aiMode.mode
+      }
+    });
+    return response.data;
+  },
+
+  /**
+   * Chat about astrological report
+   * Requires AI consent header
+   */
+  chat: async (data: AIChatRequest, aiMode: AIMode) => {
+    if (!aiMode.consent) {
+      throw new Error('AI consent required');
+    }
+    
+    if (aiMode.mode !== 'conversational') {
+      throw new Error('Conversational mode required for chat');
+    }
+    
+    const response = await api.post('/api/ai/chat', data, {
+      headers: {
+        'X-AI-Consent': 'granted',
+        'X-AI-Mode': 'conversational'
+      }
+    });
+    return response.data;
+  },
+
+  /**
+   * Summarize report using AI
+   * Requires AI consent header
+   */
+  summarize: async (data: AISummarizeRequest, aiMode: AIMode) => {
+    if (!aiMode.consent) {
+      throw new Error('AI consent required');
+    }
+    
+    const response = await api.post('/api/ai/summarize', data, {
+      headers: {
+        'X-AI-Consent': 'granted',
+        'X-AI-Mode': aiMode.mode
+      }
+    });
+    return response.data;
+  },
+};
