@@ -1,23 +1,43 @@
 // BhriguWelt Service Worker - Offline-First PWA
-// Version 1.0.0
+// Version 1.1.0
 
-const CACHE_NAME = 'bhriguwelt-v1';
-const RUNTIME_CACHE = 'bhriguwelt-runtime-v1';
+const CACHE_NAME = 'bhriguwelt-v1.1';
+const RUNTIME_CACHE = 'bhriguwelt-runtime-v1.1';
+const DATA_CACHE = 'bhriguwelt-data-v1.1';
 
 // Core app shell - cache immediately for offline-first experience
 const APP_SHELL = [
   '/',
   '/offline',
   '/manifest.json',
+  '/data/cities.json',
+  '/data/wisdom_cards.json',
 ];
+
+// Assets to cache (lazy-loaded)
+const ASSETS_TO_CACHE = [
+  '/icons/icon-72x72.svg',
+  '/icons/icon-96x96.svg',
+  '/icons/icon-192x192.svg',
+  '/icons/icon-512x512.svg',
+];
+
+// API endpoints that should use network-first strategy
+const API_ROUTES = ['/api/'];
+
+// Data routes that should use cache-first strategy
+const DATA_ROUTES = ['/data/'];
 
 // Install event - cache app shell
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker...');
+  console.log('[SW] Installing service worker v1.1...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Caching app shell');
-      return cache.addAll(APP_SHELL);
+      console.log('[SW] Caching app shell and essential assets');
+      return cache.addAll(APP_SHELL).catch((error) => {
+        console.error('[SW] Failed to cache some resources:', error);
+        // Don't fail installation if some resources fail to cache
+      });
     }).then(() => {
       console.log('[SW] Installation complete');
       return self.skipWaiting();
@@ -27,12 +47,12 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker...');
+  console.log('[SW] Activating service worker v1.1...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE) {
+          if (![CACHE_NAME, RUNTIME_CACHE, DATA_CACHE].includes(cacheName)) {
             console.log('[SW] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
@@ -65,7 +85,96 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Strategy: Network First, fallback to Cache, then Offline page
+// Fetch event - intelligent caching strategies
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Skip non-GET requests
+  if (request.method !== 'GET') {
+    return;
+  }
+
+  // Skip cross-origin requests (except API)
+  if (url.origin !== location.origin) {
+    // For API calls to backend, try network only
+    if (url.href.includes('/api/')) {
+      event.respondWith(
+        fetch(request).catch(() => {
+          return new Response(JSON.stringify({
+            error: 'offline',
+            message: 'API unavailable offline. Please use offline mode.'
+          }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        })
+      );
+      return;
+    }
+    return;
+  }
+
+  // Data files: Cache-first strategy (cities, wisdom cards)
+  if (DATA_ROUTES.some(route => url.pathname.includes(route))) {
+    event.respondWith(
+      caches.match(request).then((cachedResponse) => {
+        if (cachedResponse) {
+          console.log('[SW] Serving from data cache:', url.pathname);
+          return cachedResponse;
+        }
+
+        return fetch(request).then((response) => {
+          if (response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(DATA_CACHE).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // API routes: Network-first strategy
+  if (API_ROUTES.some(route => url.pathname.includes(route))) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Cache successful API responses
+          if (response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cached API response if available
+          return caches.match(request).then((cachedResponse) => {
+            if (cachedResponse) {
+              console.log('[SW] Serving stale API data from cache:', url.pathname);
+              return cachedResponse;
+            }
+            
+            // No cache available, return offline error
+            return new Response(JSON.stringify({
+              error: 'offline',
+              message: 'API unavailable and no cached data'
+            }), {
+              status: 503,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          });
+        })
+    );
+    return;
+  }
+
+  // Default: Network-first, fallback to cache, then offline page
   event.respondWith(
     fetch(request)
       .then((response) => {
@@ -85,6 +194,7 @@ self.addEventListener('fetch', (event) => {
         // Network failed, try cache
         return caches.match(request).then((cachedResponse) => {
           if (cachedResponse) {
+            console.log('[SW] Serving from cache:', url.pathname);
             return cachedResponse;
           }
 
