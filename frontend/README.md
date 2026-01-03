@@ -1,15 +1,17 @@
 # BhriguWelt Frontend
 
-Beautiful, cosmic-themed frontend for Vedic astrology platform.
+Modern Gen Z-inspired UI/UX with vibrant cosmic themes for Vedic astrology platform.
 
 ## Features
 
-- 🎨 Stunning cosmic UI with starry backgrounds
-- 📱 Fully responsive design
-- ⚡ Fast and optimized (Next.js 14)
-- 🌊 Smooth animations (Framer Motion)
-- 🎯 TypeScript for type safety
-- 🎨 Tailwind CSS for styling
+- ✨ **Gen Z Modern Design** - Vibrant colors, neon glows, and futuristic aesthetics
+- 🎨 **Cosmic-Themed UI** - Animated backgrounds with floating elements
+- 📱 **Fully Responsive** - Mobile-first design with bottom navigation
+- ⚡ **Blazing Fast** - Next.js 14 with optimized builds
+- 🌊 **Smooth Animations** - Framer Motion for fluid interactions
+- 🎯 **Type-Safe** - TypeScript throughout
+- 💎 **Glass Morphism** - Modern card designs with backdrop blur
+- 🔮 **Neon Accents** - Electric blue, hot pink, and neon green highlights
 
 ## Quick Start
 
@@ -53,16 +55,14 @@ See `DEPLOYMENT_GUIDE.md` in root directory.
 
 ## Pages
 
-- `/` - Home page with features overview
-- `/get-started` - Birth details form
-- `/dashboard` - User dashboard (to be implemented)
-- `/karmic-journey` - Karmic journey insights
-- `/past-lives` - Past life regression
-- `/future-lives` - Future life predictions
-- `/present-life` - Current life analysis
-- `/life-events` - Important events
-- `/karmic-remedies` - Remedies and practices
-- `/predictions` - Daily/Weekly/Monthly forecasts
+- `/` - Home page with Gen Z UI, features showcase, and cosmic animations
+- `/get-started` - Multi-step birth details form with smooth transitions
+- `/dashboard` - User dashboard with stats and quick access widgets
+- `/birth-chart` - Birth chart visualization
+- `/daily-insights` - Daily astrological insights
+- `/horoscope` - Detailed horoscope readings
+- `/matchmaking` - Compatibility analysis
+- `/profile` - User profile management
 
 ## Tech Stack
 
@@ -95,18 +95,33 @@ frontend/
 
 ## Customization
 
-### Colors
+### Gen Z Color Palette
 
 Edit `tailwind.config.js`:
 ```js
-cosmic: {
-  cyan: '#4DEEEA',
-  purple: '#8A5CF6',
-  lime: '#BEF264',
-  yellow: '#FACC15',
-  pink: '#EC4899',
+genz: {
+  'electric-blue': '#00D9FF',
+  'hot-pink': '#FF006E',
+  'neon-green': '#39FF14',
+  'cyber-yellow': '#FFD60A',
+  'purple-haze': '#B983FF',
+  'mint-fresh': '#94F9F0',
+  'sunset-orange': '#FF6B35',
+  'lavender-dream': '#C297FF',
+  'coral-pop': '#FF5D8F',
+  'lime-zest': '#CCFF00',
 }
 ```
+
+### Component Library
+
+The frontend includes custom Gen Z-styled components:
+- `GenZButton` - Vibrant buttons with variants (primary, outline, pill, neon)
+- `GenZCard` - Glass-morphism cards with glow effects
+- `GenZBadge` - Neon badges with pulse animations
+- `AnimatedBackground` - Dynamic cosmic background
+- `FloatingElements` - Animated emoji overlays
+- `BottomNav` - Mobile navigation bar
 
 ### Fonts
 
