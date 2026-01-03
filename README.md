@@ -1,366 +1,408 @@
-# BhriguWelt Astrology Platform
+# BhriguWelt - Offline-First Soul Journey App 🔐✨
 
-![Backend CI](https://github.com/BhriguWelt/BhriguWelt/actions/workflows/backend.yml/badge.svg)
-![Frontend CI](https://github.com/BhriguWelt/BhriguWelt/actions/workflows/frontend.yml/badge.svg)
+![Flutter](https://img.shields.io/badge/Flutter-3.2+-blue.svg)
+![Platform](https://img.shields.io/badge/Platform-iOS%20%7C%20Android-green.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+![Security](https://img.shields.io/badge/Security-SQLCipher%20AES--256-red.svg)
 
-[Demo video (loom placeholder)](https://example.com/bhriguwelt-demo.mp4)
+**🎯 Mission:** Privacy-first mobile astrology app inspired by ancient Vedic wisdom - **100% offline, fully encrypted, no cloud dependency.**
 
-## Screenshots
+---
 
-![Homepage preview](docs/media/homepage-preview.svg)
-![Offline mode preview](docs/media/offline-preview.svg)
+## 📱 Soul Journey Mobile App
 
-BhriguWelt is a full-stack scaffold for delivering astrology experiences whose
-entire knowledge base is sourced from the **Bhrigu Samhita** corpus. The
-repository is organized for teams that need a clean separation between backend
-prediction services and frontend delivery layers while keeping authoritative
-references to manuscript folios.
+The **Soul Journey** Flutter app is a production-ready, offline-first astrology application that generates comprehensive Soul Journey reports with complete privacy and security. All data stays encrypted on your device.
 
-## Architecture
+### ✨ Features
 
-- **Backend** (`backend/`): Python package responsible for ingesting Bhrigu
-  Samhita data (mirrored both as `data/bhrigu_samhita_principles.yml` and a
-  fallback `bhriguwelt/bhrigu_data.py` module), applying deterministic
-  calculations, converting Gregorian birth records into the Hindu Śaka calendar,
-  and exposing CLI/API entry points for horoscopes, past-life readings, future
-  directives, matchmaking diagnostics, and calendar conversions. The backend is
-  intentionally self-contained so mobile/web stacks can embed it without
-  third-party runtime dependencies.
-- **Frontend** (`frontend/`): production-grade Next.js app that already ships
-  responsive flows for the horoscope, past-life, future, matchmaking, and Śaka
-  calendar engines. It consumes the backend REST API via
-  `NEXT_PUBLIC_BACKEND_URL`, builds with `npm run build`, and deploys straight to
-  Vercel for immediate testing across desktop and mobile web. Point
-  `NEXT_PUBLIC_BACKEND_URL` to a Railway deployment, local tunnel, or any HTTPS
-  instance of the Python API before running `npm run dev`, `npm run build`, or
-  `npm run start`.
-- **Documentation** (`docs/`): reference notes that enumerate the manuscript
-  citations backing each rule embedded in the backend data files, targeted
-  guides (for example the Hindu calendar conversion explainer), onboarding
-  for new contributors (`docs/developer-onboarding.md`), OpenAPI examples
-  (`docs/openapi-examples.md`), a prompt library for shaping the UI/UX
-  roadmap (`docs/ui_improvement_prompts.md`), and an engine-to-core
-  integration blueprint that routes all engines through a unified
-  Analyser/interpreter stack (`docs/engine_core_analyser_blueprint.md`).
+- 🔐 **PIN & Biometric Authentication** - Secure app lock with optional Face ID/Touch ID
+- 📱 **100% Offline** - No internet required for any functionality
+- 🗄️ **Encrypted Storage** - SQLCipher encryption (AES-256) for all user data
+- 🔮 **7-Page Soul Journey Reports** - Comprehensive astrological insights
+- 🌆 **Offline City Database** - 50+ major cities worldwide with search
+- 📚 **Wisdom Cards System** - Customizable ancient wisdom database (30 demo cards)
+- 📄 **Multi-Page PDF Export** - Beautiful, shareable PDF reports
+- 🎨 **Sacred Geometry UI** - Animated Om logo matching spiritual traditions
+- 🌓 **Cross-Platform** - Works on iOS, Android, and Web
 
-## High-impact enhancements (chat + retention)
+### 🔒 Security Model
 
-- **Bhrigu Chat**: `/chat` endpoint (sync and async servers) keeps conversational
-  context via `session_id`, returns reflective replies, and attaches two
-  de-risked remedial suggestions (breathwork, seva, journaling). See the
-  expanded blueprint in `docs/bhrigu_chatbot_spec.md` for the persona, guardrails,
-  and interactive flow.
-- **Bhrigu Wisdom Bot**: `/wisdom-bot` merges the Bhrigu Core Wisdom digest with
-  analyser/interpreter/designer briefings, delivering a shareable markdown
-  export alongside charts, dashas, and a succinct AI reply anchored to the
-  manuscripts.
-- **Profiles + sessions**: `/profiles` and `/profiles/get` store birth details,
-  time zone, and metadata so seekers can return to the same session. Conversations
-  are persisted per `session_id` and can be listed via `GET /profiles`.
-- **Dasha alerts**: `/alerts` allows scheduling reminders for upcoming dashas and
-  important transitions. Alerts are stored per profile and exposed via `GET /alerts`
-  for calendar integrations.
-- **Admin analytics**: `/analytics` summarizes total profiles, sessions, alerts,
-  and the latest feedback cohorts to power a lightweight accuracy dashboard.
+**Privacy-First Architecture:**
+- All data encrypted at rest with SQLCipher (AES-256)
+- Encryption keys stored in iOS Keychain / Android Keystore
+- PIN required (4 digits) + optional biometric unlock
+- Auto-lock on background and configurable timeout
+- No network requests - 100% local processing
+- No analytics or telemetry
 
-These additions keep chart payloads consistent (kundli wheels are regenerated if
-missing) and let the frontend transition smoothly between form inputs, chart
-generation, chat clarifications, and dasha reminders.
+**Threat Model:**
+| Threat | Mitigation |
+|--------|-----------|
+| Device theft | PIN/biometric lock + encrypted database |
+| Data extraction | SQLCipher encryption + secure key storage |
+| Memory dumps | Sensitive data cleared after use |
+| Backup exposure | Keys excluded from device backups |
+| Unauthorized export | PIN re-auth required for data import/export |
 
-## 🧩 Optional but powerful additions
+---
 
-| Feature | Value |
-| --- | --- |
-| Remedies module | Cultural completeness |
-| Confidence meters | Trust & transparency |
-| Explain-why mode | Education |
-| Timeline visualizations | UX boost |
-| Consent & disclaimer system | Legal safety |
+## 🚀 Quick Start
 
-## Repository layout
+### Prerequisites
+- Flutter 3.2+ and Dart 3.0+
+- iOS 13+ / Android 6.0+ / Modern browser
 
-```
-├── README.md
-├── backend/
-│   ├── data/
-│   │   └── bhrigu_samhita_principles.yml
-│   ├── requirements.txt
-│   ├── src/bhriguwelt/
-│   │   ├── __init__.py
-│   │   ├── bhrigu_data.py
-│   │   ├── calculations.py
-│   │   ├── calendar_conversion.py
-│   │   ├── data_loader.py
-│   │   └── horoscope.py
-│   └── tests/
-├── docs/
-│   ├── accuracy_guide.md
-│   ├── api_reference.md
-│   ├── backup_and_recovery.md
-│   ├── bhrigu_references.md
-│   ├── deployment.md
-│   ├── developer-onboarding.md
-│   ├── hindu_calendar_conversion.md
-│   ├── openapi.yaml
-│   ├── openapi-examples.md
-│   └── ui_improvement_prompts.md
-└── frontend/
-    ├── public/
-    └── src/
-```
-
-## Quality gates
-
-- **Pre-commit hooks:** Run `pre-commit install` to enable Black, mypy, and the Next.js lint/type-check hooks described in
-  `docs/ui_improvement_prompts.md` and `.pre-commit-config.yaml`.
-- **Backend coverage:** `cd backend && pytest --cov=src --cov-report=term-missing` to maintain the 80%+ target.
-- **Frontend health:** `cd frontend && npm run lint && npm run type-check && npx playwright test` before opening a PR. The
-  CI badges above mirror the same checks.
-
-### Docker-based local development
-
-Spin up the full stack with Docker Compose when you want a reproducible local environment:
-
-1. `docker compose up --build` to start the backend on `http://localhost:8000` and the frontend on
-   `http://localhost:3000`.
-2. Set `BHRIGUWELT_ADMIN_TOKEN` in your shell before running compose if you need `/analytics` or `/ml/retrain`.
-3. Update `NEXT_PUBLIC_BACKEND_URL` in the `docker-compose.yml` service definition if you want the frontend to target a
-   different API host.
-4. Stop the stack with `docker compose down`.
-
-### Local setup + smoke tests
-
-1. Use Python 3.11 (the repo ships a `.tool-versions` pin for mise/pyenv) so `scikit-learn` installs from wheels instead of
-   failing to build on Python 3.13. Then run `cd backend && python -m pip install -r requirements.txt && python -m compileall src`
-   to validate the Python package.
-2. `python -m bhriguwelt.api` (or `python -m bhriguwelt.async_api`) starts the HTTP server; `curl http://localhost:8000/health`
-   should return `{ "status": "ok" }`.
-3. Seed a profile and chat session:
-   ```bash
-   curl -X POST http://localhost:8000/profiles -d '{"user_id":"demo@example.com","full_name":"Demo Seeker","date_of_birth":"1990-01-01","time_of_birth":"06:15","place_of_birth":"Jaipur, India","timezone":"Asia/Kolkata"}' -H 'Content-Type: application/json'
-   curl -X POST http://localhost:8000/chat -d '{"user_id":"demo@example.com","session_id":"welcome","message":"How do I balance my career and relationships?"}' -H 'Content-Type: application/json'
-   ```
-4. Add a dasha alert with `/alerts` and fetch analytics with `/analytics` to verify persistence.
-
-### Frontend + chat wiring
-
-1. `cd frontend && npm install && npm run dev` to boot the Next.js UI. Set `NEXT_PUBLIC_BACKEND_URL` (and an optional
-   `NEXT_PUBLIC_BACKEND_FALLBACK_URL`) so form submissions, kundli charts, and chat hand-offs target the Python API.
-2. Submit the horoscope form; successful responses dispatch a `bhrigu:chart-ready` event that auto-primes the chat dock with
-   the birth details you entered. Press “Open chat” to watch the view scroll into place.
-3. Conversations now persist via `/profiles` + `/chat`—the UI stores `user_id`, `profile_id`, and `session_key` in
-   `localStorage` and replays the transcript on reload. You can inspect the synced session with
-   `curl -X POST $NEXT_PUBLIC_BACKEND_URL/profiles/get -d '{"user_id":"<value from localStorage>","session_id":"default"}' -H 'Content-Type: application/json'`.
-4. Run `npm run lint && npm run type-check` before shipping UI changes; the same checks run in CI.
-
-## GitHub Copilot guidance
-
-The repository includes Copilot guidance in `.github/copilot-instructions.md` so suggestions stay aligned with the
-backend/ frontend split, API error patterns, and UI conventions. Enable GitHub Copilot in your editor and keep the
-instructions file open when prompting for larger changes.
-
-## Deployment readiness (Railway + Vercel)
-
-No live instances are bundled with the repository; you must deploy the backend
-and frontend yourself. Follow the steps below to get an endpoint ready for web
-and mobile clients:
-
-For detailed deployment guides (Railway, Vercel, and operational checklists), see
-[`docs/deployment.md`](docs/deployment.md) and the rollback notes in
-[`docs/backup_and_recovery.md`](docs/backup_and_recovery.md).
-
-1. **Backend → Railway**: Deploy the backend as a Python service and let the
-   Nixpacks config supply Python 3.11 and `pip`:
-   - If your Railway root is set to `backend/`, the existing `backend/nixpacks.toml`
-     handles setup plus `python -m pip install -r requirements.txt`.
-   - If your Railway root stays at the repository root, the top-level
-     `nixpacks.toml` runs the same `python -m pip install -r requirements.txt`
-     flow from within `backend/` and invokes the root `./start.sh` wrapper
-     (which cds into `backend/` before running the API). Both paths avoid the
-     "pip: not found" Railpack error by explicitly provisioning `python311` and
-     `python311Packages.pip`.
-   - Ensure both `start.sh` scripts are executable (`chmod +x start.sh` at the
-     repo root and inside `backend/`) before triggering a deploy so Nixpacks can
-     invoke the wrapper successfully.
-   - Add `PYTHONPATH="$(pwd)/src"` as an environment variable and confirm `/health`
-     returns `{ "status": "ok" }`. See `docs/deployment.md` for the
-     click-by-click flow plus the Railpack/Nixpacks notes.
-
-2. **Frontend → Vercel**: Point Vercel at the `frontend/` directory (Node 18+)
-   and set `NEXT_PUBLIC_BACKEND_URL` to the Railway URL. After deployment, load
-   the Vercel preview in a browser and submit each form (horoscope, past-life,
-   future, matchmaking, calendar) to confirm responses render.
-   - If the preview cannot reach your backend, double-check that the Railway
-     service is using the `python -m pip install -r requirements.txt` build
-     command and that `./start.sh` is executable (`chmod +x start.sh`).
-
-3. **Local parity**: Run `PYTHONPATH="$(pwd)/src" python -m bhriguwelt.api` inside
-   `backend/`, export `NEXT_PUBLIC_BACKEND_URL=http://localhost:8000`, and run
-   `npm run dev` from `frontend/` to mirror the hosted topology without needing
-   cloud accounts.
-
-## Backend quick start
-
-1. Create an isolated environment inside `backend/` and install dependencies:
-
-   ```bash
-   cd backend
-   python -m venv .venv
-   source .venv/bin/activate
-   pip install -r requirements.txt
-   ```
-
-2. Generate a horoscope prediction sourced from the Bhrigu Samhita wisdom:
-
-   ```bash
-   export PYTHONPATH="$(pwd)/src"
-   python -m bhriguwelt.horoscope horoscope \
-       --name "Asha" \
-       --birth-date 1995-05-18 \
-       --birth-time 14:45 \
-       --birth-place "Varanasi"
-   ```
-
-   The CLI prints karmic backlog, present-life guidance, and remedial rituals
-   along with explicit manuscript citations pulled from the data corpus.
-
-   > **Input guardrails:** Lunar tithis follow the Panchanga's full 1–30 range
-   > and the Moon element accepts all five Mahabhutas (water, fire, air, earth,
-   > ether) so the predictions remain faithful to the Bhrigu Samhita lineage.
-
-3. Explore the dedicated engines documented in the CLI help:
-
-   ```bash
-   # Past-life memory reconstruction
-   python -m bhriguwelt.horoscope past-life ...
-
-   # Future directives
-   python -m bhriguwelt.horoscope future ...
-
-   # Modern Bhrigu matchmaking (supports --modern-preference tags)
-   python -m bhriguwelt.horoscope matchmaking ...
-
-   # Gregorian → Hindu (Śaka) calendar conversion helper
-   python -m bhriguwelt.horoscope calendar \
-       --birth-date 1995-05-18 \
-       --birth-time 14:45 \
-       --birth-place "Varanasi"
-   ```
-
-4. Build the UI/API bridge. The backend already ships with an offline-friendly
-   HTTP server (documented below), and the `/frontend` Next.js experience calls
-   it out of the box (see the Frontend quick start below). If you extend the
-   backend, remember to run the pytest suite from inside
-   `backend/` with `PYTHONPATH="$(pwd)/src" pytest` so the package layout mirrors
-   production usage. To validate the web bundle, run `npm run lint` and `npm run
-   type-check` from within `frontend/` after pointing
-   `NEXT_PUBLIC_BACKEND_URL` at your chosen backend.
-
-### Lightweight HTTP API
-
-BhriguWelt already includes a zero-dependency HTTP server for mobile or web
-clients. Launch it from the backend workspace:
+### Installation
 
 ```bash
-cd backend
-PYTHONPATH="$(pwd)/src" python -m bhriguwelt.api
+# Navigate to mobile app
+cd mobile/soul_journey
+
+# Install dependencies
+flutter pub get
+
+# Generate code (Freezed & Riverpod)
+flutter pub run build_runner build --delete-conflicting-outputs
+
+# Run on iOS Simulator
+flutter run -d "iPhone 14"
+
+# Run on Android
+flutter run -d emulator-5554
+
+# Run on Web
+flutter run -d chrome
 ```
 
-Endpoints:
-
-- `GET /health` – readiness probe referencing the Bhrigu Samhita source.
-- `POST /horoscope` – accepts the same payload as the CLI arguments and
-  responds with karmic epochs plus past/future narratives.
-- `POST /past-life`, `POST /future`, `POST /matchmaking` – specialized engines
-  for the dedicated experiences.
-- `POST /calendar` – converts the supplied Gregorian birth record into the
-  Hindu Śaka calendar (Śaka year, month, day, and IST reference notes).
-
-Each POST body must supply the fields listed in `HoroscopeRequest` (see
-`backend/src/bhriguwelt/horoscope.py`). Responses mirror the CLI output so the
-frontend/mobile layers can present manuscripts alongside insights.
-
-- A concise OpenAPI spec lives at `docs/openapi.yaml` and mirrors the
-  validation rules enforced by the CLI/API handlers for `/health`, `/horoscope`,
-  `/past-life`, `/future`, `/matchmaking`, and `/calendar`.
-- A dataset backup helper is available via `cd backend && PYTHONPATH="$(pwd)/src" python
-  scripts/backup_data.py`, which writes timestamped copies into
-  `backend/backups/` for safe archival.
-- Frontend telemetry is opt-in through `NEXT_PUBLIC_SENTRY_DSN`; without the
-  DSN, telemetry calls become no-ops to preserve the zero-dependency baseline.
-
-## Frontend & mobile quick start
-
-The `frontend/` directory now contains a ready-to-ship Next.js application that
-mirrors every backend capability.
+### Build for Production
 
 ```bash
-cd frontend
-npm install
-NEXT_PUBLIC_BACKEND_URL=http://localhost:8000 npm run dev
+# iOS (requires Xcode)
+flutter build ios --release
+# Then open ios/Runner.xcworkspace to archive
+
+# Android APK
+flutter build apk --release
+
+# Android App Bundle (Google Play)
+flutter build appbundle --release
+
+# Web
+flutter build web --release
 ```
 
-- `npm run build` matches the production bundle Vercel produces before serving
-  the UI from its edge network.
-- `npm run lint` / `npm run type-check` keep the React codebase aligned with the
-  backend schema.
-- The UI ships with a Hindi/English language toggle, ARIA-labelled forms, and
-  live regions so screen readers can pick up validation states and results.
-- Optional Playwright smoke tests live in `frontend/tests/e2e/`; install
-  `@playwright/test` locally and run `npm run test:e2e` to validate form
-  submissions against mocked backend responses.
-- The bundled forms demonstrate the exact JSON payload expected by `/horoscope`,
-  `/past-life`, `/future`, `/matchmaking`, and `/calendar`, so React Native or
-  Flutter teams can reuse the same contracts when shipping Android/iOS builds.
+---
 
-See `docs/deployment.md` for Railway (backend) and Vercel (frontend) recipes
-plus notes on mobile packaging.
+## 📂 Project Structure
 
-## Environment quick-start files
+```
+BhriguWelt/
+├── mobile/soul_journey/     ← 🎯 PRIMARY: Offline Flutter app
+│   ├── lib/
+│   │   ├── core/           # Security, constants, utils
+│   │   ├── data/           # Database, models, repositories
+│   │   ├── domain/         # Business logic, interpretation engine
+│   │   └── ui/             # Screens, widgets, theme
+│   ├── assets/             # Cities DB, wisdom cards, fonts
+│   └── test/               # Unit and widget tests
+├── legacy/                  ← ⚠️ ARCHIVED: Cloud components (optional)
+│   ├── backend/            # Python Flask API (Render)
+│   ├── frontend/           # Next.js web UI (Vercel)
+│   └── MIGRATION_NOTES.md  # Cloud decommissioning guide
+└── docs/                    # Documentation
+```
 
-- Backend: copy `backend/.env.example` to `.env`; `./start.sh` auto-loads it so
-  HOST/PORT/BHRIGU_DATA_PATH/SENTRY_DSN stay consistent locally and on hosts.
-- Frontend: copy `frontend/.env.example` and point `NEXT_PUBLIC_BACKEND_URL` to
-  your Railway or local backend.
+---
 
-## CI/CD
+## 🎓 Architecture
 
-GitHub Actions guardrails ship with the repo:
-- `Backend CI` runs pytest with `PYTHONPATH="$(pwd)/src"`.
-- `Frontend CI` installs dependencies, lints, and type-checks with Node 18.
+### Mobile App: Clean Architecture
 
-## API reference and docs
+```
+lib/
+├── core/
+│   ├── constants/          # App constants
+│   ├── security/           # PIN, biometric, app lock
+│   └── utils/              # PDF generator, date utils
+├── data/
+│   ├── database/           # SQLCipher setup
+│   ├── models/             # Profile, WisdomCard, Report (Freezed)
+│   └── repositories/       # Profile, Report, WisdomCard, City repos
+├── domain/
+│   ├── entities/           # Domain entities
+│   └── engine/             # InterpretationEngine (report generation)
+└── ui/
+    ├── screens/            # Onboarding, PIN, Profile, Report, Settings
+    ├── widgets/            # Animated logo, reusable components
+    └── theme/              # App theme and colors
+```
 
-- Endpoint contracts live in `docs/api_reference.md`.
-- Deployment playbooks and hosting options are in `docs/deployment.md`.
-- Backup and recovery guidance is documented in
-  `docs/backup_and_recovery.md`.
+### Tech Stack
 
-## Contribution and community guidelines
+- **Framework:** Flutter 3.2+ (Dart)
+- **State Management:** Riverpod 2.4+
+- **Database:** SQLCipher (encrypted SQLite)
+- **Storage:** Flutter Secure Storage (Keychain/Keystore)
+- **Search:** SQLite FTS5 (full-text search)
+- **PDF:** pdf + printing packages
+- **Animations:** flutter_animate
+- **Auth:** local_auth (biometrics)
+- **Models:** freezed + json_serializable
 
-- Start with `CONTRIBUTING.md` for style, testing, and sourcing rules that keep
-  every addition aligned with Bhrigu Samhita folios.
-- `CODE_OF_CONDUCT.md` outlines expected behavior.
-- `SECURITY.md` describes how to report vulnerabilities privately (contact
-  `security@bhriguwelt.com`).
+---
 
-## Governance metadata
+## 📖 How It Works
 
-- License: MIT (`LICENSE`). Preserve the copyright notice in derivative docs or
-  forks so merge histories remain conflict-free.
-- Conduct and security contact: `security@bhriguwelt.com` (matches
-  `CODE_OF_CONDUCT.md` and `SECURITY.md`).
+### 1. First Launch: Onboarding
+- Set up 4-digit PIN (required)
+- PIN hashed with PBKDF2 (100,000 iterations)
+- Database encryption key derived from PIN
+- Keys stored in secure platform storage
 
-## Repository hygiene
+### 2. Create Profile
+- Enter name, date of birth, time of birth
+- Search offline city database for birth place
+- Profile encrypted and saved locally
 
-- Set GitHub topics (`astrology`, `python`, `nextjs`, and `bhrigu-samhita`) in
-  the repository settings so new practitioners can discover and fork the
-  project as soon as you push changes.
-- Use the GitHub Projects board or wiki (enabled in this repo) to track the
-  roadmap for UI/i18n expansions and deployment milestones.
+### 3. Generate Soul Journey Report
+- Interpretation engine calculates:
+  - Zodiac sign, nakshatra, elements
+  - Karmic number, soul signature
+  - Past life patterns
+  - Future timeline (year-by-year)
+- Wisdom cards matched based on profile features
+- 7 report pages generated:
+  1. **Soul Signature** - Core essence and identity
+  2. **Past Life Threads** - Karmic patterns from previous lives
+  3. **Present Karmic Phase** - Current challenges and gifts
+  4. **Future Outlook** - Year-by-year predictions (2024-2032)
+  5. **Relationships & Marriage Karma** - Partnership guidance
+  6. **Remedies & Practices** - Mantras, rituals, daily practices
+  7. **Complete Soul Journey Summary** - Integrated wisdom
 
-## License
+### 4. Export to PDF
+- Multi-page PDF with sacred geometry design
+- Share or print from device
+- Requires PIN re-authentication
 
-This repository is released under the MIT License (`LICENSE`) so the Bhrigu
-Samhita wisdom can be shared responsibly.
+---
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+flutter test
+
+# Run with coverage
+flutter test --coverage
+genhtml coverage/lcov.info -o coverage/html
+open coverage/html/index.html
+
+# Run specific test
+flutter test test/unit/interpretation_engine_test.dart
+```
+
+---
+
+## 🗂️ Legacy Cloud Components (Optional)
+
+The `/legacy/` directory contains the original cloud-based architecture (Python backend + Next.js frontend) that was deployed to Render and Vercel. **These components are no longer required for the mobile app.**
+
+### Why Legacy?
+
+The mobile app provides all functionality **100% offline**:
+- ✅ Astrological calculations → Native Dart engine
+- ✅ User profiles → Encrypted local SQLite
+- ✅ Wisdom cards → Bundled JSON + local DB
+- ✅ Reports → Local generation and rendering
+- ✅ Data persistence → Encrypted local storage
+
+### Migrating from Cloud
+
+If you have existing user data in the legacy backend:
+
+1. Export from backend: `cd legacy/backend && python scripts/export_profiles.py`
+2. Import to mobile app: Use "Import Data" feature (requires PIN)
+
+See `/legacy/MIGRATION_NOTES.md` for detailed migration guide.
+
+---
+
+## 🔧 Configuration
+
+### App Constants
+
+Edit `mobile/soul_journey/lib/core/constants/app_constants.dart`:
+
+```dart
+class AppConstants {
+  static const int lockTimeoutSeconds = 300;     // 5 minutes
+  static const int pinLength = 4;                // 4-digit PIN
+  static const int futureTimelineStartYear = 2024;
+  static const int futureTimelineEndYear = 2032;
+}
+```
+
+### Wisdom Cards
+
+Add custom wisdom cards via:
+1. **In-app:** Wisdom Library → Add New Card (requires PIN)
+2. **JSON import:** Export/import JSON files
+3. **Seed data:** Modify `assets/wisdom_cards/demo_cards.json`
+
+**Card Structure:**
+```json
+{
+  "tradition": "Bhrigu Samhita",
+  "topic": "soul_signature",
+  "tags": ["fire", "leadership"],
+  "conditions": {"elements": ["Fire"]},
+  "rule_text": "Fire souls are natural leaders",
+  "output_template": "Your {{element}} nature makes you...",
+  "priority": 10
+}
+```
+
+---
+
+## 🎨 Customization
+
+### Colors
+
+Edit `mobile/soul_journey/lib/ui/theme/app_theme.dart`:
+
+```dart
+Cyan:   #4DEEEA  (accent, highlights)
+Purple: #8A5CF6  (primary, mystical)
+Lime:   #BEF264  (energy, growth)
+Yellow: #FACC15  (wisdom, light)
+Pink:   #EC4899  (compassion, feminine)
+```
+
+### City Database
+
+Add cities to `assets/cities/cities.json`:
+
+```json
+{
+  "name": "New Delhi",
+  "country": "India",
+  "latitude": 28.6139,
+  "longitude": 77.2090,
+  "timezone": "Asia/Kolkata"
+}
+```
+
+---
+
+## 🌐 Deployment
+
+### iOS App Store
+
+1. Build: `flutter build ios --release`
+2. Open `ios/Runner.xcworkspace` in Xcode
+3. Archive and upload to App Store Connect
+4. Submit for review
+
+### Google Play Store
+
+1. Build: `flutter build appbundle --release`
+2. Upload to Google Play Console
+3. Complete store listing
+4. Submit for review
+
+### Web (Optional - Demo Only)
+
+```bash
+flutter build web --release
+# Deploy build/web directory to any static host
+```
+
+**⚠️ Note:** Web version has limited encryption compared to mobile. Use for demo only.
+
+---
+
+## 📱 Platform-Specific Setup
+
+### iOS Requirements
+
+- iOS 13+
+- Xcode 14+
+- Add to `ios/Runner/Info.plist`:
+
+```xml
+<key>NSFaceIDUsageDescription</key>
+<string>Unlock Soul Journey with Face ID</string>
+```
+
+### Android Requirements
+
+- Android 6.0+ (API 23)
+- Add to `android/app/src/main/AndroidManifest.xml`:
+
+```xml
+<uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Build Errors with Freezed
+
+```bash
+flutter pub run build_runner clean
+flutter pub run build_runner build --delete-conflicting-outputs
+```
+
+### Database Not Encrypted
+
+Ensure PIN is set on first launch. Delete and reinstall app to reset.
+
+### Biometric Not Working
+
+- Verify device has biometric hardware
+- Check user has enrolled Face ID/Touch ID/Fingerprint
+- Review platform-specific permissions
+
+---
+
+## 📄 License
+
+MIT License - See [LICENSE](LICENSE) file.
+
+---
+
+## 🙏 Acknowledgments
+
+- Inspired by **Bhrigu Samhita** and **Nadi Jyotisha** ancient wisdom traditions
+- Sacred geometry design influenced by Sri Yantra
+- Built with reverence for Vedic sciences
+
+---
+
+## 🛣️ Roadmap
+
+- [ ] Voice-guided meditation for remedies
+- [ ] Dasha (planetary period) calculations
+- [ ] Compatibility matching between profiles
+- [ ] Export to DOCX/HTML formats
+- [ ] Internationalization (Hindi, Sanskrit, Tamil)
+- [ ] Daily mantra reminder widget
+- [ ] Apple Watch / Wear OS companion app
+
+---
+
+## 📞 Support
+
+- **Documentation:** See `/mobile/soul_journey/README.md`
+- **Issues:** Open a GitHub issue
+- **Contributions:** See [CONTRIBUTING.md](CONTRIBUTING.md)
+
+---
+
+**ॐ शान्तिः शान्तिः शान्तिः**
+
+*(Om Shanti Shanti Shanti - Peace, Peace, Peace)*
+
+May your journey through this app bring wisdom, clarity, and spiritual growth. 🌟
