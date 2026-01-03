@@ -393,9 +393,27 @@ MIT License - See [LICENSE](LICENSE) file.
 
 ---
 
+## 📚 Documentation
+
+### Interpretation Engine (NEW!)
+Comprehensive documentation for the Soul Journey report generation engine:
+
+- **[Design Document](docs/interpretation_engine_design.md)** - Complete specification with schemas, pseudocode, and example walkthrough
+- **[Architecture](docs/interpretation_engine_architecture.md)** - Visual diagrams, data flows, and system components
+- **[Quick Reference](docs/interpretation_engine_quick_reference.md)** - Quick start guide and API reference
+- **[JSON Schemas](docs/interpretation_engine_schemas.json)** - Formal schema definitions for validation
+
+### More Documentation
+- **[Documentation Index](docs/README.md)** - Complete documentation hub
+- **[Mobile App Guide](mobile/soul_journey/README.md)** - Flutter app documentation
+- **[API Reference](docs/api_reference.md)** - Backend API documentation
+- **[Developer Onboarding](docs/DEVELOPER_ONBOARDING.md)** - Getting started guide
+
+---
+
 ## 📞 Support
 
-- **Documentation:** See `/mobile/soul_journey/README.md`
+- **Documentation:** See [Documentation Index](docs/README.md)
 - **Issues:** Open a GitHub issue
 - **Contributions:** See [CONTRIBUTING.md](CONTRIBUTING.md)
 
