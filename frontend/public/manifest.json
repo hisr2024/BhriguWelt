@@ -1,0 +1,63 @@
+{
+  "name": "BhriguWelt - Soul Journey",
+  "short_name": "BhriguWelt",
+  "description": "Offline-first spiritual astrology app combining ancient Vedic wisdom with modern AI",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0118",
+  "theme_color": "#00d9ff",
+  "orientation": "portrait-primary",
+  "categories": ["lifestyle", "education", "health"],
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.svg",
+      "sizes": "72x72",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-96x96.svg",
+      "sizes": "96x96",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/home.png",
+      "sizes": "540x720",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Birth Chart",
+      "short_name": "Chart",
+      "description": "Calculate your birth chart",
+      "url": "/birth-chart",
+      "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Daily Insights",
+      "short_name": "Insights",
+      "description": "View today's insights",
+      "url": "/daily-insights",
+      "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    }
+  ],
+  "prefer_related_applications": false
+}
