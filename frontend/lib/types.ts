@@ -85,7 +85,7 @@ export interface PastLife {
   significantEvents: string[];
   karmicPatterns: string[];
   carriedTalents: string[];
-  unresolved Issues: string[];
+  unresolvedIssues: string[];
 }
 
 // Wisdom Card types

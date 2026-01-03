@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Lock, Check, X, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { setupEncryption, hashPasscode } from '@/lib/crypto';
-import { setItem, STORES } from '@/lib/storage';
+import { hashPasscode } from '@/lib/crypto';
+import { setupEncryption, setItem, STORES } from '@/lib/storage';
 
 interface PasscodeSetupProps {
   onComplete: () => void;

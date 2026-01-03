@@ -129,7 +129,7 @@ export function useProfiles(encryptionKey: CryptoKey | null) {
         updatedAt: new Date().toISOString(),
       };
 
-      await setItem(STORES.PROFILES, id, updated, encryptionKey);
+      await setItem(STORES.PROFILES, id.toString(), updated, encryptionKey);
       await loadProfiles();
     } catch (err) {
       setError('Failed to update profile');
