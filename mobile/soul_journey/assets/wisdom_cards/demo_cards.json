@@ -1,0 +1,335 @@
+[
+  {
+    "tradition": "Bhrigu Samhita",
+    "topic": "soul_signature",
+    "tags": ["fire", "leadership", "courage"],
+    "conditions": {
+      "elements": ["Fire"]
+    },
+    "rule_text": "Fire souls are born leaders with warrior energy",
+    "output_template": "**Ancient Wisdom from Bhrigu:** Your {{element}} nature makes you a natural leader. Channel this divine fire to inspire and transform others, but beware of burning too bright and exhausting yourself.",
+    "priority": 10
+  },
+  {
+    "tradition": "Nadi Jyotisha",
+    "topic": "soul_signature",
+    "tags": ["water", "emotion", "healing"],
+    "conditions": {
+      "elements": ["Water"]
+    },
+    "rule_text": "Water souls possess deep emotional intelligence and healing abilities",
+    "output_template": "**Sacred Palm Leaf Prophecy:** Your {{element}} essence grants you profound intuitive wisdom. You are a natural healer who feels the emotions of others deeply. Honor your sensitivity as a gift.",
+    "priority": 10
+  },
+  {
+    "tradition": "Vedic",
+    "topic": "soul_signature",
+    "tags": ["earth", "grounding", "manifestation"],
+    "conditions": {
+      "elements": ["Earth"]
+    },
+    "rule_text": "Earth souls are builders and manifestors of the material world",
+    "output_template": "**Vedic Teaching:** Your {{element}} energy makes you a master builder. You have the rare gift of manifesting dreams into physical reality through patient, steady effort.",
+    "priority": 10
+  },
+  {
+    "tradition": "Bhrigu Samhita",
+    "topic": "past_life",
+    "tags": ["karma", "past-life", "india"],
+    "conditions": {
+      "minAge": 25,
+      "maxAge": 60
+    },
+    "rule_text": "Souls aged 25-60 carry strong past life imprints from Indian subcontinent",
+    "output_template": "**Past Life Revelation:** The records show you walked the sacred lands of ancient Bharat in your previous incarnation. The spiritual practices you knew then remain dormant within your soul memory, ready to be awakened.",
+    "priority": 8
+  },
+  {
+    "tradition": "Nadi Jyotisha",
+    "topic": "past_life",
+    "tags": ["temple", "devotion", "service"],
+    "conditions": {
+      "karmicNumber": [2, 6, 9]
+    },
+    "rule_text": "Karmic numbers 2, 6, 9 indicate past life temple service",
+    "output_template": "**Nadi Leaf Secret:** You served in sacred temples in your past life, tending to the divine images and assisting pilgrims. This devotional karma now draws you to spiritual spaces and selfless service.",
+    "priority": 9
+  },
+  {
+    "tradition": "Bhrigu Samhita",
+    "topic": "present",
+    "tags": ["career", "success", "timing"],
+    "conditions": {
+      "lifePhases": ["Adulthood (25-48)"]
+    },
+    "rule_text": "Prime career manifestation years are 28-45",
+    "output_template": "**Current Phase Guidance:** You are in the powerful manifestation years. Whatever seeds you plant now in your career will yield abundant harvest. Focus your energy on your highest vision.",
+    "priority": 10
+  },
+  {
+    "tradition": "Vedic",
+    "topic": "present",
+    "tags": ["health", "balance", "wellness"],
+    "conditions": {
+      "elements": ["Water", "Earth"]
+    },
+    "rule_text": "Water and Earth souls need grounding health practices",
+    "output_template": "**Health Wisdom:** Your {{element}} constitution requires daily grounding practices. Walk barefoot on earth, practice yoga, and maintain steady meal times to keep your energies balanced.",
+    "priority": 7
+  },
+  {
+    "tradition": "Nadi Jyotisha",
+    "topic": "future",
+    "tags": ["prosperity", "abundance", "jupiter"],
+    "conditions": {
+      "karmicNumber": [3, 6, 9]
+    },
+    "rule_text": "Jupiter-blessed numbers indicate future abundance",
+    "output_template": "**Future Prophecy:** The palm leaves reveal Jupiter's blessing upon your financial house. Within the next 3-5 years, opportunities for prosperity will multiply. Prepare yourself through knowledge and skill development.",
+    "priority": 9
+  },
+  {
+    "tradition": "Bhrigu Samhita",
+    "topic": "future",
+    "tags": ["transformation", "spiritual-growth"],
+    "conditions": {
+      "minAge": 40
+    },
+    "rule_text": "After 40, spiritual transformation accelerates",
+    "output_template": "**Sacred Timeline:** After age 40, your soul's spiritual evolution accelerates dramatically. The worldly achievements of youth now transform into wisdom, making you a guide for younger souls.",
+    "priority": 8
+  },
+  {
+    "tradition": "Vedic",
+    "topic": "marriage",
+    "tags": ["relationships", "partnership", "timing"],
+    "conditions": {
+      "lifePhases": ["Youth (13-24)", "Adulthood (25-48)"]
+    },
+    "rule_text": "Marriage timing aligned with planetary cycles",
+    "output_template": "**Relationship Karma:** Your chart indicates sacred partnership is destined. The universe is preparing your soul mate simultaneously. Trust divine timing and focus on becoming your best self.",
+    "priority": 10
+  },
+  {
+    "tradition": "Nadi Jyotisha",
+    "topic": "marriage",
+    "tags": ["soul-mate", "past-life-connection"],
+    "conditions": {
+      "karmicNumber": [2, 6, 11]
+    },
+    "rule_text": "Karmic numbers 2, 6, 11 indicate twin flame connections",
+    "output_template": "**Soul Mate Prophecy:** Your soul mate is someone you have known across multiple lifetimes. When you meet, there will be instant recognition. Watch for signs of déjà vu and deep familiarity.",
+    "priority": 9
+  },
+  {
+    "tradition": "Bhrigu Samhita",
+    "topic": "remedies",
+    "tags": ["mantra", "fire", "sun"],
+    "conditions": {
+      "elements": ["Fire"]
+    },
+    "rule_text": "Fire souls benefit from solar mantras and sunrise practices",
+    "output_template": "**Prescribed Remedy:** Face the rising sun each morning and chant 'Om Suryaya Namaha' 21 times. This practice will amplify your natural fire energy and remove obstacles from your path.",
+    "priority": 10
+  },
+  {
+    "tradition": "Vedic",
+    "topic": "remedies",
+    "tags": ["meditation", "peace", "moon"],
+    "conditions": {
+      "elements": ["Water"]
+    },
+    "rule_text": "Water souls need lunar energy balancing",
+    "output_template": "**Healing Practice:** Meditate under moonlight, especially on full moon nights. Drink water charged under moonlight to balance your emotional energies and enhance intuitive abilities.",
+    "priority": 9
+  },
+  {
+    "tradition": "Nadi Jyotisha",
+    "topic": "spiritual",
+    "tags": ["awakening", "kundalini", "yoga"],
+    "conditions": {
+      "minAge": 35
+    },
+    "rule_text": "After 35, kundalini awakening becomes natural",
+    "output_template": "**Spiritual Awakening:** Your age indicates readiness for deeper spiritual practices. The kundalini energy at the base of your spine is beginning to stir. Seek a qualified yoga guru for safe guidance.",
+    "priority": 8
+  },
+  {
+    "tradition": "Bhrigu Samhita",
+    "topic": "career",
+    "tags": ["teaching", "knowledge", "mercury"],
+    "conditions": {
+      "karmicNumber": [3, 5]
+    },
+    "rule_text": "Mercury-ruled souls excel in communication and teaching",
+    "output_template": "**Career Guidance:** Your karmic number reveals a natural gift for teaching, writing, and communication. Any career involving knowledge sharing will bring both success and soul satisfaction.",
+    "priority": 9
+  },
+  {
+    "tradition": "Vedic",
+    "topic": "health",
+    "tags": ["ayurveda", "diet", "balance"],
+    "conditions": {
+      "elements": ["Fire"]
+    },
+    "rule_text": "Fire constitutions need cooling foods and practices",
+    "output_template": "**Health Prescription:** Balance your fiery nature with cooling foods - cucumber, coconut water, mint. Avoid excessive spicy food and practice cooling pranayama (breathing exercises).",
+    "priority": 7
+  },
+  {
+    "tradition": "Nadi Jyotisha",
+    "topic": "wealth",
+    "tags": ["prosperity", "lakshmi", "friday"],
+    "conditions": {
+      "karmicNumber": [6]
+    },
+    "rule_text": "Venus-ruled number 6 attracts wealth through beauty and arts",
+    "output_template": "**Wealth Blessing:** Your karmic number 6 is blessed by Goddess Lakshmi. Honor Fridays as sacred, light a lamp for prosperity, and consider careers in beauty, arts, or luxury goods.",
+    "priority": 8
+  },
+  {
+    "tradition": "Bhrigu Samhita",
+    "topic": "relationships",
+    "tags": ["family", "ancestors", "lineage"],
+    "conditions": {
+      "karmicNumber": [1, 8]
+    },
+    "rule_text": "Karmic numbers 1 and 8 carry strong ancestral karma",
+    "output_template": "**Ancestral Blessing:** Your lineage is powerful. Honor your ancestors through monthly offerings and prayers. Their blessings will clear obstacles in your family relationships.",
+    "priority": 8
+  },
+  {
+    "tradition": "Vedic",
+    "topic": "spiritual",
+    "tags": ["meditation", "moksha", "liberation"],
+    "conditions": {
+      "lifePhases": ["Maturity (49-72)", "Wisdom (73+)"]
+    },
+    "rule_text": "Later life phases naturally turn toward liberation",
+    "output_template": "**Path to Liberation:** You have entered the sacred phase where worldly attachments naturally fall away. This is the time to intensify spiritual practice and prepare for ultimate freedom (moksha).",
+    "priority": 10
+  },
+  {
+    "tradition": "Nadi Jyotisha",
+    "topic": "career",
+    "tags": ["healing", "service", "medicine"],
+    "conditions": {
+      "elements": ["Water"],
+      "karmicNumber": [2, 6, 9]
+    },
+    "rule_text": "Water souls with service numbers are natural healers",
+    "output_template": "**Divine Calling:** The palm leaves reveal your soul's calling to the healing arts. Whether through medicine, counseling, energy work, or traditional healing, you are meant to ease suffering.",
+    "priority": 9
+  },
+  {
+    "tradition": "Bhrigu Samhita",
+    "topic": "present",
+    "tags": ["transformation", "saturn", "challenges"],
+    "conditions": {
+      "karmicNumber": [8]
+    },
+    "rule_text": "Saturn-ruled number 8 faces challenges that build strength",
+    "output_template": "**Divine Challenge:** Your karmic number 8 brings Saturn's lessons - challenges that forge unbreakable strength. Every difficulty you face is sculpting you into a master teacher of resilience.",
+    "priority": 9
+  },
+  {
+    "tradition": "Vedic",
+    "topic": "marriage",
+    "tags": ["compatibility", "elements", "harmony"],
+    "conditions": {
+      "elements": ["Air"]
+    },
+    "rule_text": "Air souls need intellectual and communicative partners",
+    "output_template": "**Partnership Wisdom:** As an Air soul, you need a partner who stimulates your mind and respects your need for freedom. Seek someone who enjoys deep conversations and shares your love of learning.",
+    "priority": 8
+  },
+  {
+    "tradition": "Nadi Jyotisha",
+    "topic": "future",
+    "tags": ["travel", "foreign-lands", "expansion"],
+    "conditions": {
+      "karmicNumber": [5]
+    },
+    "rule_text": "Number 5 souls are destined for travel and foreign connections",
+    "output_template": "**Travel Prophecy:** Your destiny includes significant foreign travel or connections with distant lands. These journeys - physical or spiritual - will expand your consciousness and bring unexpected opportunities.",
+    "priority": 8
+  },
+  {
+    "tradition": "Bhrigu Samhita",
+    "topic": "spiritual",
+    "tags": ["guru", "teacher", "wisdom"],
+    "conditions": {
+      "karmicNumber": [11, 22, 33]
+    },
+    "rule_text": "Master numbers indicate potential for spiritual mastery",
+    "output_template": "**Master Soul Revelation:** Your master number marks you as an old soul with advanced spiritual capacity. You are here not just to learn but to teach. Seek a true guru to unlock your full potential.",
+    "priority": 10
+  },
+  {
+    "tradition": "Vedic",
+    "topic": "health",
+    "tags": ["exercise", "discipline", "mars"],
+    "conditions": {
+      "karmicNumber": [9]
+    },
+    "rule_text": "Mars-ruled number 9 needs physical activity and discipline",
+    "output_template": "**Physical Wellness:** Your Mars energy requires regular physical exercise. Martial arts, yoga, or vigorous sports will channel your energy productively and maintain your vitality.",
+    "priority": 7
+  },
+  {
+    "tradition": "Nadi Jyotisha",
+    "topic": "wealth",
+    "tags": ["property", "land", "real-estate"],
+    "conditions": {
+      "elements": ["Earth"],
+      "minAge": 30
+    },
+    "rule_text": "Earth souls naturally accumulate land and property",
+    "output_template": "**Property Blessing:** Your Earth nature and age indicate favorable timing for property acquisition. Land and real estate will be sources of security and wealth for you. Invest wisely in tangible assets.",
+    "priority": 8
+  },
+  {
+    "tradition": "Bhrigu Samhita",
+    "topic": "remedies",
+    "tags": ["charity", "service", "jupiter"],
+    "conditions": {
+      "karmicNumber": [3]
+    },
+    "rule_text": "Jupiter-ruled number 3 benefits from charitable acts",
+    "output_template": "**Prosperity Remedy:** To multiply Jupiter's blessings, donate to educational causes every Thursday. Teaching underprivileged children or supporting libraries will bring immense good karma and material abundance.",
+    "priority": 9
+  },
+  {
+    "tradition": "Vedic",
+    "topic": "relationships",
+    "tags": ["communication", "mercury", "expression"],
+    "conditions": {
+      "elements": ["Air"]
+    },
+    "rule_text": "Air souls must master clear communication in relationships",
+    "output_template": "**Relationship Teaching:** Your Air nature gives you quick intelligence but can make you appear detached. Practice expressing your emotions clearly to deepen your intimate relationships.",
+    "priority": 7
+  },
+  {
+    "tradition": "Nadi Jyotisha",
+    "topic": "spiritual",
+    "tags": ["devotion", "bhakti", "krishna"],
+    "conditions": {
+      "karmicNumber": [6]
+    },
+    "rule_text": "Venus-ruled souls naturally incline toward devotional paths",
+    "output_template": "**Devotional Path:** Your heart is naturally devotional. The path of Bhakti (divine love) suits your soul perfectly. Chanting mantras, singing devotional songs, and temple worship will bring you deep peace.",
+    "priority": 8
+  },
+  {
+    "tradition": "Bhrigu Samhita",
+    "topic": "present",
+    "tags": ["patience", "timing", "wisdom"],
+    "conditions": {
+      "lifePhases": ["Youth (13-24)"]
+    },
+    "rule_text": "Youth period requires patience and foundation building",
+    "output_template": "**Sacred Patience:** The Rishis counsel patience during your youth. This is the time to build strong foundations in education, skills, and character. The harvest of your efforts will come in your prime years.",
+    "priority": 9
+  }
+]
