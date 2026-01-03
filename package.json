@@ -1,17 +1,10 @@
 {
   "name": "bhriguwelt-monorepo",
   "private": true,
-  "workspaces": [
-    "frontend"
-  ],
   "scripts": {
     "dev": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build",
     "start": "cd frontend && npm run start"
-  },
-  "dependencies": {
-    "react": "19.2.0",
-    "react-dom": "19.2.0"
   },
   "packageManager": "npm@10.9.2",
   "engines": {
