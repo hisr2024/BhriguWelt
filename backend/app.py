@@ -19,9 +19,24 @@ app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///bhriguwelt.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Initialize extensions
-CORS(app, origins=[os.getenv('FRONTEND_URL', '*')])
+# Initialize CORS with strict configuration
+frontend_url = os.getenv('FRONTEND_URL', '*')
+CORS(app, 
+     origins=[frontend_url] if frontend_url != '*' else '*',
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+     allow_headers=['Content-Type', 'Authorization'],
+     supports_credentials=True,
+     max_age=3600)
+
+# Initialize JWT
 jwt = JWTManager(app)
+
+# Initialize security middleware
+from middleware.security import SecurityMiddleware
+from middleware.rate_limiter import setup_rate_limiter
+
+security_middleware = SecurityMiddleware(app)
+limiter = setup_rate_limiter(app)
 
 # Import routes
 from routes import (
