@@ -100,8 +100,10 @@ export type WisdomCategory =
   | 'philosophy'
   | 'general';
 
+// Wisdom card structure matching the actual data in wisdom_cards.json
+// IDs are strings (e.g., "wc001", "wc002") as defined in the JSON data
 export interface WisdomCard {
-  id?: string;
+  id?: string; // String ID matching data structure (e.g., "wc001")
   title: string;
   tradition?: string;
   category: WisdomCategory;

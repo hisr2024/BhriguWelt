@@ -40,11 +40,12 @@ export async function seedWisdomCards(encryptionKey?: CryptoKey): Promise<number
     await initDB();
     
     // Store each card
-    for (let i = 0; i < cards.length; i++) {
-      const card = cards[i];
-      const key = card.id ? String(card.id) : `card_${i}`;
-      await setItem(STORES.WISDOM_CARDS, key, card, encryptionKey);
-    }
+    await Promise.all(
+      cards.map((card, index) => {
+        const key = card.id ? String(card.id) : `card_${index}`;
+        return setItem(STORES.WISDOM_CARDS, key, card, encryptionKey);
+      })
+    );
     
     console.log(`[WisdomCards] Seeded ${cards.length} wisdom cards`);
     return cards.length;
