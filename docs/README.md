@@ -81,9 +81,10 @@ The core of the Soul Journey app - generates deterministic, explainable Soul Jou
 ### Infrastructure
 - See `/infra` directory for infrastructure as code
 
-## 🔒 Security
+## 🔒 Security & Privacy
 
 ### Security Documentation
+- **[Privacy & Security Guide](./PRIVACY_AND_SECURITY.md)** ⭐ NEW - User-friendly privacy and security guide
 - **[Security Audit Checklist](./SECURITY_AUDIT_CHECKLIST.md)** - Comprehensive security checklist
 - See project root for:
   - SECURITY.md - Security policy

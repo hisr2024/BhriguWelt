@@ -35,6 +35,9 @@ The **Soul Journey** Flutter app is a production-ready, offline-first astrology 
 - No network requests - 100% local processing
 - No analytics or telemetry
 
+**📖 [Read our complete Privacy & Security Guide →](docs/PRIVACY_AND_SECURITY.md)**  
+*Transparent, honest, and written for real people (not just developers)*
+
 **Threat Model:**
 | Threat | Mitigation |
 |--------|-----------|
@@ -394,6 +397,17 @@ MIT License - See [LICENSE](LICENSE) file.
 ---
 
 ## 📚 Documentation
+
+### Privacy & Security (NEW!)
+Your data, your control. Transparent security documentation written for everyone:
+
+- **[Privacy & Security Guide](docs/PRIVACY_AND_SECURITY.md)** ⭐ - Complete privacy guide for users
+  - Offline mode explained
+  - Encryption in plain language
+  - Data that never leaves your device
+  - AI integration controls
+  - Security limitations (honest & transparent)
+  - FAQ for non-technical users
 
 ### Interpretation Engine (NEW!)
 Comprehensive documentation for the Soul Journey report generation engine:
