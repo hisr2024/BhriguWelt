@@ -25,10 +25,10 @@ All legacy cloud-based components have been moved to the `/archive` directory:
 
 ### 2. Stale Configurations Removed
 
-The following configurations were removed as they referenced archived components:
+The following configurations were updated or removed:
 
-- **Root `vercel.json`** - Was pointing to `legacy/frontend` build path
-- **Legacy workspace in `package.json`** - Removed `legacy/frontend` from npm workspaces
+- **Root `vercel.json`** - Updated to point to current `frontend/` directory (was pointing to legacy)
+- **Legacy workspace in `package.json`** - Removed workspace configuration (frontend is standalone)
 - **Legacy npm scripts** - Removed `dev:legacy` and `build:legacy` scripts
 
 ### 3. Current Architecture
@@ -40,6 +40,7 @@ BhriguWelt/
 ├── frontend/              ← Current Next.js 14 PWA (offline-first)
 ├── backend/               ← Current Flask backend (secure, rate-limited)
 ├── mobile/soul_journey/   ← Primary Flutter mobile app (100% offline)
+├── vercel.json            ← Deployment config for current frontend
 ├── archive/               ← Archived legacy components
 │   ├── legacy_backend/    ← OLD: Python 3.11 REST API
 │   ├── legacy_frontend/   ← OLD: Next.js 16 web app
