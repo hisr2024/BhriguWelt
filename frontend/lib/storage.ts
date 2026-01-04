@@ -179,9 +179,10 @@ export async function setItem(
           updatedAt: new Date().toISOString(),
         };
       } else {
+        // Store data as the value (no extraction of nested properties)
         item = {
           key,
-          value: data.value !== undefined ? data.value : data,
+          value: data,
           encrypted: false,
           updatedAt: new Date().toISOString(),
         };
@@ -226,7 +227,8 @@ export async function getItem(
             reject(new Error('Failed to decrypt item - incorrect key?'));
           }
         } else {
-          resolve(item);
+          // Return just the value for unencrypted items, not the entire item object
+          resolve(item.value);
         }
       };
 
@@ -264,7 +266,8 @@ export async function getAllItems(
                 if (item.encrypted) {
                   return decryptFromStorage(item.value, encryptionKey);
                 }
-                return item;
+                // Return just the value for unencrypted items
+                return item.value;
               })
             );
             resolve(decrypted);
@@ -272,7 +275,8 @@ export async function getAllItems(
             reject(new Error('Failed to decrypt items - incorrect key?'));
           }
         } else {
-          resolve(items);
+          // Return just the values for all items when no encryption key
+          resolve(items.map(item => item.value));
         }
       };
 
@@ -316,7 +320,8 @@ export async function setupEncryption(passcode: string): Promise<CryptoKey> {
   const salt = generateSalt();
   const saltBase64 = uint8ArrayToBase64(salt);
 
-  await setItem(STORES.METADATA, 'encryptionSalt', { value: saltBase64 });
+  // Store salt as a string value (not wrapped in an additional object)
+  await setItem(STORES.METADATA, 'encryptionSalt', saltBase64);
 
   const key = await deriveKey(passcode, salt);
 
@@ -327,13 +332,13 @@ export async function setupEncryption(passcode: string): Promise<CryptoKey> {
 }
 
 export async function getEncryptionKey(passcode: string): Promise<CryptoKey> {
-  const saltItem = await getItem(STORES.METADATA, 'encryptionSalt');
+  const saltValue = await getItem(STORES.METADATA, 'encryptionSalt');
 
-  if (!saltItem || !saltItem.value) {
-    throw new Error('Encryption not set up - salt not found');
+  if (!saltValue || typeof saltValue !== 'string') {
+    throw new Error('Encryption not set up - salt not found or invalid');
   }
 
-  const salt = base64ToUint8Array(saltItem.value);
+  const salt = base64ToUint8Array(saltValue);
   return deriveKey(passcode, salt);
 }
 
@@ -349,8 +354,8 @@ export async function verifyEncryptionKey(passcode: string): Promise<boolean> {
 
 export async function isEncryptionSetup(): Promise<boolean> {
   try {
-    const saltItem = await getItem(STORES.METADATA, 'encryptionSalt');
-    return !!saltItem && !!saltItem.value;
+    const saltValue = await getItem(STORES.METADATA, 'encryptionSalt');
+    return !!saltValue && typeof saltValue === 'string';
   } catch (error) {
     return false;
   }
