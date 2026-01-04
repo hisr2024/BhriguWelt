@@ -9,7 +9,7 @@ import GenZCard from '../components/GenZCard';
 import GenZButton from '../components/GenZButton';
 import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
-import { useEncryptionKey } from '@/lib/hooks/useEncryptedStorage';
+import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
 import { predictionsAPI, BirthDetails } from '@/lib/api';
 import Link from 'next/link';
@@ -20,7 +20,7 @@ export default function PredictionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
   const [wisdomCards, setWisdomCards] = useState<any[]>([]);
-  const { encryptionKey, isSetup, isLoading: encryptionLoading } = useEncryptionKey();
+  const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
 
   useEffect(() => {
@@ -30,10 +30,10 @@ export default function PredictionsPage() {
   }, [encryptionLoading, isSetup, router]);
 
   useEffect(() => {
-    if (!encryptionLoading && isSetup && !encryptionKey) {
+    if (!encryptionLoading && isSetup && !isUnlocked) {
       router.push('/unlock');
     }
-  }, [encryptionLoading, isSetup, encryptionKey, router]);
+  }, [encryptionLoading, isSetup, isUnlocked, router]);
 
   useEffect(() => {
     fetch('/data/wisdom_cards.json')
