@@ -73,8 +73,8 @@ export default function AIChatInterface({
       if (onSendMessage) {
         response = await onSendMessage(userMessage.content);
       } else {
-        // Default mock response
-        response = await generateMockResponse(userMessage.content, context);
+        // Use real AI response with Sarvam AI
+        response = await generateRealAIResponse(userMessage.content, context, birthChartData);
       }
 
       const assistantMessage: Message = {
@@ -330,7 +330,61 @@ export default function AIChatInterface({
   );
 }
 
-// Mock response generator
+// Real AI response generator using Sarvam AI
+async function generateRealAIResponse(
+  userMessage: string,
+  context: string,
+  birthChartData: any
+): Promise<string> {
+  try {
+    // Import the AI API
+    const { aiAPI } = await import('@/lib/api');
+
+    // Prepare birth data for AI
+    const birthData = {
+      zodiac_sign: birthChartData?.zodiac_sign,
+      nakshatra: birthChartData?.nakshatra,
+      moon_sign: birthChartData?.moon_sign,
+      ascendant: birthChartData?.ascendant,
+      planetary_positions: birthChartData?.planets,
+      houses: birthChartData?.houses,
+      dasha_period: birthChartData?.dasha_period?.maha_dasha,
+    };
+
+    // Get AI mode from localStorage
+    const settingsStr = localStorage.getItem('app_settings');
+    const settings = settingsStr ? JSON.parse(settingsStr) : { aiEnabled: true };
+
+    // Check if AI is enabled
+    if (!settings.aiEnabled) {
+      return generateMockResponse(userMessage, context);
+    }
+
+    const aiMode = {
+      mode: 'conversational' as const,
+      consent: true,
+      consentTimestamp: new Date().toISOString(),
+    };
+
+    // Call the AI chat endpoint
+    const response = await aiAPI.chat(
+      {
+        message: userMessage,
+        birth_data: birthData,
+        conversation_history: [],
+      },
+      aiMode
+    );
+
+    return response.response || response.message || 'I apologize, but I encountered an issue. Please try again.';
+  } catch (error) {
+    console.error('Error calling AI API:', error);
+    // Fallback to mock response
+    return generateMockResponse(userMessage, context);
+  }
+}
+
+// Mock response generator (fallback)
 async function generateMockResponse(userMessage: string, context: string): Promise<string> {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));

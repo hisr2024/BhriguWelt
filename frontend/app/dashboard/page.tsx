@@ -65,11 +65,12 @@ export default function DashboardPage() {
   }
 
   const widgets = [
-    { title: 'Birth Chart', description: 'Explore your cosmic blueprint', icon: <Sparkles className="w-8 h-8" />, link: '/birth-chart', color: 'from-genz-electric-blue to-genz-mint-fresh', badge: 'New' },
+    { title: 'Cosmic Blueprint', description: 'Bhrigu Samhita & Nadi Jyotisa Predictions', icon: <Sparkles className="w-8 h-8" />, link: '/bhrigu-predictions', color: 'from-genz-electric-blue via-genz-purple-haze to-genz-hot-pink', badge: 'Featured', featured: true },
+    { title: 'Birth Chart', description: 'Explore your cosmic blueprint', icon: <Star className="w-8 h-8" />, link: '/birth-chart', color: 'from-genz-electric-blue to-genz-mint-fresh' },
+    { title: 'AI Chat', description: 'Ask Sarvam AI about your journey', icon: <Zap className="w-8 h-8" />, link: '/ai-chat', color: 'from-genz-neon-green to-genz-lime-zest', badge: 'AI' },
     { title: 'Daily Insights', description: 'Your cosmic forecast for today', icon: <Sun className="w-8 h-8" />, link: '/daily-insights', color: 'from-genz-cyber-yellow to-genz-sunset-orange', badge: 'Today' },
     { title: 'Horoscope', description: 'Detailed predictions & guidance', icon: <Moon className="w-8 h-8" />, link: '/horoscope', color: 'from-genz-purple-haze to-genz-lavender-dream' },
-    { title: 'Matchmaking', description: 'Find your cosmic connection', icon: <Heart className="w-8 h-8" />, link: '/matchmaking', color: 'from-genz-hot-pink to-genz-coral-pop', badge: 'Hot' },
-    { title: 'Lucky Elements', description: 'Numbers, colors & gemstones', icon: <Star className="w-8 h-8" />, link: '/lucky-elements', color: 'from-genz-neon-green to-genz-lime-zest' },
+    { title: 'Matchmaking', description: 'Find your cosmic connection', icon: <Heart className="w-8 h-8" />, link: '/matchmaking', color: 'from-genz-hot-pink to-genz-coral-pop' },
     { title: 'Life Events', description: 'Important milestones & dates', icon: <Calendar className="w-8 h-8" />, link: '/life-events', color: 'from-genz-electric-blue to-genz-purple-haze' },
   ];
 
@@ -106,8 +107,51 @@ export default function DashboardPage() {
             </GenZCard>
           ))}
         </div>
+        {/* Featured Cosmic Blueprint */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-8"
+        >
+          <GenZCard variant="gradient" className="group relative overflow-hidden border-2 border-genz-electric-blue/50">
+            <Link href="/bhrigu-predictions">
+              <div className="absolute top-4 right-4 z-10">
+                <GenZBadge variant="neon" size="lg" pulse>
+                  ✨ Featured
+                </GenZBadge>
+              </div>
+              <div className="flex flex-col md:flex-row items-center gap-6 p-6">
+                <motion.div
+                  className="w-32 h-32 rounded-3xl bg-gradient-to-r from-genz-electric-blue via-genz-purple-haze to-genz-hot-pink flex items-center justify-center shadow-genz-glow"
+                  whileHover={{ scale: 1.1, rotate: 360 }}
+                  transition={{ duration: 0.6 }}
+                >
+                  <Sparkles className="w-16 h-16" />
+                </motion.div>
+                <div className="flex-1 text-center md:text-left">
+                  <h3 className="text-3xl md:text-4xl font-display font-bold mb-4 text-white group-hover:text-genz-electric-blue transition-colors">
+                    Cosmic Blueprint
+                  </h3>
+                  <p className="text-xl text-white/90 mb-4">
+                    Explore comprehensive predictions from <span className="text-genz-neon-green font-bold">Bhrigu Samhita</span> and <span className="text-genz-lavender-dream font-bold">Nadi Jyotisa</span>
+                  </p>
+                  <p className="text-white/70 mb-6">
+                    Discover your karmic journey, past lives, future paths, and personalized remedies powered by ancient Vedic wisdom
+                  </p>
+                  <div className="flex items-center justify-center md:justify-start text-genz-electric-blue font-bold text-lg">
+                    Explore Now
+                    <ArrowRight className="w-6 h-6 ml-2 group-hover:translate-x-2 transition-transform" />
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </GenZCard>
+        </motion.div>
+
+        {/* Other Widgets */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {widgets.map((widget, index) => (
+          {widgets.filter(w => !w.featured).map((widget, index) => (
             <GenZCard key={index} variant="neon" className="group relative overflow-hidden">
               <Link href={widget.link}>
                 {widget.badge && <div className="absolute top-4 right-4 z-10"><GenZBadge variant="default" size="sm">{widget.badge}</GenZBadge></div>}
