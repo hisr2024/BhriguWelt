@@ -40,6 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <meta name="mobile-web-app-capable" content="yes" />
         <link rel="icon" href="/icons/icon-192x192.svg" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.svg" />
       </head>

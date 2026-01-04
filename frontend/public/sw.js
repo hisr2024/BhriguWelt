@@ -65,26 +65,6 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - network first, fallback to cache
-self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
-
-  // Skip non-GET requests
-  if (request.method !== 'GET') {
-    return;
-  }
-
-  // Skip cross-origin requests
-  if (url.origin !== location.origin) {
-    // For API calls to backend, try network only
-    if (url.href.includes('/api/')) {
-      event.respondWith(fetch(request));
-      return;
-    }
-    return;
-  }
-
 // Fetch event - intelligent caching strategies
 self.addEventListener('fetch', (event) => {
   const { request } = event;
