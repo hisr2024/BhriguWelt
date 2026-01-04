@@ -18,6 +18,6 @@ services:
       - key: SARVAM_AI_BASE_URL
         value: https://api.sarvam.ai/v1
       - key: FRONTEND_URL
-        value: https://bhriguwelt.vercel.app
+        value: https://bhrigu-welt.vercel.app
     healthCheckPath: /health
     autoDeploy: true
