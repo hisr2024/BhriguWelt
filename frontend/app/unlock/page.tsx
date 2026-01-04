@@ -11,25 +11,16 @@ export default function UnlockPage() {
   const handleUnlock = async (passcode: string): Promise<boolean> => {
     try {
       // Verify the passcode and get encryption key
-      const key = await getEncryptionKey(passcode);
+      // This will throw an error if passcode is invalid
+      await getEncryptionKey(passcode);
       
-      if (key) {
-        // Successfully unlocked - redirect to dashboard
-        router.push('/dashboard');
-        return true;
-      }
-      
-      return false;
+      // Successfully unlocked - redirect to dashboard
+      router.push('/dashboard');
+      return true;
     } catch (error) {
       console.error('Error during unlock:', error);
       return false;
     }
-  };
-
-  const handleForgotPasscode = () => {
-    // In a real app, this might guide users through account recovery
-    // For now, just show an alert
-    alert('If you forgot your passcode, you may need to clear app data and start fresh. All encrypted data will be lost.');
   };
 
   return (
@@ -37,7 +28,6 @@ export default function UnlockPage() {
       <AnimatedBackground />
       <PasscodeUnlock 
         onUnlock={handleUnlock}
-        onForgotPasscode={handleForgotPasscode}
       />
     </>
   );
