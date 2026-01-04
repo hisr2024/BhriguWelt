@@ -292,12 +292,12 @@ cmd = "bash /app/start.sh"
 ### Backend Verification (if deployed)
 1. **Health Check:**
    ```bash
-   curl https://your-backend-url.onrender.com/health
+   curl https://bhriguwelt-api.onrender.com/health
    ```
    Expected: `{"status": "healthy", "service": "BhriguWelt API"}`
 
 2. **API Endpoints:**
-   - Test `/api/charts/natal` endpoint
+   - Test `/api/charts/natal` endpoint  
    - Verify `/api/ai/chat` with consent headers
    - Check rate limiting is working
 
@@ -322,14 +322,14 @@ cmd = "bash /app/start.sh"
 
 ## Success Criteria Status
 
-| Criterion | Status | Details |
-|-----------|--------|---------|
-| PR #555 merged to main | ✅ COMPLETE | Merged at commit `bbb5ba6` |
-| TypeScript build completes | ✅ COMPLETE | All pages build successfully |
-| Frontend tests passing | ✅ COMPLETE | Build and type checks pass |
-| Backend tests passing | ⚠️ PARTIAL | 16/21 pass (5 need Redis) |
-| Deployment configs verified | ✅ COMPLETE | Vercel, Render, Nixpacks verified |
-| Documentation updated | ✅ COMPLETE | This document + existing docs |
+| Criterion                        | Status         | Details                                |
+|----------------------------------|----------------|----------------------------------------|
+| PR #555 merged to main           | ✅ COMPLETE    | Merged at commit `bbb5ba6`             |
+| TypeScript build completes       | ✅ COMPLETE    | All pages build successfully           |
+| Frontend tests passing           | ✅ COMPLETE    | Build and type checks pass             |
+| Backend tests passing            | ⚠️ PARTIAL     | 16/21 pass (5 need Redis)              |
+| Deployment configs verified      | ✅ COMPLETE    | Vercel, Render, Nixpacks verified      |
+| Documentation updated            | ✅ COMPLETE    | This document + existing docs          |
 
 ---
 
