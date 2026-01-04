@@ -27,6 +27,33 @@ export function useEncryptionKey(autoLockTimeoutMinutes: number = 5) {
 }
 
 /**
+ * Hook for managing encrypted storage
+ * Provides methods to interact with encrypted profile data
+ */
+export function useEncryptedStorage() {
+  const { encryptionKey } = useEncryption();
+
+  const getAllProfiles = useCallback(async (): Promise<Profile[]> => {
+    if (!encryptionKey) {
+      return [];
+    }
+
+    try {
+      await initDB();
+      const profiles = await getAllItems(STORES.PROFILES, encryptionKey);
+      return profiles as Profile[];
+    } catch (error) {
+      console.error('Failed to load profiles:', error);
+      return [];
+    }
+  }, [encryptionKey]);
+
+  return {
+    getAllProfiles,
+  };
+}
+
+/**
  * Hook for managing profiles
  */
 export function useProfiles(encryptionKey: CryptoKey | null) {
