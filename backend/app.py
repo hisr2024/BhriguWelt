@@ -67,12 +67,47 @@ else:
     ]
 
 print("Configuring CORS...")
+# Configure CORS with explicit resource patterns and preflight handling
 CORS(app,
+     resources={r"/api/*": {"origins": allowed_origins}},
      origins=allowed_origins,
      supports_credentials=True,
-     allow_headers=['Content-Type', 'Authorization'],
-     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+     allow_headers=['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+     expose_headers=['Content-Type', 'Authorization'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+     max_age=86400)  # Cache preflight for 24 hours
 print(f"✓ CORS configured with origins: {allowed_origins}")
+
+# Explicit preflight handler for all API routes
+@app.before_request
+def handle_preflight():
+    """Handle CORS preflight requests explicitly"""
+    if request.method == 'OPTIONS':
+        response = app.make_default_options_response()
+        # Get the origin from the request
+        origin = request.headers.get('Origin', '')
+        if origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Max-Age'] = '86400'
+        return response
+
+# Add CORS headers to all responses (ensures headers are present on actual requests)
+@app.after_request
+def add_cors_headers(response):
+    """Add CORS headers to all responses"""
+    origin = request.headers.get('Origin', '')
+    if origin in allowed_origins:
+        # Only set if not already set (avoid overwriting)
+        if 'Access-Control-Allow-Origin' not in response.headers:
+            response.headers['Access-Control-Allow-Origin'] = origin
+        if 'Access-Control-Allow-Credentials' not in response.headers:
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+        # Always set Vary header for proper caching
+        response.headers['Vary'] = 'Origin'
+    return response
 
 print("Initializing JWT Manager...")
 jwt = JWTManager(app)

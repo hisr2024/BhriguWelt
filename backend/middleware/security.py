@@ -29,6 +29,11 @@ class SecurityMiddleware:
     @staticmethod
     def add_security_headers(response):
         """Add security headers to all responses"""
+        # Skip security headers for CORS preflight (OPTIONS) requests
+        # to avoid interfering with CORS headers
+        if request.method == 'OPTIONS':
+            return response
+
         # Content Security Policy
         response.headers['Content-Security-Policy'] = (
             "default-src 'self'; "
@@ -38,25 +43,25 @@ class SecurityMiddleware:
             "font-src 'self' data:; "
             "connect-src 'self' https://api.sarvam.ai"
         )
-        
+
         # X-Frame-Options
         response.headers['X-Frame-Options'] = 'DENY'
-        
+
         # X-Content-Type-Options
         response.headers['X-Content-Type-Options'] = 'nosniff'
-        
+
         # X-XSS-Protection
         response.headers['X-XSS-Protection'] = '1; mode=block'
-        
+
         # Strict-Transport-Security (HSTS)
         if request.is_secure:
             response.headers['Strict-Transport-Security'] = (
                 'max-age=31536000; includeSubDomains; preload'
             )
-        
+
         # Referrer-Policy
         response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-        
+
         # Permissions-Policy (formerly Feature-Policy)
         response.headers['Permissions-Policy'] = (
             'geolocation=(), '
@@ -64,7 +69,7 @@ class SecurityMiddleware:
             'camera=(), '
             'payment=()'
         )
-        
+
         return response
     
     @staticmethod
