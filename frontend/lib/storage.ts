@@ -179,7 +179,7 @@ export async function setItem(
           updatedAt: new Date().toISOString(),
         };
       } else {
-        // Store data directly as the value
+        // Store data as the value (no extraction of nested properties)
         item = {
           key,
           value: data,
@@ -320,7 +320,7 @@ export async function setupEncryption(passcode: string): Promise<CryptoKey> {
   const salt = generateSalt();
   const saltBase64 = uint8ArrayToBase64(salt);
 
-  // Store salt directly (getItem will return this string directly)
+  // Store salt as a string value (not wrapped in an additional object)
   await setItem(STORES.METADATA, 'encryptionSalt', saltBase64);
 
   const key = await deriveKey(passcode, salt);
