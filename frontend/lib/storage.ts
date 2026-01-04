@@ -52,7 +52,6 @@ export async function initDB(): Promise<IDBDatabase> {
     request.onupgradeneeded = (event) => {
       const database = (event.target as IDBOpenDBRequest).result;
 
-      // Create object stores if they don't exist
       if (!database.objectStoreNames.contains(STORES.PROFILES)) {
         const profileStore = database.createObjectStore(STORES.PROFILES, {
           keyPath: 'id',
@@ -92,9 +91,6 @@ export async function initDB(): Promise<IDBDatabase> {
   });
 }
 
-/**
- * Close the database connection
- */
 export function closeDB(): void {
   if (db) {
     db.close();
@@ -102,9 +98,6 @@ export function closeDB(): void {
   }
 }
 
-/**
- * Clear all data from the database (for testing or reset)
- */
 export async function clearDB(): Promise<void> {
   const database = await initDB();
 
@@ -124,19 +117,11 @@ export async function clearDB(): Promise<void> {
   });
 }
 
-/**
- * Secure wipe - completely destroys all data and encryption setup
- * WARNING: This is irreversible and will delete ALL user data
- */
 export async function secureWipe(): Promise<void> {
   try {
-    // Clear all data from IndexedDB
     await clearDB();
-
-    // Close the database connection
     closeDB();
 
-    // Delete the entire database
     return new Promise((resolve, reject) => {
       const request = indexedDB.deleteDatabase(DB_NAME);
 
@@ -159,10 +144,6 @@ export async function secureWipe(): Promise<void> {
   }
 }
 
-/**
- * Reset encryption - clears encryption metadata but preserves unencrypted data
- * Use this to change passcode or reset encryption setup
- */
 export async function resetEncryption(): Promise<void> {
   try {
     await deleteItem(STORES.METADATA, 'encryptionSalt');
@@ -174,9 +155,6 @@ export async function resetEncryption(): Promise<void> {
   }
 }
 
-/**
- * Store encrypted data
- */
 export async function setItem(
   storeName: string,
   key: string,
@@ -190,18 +168,24 @@ export async function setItem(
       const transaction = database.transaction(storeName, 'readwrite');
       const store = transaction.objectStore(storeName);
 
-      // Encrypt data if encryption key is provided
-      const valueToStore = encryptionKey
-        ? await encryptForStorage(data, encryptionKey)
-        : data;
+      let item: any;
 
-      const item = {
-        ...data,
-        key,
-        value: valueToStore,
-        encrypted: !!encryptionKey,
-        updatedAt: new Date().toISOString(),
-      };
+      if (encryptionKey) {
+        const encryptedValue = await encryptForStorage(data, encryptionKey);
+        item = {
+          key,
+          value: encryptedValue,
+          encrypted: true,
+          updatedAt: new Date().toISOString(),
+        };
+      } else {
+        item = {
+          key,
+          value: data.value !== undefined ? data.value : data,
+          encrypted: false,
+          updatedAt: new Date().toISOString(),
+        };
+      }
 
       const request = store.put(item);
 
@@ -213,9 +197,6 @@ export async function setItem(
   });
 }
 
-/**
- * Retrieve and decrypt data
- */
 export async function getItem(
   storeName: string,
   key: string | number,
@@ -237,7 +218,6 @@ export async function getItem(
           return;
         }
 
-        // Decrypt if encrypted
         if (item.encrypted && encryptionKey) {
           try {
             const decrypted = await decryptFromStorage(item.value, encryptionKey);
@@ -257,9 +237,6 @@ export async function getItem(
   });
 }
 
-/**
- * Get all items from a store
- */
 export async function getAllItems(
   storeName: string,
   encryptionKey?: CryptoKey
@@ -280,7 +257,6 @@ export async function getAllItems(
           return;
         }
 
-        // Decrypt items if encrypted
         if (encryptionKey) {
           try {
             const decrypted = await Promise.all(
@@ -307,9 +283,6 @@ export async function getAllItems(
   });
 }
 
-/**
- * Delete an item
- */
 export async function deleteItem(
   storeName: string,
   key: string | number
@@ -326,9 +299,6 @@ export async function deleteItem(
   });
 }
 
-/**
- * Count items in a store
- */
 export async function countItems(storeName: string): Promise<number> {
   const database = await initDB();
 
@@ -342,27 +312,20 @@ export async function countItems(storeName: string): Promise<number> {
   });
 }
 
-/**
- * Setup encryption (store salt for key derivation)
- */
-export async function setupEncryption(passcode: string): Promise<void> {
+export async function setupEncryption(passcode: string): Promise<CryptoKey> {
   const salt = generateSalt();
   const saltBase64 = uint8ArrayToBase64(salt);
 
-  // Store salt in metadata
   await setItem(STORES.METADATA, 'encryptionSalt', { value: saltBase64 });
 
-  // Derive and test the key
   const key = await deriveKey(passcode, salt);
 
-  // Store a test encrypted value to verify key works
   const testData = { test: 'encryption setup successful' };
   await setItem(STORES.METADATA, 'encryptionTest', testData, key);
+
+  return key;
 }
 
-/**
- * Get encryption key from passcode
- */
 export async function getEncryptionKey(passcode: string): Promise<CryptoKey> {
   const saltItem = await getItem(STORES.METADATA, 'encryptionSalt');
 
@@ -374,9 +337,6 @@ export async function getEncryptionKey(passcode: string): Promise<CryptoKey> {
   return deriveKey(passcode, salt);
 }
 
-/**
- * Verify passcode by attempting to decrypt test data
- */
 export async function verifyEncryptionKey(passcode: string): Promise<boolean> {
   try {
     const key = await getEncryptionKey(passcode);
@@ -387,23 +347,16 @@ export async function verifyEncryptionKey(passcode: string): Promise<boolean> {
   }
 }
 
-/**
- * Check if encryption is set up
- */
 export async function isEncryptionSetup(): Promise<boolean> {
   try {
     const saltItem = await getItem(STORES.METADATA, 'encryptionSalt');
-    return !!saltItem;
+    return !!saltItem && !!saltItem.value;
   } catch (error) {
     return false;
   }
 }
 
-/**
- * Export database to JSON (for backup)
- */
 export async function exportDatabase(encryptionKey?: CryptoKey): Promise<string> {
-  const database = await initDB();
   const exportData: any = {};
 
   for (const storeName of Object.values(STORES)) {
@@ -413,9 +366,6 @@ export async function exportDatabase(encryptionKey?: CryptoKey): Promise<string>
   return JSON.stringify(exportData);
 }
 
-/**
- * Import database from JSON (for restore)
- */
 export async function importDatabase(
   jsonData: string,
   encryptionKey?: CryptoKey
