@@ -9,7 +9,7 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends bash ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-# Install backend dependencies up front to leverage Docker layer caching. 
+# Install backend dependencies up front to leverage Docker layer caching.
 COPY backend/requirements.txt /app/backend/requirements.txt
 RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
@@ -17,9 +17,14 @@ RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 COPY backend /app/backend
 
 ENV PYTHONPATH=/app/backend \
-    PORT=8000
+    PORT=8000 \
+    WORKERS=1 \
+    TIMEOUT=120
+
 EXPOSE 8000
 
-# Run the Flask app with Gunicorn
-# Note: Using shell form to allow $PORT expansion
-CMD gunicorn app:app --bind 0.0.0.0:$PORT --workers 4 --timeout 120
+# Make start script executable
+RUN chmod +x /app/backend/start.sh
+
+# Use the startup script for better error handling and logging
+CMD ["/app/backend/start.sh"]
