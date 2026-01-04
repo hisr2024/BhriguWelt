@@ -392,13 +392,133 @@ export const aiAPI = {
     if (!aiMode.consent) {
       throw new Error('AI consent required');
     }
-    
+
     const response = await api.post('/api/ai/summarize', data, {
       headers: {
         'X-AI-Consent': 'granted',
         'X-AI-Mode': aiMode.mode
       }
     });
+    return response.data;
+  },
+};
+
+/**
+ * Bhrigu Predictions API
+ * Comprehensive Bhrigu Samhita and Nadi Jyotisa predictions
+ * All 8 categories with caching and wisdom database
+ */
+export const bhriguPredictionsAPI = {
+  /**
+   * Get Karmic Journey prediction
+   * Discover soul's purpose and life mission
+   */
+  getKarmicJourney: async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
+    const response = await api.post('/api/bhrigu-predictions/karmic-journey', data);
+    return response.data;
+  },
+
+  /**
+   * Get Past Lives analysis
+   * Explore previous incarnations and karmic patterns
+   */
+  getPastLives: async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
+    const response = await api.post('/api/bhrigu-predictions/past-lives', data);
+    return response.data;
+  },
+
+  /**
+   * Get Future Lives prediction
+   * Envision soul's evolution and future incarnations
+   */
+  getFutureLives: async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
+    const response = await api.post('/api/bhrigu-predictions/future-lives', data);
+    return response.data;
+  },
+
+  /**
+   * Get Present Life analysis
+   * Comprehensive current life opportunities and challenges
+   */
+  getPresentLife: async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
+    const response = await api.post('/api/bhrigu-predictions/present-life', data);
+    return response.data;
+  },
+
+  /**
+   * Get Life Events prediction
+   * Major transitions with precision timing
+   */
+  getLifeEvents: async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
+    const response = await api.post('/api/bhrigu-predictions/life-events', data);
+    return response.data;
+  },
+
+  /**
+   * Get Karmic Remedies
+   * Personalized spiritual practices for balance
+   */
+  getKarmicRemedies: async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
+    const response = await api.post('/api/bhrigu-predictions/karmic-remedies', data);
+    return response.data;
+  },
+
+  /**
+   * Get Relationships analysis
+   * Soul connections and compatibility
+   */
+  getRelationships: async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
+    const response = await api.post('/api/bhrigu-predictions/relationships', data);
+    return response.data;
+  },
+
+  /**
+   * Get General Predictions
+   * Daily, weekly, monthly, yearly forecasts
+   */
+  getPredictions: async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
+    const response = await api.post('/api/bhrigu-predictions/predictions', data);
+    return response.data;
+  },
+
+  /**
+   * Get Comprehensive prediction for ALL categories
+   * Complete Bhrigu Samhita analysis covering all 8 aspects
+   */
+  getComprehensive: async (data: BirthDetails & { force_regenerate?: boolean }) => {
+    const response = await api.post('/api/bhrigu-predictions/comprehensive', data);
+    return response.data;
+  },
+
+  /**
+   * Search Bhrigu wisdom database
+   * Access accumulated knowledge from previous predictions
+   */
+  searchWisdom: async (params: {
+    category?: string;
+    zodiac_sign?: string;
+    nakshatra?: string;
+    limit?: number;
+  }) => {
+    const response = await api.post('/api/bhrigu-predictions/wisdom-search', params);
+    return response.data;
+  },
+
+  /**
+   * Get cache statistics
+   * View accumulated prediction knowledge
+   */
+  getCacheStats: async () => {
+    const response = await api.get('/api/bhrigu-predictions/cache-stats');
+    return response.data;
+  },
+
+  /**
+   * Start a new prediction session
+   * Tracks user journey for analytics
+   */
+  startSession: async (user_hash?: string) => {
+    const response = await api.post('/api/bhrigu-predictions/session/start', { user_hash });
     return response.data;
   },
 };
