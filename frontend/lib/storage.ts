@@ -265,7 +265,8 @@ export async function getAllItems(
                 if (item.encrypted) {
                   return decryptFromStorage(item.value, encryptionKey);
                 }
-                return item;
+                // Return just the value for unencrypted items
+                return item.value;
               })
             );
             resolve(decrypted);
@@ -273,7 +274,8 @@ export async function getAllItems(
             reject(new Error('Failed to decrypt items - incorrect key?'));
           }
         } else {
-          resolve(items);
+          // Return just the values for all items when no encryption key
+          resolve(items.map(item => item.value));
         }
       };
 
