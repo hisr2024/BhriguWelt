@@ -26,5 +26,8 @@ EXPOSE 8000
 # Make start script executable
 RUN chmod +x /app/backend/start.sh
 
+# Set working directory to backend where app.py exists
+WORKDIR /app/backend
+
 # Use the startup script for better error handling and logging
-CMD ["/app/backend/start.sh"]
+CMD ["./start.sh"]
