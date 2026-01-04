@@ -48,7 +48,15 @@ print("✓ Flask app initialized")
 # In development, allow localhost origins only
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 if IS_PRODUCTION and FRONTEND_URL:
-    allowed_origins = [FRONTEND_URL]
+    # Support multiple frontend URL variants for robustness
+    allowed_origins = [
+        FRONTEND_URL,
+        # Support both hyphenated and non-hyphenated Vercel URLs
+        'https://bhrigu-welt.vercel.app',
+        'https://bhriguwelt.vercel.app',
+    ]
+    # Remove duplicates while preserving order
+    allowed_origins = list(dict.fromkeys(allowed_origins))
 else:
     # Development: Allow localhost with common ports
     allowed_origins = [
