@@ -100,18 +100,31 @@ export type WisdomCategory =
   | 'philosophy'
   | 'general';
 
+// Wisdom card structure matching the actual data in wisdom_cards.json
+// IDs are strings (e.g., "wc001", "wc002") as defined in the JSON data
 export interface WisdomCard {
-  id?: number;
+  id?: string; // String ID matching data structure (e.g., "wc001")
   title: string;
-  content: string;
+  tradition?: string;
   category: WisdomCategory;
   tags: string[];
+  content: string;
+  interpretation?: string;
+  remedy?: string;
+  conditions?: {
+    zodiac_signs?: string[];
+    elements?: string[];
+    planets?: string[];
+    nakshatras?: string[];
+    houses?: number[];
+  };
+  priority?: number;
   source?: string;
   author?: string;
   isFavorite?: boolean;
   readCount?: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Settings types

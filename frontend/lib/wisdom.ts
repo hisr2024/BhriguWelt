@@ -40,9 +40,12 @@ export async function seedWisdomCards(encryptionKey?: CryptoKey): Promise<number
     await initDB();
     
     // Store each card
-    for (const card of cards) {
-      await setItem(STORES.WISDOM_CARDS, card.id, card, encryptionKey);
-    }
+    await Promise.all(
+      cards.map((card, index) => {
+        const key = card.id ? String(card.id) : `card_${index}`;
+        return setItem(STORES.WISDOM_CARDS, key, card, encryptionKey);
+      })
+    );
     
     console.log(`[WisdomCards] Seeded ${cards.length} wisdom cards`);
     return cards.length;
@@ -96,8 +99,8 @@ export async function matchWisdomCards(
         }
       }
       
-      if (conditions.nakshatra && chartFeatures.nakshatra) {
-        if (chartFeatures.nakshatra === conditions.nakshatra) {
+      if (conditions.nakshatras && chartFeatures.nakshatra) {
+        if (conditions.nakshatras.includes(chartFeatures.nakshatra)) {
           score += 100; // Nakshatra is highly specific
         }
       }
@@ -247,7 +250,7 @@ export async function searchWisdomCards(
       }
       
       // Tradition match
-      if (card.tradition.toLowerCase().includes(normalizedQuery)) {
+      if (card.tradition && card.tradition.toLowerCase().includes(normalizedQuery)) {
         score += 10;
       }
       
@@ -286,7 +289,7 @@ export async function getCategories(encryptionKey?: CryptoKey): Promise<string[]
 export async function getTraditions(encryptionKey?: CryptoKey): Promise<string[]> {
   try {
     const allCards = await getWisdomCards(encryptionKey);
-    const traditions = new Set(allCards.map((card) => card.tradition));
+    const traditions = new Set(allCards.map((card) => card.tradition).filter((t): t is string => !!t));
     return Array.from(traditions).sort();
   } catch (error) {
     console.error('[WisdomCards] Error getting traditions:', error);
