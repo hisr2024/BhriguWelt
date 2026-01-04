@@ -28,7 +28,7 @@ import { useEncryption } from '@/lib/context/EncryptionContext';
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { isSetup, isUnlocked, logout } = useEncryption();
+  const { isSetup, isUnlocked, lock } = useEncryption();
   const [settings, setSettings] = useState({
     notifications: true,
     dailyReminders: true,
@@ -86,10 +86,8 @@ export default function SettingsPage() {
   };
 
   const handleChangePasscode = () => {
-    // Logout and redirect to passcode setup
-    if (logout) {
-      logout();
-    }
+    // Lock and redirect to passcode setup
+    lock();
     router.push('/setup-passcode');
   };
 
