@@ -13,10 +13,15 @@ class SarvamAIService:
     def __init__(self):
         self.api_key = os.getenv('SARVAM_AI_API_KEY')
         self.base_url = os.getenv('SARVAM_AI_BASE_URL', 'https://api.sarvam.ai/v1')
+        self.enabled = bool(self.api_key)
+
+        if not self.enabled:
+            print("WARNING: SARVAM_AI_API_KEY not set. AI features will use fallback responses.")
+
         self.headers = {
             'Authorization': f'Bearer {self.api_key}',
             'Content-Type': 'application/json'
-        }
+        } if self.enabled else {}
 
     def generate_prediction(self, prompt: str, context: Dict[str, Any] = None) -> str:
         """
@@ -29,6 +34,10 @@ class SarvamAIService:
         Returns:
             Generated prediction text
         """
+        # Use fallback if AI is not enabled
+        if not self.enabled:
+            return self._fallback_prediction(prompt, context)
+
         try:
             # Prepare the request payload
             payload = {
@@ -309,5 +318,19 @@ class SarvamAIService:
         from datetime import datetime
         return datetime.utcnow().isoformat()
 
-# Singleton instance
-sarvam_ai = SarvamAIService()
+# Lazy singleton instance
+_sarvam_ai_instance = None
+
+def get_sarvam_ai():
+    """Get or create the SarvamAI singleton instance"""
+    global _sarvam_ai_instance
+    if _sarvam_ai_instance is None:
+        _sarvam_ai_instance = SarvamAIService()
+    return _sarvam_ai_instance
+
+# Backwards compatibility - creates instance on first access
+class _LazyProxy:
+    def __getattr__(self, name):
+        return getattr(get_sarvam_ai(), name)
+
+sarvam_ai = _LazyProxy()
