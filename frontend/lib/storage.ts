@@ -179,9 +179,10 @@ export async function setItem(
           updatedAt: new Date().toISOString(),
         };
       } else {
+        // Store data directly as the value
         item = {
           key,
-          value: data.value !== undefined ? data.value : data,
+          value: data,
           encrypted: false,
           updatedAt: new Date().toISOString(),
         };
@@ -319,7 +320,8 @@ export async function setupEncryption(passcode: string): Promise<CryptoKey> {
   const salt = generateSalt();
   const saltBase64 = uint8ArrayToBase64(salt);
 
-  await setItem(STORES.METADATA, 'encryptionSalt', { value: saltBase64 });
+  // Store salt directly (getItem will return this string directly)
+  await setItem(STORES.METADATA, 'encryptionSalt', saltBase64);
 
   const key = await deriveKey(passcode, salt);
 

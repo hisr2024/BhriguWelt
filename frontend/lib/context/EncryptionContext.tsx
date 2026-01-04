@@ -106,12 +106,12 @@ export function EncryptionProvider({
       // Setup encryption with the passcode
       await setupEncryption(passcode);
 
-      // Store passcode hash for verification
+      // Store passcode hash for verification (directly, not wrapped)
       const hash = await hashPasscode(passcode);
-      await setItem(STORES.METADATA, 'passcodeHash', { value: hash });
+      await setItem(STORES.METADATA, 'passcodeHash', hash);
 
-      // Mark setup as complete
-      await setItem(STORES.METADATA, 'setupComplete', { value: true });
+      // Mark setup as complete (directly, not wrapped)
+      await setItem(STORES.METADATA, 'setupComplete', true);
 
       // Get the encryption key and store it in state
       const key = await getEncryptionKey(passcode);
