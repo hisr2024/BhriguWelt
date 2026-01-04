@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { verifyEncryptionKey } from '@/lib/storage';
 
 interface PasscodeUnlockProps {
   onUnlock: (passcode: string) => Promise<boolean>;
@@ -36,17 +35,10 @@ export default function PasscodeUnlock({ onUnlock, onForgotPasscode }: PasscodeU
       setIsLoading(true);
       setError('');
 
-      // Verify passcode
-      const isValid = await verifyEncryptionKey(passcode);
-
-      if (isValid) {
-        // Call onUnlock with the verified passcode
-        const success = await onUnlock(passcode);
-        if (!success) {
-          setError('Failed to unlock. Please try again.');
-          setAttempts(prev => prev + 1);
-        }
-      } else {
+      // Let the parent handle verification via unlockWithPasscode
+      const success = await onUnlock(passcode);
+      
+      if (!success) {
         setError('Incorrect passcode');
         setAttempts(prev => prev + 1);
         setPasscode('');

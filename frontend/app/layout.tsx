@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { PWAInstaller } from './components/PWAInstaller'
+import { EncryptionProvider } from '@/lib/context/EncryptionContext'
 
 export const metadata: Metadata = {
   title: 'BhriguWelt - Discover Your Soul\'s Journey',
@@ -45,8 +46,10 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192x192.svg" />
       </head>
       <body className="font-sans">
-        {children}
-        <PWAInstaller />
+        <EncryptionProvider>
+          {children}
+          <PWAInstaller />
+        </EncryptionProvider>
       </body>
     </html>
   )
