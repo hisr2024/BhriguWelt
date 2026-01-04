@@ -21,4 +21,4 @@ ENV PYTHONPATH=/app/backend \
 EXPOSE 8000
 
 # Run the Flask app with Gunicorn
-CMD ["gunicorn", "backend.app:app", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120"]
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120"]
