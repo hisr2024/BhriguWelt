@@ -26,6 +26,47 @@ import GenZButton from '../components/GenZButton';
 import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 
+// Type definitions for settings items
+type ToggleSettingItem = {
+  icon: JSX.Element;
+  label: string;
+  description: string;
+  type: 'toggle';
+  key: string;
+};
+
+type SelectSettingItem = {
+  icon: JSX.Element;
+  label: string;
+  description: string;
+  type: 'select';
+  key: string;
+  options: { value: string; label: string }[];
+};
+
+type ButtonSettingItem = {
+  icon: JSX.Element;
+  label: string;
+  description: string;
+  type: 'button';
+  action: () => void;
+};
+
+type DangerSettingItem = {
+  icon: JSX.Element;
+  label: string;
+  description: string;
+  type: 'danger';
+  action: () => void;
+};
+
+type SettingItem = ToggleSettingItem | SelectSettingItem | ButtonSettingItem | DangerSettingItem;
+
+type SettingSection = {
+  title: string;
+  items: SettingItem[];
+};
+
 export default function SettingsPage() {
   const router = useRouter();
   const { isSetup, isUnlocked, lock } = useEncryption();
@@ -91,7 +132,7 @@ export default function SettingsPage() {
     router.push('/setup-passcode');
   };
 
-  const settingSections = [
+  const settingSections: SettingSection[] = [
     {
       title: 'General',
       items: [
