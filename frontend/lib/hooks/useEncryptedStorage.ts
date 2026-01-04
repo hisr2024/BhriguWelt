@@ -16,14 +16,14 @@ import {
   STORES,
 } from '../storage';
 import type { Profile, Report, WisdomCard, AppSettings } from '../types';
-import { useEncryptionContext } from '../context/EncryptionContext';
+import { useEncryption } from '../context/EncryptionContext';
 
 /**
  * Hook for managing the encryption key in session with auto-lock
  */
 export function useEncryptionKey(autoLockTimeoutMinutes: number = 5) {
   // Use the context instead of local state
-  return useEncryptionContext();
+  return useEncryption();
 }
 
 /**

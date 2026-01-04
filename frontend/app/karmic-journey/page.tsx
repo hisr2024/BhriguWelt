@@ -9,7 +9,7 @@ import GenZCard from '../components/GenZCard';
 import GenZButton from '../components/GenZButton';
 import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
-import { useEncryptionKey } from '@/lib/hooks/useEncryptedStorage';
+import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
 import { karmicJourneyAPI, BirthDetails } from '@/lib/api';
 import Link from 'next/link';
@@ -19,7 +19,7 @@ export default function KarmicJourneyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [wisdomCards, setWisdomCards] = useState<any[]>([]);
-  const { encryptionKey, isSetup, isLoading: encryptionLoading } = useEncryptionKey();
+  const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
 
   // Redirect to passcode setup if encryption not configured
@@ -31,10 +31,10 @@ export default function KarmicJourneyPage() {
 
   // Redirect to unlock if not unlocked
   useEffect(() => {
-    if (!encryptionLoading && isSetup && !encryptionKey) {
+    if (!encryptionLoading && isSetup && !isUnlocked) {
       router.push('/unlock');
     }
-  }, [encryptionLoading, isSetup, encryptionKey, router]);
+  }, [encryptionLoading, isSetup, isUnlocked, router]);
 
   // Load wisdom cards for offline mode
   useEffect(() => {

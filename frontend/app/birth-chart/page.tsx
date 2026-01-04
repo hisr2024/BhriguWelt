@@ -11,7 +11,7 @@ import GenZButton from '../components/GenZButton';
 import BottomNav from '../components/BottomNav';
 import BirthChartVisualization from '../components/BirthChartVisualization';
 import AIChatInterface from '../components/AIChatInterface';
-import { useEncryptionKey } from '@/lib/hooks/useEncryptedStorage';
+import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
 import { useRouter } from 'next/navigation';
 
@@ -19,7 +19,7 @@ export default function BirthChartPage() {
   const [chartData, setChartData] = useState<any>(null);
   const [showAIChat, setShowAIChat] = useState(false);
   const [activeTab, setActiveTab] = useState<'chart' | 'details' | 'interpretation'>('chart');
-  const { encryptionKey, isSetup, isLoading: encryptionLoading } = useEncryptionKey();
+  const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
 
   // Redirect to passcode setup if encryption not configured
@@ -31,10 +31,10 @@ export default function BirthChartPage() {
 
   // Redirect to unlock if not unlocked
   useEffect(() => {
-    if (!encryptionLoading && isSetup && !encryptionKey) {
+    if (!encryptionLoading && isSetup && !isUnlocked) {
       router.push('/unlock');
     }
-  }, [encryptionLoading, isSetup, encryptionKey, router]);
+  }, [encryptionLoading, isSetup, isUnlocked, router]);
 
   // Load birth chart data from encrypted storage
   useEffect(() => {
