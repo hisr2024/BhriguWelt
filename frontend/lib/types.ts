@@ -28,7 +28,16 @@ export type ReportType =
   | 'karmic-remedies'
   | 'daily-prediction'
   | 'weekly-prediction'
-  | 'monthly-prediction';
+  | 'monthly-prediction'
+  | 'bhrigu-karmic-journey'
+  | 'bhrigu-past-lives'
+  | 'bhrigu-future-lives'
+  | 'bhrigu-present-life'
+  | 'bhrigu-life-events'
+  | 'bhrigu-karmic-remedies'
+  | 'bhrigu-relationships'
+  | 'bhrigu-predictions'
+  | 'bhrigu-comprehensive';
 
 export interface Report {
   id?: number;

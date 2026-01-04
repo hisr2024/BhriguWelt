@@ -81,6 +81,23 @@ try:
 except Exception as e:
     print(f"WARNING: Failed to initialize security middleware: {e}", file=sys.stderr)
 
+# Initialize Database
+print("Initializing database...")
+try:
+    from models import db, init_db, seed_initial_wisdom
+    init_db(app)
+
+    # Seed initial wisdom if database is empty
+    try:
+        seed_initial_wisdom()
+    except Exception as e:
+        print(f"Note: Wisdom seeding skipped (may already exist): {e}")
+
+    print("✓ Database initialized successfully")
+except Exception as e:
+    print(f"WARNING: Database initialization failed: {e}", file=sys.stderr)
+    # Continue without database - API will still work with reduced functionality
+
 # Import routes
 print("Importing route modules...")
 try:
@@ -94,7 +111,8 @@ try:
         karmic_remedies_routes,
         predictions_routes,
         user_routes,
-        ai_routes
+        ai_routes,
+        bhrigu_predictions_routes
     )
     print("✓ All route modules imported successfully")
 except Exception as e:
@@ -113,6 +131,7 @@ app.register_blueprint(karmic_remedies_routes.bp)
 app.register_blueprint(predictions_routes.bp)
 app.register_blueprint(user_routes.bp)
 app.register_blueprint(ai_routes.bp)
+app.register_blueprint(bhrigu_predictions_routes.bp)
 print("✓ All blueprints registered")
 
 @app.route('/')
@@ -133,7 +152,8 @@ def index():
             'karmic_remedies': '/api/karmic-remedies',
             'predictions': '/api/predictions',
             'users': '/api/users',
-            'ai': '/api/ai'
+            'ai': '/api/ai',
+            'bhrigu_predictions': '/api/bhrigu-predictions'
         }
     })
 
