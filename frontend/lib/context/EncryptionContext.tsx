@@ -5,7 +5,11 @@ import {
   initDB,
   getEncryptionKey,
   isEncryptionSetup,
+  setupEncryption,
+  setItem,
+  STORES,
 } from '../storage';
+import { hashPasscode } from '../crypto';
 
 interface EncryptionContextType {
   encryptionKey: CryptoKey | null;
@@ -13,13 +17,20 @@ interface EncryptionContextType {
   isLoading: boolean;
   isUnlocked: boolean;
   unlockWithPasscode: (passcode: string) => Promise<boolean>;
+  setupPasscode: (passcode: string) => Promise<boolean>;
   lock: () => void;
   lastActivity: number;
 }
 
 const EncryptionContext = createContext<EncryptionContextType | undefined>(undefined);
 
-export function EncryptionProvider({ children, autoLockTimeoutMinutes = 5 }: { children: ReactNode; autoLockTimeoutMinutes?: number }) {
+export function EncryptionProvider({ 
+  children, 
+  autoLockTimeoutMinutes = 5 
+}: { 
+  children: ReactNode; 
+  autoLockTimeoutMinutes?: number;
+}) {
   const [encryptionKey, setEncryptionKey] = useState<CryptoKey | null>(null);
   const [isSetup, setIsSetup] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,6 +54,8 @@ export function EncryptionProvider({ children, autoLockTimeoutMinutes = 5 }: { c
 
   // Track user activity for auto-lock
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const handleActivity = () => {
       setLastActivity(Date.now());
     };
@@ -88,6 +101,31 @@ export function EncryptionProvider({ children, autoLockTimeoutMinutes = 5 }: { c
     }
   };
 
+  const setupPasscode = async (passcode: string): Promise<boolean> => {
+    try {
+      // Setup encryption with the passcode
+      await setupEncryption(passcode);
+
+      // Store passcode hash for verification
+      const hash = await hashPasscode(passcode);
+      await setItem(STORES.METADATA, 'passcodeHash', { value: hash });
+
+      // Mark setup as complete
+      await setItem(STORES.METADATA, 'setupComplete', { value: true });
+
+      // Get the encryption key and store it in state
+      const key = await getEncryptionKey(passcode);
+      setEncryptionKey(key);
+      setIsSetup(true);
+      setLastActivity(Date.now());
+      
+      return true;
+    } catch (error) {
+      console.error('Error setting up passcode:', error);
+      return false;
+    }
+  };
+
   const lock = useCallback(() => {
     setEncryptionKey(null);
   }, []);
@@ -100,6 +138,7 @@ export function EncryptionProvider({ children, autoLockTimeoutMinutes = 5 }: { c
         isLoading,
         isUnlocked: !!encryptionKey,
         unlockWithPasscode,
+        setupPasscode,
         lock,
         lastActivity,
       }}
@@ -109,10 +148,10 @@ export function EncryptionProvider({ children, autoLockTimeoutMinutes = 5 }: { c
   );
 }
 
-export function useEncryptionContext() {
+export function useEncryption() {
   const context = useContext(EncryptionContext);
   if (context === undefined) {
-    throw new Error('useEncryptionContext must be used within an EncryptionProvider');
+    throw new Error('useEncryption must be used within an EncryptionProvider');
   }
   return context;
 }
