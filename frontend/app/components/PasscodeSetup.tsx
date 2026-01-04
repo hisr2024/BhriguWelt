@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Lock, Check, X, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { hashPasscode } from '@/lib/crypto';
-import { setupEncryption, setItem, STORES } from '@/lib/storage';
+import { useEncryption } from '@/lib/context/EncryptionContext';
 
 interface PasscodeSetupProps {
   onComplete: () => void;
@@ -17,9 +16,10 @@ export default function PasscodeSetup({ onComplete }: PasscodeSetupProps) {
   const [error, setError] = useState('');
   const [showPasscode, setShowPasscode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  const { setupPasscode } = useEncryption();
 
   const handlePasscodeChange = (value: string) => {
-    // Only allow digits, max 6 characters
     const sanitized = value.replace(/\D/g, '').slice(0, 6);
     
     if (step === 'enter') {
@@ -49,18 +49,13 @@ export default function PasscodeSetup({ onComplete }: PasscodeSetupProps) {
 
       try {
         setIsLoading(true);
-
-        // Setup encryption with the passcode
-        await setupEncryption(passcode);
-
-        // Store passcode hash for verification
-        const hash = await hashPasscode(passcode);
-        await setItem(STORES.METADATA, 'passcodeHash', { value: hash });
-
-        // Mark setup as complete
-        await setItem(STORES.METADATA, 'setupComplete', { value: true });
-
-        onComplete();
+        const success = await setupPasscode(passcode);
+        
+        if (success) {
+          onComplete();
+        } else {
+          setError('Failed to setup encryption. Please try again.');
+        }
       } catch (err) {
         setError('Failed to setup encryption. Please try again.');
         console.error(err);
@@ -83,7 +78,6 @@ export default function PasscodeSetup({ onComplete }: PasscodeSetupProps) {
         animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-md"
       >
-        {/* Om Symbol */}
         <div className="text-center mb-8">
           <motion.div
             className="text-6xl mb-4"
@@ -109,7 +103,6 @@ export default function PasscodeSetup({ onComplete }: PasscodeSetupProps) {
           </p>
         </div>
 
-        {/* Card */}
         <div className="bg-white/5 backdrop-blur-2xl rounded-3xl border border-white/10 p-8 shadow-genz-glow">
           <div className="flex justify-center mb-8">
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-genz-electric-blue to-genz-purple-haze flex items-center justify-center shadow-genz-glow">
@@ -119,11 +112,13 @@ export default function PasscodeSetup({ onComplete }: PasscodeSetupProps) {
 
           <form onSubmit={handleSubmit}>
             <div className="mb-6">
-              <label className="block text-white font-medium mb-3">
+              <label htmlFor="passcode-input" className="block text-white font-medium mb-3">
                 {step === 'enter' ? 'Enter Passcode' : 'Confirm Passcode'}
               </label>
               <div className="relative">
                 <input
+                  id="passcode-input"
+                  name="passcode"
                   type={showPasscode ? 'text' : 'password'}
                   value={step === 'enter' ? passcode : confirmPasscode}
                   onChange={(e) => handlePasscodeChange(e.target.value)}
@@ -132,6 +127,7 @@ export default function PasscodeSetup({ onComplete }: PasscodeSetupProps) {
                   maxLength={6}
                   autoFocus
                   disabled={isLoading}
+                  autoComplete="off"
                 />
                 <button
                   type="button"
@@ -142,7 +138,6 @@ export default function PasscodeSetup({ onComplete }: PasscodeSetupProps) {
                 </button>
               </div>
 
-              {/* Passcode strength indicator */}
               {step === 'enter' && passcode.length > 0 && (
                 <div className="mt-3">
                   <div className="flex gap-1">
@@ -171,7 +166,6 @@ export default function PasscodeSetup({ onComplete }: PasscodeSetupProps) {
                 </div>
               )}
 
-              {/* Error message */}
               <AnimatePresence>
                 {error && (
                   <motion.div
@@ -187,7 +181,6 @@ export default function PasscodeSetup({ onComplete }: PasscodeSetupProps) {
               </AnimatePresence>
             </div>
 
-            {/* Security features */}
             <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10">
               <h3 className="text-white font-medium mb-3 flex items-center gap-2">
                 <Check className="w-5 h-5 text-genz-neon-green" />
@@ -213,7 +206,6 @@ export default function PasscodeSetup({ onComplete }: PasscodeSetupProps) {
               </ul>
             </div>
 
-            {/* Actions */}
             <div className="flex gap-3">
               {step === 'confirm' && (
                 <button
@@ -252,7 +244,6 @@ export default function PasscodeSetup({ onComplete }: PasscodeSetupProps) {
             </div>
           </form>
 
-          {/* Warning */}
           <div className="mt-6 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
             <p className="text-xs text-yellow-200/90 flex items-start gap-2">
               <span className="text-lg">⚠️</span>
@@ -263,7 +254,6 @@ export default function PasscodeSetup({ onComplete }: PasscodeSetupProps) {
           </div>
         </div>
 
-        {/* Additional Info */}
         <p className="text-center text-white/50 text-sm mt-6">
           This passcode never leaves your device and is used only for local encryption
         </p>
