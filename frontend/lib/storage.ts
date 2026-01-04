@@ -334,8 +334,8 @@ export async function setupEncryption(passcode: string): Promise<CryptoKey> {
 export async function getEncryptionKey(passcode: string): Promise<CryptoKey> {
   const saltValue = await getItem(STORES.METADATA, 'encryptionSalt');
 
-  if (!saltValue) {
-    throw new Error('Encryption not set up - salt not found');
+  if (!saltValue || typeof saltValue !== 'string') {
+    throw new Error('Encryption not set up - salt not found or invalid');
   }
 
   const salt = base64ToUint8Array(saltValue);
@@ -355,7 +355,7 @@ export async function verifyEncryptionKey(passcode: string): Promise<boolean> {
 export async function isEncryptionSetup(): Promise<boolean> {
   try {
     const saltValue = await getItem(STORES.METADATA, 'encryptionSalt');
-    return !!saltValue;
+    return !!saltValue && typeof saltValue === 'string';
   } catch (error) {
     return false;
   }
