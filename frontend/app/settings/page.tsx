@@ -272,7 +272,7 @@ export default function SettingsPage() {
                       )}
 
                       {/* Select */}
-                      {item.type === 'select' && item.key && item.options && (
+                      {item.type === 'select' && item.key && 'options' in item && item.options && (
                         <select
                           value={settings[item.key as keyof typeof settings] as string}
                           onChange={(e) =>
