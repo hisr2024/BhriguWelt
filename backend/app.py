@@ -54,14 +54,13 @@ CORS(app,
 jwt = JWTManager(app)
 
 # Initialize security middleware
-from backend.middleware.security import SecurityMiddleware
-from backend.middleware. rate_limiter import setup_rate_limiter
-
+from middleware.security import SecurityMiddleware
+from middleware.rate_limiter import setup_rate_limiter
 security_middleware = SecurityMiddleware(app)
 limiter = setup_rate_limiter(app)
 
 # Import routes
-from backend.routes import (
+from routes import (
     astrology_routes,
     karmic_journey_routes,
     past_lives_routes,
