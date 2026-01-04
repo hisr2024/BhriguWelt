@@ -11,6 +11,7 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 30000,
+  withCredentials: true,  // Enable CORS credentials for cross-origin requests
 });
 
 // Types
