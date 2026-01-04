@@ -133,23 +133,20 @@ python -c "import app; print('✅ Backend module imports successfully')"
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/.next",
   "devCommand": "cd frontend && npm run dev",
-  "env": {
-    "NEXT_PUBLIC_API_URL": "@bhriguwelt-api-url",
-    "NEXT_PUBLIC_APP_NAME": "BhriguWelt",
-    "NEXT_PUBLIC_APP_DESCRIPTION": "Discover Your Soul's Journey Through Vedic Astrology",
-    "NEXT_TELEMETRY_DISABLED": "1"
-  },
   "regions": ["iad1", "sfo1", "fra1"]
 }
 ```
 
 **Status:** ✅ Configuration is correct and matches build commands
 
-**Required Environment Variables:**
-- `NEXT_PUBLIC_API_URL` - Set to backend API URL (optional for offline-first mode)
+**Required Environment Variables (Set in Vercel Dashboard):**
+- `NEXT_PUBLIC_API_URL` - Set to backend API URL `https://bhriguwelt.onrender.com`
+- `NEXT_PUBLIC_BACKEND_URL` - Set to backend API URL `https://bhriguwelt.onrender.com`
 - `NEXT_PUBLIC_APP_NAME` - "BhriguWelt"
-- `NEXT_PUBLIC_APP_DESCRIPTION` - Set in config
-- `NEXT_TELEMETRY_DISABLED` - "1"
+- `NEXT_PUBLIC_APP_DESCRIPTION` - "Discover Your Soul's Journey Through Vedic Astrology"
+- `NEXT_TELEMETRY_DISABLED` - "1" (optional)
+
+**Note:** Environment variables are configured directly in the Vercel dashboard, not in vercel.json
 
 **Deployment URL:** https://bhriguwelt.vercel.app (to be verified)
 
