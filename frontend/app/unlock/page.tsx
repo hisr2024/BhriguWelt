@@ -4,11 +4,11 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import PasscodeUnlock from '../components/PasscodeUnlock';
 import AnimatedBackground from '../components/AnimatedBackground';
-import { useEncryptionKey } from '@/lib/hooks/useEncryptedStorage';
+import { useEncryption } from '@/lib/context/EncryptionContext';
 
 export default function UnlockPage() {
   const router = useRouter();
-  const { unlockWithPasscode, isSetup, isLoading } = useEncryptionKey();
+  const { unlockWithPasscode, isSetup, isLoading, isUnlocked } = useEncryption();
 
   // Redirect to setup if not set up
   useEffect(() => {
@@ -17,9 +17,16 @@ export default function UnlockPage() {
     }
   }, [isLoading, isSetup, router]);
 
+  // Redirect to dashboard if already unlocked
+  useEffect(() => {
+    if (!isLoading && isSetup && isUnlocked) {
+      router.push('/dashboard');
+    }
+  }, [isLoading, isSetup, isUnlocked, router]);
+
   const handleUnlock = async (passcode: string): Promise<boolean> => {
     try {
-      // THIS IS THE CRITICAL FIX - actually unlock with the passcode
+      // Use the context's unlockWithPasscode to derive and store the key
       const success = await unlockWithPasscode(passcode);
       
       if (success) {
