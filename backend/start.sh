@@ -1,12 +1,17 @@
 #!/bin/bash
 set -e
 
+# Ensure we're in the backend directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
 echo "================================"
 echo "BhriguWelt Backend Starting..."
 echo "================================"
 echo "Environment: $FLASK_ENV"
 echo "Port: $PORT"
 echo "Python version: $(python --version)"
+echo "Current directory: $(pwd)"
 echo "================================"
 
 # Validate critical environment variables
