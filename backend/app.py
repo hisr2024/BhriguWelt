@@ -96,6 +96,25 @@ CORS(app,
      max_age=86400)  # Cache preflight for 24 hours
 print(f"✓ CORS configured with origins: {allowed_origins}")
 
+# Helper function for origin validation
+def is_origin_allowed(origin: str) -> bool:
+    """
+    Check if an origin is allowed for CORS requests.
+    Production: Strict whitelist only
+    Development: Localhost patterns + whitelist
+    """
+    if not origin:
+        return False
+    
+    if IS_PRODUCTION:
+        return origin in allowed_origins
+    else:
+        # Development: Allow localhost/127.0.0.1 origins or whitelisted origins
+        return origin in allowed_origins or (
+            origin.startswith('http://localhost:') or 
+            origin.startswith('http://127.0.0.1:')
+        )
+
 # Explicit preflight handler for all routes - MUST return proper headers
 @app.before_request
 def handle_preflight():
@@ -107,20 +126,8 @@ def handle_preflight():
         # Create response for preflight
         response = app.make_default_options_response()
 
-        # Check origin is allowed: production requires whitelist, development allows localhost patterns
-        origin_allowed = False
-        if IS_PRODUCTION:
-            origin_allowed = origin in allowed_origins
-        else:
-            # Development: Only allow localhost/127.0.0.1 origins or whitelisted origins
-            origin_allowed = origin in allowed_origins or (
-                origin and (
-                    origin.startswith('http://localhost:') or 
-                    origin.startswith('http://127.0.0.1:')
-                )
-            )
-        
-        if origin_allowed and origin:
+        # Check if origin is allowed using helper function
+        if is_origin_allowed(origin):
             # CORS spec requires exact origin match when credentials are enabled
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
@@ -137,20 +144,8 @@ def add_cors_headers(response):
     """Add CORS headers to all responses - ensures headers are present"""
     origin = request.headers.get('Origin', '')
 
-    # Check origin is allowed: production requires whitelist, development allows localhost patterns
-    origin_allowed = False
-    if IS_PRODUCTION:
-        origin_allowed = origin in allowed_origins
-    else:
-        # Development: Only allow localhost/127.0.0.1 origins or whitelisted origins
-        origin_allowed = origin in allowed_origins or (
-            origin and (
-                origin.startswith('http://localhost:') or 
-                origin.startswith('http://127.0.0.1:')
-            )
-        )
-    
-    if origin_allowed and origin:
+    # Check if origin is allowed using helper function
+    if is_origin_allowed(origin):
         # CORS spec requires exact origin match when credentials are enabled
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
