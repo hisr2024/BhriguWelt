@@ -46,25 +46,25 @@ print("✓ Flask app initialized")
 # Initialize CORS with strict origin checking
 # In production, FRONTEND_URL must be set (checked above)
 # In development, allow localhost origins only
+# Always include production frontend URLs
+PRODUCTION_ORIGINS = [
+    'https://bhrigu-welt.vercel. app',
+    'https://bhriguwelt.vercel.app',
+]
+
 FRONTEND_URL = os.getenv('FRONTEND_URL')
-if IS_PRODUCTION and FRONTEND_URL:
-    # Support multiple frontend URL variants for robustness
-    allowed_origins = [
-        FRONTEND_URL,
-        # Support both hyphenated and non-hyphenated Vercel URLs
-        'https://bhrigu-welt.vercel.app',
-        'https://bhriguwelt.vercel.app',
-    ]
-    # Remove duplicates while preserving order
-    allowed_origins = list(dict.fromkeys(allowed_origins))
+if IS_PRODUCTION: 
+    allowed_origins = PRODUCTION_ORIGINS. copy()
+    if FRONTEND_URL and FRONTEND_URL not in allowed_origins:
+        allowed_origins. insert(0, FRONTEND_URL)
 else:
-    # Development: Allow localhost with common ports
+    # Development: Allow localhost with common ports + production for testing
     allowed_origins = [
         'http://localhost:3000',
         'http://localhost:3001',
         'http://localhost:5173',
         'http://127.0.0.1:3000',
-    ]
+    ] + PRODUCTION_ORIGINS
 
 print("Configuring CORS...")
 # Configure CORS with explicit resource patterns and preflight handling
