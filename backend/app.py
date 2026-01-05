@@ -52,7 +52,6 @@ FRONTEND_URL = os.getenv('FRONTEND_URL')
 PRODUCTION_FRONTEND_URLS = [
     'https://bhrigu-welt.vercel.app',
     'https://bhriguwelt.vercel.app',
-    'https://www.bhriguwelt.com',  # If custom domain exists
 ]
 
 if IS_PRODUCTION:
@@ -109,7 +108,8 @@ def handle_preflight():
 
         # In development, allow any origin for testing; in production, check allowed list
         if not IS_PRODUCTION or origin in allowed_origins:
-            response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
+            # Use specific origin or fallback to first allowed origin (never use '*' with credentials)
+            response.headers['Access-Control-Allow-Origin'] = origin if origin else (allowed_origins[0] if allowed_origins else 'http://localhost:3000')
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode'
             response.headers['Access-Control-Allow-Credentials'] = 'true'
@@ -126,8 +126,8 @@ def add_cors_headers(response):
 
     # In development, allow any origin; in production, check allowed list
     if not IS_PRODUCTION or origin in allowed_origins:
-        # Always set these headers for allowed origins
-        response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
+        # Use specific origin or fallback to first allowed origin (never use '*' with credentials)
+        response.headers['Access-Control-Allow-Origin'] = origin if origin else (allowed_origins[0] if allowed_origins else 'http://localhost:3000')
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode'
