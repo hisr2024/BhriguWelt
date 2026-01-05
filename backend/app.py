@@ -68,14 +68,16 @@ else:
         'http://localhost:3001',
         'http://localhost:5173',
         'http://127.0.0.1:3000',
-    ] + PRODUCTION_ORIGINS
+    ] + PRODUCTION_FRONTEND_URLS
 
 print("Configuring CORS...")
 # Configure CORS with explicit resource patterns and preflight handling
-# Use wildcard patterns to ensure all API routes are covered
+# IMPORTANT: Flask-CORS uses REGEX patterns, not glob patterns!
+# r"/api/*" only matches /api/ + zero or more "/" chars - WRONG!
+# r"/api/.*" matches /api/ + any characters - CORRECT!
 CORS(app,
      resources={
-         r"/api/*": {
+         r"/api/.*": {
              "origins": allowed_origins,
              "methods": ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
              "allow_headers": ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'X-AI-Consent', 'X-AI-Mode'],
@@ -83,7 +85,7 @@ CORS(app,
              "supports_credentials": True,
              "max_age": 86400
          },
-         r"/*": {
+         r"/.*": {
              "origins": allowed_origins,
              "methods": ['GET', 'OPTIONS'],
              "supports_credentials": True
