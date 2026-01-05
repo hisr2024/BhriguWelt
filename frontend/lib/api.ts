@@ -10,7 +10,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000,
+  timeout: 120000,  // 120 seconds - increased for AI-powered predictions
   withCredentials: true,  // Enable CORS credentials for cross-origin requests
 });
 

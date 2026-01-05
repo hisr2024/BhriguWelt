@@ -68,45 +68,69 @@ else:
 
 print("Configuring CORS...")
 # Configure CORS with explicit resource patterns and preflight handling
+# Use wildcard patterns to ensure all API routes are covered
 CORS(app,
-     resources={r"/api/*": {"origins": allowed_origins}},
-     origins=allowed_origins,
+     resources={
+         r"/api/*": {
+             "origins": allowed_origins,
+             "methods": ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+             "allow_headers": ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'X-AI-Consent', 'X-AI-Mode'],
+             "expose_headers": ['Content-Type', 'Authorization'],
+             "supports_credentials": True,
+             "max_age": 86400
+         },
+         r"/*": {
+             "origins": allowed_origins,
+             "methods": ['GET', 'OPTIONS'],
+             "supports_credentials": True
+         }
+     },
      supports_credentials=True,
-     allow_headers=['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+     allow_headers=['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'X-AI-Consent', 'X-AI-Mode'],
      expose_headers=['Content-Type', 'Authorization'],
      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
      max_age=86400)  # Cache preflight for 24 hours
 print(f"✓ CORS configured with origins: {allowed_origins}")
 
-# Explicit preflight handler for all API routes
+# Explicit preflight handler for all routes - MUST return proper headers
 @app.before_request
 def handle_preflight():
-    """Handle CORS preflight requests explicitly"""
+    """Handle CORS preflight requests explicitly for all routes"""
     if request.method == 'OPTIONS':
-        response = app.make_default_options_response()
         # Get the origin from the request
         origin = request.headers.get('Origin', '')
-        if origin in allowed_origins:
-            response.headers['Access-Control-Allow-Origin'] = origin
+
+        # Create response for preflight
+        response = app.make_default_options_response()
+
+        # Always set CORS headers for preflight - check if origin is allowed
+        if origin in allowed_origins or not IS_PRODUCTION:
+            response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode'
             response.headers['Access-Control-Allow-Credentials'] = 'true'
             response.headers['Access-Control-Max-Age'] = '86400'
+            response.headers['Vary'] = 'Origin'
+
         return response
 
-# Add CORS headers to all responses (ensures headers are present on actual requests)
+# Add CORS headers to ALL responses - critical for actual requests after preflight
 @app.after_request
 def add_cors_headers(response):
-    """Add CORS headers to all responses"""
+    """Add CORS headers to all responses - ensures headers are present"""
     origin = request.headers.get('Origin', '')
-    if origin in allowed_origins:
-        # Only set if not already set (avoid overwriting)
-        if 'Access-Control-Allow-Origin' not in response.headers:
-            response.headers['Access-Control-Allow-Origin'] = origin
-        if 'Access-Control-Allow-Credentials' not in response.headers:
-            response.headers['Access-Control-Allow-Credentials'] = 'true'
-        # Always set Vary header for proper caching
+
+    # In production, check if origin is allowed; in dev, allow all
+    origin_allowed = origin in allowed_origins or not IS_PRODUCTION
+
+    if origin_allowed and origin:
+        # Always set these headers for allowed origins
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode'
         response.headers['Vary'] = 'Origin'
+
     return response
 
 print("Initializing JWT Manager...")

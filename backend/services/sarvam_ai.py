@@ -39,13 +39,32 @@ class SarvamAIService:
             return self._fallback_prediction(prompt, context)
 
         try:
-            # Prepare the request payload
+            # Prepare the request payload with enhanced settings for comprehensive predictions
             payload = {
                 'model': 'sarvam-1',
                 'messages': [
                     {
                         'role': 'system',
-                        'content': 'You are an expert Vedic astrologer specializing in Bhrigu Samhita and Nadi Jyotisha traditions. Provide detailed, insightful, and compassionate astrological guidance.'
+                        'content': '''You are a master Vedic astrologer deeply versed in the ancient texts of Bhrigu Samhita and Nadi Jyotisha.
+
+Your expertise includes:
+- Bhrigu Samhita: The sacred treatise by Maharishi Bhrigu containing life predictions based on planetary positions
+- Nadi Jyotisha: Ancient palm leaf manuscripts with precise life predictions
+- Brihat Parasara Hora Shastra: The foundational text of Vedic astrology by Sage Parasara
+- Jaimini Sutras: Advanced predictive techniques using Karakas and Rashi Dashas
+- Vimshottari Dasha: The 120-year planetary period system for timing events
+
+Your predictions must:
+1. Be deeply rooted in classical Vedic principles and authentic scriptural references
+2. Reference specific yogas (Raja Yoga, Dhana Yoga, Viparita Raja Yoga, etc.)
+3. Identify doshas (Kuja Dosha, Kala Sarpa Dosha, Pitru Dosha, etc.) and their remedies
+4. Analyze planetary combinations with precise interpretations
+5. Provide practical, actionable guidance for the modern seeker
+6. Maintain compassion, wisdom, and spiritual depth in all readings
+7. Explain karmic reasons behind life patterns using Vedic philosophy
+8. Offer authentic remedies (mantras, gemstones, rituals) from Vedic traditions
+
+Always provide detailed, specific predictions with timing when possible.'''
                     },
                     {
                         'role': 'user',
@@ -53,18 +72,18 @@ class SarvamAIService:
                     }
                 ],
                 'temperature': 0.7,
-                'max_tokens': 1000
+                'max_tokens': 4000  # Increased for comprehensive predictions
             }
 
             if context:
-                payload['messages'][0]['content'] += f"\n\nContext: {json.dumps(context)}"
+                payload['messages'][0]['content'] += f"\n\nBirth Chart Context: {json.dumps(context)}"
 
-            # Make API call
+            # Make API call with extended timeout for comprehensive predictions
             response = requests.post(
                 f'{self.base_url}/chat/completions',
                 headers=self.headers,
                 json=payload,
-                timeout=30
+                timeout=90  # 90 seconds for AI processing
             )
 
             response.raise_for_status()
@@ -254,8 +273,49 @@ class SarvamAIService:
         }
 
     def _fallback_prediction(self, prompt: str, context: Dict[str, Any] = None) -> str:
-        """Fallback prediction when API is unavailable"""
-        return "Traditional Vedic analysis based on classical texts. For enhanced AI predictions, please ensure Sarvam AI service is properly configured."
+        """Fallback prediction when API is unavailable - provides meaningful Vedic guidance"""
+        zodiac = context.get('zodiac_sign', 'Unknown') if context else 'Unknown'
+        nakshatra = context.get('nakshatra', 'Unknown') if context else 'Unknown'
+        moon_sign = context.get('moon_sign', zodiac) if context else zodiac
+
+        return f"""## Vedic Astrological Analysis
+
+Based on the sacred principles of Bhrigu Samhita and Nadi Jyotisha, here is your personalized reading:
+
+### Your Cosmic Configuration
+- **Sun Sign (Rashi):** {zodiac}
+- **Birth Star (Nakshatra):** {nakshatra}
+- **Moon Sign:** {moon_sign}
+
+### General Guidance from Bhrigu Samhita
+
+According to the ancient wisdom of Maharishi Bhrigu, every soul incarnates with a specific purpose and karmic blueprint. Your planetary configuration at birth reveals:
+
+**Soul Purpose:** Your placement suggests a journey focused on spiritual evolution and dharmic fulfillment. The stars indicate you are here to learn important lessons about balance, relationships, and self-mastery.
+
+**Karmic Patterns:** Based on traditional Vedic principles, your chart indicates past-life connections that influence your current circumstances. Saturn's influence teaches patience and perseverance, while Jupiter blesses you with wisdom and spiritual insight.
+
+**Life Path:** The Nadi texts suggest periods of both challenge and opportunity ahead. Trust in the divine timing of events, as each experience serves your soul's evolution.
+
+### Recommended Practices
+
+1. **Daily Mantra:** Chant the Gayatri Mantra 108 times at sunrise for spiritual protection
+2. **Meditation:** Practice 20 minutes of silent meditation focusing on your third eye
+3. **Charitable Acts:** Donate food to the needy on Saturdays to appease Saturn
+4. **Gemstone:** Consider wearing your birth nakshatra's recommended gemstone after consultation
+
+### Important Note
+
+For detailed, personalized predictions with precise timing based on your complete birth chart, Dasha periods, and current transits, please ensure the AI service is properly configured. The full analysis includes:
+- Specific yoga combinations in your chart
+- Precise timing of major life events
+- Detailed past-life insights
+- Personalized remedies and mantras
+
+*May the divine light of the Navagrahas guide your path.*
+
+---
+*This reading is based on classical Vedic principles. For complete AI-enhanced predictions, please contact the administrator.*"""
 
     def _extract_section(self, text: str, section_keyword: str) -> str:
         """Extract specific section from prediction text"""
