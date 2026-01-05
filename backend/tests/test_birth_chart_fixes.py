@@ -6,8 +6,10 @@ import pytest
 import sys
 import os
 
-# Add parent directory to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Ensure backend directory is in Python path for imports
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
 
 from utils.validators import validate_birth_data
 from services.astrology_calculator import AstrologyCalculator
@@ -97,6 +99,18 @@ class TestValidateBirthData:
         result = validate_birth_data(data)
         assert result is not None
         assert 'latitude' in result.lower()
+    
+    def test_invalid_coordinate_types(self):
+        """Test validation fails with non-numeric coordinate types"""
+        data = {
+            'date_of_birth': '1990-01-15',
+            'time_of_birth': '14:30',
+            'latitude': 'invalid',  # String instead of number
+            'longitude': 77.2090
+        }
+        result = validate_birth_data(data)
+        assert result is not None
+        assert 'must be numbers' in result.lower()
 
 
 class TestBirthChartCalculation:

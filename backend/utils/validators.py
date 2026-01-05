@@ -217,14 +217,16 @@ def validate_birth_data(data: Dict[str, Any]) -> Optional[str]:
     # Must have either place_of_birth OR (latitude AND longitude)
     place = data.get('place_of_birth', '')
     has_place = bool(place.strip()) if isinstance(place, str) else False
-    has_coords = data.get('latitude') is not None and data.get('longitude') is not None
+    latitude = data.get('latitude')
+    longitude = data.get('longitude')
+    has_coords = latitude is not None and longitude is not None
     
     if not has_place and not has_coords:
         return "Either place_of_birth or both latitude and longitude are required"
     
-    # Validate coordinates if provided
+    # Validate coordinates if provided (even if place is also provided)
     if has_coords:
-        is_valid, error = validate_coordinates(data['latitude'], data['longitude'])
+        is_valid, error = validate_coordinates(latitude, longitude)
         if not is_valid:
             return error
     

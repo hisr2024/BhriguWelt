@@ -293,9 +293,24 @@ def internal_error(error):
 def handle_exception(e):
     """Handle all unhandled exceptions with CORS headers"""
     origin = request.headers.get('Origin', '')
+    
+    # Log the full error for debugging
+    import traceback
+    print(f"Unhandled exception: {str(e)}")
+    traceback.print_exc()
+    
+    # Only expose safe error messages
+    error_message = 'An unexpected error occurred'
+    if not IS_PRODUCTION:
+        # In development, provide more details but sanitize sensitive info
+        error_str = str(e)
+        # Avoid exposing file paths, credentials, or stack traces
+        if not any(sensitive in error_str.lower() for sensitive in ['password', 'key', 'secret', 'token', '/home/', '/usr/']):
+            error_message = error_str
+    
     response = jsonify({
         'error': 'Internal server error',
-        'message': str(e) if not IS_PRODUCTION else 'An unexpected error occurred'
+        'message': error_message
     })
     response.status_code = 500
     
