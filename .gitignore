@@ -24,6 +24,8 @@ frontend/test-results/
 backend/.env
 backend/.env.local
 backend/backups/
+backend/instance/
+backend/*.db
 .env
 .env.local
 .DS_Store
