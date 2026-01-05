@@ -107,10 +107,22 @@ def handle_preflight():
         # Create response for preflight
         response = app.make_default_options_response()
 
-        # In development, allow any origin with a value; in production, check allowed list
-        if (not IS_PRODUCTION and origin) or (origin in allowed_origins):
-            # Use specific origin or fallback (allowed_origins is guaranteed non-empty)
-            response.headers['Access-Control-Allow-Origin'] = origin if origin else allowed_origins[0]
+        # Check origin is allowed: production requires whitelist, development allows localhost patterns
+        origin_allowed = False
+        if IS_PRODUCTION:
+            origin_allowed = origin in allowed_origins
+        else:
+            # Development: Only allow localhost/127.0.0.1 origins or whitelisted origins
+            origin_allowed = origin in allowed_origins or (
+                origin and (
+                    origin.startswith('http://localhost:') or 
+                    origin.startswith('http://127.0.0.1:')
+                )
+            )
+        
+        if origin_allowed and origin:
+            # CORS spec requires exact origin match when credentials are enabled
+            response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode'
             response.headers['Access-Control-Allow-Credentials'] = 'true'
@@ -125,10 +137,22 @@ def add_cors_headers(response):
     """Add CORS headers to all responses - ensures headers are present"""
     origin = request.headers.get('Origin', '')
 
-    # In development, allow any origin with a value; in production, check allowed list
-    if (not IS_PRODUCTION and origin) or (origin in allowed_origins):
-        # Use specific origin or fallback (allowed_origins is guaranteed non-empty)
-        response.headers['Access-Control-Allow-Origin'] = origin if origin else allowed_origins[0]
+    # Check origin is allowed: production requires whitelist, development allows localhost patterns
+    origin_allowed = False
+    if IS_PRODUCTION:
+        origin_allowed = origin in allowed_origins
+    else:
+        # Development: Only allow localhost/127.0.0.1 origins or whitelisted origins
+        origin_allowed = origin in allowed_origins or (
+            origin and (
+                origin.startswith('http://localhost:') or 
+                origin.startswith('http://127.0.0.1:')
+            )
+        )
+    
+    if origin_allowed and origin:
+        # CORS spec requires exact origin match when credentials are enabled
+        response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode'
