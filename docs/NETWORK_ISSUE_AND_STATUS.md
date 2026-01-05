@@ -174,7 +174,7 @@ export NO_PROXY=localhost,127.0.0.1
 
 The code supports OpenAI-compatible APIs:
 ```bash
-# Use OpenAI instead of OpenAI
+# Use OpenAI for AI-powered features
 export AI_API_KEY="your-openai-key"
 export AI_API_BASE="https://api.openai.com"
 
