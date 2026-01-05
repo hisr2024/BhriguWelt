@@ -71,7 +71,7 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
                                          category: str,
                                          question: Optional[str] = None) -> Dict[str, Any]:
         """
-        Generate comprehensive prediction for any category
+        Generate comprehensive prediction for any category with separate complete analysis
 
         Args:
             birth_data: User's birth details and calculated chart
@@ -79,7 +79,7 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
             question: Optional specific question
 
         Returns:
-            Comprehensive prediction dictionary
+            Comprehensive prediction dictionary with standalone sections and complete_analysis
         """
         # Calculate birth chart if not already provided
         if 'zodiac_sign' not in birth_data:
@@ -107,7 +107,44 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
         }
 
         method = category_methods.get(category, self.generate_general_predictions)
-        return method(birth_data, question)
+        result = method(birth_data, question)
+        
+        # Add complete analysis synthesis for appropriate categories
+        if category in ['past_lives', 'future_lives', 'karmic_remedies', 'relationships']:
+            result['complete_analysis'] = self._generate_complete_analysis(result, category)
+        
+        return result
+    
+    def _generate_complete_analysis(self, section_result: Dict[str, Any], category: str) -> str:
+        """
+        Generate a synthesized complete analysis that integrates all section content
+        
+        This is separate from individual sections and provides an integrated view
+        """
+        full_text = section_result.get('full_analysis', '')
+        
+        synthesis_prompt = f"""
+        Based on the following extensive {category.replace('_', ' ')} analysis, create a 
+        SYNTHESIZED SUMMARY that integrates all the key insights into a cohesive narrative.
+        
+        This summary should:
+        1. Provide an integrated view of the soul journey
+        2. Connect themes across different subsections
+        3. Offer final actionable wisdom
+        4. Be distinct from the detailed sections (not a repetition)
+        5. Be 3-5 paragraphs of synthesis
+        
+        Original Analysis:
+        {full_text[:3000]}  # Limit for synthesis
+        
+        Generate the complete synthesis:
+        """
+        
+        try:
+            synthesis = self.openai_service.generate_prediction(synthesis_prompt, {})
+            return synthesis
+        except Exception as e:
+            return f"Complete analysis synthesis: See detailed sections above for comprehensive insights into your {category.replace('_', ' ')}."
 
     def generate_karmic_journey_prediction(self, birth_data: Dict[str, Any],
                                           question: Optional[str] = None) -> Dict[str, Any]:
