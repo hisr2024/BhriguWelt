@@ -62,13 +62,13 @@ if IS_PRODUCTION:
     if FRONTEND_URL and FRONTEND_URL not in allowed_origins:
         allowed_origins.insert(0, FRONTEND_URL)
 else:
-    # Development: Allow localhost with common ports + production URLs for testing
+    # Development: Allow localhost with common ports
     allowed_origins = [
         'http://localhost:3000',
         'http://localhost:3001',
         'http://localhost:5173',
         'http://127.0.0.1:3000',
-    ] + PRODUCTION_FRONTEND_URLS  # Also allow production URLs in dev for testing
+    ]
 
 print("Configuring CORS...")
 # Configure CORS with explicit resource patterns and preflight handling
@@ -107,9 +107,9 @@ def handle_preflight():
         # Create response for preflight
         response = app.make_default_options_response()
 
-        # Always set CORS headers for preflight if origin is allowed
-        if origin in allowed_origins:
-            response.headers['Access-Control-Allow-Origin'] = origin
+        # In development, allow any origin for testing; in production, check allowed list
+        if not IS_PRODUCTION or origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode'
             response.headers['Access-Control-Allow-Credentials'] = 'true'
@@ -124,10 +124,10 @@ def add_cors_headers(response):
     """Add CORS headers to all responses - ensures headers are present"""
     origin = request.headers.get('Origin', '')
 
-    # Always allow configured origins (includes production URLs)
-    if origin in allowed_origins:
+    # In development, allow any origin; in production, check allowed list
+    if not IS_PRODUCTION or origin in allowed_origins:
         # Always set these headers for allowed origins
-        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode'
