@@ -65,7 +65,7 @@ Before deploying, ensure you have:
    FLASK_ENV=production
    SECRET_KEY=<generate-random-secret-key>
    JWT_SECRET_KEY=<generate-random-jwt-key>
-   OPENAI_API_KEY=<your-sarvam-ai-api-key>
+   OPENAI_API_KEY=<your-openai-api-key>
    OPENAI_BASE_URL=https://api.openai.com/v1
    FRONTEND_URL=https://your-app.vercel.app
    ```
@@ -91,7 +91,7 @@ Expected response:
   "services": {
     "api": "operational",
     "database": "operational",
-    "sarvam_ai": "operational"
+    "openai": "operational"
   }
 }
 ```

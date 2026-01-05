@@ -28,7 +28,7 @@ attaches a persistent disk so `/manuscript` updates survive restarts.
   `/ml/retrain` or manage manuscripts from CI.
 - Optional AI settings for chatbot + wisdom endpoints:
   - `AI_API_KEY`, `AI_API_BASE`, `AI_MODEL`
-  - `SARVAM_API_KEY`, `SARVAM_API_BASE`
+  - `OPENAI_API_KEY`, `OPENAI_BASE_URL`
 - (Optional) Observability: `SENTRY_DSN` and `ENVIRONMENT`
 
 Add any secrets in the Render dashboard after the first deploy; the blueprint

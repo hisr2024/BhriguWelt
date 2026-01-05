@@ -205,7 +205,7 @@ JWT_SECRET_KEY=your-jwt-secret
 
 # OpenAI
 OPENAI_API_KEY=your-api-key
-OPENAI_BASE_URL=https://api.sarvam.ai/v1
+OPENAI_BASE_URL=https://api.openai.com/v1
 
 # Frontend (CORS)
 FRONTEND_URL=https://your-app.vercel.app

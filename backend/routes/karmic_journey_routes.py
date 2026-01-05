@@ -30,7 +30,7 @@ def karmic_journey_analysis():
             place=data['place_of_birth']
         )
 
-        # Generate karmic journey analysis using Sarvam AI
+        # Generate karmic journey analysis using OpenAI
         karmic_analysis = openai_service.generate_karmic_journey(birth_chart)
 
         return jsonify({

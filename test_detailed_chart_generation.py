@@ -217,7 +217,7 @@ def main():
 
     if not ai_metadata.get("configured"):
         print(f"\n⚠️  WARNING: AI is not configured!")
-        print(f"Set environment variable AI_API_KEY or SARVAM_API_KEY to enable detailed chart generation")
+        print(f"Set environment variable AI_API_KEY or OPENAI_API_KEY to enable detailed chart generation")
         print(f"Proceeding with tests, but AI enhancement will be skipped...\n")
 
     # Run tests

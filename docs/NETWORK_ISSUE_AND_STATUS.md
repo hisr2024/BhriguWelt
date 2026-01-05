@@ -153,7 +153,7 @@ The AI enhancement will work automatically when deployed to:
 - Any environment without restrictive proxies
 
 **No code changes needed!** Just:
-1. Set environment variable: `SARVAM_API_KEY=sk_t9b8gfmn_3J1P8jaLNjByau8I8UoQcL0J`
+1. Set environment variable: `OPENAI_API_KEY=sk_t9b8gfmn_3J1P8jaLNjByau8I8UoQcL0J`
 2. Deploy backend
 3. Restart service
 4. Test with real profile
@@ -238,7 +238,7 @@ export AI_API_BASE="https://your-provider.com"
 ### Production Deployment Checklist
 ```bash
 # 1. Set API key
-export SARVAM_API_KEY="sk_t9b8gfmn_3J1P8jaLNjByau8I8UoQcL0J"
+export OPENAI_API_KEY="sk_t9b8gfmn_3J1P8jaLNjByau8I8UoQcL0J"
 
 # 2. Deploy backend
 docker-compose up -d backend

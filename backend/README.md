@@ -105,7 +105,7 @@ backend/
 │   └── user_routes.py
 └── services/               # Business logic
     ├── astrology_calculator.py
-    └── sarvam_ai.py
+    └── openai_service.py
 ```
 
 ## License

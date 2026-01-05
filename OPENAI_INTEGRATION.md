@@ -107,7 +107,7 @@ OPENAI_DAILY_LIMIT=1000  # requests per day
 
 #### Frontend (.env.local)
 ```bash
-# NO SARVAM AI KEYS IN FRONTEND!
+# NO OPENAI KEYS IN FRONTEND!
 # Only backend proxy URL
 NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
 ```

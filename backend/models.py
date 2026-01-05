@@ -88,7 +88,7 @@ class BhriguPredictionCache(db.Model):
             nakshatra=metadata.get('nakshatra') if metadata else None,
             moon_sign=metadata.get('moon_sign') if metadata else None,
             ascendant=metadata.get('ascendant') if metadata else None,
-            ai_model=metadata.get('ai_model', 'gpt-4') if metadata else 'sarvam-1'
+            ai_model=metadata.get('ai_model', 'gpt-4') if metadata else 'gpt-4'
         )
         db.session.add(cache_entry)
         db.session.commit()

@@ -243,7 +243,7 @@ AI Configuration:
   API Base:
 
 ⚠️  WARNING: AI is not configured!
-Set environment variable AI_API_KEY or SARVAM_API_KEY to enable detailed chart generation
+Set environment variable AI_API_KEY or OPENAI_API_KEY to enable detailed chart generation
 Proceeding with tests, but AI enhancement will be skipped...
 
 [... 3 profiles tested successfully ...]
@@ -316,7 +316,7 @@ Past Life Insights (sample):
 
 **To Complete Full Test:**
 ```bash
-export SARVAM_API_KEY="your-api-key-here"
+export OPENAI_API_KEY="your-api-key-here"
 # or
 export AI_API_KEY="your-api-key-here"
 
@@ -376,7 +376,7 @@ python3 test_detailed_chart_generation.py
 ### Current Limitations
 
 1. **API Key Required:** OpenAI API key must be configured to enable detailed chart generation
-   - Set environment variable: `SARVAM_API_KEY` or `AI_API_KEY`
+   - Set environment variable: `OPENAI_API_KEY` or `AI_API_KEY`
    - Can use OpenAI-compatible endpoints as well
 
 2. **Rate Limiting:** Current rate limiter allows 30 requests/60s per requester
@@ -390,7 +390,7 @@ python3 test_detailed_chart_generation.py
 1. **Configure OpenAI API Key**
    ```bash
    # In backend/.env or environment
-   export SARVAM_API_KEY="your-key-here"
+   export OPENAI_API_KEY="your-key-here"
    ```
 
 2. **Run Full Test with AI**

@@ -25,7 +25,7 @@ All requested features have been successfully implemented and are production-rea
   - Fully integrated AI service for predictions
   - Fallback system if API unavailable
   - Context-aware astrological insights
-  - Service class: `services/sarvam_ai.py`
+  - Service class: `services/openai_service.py`
 
 #### API Endpoints (50+ endpoints):
 
@@ -119,7 +119,7 @@ backend/
 │   └── user_routes.py              # User management endpoints
 └── services/
     ├── astrology_calculator.py     # Vedic astrology calculations
-    └── sarvam_ai.py                # OpenAI integration service
+    └── openai_service.py                # OpenAI integration service
 ```
 
 ---
@@ -415,7 +415,7 @@ frontend/
 
 ### Backend (.env):
 ```
-OPENAI_API_KEY=your-sarvam-ai-api-key
+OPENAI_API_KEY=your-openai-api-key
 SECRET_KEY=random-secret-key
 JWT_SECRET_KEY=random-jwt-key
 FRONTEND_URL=https://your-frontend.vercel.app

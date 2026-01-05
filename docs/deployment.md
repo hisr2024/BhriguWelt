@@ -27,7 +27,7 @@ updates, and wires the same start command used locally.
    start script seeds `BHRIGUWELT_DATA_PATH` with the canonical corpus on first
    boot so `/manuscript` updates persist across deploys.
 4. Render auto-generates `BHRIGUWELT_ADMIN_TOKEN`. Add any optional AI
-   variables (`AI_API_KEY`, `AI_API_BASE`, `AI_MODEL`, `SARVAM_API_KEY`) in the
+   variables (`AI_API_KEY`, `AI_API_BASE`, `AI_MODEL`, `OPENAI_API_KEY`) in the
    dashboard to enable chatbot flows.
 5. Once the service is live, hit `https://<render-host>/health` to verify
    `{"status":"ok"}` and propagate the URL to the frontend as
