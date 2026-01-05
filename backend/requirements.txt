@@ -18,8 +18,8 @@ timezonefinder==8.1.0
 pyswisseph==2.10.3.2
 
 # AI & ML
-openai==1.12.0
-anthropic==0.18.0
+openai>=1.12.0
+anthropic>=0.18.0
 requests==2.31.0
 
 # Data Processing
@@ -28,7 +28,7 @@ numpy==1.26.4
 
 # Validation & Serialization
 marshmallow==3.21.0
-pydantic==2.6.0
+pydantic>=2.6.0,<3.0.0
 
 # Utilities
 redis==5.0.1
