@@ -11,7 +11,7 @@ python-dotenv==1.0.0
 
 # Astrology Calculations
 ephem==4.1.5
-pytz==2024.1
+pytz==2025.2
 python-dateutil==2.9.0
 geopy==2.4.1
 timezonefinder==8.1.0
