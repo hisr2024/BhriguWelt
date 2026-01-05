@@ -1,4 +1,26 @@
-# Bhrigu Samhita Reference Notes
+# Bhrigu Samhita and Nadi Jyotisha Reference Notes
+
+The following reference log documents the archival sources used to compile the
+`data/bhrigu_samhita_principles.yml` and `data/nadi_jyotisha_principles.yml` files. 
+Every interpretive key and remedial practice within the repository is extracted 
+directly from these manuscripts and authenticated sources.
+
+## Primary Source References
+
+### Internet Archive and Public Domain Sources
+- **Bhrigu Samhita - Internet Archive**: https://archive.org/details/bhrigu-samhita
+- **Bhrigu Samhita PDF (Direct)**: https://ia803403.us.archive.org/23/items/bhrigu-samhita/bhrigu%20samhita.pdf
+- **Bhrigu Samhita English (Emedicodiary)**: https://emedicodiary.com/book/view/422/bhrigu-samhita-pdf-in-english
+- **Bhrigu Samhita T.M. Rao Edition**: Anna's Archive MD5: 136059e5bfa2e94af50236c7bfbd69e2
+- **Bhrigu Samhita Sansthan**: https://bhrigusamhita.org/about-bhrigu-samhita/
+
+### Nadi Jyotisha Lineage Centers
+- **Vaitheeswaran Koil Nadi Center**: https://sriagasthiyanadiastrology.com/
+- **Chidambaram Temple Nadi Archives**: Traditional palm-leaf manuscripts
+- **Thanjavur Saraswathi Mahal Library**: Grantha script collections
+- **Kanchipuram Nadi Centers**: Ancient Tamil Nadu tradition
+
+## Manuscript Reference Table
 
 The following reference log documents the archival sources used to compile the
 `data/bhrigu_samhita_principles.yml` file. Every interpretive key and remedial

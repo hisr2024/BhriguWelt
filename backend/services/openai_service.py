@@ -1,11 +1,19 @@
 """
 OpenAI Integration Service
-Handles all AI-powered predictions and insights
+Handles all AI-powered predictions and insights with authentic Bhrigu/Nadi corpus integration
 """
 import os
 import requests
 from typing import Dict, Any, List, Optional
 import json
+
+# Import corpus loader for RAG-style context injection
+try:
+    from services.corpus_loader import get_corpus_loader
+    CORPUS_AVAILABLE = True
+except ImportError:
+    CORPUS_AVAILABLE = False
+    print("Warning: Corpus loader not available. Predictions will use OpenAI general knowledge only.")
 
 class OpenAIService:
     """Service for interacting with OpenAI API"""
@@ -14,6 +22,15 @@ class OpenAIService:
         self.api_key = os.getenv('OPENAI_API_KEY')
         self.base_url = os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
         self.enabled = bool(self.api_key)
+        
+        # Initialize corpus loader for authentic source integration
+        self.corpus_loader = None
+        if CORPUS_AVAILABLE:
+            try:
+                self.corpus_loader = get_corpus_loader()
+                print("✓ Corpus loader initialized - predictions will reference authentic Bhrigu/Nadi sources")
+            except Exception as e:
+                print(f"Warning: Could not initialize corpus loader: {e}")
 
         if not self.enabled:
             print("WARNING: OPENAI_API_KEY not set. AI features will use fallback responses.")
@@ -25,7 +42,7 @@ class OpenAIService:
 
     def generate_prediction(self, prompt: str, context: Dict[str, Any] = None) -> str:
         """
-        Generate AI-powered predictions using OpenAI
+        Generate AI-powered predictions using OpenAI with authentic corpus integration
 
         Args:
             prompt: The prediction prompt
@@ -39,6 +56,24 @@ class OpenAIService:
             return self._fallback_prediction(prompt, context)
 
         try:
+            # Inject authentic corpus data into the context
+            corpus_context = ""
+            if self.corpus_loader and context:
+                # Get relevant principles from corpus
+                bhrigu_principles = self.corpus_loader.get_relevant_bhrigu_principles(context, limit=5)
+                nadi_principles = self.corpus_loader.get_relevant_nadi_principles(context, limit=5)
+                
+                if bhrigu_principles or nadi_principles:
+                    corpus_context = "\n\n**AUTHENTIC SOURCE MATERIAL (Reference in predictions):**\n"
+                    
+                    if bhrigu_principles:
+                        corpus_context += "\n" + self.corpus_loader.format_principles_for_context(bhrigu_principles)
+                    
+                    if nadi_principles:
+                        corpus_context += "\n" + self.corpus_loader.format_principles_for_context(nadi_principles)
+                    
+                    corpus_context += "\n\n**IMPORTANT**: Reference these authentic sutras and folios in your predictions with proper citations.\n"
+            
             # Prepare the request payload with enhanced settings for comprehensive predictions
             payload = {
                 'model': os.getenv('OPENAI_MODEL', 'gpt-4'),
@@ -49,22 +84,23 @@ class OpenAIService:
 
 Your expertise includes:
 - Bhrigu Samhita: The sacred treatise by Maharishi Bhrigu containing life predictions based on planetary positions
-- Nadi Jyotisha: Ancient palm leaf manuscripts with precise life predictions
+- Nadi Jyotisha: Ancient palm leaf manuscripts with precise life predictions from Tamil Nadu traditions
 - Brihat Parasara Hora Shastra: The foundational text of Vedic astrology by Sage Parasara
 - Jaimini Sutras: Advanced predictive techniques using Karakas and Rashi Dashas
 - Vimshottari Dasha: The 120-year planetary period system for timing events
 
 Your predictions must:
 1. Be deeply rooted in classical Vedic principles and authentic scriptural references
-2. Reference specific yogas (Raja Yoga, Dhana Yoga, Viparita Raja Yoga, etc.)
+2. **Reference specific sutras, folios, and manuscript citations from the corpus provided**
 3. Identify doshas (Kuja Dosha, Kala Sarpa Dosha, Pitru Dosha, etc.) and their remedies
 4. Analyze planetary combinations with precise interpretations
 5. Provide practical, actionable guidance for the modern seeker
 6. Maintain compassion, wisdom, and spiritual depth in all readings
 7. Explain karmic reasons behind life patterns using Vedic philosophy
 8. Offer authentic remedies (mantras, gemstones, rituals) from Vedic traditions
+9. **Include confidence scores and source references where applicable**
 
-Always provide detailed, specific predictions with timing when possible.'''
+Always provide detailed, specific predictions with timing when possible.''' + corpus_context
                     },
                     {
                         'role': 'user',
@@ -75,7 +111,7 @@ Always provide detailed, specific predictions with timing when possible.'''
                 'max_tokens': int(os.getenv('OPENAI_MAX_TOKENS', '4000'))  # Increased for comprehensive predictions
             }
 
-            if context:
+            if context and not corpus_context:  # Only add raw context if no corpus was injected
                 payload['messages'][0]['content'] += f"\n\nBirth Chart Context: {json.dumps(context)}"
 
             # Make API call with extended timeout for comprehensive predictions
@@ -126,7 +162,14 @@ Always provide detailed, specific predictions with timing when possible.'''
         }
 
     def generate_past_lives_analysis(self, birth_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate past lives analysis"""
+        """Generate past lives analysis with authentic corpus integration"""
+        # Get relevant past life patterns from corpus
+        corpus_context = ""
+        if self.corpus_loader:
+            past_life_engines = self.corpus_loader.get_past_life_engines(birth_data, limit=3)
+            if past_life_engines:
+                corpus_context = "\n\n" + self.corpus_loader.format_past_life_engines_for_context(past_life_engines)
+        
         prompt = f"""
         Based on Vedic astrology and Nadi Jyotisha principles, analyze past life influences for:
         - Zodiac Sign: {birth_data.get('zodiac_sign')}
@@ -134,13 +177,17 @@ Always provide detailed, specific predictions with timing when possible.'''
         - Moon Sign: {birth_data.get('moon_sign')}
         - South Node (Ketu) position: {birth_data.get('ketu_position')}
 
-        Provide insights on:
-        1. Most significant past life era and location
-        2. Past life professions and roles
-        3. Unresolved karmic patterns
+        {corpus_context}
+
+        Provide EXTENSIVE insights on:
+        1. Most significant past life era and location (multiple lives)
+        2. Past life professions and roles with detailed narratives
+        3. Unresolved karmic patterns with specific descriptions
         4. Past life relationships affecting current life
         5. Skills and talents carried forward
         6. Past life traumas needing healing
+        
+        **Reference the authentic corpus patterns above and cite specific sutras/folios.**
         """
 
         analysis = self.generate_prediction(prompt, birth_data)
@@ -154,19 +201,31 @@ Always provide detailed, specific predictions with timing when possible.'''
         }
 
     def generate_future_lives_prediction(self, birth_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate future lives prediction"""
+        """Generate future lives prediction with authentic corpus integration"""
+        # Get relevant future life patterns from corpus
+        corpus_context = ""
+        if self.corpus_loader:
+            future_engines = self.corpus_loader.get_future_engines(birth_data, limit=3)
+            if future_engines:
+                corpus_context = "\n\n" + self.corpus_loader.format_future_engines_for_context(future_engines)
+        
         prompt = f"""
         Based on current karmic trajectory and soul evolution, predict future life possibilities:
         - Current Zodiac: {birth_data.get('zodiac_sign')}
         - Spiritual Development Level: {birth_data.get('spiritual_level', 'Intermediate')}
         - North Node (Rahu) position: {birth_data.get('rahu_position')}
 
-        Provide insights on:
-        1. Likely future birth scenarios
-        2. Soul evolution trajectory
+        {corpus_context}
+
+        Provide EXTENSIVE insights on:
+        1. Likely future birth scenarios with detailed descriptions
+        2. Soul evolution trajectory and stages
         3. Future life purposes and missions
         4. Potential spiritual advancement paths
         5. Conditions for liberation (moksha)
+        6. Timeline and probability assessments
+        
+        **Reference the authentic corpus trajectories above and cite specific sutras/folios.**
         """
 
         prediction = self.generate_prediction(prompt, birth_data)
@@ -240,8 +299,15 @@ Always provide detailed, specific predictions with timing when possible.'''
         }
 
     def generate_karmic_remedies(self, birth_data: Dict[str, Any], challenges: List[str] = None) -> Dict[str, Any]:
-        """Generate personalized karmic remedies"""
+        """Generate personalized karmic remedies with authentic corpus integration"""
         challenges_text = ', '.join(challenges) if challenges else 'general wellbeing'
+        
+        # Get relevant remedies from corpus
+        corpus_context = ""
+        if self.corpus_loader:
+            remedies = self.corpus_loader.get_remedies(birth_data, limit=5)
+            if remedies:
+                corpus_context = "\n\n" + self.corpus_loader.format_remedies_for_context(remedies)
 
         prompt = f"""
         Provide personalized Vedic remedies and spiritual practices for:
@@ -250,15 +316,19 @@ Always provide detailed, specific predictions with timing when possible.'''
         - Planetary Afflictions: {birth_data.get('afflictions', 'None specified')}
         - Current Challenges: {challenges_text}
 
-        Recommend:
-        1. Mantras (with pronunciation and meaning)
-        2. Gemstone therapy
-        3. Charitable activities (dana)
+        {corpus_context}
+
+        Recommend EXTENSIVE practices including:
+        1. Mantras (with pronunciation, meaning, and repetition counts)
+        2. Gemstone therapy (specific stones, carats, wearing instructions)
+        3. Charitable activities (dana) - specific items and timing
         4. Fasting days and rituals
         5. Deity worship and prayers
         6. Lifestyle modifications
         7. Meditation practices
         8. Yantra and sacred geometry
+        
+        **Reference the authentic remedial practices above and cite specific sutras/folios.**
         """
 
         remedies = self.generate_prediction(prompt, birth_data)
