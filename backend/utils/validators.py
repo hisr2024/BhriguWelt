@@ -191,3 +191,43 @@ def validate_report_type(report_type: str) -> Tuple[bool, Optional[str]]:
         return False, f"Invalid report type. Must be one of: {', '.join(valid_types)}"
 
     return True, None
+
+
+def validate_birth_data(data: Dict[str, Any]) -> Optional[str]:
+    """
+    Validate birth data for Bhrigu predictions API.
+    Accepts either place_of_birth (string) OR latitude/longitude (numbers).
+    
+    Returns:
+        None if valid, error message string if invalid
+    """
+    if not data:
+        return "Request body is required"
+    
+    # Validate date of birth (required)
+    is_valid, error = validate_date(data.get('date_of_birth', ''), 'Date of birth')
+    if not is_valid:
+        return error
+    
+    # Validate time of birth (required)
+    is_valid, error = validate_time(data.get('time_of_birth', ''), 'Time of birth')
+    if not is_valid:
+        return error
+    
+    # Must have either place_of_birth OR (latitude AND longitude)
+    place = data.get('place_of_birth', '')
+    has_place = bool(place.strip()) if isinstance(place, str) else False
+    latitude = data.get('latitude')
+    longitude = data.get('longitude')
+    has_coords = latitude is not None and longitude is not None
+    
+    if not has_place and not has_coords:
+        return "Either place_of_birth or both latitude and longitude are required"
+    
+    # Validate coordinates if provided (even if place is also provided)
+    if has_coords:
+        is_valid, error = validate_coordinates(latitude, longitude)
+        if not is_valid:
+            return error
+    
+    return None  # Valid

@@ -263,11 +263,63 @@ def health():
 
 @app.errorhandler(404)
 def not_found(error):
-    return jsonify({'error': 'Not found', 'message': str(error)}), 404
+    """Handle 404 errors with CORS headers"""
+    origin = request.headers.get('Origin', '')
+    response = jsonify({'error': 'Not found', 'message': str(error)})
+    response.status_code = 404
+    
+    if is_origin_allowed(origin):
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Vary'] = 'Origin'
+    
+    return response
 
 @app.errorhandler(500)
 def internal_error(error):
-    return jsonify({'error': 'Internal server error', 'message': str(error)}), 500
+    """Handle 500 errors with CORS headers"""
+    origin = request.headers.get('Origin', '')
+    response = jsonify({'error': 'Internal server error', 'message': str(error)})
+    response.status_code = 500
+    
+    if is_origin_allowed(origin):
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Vary'] = 'Origin'
+    
+    return response
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Handle all unhandled exceptions with CORS headers"""
+    origin = request.headers.get('Origin', '')
+    
+    # Log the full error for debugging
+    import traceback
+    print(f"Unhandled exception: {str(e)}")
+    traceback.print_exc()
+    
+    # Only expose safe error messages
+    error_message = 'An unexpected error occurred'
+    if not IS_PRODUCTION:
+        # In development, provide more details but sanitize sensitive info
+        error_str = str(e)
+        # Avoid exposing file paths, credentials, or stack traces
+        if not any(sensitive in error_str.lower() for sensitive in ['password', 'key', 'secret', 'token', '/home/', '/usr/']):
+            error_message = error_str
+    
+    response = jsonify({
+        'error': 'Internal server error',
+        'message': error_message
+    })
+    response.status_code = 500
+    
+    if is_origin_allowed(origin):
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Vary'] = 'Origin'
+    
+    return response
 
 print("=" * 60)
 print("✓ BhriguWelt Backend Initialization Complete")

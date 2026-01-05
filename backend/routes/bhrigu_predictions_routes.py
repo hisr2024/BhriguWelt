@@ -48,10 +48,11 @@ def karmic_journey():
 
         # Calculate birth chart
         chart_data = astrology_calc.calculate_birth_chart(
-            data['date_of_birth'],
-            data['time_of_birth'],
-            data['latitude'],
-            data['longitude']
+            date_of_birth=data['date_of_birth'],
+            time_of_birth=data['time_of_birth'],
+            place=data.get('place_of_birth', ''),
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude')
         )
 
         # Merge chart data with input
@@ -110,8 +111,11 @@ def past_lives():
 
         # Calculate and generate
         chart_data = astrology_calc.calculate_birth_chart(
-            data['date_of_birth'], data['time_of_birth'],
-            data['latitude'], data['longitude']
+            date_of_birth=data['date_of_birth'],
+            time_of_birth=data['time_of_birth'],
+            place=data.get('place_of_birth', ''),
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude')
         )
         birth_data = {**data, **chart_data}
 
@@ -154,8 +158,11 @@ def future_lives():
             return success_response(cached.to_dict(), message="From cache")
 
         chart_data = astrology_calc.calculate_birth_chart(
-            data['date_of_birth'], data['time_of_birth'],
-            data['latitude'], data['longitude']
+            date_of_birth=data['date_of_birth'],
+            time_of_birth=data['time_of_birth'],
+            place=data.get('place_of_birth', ''),
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude')
         )
         birth_data = {**data, **chart_data}
 
@@ -197,8 +204,11 @@ def present_life():
             return success_response(cached.to_dict(), message="From cache")
 
         chart_data = astrology_calc.calculate_birth_chart(
-            data['date_of_birth'], data['time_of_birth'],
-            data['latitude'], data['longitude']
+            date_of_birth=data['date_of_birth'],
+            time_of_birth=data['time_of_birth'],
+            place=data.get('place_of_birth', ''),
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude')
         )
         birth_data = {**data, **chart_data}
 
@@ -240,8 +250,11 @@ def life_events():
             return success_response(cached.to_dict(), message="From cache")
 
         chart_data = astrology_calc.calculate_birth_chart(
-            data['date_of_birth'], data['time_of_birth'],
-            data['latitude'], data['longitude']
+            date_of_birth=data['date_of_birth'],
+            time_of_birth=data['time_of_birth'],
+            place=data.get('place_of_birth', ''),
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude')
         )
         birth_data = {**data, **chart_data}
 
@@ -283,8 +296,11 @@ def karmic_remedies():
             return success_response(cached.to_dict(), message="From cache")
 
         chart_data = astrology_calc.calculate_birth_chart(
-            data['date_of_birth'], data['time_of_birth'],
-            data['latitude'], data['longitude']
+            date_of_birth=data['date_of_birth'],
+            time_of_birth=data['time_of_birth'],
+            place=data.get('place_of_birth', ''),
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude')
         )
         birth_data = {**data, **chart_data}
 
@@ -326,8 +342,11 @@ def relationships():
             return success_response(cached.to_dict(), message="From cache")
 
         chart_data = astrology_calc.calculate_birth_chart(
-            data['date_of_birth'], data['time_of_birth'],
-            data['latitude'], data['longitude']
+            date_of_birth=data['date_of_birth'],
+            time_of_birth=data['time_of_birth'],
+            place=data.get('place_of_birth', ''),
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude')
         )
         birth_data = {**data, **chart_data}
 
@@ -369,8 +388,11 @@ def predictions():
             return success_response(cached.to_dict(), message="From cache")
 
         chart_data = astrology_calc.calculate_birth_chart(
-            data['date_of_birth'], data['time_of_birth'],
-            data['latitude'], data['longitude']
+            date_of_birth=data['date_of_birth'],
+            time_of_birth=data['time_of_birth'],
+            place=data.get('place_of_birth', ''),
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude')
         )
         birth_data = {**data, **chart_data}
 
@@ -499,8 +521,11 @@ def comprehensive_prediction():
 
         # Calculate birth chart once
         chart_data = astrology_calc.calculate_birth_chart(
-            data['date_of_birth'], data['time_of_birth'],
-            data['latitude'], data['longitude']
+            date_of_birth=data['date_of_birth'],
+            time_of_birth=data['time_of_birth'],
+            place=data.get('place_of_birth', ''),
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude')
         )
         birth_data = {**data, **chart_data}
 
