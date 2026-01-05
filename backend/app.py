@@ -68,7 +68,7 @@ else:
         'http://localhost:3001',
         'http://localhost:5173',
         'http://127.0.0.1:3000',
-    ]
+    ] + PRODUCTION_ORIGINS
 
 print("Configuring CORS...")
 # Configure CORS with explicit resource patterns and preflight handling
