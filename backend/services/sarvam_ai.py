@@ -92,10 +92,10 @@ Always provide detailed, specific predictions with timing when possible.'''
             return result['choices'][0]['message']['content']
 
         except requests.exceptions.RequestException as e:
-    # Log the error for debugging
-    print(f"ERROR:  Sarvam AI API call failed: {str(e)}")
-    # Fallback to traditional analysis if API fails
-    return self._fallback_prediction(prompt, context)
+            # Log the error for debugging
+            print(f"ERROR: Sarvam AI API call failed: {str(e)}")
+            # Fallback to traditional analysis if API fails
+            return self._fallback_prediction(prompt, context)
     def generate_karmic_journey(self, birth_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate comprehensive karmic journey analysis"""
         prompt = f"""

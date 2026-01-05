@@ -7,7 +7,6 @@ from functools import wraps
 import os
 
 from middleware.sanitizer import RequestSanitizer, sanitize_ai_request
-from middleware.rate_limiter import setup_rate_limiter
 from middleware.ai_constants import PII_FIELDS
 from services.sarvam_ai import sarvam_ai
 from services.ai_service import AIService

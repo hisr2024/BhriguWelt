@@ -22,46 +22,59 @@ def get_rate_limit_key():
             return f"user:{user_id}"
     except:
         pass
-    
+
     # Fallback to IP address
     return get_remote_address()
+
+
+# Create a module-level limiter instance that can be imported by routes
+# Uses memory storage by default, can be reconfigured in setup_rate_limiter()
+limiter = Limiter(
+    key_func=get_rate_limit_key,
+    default_limits=["100 per minute"],
+    storage_uri="memory://",
+    strategy="fixed-window",
+    headers_enabled=True,
+    swallow_errors=True  # Don't fail if storage is unavailable
+)
 
 
 def setup_rate_limiter(app):
     """
     Configure and attach rate limiter to Flask app
-    
+
     Rate limits:
     - General API: 100 requests/minute per IP
     - AI endpoints: 10 requests/minute per user
     - Sync endpoints: 60 requests/hour per user
     - Backup: 5 requests/day per user
     """
-    # Use Redis if available, otherwise in-memory storage
-    redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
-    
-    try:
-        limiter = Limiter(
-            app=app,
-            key_func=get_rate_limit_key,
-            default_limits=["100 per minute"],
-            storage_uri=redis_url,
-            strategy="fixed-window",
-            headers_enabled=True,
-            swallow_errors=True  # Don't fail if Redis is unavailable
-        )
-    except Exception as e:
-        # Fallback to in-memory storage
-        print(f"Warning: Redis not available, using in-memory rate limiting: {e}")
-        limiter = Limiter(
-            app=app,
-            key_func=get_rate_limit_key,
-            default_limits=["100 per minute"],
-            storage_uri="memory://",
-            strategy="fixed-window",
-            headers_enabled=True
-        )
-    
+    global limiter
+
+    # Use Redis if available, otherwise keep in-memory storage
+    redis_url = os.getenv('REDIS_URL')
+
+    if redis_url:
+        try:
+            # Try to use Redis storage
+            limiter = Limiter(
+                key_func=get_rate_limit_key,
+                default_limits=["100 per minute"],
+                storage_uri=redis_url,
+                strategy="fixed-window",
+                headers_enabled=True,
+                swallow_errors=True  # Don't fail if Redis is unavailable
+            )
+            print(f"Rate limiter using Redis storage")
+        except Exception as e:
+            # Fallback to in-memory storage
+            print(f"Warning: Redis not available, using in-memory rate limiting: {e}")
+    else:
+        print("Rate limiter using in-memory storage (no REDIS_URL configured)")
+
+    # Initialize limiter with Flask app
+    limiter.init_app(app)
+
     # Custom rate limit exceeded handler
     @app.errorhandler(429)
     def rate_limit_exceeded(e):
@@ -70,7 +83,7 @@ def setup_rate_limiter(app):
             'message': str(e.description),
             'retry_after': e.description
         }, 429
-    
+
     return limiter
 
 
