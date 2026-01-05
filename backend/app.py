@@ -49,19 +49,20 @@ print("✓ Flask app initialized")
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 
 # Production frontend URLs - always allowed in production
+# These are hardcoded to ensure backend works even without FRONTEND_URL env var
 PRODUCTION_FRONTEND_URLS = [
     'https://bhrigu-welt.vercel.app',
     'https://bhriguwelt.vercel.app',
 ]
 
 if IS_PRODUCTION:
-    # Start with production URLs
+    # Start with production URLs (guaranteed to have at least 2 URLs)
     allowed_origins = PRODUCTION_FRONTEND_URLS.copy()
     # Add FRONTEND_URL if set and not already in list
     if FRONTEND_URL and FRONTEND_URL not in allowed_origins:
         allowed_origins.insert(0, FRONTEND_URL)
 else:
-    # Development: Allow localhost with common ports
+    # Development: Allow localhost with common ports (guaranteed to have at least 4 URLs)
     allowed_origins = [
         'http://localhost:3000',
         'http://localhost:3001',
@@ -108,8 +109,8 @@ def handle_preflight():
 
         # In development, allow any origin for testing; in production, check allowed list
         if not IS_PRODUCTION or origin in allowed_origins:
-            # Use specific origin or fallback to first allowed origin (never use '*' with credentials)
-            response.headers['Access-Control-Allow-Origin'] = origin if origin else (allowed_origins[0] if allowed_origins else 'http://localhost:3000')
+            # Use specific origin or fallback (allowed_origins is guaranteed non-empty)
+            response.headers['Access-Control-Allow-Origin'] = origin if origin else allowed_origins[0]
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode'
             response.headers['Access-Control-Allow-Credentials'] = 'true'
@@ -126,8 +127,8 @@ def add_cors_headers(response):
 
     # In development, allow any origin; in production, check allowed list
     if not IS_PRODUCTION or origin in allowed_origins:
-        # Use specific origin or fallback to first allowed origin (never use '*' with credentials)
-        response.headers['Access-Control-Allow-Origin'] = origin if origin else (allowed_origins[0] if allowed_origins else 'http://localhost:3000')
+        # Use specific origin or fallback (allowed_origins is guaranteed non-empty)
+        response.headers['Access-Control-Allow-Origin'] = origin if origin else allowed_origins[0]
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode'
