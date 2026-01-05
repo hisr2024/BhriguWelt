@@ -26,7 +26,8 @@ print(f"Production Mode: {IS_PRODUCTION}")
 
 if IS_PRODUCTION:
     # Enforce strict security in production
-    required_vars = ['SECRET_KEY', 'JWT_SECRET_KEY', 'FRONTEND_URL']
+    # Note: FRONTEND_URL is optional - we have hardcoded production URLs as fallback
+    required_vars = ['SECRET_KEY', 'JWT_SECRET_KEY']
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     if missing_vars:
         error_msg = f"Production mode requires environment variables: {', '.join(missing_vars)}"
@@ -44,21 +45,24 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 print("✓ Flask app initialized")
 
 # Initialize CORS with strict origin checking
-# In production, FRONTEND_URL must be set (checked above)
-# In development, allow localhost origins only
-# Always include production frontend URLs
-PRODUCTION_ORIGINS = [
-    'https://bhrigu-welt.vercel. app',
+# Production URLs are hardcoded, FRONTEND_URL is optional for additional origins
+FRONTEND_URL = os.getenv('FRONTEND_URL')
+
+# Production frontend URLs - always allowed in production
+# These are hardcoded to ensure backend works even without FRONTEND_URL env var
+PRODUCTION_FRONTEND_URLS = [
+    'https://bhrigu-welt.vercel.app',
     'https://bhriguwelt.vercel.app',
 ]
 
-FRONTEND_URL = os.getenv('FRONTEND_URL')
-if IS_PRODUCTION: 
-    allowed_origins = PRODUCTION_ORIGINS. copy()
+if IS_PRODUCTION:
+    # Start with production URLs (guaranteed to have at least 2 URLs)
+    allowed_origins = PRODUCTION_FRONTEND_URLS.copy()
+    # Add FRONTEND_URL if set and not already in list
     if FRONTEND_URL and FRONTEND_URL not in allowed_origins:
-        allowed_origins. insert(0, FRONTEND_URL)
+        allowed_origins.insert(0, FRONTEND_URL)
 else:
-    # Development: Allow localhost with common ports + production for testing
+    # Development: Allow localhost with common ports (guaranteed to have at least 4 URLs)
     allowed_origins = [
         'http://localhost:3000',
         'http://localhost:3001',
@@ -92,6 +96,25 @@ CORS(app,
      max_age=86400)  # Cache preflight for 24 hours
 print(f"✓ CORS configured with origins: {allowed_origins}")
 
+# Helper function for origin validation
+def is_origin_allowed(origin: str) -> bool:
+    """
+    Check if an origin is allowed for CORS requests.
+    Production: Strict whitelist only
+    Development: Localhost patterns + whitelist
+    """
+    if not origin:
+        return False
+    
+    if IS_PRODUCTION:
+        return origin in allowed_origins
+    else:
+        # Development: Allow localhost/127.0.0.1 origins or whitelisted origins
+        return origin in allowed_origins or (
+            origin.startswith('http://localhost:') or 
+            origin.startswith('http://127.0.0.1:')
+        )
+
 # Explicit preflight handler for all routes - MUST return proper headers
 @app.before_request
 def handle_preflight():
@@ -103,9 +126,10 @@ def handle_preflight():
         # Create response for preflight
         response = app.make_default_options_response()
 
-        # Always set CORS headers for preflight - check if origin is allowed
-        if origin in allowed_origins or not IS_PRODUCTION:
-            response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
+        # Check if origin is allowed using helper function
+        if is_origin_allowed(origin):
+            # CORS spec requires exact origin match when credentials are enabled
+            response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode'
             response.headers['Access-Control-Allow-Credentials'] = 'true'
@@ -120,11 +144,9 @@ def add_cors_headers(response):
     """Add CORS headers to all responses - ensures headers are present"""
     origin = request.headers.get('Origin', '')
 
-    # In production, check if origin is allowed; in dev, allow all
-    origin_allowed = origin in allowed_origins or not IS_PRODUCTION
-
-    if origin_allowed and origin:
-        # Always set these headers for allowed origins
+    # Check if origin is allowed using helper function
+    if is_origin_allowed(origin):
+        # CORS spec requires exact origin match when credentials are enabled
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
