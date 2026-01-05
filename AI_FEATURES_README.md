@@ -120,7 +120,7 @@ pip install -r requirements.txt
 
 # 2. Configure environment
 cp .env.example .env
-# Edit .env and add your SARVAM_AI_API_KEY
+# Edit .env and add your OPENAI_API_KEY
 
 # 3. Run server
 python app.py
@@ -226,8 +226,8 @@ python demo_ai_features.py
 
 **Backend (.env)**:
 ```bash
-SARVAM_AI_API_KEY=your-api-key-here
-SARVAM_AI_BASE_URL=https://api.sarvam.ai/v1
+OPENAI_API_KEY=your-api-key-here
+OPENAI_BASE_URL=https://api.openai.com/v1
 AI_FEATURES_ENABLED=true
 DAILY_AI_QUOTA=1000
 MONTHLY_AI_QUOTA=30000

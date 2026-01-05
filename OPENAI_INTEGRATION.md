@@ -1,8 +1,8 @@
-# Sarvam AI Integration Guidelines
+# OpenAI Integration Guidelines
 
 ## Overview
 
-BhriguWelt integrates with Sarvam AI to provide enhanced astrological predictions and insights. This document outlines the security guidelines, best practices, and compliance requirements for the Sarvam AI integration.
+BhriguWelt integrates with OpenAI to provide enhanced astrological predictions and insights. This document outlines the security guidelines, best practices, and compliance requirements for the OpenAI integration.
 
 ## Security Model
 
@@ -92,17 +92,17 @@ BhriguWelt integrates with Sarvam AI to provide enhanced astrological prediction
 
 #### Backend (.env)
 ```bash
-# Sarvam AI Configuration
-SARVAM_AI_API_KEY=your-api-key-here
-SARVAM_AI_BASE_URL=https://api.sarvam.ai/v1
-SARVAM_AI_MODEL=sarvam-1
-SARVAM_AI_MAX_TOKENS=1000
-SARVAM_AI_TEMPERATURE=0.7
-SARVAM_AI_TIMEOUT=30
+# OpenAI Configuration
+OPENAI_API_KEY=your-api-key-here
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4
+OPENAI_MAX_TOKENS=1000
+OPENAI_TEMPERATURE=0.7
+OPENAI_TIMEOUT=30
 
 # Rate Limiting
-SARVAM_AI_RATE_LIMIT=10  # requests per minute
-SARVAM_AI_DAILY_LIMIT=1000  # requests per day
+OPENAI_RATE_LIMIT=10  # requests per minute
+OPENAI_DAILY_LIMIT=1000  # requests per day
 ```
 
 #### Frontend (.env.local)
@@ -114,7 +114,7 @@ NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
 
 ### Key Rotation
 
-1. **Generate new key** from Sarvam AI dashboard
+1. **Generate new key** from OpenAI dashboard
 2. **Update backend environment** variable
 3. **Test with new key** in staging
 4. **Deploy to production** with zero downtime
@@ -138,7 +138,7 @@ Backend Proxy (Flask/Python)
     ↓
     | HTTPS (TLS 1.3)
     ↓
-Sarvam AI API
+OpenAI API
     ↓
     | AI Processing
     ↓
@@ -154,9 +154,9 @@ User Device (Frontend)
 ### Request Sanitization
 
 ```python
-def sanitize_for_sarvam_ai(birth_data: Dict[str, Any]) -> Dict[str, Any]:
+def sanitize_for_openai(birth_data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Remove all PII before sending to Sarvam AI
+    Remove all PII before sending to OpenAI
     Only send astrological data points
     """
     # Allowed fields only
@@ -254,7 +254,7 @@ limiter = Limiter(
 )
 
 @app.route('/api/predictions/ai', methods=['POST'])
-@limiter.limit("10 per minute")  # Sarvam AI specific limit
+@limiter.limit("10 per minute")  # OpenAI specific limit
 def ai_prediction():
     """AI-powered prediction with rate limiting"""
     # ... implementation
@@ -298,32 +298,32 @@ class QuotaManager:
 ### Graceful Degradation
 
 ```python
-class SarvamAIService:
+class OpenAIService:
     def generate_prediction(self, prompt: str, context: Dict = None) -> str:
         try:
             # Attempt AI prediction
-            return self._call_sarvam_api(prompt, context)
+            return self._call_openai_api(prompt, context)
         
         except requests.exceptions.Timeout:
             # Timeout - fallback to cache or traditional
-            logger.warning("Sarvam AI timeout, using fallback")
+            logger.warning("OpenAI timeout, using fallback")
             return self._fallback_prediction(prompt, context)
         
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 429:
                 # Rate limited - inform user
-                logger.error("Sarvam AI rate limit exceeded")
+                logger.error("OpenAI rate limit exceeded")
                 return self._rate_limit_message()
             elif e.response.status_code >= 500:
                 # Server error - fallback
-                logger.error(f"Sarvam AI server error: {e}")
+                logger.error(f"OpenAI server error: {e}")
                 return self._fallback_prediction(prompt, context)
             else:
                 raise
         
         except Exception as e:
             # Unknown error - fallback
-            logger.exception(f"Unexpected error in Sarvam AI: {e}")
+            logger.exception(f"Unexpected error in OpenAI: {e}")
             return self._fallback_prediction(prompt, context)
     
     def _fallback_prediction(self, prompt: str, context: Dict) -> str:
@@ -341,7 +341,7 @@ def format_ai_response(response: str, ai_used: bool) -> Dict[str, Any]:
         'prediction': response,
         'metadata': {
             'ai_enhanced': ai_used,
-            'source': 'sarvam-ai' if ai_used else 'traditional',
+            'source': 'openai' if ai_used else 'traditional',
             'timestamp': datetime.utcnow().isoformat(),
             'confidence': 'high' if ai_used else 'medium'
         }
@@ -377,14 +377,14 @@ import logging
 from pythonjsonlogger import jsonlogger
 
 # Structured logging
-logger = logging.getLogger('sarvam_ai')
+logger = logging.getLogger('openai_service')
 handler = logging.StreamHandler()
 formatter = jsonlogger.JsonFormatter()
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 # Log AI requests (without PII)
-logger.info('sarvam_ai_request', extra={
+logger.info('openai_service_request', extra={
     'endpoint': '/api/predictions/daily',
     'mode': 'hybrid',
     'zodiac_sign': 'Aries',  # OK to log
@@ -395,7 +395,7 @@ logger.info('sarvam_ai_request', extra={
 
 # DON'T log sensitive data
 # ❌ logger.info(f"Request for {user_name} born in {city}")
-# ✅ logger.info('sarvam_ai_request', extra={'mode': 'hybrid'})
+# ✅ logger.info('openai_service_request', extra={'mode': 'hybrid'})
 ```
 
 ## Cost Optimization
@@ -406,7 +406,7 @@ logger.info('sarvam_ai_request', extra={
 from functools import lru_cache
 import hashlib
 
-class CachedSarvamAI:
+class CachedOpenAI:
     """Cache AI responses to reduce API calls"""
     
     def __init__(self, redis_client, ttl=3600):
@@ -420,11 +420,11 @@ class CachedSarvamAI:
         # Try cache first
         cached = self.redis.get(cache_key)
         if cached:
-            logger.info('sarvam_ai_cache_hit')
+            logger.info('openai_service_cache_hit')
             return cached.decode()
         
         # Generate new prediction
-        logger.info('sarvam_ai_cache_miss')
+        logger.info('openai_service_cache_miss')
         prediction = self.ai_service.generate_prediction(prompt, context)
         
         # Cache result
@@ -435,7 +435,7 @@ class CachedSarvamAI:
     def _make_cache_key(self, prompt: str, context: Dict) -> str:
         """Generate cache key from input"""
         data = f"{prompt}:{json.dumps(context, sort_keys=True)}"
-        return f"sarvam_ai:{hashlib.sha256(data.encode()).hexdigest()}"
+        return f"openai_service:{hashlib.sha256(data.encode()).hexdigest()}"
 ```
 
 ### Batch Requests
@@ -449,7 +449,7 @@ def batch_predictions(requests: List[Dict]) -> List[str]:
     combined_prompt = "\n\n---\n\n".join([r['prompt'] for r in requests])
     
     # Single API call
-    response = sarvam_ai.generate_prediction(combined_prompt)
+    response = openai_service.generate_prediction(combined_prompt)
     
     # Split response
     predictions = response.split("\n\n---\n\n")
@@ -477,7 +477,7 @@ function AIConsentDialog() {
         <p>
           BhriguWelt can use AI to enhance your predictions.
           This requires sending your birth chart data (not personal info)
-          to our secure backend, which forwards it to Sarvam AI.
+          to our secure backend, which forwards it to OpenAI.
         </p>
         
         <h3>What we send:</h3>
@@ -518,20 +518,20 @@ Include in your Privacy Policy:
 When you enable AI features (Hybrid or Chatbot mode):
 
 1. **Data Sent**: We transmit your astrological chart data (zodiac sign,
-   nakshatra, planetary positions) to Sarvam AI for enhanced predictions.
+   nakshatra, planetary positions) to OpenAI for enhanced predictions.
 
 2. **No PII**: We do NOT send your name, email, birth location, exact birth
    time, or any other personally identifiable information.
 
 3. **Encryption**: All data is encrypted in transit using TLS 1.3.
 
-4. **No Storage**: Sarvam AI does not store your data long-term. Requests
+4. **No Storage**: OpenAI does not store your data long-term. Requests
    are processed in real-time and discarded.
 
 5. **Opt-Out**: You can disable AI features anytime by switching to
    "Offline Only" mode in Settings.
 
-6. **Third-Party**: Review Sarvam AI's privacy policy at sarvam.ai/privacy
+6. **Third-Party**: Review OpenAI's privacy policy at openai.com/privacy
 ```
 
 ## Testing & Validation
@@ -539,9 +539,9 @@ When you enable AI features (Hybrid or Chatbot mode):
 ### Security Tests
 
 ```python
-# test_sarvam_ai_security.py
+# test_openai_service_security.py
 import pytest
-from services.sarvam_ai import sanitize_for_sarvam_ai
+from services.openai_service import sanitize_for_openai
 
 def test_pii_removed():
     """Ensure PII is stripped before sending to AI"""
@@ -553,7 +553,7 @@ def test_pii_removed():
         'nakshatra': 'Ashwini'  # OK
     }
     
-    sanitized = sanitize_for_sarvam_ai(birth_data)
+    sanitized = sanitize_for_openai(birth_data)
     
     # Verify PII removed
     assert 'name' not in sanitized
@@ -573,7 +573,7 @@ def test_api_key_not_exposed():
         data = response.get_json()
         
         # Check response doesn't contain key
-        assert 'SARVAM_AI_API_KEY' not in str(data)
+        assert 'OPENAI_API_KEY' not in str(data)
         assert 'api_key' not in str(data).lower()
 
 def test_rate_limiting():
@@ -638,7 +638,7 @@ locust -f locustfile.py --host=https://your-backend.onrender.com
 - Check rate limit configuration
 - Implement request queuing
 - Add caching layer
-- Consider upgrading Sarvam AI plan
+- Consider upgrading OpenAI plan
 
 **Issue**: Slow response times
 **Solution**:
@@ -651,7 +651,7 @@ locust -f locustfile.py --host=https://your-backend.onrender.com
 **Solution**:
 - Verify key in environment variables
 - Check key format (no extra spaces)
-- Confirm key is active in Sarvam dashboard
+- Confirm key is active in OpenAI dashboard
 - Rotate key if compromised
 
 **Issue**: Unexpected AI responses
@@ -663,11 +663,11 @@ locust -f locustfile.py --host=https://your-backend.onrender.com
 
 ## Support & Resources
 
-### Sarvam AI Documentation
-- API Reference: https://docs.sarvam.ai/api-reference
-- Authentication: https://docs.sarvam.ai/authentication
-- Rate Limits: https://docs.sarvam.ai/rate-limits
-- Best Practices: https://docs.sarvam.ai/best-practices
+### OpenAI Documentation
+- API Reference: https://docs.openai.com/api-reference
+- Authentication: https://docs.openai.com/authentication
+- Rate Limits: https://docs.openai.com/rate-limits
+- Best Practices: https://docs.openai.com/best-practices
 
 ### BhriguWelt Resources
 - Security Architecture: `SECURITY_ARCHITECTURE.md`

@@ -229,7 +229,7 @@ NEXT_PUBLIC_API_URL=https://api.bhriguwelt.com
 - **Contents**: 10 practical examples for common use cases
 
 ### Integration Guide
-- **Reference**: `SARVAM_AI_INTEGRATION.md` (existing)
+- **Reference**: `OPENAI_INTEGRATION.md` (existing)
 - **Complements**: New AI features documentation
 
 ## 🔑 Key Achievements

@@ -427,9 +427,9 @@ def test_pii_removal():
 ### Backend (.env)
 
 ```bash
-# Sarvam AI Configuration
-SARVAM_AI_API_KEY=your-api-key-here
-SARVAM_AI_BASE_URL=https://api.sarvam.ai/v1
+# OpenAI Configuration
+OPENAI_API_KEY=your-api-key-here
+OPENAI_BASE_URL=https://api.openai.com/v1
 
 # AI Features
 AI_FEATURES_ENABLED=true
@@ -465,7 +465,7 @@ NEXT_PUBLIC_API_URL=https://api.bhriguwelt.com
 For issues or questions:
 - **Security Issues**: security@bhriguwelt.com
 - **API Support**: api-support@bhriguwelt.com
-- **Documentation**: See `SARVAM_AI_INTEGRATION.md`
+- **Documentation**: See `OPENAI_INTEGRATION.md`
 
 ---
 

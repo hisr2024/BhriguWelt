@@ -138,11 +138,11 @@ All test outputs saved to: `docs/test-outputs/`
 
 ## ⚡ Next Steps to Enable Full Functionality
 
-### 1. Configure Sarvam AI API Key
+### 1. Configure OpenAI API Key
 
 The detailed chart generation is **ready but requires an AI API key** to run.
 
-**Option A: Use Sarvam AI**
+**Option A: Use OpenAI**
 ```bash
 export SARVAM_API_KEY="your-sarvam-api-key-here"
 ```
@@ -279,7 +279,7 @@ API → _enhance_with_ai() → generate_detailed_chart()
   ↓
   1. Extract Bhrigu principles from repo (RAG)
   2. Build comprehensive prompt with context
-  3. Call Sarvam AI (max_tokens=3500)
+  3. Call OpenAI (max_tokens=3500)
   4. Parse JSON response
   5. Repair JSON if malformed (4 stages)
   6. Validate schema (strict checks)

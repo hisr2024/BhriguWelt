@@ -72,7 +72,7 @@ Both versions share the same core features:
 | Wisdom Cards | ✅ | ✅ |
 | City Database (Offline) | ✅ (50+ cities) | ✅ (50+ cities) |
 | PDF Export | ✅ | ✅ |
-| Optional AI Integration | ❌ | ✅ (Sarvam AI) |
+| Optional AI Integration | ❌ | ✅ (OpenAI) |
 | Biometric Auth | ✅ | ⏳ (Future) |
 | Multi-Profile | ✅ | ✅ |
 | Auto-Lock | ✅ | ✅ |
@@ -90,7 +90,7 @@ Both versions share the same core features:
 ### Choose PWA if you want:
 - Cross-platform without app stores
 - Easy updates without app review process
-- Optional AI enhancements (Sarvam AI)
+- Optional AI enhancements (OpenAI)
 - Web-based access from any device
 - Quick deployment to Vercel
 
@@ -167,7 +167,7 @@ git push render main
 ```
 
 ### Backend Features
-- 🤖 AI-powered predictions via Sarvam AI
+- 🤖 AI-powered predictions via OpenAI
 - 🛡️ Security headers and CORS protection
 - 🚦 Rate limiting (100 req/min general, 10 req/min AI)
 - 🧹 Request sanitization (removes PII)
@@ -179,7 +179,7 @@ git push render main
 - **Main README**: [README.md](README.md) - Mobile app documentation
 - **PWA Architecture**: [PWA_IMPLEMENTATION.md](PWA_IMPLEMENTATION.md) - PWA details
 - **Security**: [SECURITY_ARCHITECTURE.md](SECURITY_ARCHITECTURE.md) - Security model
-- **Sarvam AI Integration**: [SARVAM_AI_INTEGRATION.md](SARVAM_AI_INTEGRATION.md) - AI guidelines
+- **OpenAI Integration**: [OPENAI_INTEGRATION.md](OPENAI_INTEGRATION.md) - AI guidelines
 - **Migration Guide**: [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) - Cloud to offline-first
 - **Deployment**: [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Deployment instructions
 

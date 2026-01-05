@@ -4,7 +4,7 @@
 
 **Error:** `Tunnel connection failed: 403 Forbidden`
 
-**Cause:** The test environment is behind a proxy/firewall blocking HTTPS connections to `api.sarvam.ai`
+**Cause:** The test environment is behind a proxy/firewall blocking HTTPS connections to `api.openai.com`
 
 **Impact:** AI enhancement layer cannot be tested in this environment
 
@@ -130,14 +130,14 @@ The AI enhancement layer would add **even more structure** on top of the already
 OSError: Tunnel connection failed: 403 Forbidden
 
 The environment's proxy/firewall is blocking:
-- Target: https://api.sarvam.ai
+- Target: https://api.openai.com
 - Method: POST to /v1/chat/completions
 - Status: 403 (Forbidden by proxy)
 ```
 
 ### Environment Constraints
 - Behind corporate/network proxy
-- HTTPS traffic to api.sarvam.ai blocked
+- HTTPS traffic to api.openai.com blocked
 - Cannot be resolved in test environment
 
 ---
@@ -174,7 +174,7 @@ export NO_PROXY=localhost,127.0.0.1
 
 The code supports OpenAI-compatible APIs:
 ```bash
-# Use OpenAI instead of Sarvam
+# Use OpenAI instead of OpenAI
 export AI_API_KEY="your-openai-key"
 export AI_API_BASE="https://api.openai.com"
 
@@ -339,6 +339,6 @@ The network error is an **environment limitation**, not a code issue. All infras
 ---
 
 **Report Generated:** 2026-01-01
-**Network Issue:** Proxy blocking api.sarvam.ai (403 Forbidden)
+**Network Issue:** Proxy blocking api.openai.com (403 Forbidden)
 **Resolution:** Deploy to production environment
 **Status:** ✅ READY FOR PRODUCTION DEPLOYMENT

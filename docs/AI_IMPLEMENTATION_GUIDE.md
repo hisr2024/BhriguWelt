@@ -39,7 +39,7 @@ This document describes the implementation of secure, privacy-first AI features 
                   │ + API Key
                   │
 ┌─────────────────▼───────────────────────────────────┐
-│              Sarvam AI API                          │
+│              OpenAI API                          │
 │  - AI processing                                    │
 │  - No data retention                                │
 └─────────────────────────────────────────────────────┘
@@ -136,7 +136,7 @@ Mode switching UI:
 10. **Validation**: Checks consent and AI mode
 11. **Sanitization**: Double-checks no PII present
 12. **AI Service**: Builds prompt with sanitized data
-13. **Sarvam AI**: Processes request
+13. **OpenAI**: Processes request
 14. **Backend**: Sanitizes AI response (XSS prevention)
 15. **Frontend**: Displays enhanced insights
 16. **UI**: Shows "AI Enhanced" badge
@@ -235,8 +235,8 @@ Tests cover:
 
 **Backend:**
 ```bash
-SARVAM_AI_API_KEY=sk-xxxxx
-SARVAM_AI_BASE_URL=https://api.sarvam.ai/v1
+OPENAI_API_KEY=sk-xxxxx
+OPENAI_BASE_URL=https://api.openai.com/v1
 AI_FEATURES_ENABLED=true
 DAILY_AI_QUOTA=1000
 MONTHLY_AI_QUOTA=30000
@@ -365,7 +365,7 @@ except requests.exceptions.Timeout:
 ## References
 
 - [API Documentation](./AI_FEATURES_API.md)
-- [Sarvam AI Integration Guide](../SARVAM_AI_INTEGRATION.md)
+- [OpenAI Integration Guide](../OPENAI_INTEGRATION.md)
 - [Security Architecture](../SECURITY_ARCHITECTURE.md)
 - [Privacy Policy](https://bhriguwelt.com/privacy)
 

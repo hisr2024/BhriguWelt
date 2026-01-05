@@ -17,7 +17,7 @@ Successfully implemented comprehensive fixes to the Birth Chart and Horoscope ge
 - ✅ **Correlation ID Tracking** - Full request traceability
 - ✅ **Enhanced UI Components** - Complete rendering of all detailed sections
 - ✅ **Retry Logic** - Smart retries with feedback for failed generations
-- ⚠️ **AI Integration** - Ready but requires Sarvam AI API key configuration
+- ⚠️ **AI Integration** - Ready but requires OpenAI API key configuration
 
 ---
 
@@ -312,7 +312,7 @@ Past Life Insights (sample):
 - ✅ JSON repair logic tested
 - ✅ Prompt construction verified
 - ✅ UI rendering components ready
-- ⚠️ Awaiting Sarvam AI API key for full test
+- ⚠️ Awaiting OpenAI API key for full test
 
 **To Complete Full Test:**
 ```bash
@@ -375,7 +375,7 @@ python3 test_detailed_chart_generation.py
 
 ### Current Limitations
 
-1. **API Key Required:** Sarvam AI API key must be configured to enable detailed chart generation
+1. **API Key Required:** OpenAI API key must be configured to enable detailed chart generation
    - Set environment variable: `SARVAM_API_KEY` or `AI_API_KEY`
    - Can use OpenAI-compatible endpoints as well
 
@@ -387,7 +387,7 @@ python3 test_detailed_chart_generation.py
 
 ### Recommended Next Steps
 
-1. **Configure Sarvam AI API Key**
+1. **Configure OpenAI API Key**
    ```bash
    # In backend/.env or environment
    export SARVAM_API_KEY="your-key-here"
@@ -457,7 +457,7 @@ The Birth Chart and Horoscope generation pipeline has been comprehensively upgra
 ✅ **Logging:** Correlation IDs and metrics throughout
 ✅ **Documentation:** Complete test report with evidence
 
-**Final Status:** READY FOR PRODUCTION (pending Sarvam AI API key configuration)
+**Final Status:** READY FOR PRODUCTION (pending OpenAI API key configuration)
 
 Once the API key is configured, the system will automatically generate comprehensive, detailed birth charts with:
 - 3-5 sentence chart summaries

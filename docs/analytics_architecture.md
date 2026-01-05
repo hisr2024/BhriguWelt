@@ -19,7 +19,7 @@ This document defines a scalable, high-precision architecture for the **Analytic
 - **Aggregation Service (FastAPI/AIOHTTP)**
   - Aggregates prior predictions, session analytics, and longitudinal insights.
 - **AI Interpretation Service**
-  - Generates Samhita-aligned summaries using Sarvam/OpenAI.
+  - Generates Samhita-aligned summaries using OpenAI/OpenAI.
   - Receives verified computation outputs only (no approximations).
 
 ### Data Stores

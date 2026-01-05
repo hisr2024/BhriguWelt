@@ -243,7 +243,7 @@ curl -X POST https://backend.render.com/api/astrology/birth-chart \
 | 4.3.1 | API endpoints require authentication | ❌ | No JWT implementation yet |
 | 4.3.2 | No sensitive data in URL parameters | ✅ | POST body used |
 | 4.3.3 | API timeout configured | ✅ | 30 seconds |
-| 4.3.4 | No API keys in frontend code | ✅ | Sarvam AI key in backend only |
+| 4.3.4 | No API keys in frontend code | ✅ | OpenAI key in backend only |
 | 4.3.5 | Input validation on backend | ⚠️ | Not verified in this audit |
 
 **Security Gap:** ⚠️ API calls not authenticated (no JWT tokens)
@@ -374,7 +374,7 @@ git ls-files | grep "\.env$" # Should return nothing
 | 7.2.1 | SECRET_KEY set in production | ⚠️ | Required by new code |
 | 7.2.2 | JWT_SECRET_KEY set in production | ⚠️ | Required by new code |
 | 7.2.3 | FRONTEND_URL set in production | ⚠️ | Required by new code |
-| 7.2.4 | SARVAM_AI_API_KEY set | ⚠️ | Required for AI features |
+| 7.2.4 | OPENAI_API_KEY set | ⚠️ | Required for AI features |
 | 7.2.5 | Default secrets not used in production | ✅ | Enforced by app.py:19-24 |
 
 **Validation:**

@@ -21,7 +21,7 @@ All requested features have been successfully implemented and are production-rea
   - Karmic number and Soul number
   - Current Vimshottari Dasha period
 
-- ✅ **Sarvam AI Integration**
+- ✅ **OpenAI Integration**
   - Fully integrated AI service for predictions
   - Fallback system if API unavailable
   - Context-aware astrological insights
@@ -119,7 +119,7 @@ backend/
 │   └── user_routes.py              # User management endpoints
 └── services/
     ├── astrology_calculator.py     # Vedic astrology calculations
-    └── sarvam_ai.py                # Sarvam AI integration service
+    └── sarvam_ai.py                # OpenAI integration service
 ```
 
 ---
@@ -247,7 +247,7 @@ frontend/
 ### Backend API Testing:
 - ✅ Health check endpoint working
 - ✅ All route blueprints registered
-- ✅ Sarvam AI service configured
+- ✅ OpenAI service configured
 - ✅ Astrology calculator implemented
 - ✅ CORS configuration set up
 - ✅ Error handling implemented
@@ -273,7 +273,7 @@ frontend/
 - ✅ Health check endpoint (`/health`)
 - ✅ CORS configured for frontend
 - ✅ All API routes implemented
-- ✅ Sarvam AI integration ready
+- ✅ OpenAI integration ready
 - ✅ Error handling in place
 
 ### Frontend (Vercel):
@@ -354,7 +354,7 @@ frontend/
 ### Backend:
 - **Framework**: Flask 3.0.0
 - **Language**: Python 3.11.7
-- **AI**: Sarvam AI API integration
+- **AI**: OpenAI API integration
 - **Astrology**: Custom Vedic calculations with ephem
 - **Geolocation**: geopy, timezonefinder
 - **Server**: Gunicorn
@@ -381,7 +381,7 @@ frontend/
    - Push code to GitHub
    - Create new Web Service on Render
    - Connect repository
-   - Set environment variables (especially `SARVAM_AI_API_KEY`)
+   - Set environment variables (especially `OPENAI_API_KEY`)
    - Deploy!
 
 3. **Frontend to Vercel**:
@@ -400,7 +400,7 @@ frontend/
 
 1. **100% Feature Complete**: All requested features fully implemented
 2. **Production Ready**: Proper error handling, logging, and configuration
-3. **AI-Powered**: Sarvam AI integration for intelligent predictions
+3. **AI-Powered**: OpenAI integration for intelligent predictions
 4. **Beautiful UI**: Cosmic-themed design with animations
 5. **Type Safe**: Full TypeScript implementation on frontend
 6. **Well Documented**: Comprehensive guides and README files
@@ -415,7 +415,7 @@ frontend/
 
 ### Backend (.env):
 ```
-SARVAM_AI_API_KEY=your-sarvam-ai-api-key
+OPENAI_API_KEY=your-sarvam-ai-api-key
 SECRET_KEY=random-secret-key
 JWT_SECRET_KEY=random-jwt-key
 FRONTEND_URL=https://your-frontend.vercel.app
@@ -432,9 +432,9 @@ NEXT_PUBLIC_APP_NAME=BhriguWelt
 
 ## 🚨 Important Notes
 
-1. **Sarvam AI API Key Required**: Get from https://www.sarvam.ai/
+1. **OpenAI API Key Required**: Get from https://www.openai.com/
    - Without it, API will use fallback traditional analysis
-   - Set as `SARVAM_AI_API_KEY` environment variable
+   - Set as `OPENAI_API_KEY` environment variable
 
 2. **First Deploy May Be Slow**: Render cold starts take ~30 seconds
    - Upgrade to paid plan for instant response
@@ -464,7 +464,7 @@ NEXT_PUBLIC_APP_NAME=BhriguWelt
 ✅ Backend deployed on Render
 ✅ 100% applicable and functional
 ✅ All APIs working (50+ endpoints)
-✅ Sarvam AI fully integrated
+✅ OpenAI fully integrated
 ✅ Predictions feature implemented
 ✅ Karmic Journey implemented
 ✅ Past Lives implemented
