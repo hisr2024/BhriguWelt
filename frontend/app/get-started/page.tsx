@@ -165,7 +165,7 @@ export default function GetStartedPage() {
           </form>
         </GenZCard>
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[{ icon: <Zap className="w-6 h-6" />, title: 'AI-Powered', description: 'Sarvam AI analysis', color: 'from-genz-electric-blue to-genz-mint-fresh' }, { icon: <Sparkles className="w-6 h-6" />, title: 'Comprehensive', description: 'Past, present, future', color: 'from-genz-purple-haze to-genz-lavender-dream' }, { icon: <Shield className="w-6 h-6" />, title: 'Personalized', description: 'Unique to you', color: 'from-genz-hot-pink to-genz-coral-pop' }].map((feature, index) => (
+          {[{ icon: <Zap className="w-6 h-6" />, title: 'AI-Powered', description: 'OpenAI analysis', color: 'from-genz-electric-blue to-genz-mint-fresh' }, { icon: <Sparkles className="w-6 h-6" />, title: 'Comprehensive', description: 'Past, present, future', color: 'from-genz-purple-haze to-genz-lavender-dream' }, { icon: <Shield className="w-6 h-6" />, title: 'Personalized', description: 'Unique to you', color: 'from-genz-hot-pink to-genz-coral-pop' }].map((feature, index) => (
             <GenZCard key={index} variant="glass" className="text-center group">
               <motion.div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${feature.color} flex items-center justify-center mx-auto mb-4 shadow-genz-glow group-hover:scale-110 transition-transform`} whileHover={{ rotate: 360 }} transition={{ duration: 0.6 }}>{feature.icon}</motion.div>
               <h3 className="font-display font-bold text-white mb-2 text-lg group-hover:text-genz-electric-blue transition-colors">{feature.title}</h3>

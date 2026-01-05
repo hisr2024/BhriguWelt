@@ -4,7 +4,7 @@ Personalized remedies and spiritual practices
 """
 from flask import Blueprint, request, jsonify
 from services.astrology_calculator import astrology_calculator
-from services.sarvam_ai import sarvam_ai
+from services.openai_service import openai_service
 
 bp = Blueprint('karmic_remedies', __name__, url_prefix='/api/karmic-remedies')
 
@@ -33,7 +33,7 @@ def comprehensive_remedies():
 
         # Generate remedies
         challenges = data.get('challenges', [])
-        remedies = sarvam_ai.generate_karmic_remedies(birth_chart, challenges)
+        remedies = openai_service.generate_karmic_remedies(birth_chart, challenges)
 
         return jsonify({
             'status': 'success',
@@ -72,7 +72,7 @@ def mantra_recommendations():
         6. Benefits and timing for chanting
         """
 
-        mantras = sarvam_ai.generate_prediction(prompt, birth_chart)
+        mantras = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -113,7 +113,7 @@ def gemstone_therapy():
         6. Mantra for energizing gemstone
         """
 
-        gemstones = sarvam_ai.generate_prediction(prompt, birth_chart)
+        gemstones = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -153,7 +153,7 @@ def ritual_recommendations():
         6. Pilgrimage sites
         """
 
-        rituals = sarvam_ai.generate_prediction(prompt, birth_chart)
+        rituals = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -192,7 +192,7 @@ def charitable_acts():
         5. Karmic debt clearing through service
         """
 
-        charity = sarvam_ai.generate_prediction(prompt, birth_chart)
+        charity = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -232,7 +232,7 @@ def lifestyle_modifications():
         6. Direction and spatial guidance
         """
 
-        lifestyle = sarvam_ai.generate_prediction(prompt, birth_chart)
+        lifestyle = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -272,7 +272,7 @@ def meditation_practices():
         6. Duration and frequency
         """
 
-        meditation = sarvam_ai.generate_prediction(prompt, birth_chart)
+        meditation = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -311,7 +311,7 @@ def yantra_recommendations():
         5. Materials and specifications
         """
 
-        yantras = sarvam_ai.generate_prediction(prompt, birth_chart)
+        yantras = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',

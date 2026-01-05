@@ -4,7 +4,7 @@ Future incarnation predictions and soul evolution
 """
 from flask import Blueprint, request, jsonify
 from services.astrology_calculator import astrology_calculator
-from services.sarvam_ai import sarvam_ai
+from services.openai_service import openai_service
 
 bp = Blueprint('future_lives', __name__, url_prefix='/api/future-lives')
 
@@ -31,7 +31,7 @@ def future_lives_prediction():
         )
 
         # Generate future lives prediction
-        future_prediction = sarvam_ai.generate_future_lives_prediction(birth_chart)
+        future_prediction = openai_service.generate_future_lives_prediction(birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -69,7 +69,7 @@ def evolution_path():
         5. Timeline to higher dimensional existence
         """
 
-        evolution = sarvam_ai.generate_prediction(prompt, birth_chart)
+        evolution = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -108,7 +108,7 @@ def moksha_timeline():
         5. Signs of approaching enlightenment
         """
 
-        moksha = sarvam_ai.generate_prediction(prompt, birth_chart)
+        moksha = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -147,7 +147,7 @@ def future_missions():
         5. Role in collective evolution
         """
 
-        missions = sarvam_ai.generate_prediction(prompt, birth_chart)
+        missions = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -186,7 +186,7 @@ def soul_advancement():
         5. Ascension pathway and timeline
         """
 
-        advancement = sarvam_ai.generate_prediction(prompt, birth_chart)
+        advancement = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',

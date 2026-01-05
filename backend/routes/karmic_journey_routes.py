@@ -4,7 +4,7 @@ Soul journey and karmic analysis endpoints
 """
 from flask import Blueprint, request, jsonify
 from services.astrology_calculator import astrology_calculator
-from services.sarvam_ai import sarvam_ai
+from services.openai_service import openai_service
 
 bp = Blueprint('karmic_journey', __name__, url_prefix='/api/karmic-journey')
 
@@ -31,7 +31,7 @@ def karmic_journey_analysis():
         )
 
         # Generate karmic journey analysis using Sarvam AI
-        karmic_analysis = sarvam_ai.generate_karmic_journey(birth_chart)
+        karmic_analysis = openai_service.generate_karmic_journey(birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -70,7 +70,7 @@ def soul_purpose():
         5. Service to humanity
         """
 
-        analysis = sarvam_ai.generate_prediction(prompt, birth_chart)
+        analysis = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -109,7 +109,7 @@ def karmic_lessons():
         5. Karmic rewards upon completion
         """
 
-        lessons = sarvam_ai.generate_prediction(prompt, birth_chart)
+        lessons = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -148,7 +148,7 @@ def soul_evolution():
         5. Timeline to higher consciousness
         """
 
-        evolution = sarvam_ai.generate_prediction(prompt, birth_chart)
+        evolution = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -187,7 +187,7 @@ def dharmic_path():
         5. Success through dharma
         """
 
-        dharma = sarvam_ai.generate_prediction(prompt, birth_chart)
+        dharma = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',

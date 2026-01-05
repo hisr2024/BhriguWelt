@@ -69,7 +69,7 @@ def karmic_journey():
             'nakshatra': chart_data.get('nakshatra'),
             'moon_sign': chart_data.get('moon_sign'),
             'ascendant': chart_data.get('ascendant'),
-            'ai_model': 'sarvam-1'
+            'ai_model': 'gpt-4'
         }
 
         BhriguPredictionCache.cache_prediction(

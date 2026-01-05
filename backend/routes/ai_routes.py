@@ -8,7 +8,7 @@ import os
 
 from middleware.sanitizer import RequestSanitizer, sanitize_ai_request
 from middleware.ai_constants import PII_FIELDS
-from services.sarvam_ai import sarvam_ai
+from services.openai_service import openai_service
 from services.ai_service import AIService
 
 bp = Blueprint('ai', __name__, url_prefix='/api/ai')
@@ -22,7 +22,7 @@ def require_ai_consent(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         # Check if AI is enabled in environment
-        if not os.getenv('SARVAM_AI_API_KEY'):
+        if not os.getenv('OPENAI_API_KEY'):
             return jsonify({
                 'error': 'AI features not configured',
                 'message': 'AI integration is not available'
@@ -297,7 +297,7 @@ def ai_status():
     Check AI service status
     No authentication required
     """
-    ai_configured = bool(os.getenv('SARVAM_AI_API_KEY'))
+    ai_configured = bool(os.getenv('OPENAI_API_KEY'))
     
     return jsonify({
         'status': 'success',

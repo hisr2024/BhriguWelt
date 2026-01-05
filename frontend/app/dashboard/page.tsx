@@ -67,7 +67,7 @@ export default function DashboardPage() {
   const widgets = [
     { title: 'Cosmic Blueprint', description: 'Bhrigu Samhita & Nadi Jyotisa Predictions', icon: <Sparkles className="w-8 h-8" />, link: '/bhrigu-predictions', color: 'from-genz-electric-blue via-genz-purple-haze to-genz-hot-pink', badge: 'Featured', featured: true },
     { title: 'Birth Chart', description: 'Explore your cosmic blueprint', icon: <Star className="w-8 h-8" />, link: '/birth-chart', color: 'from-genz-electric-blue to-genz-mint-fresh' },
-    { title: 'AI Chat', description: 'Ask Sarvam AI about your journey', icon: <Zap className="w-8 h-8" />, link: '/ai-chat', color: 'from-genz-neon-green to-genz-lime-zest', badge: 'AI' },
+    { title: 'AI Chat', description: 'Ask OpenAI about your journey', icon: <Zap className="w-8 h-8" />, link: '/ai-chat', color: 'from-genz-neon-green to-genz-lime-zest', badge: 'AI' },
     { title: 'Daily Insights', description: 'Your cosmic forecast for today', icon: <Sun className="w-8 h-8" />, link: '/daily-insights', color: 'from-genz-cyber-yellow to-genz-sunset-orange', badge: 'Today' },
     { title: 'Horoscope', description: 'Detailed predictions & guidance', icon: <Moon className="w-8 h-8" />, link: '/horoscope', color: 'from-genz-purple-haze to-genz-lavender-dream' },
     { title: 'Matchmaking', description: 'Find your cosmic connection', icon: <Heart className="w-8 h-8" />, link: '/matchmaking', color: 'from-genz-hot-pink to-genz-coral-pop' },

@@ -82,7 +82,7 @@ export default function AIChatPage() {
           </GenZButton>
 
           <GenZBadge variant="neon" size="sm">
-            Powered by Sarvam AI
+            Powered by OpenAI
           </GenZBadge>
         </div>
 
@@ -104,7 +104,7 @@ export default function AIChatPage() {
             AI Astrology Guide
           </GenZBadge>
 
-          <h1 className="genz-title mb-4">Chat with Sarvam AI</h1>
+          <h1 className="genz-title mb-4">Chat with AI Assistant</h1>
           <p className="text-xl text-white/80 max-w-2xl mx-auto">
             Ask me anything about your cosmic journey, birth chart, or astrology. I'm here to provide personalized insights and guidance.
           </p>

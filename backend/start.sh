@@ -26,9 +26,9 @@ if [ "$FLASK_ENV" = "production" ]; then
         fi
     done
 
-    # Warn if SARVAM_AI_API_KEY is not set (non-fatal)
-    if [ -z "$SARVAM_AI_API_KEY" ]; then
-        echo "WARNING: SARVAM_AI_API_KEY is not set. AI features will be disabled."
+    # Warn if OPENAI_API_KEY is not set (non-fatal)
+    if [ -z "$OPENAI_API_KEY" ]; then
+        echo "WARNING: OPENAI_API_KEY is not set. AI features will be disabled."
     fi
 fi
 

@@ -4,7 +4,7 @@ Current life analysis and guidance endpoints
 """
 from flask import Blueprint, request, jsonify
 from services.astrology_calculator import astrology_calculator
-from services.sarvam_ai import sarvam_ai
+from services.openai_service import openai_service
 
 bp = Blueprint('present_life', __name__, url_prefix='/api/present-life')
 
@@ -31,7 +31,7 @@ def comprehensive_analysis():
         )
 
         # Generate present life analysis
-        present_life = sarvam_ai.generate_present_life_analysis(birth_chart)
+        present_life = openai_service.generate_present_life_analysis(birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -71,7 +71,7 @@ def career_guidance():
         6. Financial prosperity timeline
         """
 
-        career = sarvam_ai.generate_prediction(prompt, birth_chart)
+        career = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -112,7 +112,7 @@ def relationships_analysis():
         6. Family and friendship dynamics
         """
 
-        relationships = sarvam_ai.generate_prediction(prompt, birth_chart)
+        relationships = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -153,7 +153,7 @@ def health_wellness():
         6. Energy management and vitality
         """
 
-        health = sarvam_ai.generate_prediction(prompt, birth_chart)
+        health = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -194,7 +194,7 @@ def financial_prospects():
         6. Financial planning recommendations
         """
 
-        financial = sarvam_ai.generate_prediction(prompt, birth_chart)
+        financial = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -235,7 +235,7 @@ def spiritual_growth():
         6. Spiritual breakthroughs timeline
         """
 
-        spiritual = sarvam_ai.generate_prediction(prompt, birth_chart)
+        spiritual = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -274,7 +274,7 @@ def current_dasha():
         5. Making the most of current period
         """
 
-        dasha = sarvam_ai.generate_prediction(prompt, birth_chart)
+        dasha = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',

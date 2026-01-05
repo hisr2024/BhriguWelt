@@ -73,7 +73,7 @@ export default function AIChatInterface({
       if (onSendMessage) {
         response = await onSendMessage(userMessage.content);
       } else {
-        // Use real AI response with Sarvam AI
+        // Use real AI response with OpenAI
         response = await generateRealAIResponse(userMessage.content, context, birthChartData);
       }
 
@@ -330,7 +330,7 @@ export default function AIChatInterface({
   );
 }
 
-// Real AI response generator using Sarvam AI
+// Real AI response generator using OpenAI
 async function generateRealAIResponse(
   userMessage: string,
   context: string,
