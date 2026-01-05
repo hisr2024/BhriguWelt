@@ -22,7 +22,7 @@ This guide covers the transition from the cloud-based architecture (Next.js fron
                                   │
                                   ▼
                          ┌──────────────────┐
-                         │  Sarvam AI       │
+                         │  OpenAI       │
                          │  (External)      │
                          └──────────────────┘
 ```
@@ -61,7 +61,7 @@ This guide covers the transition from the cloud-based architecture (Next.js fron
        └──────────────────┘  │
                              ▼
                     ┌──────────────────┐
-                    │  Sarvam AI       │
+                    │  OpenAI       │
                     │  (External)      │
                     └──────────────────┘
 ```
@@ -203,9 +203,9 @@ FLASK_ENV=production
 SECRET_KEY=your-secure-secret-key
 JWT_SECRET_KEY=your-jwt-secret
 
-# Sarvam AI
-SARVAM_AI_API_KEY=your-api-key
-SARVAM_AI_BASE_URL=https://api.sarvam.ai/v1
+# OpenAI
+OPENAI_API_KEY=your-api-key
+OPENAI_BASE_URL=https://api.openai.com/v1
 
 # Frontend (CORS)
 FRONTEND_URL=https://your-app.vercel.app
@@ -460,7 +460,7 @@ mysql -u user -p database < latest.sql
 | Vercel (Frontend) | $20 |
 | Render (Backend) | $25 |
 | Database | $15 |
-| Sarvam AI | $100 |
+| OpenAI | $100 |
 | **Total** | **$160** |
 
 ### New Architecture (Monthly)
@@ -469,7 +469,7 @@ mysql -u user -p database < latest.sql
 |---------|------|
 | Vercel (Frontend/PWA) | $20 |
 | Render (AI Proxy only) | $7 |
-| Sarvam AI (reduced usage) | $30 |
+| OpenAI (reduced usage) | $30 |
 | **Total** | **$57** |
 
 **Savings: $103/month (64% reduction)**

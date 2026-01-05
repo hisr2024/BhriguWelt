@@ -6,7 +6,7 @@ Complete guide to deploying the full-stack astrology application to Vercel (Fron
 
 - **Frontend**: Next.js 14 + React + TypeScript → Vercel
 - **Backend**: Flask + Python 3.11 → Render
-- **AI Integration**: Sarvam AI API
+- **AI Integration**: OpenAI API
 - **Features**: Karmic Journey, Past Lives, Future Lives, Present Life Analysis, Life Events, Karmic Remedies
 
 ---
@@ -15,7 +15,7 @@ Complete guide to deploying the full-stack astrology application to Vercel (Fron
 
 Before deploying, ensure you have:
 
-1. **Sarvam AI API Key** - Get from https://www.sarvam.ai/
+1. **OpenAI API Key** - Get from https://www.openai.com/
 2. **GitHub Account** - For repository and deployments
 3. **Vercel Account** - Sign up at https://vercel.com
 4. **Render Account** - Sign up at https://render.com
@@ -65,8 +65,8 @@ Before deploying, ensure you have:
    FLASK_ENV=production
    SECRET_KEY=<generate-random-secret-key>
    JWT_SECRET_KEY=<generate-random-jwt-key>
-   SARVAM_AI_API_KEY=<your-sarvam-ai-api-key>
-   SARVAM_AI_BASE_URL=https://api.sarvam.ai/v1
+   OPENAI_API_KEY=<your-openai-api-key>
+   OPENAI_BASE_URL=https://api.openai.com/v1
    FRONTEND_URL=https://your-app.vercel.app
    ```
 
@@ -91,7 +91,7 @@ Expected response:
   "services": {
     "api": "operational",
     "database": "operational",
-    "sarvam_ai": "operational"
+    "openai": "operational"
   }
 }
 ```
@@ -228,8 +228,8 @@ Redeploy backend service.
 | `FLASK_ENV` | Environment mode | `production` |
 | `SECRET_KEY` | Flask secret key | Random 32+ chars |
 | `JWT_SECRET_KEY` | JWT signing key | Random 32+ chars |
-| `SARVAM_AI_API_KEY` | Sarvam AI API key | Your API key |
-| `SARVAM_AI_BASE_URL` | Sarvam AI endpoint | `https://api.sarvam.ai/v1` |
+| `OPENAI_API_KEY` | OpenAI API key | Your API key |
+| `OPENAI_BASE_URL` | OpenAI endpoint | `https://api.openai.com/v1` |
 | `FRONTEND_URL` | Frontend URL for CORS | `https://your-app.vercel.app` |
 
 ### Frontend Environment Variables
@@ -315,7 +315,7 @@ Redeploy backend service.
 **Problem**: API returns 500 errors
 - Check Render logs
 - Verify environment variables are set
-- Ensure Sarvam AI API key is valid
+- Ensure OpenAI API key is valid
 
 **Problem**: CORS errors
 - Verify `FRONTEND_URL` is set correctly in backend
@@ -323,7 +323,7 @@ Redeploy backend service.
 
 **Problem**: Slow responses
 - Upgrade Render plan to Starter
-- Check Sarvam AI rate limits
+- Check OpenAI rate limits
 
 ### Frontend Issues
 
@@ -361,7 +361,7 @@ Redeploy backend service.
 ### Backend
 - Use Render Starter plan for better performance
 - Enable Redis caching (optional)
-- Optimize Sarvam AI calls
+- Optimize OpenAI calls
 - Add request timeout handling
 
 ### Frontend
@@ -383,7 +383,7 @@ Redeploy backend service.
 
 ### Common Solutions
 
-**Sarvam AI API Not Working**:
+**OpenAI API Not Working**:
 - Verify API key is correct
 - Check API quotas and limits
 - Use fallback predictions if API fails
@@ -398,7 +398,7 @@ Redeploy backend service.
 ## ✨ Features Implemented
 
 ✅ Complete Vedic astrology birth chart calculation
-✅ AI-powered predictions via Sarvam AI integration
+✅ AI-powered predictions via OpenAI integration
 ✅ Karmic Journey analysis
 ✅ Past Lives regression and analysis
 ✅ Future Lives prediction

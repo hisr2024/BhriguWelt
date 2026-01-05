@@ -138,13 +138,13 @@ All test outputs saved to: `docs/test-outputs/`
 
 ## ⚡ Next Steps to Enable Full Functionality
 
-### 1. Configure Sarvam AI API Key
+### 1. Configure OpenAI API Key
 
 The detailed chart generation is **ready but requires an AI API key** to run.
 
-**Option A: Use Sarvam AI**
+**Option A: Use OpenAI**
 ```bash
-export SARVAM_API_KEY="your-sarvam-api-key-here"
+export OPENAI_API_KEY="your-openai-api-key-here"
 ```
 
 **Option B: Use OpenAI-compatible API**
@@ -156,10 +156,10 @@ export AI_API_BASE="https://api.your-provider.com"
 **For Docker/Backend:**
 ```bash
 # Add to backend/.env or docker-compose.yml
-SARVAM_API_KEY=your-key-here
+OPENAI_API_KEY=your-key-here
 # or
 AI_API_KEY=your-key-here
-AI_API_BASE=https://api.sarvam.ai
+AI_API_BASE=https://api.openai.com/v1
 ```
 
 ### 2. Run Full Test with AI
@@ -279,7 +279,7 @@ API → _enhance_with_ai() → generate_detailed_chart()
   ↓
   1. Extract Bhrigu principles from repo (RAG)
   2. Build comprehensive prompt with context
-  3. Call Sarvam AI (max_tokens=3500)
+  3. Call OpenAI (max_tokens=3500)
   4. Parse JSON response
   5. Repair JSON if malformed (4 stages)
   6. Validate schema (strict checks)
@@ -330,7 +330,7 @@ ReadingPanel → DetailedChartPanel
 
 **Solution:**
 ```bash
-export SARVAM_API_KEY="your-key-here"
+export OPENAI_API_KEY="your-key-here"
 # or
 export AI_API_KEY="your-key-here"
 ```
@@ -344,8 +344,8 @@ Should show:
 ```json
 {
   "configured": true,
-  "provider": "sarvam",
-  "api_base": "https://api.sarvam.ai"
+  "provider": "openai",
+  "api_base": "https://api.openai.com/v1"
 }
 ```
 
@@ -472,7 +472,7 @@ Files Changed: 11 files, 5345 insertions
 ```
 
 **To deploy:**
-1. Set `SARVAM_API_KEY` environment variable
+1. Set `OPENAI_API_KEY` environment variable
 2. Restart backend server
 3. Test with real profiles
 4. Monitor logs for metrics

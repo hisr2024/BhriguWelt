@@ -184,8 +184,8 @@ python demo_ai_features.py
 
 **Backend (Required):**
 ```env
-SARVAM_AI_API_KEY=your-api-key-here
-SARVAM_AI_BASE_URL=https://api.sarvam.ai/v1
+OPENAI_API_KEY=your-api-key-here
+OPENAI_BASE_URL=https://api.openai.com/v1
 AI_FEATURES_ENABLED=true
 ```
 
@@ -229,7 +229,7 @@ NEXT_PUBLIC_API_URL=https://api.bhriguwelt.com
 - **Contents**: 10 practical examples for common use cases
 
 ### Integration Guide
-- **Reference**: `SARVAM_AI_INTEGRATION.md` (existing)
+- **Reference**: `OPENAI_INTEGRATION.md` (existing)
 - **Complements**: New AI features documentation
 
 ## 🔑 Key Achievements

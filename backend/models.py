@@ -42,7 +42,7 @@ class BhriguPredictionCache(db.Model):
     access_count = db.Column(db.Integer, default=1)
 
     # Quality indicators
-    ai_model = db.Column(db.String(50))  # sarvam-1, etc.
+    ai_model = db.Column(db.String(50))  # gpt-4, etc.
     confidence_score = db.Column(db.Float, default=0.0)
     user_rating = db.Column(db.Integer)  # 1-5 stars if user rates
 
@@ -88,7 +88,7 @@ class BhriguPredictionCache(db.Model):
             nakshatra=metadata.get('nakshatra') if metadata else None,
             moon_sign=metadata.get('moon_sign') if metadata else None,
             ascendant=metadata.get('ascendant') if metadata else None,
-            ai_model=metadata.get('ai_model', 'sarvam-1') if metadata else 'sarvam-1'
+            ai_model=metadata.get('ai_model', 'gpt-4') if metadata else 'gpt-4'
         )
         db.session.add(cache_entry)
         db.session.commit()

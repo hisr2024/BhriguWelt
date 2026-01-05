@@ -1,5 +1,5 @@
 """
-Sarvam AI Integration Service
+OpenAI Integration Service
 Handles all AI-powered predictions and insights
 """
 import os
@@ -7,16 +7,16 @@ import requests
 from typing import Dict, Any, List, Optional
 import json
 
-class SarvamAIService:
-    """Service for interacting with Sarvam AI API"""
+class OpenAIService:
+    """Service for interacting with OpenAI API"""
 
     def __init__(self):
-        self.api_key = os.getenv('SARVAM_AI_API_KEY')
-        self.base_url = os.getenv('SARVAM_AI_BASE_URL', 'https://api.sarvam.ai/v1')
+        self.api_key = os.getenv('OPENAI_API_KEY')
+        self.base_url = os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
         self.enabled = bool(self.api_key)
 
         if not self.enabled:
-            print("WARNING: SARVAM_AI_API_KEY not set. AI features will use fallback responses.")
+            print("WARNING: OPENAI_API_KEY not set. AI features will use fallback responses.")
 
         self.headers = {
             'Authorization': f'Bearer {self.api_key}',
@@ -25,7 +25,7 @@ class SarvamAIService:
 
     def generate_prediction(self, prompt: str, context: Dict[str, Any] = None) -> str:
         """
-        Generate AI-powered predictions using Sarvam AI
+        Generate AI-powered predictions using OpenAI
 
         Args:
             prompt: The prediction prompt
@@ -41,7 +41,7 @@ class SarvamAIService:
         try:
             # Prepare the request payload with enhanced settings for comprehensive predictions
             payload = {
-                'model': 'sarvam-1',
+                'model': os.getenv('OPENAI_MODEL', 'gpt-4'),
                 'messages': [
                     {
                         'role': 'system',
@@ -71,8 +71,8 @@ Always provide detailed, specific predictions with timing when possible.'''
                         'content': prompt
                     }
                 ],
-                'temperature': 0.7,
-                'max_tokens': 4000  # Increased for comprehensive predictions
+                'temperature': float(os.getenv('OPENAI_TEMPERATURE', '0.7')),
+                'max_tokens': int(os.getenv('OPENAI_MAX_TOKENS', '4000'))  # Increased for comprehensive predictions
             }
 
             if context:
@@ -83,7 +83,7 @@ Always provide detailed, specific predictions with timing when possible.'''
                 f'{self.base_url}/chat/completions',
                 headers=self.headers,
                 json=payload,
-                timeout=90  # 90 seconds for AI processing
+                timeout=int(os.getenv('OPENAI_TIMEOUT', '90'))  # 90 seconds for AI processing
             )
 
             response.raise_for_status()
@@ -93,7 +93,7 @@ Always provide detailed, specific predictions with timing when possible.'''
 
         except requests.exceptions.RequestException as e:
             # Log the error for debugging
-            print(f"ERROR: Sarvam AI API call failed: {str(e)}")
+            print(f"ERROR: OpenAI API call failed: {str(e)}")
             # Fallback to traditional analysis if API fails
             return self._fallback_prediction(prompt, context)
     def generate_karmic_journey(self, birth_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -380,18 +380,18 @@ For detailed, personalized predictions with precise timing based on your complet
         return datetime.utcnow().isoformat()
 
 # Lazy singleton instance
-_sarvam_ai_instance = None
+_openai_service_instance = None
 
-def get_sarvam_ai():
-    """Get or create the SarvamAI singleton instance"""
-    global _sarvam_ai_instance
-    if _sarvam_ai_instance is None:
-        _sarvam_ai_instance = SarvamAIService()
-    return _sarvam_ai_instance
+def get_openai_service():
+    """Get or create the OpenAI service singleton instance"""
+    global _openai_service_instance
+    if _openai_service_instance is None:
+        _openai_service_instance = OpenAIService()
+    return _openai_service_instance
 
 # Backwards compatibility - creates instance on first access
 class _LazyProxy:
     def __getattr__(self, name):
-        return getattr(get_sarvam_ai(), name)
+        return getattr(get_openai_service(), name)
 
-sarvam_ai = _LazyProxy()
+openai_service = _LazyProxy()

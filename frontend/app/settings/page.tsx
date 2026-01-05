@@ -196,7 +196,7 @@ export default function SettingsPage() {
         {
           icon: <SettingsIcon className="w-5 h-5" />,
           label: 'AI Insights',
-          description: 'Enable Sarvam AI predictions',
+          description: 'Enable OpenAI predictions',
           type: 'toggle',
           key: 'aiEnabled',
         },
@@ -366,7 +366,7 @@ export default function SettingsPage() {
             </h3>
             <p className="text-white/60 mb-2">Version 1.0.0</p>
             <GenZBadge variant="neon" size="sm">
-              Powered by Sarvam AI
+              Powered by OpenAI
             </GenZBadge>
           </GenZCard>
         </div>

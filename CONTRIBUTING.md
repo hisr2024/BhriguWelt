@@ -41,7 +41,7 @@ Include links to the relevant API endpoints, UI routes, or manuscripts so mainta
 - **Input validation**: Sanitize all user inputs before processing (see `backend/middleware/sanitizer.py`)
 - **CORS**: Use strict origin configuration, never `*` in production
 - **Headers**: Apply security headers (CSP, HSTS, X-Frame-Options) via middleware
-- **See**: `SARVAM_AI_INTEGRATION.md` for AI API security guidelines
+- **See**: `OPENAI_INTEGRATION.md` for AI API security guidelines
 
 ### Frontend Security
 - **No secrets in code**: API keys and secrets must never be in frontend bundle

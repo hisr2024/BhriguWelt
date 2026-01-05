@@ -4,7 +4,7 @@ General prediction endpoints
 """
 from flask import Blueprint, request, jsonify
 from services.astrology_calculator import astrology_calculator
-from services.sarvam_ai import sarvam_ai
+from services.openai_service import openai_service
 from datetime import datetime
 
 bp = Blueprint('predictions', __name__, url_prefix='/api/predictions')
@@ -36,7 +36,7 @@ def daily_prediction():
         6. Auspicious timing
         """
 
-        prediction = sarvam_ai.generate_prediction(prompt, birth_chart)
+        prediction = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -74,7 +74,7 @@ def weekly_prediction():
         5. Key dates and timing
         """
 
-        prediction = sarvam_ai.generate_prediction(prompt, birth_chart)
+        prediction = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -113,7 +113,7 @@ def monthly_prediction():
         6. Challenges and solutions
         """
 
-        prediction = sarvam_ai.generate_prediction(prompt, birth_chart)
+        prediction = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -154,7 +154,7 @@ def yearly_prediction():
         7. Quarter-by-quarter breakdown
         """
 
-        prediction = sarvam_ai.generate_prediction(prompt, birth_chart)
+        prediction = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -201,7 +201,7 @@ def specific_question():
         4. Remedies if needed
         """
 
-        answer = sarvam_ai.generate_prediction(prompt, birth_chart)
+        answer = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',

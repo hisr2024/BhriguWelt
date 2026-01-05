@@ -257,7 +257,7 @@ def health():
         'services': {
             'api': 'operational',
             'database': 'operational',
-            'sarvam_ai': 'operational'
+            'openai': 'operational'
         }
     })
 

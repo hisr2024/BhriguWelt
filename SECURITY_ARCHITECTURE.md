@@ -91,7 +91,7 @@ CORS(app,
 "Referrer-Policy": "strict-origin-when-cross-origin"
 ```
 
-### 3. Sarvam AI Integration Security
+### 3. OpenAI Integration Security
 
 #### API Key Management
 - **Storage**: Environment variables only (never in code)
@@ -211,7 +211,7 @@ def sanitize_birth_data(data: Dict[str, Any]) -> Dict[str, Any]:
 - ✅ All user input sanitized
 
 ### Threat 7: API Abuse
-**Risk**: Excessive API calls to Sarvam AI or backend endpoints
+**Risk**: Excessive API calls to OpenAI or backend endpoints
 
 **Mitigation**:
 1. **Rate limiting** on all endpoints
@@ -318,7 +318,7 @@ def sanitize_birth_data(data: Dict[str, Any]) -> Dict[str, Any]:
 - [x] Logging without sensitive data
 - [x] Error handling without info leakage
 
-### Sarvam AI Integration
+### OpenAI Integration
 - [x] API key never exposed to frontend
 - [x] Birth data sanitized before transmission
 - [x] TLS encryption for all API calls

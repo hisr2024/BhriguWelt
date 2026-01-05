@@ -134,7 +134,7 @@ pytest tests/test_rate_limiting.py -v
 - ✅ Security headers present on all responses
 - ✅ Limits reset after time window
 
-### 4. Sarvam AI Integration Security ✅
+### 4. OpenAI Integration Security ✅
 
 #### Manual Validation
 1. **PII Sanitization**
@@ -147,7 +147,7 @@ pytest tests/test_rate_limiting.py -v
 
 2. **API Key Security**
    - [ ] Check frontend bundle (DevTools > Sources)
-   - [ ] Search for "SARVAM_AI_API_KEY"
+   - [ ] Search for "OPENAI_API_KEY"
    - [ ] Verify NOT found in any frontend file
    - [ ] Check backend code
    - [ ] Verify key loaded from environment variable only
@@ -400,7 +400,7 @@ console.log({ hasServiceWorker, hasWebCrypto, hasIndexedDB });
 - [ ] Test rate limiting
 - [ ] Check security headers
 - [ ] Verify environment variables set
-- [ ] Test Sarvam AI connection (if configured)
+- [ ] Test OpenAI connection (if configured)
 - [ ] Monitor logs for errors
 - [ ] Deploy to production
 
@@ -431,7 +431,7 @@ Environment: Chrome 120, macOS 14
 ✅ Encryption/Decryption: PASS
 ✅ Offline Functionality: PASS
 ✅ Rate Limiting: PASS
-✅ Sarvam AI Security: PASS
+✅ OpenAI Security: PASS
 ✅ PWA Installation: PASS
 ✅ Auto-Lock: PASS
 ✅ Wisdom Cards: PASS

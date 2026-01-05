@@ -84,7 +84,7 @@ The modern architecture addresses all legacy issues:
 - ✅ **Security middleware** - CSP, HSTS, X-Content-Type-Options headers
 - ✅ **Request sanitization** - PII removal and input validation
 - ✅ **CORS strict origins** - Prevents unauthorized API access
-- ✅ **Optional AI integration** - Sarvam AI proxy with cost optimization
+- ✅ **Optional AI integration** - OpenAI proxy with cost optimization
 
 #### **Mobile App (`/mobile/soul_journey/`)**
 - ✅ **100% offline operation** - No internet required for core features
@@ -241,7 +241,7 @@ For more information about the current architecture:
 - **Mobile App:** See `/mobile/soul_journey/README.md`
 - **Security:** See `SECURITY_ARCHITECTURE.md`
 - **PWA Implementation:** See `PWA_IMPLEMENTATION_COMPLETE.md`
-- **AI Integration:** See `SARVAM_AI_INTEGRATION.md`
+- **AI Integration:** See `OPENAI_INTEGRATION.md`
 - **Testing:** See `TESTING_VALIDATION.md`
 - **Legacy Details:** See `/archive/MIGRATION_NOTES.md`
 

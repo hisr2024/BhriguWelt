@@ -16,7 +16,7 @@ Successfully transitioned BhriguWelt to a **privacy-first, offline-first Progres
 
 ### Phase 1: Documentation & Security Guidelines ✅
 - SECURITY_ARCHITECTURE.md (threat model with 8 scenarios)
-- SARVAM_AI_INTEGRATION.md (AI security guidelines)
+- OPENAI_INTEGRATION.md (AI security guidelines)
 
 ### Phase 2: Backend Security Enhancements ✅
 - Rate limiting (100 req/min, 10 req/min AI)
@@ -64,13 +64,13 @@ Backend (Flask 3.0 + Python 3.11):
 ├── Security middleware
 ├── Rate limiter
 ├── Request sanitizer
-└── Sarvam AI proxy
+└── OpenAI proxy
 ```
 
 ## Documentation Suite (7 Files)
 
 1. **SECURITY_ARCHITECTURE.md** - Threat model, compliance
-2. **SARVAM_AI_INTEGRATION.md** - AI security, cost optimization
+2. **OPENAI_INTEGRATION.md** - AI security, cost optimization
 3. **MIGRATION_GUIDE.md** - Cloud to offline migration
 4. **PWA_ADDENDUM.md** - Architecture comparison
 5. **TROUBLESHOOTING.md** - Common issues, solutions

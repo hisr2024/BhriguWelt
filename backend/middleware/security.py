@@ -41,7 +41,7 @@ class SecurityMiddleware:
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: https:; "
             "font-src 'self' data:; "
-            "connect-src 'self' https://api.sarvam.ai"
+            "connect-src 'self' https://api.openai.com"
         )
 
         # X-Frame-Options

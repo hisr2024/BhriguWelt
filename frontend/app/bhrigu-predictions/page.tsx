@@ -211,7 +211,7 @@ export default function BhriguPredictionsPage() {
 
             <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
               Comprehensive astrological insights powered by{' '}
-              <span className="text-cyan-400 font-semibold">Sarvam AI</span>{' '}
+              <span className="text-cyan-400 font-semibold">OpenAI</span>{' '}
               and ancient Vedic knowledge
             </p>
           </motion.div>

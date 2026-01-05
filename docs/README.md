@@ -48,8 +48,8 @@ The core of the Soul Journey app - generates deterministic, explainable Soul Jou
 ### Chatbot
 - **[Bhrigu Chatbot Spec](./bhrigu_chatbot_spec.md)** - Conversational AI specifications
 
-### Sarvam AI
-- See project root for Sarvam AI integration documentation
+### OpenAI
+- See project root for OpenAI integration documentation
 
 ## 📊 API Documentation
 

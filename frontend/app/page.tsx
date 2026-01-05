@@ -120,7 +120,7 @@ export default function HomePage() {
     {
       icon: <Zap className="w-6 h-6" />,
       title: 'AI-Powered Insights',
-      description: 'Sarvam AI analyzes millions of astrological patterns'
+      description: 'OpenAI analyzes millions of astrological patterns'
     },
     {
       icon: <BookOpen className="w-6 h-6" />,
@@ -438,7 +438,7 @@ export default function HomePage() {
             </h2>
             <p className="text-xl md:text-2xl text-white/80 max-w-3xl mx-auto leading-relaxed">
               Comprehensive astrological insights powered by{' '}
-              <span className="text-genz-neon-green font-bold">Sarvam AI</span> and ancient Vedic knowledge
+              <span className="text-genz-neon-green font-bold">OpenAI</span> and ancient Vedic knowledge
             </p>
           </motion.div>
 
@@ -581,7 +581,7 @@ export default function HomePage() {
                 step: 2,
                 emoji: '🤖',
                 title: 'AI Analysis',
-                description: 'Our Sarvam AI analyzes your unique astrological chart with millions of data points',
+                description: 'Our OpenAI analyzes your unique astrological chart with millions of data points',
                 icon: <Zap className="w-6 h-6" />,
                 color: 'from-genz-purple-haze to-genz-lavender-dream',
               },

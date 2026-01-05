@@ -245,7 +245,7 @@ type ReportType =
 - **Offline Mode**: Zero transmission
 - **Hybrid Mode**: Birth data + chart only (no personal info)
 - **Chatbot Mode**: Questions + context (encrypted in transit)
-- **Always**: Sarvam AI key never exposed to browser
+- **Always**: OpenAI key never exposed to browser
 
 ## Future Enhancements
 

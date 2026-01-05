@@ -312,7 +312,7 @@ This security model assumes:
 | **IndexedDB Implementation** | Medium | Low |
 | **Vercel Hosting** | Medium | Low |
 | **Render Backend Hosting** | Medium | Low |
-| **Sarvam AI API** | Low (Third-party) | Medium |
+| **OpenAI API** | Low (Third-party) | Medium |
 
 ---
 
@@ -418,7 +418,7 @@ This security model assumes:
 - Physical security of device
 - Browser/OS security vulnerabilities
 - Social engineering attacks
-- Third-party service security (Sarvam AI)
+- Third-party service security (OpenAI)
 
 ---
 

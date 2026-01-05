@@ -146,7 +146,7 @@ export default function AIConsentDialog({
                 </h3>
                 <p className="text-sm text-yellow-800 dark:text-yellow-300">
                   This feature requires sending your astrological chart data (not personal info)
-                  to our secure backend, which forwards it to Sarvam AI for enhanced predictions.
+                  to our secure backend, which forwards it to OpenAI for enhanced predictions.
                   Your privacy is our priority.
                 </p>
               </div>

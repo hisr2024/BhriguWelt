@@ -1,11 +1,11 @@
 # BhriguWelt Backend API
 
-Comprehensive Vedic astrology API with Sarvam AI integration.
+Comprehensive Vedic astrology API with OpenAI integration.
 
 ## Features
 
 - ✨ Complete birth chart calculations
-- 🔮 AI-powered predictions (Sarvam AI)
+- 🔮 AI-powered predictions (OpenAI)
 - 🌟 Karmic Journey analysis
 - 🔄 Past Lives regression
 - 🚀 Future Lives prediction
@@ -68,7 +68,7 @@ See `DEPLOYMENT_GUIDE.md` for complete instructions.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `SARVAM_AI_API_KEY` | Yes | Sarvam AI API key |
+| `OPENAI_API_KEY` | Yes | OpenAI API key |
 | `SECRET_KEY` | Yes | Flask secret key |
 | `JWT_SECRET_KEY` | Yes | JWT signing key |
 | `FRONTEND_URL` | Yes | Frontend URL for CORS |
@@ -105,7 +105,7 @@ backend/
 │   └── user_routes.py
 └── services/               # Business logic
     ├── astrology_calculator.py
-    └── sarvam_ai.py
+    └── openai_service.py
 ```
 
 ## License

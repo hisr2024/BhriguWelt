@@ -4,7 +4,7 @@ Past life analysis and regression endpoints
 """
 from flask import Blueprint, request, jsonify
 from services.astrology_calculator import astrology_calculator
-from services.sarvam_ai import sarvam_ai
+from services.openai_service import openai_service
 
 bp = Blueprint('past_lives', __name__, url_prefix='/api/past-lives')
 
@@ -31,7 +31,7 @@ def past_lives_analysis():
         )
 
         # Generate past lives analysis
-        past_lives = sarvam_ai.generate_past_lives_analysis(birth_chart)
+        past_lives = openai_service.generate_past_lives_analysis(birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -69,7 +69,7 @@ def karmic_patterns():
         5. Unfinished business from past lives
         """
 
-        patterns = sarvam_ai.generate_prediction(prompt, birth_chart)
+        patterns = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -108,7 +108,7 @@ def past_relationships():
         5. Lessons through relationships
         """
 
-        relationships = sarvam_ai.generate_prediction(prompt, birth_chart)
+        relationships = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -147,7 +147,7 @@ def talents_carried_forward():
         5. How to activate these talents
         """
 
-        talents = sarvam_ai.generate_prediction(prompt, birth_chart)
+        talents = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -186,7 +186,7 @@ def past_traumas():
         5. Steps toward karmic healing
         """
 
-        traumas = sarvam_ai.generate_prediction(prompt, birth_chart)
+        traumas = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',

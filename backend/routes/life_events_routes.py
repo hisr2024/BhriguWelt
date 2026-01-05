@@ -4,7 +4,7 @@ Important life events prediction endpoints
 """
 from flask import Blueprint, request, jsonify
 from services.astrology_calculator import astrology_calculator
-from services.sarvam_ai import sarvam_ai
+from services.openai_service import openai_service
 
 bp = Blueprint('life_events', __name__, url_prefix='/api/life-events')
 
@@ -33,7 +33,7 @@ def life_events_prediction():
         )
 
         # Generate life events prediction
-        events = sarvam_ai.generate_life_events_prediction(birth_chart, years_ahead)
+        events = openai_service.generate_life_events_prediction(birth_chart, years_ahead)
 
         return jsonify({
             'status': 'success',
@@ -72,7 +72,7 @@ def career_milestones():
         6. Leadership positions
         """
 
-        milestones = sarvam_ai.generate_prediction(prompt, birth_chart)
+        milestones = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -111,7 +111,7 @@ def relationship_events():
         6. Reconciliation or separation
         """
 
-        events = sarvam_ai.generate_prediction(prompt, birth_chart)
+        events = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -151,7 +151,7 @@ def financial_events():
         6. Business expansion
         """
 
-        events = sarvam_ai.generate_prediction(prompt, birth_chart)
+        events = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -191,7 +191,7 @@ def health_alerts():
         6. Energy management cycles
         """
 
-        alerts = sarvam_ai.generate_prediction(prompt, birth_chart)
+        alerts = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -231,7 +231,7 @@ def spiritual_breakthroughs():
         6. Consciousness expansion
         """
 
-        breakthroughs = sarvam_ai.generate_prediction(prompt, birth_chart)
+        breakthroughs = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',
@@ -271,7 +271,7 @@ def auspicious_timings():
         6. Major investments
         """
 
-        timings = sarvam_ai.generate_prediction(prompt, birth_chart)
+        timings = openai_service.generate_prediction(prompt, birth_chart)
 
         return jsonify({
             'status': 'success',

@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 import json
 
-from services.sarvam_ai import get_sarvam_ai
+from services.openai_service import get_openai_service
 from services.astrology_calculator import AstrologyCalculator
 
 class BhriguPredictionsService:
@@ -17,7 +17,7 @@ class BhriguPredictionsService:
     """
 
     def __init__(self):
-        self.sarvam_ai = get_sarvam_ai()
+        self.openai_service = get_openai_service()
         self.astrology_calculator = AstrologyCalculator()
 
         # Bhrigu Samhita system prompts for enhanced accuracy and precision
@@ -185,7 +185,7 @@ Provide an extensive analysis covering:
 
 Provide specific, actionable guidance rooted in Bhrigu Samhita and Nadi Jyotisa traditions."""
 
-        prediction_text = self.sarvam_ai.generate_prediction(prompt, birth_data)
+        prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
 
         return {
             'category': 'karmic_journey',
@@ -278,7 +278,7 @@ For each life, describe:
 
 Reference specific Nadi Jyotisa indicators and planetary positions."""
 
-        prediction_text = self.sarvam_ai.generate_prediction(prompt, birth_data)
+        prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
 
         return {
             'category': 'past_lives',
@@ -381,7 +381,7 @@ For each future life:
 
 Ground predictions in Bhrigu Samhita principles of karmic progression."""
 
-        prediction_text = self.sarvam_ai.generate_prediction(prompt, birth_data)
+        prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
 
         return {
             'category': 'future_lives',
@@ -506,7 +506,7 @@ Provide detailed analysis of:
 
 Base analysis on classical Bhrigu Samhita delineation methods."""
 
-        prediction_text = self.sarvam_ai.generate_prediction(prompt, birth_data)
+        prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
 
         return {
             'category': 'present_life',
@@ -667,7 +667,7 @@ Highlight ages of particular significance:
 
 Provide month-level precision where possible using Nadi Jyotisa methods."""
 
-        prediction_text = self.sarvam_ai.generate_prediction(prompt, birth_data)
+        prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
 
         return {
             'category': 'life_events',
@@ -878,7 +878,7 @@ For each deity:
 
 Provide practical, affordable, and effective remedies that can be integrated into modern life."""
 
-        prediction_text = self.sarvam_ai.generate_prediction(prompt, birth_data)
+        prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
 
         return {
             'category': 'karmic_remedies',
@@ -1089,7 +1089,7 @@ For each year, predict:
 
 Provide specific, actionable relationship guidance based on classical astrology."""
 
-        prediction_text = self.sarvam_ai.generate_prediction(prompt, birth_data)
+        prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
 
         return {
             'category': 'relationships',
@@ -1165,7 +1165,7 @@ Provide:
 
 Base on current planetary transits and your natal chart."""
 
-        prediction_text = self.sarvam_ai.generate_prediction(prompt, birth_data)
+        prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
 
         return {
             'category': 'predictions',
@@ -1221,7 +1221,7 @@ Base on current planetary transits and your natal chart."""
             'nakshatra': birth_data.get('nakshatra'),
             'moon_sign': birth_data.get('moon_sign'),
             'ascendant': birth_data.get('ascendant'),
-            'ai_model': 'sarvam-1',
+            'ai_model': 'gpt-4',
             'tradition': 'Bhrigu Samhita & Nadi Jyotisa'
         }
 

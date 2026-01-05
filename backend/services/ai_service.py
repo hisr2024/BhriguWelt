@@ -4,7 +4,7 @@ Handles AI-powered features with privacy controls
 """
 import os
 from typing import Dict, Any, List, Optional
-from services.sarvam_ai import sarvam_ai
+from services.openai_service import openai_service
 from middleware.sanitizer import RequestSanitizer
 from middleware.ai_constants import PII_FIELDS
 import logging
@@ -23,8 +23,8 @@ class AIService:
     """
     
     def __init__(self):
-        self.sarvam = sarvam_ai
-        self.ai_enabled = bool(os.getenv('SARVAM_AI_API_KEY'))
+        self.openai = openai_service
+        self.ai_enabled = bool(os.getenv('OPENAI_API_KEY'))
     
     def refine_report_section(
         self,
@@ -54,7 +54,7 @@ class AIService:
             prompt = self._build_section_prompt(section_type, astrological_data)
             
             # Get AI response
-            response = self.sarvam.generate_prediction(prompt, astrological_data)
+            response = self.openai.generate_prediction(prompt, astrological_data)
             
             # Sanitize response
             sanitized_response = RequestSanitizer.sanitize_ai_response(response)
@@ -97,7 +97,7 @@ class AIService:
             )
             
             # Get AI response
-            response = self.sarvam.generate_prediction(prompt, astrological_data)
+            response = self.openai.generate_prediction(prompt, astrological_data)
             
             # Sanitize response
             sanitized_response = RequestSanitizer.sanitize_ai_response(response)
@@ -140,7 +140,7 @@ class AIService:
             )
             
             # Get AI response
-            response = self.sarvam.generate_prediction(prompt, astrological_data)
+            response = self.openai.generate_prediction(prompt, astrological_data)
             
             # Sanitize response
             sanitized_response = RequestSanitizer.sanitize_ai_response(response)

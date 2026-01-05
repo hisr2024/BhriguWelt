@@ -4,7 +4,7 @@ Core astrology calculation endpoints with enhanced validation and error handling
 """
 from flask import Blueprint, request, jsonify
 from services.astrology_calculator import astrology_calculator
-from services.sarvam_ai import sarvam_ai
+from services.openai_service import openai_service
 from utils.logger import setup_logger, log_request, log_response, log_error
 from utils.validators import validate_birth_details, validate_coordinates, sanitize_input
 from utils.response_formatter import (
@@ -123,7 +123,7 @@ def zodiac_analysis():
         5. Career and professional path
         """
 
-        analysis = sarvam_ai.generate_prediction(prompt, birth_chart)
+        analysis = openai_service.generate_prediction(prompt, birth_chart)
 
         logger.info("Zodiac analysis completed successfully")
         return success_response(
@@ -241,7 +241,7 @@ def compatibility_analysis():
         8. Strengths of the relationship
         """
 
-        compatibility = sarvam_ai.generate_prediction(prompt, {
+        compatibility = openai_service.generate_prediction(prompt, {
             'person1': chart1,
             'person2': chart2
         })
