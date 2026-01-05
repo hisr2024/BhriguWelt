@@ -107,8 +107,8 @@ def handle_preflight():
         # Create response for preflight
         response = app.make_default_options_response()
 
-        # In development, allow any origin for testing; in production, check allowed list
-        if not IS_PRODUCTION or origin in allowed_origins:
+        # In development, allow any origin with a value; in production, check allowed list
+        if (not IS_PRODUCTION and origin) or (origin in allowed_origins):
             # Use specific origin or fallback (allowed_origins is guaranteed non-empty)
             response.headers['Access-Control-Allow-Origin'] = origin if origin else allowed_origins[0]
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
@@ -125,8 +125,8 @@ def add_cors_headers(response):
     """Add CORS headers to all responses - ensures headers are present"""
     origin = request.headers.get('Origin', '')
 
-    # In development, allow any origin; in production, check allowed list
-    if not IS_PRODUCTION or origin in allowed_origins:
+    # In development, allow any origin with a value; in production, check allowed list
+    if (not IS_PRODUCTION and origin) or (origin in allowed_origins):
         # Use specific origin or fallback (allowed_origins is guaranteed non-empty)
         response.headers['Access-Control-Allow-Origin'] = origin if origin else allowed_origins[0]
         response.headers['Access-Control-Allow-Credentials'] = 'true'
