@@ -116,8 +116,11 @@ LOG_LEVEL=INFO  # or DEBUG, WARNING, ERROR, CRITICAL
 Optional metrics collection using Prometheus or AWS CloudWatch.
 
 **Prometheus Setup:**
+
+The `prometheus.yml` configuration file is provided in this directory:
+
 ```yaml
-# See prometheus.yml in this directory
+# See prometheus.yml in this directory for full configuration
 global:
   scrape_interval: 15s
 
@@ -128,10 +131,8 @@ scrape_configs:
 ```
 
 **CloudWatch Setup:**
-```yaml
-# See cloudwatch-exporter.yml in this directory
-# Configure AWS credentials and region
-```
+
+The `cloudwatch-exporter.yml` configuration file is provided in this directory for AWS CloudWatch integration. Configure your AWS credentials and region as needed.
 
 **Key Metrics to Track:**
 - Request rate (requests/second)
@@ -143,22 +144,21 @@ scrape_configs:
 
 ### 5. **Docker Compose Monitoring Stack**
 
-A complete monitoring stack is provided in `docker-compose.yml`.
+A complete monitoring stack is provided in this directory's `docker-compose.yml` file.
 
-**Services:**
+**Services included:**
 - Prometheus - Metrics collection
-- Grafana - Visualization and dashboards
-- Loki - Log aggregation
-- Promtail - Log shipping
+- Grafana - Visualization and dashboards (if configured)
+- Additional monitoring tools as specified
 
 **Start Monitoring Stack:**
 ```bash
+cd infra/monitoring
 docker-compose up -d
 ```
 
 **Access:**
-- Grafana: http://localhost:3001 (default credentials: admin/admin)
-- Prometheus: http://localhost:9090
+- Check the docker-compose.yml file for exposed ports and services
 
 ## Setup Instructions
 

@@ -269,6 +269,21 @@ export const copy = {
 export type Language = 'en' | 'hi';
 
 /**
+ * Resolve nested key in object
+ */
+function resolveKey(obj: any, keys: string[]): any {
+  let value = obj;
+  for (const key of keys) {
+    if (value && typeof value === 'object' && key in value) {
+      value = value[key];
+    } else {
+      return null;
+    }
+  }
+  return value;
+}
+
+/**
  * Get translation string by key
  * @param key - Dot-notation key (e.g., 'common.appName')
  * @param lang - Language code ('en' or 'hi')
@@ -276,26 +291,17 @@ export type Language = 'en' | 'hi';
  */
 export function t(key: string, lang: Language = 'en'): string {
   const keys = key.split('.');
-  let value: any = copy[lang];
-
-  for (const k of keys) {
-    if (value && typeof value === 'object' && k in value) {
-      value = value[k];
-    } else {
-      // Fallback to English if key not found
-      console.warn(`Translation key not found: ${key} for language: ${lang}`);
-      value = copy.en;
-      for (const fallbackKey of keys) {
-        if (value && typeof value === 'object' && fallbackKey in value) {
-          value = value[fallbackKey];
-        } else {
-          return key; // Return key if not found in fallback either
-        }
-      }
-      break;
-    }
+  
+  // Try to get translation in requested language
+  let value = resolveKey(copy[lang], keys);
+  
+  // Fallback to English if not found and not already English
+  if (value === null && lang !== 'en') {
+    console.warn(`Translation key not found: ${key} for language: ${lang}, falling back to English`);
+    value = resolveKey(copy.en, keys);
   }
-
+  
+  // Return the value if it's a string, otherwise return the key
   return typeof value === 'string' ? value : key;
 }
 
