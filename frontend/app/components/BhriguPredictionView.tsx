@@ -165,20 +165,20 @@ export default function BhriguPredictionView({
       return null;
     }
 
-    const colorClasses: Record<string, { border: string; accent: string; text: string }> = {
-      cyan: { border: 'border-cyan-500/30', accent: 'from-cyan-400 to-cyan-600', text: 'text-cyan-400' },
-      purple: { border: 'border-purple-500/30', accent: 'from-purple-400 to-purple-600', text: 'text-purple-400' },
-      blue: { border: 'border-blue-500/30', accent: 'from-blue-400 to-blue-600', text: 'text-blue-400' },
-      indigo: { border: 'border-indigo-500/30', accent: 'from-indigo-400 to-indigo-600', text: 'text-indigo-400' },
-      violet: { border: 'border-violet-500/30', accent: 'from-violet-400 to-violet-600', text: 'text-violet-400' },
-      pink: { border: 'border-pink-500/30', accent: 'from-pink-400 to-pink-600', text: 'text-pink-400' },
-      rose: { border: 'border-rose-500/30', accent: 'from-rose-400 to-rose-600', text: 'text-rose-400' },
-      amber: { border: 'border-amber-500/30', accent: 'from-amber-400 to-amber-600', text: 'text-amber-400' },
-      orange: { border: 'border-orange-500/30', accent: 'from-orange-400 to-orange-600', text: 'text-orange-400' },
-      teal: { border: 'border-teal-500/30', accent: 'from-teal-400 to-teal-600', text: 'text-teal-400' },
-      red: { border: 'border-red-500/30', accent: 'from-red-400 to-red-600', text: 'text-red-400' },
-      lime: { border: 'border-lime-500/30', accent: 'from-lime-400 to-lime-600', text: 'text-lime-400' },
-      emerald: { border: 'border-emerald-500/30', accent: 'from-emerald-400 to-emerald-600', text: 'text-emerald-400' }
+    const colorClasses: Record<string, { border: string; hover: string; accent: string; text: string }> = {
+      cyan: { border: 'border-cyan-500/30', hover: 'hover:border-cyan-500/50', accent: 'from-cyan-400 to-cyan-600', text: 'text-cyan-400' },
+      purple: { border: 'border-purple-500/30', hover: 'hover:border-purple-500/50', accent: 'from-purple-400 to-purple-600', text: 'text-purple-400' },
+      blue: { border: 'border-blue-500/30', hover: 'hover:border-blue-500/50', accent: 'from-blue-400 to-blue-600', text: 'text-blue-400' },
+      indigo: { border: 'border-indigo-500/30', hover: 'hover:border-indigo-500/50', accent: 'from-indigo-400 to-indigo-600', text: 'text-indigo-400' },
+      violet: { border: 'border-violet-500/30', hover: 'hover:border-violet-500/50', accent: 'from-violet-400 to-violet-600', text: 'text-violet-400' },
+      pink: { border: 'border-pink-500/30', hover: 'hover:border-pink-500/50', accent: 'from-pink-400 to-pink-600', text: 'text-pink-400' },
+      rose: { border: 'border-rose-500/30', hover: 'hover:border-rose-500/50', accent: 'from-rose-400 to-rose-600', text: 'text-rose-400' },
+      amber: { border: 'border-amber-500/30', hover: 'hover:border-amber-500/50', accent: 'from-amber-400 to-amber-600', text: 'text-amber-400' },
+      orange: { border: 'border-orange-500/30', hover: 'hover:border-orange-500/50', accent: 'from-orange-400 to-orange-600', text: 'text-orange-400' },
+      teal: { border: 'border-teal-500/30', hover: 'hover:border-teal-500/50', accent: 'from-teal-400 to-teal-600', text: 'text-teal-400' },
+      red: { border: 'border-red-500/30', hover: 'hover:border-red-500/50', accent: 'from-red-400 to-red-600', text: 'text-red-400' },
+      lime: { border: 'border-lime-500/30', hover: 'hover:border-lime-500/50', accent: 'from-lime-400 to-lime-600', text: 'text-lime-400' },
+      emerald: { border: 'border-emerald-500/30', hover: 'hover:border-emerald-500/50', accent: 'from-emerald-400 to-emerald-600', text: 'text-emerald-400' }
     };
 
     const colorClass = colorClasses[color] || colorClasses.cyan;
@@ -189,8 +189,7 @@ export default function BhriguPredictionView({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
-                   border ${colorClass.border} rounded-xl p-6
-                   hover:${colorClass.border.replace('/30', '/50')} transition-all`}
+                   border ${colorClass.border} ${colorClass.hover} rounded-xl p-6 transition-all`}
       >
         <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3`}>
           <div className={`w-1.5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
