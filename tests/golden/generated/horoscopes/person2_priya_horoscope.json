@@ -1,0 +1,206 @@
+{
+  "meta": {
+    "engine_version": "1.0.0",
+    "calculation_notes": [
+      "Calculations use Lahiri Ayanamsa (sidereal zodiac)",
+      "House system: Placidus",
+      "Dasha system: Vimshottari (120-year cycle)"
+    ],
+    "assumptions": [
+      "Birth time is accurate to the minute",
+      "Timezone conversion is correctly applied",
+      "Coordinates are precise for birth location"
+    ]
+  },
+  "chart_summary": {
+    "ascendant": "Aries",
+    "ascendant_degree": 29.18,
+    "planets": [
+      {
+        "planet": "Sun",
+        "sign": "Pisces",
+        "house": 11,
+        "degree": 7.27,
+        "nakshatra": "Uttara Bhadrapada",
+        "pada": 2,
+        "retrograde": false
+      },
+      {
+        "planet": "Moon",
+        "sign": "Scorpio",
+        "house": 7,
+        "degree": 29.8,
+        "nakshatra": "Jyeshtha",
+        "pada": 4,
+        "retrograde": false
+      },
+      {
+        "planet": "Mars",
+        "sign": "Aries",
+        "house": 12,
+        "degree": 26.5,
+        "nakshatra": "Bharani",
+        "pada": 4,
+        "retrograde": false
+      },
+      {
+        "planet": "Mercury",
+        "sign": "Aquarius",
+        "house": 10,
+        "degree": 10.03,
+        "nakshatra": "Shatabhisha",
+        "pada": 2,
+        "retrograde": false
+      },
+      {
+        "planet": "Jupiter",
+        "sign": "Pisces",
+        "house": 11,
+        "degree": 10.96,
+        "nakshatra": "Uttara Bhadrapada",
+        "pada": 3,
+        "retrograde": false
+      },
+      {
+        "planet": "Venus",
+        "sign": "Capricorn",
+        "house": 10,
+        "degree": 28.49,
+        "nakshatra": "Dhanishtha",
+        "pada": 2,
+        "retrograde": false
+      },
+      {
+        "planet": "Saturn",
+        "sign": "Scorpio",
+        "house": 7,
+        "degree": 27.42,
+        "nakshatra": "Jyeshtha",
+        "pada": 4,
+        "retrograde": false
+      },
+      {
+        "planet": "Rahu",
+        "sign": "Pisces",
+        "house": 11,
+        "degree": 18.57,
+        "nakshatra": "Revati",
+        "pada": 1,
+        "retrograde": true
+      },
+      {
+        "planet": "Ketu",
+        "sign": "Virgo",
+        "house": 5,
+        "degree": 18.57,
+        "nakshatra": "Hasta",
+        "pada": 3,
+        "retrograde": false
+      }
+    ]
+  },
+  "nakshatra_summary": {
+    "moon_nakshatra": "Jyeshtha",
+    "moon_pada": 4,
+    "moon_sign": "Scorpio",
+    "sun_nakshatra": "Uttara Bhadrapada",
+    "sun_pada": 2,
+    "sun_sign": "Pisces",
+    "ascendant_nakshatra": "Krittika"
+  },
+  "summary_bullets": [
+    "**Ascendant**: Aries - defines core personality and life approach",
+    "**Moon Nakshatra**: Jyeshtha - reveals karmic mission and emotional nature",
+    "**Career**: Mercury's presence in the 10th house suggests career in business, communication, trade, or intellectual fields.",
+    "**Personality**: With Aries ascendant (Mesha Lagna), you possess a pioneering spirit, courage, and initiative."
+  ],
+  "domains": [
+    {
+      "domain": "personality",
+      "summary": "With Aries ascendant (Mesha Lagna), you possess a pioneering spirit, courage, and initiative.",
+      "detailed_narrative": "With Aries ascendant (Mesha Lagna), you possess a pioneering spirit, courage, and initiative. Mars as your ascendant lord gives you dynamic energy and competitive drive. You prefer to lead rather than follow and approach life with directness and enthusiasm. Physical activity and challenges appeal to your nature.\n*[ASCENDANT-ARIES]*",
+      "rule_traces": [
+        {
+          "rule_id": "ASCENDANT-ARIES",
+          "tradition": "bhrigu",
+          "domain": "personality",
+          "matched_triggers": [
+            {
+              "expression": "ascendant_in_sign(Aries)",
+              "evaluated": true,
+              "context": {
+                "expected_sign": "Aries",
+                "actual_ascendant": "Aries"
+              }
+            }
+          ],
+          "priority": 70,
+          "narrative": "With Aries ascendant (Mesha Lagna), you possess a pioneering spirit, courage, and initiative. Mars as your ascendant lord gives you dynamic energy and competitive drive. You prefer to lead rather than follow and approach life with directness and enthusiasm. Physical activity and challenges appeal to your nature.",
+          "citations": [
+            "Classical Texts on Ascendant Significations"
+          ]
+        }
+      ],
+      "timing_windows": [
+        "Current Maha Dasha: Mercury (1987-1987)",
+        "Current Antar Dasha: Mercury (1987-03-1987-06)"
+      ]
+    },
+    {
+      "domain": "career",
+      "summary": "Mercury's presence in the 10th house suggests career in business, communication, trade, or intellectual fields.",
+      "detailed_narrative": "Mercury's presence in the 10th house suggests career in business, communication, trade, or intellectual fields. Professional success comes through analytical abilities, networking, and adaptability. Career changes and opportunities manifest during Mercury dasha or bhukti periods.\n*[ND-203]*",
+      "rule_traces": [
+        {
+          "rule_id": "ND-203",
+          "tradition": "nadi",
+          "domain": "career",
+          "matched_triggers": [
+            {
+              "expression": "planet_in_house(Mercury, 10)",
+              "evaluated": true,
+              "context": {
+                "planet": "Mercury",
+                "house": 10,
+                "actual_house": 10
+              }
+            }
+          ],
+          "priority": 82,
+          "narrative": "Mercury's presence in the 10th house suggests career in business, communication, trade, or intellectual fields. Professional success comes through analytical abilities, networking, and adaptability. Career changes and opportunities manifest during Mercury dasha or bhukti periods.",
+          "citations": [
+            "nadi_jyotisha_rules.md#ND-203"
+          ]
+        }
+      ],
+      "timing_windows": [
+        "Current Maha Dasha: Mercury (1987-1987)",
+        "Current Antar Dasha: Mercury (1987-03-1987-06)"
+      ]
+    }
+  ],
+  "dasha_timeline": {
+    "birth_date": "1987-03-22",
+    "current_maha_dasha": {
+      "planet": "Mercury",
+      "start_date": "1987-03-22",
+      "end_date": "1987-06-21",
+      "level": "maha",
+      "parent_dasha": null
+    },
+    "current_antar_dasha": {
+      "planet": "Mercury",
+      "start_date": "1987-03-22",
+      "end_date": "1987-06-21",
+      "level": "antar",
+      "parent_dasha": "Mercury"
+    },
+    "upcoming_maha_dashas": []
+  },
+  "disclaimers": [
+    "This horoscope provides interpretive guidance based on Nadi Jyotisha and Bhrigu Samhita traditions.",
+    "Astrological insights are meant for contemplation and self-understanding, not absolute prediction.",
+    "Free will and personal effort significantly influence life outcomes.",
+    "Consult qualified astrologers for personalized guidance and remedial measures."
+  ]
+}
