@@ -462,60 +462,213 @@ For detailed, personalized predictions with precise timing based on your complet
 *This reading is based on classical Vedic principles. For complete AI-enhanced predictions, please contact the administrator.*"""
 
     def _extract_section(self, text: str, section_keyword: str) -> str:
-        """Extract specific section from prediction text"""
-        # Simple extraction - can be enhanced with NLP
+        """Extract specific section from prediction text with intelligent parsing"""
+        if not text:
+            return "Analysis available in full report"
+
         lines = text.split('\n')
         section_lines = []
         in_section = False
+        section_level = 0
 
-        for line in lines:
-            if section_keyword.lower() in line.lower():
-                in_section = True
-            elif in_section and line.strip() and not line[0].isdigit():
-                break
-            elif in_section:
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+
+            # Detect section header with keyword
+            if section_keyword.lower() in stripped.lower():
+                if stripped.startswith('#'):
+                    in_section = True
+                    section_level = len(stripped) - len(stripped.lstrip('#'))
+                    section_lines.append(line)
+                    continue
+                elif ':' in stripped or stripped.endswith(':'):
+                    in_section = True
+                    section_level = 0
+                    section_lines.append(line)
+                    continue
+
+            # If in section, add content until next section of same or higher level
+            if in_section:
+                if stripped.startswith('#'):
+                    current_level = len(stripped) - len(stripped.lstrip('#'))
+                    if current_level <= section_level and section_level > 0:
+                        break
+                    elif section_level == 0:
+                        break
                 section_lines.append(line)
 
-        return '\n'.join(section_lines).strip() if section_lines else "Analysis available in full report"
+        result = '\n'.join(section_lines).strip()
+        return result if result else f"See full analysis for {section_keyword}"
 
     def _extract_lives(self, text: str) -> List[Dict[str, str]]:
-        """Extract past life information"""
-        # Simplified extraction - enhance based on actual API response format
-        return [
-            {'era': 'Previous century', 'role': 'Based on karmic patterns', 'location': 'To be determined'},
-        ]
+        """Extract past life information with intelligent parsing"""
+        lives = []
+        lines = text.split('\n')
+        current_life = {}
+
+        for line in lines:
+            lower_line = line.lower()
+            # Look for era indicators
+            if any(term in lower_line for term in ['century', 'era', 'period', 'bc', 'ad', 'ancient']):
+                if current_life:
+                    lives.append(current_life)
+                current_life = {'era': line.strip(), 'role': '', 'location': ''}
+            # Look for role/profession
+            elif any(term in lower_line for term in ['profession', 'role', 'occupation', 'worked as', 'served as']):
+                if current_life:
+                    current_life['role'] = line.strip()
+            # Look for location
+            elif any(term in lower_line for term in ['location', 'place', 'region', 'country', 'city']):
+                if current_life:
+                    current_life['location'] = line.strip()
+
+        if current_life:
+            lives.append(current_life)
+
+        return lives if lives else [{'era': 'See full analysis', 'role': 'Detailed in report', 'location': 'Detailed in report'}]
 
     def _extract_patterns(self, text: str) -> List[str]:
-        """Extract karmic patterns"""
-        return ['Pattern analysis available in detailed report']
+        """Extract karmic patterns with intelligent parsing"""
+        patterns = []
+        lines = text.split('\n')
+
+        for line in lines:
+            lower_line = line.lower()
+            # Look for pattern indicators
+            if any(term in lower_line for term in ['pattern', 'recurring', 'repeating', 'cycle', 'theme']):
+                stripped = line.strip().lstrip('-*•123456789. ')
+                if len(stripped) > 10:  # Meaningful content
+                    patterns.append(stripped)
+
+        return patterns[:10] if patterns else ['Karmic patterns detailed in comprehensive analysis']
 
     def _extract_scenarios(self, text: str) -> List[str]:
-        """Extract future scenarios"""
-        return ['Future scenarios detailed in comprehensive analysis']
+        """Extract future scenarios with intelligent parsing"""
+        scenarios = []
+        lines = text.split('\n')
+
+        for line in lines:
+            lower_line = line.lower()
+            # Look for scenario indicators
+            if any(term in lower_line for term in ['scenario', 'possibility', 'likely', 'potential', 'future']):
+                stripped = line.strip().lstrip('-*•123456789. ')
+                if len(stripped) > 15:
+                    scenarios.append(stripped)
+
+        return scenarios[:8] if scenarios else ['Future scenarios detailed in comprehensive analysis']
 
     def _extract_yearly_forecast(self, text: str, years: int) -> List[Dict[str, Any]]:
-        """Extract yearly forecast"""
-        return [{'year': i + 1, 'forecast': 'Detailed in full report'} for i in range(years)]
+        """Extract yearly forecast with intelligent parsing"""
+        forecasts = []
+        lines = text.split('\n')
+        current_year = None
+        current_forecast = []
+
+        for line in lines:
+            # Look for year indicators
+            if any(term in line.lower() for term in ['year', 'age']):
+                if any(char.isdigit() for char in line):
+                    if current_year and current_forecast:
+                        forecasts.append({
+                            'year': current_year,
+                            'forecast': '\n'.join(current_forecast)
+                        })
+                    current_year = line.strip()
+                    current_forecast = []
+            elif current_year and line.strip():
+                current_forecast.append(line.strip())
+
+        if current_year and current_forecast:
+            forecasts.append({
+                'year': current_year,
+                'forecast': '\n'.join(current_forecast)
+            })
+
+        return forecasts if forecasts else [{'year': f'Year {i+1}', 'forecast': 'Detailed in full report'} for i in range(years)]
 
     def _extract_transitions(self, text: str) -> List[str]:
-        """Extract major life transitions"""
-        return ['Transitions detailed in comprehensive analysis']
+        """Extract major life transitions with intelligent parsing"""
+        transitions = []
+        lines = text.split('\n')
+
+        for line in lines:
+            lower_line = line.lower()
+            # Look for transition indicators
+            if any(term in lower_line for term in ['transition', 'change', 'milestone', 'shift', 'transformation']):
+                stripped = line.strip().lstrip('-*•123456789. ')
+                if len(stripped) > 10:
+                    transitions.append(stripped)
+
+        return transitions[:10] if transitions else ['Major transitions detailed in comprehensive analysis']
 
     def _extract_auspicious_times(self, text: str) -> List[str]:
-        """Extract auspicious periods"""
-        return ['Auspicious times calculated based on planetary positions']
+        """Extract auspicious periods with intelligent parsing"""
+        times = []
+        lines = text.split('\n')
+
+        for line in lines:
+            lower_line = line.lower()
+            # Look for auspicious time indicators
+            if any(term in lower_line for term in ['auspicious', 'favorable', 'beneficial', 'lucky', 'good time', 'best time']):
+                stripped = line.strip().lstrip('-*•123456789. ')
+                if len(stripped) > 10:
+                    times.append(stripped)
+
+        return times[:12] if times else ['Auspicious times calculated based on planetary positions']
 
     def _extract_mantras(self, text: str) -> List[Dict[str, str]]:
-        """Extract mantra recommendations"""
-        return [{'mantra': 'Specific mantras in detailed report', 'purpose': 'Based on chart analysis'}]
+        """Extract mantra recommendations with intelligent parsing"""
+        mantras = []
+        lines = text.split('\n')
+        current_mantra = {}
+
+        for line in lines:
+            lower_line = line.lower()
+            # Look for mantra indicators
+            if 'mantra' in lower_line or 'om' in lower_line or 'namah' in lower_line:
+                if current_mantra and 'mantra' in current_mantra:
+                    mantras.append(current_mantra)
+                    current_mantra = {}
+                current_mantra['mantra'] = line.strip()
+            elif current_mantra and any(term in lower_line for term in ['purpose', 'benefit', 'for']):
+                current_mantra['purpose'] = line.strip()
+            elif current_mantra and any(term in lower_line for term in ['times', 'repetitions', 'count']):
+                current_mantra['repetitions'] = line.strip()
+
+        if current_mantra:
+            mantras.append(current_mantra)
+
+        return mantras if mantras else [{'mantra': 'See full analysis for specific mantras', 'purpose': 'Based on chart analysis'}]
 
     def _extract_gemstones(self, text: str) -> List[str]:
-        """Extract gemstone recommendations"""
-        return ['Gemstone recommendations in full report']
+        """Extract gemstone recommendations with intelligent parsing"""
+        gemstones = []
+        lines = text.split('\n')
+
+        for line in lines:
+            lower_line = line.lower()
+            # Look for gemstone names
+            if any(gem in lower_line for gem in ['ruby', 'pearl', 'coral', 'emerald', 'yellow sapphire', 'diamond', 'blue sapphire', 'hessonite', 'cat\'s eye', 'sapphire']):
+                stripped = line.strip().lstrip('-*•123456789. ')
+                if stripped:
+                    gemstones.append(stripped)
+
+        return gemstones[:5] if gemstones else ['Gemstone recommendations available in full report']
 
     def _extract_rituals(self, text: str) -> List[str]:
-        """Extract ritual recommendations"""
-        return ['Ritual recommendations in detailed analysis']
+        """Extract ritual recommendations with intelligent parsing"""
+        rituals = []
+        lines = text.split('\n')
+
+        for line in lines:
+            lower_line = line.lower()
+            # Look for ritual indicators
+            if any(term in lower_line for term in ['ritual', 'puja', 'ceremony', 'worship', 'offering', 'fast', 'fasting']):
+                stripped = line.strip().lstrip('-*•123456789. ')
+                if len(stripped) > 10:
+                    rituals.append(stripped)
+
+        return rituals[:10] if rituals else ['Ritual recommendations detailed in comprehensive analysis']
 
     def _get_timestamp(self) -> str:
         """Get current timestamp"""
