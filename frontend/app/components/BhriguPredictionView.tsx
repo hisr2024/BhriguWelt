@@ -115,6 +115,9 @@ const COLOR_CLASSES: Record<string, { border: string; hover: string; accent: str
   emerald: { border: 'border-emerald-500/30', hover: 'hover:border-emerald-500/50', accent: 'from-emerald-400 to-emerald-600', text: 'text-emerald-400' }
 };
 
+// Default color for sections without a specific color mapping
+const DEFAULT_COLOR = 'cyan';
+
 interface BhriguPredictionViewProps {
   category: string;
   title: string;
@@ -182,7 +185,7 @@ export default function BhriguPredictionView({
       return null;
     }
 
-    const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES.cyan;
+    const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES[DEFAULT_COLOR];
 
     return (
       <motion.div
