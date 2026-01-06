@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Calendar, Clock, MapPin, ArrowRight, Shield, Zap } from 'lucide-react';
+import { Sparkles, Calendar, Clock, MapPin, ArrowRight, Shield, Zap, User } from 'lucide-react';
 import { astrologyAPI, type BirthDetails } from '@/lib/api';
 import AnimatedBackground, { FloatingElements } from '../components/AnimatedBackground';
 import GenZButton from '../components/GenZButton';
@@ -18,7 +18,8 @@ export default function GetStartedPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState<BirthDetails>({
+  const [formData, setFormData] = useState<BirthDetails & { name: string }>({
+    name: '',
     date_of_birth: '',
     time_of_birth: '',
     place_of_birth: '',
@@ -48,14 +49,15 @@ export default function GetStartedPage() {
     try {
       const result = await astrologyAPI.calculateBirthChart(formData);
       const profileData = {
-        name: formData.place_of_birth,
+        name: formData.name,
         dateOfBirth: formData.date_of_birth,
         timeOfBirth: formData.time_of_birth,
         placeOfBirth: formData.place_of_birth,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      await setItem(STORES.PROFILES, 'current_profile', profileData, encryptionKey);
+      // Use add() instead of put() to let auto-increment generate the ID
+      const database = await setItem(STORES.PROFILES, Date.now().toString(), profileData, encryptionKey);
       const reportData = {
         profileId: 1,
         type: 'birth-chart',
@@ -84,9 +86,10 @@ export default function GetStartedPage() {
   }
 
   const isStepValid = () => {
-    if (step === 1) return formData.date_of_birth !== '';
-    if (step === 2) return formData.time_of_birth !== '';
-    if (step === 3) return formData.place_of_birth !== '';
+    if (step === 1) return formData.name.trim() !== '';
+    if (step === 2) return formData.date_of_birth !== '';
+    if (step === 3) return formData.time_of_birth !== '';
+    if (step === 4) return formData.place_of_birth !== '';
     return false;
   };
 
@@ -102,16 +105,18 @@ export default function GetStartedPage() {
               <Sparkles className="w-20 h-20 text-genz-electric-blue relative z-10 animate-pulse-glow" />
             </div>
           </motion.div>
-          <GenZBadge variant="neon" size="lg" className="mb-6" pulse>Step {step} of 3</GenZBadge>
+          <GenZBadge variant="neon" size="lg" className="mb-6" pulse>Step {step} of 4</GenZBadge>
           <motion.h1 className="genz-title mb-6" key={step} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            {step === 1 && 'When Were You Born?'}
-            {step === 2 && 'What Time?'}
-            {step === 3 && 'Where Were You Born?'}
+            {step === 1 && 'What\'s Your Name?'}
+            {step === 2 && 'When Were You Born?'}
+            {step === 3 && 'What Time?'}
+            {step === 4 && 'Where Were You Born?'}
           </motion.h1>
           <motion.p className="text-xl md:text-2xl text-white/80 leading-relaxed" key={`desc-${step}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {step === 1 && 'Enter your birth date to start your cosmic journey'}
-            {step === 2 && 'Time is crucial for accurate predictions'}
-            {step === 3 && 'Location helps us calculate planetary positions'}
+            {step === 1 && 'Tell us your name to personalize your journey'}
+            {step === 2 && 'Enter your birth date to start your cosmic journey'}
+            {step === 3 && 'Time is crucial for accurate predictions'}
+            {step === 4 && 'Location helps us calculate planetary positions'}
           </motion.p>
         </div>
         <GenZCard variant="neon" className="relative overflow-hidden">
@@ -119,9 +124,18 @@ export default function GetStartedPage() {
           <div className="absolute bottom-0 left-0 w-40 h-40 bg-genz-electric-blue/20 blur-3xl rounded-full"></div>
           <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
             <div className="flex gap-2 mb-8">
-              {[1, 2, 3].map((s) => (<div key={s} className={`h-2 flex-1 rounded-full transition-all duration-500 ${s <= step ? 'bg-gradient-to-r from-genz-electric-blue to-genz-purple-haze shadow-genz-glow' : 'bg-white/10'}`} />))}
+              {[1, 2, 3, 4].map((s) => (<div key={s} className={`h-2 flex-1 rounded-full transition-all duration-500 ${s <= step ? 'bg-gradient-to-r from-genz-electric-blue to-genz-purple-haze shadow-genz-glow' : 'bg-white/10'}`} />))}
             </div>
             {step === 1 && (
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+                <label className="block text-lg font-display font-bold mb-4 flex items-center gap-3 text-white">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-genz-hot-pink to-genz-coral-pop flex items-center justify-center shadow-genz-glow"><User className="w-6 h-6" /></div>
+                  Your Name
+                </label>
+                <input type="text" required placeholder="e.g., Arjun Kumar" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="genz-input w-full text-lg" autoFocus />
+              </motion.div>
+            )}
+            {step === 2 && (
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                 <label className="block text-lg font-display font-bold mb-4 flex items-center gap-3 text-white">
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-genz-electric-blue to-genz-mint-fresh flex items-center justify-center shadow-genz-glow"><Calendar className="w-6 h-6" /></div>
@@ -130,7 +144,7 @@ export default function GetStartedPage() {
                 <input type="date" required value={formData.date_of_birth} onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })} className="genz-input w-full text-lg" autoFocus />
               </motion.div>
             )}
-            {step === 2 && (
+            {step === 3 && (
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                 <label className="block text-lg font-display font-bold mb-4 flex items-center gap-3 text-white">
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-genz-purple-haze to-genz-lavender-dream flex items-center justify-center shadow-genz-glow"><Clock className="w-6 h-6" /></div>
@@ -140,10 +154,10 @@ export default function GetStartedPage() {
                 <p className="text-sm text-genz-mint-fresh mt-3 flex items-center gap-2"><Zap className="w-4 h-4" />Exact time gives more accurate predictions</p>
               </motion.div>
             )}
-            {step === 3 && (
+            {step === 4 && (
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                 <label className="block text-lg font-display font-bold mb-4 flex items-center gap-3 text-white">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-genz-hot-pink to-genz-coral-pop flex items-center justify-center shadow-genz-glow"><MapPin className="w-6 h-6" /></div>
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-genz-cyber-yellow to-genz-sunset-orange flex items-center justify-center shadow-genz-glow"><MapPin className="w-6 h-6" /></div>
                   Place of Birth
                 </label>
                 <input type="text" required placeholder="e.g., New Delhi, India" value={formData.place_of_birth} onChange={(e) => setFormData({ ...formData, place_of_birth: e.target.value })} className="genz-input w-full text-lg" autoFocus />
@@ -153,7 +167,7 @@ export default function GetStartedPage() {
             {error && (<motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-genz-hot-pink/20 border-2 border-genz-hot-pink/50 rounded-2xl p-4 text-white backdrop-blur-xl">{error}</motion.div>)}
             <div className="flex gap-4 pt-6">
               {step > 1 && (<GenZButton variant="outline" size="lg" onClick={() => setStep(step - 1)} type="button" className="flex-1">Back</GenZButton>)}
-              {step < 3 ? (
+              {step < 4 ? (
                 <GenZButton variant="primary" size="lg" onClick={() => setStep(step + 1)} disabled={!isStepValid()} type="button" className="flex-1 group">Continue<ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" /></GenZButton>
               ) : (
                 <GenZButton variant="primary" size="lg" type="submit" disabled={loading || !isStepValid()} loading={loading} className="flex-1 shadow-genz-glow" fullWidth>{loading ? 'Calculating...' : 'Calculate My Chart'}</GenZButton>

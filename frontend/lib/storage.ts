@@ -262,12 +262,16 @@ export async function getAllItems(
         if (encryptionKey) {
           try {
             const decrypted = await Promise.all(
-              items.map((item) => {
+              items.map(async (item) => {
+                let data;
                 if (item.encrypted) {
-                  return decryptFromStorage(item.value, encryptionKey);
+                  data = await decryptFromStorage(item.value, encryptionKey);
+                } else {
+                  // Return just the value for unencrypted items
+                  data = item.value;
                 }
-                // Return just the value for unencrypted items
-                return item.value;
+                // Include the id from IndexedDB in the returned object
+                return { ...data, id: item.id };
               })
             );
             resolve(decrypted);
@@ -275,8 +279,8 @@ export async function getAllItems(
             reject(new Error('Failed to decrypt items - incorrect key?'));
           }
         } else {
-          // Return just the values for all items when no encryption key
-          resolve(items.map(item => item.value));
+          // Return values with their IDs for unencrypted items
+          resolve(items.map(item => ({ ...item.value, id: item.id })));
         }
       };
 
