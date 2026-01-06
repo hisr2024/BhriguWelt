@@ -3,7 +3,7 @@
 Use these notes when generating code suggestions for BhriguWelt.
 
 ## Repository map
-- **Backend**: `backend/src/bhriguwelt/` (Python 3.11, HTTP server in `api.py`).
+- **Backend**: `backend/` (Python 3.11, HTTP server in `app.py`).
 - **Frontend**: `frontend/` (Next.js App Router, API helpers in `frontend/lib/api.ts`).
 - **Docs**: `docs/` for deployment notes and onboarding.
 
