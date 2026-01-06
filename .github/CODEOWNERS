@@ -1,0 +1,36 @@
+# Default owners for everything
+* @hisr2024
+
+# Frontend
+/frontend/ @hisr2024
+/frontend/lib/ @hisr2024
+/frontend/app/ @hisr2024
+/frontend/components/ @hisr2024
+
+# Backend
+/backend/ @hisr2024
+/backend/services/ @hisr2024
+/backend/routes/ @hisr2024
+/backend/middleware/ @hisr2024
+
+# Mobile
+/mobile/ @hisr2024
+
+# Documentation
+/docs/ @hisr2024
+*.md @hisr2024
+README.md @hisr2024
+
+# CI/CD and GitHub
+/.github/ @hisr2024
+/.github/workflows/ @hisr2024
+
+# Infrastructure
+/infra/ @hisr2024
+/infra/monitoring/ @hisr2024
+/infra/aws/ @hisr2024
+
+# Configuration files
+/docker-compose.yml @hisr2024
+/Dockerfile @hisr2024
+/.env.example @hisr2024

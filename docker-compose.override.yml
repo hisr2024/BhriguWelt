@@ -1,0 +1,28 @@
+# Docker Compose overrides for local development
+# This file is automatically loaded when running docker-compose
+# Useful for development-specific configurations
+
+version: '3.8'
+
+services:
+  backend:
+    # Enable hot-reload for backend
+    volumes:
+      - ./backend:/app/backend:delegated
+      - ./core_wisdom:/app/core_wisdom:delegated
+    environment:
+      - FLASK_DEBUG=1
+      - LOG_LEVEL=DEBUG
+    # Override command for development with auto-reload
+    command: python -u backend/app.py
+
+  frontend:
+    # Enable hot-reload for frontend
+    volumes:
+      - ./frontend:/app:delegated
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - WATCHPACK_POLLING=true
+    stdin_open: true
+    tty: true
