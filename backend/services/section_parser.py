@@ -280,55 +280,101 @@ class SectionParser:
     
     def extract_section_content(self, text: str, section_key: str) -> str:
         """
-        Extract specific section content using header patterns
-        
+        Extract specific section content using flexible header patterns
+
         Args:
             text: Full text to search
             section_key: Key of section to extract
-            
+
         Returns:
             Extracted section content or empty string
         """
         if not text:
+            logger.debug(f"Section '{section_key}': No text provided for extraction")
             return ""
-            
+
         headers = self.SECTION_HEADERS.get(section_key, [])
-        
+        logger.info(f"Extracting section '{section_key}' with {len(headers)} header patterns")
+
         for header in headers:
-            # Try to find section with this header using markdown format (##)
-            pattern = rf'{re.escape(header)}(.*?)(?=##|\Z)'
-            match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
-            
-            if match:
-                content = match.group(1).strip()
-                if len(content) > self.HEADER_EXTRACTION_MIN_LENGTH:
-                    return content
-        
-        # Try generic extraction by section number or key
-        return self._extract_by_keywords(text, section_key)
+            # Try multiple pattern variations for maximum flexibility
+            patterns = [
+                # Standard markdown with ## (most common)
+                rf'##\s*{re.escape(header)}\s*\n(.*?)(?=\n##|\n#[^#]|\Z)',
+                # Markdown with any number of # symbols
+                rf'#+\s*{re.escape(header)}\s*[:\n](.*?)(?=\n#+\s|\Z)',
+                # Without markdown symbols (plain text headers)
+                rf'{re.escape(header)}\s*[:\n](.*?)(?=\n[A-Z][^\n]*[:\n]|\Z)',
+                # Numbered sections (1., 2., etc.)
+                rf'\d+\.\s*{re.escape(header)}\s*[:\n](.*?)(?=\n\d+\.|\Z)',
+                # Bold or emphasized headers
+                rf'\*\*{re.escape(header)}\*\*\s*[:\n](.*?)(?=\n\*\*|\Z)',
+            ]
+
+            for i, pattern in enumerate(patterns):
+                try:
+                    match = re.search(pattern, text, re.DOTALL | re.IGNORECASE | re.MULTILINE)
+
+                    if match:
+                        content = match.group(1).strip()
+                        if len(content) > self.HEADER_EXTRACTION_MIN_LENGTH:
+                            logger.info(f"Section '{section_key}': Extracted {len(content)} chars using pattern {i+1} with header '{header}'")
+                            return content
+                        else:
+                            logger.debug(f"Section '{section_key}': Match found with header '{header}' but content too short ({len(content)} chars)")
+                except Exception as e:
+                    logger.warning(f"Section '{section_key}': Pattern {i+1} failed: {e}")
+                    continue
+
+        # Try generic extraction by section number or keywords
+        logger.info(f"Section '{section_key}': No header match found, trying keyword extraction")
+        keyword_result = self._extract_by_keywords(text, section_key)
+
+        if keyword_result:
+            logger.info(f"Section '{section_key}': Extracted {len(keyword_result)} chars via keyword search")
+        else:
+            logger.warning(f"Section '{section_key}': No content extracted by any method")
+
+        return keyword_result
     
     def _extract_by_keywords(self, text: str, section_key: str) -> str:
         """
-        Extract content based on keywords in section key
-        
+        Extract content based on keywords in section key with improved matching
+
         Args:
             text: Full text to search
             section_key: Section key to derive keywords from
-            
+
         Returns:
             Extracted content or empty string
         """
         keywords = section_key.replace('_', ' ').split()
-        
+        logger.debug(f"Keyword extraction for '{section_key}' using keywords: {keywords}")
+
         # Look for paragraphs containing all keywords
         paragraphs = text.split('\n\n')
         relevant_paras = []
-        
+
+        # Try exact keyword matching first
         for para in paragraphs:
             if all(kw.lower() in para.lower() for kw in keywords):
                 relevant_paras.append(para)
-        
-        return '\n\n'.join(relevant_paras)
+                logger.debug(f"Found paragraph with all keywords: {para[:100]}...")
+
+        # If no exact matches, try partial matching (at least 50% of keywords)
+        if not relevant_paras and len(keywords) > 1:
+            threshold = max(1, len(keywords) // 2)
+            logger.debug(f"No exact matches, trying partial match with threshold {threshold}/{len(keywords)}")
+
+            for para in paragraphs:
+                matches = sum(1 for kw in keywords if kw.lower() in para.lower())
+                if matches >= threshold and len(para.strip()) > 100:
+                    relevant_paras.append(para)
+                    logger.debug(f"Found paragraph with {matches}/{len(keywords)} keywords")
+
+        result = '\n\n'.join(relevant_paras)
+        logger.debug(f"Keyword extraction returned {len(result)} characters")
+        return result
     
     def generate_missing_section(
         self, 

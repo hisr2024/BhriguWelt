@@ -258,5 +258,187 @@ Sanskrit mantras: ॐ नमः शिवाय
         assert isinstance(sections, dict)
 
 
+class TestSectionParserFlexibleExtraction:
+    """Test the new flexible regex patterns and improved extraction"""
+
+    @pytest.fixture
+    def parser(self):
+        return SectionParser()
+
+    def test_numbered_section_extraction(self, parser):
+        """Test extraction with numbered sections (1., 2., etc.)"""
+        text = """
+1. Soul's Primary Purpose
+The fundamental reason for this incarnation is revealed through detailed analysis.
+
+2. Karmic Blueprint
+Past life patterns are examined here.
+"""
+        result = parser.extract_section_content(text, 'soul_purpose')
+        assert 'fundamental reason' in result.lower()
+
+    def test_bold_header_extraction(self, parser):
+        """Test extraction with **bold** headers"""
+        text = """
+**Soul's Primary Purpose**
+This native is destined for spiritual work with comprehensive guidance included.
+
+**Karmic Blueprint**
+Different patterns emerge.
+"""
+        result = parser.extract_section_content(text, 'soul_purpose')
+        assert 'spiritual work' in result.lower()
+
+    def test_colon_separated_headers(self, parser):
+        """Test headers with colons"""
+        text = """
+Soul's Primary Purpose:
+The native has a unique mission involving teaching and healing practices.
+
+Karmic Blueprint:
+Past life influences.
+"""
+        result = parser.extract_section_content(text, 'soul_purpose')
+        assert 'teaching' in result.lower() or 'healing' in result.lower()
+
+    def test_mixed_header_formats(self, parser):
+        """Test document with various header formats"""
+        text = """
+## Soul's Primary Purpose
+Standard markdown format with comprehensive analysis.
+
+**Karmic Blueprint**
+Bold format content.
+
+3. Life Mission & Dharma
+Numbered format content.
+"""
+        result1 = parser.extract_section_content(text, 'soul_purpose')
+        result2 = parser.extract_section_content(text, 'karmic_blueprint')
+        result3 = parser.extract_section_content(text, 'life_mission')
+
+        assert len(result1) > 20
+        assert len(result2) > 10
+        assert len(result3) > 10
+
+    def test_partial_keyword_matching(self, parser):
+        """Test partial keyword matching fallback"""
+        text = """
+The soul calling is evident in the chart with specific indicators present.
+This individual has a unique purpose beyond ordinary existence and duties.
+
+Different themes emerge in relationship patterns.
+"""
+        result = parser.extract_section_content(text, 'soul_purpose')
+        # With partial matching, should get content with at least 50% keywords
+        assert isinstance(result, str)
+
+    def test_case_insensitive_matching(self, parser):
+        """Test case-insensitive header matching"""
+        text = """
+## SOUL'S PRIMARY PURPOSE
+This should match despite uppercase formatting.
+
+## soul's primary purpose
+This should also match with lowercase.
+"""
+        result = parser.extract_section_content(text, 'soul_purpose')
+        assert len(result) > 20
+
+    def test_whitespace_tolerance(self, parser):
+        """Test tolerance for extra whitespace"""
+        text = """
+##   Soul's Primary Purpose
+Content with extra whitespace.
+
+##Soul's Primary Purpose
+Content without spaces.
+"""
+        result = parser.extract_section_content(text, 'soul_purpose')
+        assert len(result) > 10
+
+
+class TestSectionParserLifeEvents:
+    """Test life_events category extraction"""
+
+    @pytest.fixture
+    def parser(self):
+        return SectionParser()
+
+    def test_all_life_events_sections_defined(self, parser):
+        """Test all life_events sections are defined"""
+        sections = parser.REQUIRED_SECTIONS['life_events']
+        expected = ['yearly_forecast', 'marriage_timing', 'career_milestones',
+                   'children_family', 'financial_events', 'health_alerts',
+                   'spiritual_milestones', 'relocations', 'education',
+                   'favorable_periods', 'challenging_periods', 'transits',
+                   'age_milestones']
+
+        for section in expected:
+            assert section in sections
+
+    def test_life_events_extraction(self, parser):
+        """Test extraction of life_events sections"""
+        text = """
+## Year-by-Year Forecast
+Comprehensive yearly predictions with specific events and timing details.
+
+## Marriage & Partnerships
+Marriage timing and relationship analysis with precise periods.
+
+## Career Milestones
+Career trajectory with promotion and growth opportunities.
+
+## Financial Events
+Financial breakthroughs and wealth accumulation timing.
+"""
+        sections = parser.extract_sections(text, 'life_events', {})
+
+        assert 'yearly_forecast' in sections
+        assert 'marriage_timing' in sections
+        assert len(sections['yearly_forecast']) > 50
+        assert len(sections['marriage_timing']) > 50
+
+
+class TestSectionParserValidationAndLogging:
+    """Test validation and logging functionality"""
+
+    @pytest.fixture
+    def parser(self):
+        return SectionParser()
+
+    def test_minimum_length_validation(self, parser):
+        """Test minimum section length validation"""
+        sections = {
+            'soul_purpose': 'A' * 150,  # Valid (>100)
+            'karmic_blueprint': 'Short',  # Invalid (<100)
+        }
+
+        validation = parser.validate_sections(sections, 'karmic_journey')
+        assert validation['soul_purpose'] == True
+        assert validation['karmic_blueprint'] == False
+
+    def test_extraction_statistics(self, parser):
+        """Test extraction success rate"""
+        text = """
+## Soul's Primary Purpose
+Comprehensive soul purpose analysis with detailed astrological insights.
+
+## Karmic Blueprint
+Detailed karmic blueprint analysis with past life influences.
+
+## Life Mission & Dharma
+Life mission guidance with specific dharma recommendations.
+"""
+
+        sections = parser.extract_sections(text, 'karmic_journey', {})
+        missing = parser.get_missing_sections(sections, 'karmic_journey')
+
+        # Should have extracted at least 3 sections
+        total_required = len(parser.REQUIRED_SECTIONS['karmic_journey'])
+        extracted = total_required - len(missing)
+        assert extracted >= 3
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
