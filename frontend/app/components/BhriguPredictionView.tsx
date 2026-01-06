@@ -5,6 +5,116 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Profile } from '@/lib/types';
 
+// Category-specific section configurations (moved outside component for performance)
+const CATEGORY_SECTIONS: Record<string, Array<{ key: string; title: string; color: string }>> = {
+  'karmic-journey': [
+    { key: 'soul_purpose', title: "Soul's Primary Purpose", color: 'cyan' },
+    { key: 'karmic_blueprint', title: 'Karmic Blueprint', color: 'purple' },
+    { key: 'evolution_stage', title: 'Soul Evolution Stage', color: 'blue' },
+    { key: 'life_mission', title: 'Life Mission & Dharma', color: 'indigo' },
+    { key: 'karmic_lessons', title: 'Karmic Lessons', color: 'violet' },
+    { key: 'soul_connections', title: 'Soul Group Connections', color: 'pink' },
+    { key: 'timing', title: 'Timing of Karmic Events', color: 'rose' },
+    { key: 'spiritual_gifts', title: 'Spiritual Gifts & Abilities', color: 'amber' }
+  ],
+  'past-lives': [
+    { key: 'recent_life', title: 'Most Recent Past Life', color: 'cyan' },
+    { key: 'significant_lives', title: 'Significant Past Lives', color: 'purple' },
+    { key: 'karmic_patterns', title: 'Recurring Karmic Patterns', color: 'blue' },
+    { key: 'past_skills', title: 'Past Life Skills & Talents', color: 'indigo' },
+    { key: 'traumas_healing', title: 'Past Life Traumas Needing Healing', color: 'violet' },
+    { key: 'past_relationships', title: 'Past Life Relationships', color: 'pink' },
+    { key: 'karmic_debts', title: 'Karmic Debts from Past Lives', color: 'rose' },
+    { key: 'spiritual_progress', title: 'Past Life Spiritual Progress', color: 'amber' }
+  ],
+  'future-lives': [
+    { key: 'next_incarnation', title: 'Next Incarnation', color: 'cyan' },
+    { key: 'evolution_trajectory', title: 'Soul Evolution Trajectory', color: 'purple' },
+    { key: 'final_birth_conditions', title: 'Final Birth Conditions', color: 'blue' },
+    { key: 'future_scenarios', title: 'Future Life Scenarios', color: 'indigo' },
+    { key: 'moksha_timeline', title: 'Moksha Timeline', color: 'violet' },
+    { key: 'higher_realms', title: 'Higher Realms Access', color: 'pink' },
+    { key: 'bodhisattva_path', title: 'Bodhisattva Path', color: 'rose' },
+    { key: 'ultimate_destiny', title: 'Ultimate Destiny', color: 'amber' }
+  ],
+  'present-life': [
+    { key: 'current_phase', title: 'Current Life Phase', color: 'cyan' },
+    { key: 'career', title: 'Career & Professional Life', color: 'purple' },
+    { key: 'relationships', title: 'Relationships & Love', color: 'blue' },
+    { key: 'health', title: 'Health & Wellness', color: 'indigo' },
+    { key: 'finances', title: 'Financial Prospects', color: 'violet' },
+    { key: 'spiritual_growth', title: 'Spiritual Growth', color: 'pink' },
+    { key: 'education', title: 'Education & Learning', color: 'rose' },
+    { key: 'life_purpose', title: 'Life Purpose', color: 'amber' },
+    { key: 'challenges', title: 'Current Challenges', color: 'orange' },
+    { key: 'timing', title: 'Timing & Transitions', color: 'teal' }
+  ],
+  'life-events': [
+    { key: 'yearly_forecast', title: 'Yearly Forecast', color: 'cyan' },
+    { key: 'marriage_timing', title: 'Marriage Timing', color: 'purple' },
+    { key: 'career_milestones', title: 'Career Milestones', color: 'blue' },
+    { key: 'children_family', title: 'Children & Family', color: 'indigo' },
+    { key: 'financial_events', title: 'Financial Events', color: 'violet' },
+    { key: 'health_alerts', title: 'Health Alerts', color: 'pink' },
+    { key: 'spiritual_milestones', title: 'Spiritual Milestones', color: 'rose' },
+    { key: 'relocations', title: 'Relocations & Travel', color: 'amber' },
+    { key: 'education', title: 'Educational Achievements', color: 'orange' },
+    { key: 'favorable_periods', title: 'Favorable Periods', color: 'teal' },
+    { key: 'challenging_periods', title: 'Challenging Periods', color: 'red' },
+    { key: 'transits', title: 'Key Planetary Transits', color: 'lime' },
+    { key: 'age_milestones', title: 'Age Milestones', color: 'emerald' }
+  ],
+  'karmic-remedies': [
+    { key: 'mantras', title: 'Mantras & Chanting', color: 'cyan' },
+    { key: 'gemstones', title: 'Gemstones & Crystals', color: 'purple' },
+    { key: 'yantras', title: 'Yantras & Sacred Geometry', color: 'blue' },
+    { key: 'charitable_activities', title: 'Charitable Activities', color: 'indigo' },
+    { key: 'fasting', title: 'Fasting & Dietary Practices', color: 'violet' },
+    { key: 'deity_worship', title: 'Deity Worship', color: 'pink' },
+    { key: 'pilgrimage', title: 'Pilgrimage & Sacred Sites', color: 'rose' },
+    { key: 'lifestyle', title: 'Lifestyle Modifications', color: 'amber' },
+    { key: 'planetary_rituals', title: 'Planetary Rituals', color: 'orange' },
+    { key: 'karmic_cleansing', title: 'Karmic Cleansing Practices', color: 'teal' },
+    { key: 'service', title: 'Service & Seva', color: 'lime' },
+    { key: 'meditation', title: 'Meditation & Yoga', color: 'emerald' }
+  ],
+  'relationships': [
+    { key: 'romantic_marriage', title: 'Romantic & Marriage Prospects', color: 'cyan' },
+    { key: 'family', title: 'Family Relationships', color: 'purple' },
+    { key: 'soul_connections', title: 'Soul Connections & Soulmates', color: 'blue' },
+    { key: 'friendships', title: 'Friendships & Social Circle', color: 'indigo' },
+    { key: 'professional', title: 'Professional Relationships', color: 'violet' },
+    { key: 'karmic_patterns', title: 'Karmic Relationship Patterns', color: 'pink' },
+    { key: 'communication', title: 'Communication Dynamics', color: 'rose' },
+    { key: 'timing', title: 'Relationship Timing', color: 'amber' },
+    { key: 'healing', title: 'Relationship Healing', color: 'orange' },
+    { key: 'healthy_practices', title: 'Healthy Relationship Practices', color: 'teal' }
+  ],
+  'predictions': [
+    { key: 'daily', title: 'Daily Predictions', color: 'cyan' },
+    { key: 'weekly', title: 'Weekly Forecast', color: 'purple' },
+    { key: 'monthly', title: 'Monthly Outlook', color: 'blue' },
+    { key: 'yearly', title: 'Yearly Overview', color: 'indigo' }
+  ]
+};
+
+// Color classes configuration (moved outside component for performance)
+const COLOR_CLASSES: Record<string, { border: string; hover: string; accent: string; text: string }> = {
+  cyan: { border: 'border-cyan-500/30', hover: 'hover:border-cyan-500/50', accent: 'from-cyan-400 to-cyan-600', text: 'text-cyan-400' },
+  purple: { border: 'border-purple-500/30', hover: 'hover:border-purple-500/50', accent: 'from-purple-400 to-purple-600', text: 'text-purple-400' },
+  blue: { border: 'border-blue-500/30', hover: 'hover:border-blue-500/50', accent: 'from-blue-400 to-blue-600', text: 'text-blue-400' },
+  indigo: { border: 'border-indigo-500/30', hover: 'hover:border-indigo-500/50', accent: 'from-indigo-400 to-indigo-600', text: 'text-indigo-400' },
+  violet: { border: 'border-violet-500/30', hover: 'hover:border-violet-500/50', accent: 'from-violet-400 to-violet-600', text: 'text-violet-400' },
+  pink: { border: 'border-pink-500/30', hover: 'hover:border-pink-500/50', accent: 'from-pink-400 to-pink-600', text: 'text-pink-400' },
+  rose: { border: 'border-rose-500/30', hover: 'hover:border-rose-500/50', accent: 'from-rose-400 to-rose-600', text: 'text-rose-400' },
+  amber: { border: 'border-amber-500/30', hover: 'hover:border-amber-500/50', accent: 'from-amber-400 to-amber-600', text: 'text-amber-400' },
+  orange: { border: 'border-orange-500/30', hover: 'hover:border-orange-500/50', accent: 'from-orange-400 to-orange-600', text: 'text-orange-400' },
+  teal: { border: 'border-teal-500/30', hover: 'hover:border-teal-500/50', accent: 'from-teal-400 to-teal-600', text: 'text-teal-400' },
+  red: { border: 'border-red-500/30', hover: 'hover:border-red-500/50', accent: 'from-red-400 to-red-600', text: 'text-red-400' },
+  lime: { border: 'border-lime-500/30', hover: 'hover:border-lime-500/50', accent: 'from-lime-400 to-lime-600', text: 'text-lime-400' },
+  emerald: { border: 'border-emerald-500/30', hover: 'hover:border-emerald-500/50', accent: 'from-emerald-400 to-emerald-600', text: 'text-emerald-400' }
+};
+
 interface BhriguPredictionViewProps {
   category: string;
   title: string;
@@ -28,99 +138,6 @@ export default function BhriguPredictionView({
   const [fromCache, setFromCache] = useState(false);
   const [question, setQuestion] = useState('');
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
-
-  // Category-specific section configurations
-  const categorySections: Record<string, Array<{ key: string; title: string; color: string }>> = {
-    'karmic-journey': [
-      { key: 'soul_purpose', title: "Soul's Primary Purpose", color: 'cyan' },
-      { key: 'karmic_blueprint', title: 'Karmic Blueprint', color: 'purple' },
-      { key: 'evolution_stage', title: 'Soul Evolution Stage', color: 'blue' },
-      { key: 'life_mission', title: 'Life Mission & Dharma', color: 'indigo' },
-      { key: 'karmic_lessons', title: 'Karmic Lessons', color: 'violet' },
-      { key: 'soul_connections', title: 'Soul Group Connections', color: 'pink' },
-      { key: 'timing', title: 'Timing of Karmic Events', color: 'rose' },
-      { key: 'spiritual_gifts', title: 'Spiritual Gifts & Abilities', color: 'amber' }
-    ],
-    'past-lives': [
-      { key: 'recent_life', title: 'Most Recent Past Life', color: 'cyan' },
-      { key: 'significant_lives', title: 'Significant Past Lives', color: 'purple' },
-      { key: 'karmic_patterns', title: 'Recurring Karmic Patterns', color: 'blue' },
-      { key: 'past_skills', title: 'Past Life Skills & Talents', color: 'indigo' },
-      { key: 'traumas_healing', title: 'Past Life Traumas Needing Healing', color: 'violet' },
-      { key: 'past_relationships', title: 'Past Life Relationships', color: 'pink' },
-      { key: 'karmic_debts', title: 'Karmic Debts from Past Lives', color: 'rose' },
-      { key: 'spiritual_progress', title: 'Past Life Spiritual Progress', color: 'amber' }
-    ],
-    'future-lives': [
-      { key: 'next_incarnation', title: 'Next Incarnation', color: 'cyan' },
-      { key: 'evolution_trajectory', title: 'Soul Evolution Trajectory', color: 'purple' },
-      { key: 'final_birth_conditions', title: 'Final Birth Conditions', color: 'blue' },
-      { key: 'future_scenarios', title: 'Future Life Scenarios', color: 'indigo' },
-      { key: 'moksha_timeline', title: 'Moksha Timeline', color: 'violet' },
-      { key: 'higher_realms', title: 'Higher Realms Access', color: 'pink' },
-      { key: 'bodhisattva_path', title: 'Bodhisattva Path', color: 'rose' },
-      { key: 'ultimate_destiny', title: 'Ultimate Destiny', color: 'amber' }
-    ],
-    'present-life': [
-      { key: 'current_phase', title: 'Current Life Phase', color: 'cyan' },
-      { key: 'career', title: 'Career & Professional Life', color: 'purple' },
-      { key: 'relationships', title: 'Relationships & Love', color: 'blue' },
-      { key: 'health', title: 'Health & Wellness', color: 'indigo' },
-      { key: 'finances', title: 'Financial Prospects', color: 'violet' },
-      { key: 'spiritual_growth', title: 'Spiritual Growth', color: 'pink' },
-      { key: 'education', title: 'Education & Learning', color: 'rose' },
-      { key: 'life_purpose', title: 'Life Purpose', color: 'amber' },
-      { key: 'challenges', title: 'Current Challenges', color: 'orange' },
-      { key: 'timing', title: 'Timing & Transitions', color: 'teal' }
-    ],
-    'life-events': [
-      { key: 'yearly_forecast', title: 'Yearly Forecast', color: 'cyan' },
-      { key: 'marriage_timing', title: 'Marriage Timing', color: 'purple' },
-      { key: 'career_milestones', title: 'Career Milestones', color: 'blue' },
-      { key: 'children_family', title: 'Children & Family', color: 'indigo' },
-      { key: 'financial_events', title: 'Financial Events', color: 'violet' },
-      { key: 'health_alerts', title: 'Health Alerts', color: 'pink' },
-      { key: 'spiritual_milestones', title: 'Spiritual Milestones', color: 'rose' },
-      { key: 'relocations', title: 'Relocations & Travel', color: 'amber' },
-      { key: 'education', title: 'Educational Achievements', color: 'orange' },
-      { key: 'favorable_periods', title: 'Favorable Periods', color: 'teal' },
-      { key: 'challenging_periods', title: 'Challenging Periods', color: 'red' },
-      { key: 'transits', title: 'Key Planetary Transits', color: 'lime' },
-      { key: 'age_milestones', title: 'Age Milestones', color: 'emerald' }
-    ],
-    'karmic-remedies': [
-      { key: 'mantras', title: 'Mantras & Chanting', color: 'cyan' },
-      { key: 'gemstones', title: 'Gemstones & Crystals', color: 'purple' },
-      { key: 'yantras', title: 'Yantras & Sacred Geometry', color: 'blue' },
-      { key: 'charitable_activities', title: 'Charitable Activities', color: 'indigo' },
-      { key: 'fasting', title: 'Fasting & Dietary Practices', color: 'violet' },
-      { key: 'deity_worship', title: 'Deity Worship', color: 'pink' },
-      { key: 'pilgrimage', title: 'Pilgrimage & Sacred Sites', color: 'rose' },
-      { key: 'lifestyle', title: 'Lifestyle Modifications', color: 'amber' },
-      { key: 'planetary_rituals', title: 'Planetary Rituals', color: 'orange' },
-      { key: 'karmic_cleansing', title: 'Karmic Cleansing Practices', color: 'teal' },
-      { key: 'service', title: 'Service & Seva', color: 'lime' },
-      { key: 'meditation', title: 'Meditation & Yoga', color: 'emerald' }
-    ],
-    'relationships': [
-      { key: 'romantic_marriage', title: 'Romantic & Marriage Prospects', color: 'cyan' },
-      { key: 'family', title: 'Family Relationships', color: 'purple' },
-      { key: 'soul_connections', title: 'Soul Connections & Soulmates', color: 'blue' },
-      { key: 'friendships', title: 'Friendships & Social Circle', color: 'indigo' },
-      { key: 'professional', title: 'Professional Relationships', color: 'violet' },
-      { key: 'karmic_patterns', title: 'Karmic Relationship Patterns', color: 'pink' },
-      { key: 'communication', title: 'Communication Dynamics', color: 'rose' },
-      { key: 'timing', title: 'Relationship Timing', color: 'amber' },
-      { key: 'healing', title: 'Relationship Healing', color: 'orange' },
-      { key: 'healthy_practices', title: 'Healthy Relationship Practices', color: 'teal' }
-    ],
-    'predictions': [
-      { key: 'daily', title: 'Daily Predictions', color: 'cyan' },
-      { key: 'weekly', title: 'Weekly Forecast', color: 'purple' },
-      { key: 'monthly', title: 'Monthly Outlook', color: 'blue' },
-      { key: 'yearly', title: 'Yearly Overview', color: 'indigo' }
-    ]
-  };
 
   useEffect(() => {
     if (profile) {
@@ -165,23 +182,7 @@ export default function BhriguPredictionView({
       return null;
     }
 
-    const colorClasses: Record<string, { border: string; hover: string; accent: string; text: string }> = {
-      cyan: { border: 'border-cyan-500/30', hover: 'hover:border-cyan-500/50', accent: 'from-cyan-400 to-cyan-600', text: 'text-cyan-400' },
-      purple: { border: 'border-purple-500/30', hover: 'hover:border-purple-500/50', accent: 'from-purple-400 to-purple-600', text: 'text-purple-400' },
-      blue: { border: 'border-blue-500/30', hover: 'hover:border-blue-500/50', accent: 'from-blue-400 to-blue-600', text: 'text-blue-400' },
-      indigo: { border: 'border-indigo-500/30', hover: 'hover:border-indigo-500/50', accent: 'from-indigo-400 to-indigo-600', text: 'text-indigo-400' },
-      violet: { border: 'border-violet-500/30', hover: 'hover:border-violet-500/50', accent: 'from-violet-400 to-violet-600', text: 'text-violet-400' },
-      pink: { border: 'border-pink-500/30', hover: 'hover:border-pink-500/50', accent: 'from-pink-400 to-pink-600', text: 'text-pink-400' },
-      rose: { border: 'border-rose-500/30', hover: 'hover:border-rose-500/50', accent: 'from-rose-400 to-rose-600', text: 'text-rose-400' },
-      amber: { border: 'border-amber-500/30', hover: 'hover:border-amber-500/50', accent: 'from-amber-400 to-amber-600', text: 'text-amber-400' },
-      orange: { border: 'border-orange-500/30', hover: 'hover:border-orange-500/50', accent: 'from-orange-400 to-orange-600', text: 'text-orange-400' },
-      teal: { border: 'border-teal-500/30', hover: 'hover:border-teal-500/50', accent: 'from-teal-400 to-teal-600', text: 'text-teal-400' },
-      red: { border: 'border-red-500/30', hover: 'hover:border-red-500/50', accent: 'from-red-400 to-red-600', text: 'text-red-400' },
-      lime: { border: 'border-lime-500/30', hover: 'hover:border-lime-500/50', accent: 'from-lime-400 to-lime-600', text: 'text-lime-400' },
-      emerald: { border: 'border-emerald-500/30', hover: 'hover:border-emerald-500/50', accent: 'from-emerald-400 to-emerald-600', text: 'text-emerald-400' }
-    };
-
-    const colorClass = colorClasses[color] || colorClasses.cyan;
+    const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES.cyan;
 
     return (
       <motion.div
@@ -208,7 +209,7 @@ export default function BhriguPredictionView({
     if (!prediction) return null;
 
     // Get the sections configuration for this category
-    const sections = categorySections[category] || [];
+    const sections = CATEGORY_SECTIONS[category] || [];
 
     // Filter sections that have meaningful content
     const availableSections = sections.filter(section => {
