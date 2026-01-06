@@ -10,6 +10,9 @@ from services.section_parser import SectionParser
 class TestStructuredPredictions:
     """Integration tests for structured prediction generation"""
     
+    # Test configuration constants
+    SUBSTANTIAL_CONTENT_THRESHOLD = 0.7  # 70% of sections should have substantial content
+    
     @pytest.fixture
     def service(self):
         """Create a predictions service instance"""
@@ -174,7 +177,7 @@ class TestStructuredPredictions:
                 substantial_sections += 1
         
         # At least 70% of sections should have substantial content
-        assert substantial_sections >= len(required_sections) * 0.7
+        assert substantial_sections >= len(required_sections) * self.SUBSTANTIAL_CONTENT_THRESHOLD
     
     def test_comprehensive_prediction_routing(self, service, sample_birth_data):
         """Test that comprehensive prediction routes to correct methods"""

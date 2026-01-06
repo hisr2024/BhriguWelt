@@ -4,8 +4,12 @@ Integrates local corpus with online search capabilities
 """
 import os
 import json
+import logging
 from typing import Dict, List, Any, Optional
 from pathlib import Path
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 
 class BhriguCorpusDatabase:
@@ -47,9 +51,9 @@ class BhriguCorpusDatabase:
             try:
                 with open(bhrigu_path, 'r', encoding='utf-8') as f:
                     corpus['bhrigu_samhita'] = json.load(f)
-                print(f"✓ Loaded Bhrigu Samhita core texts from {bhrigu_path}")
+                logger.info(f"Loaded Bhrigu Samhita core texts from {bhrigu_path}")
             except Exception as e:
-                print(f"Warning: Could not load Bhrigu Samhita texts: {e}")
+                logger.warning(f"Could not load Bhrigu Samhita texts: {e}")
         
         # Load Nadi Jyotisa manuscripts
         nadi_path = data_dir / 'nadi_jyotisa' / 'manuscripts.json'
@@ -57,9 +61,9 @@ class BhriguCorpusDatabase:
             try:
                 with open(nadi_path, 'r', encoding='utf-8') as f:
                     corpus['nadi_jyotisa'] = json.load(f)
-                print(f"✓ Loaded Nadi Jyotisa manuscripts from {nadi_path}")
+                logger.info(f"Loaded Nadi Jyotisa manuscripts from {nadi_path}")
             except Exception as e:
-                print(f"Warning: Could not load Nadi Jyotisa texts: {e}")
+                logger.warning(f"Could not load Nadi Jyotisa texts: {e}")
         
         # Load commentaries
         commentaries_path = data_dir / 'bhrigu_samhita' / 'commentaries.json'
@@ -67,9 +71,9 @@ class BhriguCorpusDatabase:
             try:
                 with open(commentaries_path, 'r', encoding='utf-8') as f:
                     corpus['commentaries'] = json.load(f)
-                print(f"✓ Loaded commentaries from {commentaries_path}")
+                logger.info(f"Loaded commentaries from {commentaries_path}")
             except Exception as e:
-                print(f"Warning: Could not load commentaries: {e}")
+                logger.warning(f"Could not load commentaries: {e}")
         
         # Load nakshatra mappings
         nakshatra_path = data_dir / 'bhrigu_samhita' / 'nakshatra_mappings.json'
@@ -77,9 +81,9 @@ class BhriguCorpusDatabase:
             try:
                 with open(nakshatra_path, 'r', encoding='utf-8') as f:
                     corpus['nakshatra_mappings'] = json.load(f)
-                print(f"✓ Loaded nakshatra mappings from {nakshatra_path}")
+                logger.info(f"Loaded nakshatra mappings from {nakshatra_path}")
             except Exception as e:
-                print(f"Warning: Could not load nakshatra mappings: {e}")
+                logger.warning(f"Could not load nakshatra mappings: {e}")
         
         # Load life events patterns
         life_events_path = data_dir / 'nadi_jyotisa' / 'life_events_patterns.json'
@@ -87,9 +91,9 @@ class BhriguCorpusDatabase:
             try:
                 with open(life_events_path, 'r', encoding='utf-8') as f:
                     corpus['life_events'] = json.load(f)
-                print(f"✓ Loaded life events patterns from {life_events_path}")
+                logger.info(f"Loaded life events patterns from {life_events_path}")
             except Exception as e:
-                print(f"Warning: Could not load life events patterns: {e}")
+                logger.warning(f"Could not load life events patterns: {e}")
         
         # Load timing rules
         timing_path = data_dir / 'nadi_jyotisa' / 'timing_rules.json'
@@ -97,9 +101,9 @@ class BhriguCorpusDatabase:
             try:
                 with open(timing_path, 'r', encoding='utf-8') as f:
                     corpus['timing_rules'] = json.load(f)
-                print(f"✓ Loaded timing rules from {timing_path}")
+                logger.info(f"Loaded timing rules from {timing_path}")
             except Exception as e:
-                print(f"Warning: Could not load timing rules: {e}")
+                logger.warning(f"Could not load timing rules: {e}")
         
         return corpus
         

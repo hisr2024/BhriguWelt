@@ -3,6 +3,7 @@ Bhrigu Samhita and Nadi Jyotisa Predictions Service
 Comprehensive predictions based on ancient Vedic wisdom
 """
 import os
+import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import json
@@ -11,6 +12,10 @@ from services.openai_service import get_openai_service
 from services.astrology_calculator import AstrologyCalculator
 from services.section_parser import get_section_parser
 from services.bhrigu_corpus_db import get_corpus_database
+
+# Configure logging
+logger = logging.getLogger(__name__)
+
 
 class BhriguPredictionsService:
     """
@@ -239,7 +244,7 @@ Provide specific, actionable guidance rooted in Bhrigu Samhita and Nadi Jyotisa 
         # Validate and ensure all sections are present
         missing_sections = self.section_parser.get_missing_sections(sections, 'karmic_journey')
         if missing_sections:
-            print(f"⚠️  Auto-repairing {len(missing_sections)} missing sections for karmic_journey")
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for karmic_journey")
             for section_key in missing_sections:
                 sections[section_key] = self.section_parser.generate_missing_section(
                     section_key,
@@ -344,7 +349,7 @@ Reference specific Nadi Jyotisa indicators and planetary positions."""
         # Validate and ensure all sections are present
         missing_sections = self.section_parser.get_missing_sections(sections, 'past_lives')
         if missing_sections:
-            print(f"⚠️  Auto-repairing {len(missing_sections)} missing sections for past_lives")
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for past_lives")
             for section_key in missing_sections:
                 sections[section_key] = self.section_parser.generate_missing_section(
                     section_key,
@@ -459,7 +464,7 @@ Ground predictions in Bhrigu Samhita principles of karmic progression."""
         # Validate and ensure all sections are present
         missing_sections = self.section_parser.get_missing_sections(sections, 'future_lives')
         if missing_sections:
-            print(f"⚠️  Auto-repairing {len(missing_sections)} missing sections for future_lives")
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for future_lives")
             for section_key in missing_sections:
                 sections[section_key] = self.section_parser.generate_missing_section(
                     section_key,
@@ -596,7 +601,7 @@ Base analysis on classical Bhrigu Samhita delineation methods."""
         # Validate and ensure all sections are present
         missing_sections = self.section_parser.get_missing_sections(sections, 'present_life')
         if missing_sections:
-            print(f"⚠️  Auto-repairing {len(missing_sections)} missing sections for present_life")
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for present_life")
             for section_key in missing_sections:
                 sections[section_key] = self.section_parser.generate_missing_section(
                     section_key,
@@ -767,7 +772,7 @@ Provide month-level precision where possible using Nadi Jyotisa methods."""
         # Validate and ensure all sections are present
         missing_sections = self.section_parser.get_missing_sections(sections, 'life_events')
         if missing_sections:
-            print(f"⚠️  Auto-repairing {len(missing_sections)} missing sections for life_events")
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for life_events")
             for section_key in missing_sections:
                 sections[section_key] = self.section_parser.generate_missing_section(
                     section_key,
@@ -985,7 +990,7 @@ Provide practical, affordable, and effective remedies that can be integrated int
         # Validate and ensure all sections are present
         missing_sections = self.section_parser.get_missing_sections(sections, 'karmic_remedies')
         if missing_sections:
-            print(f"⚠️  Auto-repairing {len(missing_sections)} missing sections for karmic_remedies")
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for karmic_remedies")
             for section_key in missing_sections:
                 sections[section_key] = self.section_parser.generate_missing_section(
                     section_key,
@@ -1204,7 +1209,7 @@ Provide specific, actionable relationship guidance based on classical astrology.
         # Validate and ensure all sections are present
         missing_sections = self.section_parser.get_missing_sections(sections, 'relationships')
         if missing_sections:
-            print(f"⚠️  Auto-repairing {len(missing_sections)} missing sections for relationships")
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for relationships")
             for section_key in missing_sections:
                 sections[section_key] = self.section_parser.generate_missing_section(
                     section_key,
@@ -1290,7 +1295,7 @@ Base on current planetary transits and your natal chart."""
         # Validate and ensure all sections are present
         missing_sections = self.section_parser.get_missing_sections(sections, 'predictions')
         if missing_sections:
-            print(f"⚠️  Auto-repairing {len(missing_sections)} missing sections for predictions")
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for predictions")
             for section_key in missing_sections:
                 sections[section_key] = self.section_parser.generate_missing_section(
                     section_key,

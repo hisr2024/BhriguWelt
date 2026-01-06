@@ -3,7 +3,11 @@ Advanced Section Parser for Bhrigu Predictions
 Ensures 100% structured output with AI-powered section generation
 """
 import re
+import logging
 from typing import Dict, List, Any, Optional
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 
 class SectionParser:
@@ -11,6 +15,10 @@ class SectionParser:
     Parse AI responses into structured sections
     Never return unstructured-only results
     """
+    
+    # Content validation thresholds
+    MINIMUM_SECTION_LENGTH = 100  # Minimum characters for a valid section
+    HEADER_EXTRACTION_MIN_LENGTH = 50  # Minimum for header-based extraction
     
     # Required sections for each category
     REQUIRED_SECTIONS = {
@@ -257,8 +265,8 @@ class SectionParser:
             section_data = self.extract_section_content(raw_text, section_key)
             
             # If section missing or insufficient, generate it specifically
-            if not section_data or len(section_data.strip()) < 100:
-                print(f"⚠️  Section '{section_key}' missing or insufficient, generating...")
+            if not section_data or len(section_data.strip()) < self.MINIMUM_SECTION_LENGTH:
+                logger.warning(f"Section '{section_key}' missing or insufficient, generating...")
                 section_data = self.generate_missing_section(
                     section_key, 
                     raw_text, 
@@ -287,13 +295,13 @@ class SectionParser:
         headers = self.SECTION_HEADERS.get(section_key, [])
         
         for header in headers:
-            # Try to find section with this header
+            # Try to find section with this header using markdown format (##)
             pattern = rf'{re.escape(header)}(.*?)(?=##|\Z)'
             match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
             
             if match:
                 content = match.group(1).strip()
-                if len(content) > 50:  # Minimum content length
+                if len(content) > self.HEADER_EXTRACTION_MIN_LENGTH:
                     return content
         
         # Try generic extraction by section number or key
@@ -361,7 +369,7 @@ class SectionParser:
             )
             return generated
         except Exception as e:
-            print(f"Error generating section {section_key}: {e}")
+            logger.error(f"Error generating section {section_key}: {e}")
             return self._get_fallback_section(section_key, birth_data)
     
     def _create_section_specific_prompt(
@@ -579,7 +587,7 @@ According to classical Vedic principles, individuals with {zodiac} as their zodi
             has_content = (
                 section_key in sections and 
                 sections[section_key] and 
-                len(str(sections[section_key]).strip()) >= 100
+                len(str(sections[section_key]).strip()) >= self.MINIMUM_SECTION_LENGTH
             )
             validation[section_key] = has_content
             
