@@ -1,0 +1,124 @@
+{
+  "life_events": {
+    "marriage_timing": {
+      "principles": [
+        "Marriage typically occurs during favorable Venus or Jupiter Dasha",
+        "7th house activation by transit or Dasha indicates marriage timing",
+        "Age ranges: Early (18-23), Moderate (24-28), Late (29-35), Very Late (36+)",
+        "Multiple marriage yogas indicate potential for remarriage"
+      ],
+      "favorable_ages": [21, 24, 27, 30, 33, 36],
+      "indicators": [
+        "Jupiter transit through 7th from Moon or Ascendant",
+        "Venus Dasha or Antardasha",
+        "7th lord Dasha period",
+        "Upapada Lagna activation"
+      ]
+    },
+    "career_milestones": {
+      "principles": [
+        "Career changes occur during 10th house activations",
+        "Saturn transit over 10th house brings responsibility and recognition",
+        "Sun Dasha brings authority and leadership roles",
+        "Mercury Dasha favors intellectual and business pursuits"
+      ],
+      "key_ages": [23, 28, 35, 42, 49, 56],
+      "indicators": [
+        "10th lord Dasha or Antardasha",
+        "Saturn aspect to 10th house",
+        "Jupiter transit through 10th",
+        "Sun in 10th or aspecting 10th"
+      ]
+    },
+    "children_timing": {
+      "principles": [
+        "Children arrive during Jupiter or 5th lord Dasha",
+        "Jupiter transit through 5th house indicates conception",
+        "5th house activation by favorable planets",
+        "Strong 5th house and lord indicate multiple children"
+      ],
+      "favorable_periods": [
+        "Jupiter Dasha or Antardasha",
+        "5th lord Mahadasha",
+        "Moon in favorable position with 5th house"
+      ]
+    },
+    "financial_breakthroughs": {
+      "principles": [
+        "11th house activation brings gains and achievements",
+        "2nd house activation increases income and savings",
+        "Jupiter transit through 2nd or 11th brings wealth",
+        "Dhan Yogas activate during specific Dashas"
+      ],
+      "key_ages": [24, 32, 36, 42, 48, 54],
+      "indicators": [
+        "Jupiter transit through 2nd or 11th",
+        "2nd or 11th lord Dasha",
+        "Venus Dasha with wealth yogas",
+        "Rahu in 2nd or 11th (sudden gains)"
+      ]
+    },
+    "health_transitions": {
+      "principles": [
+        "6th house activation indicates health challenges requiring attention",
+        "8th house transits may indicate surgeries or transformative health events",
+        "Saturn transit can indicate chronic conditions or need for discipline",
+        "Rahu-Ketu axis activation may indicate unusual health patterns"
+      ],
+      "critical_ages": [36, 42, 48, 54, 60, 66],
+      "prevention_periods": [
+        "Before Saturn return (age 29)",
+        "Mid-life transit (42)",
+        "Second Saturn return (58-60)"
+      ]
+    },
+    "spiritual_milestones": {
+      "principles": [
+        "9th house activation brings spiritual awakening",
+        "12th house transits deepen meditation and introspection",
+        "Ketu Dasha brings spiritual detachment and wisdom",
+        "Jupiter in 9th or 12th indicates spiritual teacher connection"
+      ],
+      "awakening_ages": [27, 33, 36, 42, 54, 63],
+      "indicators": [
+        "Ketu Mahadasha or Antardasha",
+        "Jupiter transit through 9th or 12th",
+        "9th lord activation",
+        "Spiritual planet Dasha with 12th house connection"
+      ]
+    },
+    "relocation_timing": {
+      "principles": [
+        "4th house changes indicate home and residence shifts",
+        "12th house activation may indicate foreign travel or residence",
+        "3rd house activation indicates short-distance moves",
+        "Rahu-Ketu axis in 4th-10th indicates major relocations"
+      ],
+      "common_ages": [23, 28, 35, 42, 49],
+      "indicators": [
+        "4th lord Dasha or transit activation",
+        "Rahu in 4th or 12th house",
+        "Saturn transit over 4th house",
+        "Mars activation indicating property changes"
+      ]
+    }
+  },
+  "timing_precision": {
+    "dasha_system": {
+      "vimshottari": "120-year cycle, most commonly used for life event timing",
+      "yogini": "36-year cycle, used for specific event timing",
+      "chara": "Used in Jaimini system for relationship and event timing"
+    },
+    "transit_importance": {
+      "jupiter": "Major benefic, 1-year transit per sign, brings growth and expansion",
+      "saturn": "Major karmic, 2.5-year transit per sign, brings lessons and maturity",
+      "rahu_ketu": "1.5-year transit per sign, brings unexpected changes and karmic events",
+      "eclipses": "Activate sensitive points, bring sudden changes and revelations"
+    }
+  },
+  "predictive_accuracy": {
+    "month_level": "Achieved through Antardasha and transit combinations",
+    "week_level": "Achieved through Pratyantardasha and daily transits",
+    "day_level": "Achieved through Muhurta and precise planetary positions"
+  }
+}

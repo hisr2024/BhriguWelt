@@ -1,0 +1,216 @@
+{
+  "karmic_journey": {
+    "Aries": {
+      "Ashwini": {
+        "soul_purpose": "Pioneer and healer, bringing swift transformation and new beginnings to others",
+        "karmic_blueprint": "Past life as a warrior or healer, karmic pattern of initiating change, debt of impulsiveness to balance",
+        "life_mission": "Lead with courage while cultivating patience, heal through action"
+      },
+      "Bharani": {
+        "soul_purpose": "Transform through creative destruction, bear the weight of transformation for collective growth",
+        "karmic_blueprint": "Past life of extreme experiences, karmic lesson of managing power and restraint",
+        "life_mission": "Create through destruction, bring new life through endings"
+      },
+      "Krittika": {
+        "soul_purpose": "Purify and cut through illusions, nurture while maintaining boundaries",
+        "karmic_blueprint": "Past life of authority and judgment, balancing nurturing with discrimination",
+        "life_mission": "Burn away falsehood, nurture truth and authenticity"
+      }
+    },
+    "Taurus": {
+      "Krittika": {
+        "soul_purpose": "Stabilize and purify material foundations while maintaining spiritual discernment",
+        "karmic_blueprint": "Past accumulation of wealth with spiritual neglect, now balancing material and spiritual",
+        "life_mission": "Build lasting value through purified intentions and discerning choices"
+      },
+      "Rohini": {
+        "soul_purpose": "Create beauty and abundance, manifest divine creativity in material form",
+        "karmic_blueprint": "Past life of artistic mastery, learning balance between creation and attachment",
+        "life_mission": "Channel creative energy for collective beauty and abundance"
+      },
+      "Mrigashira": {
+        "soul_purpose": "Seek and explore, bring curiosity and wonder to material pursuits",
+        "karmic_blueprint": "Eternal seeker from past lives, learning to balance search with contentment",
+        "life_mission": "Explore with purpose, find stability in the journey itself"
+      }
+    },
+    "Gemini": {
+      "Mrigashira": {
+        "soul_purpose": "Communicate divine wisdom through exploration and intellectual curiosity",
+        "karmic_blueprint": "Past as scholar or messenger, learning depth beyond breadth",
+        "life_mission": "Share knowledge that transforms, communicate with purpose"
+      },
+      "Ardra": {
+        "soul_purpose": "Transform through storms, bring clarity after chaos",
+        "karmic_blueprint": "Past life of upheaval leading to wisdom, mastering emotional intensity",
+        "life_mission": "Weather storms with grace, help others find clarity in chaos"
+      },
+      "Punarvasu": {
+        "soul_purpose": "Return to innocence, restore and renew after loss",
+        "karmic_blueprint": "Multiple lives of loss and recovery, mastering resilience",
+        "life_mission": "Teach renewal, show that return to wholeness is always possible"
+      }
+    },
+    "Cancer": {
+      "Punarvasu": {
+        "soul_purpose": "Nurture renewal, provide emotional sanctuary for restoration",
+        "karmic_blueprint": "Caretaker across lifetimes, learning self-care alongside service",
+        "life_mission": "Create emotional safety while maintaining healthy boundaries"
+      },
+      "Pushya": {
+        "soul_purpose": "Nourish and sustain, provide spiritual and material nourishment",
+        "karmic_blueprint": "Past as provider and nurturer, balancing giving with receiving",
+        "life_mission": "Feed body and soul, create abundance through caring"
+      },
+      "Ashlesha": {
+        "soul_purpose": "Penetrate mysteries, understand hidden emotional depths",
+        "karmic_blueprint": "Past involvement with occult or psychology, managing psychic sensitivity",
+        "life_mission": "Use intuitive gifts for healing, not manipulation"
+      }
+    },
+    "Leo": {
+      "Magha": {
+        "soul_purpose": "Lead with ancestral wisdom, carry forward royal dharmic lineage",
+        "karmic_blueprint": "Past life royalty or spiritual authority, balancing pride with service",
+        "life_mission": "Establish dharmic authority, guide with compassion and wisdom"
+      },
+      "Purva_Phalguni": {
+        "soul_purpose": "Create joy and beauty, balance pleasure with dharmic responsibility",
+        "karmic_blueprint": "Past artistic or pleasure-seeking life, learning sacred creativity",
+        "life_mission": "Bring delight while fulfilling duties, create beauty with purpose"
+      },
+      "Uttara_Phalguni": {
+        "soul_purpose": "Formalize and structure creative expression, build lasting institutions",
+        "karmic_blueprint": "Past builder or organizer, learning balance of structure and spontaneity",
+        "life_mission": "Create enduring systems that serve collective good"
+      }
+    },
+    "Virgo": {
+      "Uttara_Phalguni": {
+        "soul_purpose": "Perfect through service, bring divine order to earthly affairs",
+        "karmic_blueprint": "Past as craftsperson or healer, refining skills across lifetimes",
+        "life_mission": "Serve through excellence, heal through attention to detail"
+      },
+      "Hasta": {
+        "soul_purpose": "Master crafts and skills, create tangible manifestations of divinity",
+        "karmic_blueprint": "Artisan across multiple lives, learning spiritual dimension of work",
+        "life_mission": "Perfect skills in service of higher purpose"
+      },
+      "Chitra": {
+        "soul_purpose": "Design and architect, bring divine beauty into structured form",
+        "karmic_blueprint": "Past as designer or artist, balancing aesthetics with function",
+        "life_mission": "Create beauty that serves, design with divine inspiration"
+      }
+    },
+    "Libra": {
+      "Chitra": {
+        "soul_purpose": "Balance opposites through creative expression and aesthetic harmony",
+        "karmic_blueprint": "Past lives seeking beauty, learning deeper meaning beyond appearance",
+        "life_mission": "Create harmony that reflects universal truth"
+      },
+      "Swati": {
+        "soul_purpose": "Move independently while maintaining connection, balance freedom with relationship",
+        "karmic_blueprint": "Past as wanderer or merchant, learning commitment alongside freedom",
+        "life_mission": "Demonstrate independence within interdependence"
+      },
+      "Vishakha": {
+        "soul_purpose": "Focus intensity on worthy goals, channel ambition for collective benefit",
+        "karmic_blueprint": "Past of worldly ambition, now learning spiritual purpose",
+        "life_mission": "Achieve with integrity, transform ambition into service"
+      }
+    },
+    "Scorpio": {
+      "Vishakha": {
+        "soul_purpose": "Transform personal power into spiritual potency through focused intensity",
+        "karmic_blueprint": "Past lives of power struggles, learning to wield power wisely",
+        "life_mission": "Transform self and others through authentic power"
+      },
+      "Anuradha": {
+        "soul_purpose": "Build lasting bonds through loyalty and devotion to higher principles",
+        "karmic_blueprint": "Past of betrayal or deep loyalty, learning discriminating devotion",
+        "life_mission": "Create spiritual friendships, demonstrate loyal devotion"
+      },
+      "Jyeshtha": {
+        "soul_purpose": "Protect and mentor, wield authority with wisdom and responsibility",
+        "karmic_blueprint": "Past as protector or elder, managing power and vulnerability",
+        "life_mission": "Lead with maturity, protect the vulnerable with strength"
+      }
+    },
+    "Sagittarius": {
+      "Mula": {
+        "soul_purpose": "Uproot falsehood, return to fundamental truth through deep investigation",
+        "karmic_blueprint": "Past lives of spiritual seeking and philosophical inquiry",
+        "life_mission": "Dig deep for truth, destroy illusions to reveal reality"
+      },
+      "Purva_Ashadha": {
+        "soul_purpose": "Invigorate and inspire, bring renewal through optimistic vision",
+        "karmic_blueprint": "Past as teacher or inspirer, learning grounded idealism",
+        "life_mission": "Inspire while remaining practical, uplift through realistic hope"
+      },
+      "Uttara_Ashadha": {
+        "soul_purpose": "Achieve enduring victory through righteous perseverance",
+        "karmic_blueprint": "Past of noble struggles, learning patience in achievement",
+        "life_mission": "Win through integrity, establish lasting positive change"
+      }
+    },
+    "Capricorn": {
+      "Uttara_Ashadha": {
+        "soul_purpose": "Build lasting legacy through disciplined dharmic action",
+        "karmic_blueprint": "Past as administrator or elder, managing worldly responsibility with spiritual awareness",
+        "life_mission": "Create enduring structures that serve future generations"
+      },
+      "Shravana": {
+        "soul_purpose": "Listen deeply and transmit sacred knowledge with accuracy",
+        "karmic_blueprint": "Past as scholar or oral tradition keeper, perfecting receptivity",
+        "life_mission": "Preserve and transmit wisdom, listen with sacred attention"
+      },
+      "Dhanishta": {
+        "soul_purpose": "Create rhythm and prosperity through harmonious coordination",
+        "karmic_blueprint": "Past involvement with music or wealth, learning generosity",
+        "life_mission": "Generate abundance for collective benefit through harmonious action"
+      }
+    },
+    "Aquarius": {
+      "Dhanishta": {
+        "soul_purpose": "Innovate for collective benefit, bring future vision to present reality",
+        "karmic_blueprint": "Past as innovator or rebel, learning to ground ideals",
+        "life_mission": "Create humanitarian solutions through innovative thinking"
+      },
+      "Shatabhisha": {
+        "soul_purpose": "Heal through unconventional means, reveal hidden truths",
+        "karmic_blueprint": "Past as healer or mystic, managing isolation and connection",
+        "life_mission": "Share hidden knowledge for collective healing"
+      },
+      "Purva_Bhadrapada": {
+        "soul_purpose": "Transform through intensity, bridge worldly and spiritual realms",
+        "karmic_blueprint": "Past lives of extreme experiences, integrating dualities",
+        "life_mission": "Guide others through transformation, teach through intensity"
+      }
+    },
+    "Pisces": {
+      "Purva_Bhadrapada": {
+        "soul_purpose": "Dissolve boundaries through compassionate transformation",
+        "karmic_blueprint": "Past spiritual practices, balancing transcendence with embodiment",
+        "life_mission": "Serve through spiritual insight, heal through compassion"
+      },
+      "Uttara_Bhadrapada": {
+        "soul_purpose": "Anchor cosmic wisdom in earthly service, provide stable spirituality",
+        "karmic_blueprint": "Advanced soul nearing completion, teaching through being",
+        "life_mission": "Embody wisdom, serve as anchor for spiritual seekers"
+      },
+      "Revati": {
+        "soul_purpose": "Complete the journey, guide souls to liberation",
+        "karmic_blueprint": "Near final incarnations, soul has achieved mastery",
+        "life_mission": "Shepherd souls, demonstrate completion while remaining present"
+      }
+    }
+  },
+  "life_events": {
+    "general_timing": {
+      "marriage_indicators": "7th house lord position, Venus placement, Jupiter transit through 7th from Moon",
+      "career_shifts": "10th house activations, Saturn transits, Dasha changes",
+      "financial_gains": "2nd and 11th house activations, Jupiter aspects, favorable Dasha periods",
+      "health_alerts": "6th and 8th house transits, Saturn or Mars afflictions, Rahu-Ketu axis"
+    }
+  }
+}
