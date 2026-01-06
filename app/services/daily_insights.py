@@ -1,264 +1,288 @@
 """
-Daily insights service for transit-based predictions.
-Provides daily guidance based on current planetary transits.
+Daily Insights engine for transit-based predictions.
+Provides today's insights and 7-day forecast using current transits.
 """
-from datetime import date, datetime, timedelta
-from typing import List, Dict, Any
+
+from datetime import datetime, timedelta
+from typing import List
+import pytz
+
 from app.domain.models import (
-    BirthInfo, DailyInsightsOutput, DailyInsight,
-    TransitTrigger, RuleTrace, Planet, Chart
+    PersonInput, DailyInsightsOutput, DailyInsight,
+    ChartData, TransitSnapshot, PlanetPosition, RuleTrace,
+    Planet, ZodiacSign, Nakshatra
 )
 from app.services.chart import ChartService
 from app.services.ephemeris import EphemerisService
+from app.rules.engine import RulesEngine
+from app.config import ENGINE_VERSION, STANDARD_DISCLAIMERS
 
 
 class DailyInsightsService:
-    """Service for daily astrological insights based on transits."""
+    """
+    Service for generating daily insights based on transits.
+    """
 
     def __init__(self):
-        """Initialize daily insights service."""
         self.chart_service = ChartService()
-        self.ephemeris = EphemerisService()
+        self.ephe = EphemerisService()
+        self.rules_engine = RulesEngine()
 
-    def generate_daily_insights(
-        self,
-        birth_info: BirthInfo,
-        target_date: date = None
-    ) -> DailyInsightsOutput:
+    def generate_daily_insights(self, person: PersonInput) -> DailyInsightsOutput:
         """
-        Generate daily insights based on transits.
+        Generate daily insights for a person.
 
         Args:
-            birth_info: Birth information
-            target_date: Date for insights (default: today)
+            person: PersonInput with birth details
 
         Returns:
-            Complete DailyInsightsOutput
+            DailyInsightsOutput with today and 7-day forecast
         """
-        if target_date is None:
-            target_date = date.today()
-
         # Calculate natal chart
-        natal_chart = self.chart_service.calculate_chart(birth_info)
+        natal_chart = self.chart_service.calculate_chart(person)
+
+        # Get today's date in person's timezone
+        tz = pytz.timezone(person.place_of_birth.tz)
+        today = datetime.now(tz).date()
 
         # Generate today's insight
-        today_insight = self._generate_insight_for_date(target_date, natal_chart)
+        today_insight = self._generate_day_insight(today, natal_chart, person.place_of_birth.tz)
 
         # Generate next 7 days
         next_7_days = []
         for i in range(1, 8):
-            future_date = target_date + timedelta(days=i)
-            insight = self._generate_insight_for_date(future_date, natal_chart)
-            next_7_days.append(insight)
+            future_date = today + timedelta(days=i)
+            day_insight = self._generate_day_insight(future_date, natal_chart, person.place_of_birth.tz)
+            next_7_days.append(day_insight)
 
-        # Key transit triggers (significant transits)
-        key_triggers = self._get_key_transit_triggers(target_date, natal_chart)
+        # Generate summary
+        summary = self._generate_summary(natal_chart, today_insight)
 
-        # Meta
+        # Collect all rule traces
+        all_traces = today_insight.key_triggers  # These contain basic transit info
+
+        # Create metadata
         meta = {
-            "engine_version": "1.0.0",
-            "target_date": target_date.isoformat(),
-            "calculation_notes": [
-                "Transit positions calculated for 12:00 UTC on target date",
-                "Insights based on Nadi Jyotisha transit principles",
-                "Focus on practical guidance for daily navigation"
-            ]
+            "engine_version": ENGINE_VERSION,
+            "calculation_notes": f"Transit analysis for {today.isoformat()} in timezone {person.place_of_birth.tz}",
+            "assumptions": "Daily insights based on current planetary transits relative to natal positions",
+            "timestamp_utc": datetime.utcnow().isoformat()
         }
 
-        # Disclaimers
-        disclaimers = [
-            "Daily insights are general guidance based on transits to your natal chart.",
-            "Personal free will and conscious choice influence outcomes significantly.",
-            "Use insights for awareness and planning, not rigid prediction.",
-            "Major life decisions should consider comprehensive astrological consultation."
-        ]
-
-        return DailyInsightsOutput(
+        output = DailyInsightsOutput(
             meta=meta,
+            summary=summary,
             today=today_insight,
             next_7_days=next_7_days,
-            key_transit_triggers=key_triggers,
-            rule_traces=[],  # Could add transit-specific rules
-            disclaimers=disclaimers
+            rule_traces=[],  # Transit rules would go here
+            disclaimers=STANDARD_DISCLAIMERS
         )
 
-    def _generate_insight_for_date(self, target_date: date, natal_chart: Chart) -> DailyInsight:
-        """Generate insight for a specific date."""
-        # Calculate transit chart for target date
-        transit_datetime = datetime(target_date.year, target_date.month, target_date.day, 12, 0, 0)
-        jd = self.ephemeris.datetime_to_julian_day(transit_datetime, 'UTC')
+        return output
 
-        # Get transiting Moon
-        transit_moon_lon, _ = self.ephemeris.get_planet_longitude(Planet.MOON, jd, sidereal=True)
-        transit_moon_nak, transit_moon_pada, _ = self.ephemeris.longitude_to_nakshatra(transit_moon_lon)
+    def _generate_day_insight(self, date, natal_chart: ChartData, timezone_str: str) -> DailyInsight:
+        """
+        Generate insight for a specific day.
 
-        # Get natal Moon
-        natal_moon = self.chart_service.get_planet_position(natal_chart, Planet.MOON)
+        Args:
+            date: Date object
+            natal_chart: Person's natal chart
+            timezone_str: IANA timezone string
 
-        # Determine focus areas based on transiting Moon
-        focus_areas = self._determine_focus_areas(transit_moon_nak.value, natal_moon.nakshatra.value)
+        Returns:
+            DailyInsight for the day
+        """
+        # Calculate transit positions for this date at noon
+        tz = pytz.timezone(timezone_str)
+        dt = tz.localize(datetime.combine(date, datetime.min.time().replace(hour=12)))
+        utc_dt = dt.astimezone(pytz.UTC)
+        jd = self.ephe.datetime_to_jd(utc_dt)
 
-        # Generate do/don't lists
-        do_list = self._generate_do_list(transit_moon_nak.value)
-        dont_list = self._generate_dont_list(transit_moon_nak.value)
+        # Get transit positions
+        transit_snapshot = self._calculate_transit_snapshot(jd, date.isoformat())
 
-        # Transit triggers
-        transit_triggers = self._analyze_daily_transits(target_date, natal_chart, jd)
+        # Analyze transits against natal chart
+        overview = self._analyze_day_overview(transit_snapshot, natal_chart, date)
+        do_list = self._generate_do_list(transit_snapshot, natal_chart)
+        dont_list = self._generate_dont_list(transit_snapshot, natal_chart)
+        focus_areas = self._generate_focus_areas(transit_snapshot, natal_chart)
+        key_triggers = self._identify_key_triggers(transit_snapshot, natal_chart)
 
-        # Energy level based on Moon phase and nakshatra
-        energy_level = self._assess_energy_level(transit_moon_nak.value, transit_moon_pada)
-
-        return DailyInsight(
-            date=target_date,
-            focus_areas=focus_areas,
+        insight = DailyInsight(
+            date=date.isoformat(),
+            overview=overview,
             do_list=do_list,
             dont_list=dont_list,
-            transit_triggers=transit_triggers,
-            energy_level=energy_level
+            focus_areas=focus_areas,
+            key_triggers=key_triggers
         )
 
-    def _determine_focus_areas(self, transit_nak: str, natal_nak: str) -> List[str]:
-        """Determine focus areas based on Moon nakshatras."""
-        # Nakshatra-based focus
-        nakshatra_focus = {
-            "Ashwini": ["Health and healing", "New beginnings"],
-            "Bharani": ["Transformation", "Creative projects"],
-            "Krittika": ["Purification", "Critical thinking"],
-            "Rohini": ["Material matters", "Beauty and comfort"],
-            "Mrigashira": ["Learning", "Seeking new knowledge"],
-            "Ardra": ["Research", "Emotional processing"],
-            "Punarvasu": ["Renewal", "Returning to fundamentals"],
-            "Pushya": ["Nourishment", "Spiritual practices"],
-            "Ashlesha": ["Mystical studies", "Deep contemplation"],
-            "Magha": ["Ancestral matters", "Authority and responsibility"],
-            "Purva Phalguni": ["Creativity", "Relationships"],
-            "Uttara Phalguni": ["Partnerships", "Generous actions"],
-            "Hasta": ["Skills development", "Detailed work"],
-            "Chitra": ["Artistic expression", "Brilliance"],
-            "Swati": ["Independence", "Flexibility"],
-            "Vishakha": ["Goal pursuit", "Determination"],
-            "Anuradha": ["Devotion", "Friendship"],
-            "Jyeshtha": ["Leadership", "Protection"],
-            "Mula": ["Root investigation", "Foundation work"],
-            "Purva Ashadha": ["Invincibility", "Purification"],
-            "Uttara Ashadha": ["Victory", "Ethical action"],
-            "Shravana": ["Listening", "Learning"],
-            "Dhanishtha": ["Wealth creation", "Music and rhythm"],
-            "Shatabhisha": ["Healing", "Alternative approaches"],
-            "Purva Bhadrapada": ["Spiritual intensity", "Sacrifice"],
-            "Uttara Bhadrapada": ["Deep wisdom", "Kundalini practices"],
-            "Revati": ["Compassion", "Completion of cycles"]
-        }
+        return insight
 
-        return nakshatra_focus.get(transit_nak, ["General awareness", "Mindful action"])
+    def _calculate_transit_snapshot(self, jd: float, date_str: str) -> TransitSnapshot:
+        """Calculate current transit positions."""
+        planet_positions = []
+        planet_data = self.ephe.get_all_planet_positions(jd)
 
-    def _generate_do_list(self, transit_nak: str) -> List[str]:
-        """Generate favorable activities based on transiting Moon nakshatra."""
-        nakshatra_dos = {
-            "Ashwini": ["Start new health routines", "Take initiative on pending projects"],
-            "Rohini": ["Focus on financial planning", "Enjoy beauty and arts"],
-            "Pushya": ["Spiritual practices", "Nurture relationships"],
-            "Magha": ["Honor ancestors", "Take leadership roles"],
-            "Hasta": ["Work with hands", "Pay attention to details"],
-            "Swati": ["Network and trade", "Be flexible in approach"],
-            "Anuradha": ["Cultivate devotion", "Strengthen friendships"],
-            "Shravana": ["Listen more than speak", "Study and learn"],
-            "Uttara Bhadrapada": ["Meditate deeply", "Seek profound wisdom"]
-        }
+        for planet_name, pos_data in planet_data.items():
+            longitude = pos_data["longitude"]
+            sign_name, sign_long = self.ephe.longitude_to_sign(longitude)
+            nakshatra_name, pada, nak_lord, long_in_nak = self.ephe.longitude_to_nakshatra(longitude)
 
-        return nakshatra_dos.get(transit_nak, ["Maintain regular routines", "Act with awareness"])
+            planet_pos = PlanetPosition(
+                planet=Planet[planet_name.upper()],
+                longitude=longitude,
+                sign=ZodiacSign[sign_name.upper()],
+                sign_longitude=sign_long,
+                house=1,  # House position not relevant for pure transits
+                nakshatra=Nakshatra[nakshatra_name.upper().replace(" ", "_")],
+                nakshatra_pada=pada,
+                is_retrograde=pos_data["is_retrograde"]
+            )
+            planet_positions.append(planet_pos)
 
-    def _generate_dont_list(self, transit_nak: str) -> List[str]:
-        """Generate unfavorable activities based on transiting Moon nakshatra."""
-        nakshatra_donts = {
-            "Ashwini": ["Delay health matters", "Procrastinate on important tasks"],
-            "Ardra": ["Avoid emotional decisions", "Skip rest and recovery"],
-            "Ashlesha": ["Distrust intuition", "Ignore subtle signs"],
-            "Magha": ["Disrespect traditions", "Ignore responsibilities"],
-            "Mula": ["Make superficial choices", "Avoid root causes"],
-            "Uttara Ashadha": ["Compromise ethics", "Rush to conclusions"]
-        }
+        return TransitSnapshot(
+            date=date_str,
+            planets=planet_positions
+        )
 
-        return nakshatra_donts.get(transit_nak, ["Avoid impulsive actions", "Don't ignore intuition"])
+    def _analyze_day_overview(self, transit: TransitSnapshot, natal: ChartData, date) -> str:
+        """Generate overview for the day."""
+        # Find significant transits
+        weekday = date.strftime("%A")
 
-    def _analyze_daily_transits(
-        self,
-        target_date: date,
-        natal_chart: Chart,
-        jd: float
-    ) -> List[TransitTrigger]:
-        """Analyze specific transits for the day."""
-        triggers: List[TransitTrigger] = []
+        # Check Moon transit
+        transit_moon = next((p for p in transit.planets if p.planet == Planet.MOON), None)
+        if transit_moon:
+            overview = (
+                f"{weekday}: The Moon transits {transit_moon.sign.value}, "
+                f"nakshatra {transit_moon.nakshatra.value}. "
+            )
+        else:
+            overview = f"{weekday}: "
 
-        # Check transiting planets to natal Moon
-        natal_moon = self.chart_service.get_planet_position(natal_chart, Planet.MOON)
+        # Add general guidance
+        overview += "Focus on aligning daily actions with long-term dharmic goals."
 
-        # Jupiter transit (expansion)
-        transit_jupiter_lon, _ = self.ephemeris.get_planet_longitude(Planet.JUPITER, jd, sidereal=True)
-        jupiter_orb = abs(transit_jupiter_lon - natal_moon.longitude)
-        if jupiter_orb > 180:
-            jupiter_orb = 360 - jupiter_orb
+        return overview
 
-        if jupiter_orb < 5:  # Close conjunction
-            triggers.append(TransitTrigger(
-                transit_planet=Planet.JUPITER,
-                natal_point="natal Moon",
-                aspect_type="conjunction",
-                orb_degrees=jupiter_orb,
-                narrative="Jupiter transiting near your Moon brings emotional expansion and optimism. "
-                         "Good time for learning and spiritual growth."
-            ))
+    def _generate_do_list(self, transit: TransitSnapshot, natal: ChartData) -> List[str]:
+        """Generate recommended activities."""
+        do_list = []
 
-        # Saturn transit (discipline)
-        transit_saturn_lon, _ = self.ephemeris.get_planet_longitude(Planet.SATURN, jd, sidereal=True)
-        saturn_orb = abs(transit_saturn_lon - natal_moon.longitude)
-        if saturn_orb > 180:
-            saturn_orb = 360 - saturn_orb
+        # Based on transiting Moon
+        transit_moon = next((p for p in transit.planets if p.planet == Planet.MOON), None)
+        if transit_moon:
+            # Moon in cardinal signs: initiate
+            if transit_moon.sign.value in ["Aries", "Cancer", "Libra", "Capricorn"]:
+                do_list.append("Initiate new projects or activities")
 
-        if saturn_orb < 5:
-            triggers.append(TransitTrigger(
-                transit_planet=Planet.SATURN,
-                natal_point="natal Moon",
-                aspect_type="conjunction",
-                orb_degrees=saturn_orb,
-                narrative="Saturn transiting near your Moon brings emotional discipline and maturity. "
-                         "Time for serious reflection and responsibility."
-            ))
+            # Moon in earth signs: practical work
+            if transit_moon.sign.value in ["Taurus", "Virgo", "Capricorn"]:
+                do_list.append("Focus on practical, tangible tasks")
 
-        # If no close transits, add general guidance
+            # Moon in water signs: emotional work
+            if transit_moon.sign.value in ["Cancer", "Scorpio", "Pisces"]:
+                do_list.append("Nurture relationships and emotional well-being")
+
+        do_list.append("Maintain regular spiritual practice")
+        do_list.append("Honor commitments and responsibilities")
+
+        return do_list[:3]  # Top 3
+
+    def _generate_dont_list(self, transit: TransitSnapshot, natal: ChartData) -> List[str]:
+        """Generate activities to avoid."""
+        dont_list = []
+
+        # Check for challenging transits
+        transit_saturn = next((p for p in transit.planets if p.planet == Planet.SATURN), None)
+        transit_mars = next((p for p in transit.planets if p.planet == Planet.MARS), None)
+
+        # If Mars is in a challenging position
+        if transit_mars and transit_mars.is_retrograde:
+            dont_list.append("Avoid impulsive actions or confrontations")
+
+        # General wisdom
+        dont_list.append("Avoid major financial decisions without due diligence")
+        dont_list.append("Don't neglect health and rest")
+
+        return dont_list[:3]  # Top 3
+
+    def _generate_focus_areas(self, transit: TransitSnapshot, natal: ChartData) -> List[str]:
+        """Generate focus areas for the day."""
+        focus = []
+
+        # Based on current mahadasha
+        if natal.dasha_timeline.current_mahadasha:
+            maha_planet = natal.dasha_timeline.current_mahadasha.planet.value
+            focus.append(f"Continue working with {maha_planet} Mahadasha themes")
+
+        # Transit-based focus
+        transit_jupiter = next((p for p in transit.planets if p.planet == Planet.JUPITER), None)
+        if transit_jupiter:
+            focus.append(f"Jupiter in {transit_jupiter.sign.value}: Expansion and wisdom")
+
+        focus.append("Maintain balance between material and spiritual pursuits")
+
+        return focus[:3]
+
+    def _identify_key_triggers(self, transit: TransitSnapshot, natal: ChartData) -> List[str]:
+        """Identify key transit triggers."""
+        triggers = []
+
+        # Check if any transit planet is hitting natal Moon
+        natal_moon = next(p for p in natal.planets if p.planet == Planet.MOON)
+
+        for transit_planet in transit.planets:
+            if transit_planet.planet in [Planet.JUPITER, Planet.SATURN]:
+                diff = abs(transit_planet.longitude - natal_moon.longitude)
+                if diff > 180:
+                    diff = 360 - diff
+
+                if diff < 5:  # Within 5 degrees
+                    triggers.append(
+                        f"{transit_planet.planet.value} transiting near natal Moon "
+                        f"({transit_planet.sign.value})"
+                    )
+
+        # Check natal Sun
+        natal_sun = next(p for p in natal.planets if p.planet == Planet.SUN)
+        transit_saturn = next((p for p in transit.planets if p.planet == Planet.SATURN), None)
+
+        if transit_saturn:
+            diff = abs(transit_saturn.longitude - natal_sun.longitude)
+            if diff > 180:
+                diff = 360 - diff
+
+            if diff < 5:
+                triggers.append(
+                    f"Saturn transiting near natal Sun: Lessons in authority and discipline"
+                )
+
         if not triggers:
-            triggers.append(TransitTrigger(
-                transit_planet=Planet.MOON,
-                natal_point="general",
-                aspect_type="daily_motion",
-                orb_degrees=0,
-                narrative="Daily Moon transit influences general emotional tone and receptivity."
-            ))
+            triggers.append("No major exact transits today; focus on steady progress")
 
         return triggers
 
-    def _assess_energy_level(self, transit_nak: str, pada: int) -> str:
-        """Assess energy level for the day."""
-        # Simplified energy assessment
-        high_energy_naks = ["Ashwini", "Magha", "Mula", "Uttara Ashadha"]
-        medium_energy_naks = ["Rohini", "Pushya", "Hasta", "Shravana", "Revati"]
+    def _generate_summary(self, natal_chart: ChartData, today_insight: DailyInsight) -> List[str]:
+        """Generate summary for daily insights."""
+        summary = []
 
-        if transit_nak in high_energy_naks:
-            return "high"
-        elif transit_nak in medium_energy_naks:
-            return "medium"
-        else:
-            return "medium"  # Default
+        summary.append(f"Daily insights for {natal_chart.person.name}")
 
-    def _get_key_transit_triggers(self, target_date: date, natal_chart: Chart) -> List[TransitTrigger]:
-        """Get significant transit triggers for the period."""
-        # Return today's triggers as key triggers
-        transit_datetime = datetime(target_date.year, target_date.month, target_date.day, 12, 0, 0)
-        jd = self.ephemeris.datetime_to_julian_day(transit_datetime, 'UTC')
+        if natal_chart.dasha_timeline.current_mahadasha:
+            maha = natal_chart.dasha_timeline.current_mahadasha
+            summary.append(
+                f"Currently in {maha.planet.value} Mahadasha period"
+            )
 
-        return self._analyze_daily_transits(target_date, natal_chart, jd)
+        summary.append(
+            f"Today: {today_insight.overview[:100]}..."
+        )
+
+        return summary
 
     def close(self):
         """Clean up resources."""
         self.chart_service.close()
-        self.ephemeris.close()
+        self.ephe.close()

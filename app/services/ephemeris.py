@@ -1,319 +1,312 @@
 """
-Ephemeris service using pyswisseph for planetary calculations.
-Handles all astronomical computations offline.
+Ephemeris service using Swiss Ephemeris for offline calculations.
+Provides planetary positions, house cusps, and coordinate transformations.
 """
+
 import swisseph as swe
-from datetime import datetime, timezone
-from typing import Tuple, Dict, List
+from datetime import datetime
+from typing import Dict, Tuple, List
 import pytz
-from app.domain.models import Planet, Sign, Nakshatra
+
+from app.config import (
+    AYANAMSA_MODE, HOUSE_SYSTEM, SIGNS, NAKSHATRAS,
+    NAKSHATRA_LORDS, NAKSHATRA_DEGREES, SIGN_LORDS,
+    EPHE_PATH
+)
 
 
-# Swiss Ephemeris planet constants
-PLANET_MAP = {
-    Planet.SUN: swe.SUN,
-    Planet.MOON: swe.MOON,
-    Planet.MARS: swe.MARS,
-    Planet.MERCURY: swe.MERCURY,
-    Planet.JUPITER: swe.JUPITER,
-    Planet.VENUS: swe.VENUS,
-    Planet.SATURN: swe.SATURN,
-    Planet.RAHU: swe.MEAN_NODE,  # Mean North Node
-}
-
-# Ketu is 180 degrees opposite to Rahu
-KETU_OFFSET = 180.0
-
-# Ayanamsa for sidereal calculations (Lahiri)
-AYANAMSA_LAHIRI = swe.SIDM_LAHIRI
-
-# Sign boundaries (0-30, 30-60, etc.)
-SIGNS = [
-    Sign.ARIES, Sign.TAURUS, Sign.GEMINI, Sign.CANCER,
-    Sign.LEO, Sign.VIRGO, Sign.LIBRA, Sign.SCORPIO,
-    Sign.SAGITTARIUS, Sign.CAPRICORN, Sign.AQUARIUS, Sign.PISCES
-]
-
-# Nakshatra list (27 nakshatras)
-NAKSHATRAS = [
-    Nakshatra.ASHWINI, Nakshatra.BHARANI, Nakshatra.KRITTIKA, Nakshatra.ROHINI,
-    Nakshatra.MRIGASHIRA, Nakshatra.ARDRA, Nakshatra.PUNARVASU, Nakshatra.PUSHYA,
-    Nakshatra.ASHLESHA, Nakshatra.MAGHA, Nakshatra.PURVA_PHALGUNI, Nakshatra.UTTARA_PHALGUNI,
-    Nakshatra.HASTA, Nakshatra.CHITRA, Nakshatra.SWATI, Nakshatra.VISHAKHA,
-    Nakshatra.ANURADHA, Nakshatra.JYESHTHA, Nakshatra.MULA, Nakshatra.PURVA_ASHADHA,
-    Nakshatra.UTTARA_ASHADHA, Nakshatra.SHRAVANA, Nakshatra.DHANISHTHA, Nakshatra.SHATABHISHA,
-    Nakshatra.PURVA_BHADRAPADA, Nakshatra.UTTARA_BHADRAPADA, Nakshatra.REVATI
-]
-
-# Nakshatra lords (in Vimshottari sequence)
-NAKSHATRA_LORDS = [
-    Planet.KETU, Planet.VENUS, Planet.SUN, Planet.MOON,
-    Planet.MARS, Planet.RAHU, Planet.JUPITER, Planet.SATURN,
-    Planet.MERCURY, Planet.KETU, Planet.VENUS, Planet.SUN,
-    Planet.MOON, Planet.MARS, Planet.RAHU, Planet.JUPITER,
-    Planet.SATURN, Planet.MERCURY, Planet.KETU, Planet.VENUS,
-    Planet.SUN, Planet.MOON, Planet.MARS, Planet.RAHU,
-    Planet.JUPITER, Planet.SATURN, Planet.MERCURY
-]
-
-# Sign lords
-SIGN_LORDS = {
-    Sign.ARIES: Planet.MARS,
-    Sign.TAURUS: Planet.VENUS,
-    Sign.GEMINI: Planet.MERCURY,
-    Sign.CANCER: Planet.MOON,
-    Sign.LEO: Planet.SUN,
-    Sign.VIRGO: Planet.MERCURY,
-    Sign.LIBRA: Planet.VENUS,
-    Sign.SCORPIO: Planet.MARS,
-    Sign.SAGITTARIUS: Planet.JUPITER,
-    Sign.CAPRICORN: Planet.SATURN,
-    Sign.AQUARIUS: Planet.SATURN,
-    Sign.PISCES: Planet.JUPITER,
-}
+# Set ephemeris path
+swe.set_ephe_path(EPHE_PATH)
 
 
 class EphemerisService:
-    """Service for astronomical calculations using Swiss Ephemeris."""
+    """
+    Wrapper around Swiss Ephemeris for all astronomical calculations.
+    All calculations are done offline using the ephemeris data files.
+    """
+
+    # Swiss Ephemeris planet constants
+    PLANET_CODES = {
+        "Sun": swe.SUN,
+        "Moon": swe.MOON,
+        "Mars": swe.MARS,
+        "Mercury": swe.MERCURY,
+        "Jupiter": swe.JUPITER,
+        "Venus": swe.VENUS,
+        "Saturn": swe.SATURN,
+        "Rahu": swe.MEAN_NODE,  # Using mean node for Rahu
+        "Ketu": swe.MEAN_NODE   # Ketu is 180° opposite to Rahu
+    }
 
     def __init__(self):
-        """Initialize Swiss Ephemeris with sidereal mode."""
-        swe.set_sid_mode(AYANAMSA_LAHIRI)
+        """Initialize ephemeris service."""
+        swe.set_sid_mode(AYANAMSA_MODE)
 
-    def datetime_to_julian_day(self, dt: datetime, tz_str: str) -> float:
+    def datetime_to_jd(self, dt: datetime) -> float:
         """
-        Convert datetime to Julian Day (UT).
+        Convert datetime to Julian Day in UTC.
 
         Args:
-            dt: datetime object (date + time)
-            tz_str: timezone string (e.g., 'Asia/Kolkata')
+            dt: datetime object (should be UTC)
 
         Returns:
-            Julian Day in Universal Time
+            Julian Day number
         """
-        # Convert to timezone-aware datetime
-        tz = pytz.timezone(tz_str)
-        if dt.tzinfo is None:
-            dt_aware = tz.localize(dt)
-        else:
-            dt_aware = dt.astimezone(tz)
-
-        # Convert to UTC
-        dt_utc = dt_aware.astimezone(timezone.utc)
-
-        # Calculate Julian Day
-        jd = swe.julday(
-            dt_utc.year,
-            dt_utc.month,
-            dt_utc.day,
-            dt_utc.hour + dt_utc.minute / 60.0 + dt_utc.second / 3600.0
-        )
-
+        jd = swe.julday(dt.year, dt.month, dt.day,
+                        dt.hour + dt.minute / 60.0 + dt.second / 3600.0)
         return jd
 
-    def get_planet_longitude(self, planet: Planet, jd: float, sidereal: bool = True) -> Tuple[float, bool]:
+    def local_to_utc(self, date_str: str, time_str: str, timezone_str: str) -> datetime:
         """
-        Get planet's longitude.
+        Convert local date/time to UTC datetime.
 
         Args:
-            planet: Planet enum
-            jd: Julian Day
-            sidereal: Use sidereal zodiac (True) or tropical (False)
+            date_str: Date in YYYY-MM-DD format
+            time_str: Time in HH:MM format
+            timezone_str: IANA timezone string
 
         Returns:
-            Tuple of (longitude in degrees 0-360, is_retrograde)
+            UTC datetime object
         """
-        if planet == Planet.KETU:
-            # Ketu is 180 degrees opposite to Rahu
-            rahu_lon, _ = self.get_planet_longitude(Planet.RAHU, jd, sidereal)
-            ketu_lon = (rahu_lon + KETU_OFFSET) % 360
-            return ketu_lon, False  # Ketu has same retrograde status as Rahu
+        year, month, day = map(int, date_str.split('-'))
+        hour, minute = map(int, time_str.split(':'))
 
-        planet_id = PLANET_MAP[planet]
-        flags = swe.FLG_SWIEPH | swe.FLG_SPEED
-        if sidereal:
-            flags |= swe.FLG_SIDEREAL
+        tz = pytz.timezone(timezone_str)
+        local_dt = tz.localize(datetime(year, month, day, hour, minute, 0))
+        utc_dt = local_dt.astimezone(pytz.UTC)
 
-        result = swe.calc_ut(jd, planet_id, flags)
-        longitude = result[0][0]  # Longitude in degrees
-        speed = result[0][3]  # Speed in degrees per day
+        return utc_dt
 
-        # Normalize to 0-360
-        longitude = longitude % 360
-
-        # Check retrograde (negative speed)
-        is_retrograde = speed < 0
-
-        return longitude, is_retrograde
-
-    def get_ascendant(self, jd: float, lat: float, lon: float, sidereal: bool = True) -> float:
+    def get_ayanamsa(self, jd: float) -> float:
         """
-        Calculate ascendant (rising sign).
+        Get ayanamsa value for given Julian Day.
 
         Args:
-            jd: Julian Day
-            lat: Latitude
-            lon: Longitude
-            sidereal: Use sidereal zodiac
+            jd: Julian Day number
 
         Returns:
-            Ascendant longitude in degrees 0-360
+            Ayanamsa in degrees
         """
-        flags = swe.FLG_SWIEPH
-        if sidereal:
-            flags |= swe.FLG_SIDEREAL
+        return swe.get_ayanamsa(jd)
 
-        houses, ascmc = swe.houses(jd, lat, lon, b'P')  # Placidus house system
-        ascendant = ascmc[0]  # Ascendant
-
-        return ascendant % 360
-
-    def get_house_cusps(self, jd: float, lat: float, lon: float, sidereal: bool = True) -> List[float]:
+    def get_planet_position(self, planet_name: str, jd: float) -> Dict:
         """
-        Calculate all 12 house cusps.
+        Get sidereal position of a planet.
 
         Args:
-            jd: Julian Day
-            lat: Latitude
-            lon: Longitude
-            sidereal: Use sidereal zodiac
+            planet_name: Name of the planet
+            jd: Julian Day number
 
         Returns:
-            List of 12 house cusp longitudes
+            Dictionary with longitude, latitude, speed, etc.
         """
-        flags = swe.FLG_SWIEPH
-        if sidereal:
-            flags |= swe.FLG_SIDEREAL
+        planet_code = self.PLANET_CODES.get(planet_name)
+        if planet_code is None:
+            raise ValueError(f"Unknown planet: {planet_name}")
 
-        houses, ascmc = swe.houses(jd, lat, lon, b'P')  # Placidus
+        # Calculate position with SEFLG_SIDEREAL flag
+        result = swe.calc_ut(jd, planet_code, swe.FLG_SIDEREAL | swe.FLG_SPEED)
 
-        # Return 12 house cusps
-        return [h % 360 for h in houses]
+        longitude = result[0][0]
+        latitude = result[0][1]
+        distance = result[0][2]
+        speed = result[0][3]
 
-    def longitude_to_sign(self, longitude: float) -> Tuple[Sign, float]:
+        # For Ketu, add 180 degrees to Rahu's position
+        if planet_name == "Ketu":
+            longitude = (longitude + 180.0) % 360.0
+
+        # Normalize longitude to 0-360
+        longitude = longitude % 360.0
+
+        # Determine if retrograde (speed < 0)
+        is_retrograde = speed < 0 if planet_name not in ["Rahu", "Ketu"] else False
+        # Rahu and Ketu are always retrograde by nature, but we don't mark them as such
+
+        return {
+            "longitude": longitude,
+            "latitude": latitude,
+            "distance": distance,
+            "speed": speed,
+            "is_retrograde": is_retrograde
+        }
+
+    def get_all_planet_positions(self, jd: float) -> Dict[str, Dict]:
         """
-        Convert absolute longitude to sign and degree within sign.
+        Get positions of all planets.
 
         Args:
-            longitude: Absolute longitude 0-360
+            jd: Julian Day number
 
         Returns:
-            Tuple of (Sign, degree_in_sign)
+            Dictionary mapping planet names to their positions
         """
-        sign_index = int(longitude // 30)
-        degree_in_sign = longitude % 30
+        positions = {}
+        for planet_name in self.PLANET_CODES.keys():
+            positions[planet_name] = self.get_planet_position(planet_name, jd)
+        return positions
 
-        if sign_index >= 12:
-            sign_index = 11
-
-        return SIGNS[sign_index], degree_in_sign
-
-    def longitude_to_nakshatra(self, longitude: float) -> Tuple[Nakshatra, int, Planet]:
+    def get_house_cusps(self, jd: float, lat: float, lon: float) -> Tuple[List[float], float, float]:
         """
-        Convert longitude to nakshatra, pada, and nakshatra lord.
+        Calculate house cusps and angles.
 
         Args:
-            longitude: Absolute longitude 0-360
+            jd: Julian Day number
+            lat: Latitude in degrees
+            lon: Longitude in degrees (East positive)
 
         Returns:
-            Tuple of (Nakshatra, pada 1-4, nakshatra_lord)
+            Tuple of (house_cusps, ascendant, midheaven)
         """
-        # Each nakshatra is 13.333... degrees (360/27)
-        nakshatra_span = 360.0 / 27.0
-        nakshatra_index = int(longitude / nakshatra_span)
+        # Calculate houses using specified house system
+        cusps, ascmc = swe.houses(jd, lat, lon, HOUSE_SYSTEM)
 
-        if nakshatra_index >= 27:
-            nakshatra_index = 26
+        # Get ayanamsa to convert to sidereal
+        ayanamsa = self.get_ayanamsa(jd)
 
-        # Pada is 1/4 of nakshatra
-        position_in_nakshatra = longitude - (nakshatra_index * nakshatra_span)
-        pada = int(position_in_nakshatra / (nakshatra_span / 4)) + 1
+        # Convert cusps to sidereal
+        house_cusps = [(cusp - ayanamsa) % 360.0 for cusp in cusps]
 
-        if pada > 4:
-            pada = 4
+        # Ascendant and MC (Midheaven)
+        ascendant = (ascmc[0] - ayanamsa) % 360.0
+        midheaven = (ascmc[1] - ayanamsa) % 360.0
 
-        nakshatra = NAKSHATRAS[nakshatra_index]
+        return house_cusps, ascendant, midheaven
+
+    def longitude_to_sign(self, longitude: float) -> Tuple[str, float]:
+        """
+        Convert absolute longitude to sign and sign longitude.
+
+        Args:
+            longitude: Absolute longitude (0-360 degrees)
+
+        Returns:
+            Tuple of (sign_name, longitude_within_sign)
+        """
+        sign_index = int(longitude / 30)
+        sign_longitude = longitude % 30
+        sign_name = SIGNS[sign_index]
+        return sign_name, sign_longitude
+
+    def longitude_to_nakshatra(self, longitude: float) -> Tuple[str, int, str, float]:
+        """
+        Convert longitude to nakshatra, pada, and lord.
+
+        Args:
+            longitude: Absolute longitude (0-360 degrees)
+
+        Returns:
+            Tuple of (nakshatra_name, pada, lord, longitude_in_nakshatra)
+        """
+        # Each nakshatra is 13°20' = 13.333333 degrees
+        nakshatra_index = int(longitude / NAKSHATRA_DEGREES)
+        nakshatra_index = nakshatra_index % 27  # Ensure we stay within 0-26
+
+        # Position within the nakshatra
+        longitude_in_nakshatra = longitude % NAKSHATRA_DEGREES
+
+        # Pada (1-4) within the nakshatra
+        pada = int(longitude_in_nakshatra / (NAKSHATRA_DEGREES / 4)) + 1
+
+        nakshatra_name = NAKSHATRAS[nakshatra_index]
         lord = NAKSHATRA_LORDS[nakshatra_index]
 
-        return nakshatra, pada, lord
+        return nakshatra_name, pada, lord, longitude_in_nakshatra
 
-    def get_house_for_planet(self, planet_longitude: float, house_cusps: List[float]) -> int:
+    def get_house_number(self, longitude: float, house_cusps: List[float]) -> int:
         """
-        Determine which house a planet occupies.
+        Determine which house a planet is in based on house cusps.
 
         Args:
-            planet_longitude: Planet's longitude
+            longitude: Planet's longitude
             house_cusps: List of 12 house cusp longitudes
 
         Returns:
-            House number 1-12
+            House number (1-12)
         """
-        # Handle wrap-around at 360/0 degrees
-        for i in range(12):
-            cusp_current = house_cusps[i]
-            cusp_next = house_cusps[(i + 1) % 12]
+        # Normalize longitude
+        longitude = longitude % 360.0
 
-            if cusp_next > cusp_current:
-                # Normal case: no wrap-around
-                if cusp_current <= planet_longitude < cusp_next:
+        for i in range(12):
+            cusp_start = house_cusps[i]
+            cusp_end = house_cusps[(i + 1) % 12]
+
+            # Handle wraparound at 360/0 degrees
+            if cusp_end < cusp_start:
+                if longitude >= cusp_start or longitude < cusp_end:
                     return i + 1
             else:
-                # Wrap-around case
-                if planet_longitude >= cusp_current or planet_longitude < cusp_next:
+                if cusp_start <= longitude < cusp_end:
                     return i + 1
 
-        # Default to 1st house if not found
+        # Fallback (should not happen)
         return 1
 
-    def get_sign_lord(self, sign: Sign) -> Planet:
-        """Get the ruling planet of a sign."""
-        return SIGN_LORDS[sign]
-
-    def get_nakshatra_lord(self, nakshatra: Nakshatra) -> Planet:
-        """Get the ruling planet of a nakshatra."""
-        nak_index = NAKSHATRAS.index(nakshatra)
-        return NAKSHATRA_LORDS[nak_index]
-
-    def calculate_vimshottari_balance(self, moon_longitude: float, birth_date: datetime) -> Tuple[Planet, float]:
+    def get_sign_lord(self, sign_name: str) -> str:
         """
-        Calculate Vimshottari Dasha balance at birth.
+        Get the ruling planet of a sign.
 
         Args:
-            moon_longitude: Moon's longitude at birth
-            birth_date: Birth datetime
+            sign_name: Name of the zodiac sign
 
         Returns:
-            Tuple of (dasha_lord, years_remaining)
+            Name of the ruling planet
         """
-        # Get Moon's nakshatra
-        nakshatra, pada, lord = self.longitude_to_nakshatra(moon_longitude)
+        return SIGN_LORDS.get(sign_name, "Unknown")
 
-        # Dasha years for each planet
-        dasha_years = {
-            Planet.KETU: 7,
-            Planet.VENUS: 20,
-            Planet.SUN: 6,
-            Planet.MOON: 10,
-            Planet.MARS: 7,
-            Planet.RAHU: 18,
-            Planet.JUPITER: 16,
-            Planet.SATURN: 19,
-            Planet.MERCURY: 17,
-        }
+    def calculate_navamsa_longitude(self, rasi_longitude: float) -> float:
+        """
+        Calculate Navamsa (D9) longitude from Rasi longitude.
 
-        # Position within nakshatra
-        nakshatra_span = 360.0 / 27.0
-        nakshatra_index = int(moon_longitude / nakshatra_span)
-        position_in_nakshatra = moon_longitude - (nakshatra_index * nakshatra_span)
-        fraction_completed = position_in_nakshatra / nakshatra_span
+        Each sign is divided into 9 parts of 3°20' each.
+        The 9 divisions cycle through signs of the same element.
 
-        # Years remaining in this dasha
-        total_years = dasha_years[lord]
-        years_elapsed = fraction_completed * total_years
-        years_remaining = total_years - years_elapsed
+        Args:
+            rasi_longitude: Longitude in Rasi chart (0-360)
 
-        return lord, years_remaining
+        Returns:
+            Longitude in Navamsa chart (0-360)
+        """
+        # Determine sign (0-11)
+        sign_num = int(rasi_longitude / 30)
+
+        # Longitude within sign (0-30)
+        sign_long = rasi_longitude % 30
+
+        # Navamsa number within the sign (0-8)
+        navamsa_num = int(sign_long / (30.0 / 9.0))
+
+        # Starting sign for navamsa calculation depends on sign element
+        # Aries, Leo, Sagittarius (Fire) -> start from Aries (0)
+        # Taurus, Virgo, Capricorn (Earth) -> start from Capricorn (9)
+        # Gemini, Libra, Aquarius (Air) -> start from Libra (6)
+        # Cancer, Scorpio, Pisces (Water) -> start from Cancer (3)
+
+        element = sign_num % 3
+        if sign_num in [0, 4, 8]:  # Aries, Leo, Sagittarius
+            start_sign = 0
+        elif sign_num in [1, 5, 9]:  # Taurus, Virgo, Capricorn
+            start_sign = 9
+        elif sign_num in [2, 6, 10]:  # Gemini, Libra, Aquarius
+            start_sign = 6
+        else:  # Cancer, Scorpio, Pisces
+            start_sign = 3
+
+        # Calculate navamsa sign
+        navamsa_sign = (start_sign + navamsa_num) % 12
+
+        # Calculate exact longitude in navamsa
+        # Position within the 3°20' division
+        pos_in_division = sign_long % (30.0 / 9.0)
+
+        # Scale to full sign (0-30)
+        navamsa_sign_long = (pos_in_division / (30.0 / 9.0)) * 30.0
+
+        # Absolute navamsa longitude
+        navamsa_longitude = navamsa_sign * 30.0 + navamsa_sign_long
+
+        return navamsa_longitude
 
     def close(self):
-        """Close Swiss Ephemeris."""
+        """Clean up Swiss Ephemeris resources."""
         swe.close()

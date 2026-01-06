@@ -1,334 +1,307 @@
 """
-Chart calculation service.
-Builds complete birth charts using ephemeris service.
+Chart calculation service for generating birth charts.
+Calculates D1 (Rasi), D9 (Navamsa), and derives planetary relationships.
 """
-from datetime import datetime, timedelta, date
-from typing import List, Dict, Optional
+
+from typing import Dict, List, Any
+from datetime import datetime
+
 from app.domain.models import (
-    BirthInfo, Chart, PlanetPosition, HouseCusp,
-    Planet, Sign, DashaPeriod, DashaTimeline
+    PersonInput, ChartData, PlanetPosition, HouseCusps,
+    NakshatraInfo, Planet, ZodiacSign, Nakshatra
 )
 from app.services.ephemeris import EphemerisService
+from app.config import ENGINE_VERSION, SIGN_LORDS
 
 
 class ChartService:
-    """Service for calculating birth charts."""
+    """
+    Service for calculating birth charts with D1 and D9 analysis.
+    """
 
     def __init__(self):
-        """Initialize with ephemeris service."""
-        self.ephemeris = EphemerisService()
+        self.ephe = EphemerisService()
 
-    def calculate_chart(self, birth_info: BirthInfo) -> Chart:
+    def calculate_chart(self, person: PersonInput) -> ChartData:
         """
-        Calculate complete birth chart.
+        Calculate complete birth chart for a person.
 
         Args:
-            birth_info: Birth information
+            person: PersonInput with birth details
 
         Returns:
-            Complete Chart object
+            ChartData with all calculated positions
         """
-        # Combine date and time
-        time_parts = birth_info.time_of_birth.split(':')
-        birth_datetime = datetime(
-            birth_info.date_of_birth.year,
-            birth_info.date_of_birth.month,
-            birth_info.date_of_birth.day,
-            int(time_parts[0]),
-            int(time_parts[1]),
-            int(time_parts[2])
+        # Convert local time to UTC
+        utc_dt = self.ephe.local_to_utc(
+            person.date_of_birth,
+            person.time_of_birth,
+            person.place_of_birth.tz
         )
 
-        # Convert to Julian Day
-        jd = self.ephemeris.datetime_to_julian_day(birth_datetime, birth_info.timezone)
+        # Calculate Julian Day
+        jd = self.ephe.datetime_to_jd(utc_dt)
 
-        # Calculate ascendant
-        asc_longitude = self.ephemeris.get_ascendant(
-            jd, birth_info.latitude, birth_info.longitude, sidereal=True
+        # Get ayanamsa
+        ayanamsa = self.ephe.get_ayanamsa(jd)
+
+        # Calculate house cusps and angles
+        house_cusps_list, ascendant_degree, mc_degree = self.ephe.get_house_cusps(
+            jd,
+            person.place_of_birth.lat,
+            person.place_of_birth.lon
         )
-        asc_sign, _ = self.ephemeris.longitude_to_sign(asc_longitude)
 
-        # Calculate house cusps
-        house_cusp_longitudes = self.ephemeris.get_house_cusps(
-            jd, birth_info.latitude, birth_info.longitude, sidereal=True
+        # Create HouseCusps object
+        house_cusps = HouseCusps(
+            cusps=house_cusps_list,
+            ascendant=ascendant_degree,
+            midheaven=mc_degree
         )
 
-        # Build house cusps
-        house_cusps = []
-        for i, cusp_lon in enumerate(house_cusp_longitudes):
-            sign, deg = self.ephemeris.longitude_to_sign(cusp_lon)
-            house_cusps.append(HouseCusp(
-                house=i + 1,
-                longitude=cusp_lon,
-                sign=sign,
-                degree_in_sign=deg
-            ))
+        # Calculate planetary positions
+        planet_positions = []
+        planet_data = self.ephe.get_all_planet_positions(jd)
 
-        # Calculate planet positions
-        planets = []
-        for planet in [Planet.SUN, Planet.MOON, Planet.MARS, Planet.MERCURY,
-                       Planet.JUPITER, Planet.VENUS, Planet.SATURN,
-                       Planet.RAHU, Planet.KETU]:
-            longitude, retrograde = self.ephemeris.get_planet_longitude(planet, jd, sidereal=True)
-            sign, degree_in_sign = self.ephemeris.longitude_to_sign(longitude)
-            nakshatra, pada, nak_lord = self.ephemeris.longitude_to_nakshatra(longitude)
-            house_num = self.ephemeris.get_house_for_planet(longitude, house_cusp_longitudes)
+        for planet_name, pos_data in planet_data.items():
+            longitude = pos_data["longitude"]
+            sign_name, sign_long = self.ephe.longitude_to_sign(longitude)
+            nakshatra_name, pada, nak_lord, long_in_nak = self.ephe.longitude_to_nakshatra(longitude)
+            house_num = self.ephe.get_house_number(longitude, house_cusps_list)
 
-            planets.append(PlanetPosition(
-                planet=planet,
+            planet_pos = PlanetPosition(
+                planet=Planet[planet_name.upper()],
                 longitude=longitude,
-                sign=sign,
-                degree_in_sign=degree_in_sign,
-                nakshatra=nakshatra,
-                nakshatra_pada=pada,
+                sign=ZodiacSign[sign_name.upper()],
+                sign_longitude=sign_long,
                 house=house_num,
-                retrograde=retrograde
-            ))
+                nakshatra=Nakshatra[nakshatra_name.upper().replace(" ", "_")],
+                nakshatra_pada=pada,
+                is_retrograde=pos_data["is_retrograde"]
+            )
+            planet_positions.append(planet_pos)
 
-        return Chart(
-            birth_info=birth_info,
-            ascendant=asc_sign,
-            ascendant_longitude=asc_longitude,
-            planets=planets,
-            house_cusps=house_cusps
+        # Create ascendant position
+        asc_sign_name, asc_sign_long = self.ephe.longitude_to_sign(ascendant_degree)
+        asc_nak_name, asc_pada, asc_nak_lord, asc_long_in_nak = self.ephe.longitude_to_nakshatra(ascendant_degree)
+
+        ascendant_position = PlanetPosition(
+            planet=Planet.SUN,  # Placeholder; ascendant is not a planet
+            longitude=ascendant_degree,
+            sign=ZodiacSign[asc_sign_name.upper()],
+            sign_longitude=asc_sign_long,
+            house=1,
+            nakshatra=Nakshatra[asc_nak_name.upper().replace(" ", "_")],
+            nakshatra_pada=asc_pada,
+            is_retrograde=False
         )
 
-    def calculate_dasha_timeline(self, chart: Chart, num_years: int = 30) -> DashaTimeline:
-        """
-        Calculate Vimshottari Dasha timeline.
-
-        Args:
-            chart: Birth chart
-            num_years: Number of years to calculate ahead
-
-        Returns:
-            DashaTimeline with current and upcoming dashas
-        """
-        # Get Moon position
-        moon = next(p for p in chart.planets if p.planet == Planet.MOON)
-
-        # Calculate dasha balance at birth
-        birth_date = chart.birth_info.date_of_birth
-        dasha_lord, years_remaining = self.ephemeris.calculate_vimshottari_balance(
-            moon.longitude, datetime.combine(birth_date, datetime.min.time())
+        # Nakshatra info for Moon and Ascendant
+        moon_pos = next(p for p in planet_positions if p.planet == Planet.MOON)
+        moon_nakshatra_info = NakshatraInfo(
+            nakshatra=moon_pos.nakshatra,
+            pada=moon_pos.nakshatra_pada,
+            lord=Planet[self.ephe.longitude_to_nakshatra(moon_pos.longitude)[2].upper()],
+            longitude_in_nakshatra=self.ephe.longitude_to_nakshatra(moon_pos.longitude)[3]
         )
 
-        # Dasha sequence and durations
-        dasha_sequence = [
-            Planet.KETU, Planet.VENUS, Planet.SUN, Planet.MOON,
-            Planet.MARS, Planet.RAHU, Planet.JUPITER, Planet.SATURN, Planet.MERCURY
-        ]
-        dasha_years = {
-            Planet.KETU: 7,
-            Planet.VENUS: 20,
-            Planet.SUN: 6,
-            Planet.MOON: 10,
-            Planet.MARS: 7,
-            Planet.RAHU: 18,
-            Planet.JUPITER: 16,
-            Planet.SATURN: 19,
-            Planet.MERCURY: 17,
+        ascendant_nakshatra_info = NakshatraInfo(
+            nakshatra=ascendant_position.nakshatra,
+            pada=ascendant_position.nakshatra_pada,
+            lord=Planet[asc_nak_lord.upper()],
+            longitude_in_nakshatra=asc_long_in_nak
+        )
+
+        # Calculate house lordships
+        house_lords = self._calculate_house_lords(house_cusps_list)
+
+        # Calculate D9 (Navamsa) summary
+        d9_summary = self._calculate_d9_summary(planet_positions)
+
+        # Create D1 summary
+        d1_summary = {
+            "ascendant_sign": asc_sign_name,
+            "ascendant_degree": ascendant_degree,
+            "moon_sign": moon_pos.sign.value,
+            "sun_sign": next(p for p in planet_positions if p.planet == Planet.SUN).sign.value,
         }
 
-        # Find starting index
-        current_index = dasha_sequence.index(dasha_lord)
-
-        # Build dasha periods
-        maha_dashas: List[DashaPeriod] = []
-        current_date = birth_date
-
-        # First dasha (partial)
-        first_end_date = current_date + timedelta(days=years_remaining * 365.25)
-        maha_dashas.append(DashaPeriod(
-            planet=dasha_lord,
-            start_date=current_date,
-            end_date=first_end_date,
-            level="maha"
-        ))
-        current_date = first_end_date
-
-        # Subsequent dashas
-        index = (current_index + 1) % len(dasha_sequence)
-        while (current_date - birth_date).days < num_years * 365.25:
-            planet = dasha_sequence[index]
-            years = dasha_years[planet]
-            end_date = current_date + timedelta(days=years * 365.25)
-
-            maha_dashas.append(DashaPeriod(
-                planet=planet,
-                start_date=current_date,
-                end_date=end_date,
-                level="maha"
-            ))
-
-            current_date = end_date
-            index = (index + 1) % len(dasha_sequence)
-
-        # Determine current dasha
-        today = date.today()
-        current_maha = None
-        for dasha in maha_dashas:
-            if dasha.start_date <= today <= dasha.end_date:
-                current_maha = dasha
-                break
-
-        if current_maha is None:
-            current_maha = maha_dashas[0]  # Fallback
-
-        # Calculate current antar dasha (bhukti)
-        antar_dashas = self._calculate_antar_dashas(current_maha, dasha_sequence, dasha_years)
-        current_antar = None
-        for antar in antar_dashas:
-            if antar.start_date <= today <= antar.end_date:
-                current_antar = antar
-                break
-
-        if current_antar is None:
-            current_antar = antar_dashas[0]  # Fallback
-
-        # Upcoming maha dashas (next 5)
-        upcoming = []
-        for dasha in maha_dashas:
-            if dasha.start_date > today and len(upcoming) < 5:
-                upcoming.append(dasha)
-
-        return DashaTimeline(
-            birth_date=birth_date,
-            current_maha_dasha=current_maha,
-            current_antar_dasha=current_antar,
-            upcoming_maha_dashas=upcoming
+        # Import dasha service here to avoid circular dependency
+        from app.services.dasha import DashaService
+        dasha_service = DashaService()
+        dasha_timeline = dasha_service.calculate_vimshottari_dasha(
+            person.date_of_birth,
+            moon_pos.longitude
         )
 
-    def _calculate_antar_dashas(
-        self,
-        maha_dasha: DashaPeriod,
-        dasha_sequence: List[Planet],
-        dasha_years: Dict[Planet, int]
-    ) -> List[DashaPeriod]:
-        """Calculate antar dashas (bhuktis) within a maha dasha."""
-        antar_dashas: List[DashaPeriod] = []
+        # Create ChartData
+        chart_data = ChartData(
+            person=person,
+            calculation_datetime_utc=utc_dt.isoformat(),
+            julian_day=jd,
+            ayanamsa=ayanamsa,
+            ayanamsa_name="Lahiri",
+            ascendant=ascendant_position,
+            planets=planet_positions,
+            house_cusps=house_cusps,
+            moon_nakshatra=moon_nakshatra_info,
+            ascendant_nakshatra=ascendant_nakshatra_info,
+            d1_chart=d1_summary,
+            d9_chart=d9_summary,
+            dasha_timeline=dasha_timeline,
+            house_lords=house_lords
+        )
 
-        # Start with maha dasha lord
-        maha_lord = maha_dasha.planet
-        maha_lord_index = dasha_sequence.index(maha_lord)
+        return chart_data
 
-        # Total days in maha dasha
-        total_days = (maha_dasha.end_date - maha_dasha.start_date).days
-
-        current_date = maha_dasha.start_date
-
-        # Each antar dasha is proportional
-        for i in range(len(dasha_sequence)):
-            antar_lord = dasha_sequence[(maha_lord_index + i) % len(dasha_sequence)]
-            antar_years = dasha_years[antar_lord]
-            maha_years = dasha_years[maha_lord]
-
-            # Proportion of maha dasha
-            fraction = antar_years / 120.0  # Total Vimshottari cycle is 120 years
-            antar_days = maha_years * 365.25 * fraction
-
-            end_date = current_date + timedelta(days=antar_days)
-
-            # Don't exceed maha dasha end
-            if end_date > maha_dasha.end_date:
-                end_date = maha_dasha.end_date
-
-            antar_dashas.append(DashaPeriod(
-                planet=antar_lord,
-                start_date=current_date,
-                end_date=end_date,
-                level="antar",
-                parent_dasha=maha_lord
-            ))
-
-            current_date = end_date
-
-            if current_date >= maha_dasha.end_date:
-                break
-
-        return antar_dashas
-
-    def get_planet_in_house(self, chart: Chart, house: int) -> Optional[Planet]:
-        """Get planet in a specific house (if any)."""
-        for planet_pos in chart.planets:
-            if planet_pos.house == house:
-                return planet_pos.planet
-        return None
-
-    def get_planets_in_house(self, chart: Chart, house: int) -> List[Planet]:
-        """Get all planets in a specific house."""
-        return [p.planet for p in chart.planets if p.house == house]
-
-    def get_planet_position(self, chart: Chart, planet: Planet) -> PlanetPosition:
-        """Get position of a specific planet."""
-        return next(p for p in chart.planets if p.planet == planet)
-
-    def get_house_lord(self, chart: Chart, house: int) -> Planet:
-        """Get the lord (ruler) of a house."""
-        house_cusp = chart.house_cusps[house - 1]
-        return self.ephemeris.get_sign_lord(house_cusp.sign)
-
-    def are_planets_in_kendra(self, chart: Chart, planet1: Planet, planet2: Planet) -> bool:
-        """Check if two planets are in kendra (1, 4, 7, 10) from each other."""
-        pos1 = self.get_planet_position(chart, planet1)
-        pos2 = self.get_planet_position(chart, planet2)
-
-        house_diff = abs(pos1.house - pos2.house)
-
-        return house_diff in [0, 3, 6, 9]
-
-    def calculate_aspect(self, chart: Chart, planet: Planet, target_house: int) -> bool:
+    def _calculate_house_lords(self, house_cusps: List[float]) -> Dict[int, Planet]:
         """
-        Check if a planet aspects a house.
-        All planets aspect 7th house from their position.
-        Mars also aspects 4th and 8th.
-        Jupiter also aspects 5th and 9th.
-        Saturn also aspects 3rd and 10th.
+        Calculate which planet rules each house based on cusp sign.
+
+        Args:
+            house_cusps: List of house cusp longitudes
+
+        Returns:
+            Dictionary mapping house number to ruling planet
         """
-        planet_pos = self.get_planet_position(chart, planet)
-        planet_house = planet_pos.house
+        house_lords = {}
 
-        # All planets aspect 7th house
-        seventh_house = ((planet_house - 1) + 6) % 12 + 1
-        if target_house == seventh_house:
-            return True
+        for i, cusp_long in enumerate(house_cusps):
+            sign_name, _ = self.ephe.longitude_to_sign(cusp_long)
+            lord_name = self.ephe.get_sign_lord(sign_name)
+            house_lords[i + 1] = Planet[lord_name.upper()]
 
-        # Special aspects
-        if planet == Planet.MARS:
-            fourth_house = ((planet_house - 1) + 3) % 12 + 1
-            eighth_house = ((planet_house - 1) + 7) % 12 + 1
-            if target_house in [fourth_house, eighth_house]:
-                return True
+        return house_lords
 
-        if planet == Planet.JUPITER:
-            fifth_house = ((planet_house - 1) + 4) % 12 + 1
-            ninth_house = ((planet_house - 1) + 8) % 12 + 1
-            if target_house in [fifth_house, ninth_house]:
-                return True
+    def _calculate_d9_summary(self, rasi_positions: List[PlanetPosition]) -> Dict[str, Any]:
+        """
+        Calculate Navamsa (D9) chart summary.
 
-        if planet == Planet.SATURN:
-            third_house = ((planet_house - 1) + 2) % 12 + 1
-            tenth_house = ((planet_house - 1) + 9) % 12 + 1
-            if target_house in [third_house, tenth_house]:
-                return True
+        Args:
+            rasi_positions: Planet positions in Rasi chart
 
-        return False
+        Returns:
+            Dictionary with D9 analysis
+        """
+        d9_planets = {}
 
-    def is_conjunction(self, chart: Chart, planet1: Planet, planet2: Planet, orb: float = 10.0) -> bool:
-        """Check if two planets are in conjunction (same house or within orb)."""
-        pos1 = self.get_planet_position(chart, planet1)
-        pos2 = self.get_planet_position(chart, planet2)
+        for planet_pos in rasi_positions:
+            # Calculate navamsa longitude
+            d9_long = self.ephe.calculate_navamsa_longitude(planet_pos.longitude)
+            d9_sign, d9_sign_long = self.ephe.longitude_to_sign(d9_long)
 
-        # Same house is conjunction
-        if pos1.house == pos2.house:
-            # Check orb
-            diff = abs(pos1.longitude - pos2.longitude)
-            if diff > 180:
-                diff = 360 - diff
-            return diff <= orb
+            d9_planets[planet_pos.planet.value] = {
+                "sign": d9_sign,
+                "longitude": d9_long,
+                "sign_longitude": d9_sign_long
+            }
 
-        return False
+        # Check for Vargottama (same sign in D1 and D9)
+        vargottama = []
+        for planet_pos in rasi_positions:
+            d1_sign = planet_pos.sign.value
+            d9_sign = d9_planets[planet_pos.planet.value]["sign"]
+            if d1_sign == d9_sign:
+                vargottama.append(planet_pos.planet.value)
+
+        d9_summary = {
+            "planets": d9_planets,
+            "vargottama_planets": vargottama,
+            "description": "Navamsa chart shows relationship and spiritual destiny"
+        }
+
+        return d9_summary
+
+    def get_planet_by_name(self, chart_data: ChartData, planet_name: str) -> PlanetPosition:
+        """
+        Retrieve a specific planet's position from chart data.
+
+        Args:
+            chart_data: Calculated chart data
+            planet_name: Name of the planet (e.g., "Jupiter")
+
+        Returns:
+            PlanetPosition object
+        """
+        for planet_pos in chart_data.planets:
+            if planet_pos.planet.value == planet_name:
+                return planet_pos
+        raise ValueError(f"Planet {planet_name} not found in chart")
+
+    def get_planets_in_house(self, chart_data: ChartData, house_num: int) -> List[PlanetPosition]:
+        """
+        Get all planets in a specific house.
+
+        Args:
+            chart_data: Calculated chart data
+            house_num: House number (1-12)
+
+        Returns:
+            List of PlanetPosition objects in that house
+        """
+        return [p for p in chart_data.planets if p.house == house_num]
+
+    def get_planets_in_sign(self, chart_data: ChartData, sign: str) -> List[PlanetPosition]:
+        """
+        Get all planets in a specific sign.
+
+        Args:
+            chart_data: Calculated chart data
+            sign: Sign name (e.g., "Aries")
+
+        Returns:
+            List of PlanetPosition objects in that sign
+        """
+        return [p for p in chart_data.planets if p.sign.value == sign]
+
+    def are_planets_conjunct(self, pos1: PlanetPosition, pos2: PlanetPosition, orb: float = 10.0) -> bool:
+        """
+        Check if two planets are in conjunction.
+
+        Args:
+            pos1: First planet position
+            pos2: Second planet position
+            orb: Orb in degrees for conjunction
+
+        Returns:
+            True if conjunct within orb
+        """
+        diff = abs(pos1.longitude - pos2.longitude)
+        # Handle wraparound at 360 degrees
+        if diff > 180:
+            diff = 360 - diff
+        return diff <= orb
+
+    def get_lord_of_house(self, chart_data: ChartData, house_num: int) -> Planet:
+        """
+        Get the ruling planet of a house.
+
+        Args:
+            chart_data: Calculated chart data
+            house_num: House number (1-12)
+
+        Returns:
+            Planet that rules the house
+        """
+        return chart_data.house_lords[house_num]
+
+    def get_house_of_planet(self, chart_data: ChartData, planet: Planet) -> int:
+        """
+        Get the house position of a planet.
+
+        Args:
+            chart_data: Calculated chart data
+            planet: Planet enum
+
+        Returns:
+            House number (1-12)
+        """
+        for planet_pos in chart_data.planets:
+            if planet_pos.planet == planet:
+                return planet_pos.house
+        # If planet is ascendant lord, etc.
+        return 1
 
     def close(self):
-        """Close ephemeris."""
-        self.ephemeris.close()
+        """Clean up resources."""
+        self.ephe.close()

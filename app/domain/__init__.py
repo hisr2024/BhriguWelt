@@ -1,1 +1,1 @@
-# Domain package
+"""Domain models for the astrology system."""

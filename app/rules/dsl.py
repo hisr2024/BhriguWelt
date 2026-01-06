@@ -1,282 +1,364 @@
 """
-Domain-Specific Language (DSL) for rule triggers.
-Parses and evaluates astrological rule expressions.
+Domain-Specific Language (DSL) parser and evaluator for astrological rules.
+Supports expressions like:
+- planet_in_house(Jupiter, 5)
+- planet_in_sign(Venus, Taurus)
+- lord_of_house_in_house(1, 10)
+- nakshatra_of(Moon) == "Rohini"
+- conjunction(Mars, Saturn, 10)
 """
+
 import re
 from typing import Any, Dict, List, Optional
-from app.domain.models import Chart, Planet, Sign, Nakshatra, RuleTrigger
-from app.services.chart import ChartService
+from app.domain.models import ChartData, PlanetPosition, Planet, TransitSnapshot
 
 
 class DSLEvaluator:
-    """Evaluates DSL expressions against charts."""
+    """
+    Evaluates DSL expressions against chart data.
+    """
 
-    def __init__(self, chart_service: ChartService):
-        """Initialize with chart service."""
-        self.chart_service = chart_service
-
-    def evaluate(self, expression: str, chart: Chart) -> RuleTrigger:
+    def __init__(self, chart_data: ChartData, transit_data: Optional[TransitSnapshot] = None):
         """
-        Evaluate a DSL expression against a chart.
+        Initialize evaluator with chart and optional transit data.
 
         Args:
-            expression: DSL expression (e.g., "planet_in_house(Sun, 10)")
-            chart: Birth chart
+            chart_data: Birth chart data
+            transit_data: Optional transit snapshot for daily insights
+        """
+        self.chart = chart_data
+        self.transit = transit_data
+        self.context = {}
+
+    def evaluate(self, expression: str) -> bool:
+        """
+        Evaluate a DSL expression.
+
+        Args:
+            expression: DSL expression string
 
         Returns:
-            RuleTrigger with evaluation result
+            Boolean result of evaluation
         """
         expression = expression.strip()
-        context: Dict[str, Any] = {}
 
+        # Handle OR conditions
+        if " OR " in expression:
+            parts = expression.split(" OR ")
+            return any(self.evaluate(part.strip()) for part in parts)
+
+        # Handle AND conditions
+        if " AND " in expression:
+            parts = expression.split(" AND ")
+            return all(self.evaluate(part.strip()) for part in parts)
+
+        # Handle comparison operators
+        if " == " in expression:
+            left, right = expression.split(" == ")
+            left_val = self._evaluate_function(left.strip())
+            right_val = right.strip().strip('"\'')
+            return str(left_val) == right_val
+
+        if " != " in expression:
+            left, right = expression.split(" != ")
+            left_val = self._evaluate_function(left.strip())
+            right_val = right.strip().strip('"\'')
+            return str(left_val) != right_val
+
+        # Otherwise, evaluate as function call
+        return self._evaluate_function(expression)
+
+    def _evaluate_function(self, func_expr: str) -> Any:
+        """
+        Evaluate a function expression.
+
+        Args:
+            func_expr: Function expression like "planet_in_house(Jupiter, 5)"
+
+        Returns:
+            Result of function evaluation
+        """
+        # Parse function name and arguments
+        match = re.match(r'(\w+)\((.*)\)', func_expr)
+        if not match:
+            # Not a function, return as literal
+            return func_expr
+
+        func_name = match.group(1)
+        args_str = match.group(2)
+
+        # Parse arguments
+        args = [arg.strip().strip('"\'') for arg in args_str.split(',')]
+
+        # Dispatch to appropriate handler
+        method_name = f"_eval_{func_name}"
+        if hasattr(self, method_name):
+            return getattr(self, method_name)(*args)
+        else:
+            raise ValueError(f"Unknown DSL function: {func_name}")
+
+    def _get_planet_position(self, planet_name: str) -> Optional[PlanetPosition]:
+        """Get planet position from chart."""
+        planet_name = planet_name.upper()
         try:
-            result = self._evaluate_expression(expression, chart, context)
-            return RuleTrigger(
-                expression=expression,
-                evaluated=result,
-                context=context
-            )
-        except Exception as e:
-            # If evaluation fails, return False
-            return RuleTrigger(
-                expression=expression,
-                evaluated=False,
-                context={"error": str(e)}
-            )
+            planet = Planet[planet_name]
+            for pos in self.chart.planets:
+                if pos.planet == planet:
+                    return pos
+        except KeyError:
+            return None
+        return None
 
-    def _evaluate_expression(self, expr: str, chart: Chart, context: Dict[str, Any]) -> bool:
-        """Internal expression evaluator."""
+    def _eval_planet_in_house(self, planet_name: str, house_str: str) -> bool:
+        """Check if planet is in specified house."""
+        pos = self._get_planet_position(planet_name)
+        if not pos:
+            return False
+        return pos.house == int(house_str)
 
-        # planet_in_house(planet, house)
-        match = re.match(r'planet_in_house\((\w+),\s*(\d+)\)', expr)
-        if match:
-            planet_name = match.group(1)
-            house = int(match.group(2))
-            return self._eval_planet_in_house(planet_name, house, chart, context)
+    def _eval_planet_in_sign(self, planet_name: str, sign_name: str) -> bool:
+        """Check if planet is in specified sign."""
+        pos = self._get_planet_position(planet_name)
+        if not pos:
+            return False
+        return pos.sign.value.lower() == sign_name.lower()
 
-        # planet_in_sign(planet, sign)
-        match = re.match(r'planet_in_sign\((\w+),\s*(\w+)\)', expr)
-        if match:
-            planet_name = match.group(1)
-            sign_name = match.group(2)
-            return self._eval_planet_in_sign(planet_name, sign_name, chart, context)
+    def _eval_lord_of_house_in_house(self, source_house_str: str, target_house_str: str) -> bool:
+        """Check if lord of source house is in target house."""
+        source_house = int(source_house_str)
+        target_house = int(target_house_str)
 
-        # lord_of_house_in_house(source_house, target_house)
-        match = re.match(r'lord_of_house_in_house\((\d+),\s*(\d+)\)', expr)
-        if match:
-            source_house = int(match.group(1))
-            target_house = int(match.group(2))
-            return self._eval_lord_of_house_in_house(source_house, target_house, chart, context)
-
-        # nakshatra(planet) == nakshatra_name
-        match = re.match(r'nakshatra\((\w+)\)\s*==\s*(.+)', expr)
-        if match:
-            planet_name = match.group(1)
-            nakshatra_name = match.group(2).strip()
-            return self._eval_nakshatra(planet_name, nakshatra_name, chart, context)
-
-        # aspect(planet, target_house, type)
-        match = re.match(r'aspect\((\w+),\s*(\d+),\s*(\w+)\)', expr)
-        if match:
-            planet_name = match.group(1)
-            target = int(match.group(2))
-            aspect_type = match.group(3)
-            return self._eval_aspect(planet_name, target, aspect_type, chart, context)
-
-        # conjunction(planet1, planet2, orb)
-        match = re.match(r'conjunction\((\w+),\s*(\w+),\s*([\d.]+)\)', expr)
-        if match:
-            planet1_name = match.group(1)
-            planet2_name = match.group(2)
-            orb = float(match.group(3))
-            return self._eval_conjunction(planet1_name, planet2_name, orb, chart, context)
-
-        # planet_in_own_sign(planet)
-        match = re.match(r'planet_in_own_sign\((.+)\)', expr)
-        if match:
-            planet_expr = match.group(1).strip()
-            return self._eval_planet_in_own_sign(planet_expr, chart, context)
-
-        # lord_of_house(house) - returns planet name
-        match = re.match(r'lord_of_house\((\d+)\)', expr)
-        if match:
-            house = int(match.group(1))
-            lord = self.chart_service.get_house_lord(chart, house)
-            context[f'lord_of_house_{house}'] = lord.value
-            return True  # This is a lookup, not a boolean check
-
-        # jupiter_moon_kendra - special check
-        match = re.match(r'jupiter_moon_kendra', expr)
-        if match:
-            return self._eval_jupiter_moon_kendra(chart, context)
-
-        # planet_in_kendra(planet)
-        match = re.match(r'planet_in_kendra\((\w+)\)', expr)
-        if match:
-            planet_name = match.group(1)
-            return self._eval_planet_in_kendra(planet_name, chart, context)
-
-        # ascendant_in_sign(sign)
-        match = re.match(r'ascendant_in_sign\((\w+)\)', expr)
-        if match:
-            sign_name = match.group(1)
-            return self._eval_ascendant_in_sign(sign_name, chart, context)
-
-        # transit_sade_sati - placeholder for transit checks
-        match = re.match(r'transit_sade_sati', expr)
-        if match:
-            # This would require current transit data
-            # For now, return False as we focus on birth chart
-            context['note'] = 'Transit checks require current date'
+        lord = self.chart.house_lords.get(source_house)
+        if not lord:
             return False
 
-        # Unknown expression
-        context['error'] = f'Unknown DSL expression: {expr}'
+        lord_pos = self._get_planet_position(lord.value)
+        if not lord_pos:
+            return False
+
+        return lord_pos.house == target_house
+
+    def _eval_nakshatra_of(self, point: str) -> str:
+        """Get nakshatra of a point or planet."""
+        if point.upper() == "MOON":
+            return self.chart.moon_nakshatra.nakshatra.value
+        elif point.upper() == "ASCENDANT":
+            return self.chart.ascendant_nakshatra.nakshatra.value
+        else:
+            pos = self._get_planet_position(point)
+            if pos:
+                return pos.nakshatra.value
+        return ""
+
+    def _eval_pada_of(self, point: str) -> int:
+        """Get pada of a point or planet."""
+        if point.upper() == "MOON":
+            return self.chart.moon_nakshatra.pada
+        elif point.upper() == "ASCENDANT":
+            return self.chart.ascendant_nakshatra.pada
+        else:
+            pos = self._get_planet_position(point)
+            if pos:
+                return pos.nakshatra_pada
+        return 0
+
+    def _eval_conjunction(self, planet1: str, planet2: str, orb_str: str) -> bool:
+        """Check if two planets are in conjunction within orb."""
+        pos1 = self._get_planet_position(planet1)
+        pos2 = self._get_planet_position(planet2)
+
+        if not pos1 or not pos2:
+            return False
+
+        orb = float(orb_str)
+        diff = abs(pos1.longitude - pos2.longitude)
+
+        # Handle wraparound at 360 degrees
+        if diff > 180:
+            diff = 360 - diff
+
+        return diff <= orb
+
+    def _eval_planet_in_kendra(self, planet_name: str) -> bool:
+        """Check if planet is in a kendra (1, 4, 7, 10)."""
+        pos = self._get_planet_position(planet_name)
+        if not pos:
+            return False
+        return pos.house in [1, 4, 7, 10]
+
+    def _eval_planet_in_trikona(self, planet_name: str) -> bool:
+        """Check if planet is in a trikona (1, 5, 9)."""
+        pos = self._get_planet_position(planet_name)
+        if not pos:
+            return False
+        return pos.house in [1, 5, 9]
+
+    def _eval_lord_of_house_in_kendra(self, house_str: str) -> bool:
+        """Check if lord of house is in a kendra."""
+        house = int(house_str)
+        lord = self.chart.house_lords.get(house)
+        if not lord:
+            return False
+
+        lord_pos = self._get_planet_position(lord.value)
+        if not lord_pos:
+            return False
+
+        return lord_pos.house in [1, 4, 7, 10]
+
+    def _eval_lord_of_house_in_trikona(self, house_str: str) -> bool:
+        """Check if lord of house is in a trikona."""
+        house = int(house_str)
+        lord = self.chart.house_lords.get(house)
+        if not lord:
+            return False
+
+        lord_pos = self._get_planet_position(lord.value)
+        if not lord_pos:
+            return False
+
+        return lord_pos.house in [1, 5, 9]
+
+    def _eval_planet_in_own_sign(self, planet_name: str) -> bool:
+        """Check if planet is in its own sign."""
+        pos = self._get_planet_position(planet_name)
+        if not pos:
+            return False
+
+        # Define planetary sign ownerships
+        ownerships = {
+            "Sun": ["Leo"],
+            "Moon": ["Cancer"],
+            "Mars": ["Aries", "Scorpio"],
+            "Mercury": ["Gemini", "Virgo"],
+            "Jupiter": ["Sagittarius", "Pisces"],
+            "Venus": ["Taurus", "Libra"],
+            "Saturn": ["Capricorn", "Aquarius"]
+        }
+
+        own_signs = ownerships.get(planet_name, [])
+        return pos.sign.value in own_signs
+
+    def _eval_planet_in_nakshatra(self, planet_name: str, nakshatra_name: str) -> bool:
+        """Check if planet is in specified nakshatra."""
+        pos = self._get_planet_position(planet_name)
+        if not pos:
+            return False
+        return pos.nakshatra.value.lower() == nakshatra_name.lower()
+
+    def _eval_planet_in_nakshatra_in_house(self, planet_name: str, nakshatra_name: str, house_str: str) -> bool:
+        """Check if planet is in specified nakshatra and house."""
+        pos = self._get_planet_position(planet_name)
+        if not pos:
+            return False
+        return (pos.nakshatra.value.lower() == nakshatra_name.lower() and
+                pos.house == int(house_str))
+
+    def _eval_transit_hit(self, transit_planet: str, natal_point: str, orb_str: str) -> bool:
+        """Check if transit planet is hitting a natal point."""
+        if not self.transit:
+            return False
+
+        # Get transit planet position
+        transit_pos = None
+        for pos in self.transit.planets:
+            if pos.planet.value.lower() == transit_planet.lower():
+                transit_pos = pos
+                break
+
+        if not transit_pos:
+            return False
+
+        # Get natal point longitude
+        natal_long = None
+        if natal_point.lower() == "natal_moon":
+            natal_pos = self._get_planet_position("Moon")
+            if natal_pos:
+                natal_long = natal_pos.longitude
+        elif natal_point.lower() == "natal_sun":
+            natal_pos = self._get_planet_position("Sun")
+            if natal_pos:
+                natal_long = natal_pos.longitude
+        elif natal_point.lower() == "natal_venus":
+            natal_pos = self._get_planet_position("Venus")
+            if natal_pos:
+                natal_long = natal_pos.longitude
+        # Add more as needed
+
+        if natal_long is None:
+            return False
+
+        orb = float(orb_str)
+        diff = abs(transit_pos.longitude - natal_long)
+
+        # Handle wraparound
+        if diff > 180:
+            diff = 360 - diff
+
+        return diff <= orb
+
+    def _eval_lord_of_house(self, house_str: str) -> str:
+        """Get the lord of a house."""
+        house = int(house_str)
+        lord = self.chart.house_lords.get(house)
+        return lord.value if lord else ""
+
+    def _eval_moon_nakshatra_any(self) -> bool:
+        """Always returns True, used as a trigger to capture Moon nakshatra."""
+        return True
+
+    def _eval_dasha_of_planet(self, planet_or_lord_expr: str) -> bool:
+        """
+        Check if currently in dasha of specified planet.
+        Accepts either planet name or lord_of_house(X) expression.
+        """
+        # For now, return False as we need current date context
+        # This should be evaluated differently in horoscope engine
         return False
 
-    def _eval_planet_in_house(self, planet_name: str, house: int, chart: Chart, context: Dict) -> bool:
-        """Evaluate planet_in_house(planet, house)."""
-        try:
-            planet = Planet[planet_name.upper()]
-            pos = self.chart_service.get_planet_position(chart, planet)
-            context['planet'] = planet.value
-            context['house'] = house
-            context['actual_house'] = pos.house
-            return pos.house == house
-        except (KeyError, StopIteration):
+    def _eval_gajakesari_yoga(self) -> bool:
+        """Check for Gajakesari Yoga (Jupiter and Moon in mutual kendras)."""
+        jupiter_pos = self._get_planet_position("Jupiter")
+        moon_pos = self._get_planet_position("Moon")
+
+        if not jupiter_pos or not moon_pos:
             return False
 
-    def _eval_planet_in_sign(self, planet_name: str, sign_name: str, chart: Chart, context: Dict) -> bool:
-        """Evaluate planet_in_sign(planet, sign)."""
-        try:
-            planet = Planet[planet_name.upper()]
-            sign = Sign[sign_name.upper()]
-            pos = self.chart_service.get_planet_position(chart, planet)
-            context['planet'] = planet.value
-            context['expected_sign'] = sign.value
-            context['actual_sign'] = pos.sign.value
-            return pos.sign == sign
-        except (KeyError, StopIteration):
-            return False
+        # Calculate house difference
+        house_diff = abs(jupiter_pos.house - moon_pos.house)
 
-    def _eval_lord_of_house_in_house(self, source: int, target: int, chart: Chart, context: Dict) -> bool:
-        """Evaluate lord_of_house_in_house(source, target)."""
-        try:
-            lord = self.chart_service.get_house_lord(chart, source)
-            lord_pos = self.chart_service.get_planet_position(chart, lord)
-            context['source_house'] = source
-            context['house_lord'] = lord.value
-            context['target_house'] = target
-            context['actual_house'] = lord_pos.house
-            return lord_pos.house == target
-        except (StopIteration, KeyError):
-            return False
+        # Kendras are 1, 4, 7, 10 houses apart
+        # So difference should be 0, 3, 6, 9 (for 1, 4, 7, 10)
+        return house_diff in [0, 3, 6, 9]
 
-    def _eval_nakshatra(self, planet_name: str, nakshatra_name: str, chart: Chart, context: Dict) -> bool:
-        """Evaluate nakshatra(planet) == nakshatra_name."""
-        try:
-            planet = Planet[planet_name.upper()]
-            # Handle nakshatra names with spaces
-            nakshatra_name_clean = nakshatra_name.strip().upper().replace(' ', '_')
-            nakshatra = Nakshatra[nakshatra_name_clean]
+    def _eval_neechabhanga_raja_yoga(self) -> bool:
+        """
+        Check for Neechabhanga Raja Yoga (debilitation cancellation).
+        This is a simplified check.
+        """
+        # Define debilitation signs
+        debilitations = {
+            "Sun": "Libra",
+            "Moon": "Scorpio",
+            "Mars": "Cancer",
+            "Mercury": "Pisces",
+            "Jupiter": "Capricorn",
+            "Venus": "Virgo",
+            "Saturn": "Aries"
+        }
 
-            pos = self.chart_service.get_planet_position(chart, planet)
-            context['planet'] = planet.value
-            context['expected_nakshatra'] = nakshatra.value
-            context['actual_nakshatra'] = pos.nakshatra.value
-            return pos.nakshatra == nakshatra
-        except (KeyError, StopIteration):
-            return False
+        for planet_name, debil_sign in debilitations.items():
+            pos = self._get_planet_position(planet_name)
+            if pos and pos.sign.value == debil_sign:
+                # Check if lord of debilitation sign is in kendra
+                lord = self.chart.house_lords.get(pos.house)
+                if lord:
+                    lord_pos = self._get_planet_position(lord.value)
+                    if lord_pos and lord_pos.house in [1, 4, 7, 10]:
+                        return True
 
-    def _eval_aspect(self, planet_name: str, target: int, aspect_type: str, chart: Chart, context: Dict) -> bool:
-        """Evaluate aspect(planet, target, type)."""
-        try:
-            planet = Planet[planet_name.upper()]
-            aspects = self.chart_service.calculate_aspect(chart, planet, target)
-            context['planet'] = planet.value
-            context['target_house'] = target
-            context['aspects'] = aspects
-            return aspects
-        except (KeyError, StopIteration):
-            return False
+        return False
 
-    def _eval_conjunction(self, p1_name: str, p2_name: str, orb: float, chart: Chart, context: Dict) -> bool:
-        """Evaluate conjunction(planet1, planet2, orb)."""
-        try:
-            planet1 = Planet[p1_name.upper()]
-            planet2 = Planet[p2_name.upper()]
-            is_conj = self.chart_service.is_conjunction(chart, planet1, planet2, orb)
-            context['planet1'] = planet1.value
-            context['planet2'] = planet2.value
-            context['orb'] = orb
-            context['conjunction'] = is_conj
-            return is_conj
-        except (KeyError, StopIteration):
-            return False
-
-    def _eval_planet_in_own_sign(self, planet_expr: str, chart: Chart, context: Dict) -> bool:
-        """Evaluate planet_in_own_sign(planet)."""
-        try:
-            # Handle lord_of_house(N) expressions
-            match = re.match(r'lord_of_house\((\d+)\)', planet_expr)
-            if match:
-                house = int(match.group(1))
-                planet = self.chart_service.get_house_lord(chart, house)
-            else:
-                planet = Planet[planet_expr.upper()]
-
-            pos = self.chart_service.get_planet_position(chart, planet)
-            lord_of_sign = self.chart_service.ephemeris.get_sign_lord(pos.sign)
-
-            context['planet'] = planet.value
-            context['sign'] = pos.sign.value
-            context['sign_lord'] = lord_of_sign.value
-            context['in_own_sign'] = (planet == lord_of_sign)
-
-            return planet == lord_of_sign
-        except (KeyError, StopIteration):
-            return False
-
-    def _eval_jupiter_moon_kendra(self, chart: Chart, context: Dict) -> bool:
-        """Evaluate jupiter_moon_kendra (Gajakesari Yoga)."""
-        in_kendra = self.chart_service.are_planets_in_kendra(chart, Planet.JUPITER, Planet.MOON)
-        context['yoga'] = 'Gajakesari Yoga'
-        context['jupiter_moon_kendra'] = in_kendra
-        return in_kendra
-
-    def _eval_planet_in_kendra(self, planet_name: str, chart: Chart, context: Dict) -> bool:
-        """Evaluate planet_in_kendra(planet)."""
-        try:
-            planet = Planet[planet_name.upper()]
-            pos = self.chart_service.get_planet_position(chart, planet)
-            is_kendra = pos.house in [1, 4, 7, 10]
-            context['planet'] = planet.value
-            context['house'] = pos.house
-            context['is_kendra'] = is_kendra
-            return is_kendra
-        except (KeyError, StopIteration):
-            return False
-
-    def _eval_ascendant_in_sign(self, sign_name: str, chart: Chart, context: Dict) -> bool:
-        """Evaluate ascendant_in_sign(sign)."""
-        try:
-            sign = Sign[sign_name.upper()]
-            context['expected_sign'] = sign.value
-            context['actual_ascendant'] = chart.ascendant.value
-            return chart.ascendant == sign
-        except KeyError:
-            return False
-
-    def evaluate_all(self, expressions: List[str], chart: Chart) -> List[RuleTrigger]:
-        """Evaluate multiple expressions."""
-        return [self.evaluate(expr, chart) for expr in expressions]
-
-    def all_match(self, expressions: List[str], chart: Chart) -> bool:
-        """Check if all expressions match."""
-        triggers = self.evaluate_all(expressions, chart)
-        return all(t.evaluated for t in triggers)
-
-    def any_match(self, expressions: List[str], chart: Chart) -> bool:
-        """Check if any expression matches."""
-        triggers = self.evaluate_all(expressions, chart)
-        return any(t.evaluated for t in triggers)
+    def get_computed_facts(self) -> Dict[str, Any]:
+        """Get computed facts from last evaluation."""
+        return self.context

@@ -1,28 +1,33 @@
 """
-Domain models for the astrology system.
-All data structures using Pydantic for validation.
+Domain models for the Bhrigu-Nadi Astrology System.
+All models use Pydantic v2 for validation and serialization.
 """
+
+from datetime import datetime, date, time
+from typing import List, Optional, Dict, Any, Literal
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Dict, Optional, Literal, Any
-from datetime import datetime, date
 from enum import Enum
 
 
-class Planet(str, Enum):
-    """Vedic astrology planets including lunar nodes."""
-    SUN = "Sun"
-    MOON = "Moon"
-    MARS = "Mars"
-    MERCURY = "Mercury"
-    JUPITER = "Jupiter"
-    VENUS = "Venus"
-    SATURN = "Saturn"
-    RAHU = "Rahu"  # North Node
-    KETU = "Ketu"  # South Node
+class PlaceOfBirth(BaseModel):
+    """Geographic location and timezone information."""
+    city: str = Field(..., min_length=1, description="City name")
+    country: str = Field(..., min_length=1, description="Country name")
+    lat: float = Field(..., ge=-90, le=90, description="Latitude in decimal degrees")
+    lon: float = Field(..., ge=-180, le=180, description="Longitude in decimal degrees")
+    tz: str = Field(..., description="IANA timezone string (e.g., 'Asia/Kolkata')")
 
 
-class Sign(str, Enum):
-    """12 Zodiac signs (Rashis)."""
+class PersonInput(BaseModel):
+    """Input data for a person's birth chart."""
+    name: str = Field(..., min_length=1, description="Person's name")
+    date_of_birth: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$', description="Date in YYYY-MM-DD format")
+    time_of_birth: str = Field(..., pattern=r'^\d{2}:\d{2}$', description="Time in HH:MM 24-hour format")
+    place_of_birth: PlaceOfBirth
+
+
+class ZodiacSign(str, Enum):
+    """Zodiac signs in sidereal order."""
     ARIES = "Aries"
     TAURUS = "Taurus"
     GEMINI = "Gemini"
@@ -38,7 +43,7 @@ class Sign(str, Enum):
 
 
 class Nakshatra(str, Enum):
-    """27 Nakshatras (Lunar mansions)."""
+    """27 Nakshatras in order."""
     ASHWINI = "Ashwini"
     BHARANI = "Bharani"
     KRITTIKA = "Krittika"
@@ -57,211 +62,214 @@ class Nakshatra(str, Enum):
     VISHAKHA = "Vishakha"
     ANURADHA = "Anuradha"
     JYESHTHA = "Jyeshtha"
-    MULA = "Mula"
+    MOOLA = "Moola"
     PURVA_ASHADHA = "Purva Ashadha"
     UTTARA_ASHADHA = "Uttara Ashadha"
     SHRAVANA = "Shravana"
-    DHANISHTHA = "Dhanishtha"
+    DHANISHTA = "Dhanishta"
     SHATABHISHA = "Shatabhisha"
     PURVA_BHADRAPADA = "Purva Bhadrapada"
     UTTARA_BHADRAPADA = "Uttara Bhadrapada"
     REVATI = "Revati"
 
 
-class BirthInfo(BaseModel):
-    """Birth information for chart calculation."""
-    name: str = Field(..., min_length=1, description="Person's name")
-    date_of_birth: date = Field(..., description="Date of birth")
-    time_of_birth: str = Field(..., description="Time of birth in HH:MM:SS format")
-    latitude: float = Field(..., ge=-90, le=90, description="Birth place latitude")
-    longitude: float = Field(..., ge=-180, le=180, description="Birth place longitude")
-    timezone: str = Field(..., description="Timezone (e.g., 'Asia/Kolkata', 'America/New_York')")
-
-    @field_validator('time_of_birth')
-    @classmethod
-    def validate_time_format(cls, v: str) -> str:
-        """Validate time format HH:MM:SS."""
-        try:
-            parts = v.split(':')
-            if len(parts) != 3:
-                raise ValueError
-            hours, minutes, seconds = int(parts[0]), int(parts[1]), int(parts[2])
-            if not (0 <= hours < 24 and 0 <= minutes < 60 and 0 <= seconds < 60):
-                raise ValueError
-        except (ValueError, AttributeError):
-            raise ValueError('Time must be in HH:MM:SS format')
-        return v
+class Planet(str, Enum):
+    """Celestial bodies used in Vedic astrology."""
+    SUN = "Sun"
+    MOON = "Moon"
+    MARS = "Mars"
+    MERCURY = "Mercury"
+    JUPITER = "Jupiter"
+    VENUS = "Venus"
+    SATURN = "Saturn"
+    RAHU = "Rahu"
+    KETU = "Ketu"
 
 
 class PlanetPosition(BaseModel):
-    """Position of a planet in the chart."""
+    """Detailed position of a planet."""
     planet: Planet
-    longitude: float = Field(..., description="Absolute longitude 0-360 degrees")
-    sign: Sign
-    degree_in_sign: float = Field(..., description="Degree within sign 0-30")
+    longitude: float = Field(..., ge=0, lt=360, description="Absolute longitude in degrees")
+    sign: ZodiacSign
+    sign_longitude: float = Field(..., ge=0, lt=30, description="Longitude within the sign")
+    house: int = Field(..., ge=1, le=12, description="House number")
     nakshatra: Nakshatra
     nakshatra_pada: int = Field(..., ge=1, le=4, description="Pada (quarter) within nakshatra")
-    house: int = Field(..., ge=1, le=12, description="House number")
-    retrograde: bool = Field(default=False, description="Is planet retrograde")
+    is_retrograde: bool = False
 
 
-class HouseCusp(BaseModel):
-    """House cusp information."""
-    house: int = Field(..., ge=1, le=12)
-    longitude: float = Field(..., description="Cusp longitude 0-360 degrees")
-    sign: Sign
-    degree_in_sign: float
+class HouseCusps(BaseModel):
+    """House cusp positions (Placidus or similar system)."""
+    cusps: List[float] = Field(..., min_length=12, max_length=12, description="12 house cusp longitudes")
+    ascendant: float = Field(..., ge=0, lt=360, description="Ascendant degree")
+    midheaven: float = Field(..., ge=0, lt=360, description="MC degree")
+
+    @field_validator('cusps')
+    @classmethod
+    def validate_cusps(cls, v):
+        if len(v) != 12:
+            raise ValueError("Must have exactly 12 house cusps")
+        return v
 
 
-class Chart(BaseModel):
-    """Complete birth chart."""
-    birth_info: BirthInfo
-    ascendant: Sign
-    ascendant_longitude: float
-    planets: List[PlanetPosition]
-    house_cusps: List[HouseCusp]
-    calculation_timestamp: datetime = Field(default_factory=datetime.utcnow)
+class NakshatraInfo(BaseModel):
+    """Detailed nakshatra information for a point."""
+    nakshatra: Nakshatra
+    pada: int = Field(..., ge=1, le=4)
+    lord: Planet
+    longitude_in_nakshatra: float = Field(..., ge=0, lt=13.333333)
 
 
 class DashaPeriod(BaseModel):
-    """Vimshottari Dasha period."""
+    """A single dasha or antardasha period."""
     planet: Planet
-    start_date: date
-    end_date: date
-    level: Literal["maha", "antar", "pratyantar"]
-    parent_dasha: Optional[Planet] = None  # For bhukti, refers to Maha dasha
+    level: Literal["mahadasha", "antardasha", "pratyantardasha"] = "mahadasha"
+    start_date: str  # YYYY-MM-DD
+    end_date: str    # YYYY-MM-DD
+    duration_years: float
 
 
 class DashaTimeline(BaseModel):
-    """Complete Dasha timeline."""
-    birth_date: date
-    current_maha_dasha: DashaPeriod
-    current_antar_dasha: DashaPeriod
-    upcoming_maha_dashas: List[DashaPeriod]
+    """Complete Vimshottari dasha timeline."""
+    system: Literal["Vimshottari"] = "Vimshottari"
+    start_planet: Planet
+    birth_balance_years: float
+    mahadashas: List[DashaPeriod]
+    current_mahadasha: Optional[DashaPeriod] = None
+    current_antardasha: Optional[DashaPeriod] = None
 
 
-class RuleTrigger(BaseModel):
-    """Evaluated trigger from rule."""
-    expression: str
-    evaluated: bool
-    context: Dict[str, Any] = Field(default_factory=dict)
+class TransitSnapshot(BaseModel):
+    """Current planetary positions for transit analysis."""
+    date: str  # YYYY-MM-DD
+    planets: List[PlanetPosition]
 
 
 class RuleTrace(BaseModel):
-    """Trace of a matched rule."""
+    """Trace of a matched rule with computed values."""
     rule_id: str
-    tradition: Literal["bhrigu", "nadi"]
-    domain: str
-    matched_triggers: List[RuleTrigger]
+    tradition: Literal["bhrigu", "nadi", "combined"]
     priority: int
-    narrative: str
+    domain: str
+    matched_triggers: List[str]
+    computed_facts: Dict[str, Any]
+    rendered_narrative: str
     citations: List[str]
 
 
-class DomainAnalysis(BaseModel):
-    """Analysis for a specific life domain."""
-    domain: str
+class Interpretation(BaseModel):
+    """Structured interpretation with supporting data."""
+    title: str
     summary: str
-    detailed_narrative: str
+    details: str
+    timing: Optional[str] = None
+    rule_traces: List[RuleTrace] = Field(default_factory=list)
+
+
+class ChartData(BaseModel):
+    """Complete birth chart data."""
+    person: PersonInput
+    calculation_datetime_utc: str
+    julian_day: float
+    ayanamsa: float
+    ayanamsa_name: str = "Lahiri"
+
+    # Core positions
+    ascendant: PlanetPosition
+    planets: List[PlanetPosition]
+    house_cusps: HouseCusps
+
+    # Nakshatra details
+    moon_nakshatra: NakshatraInfo
+    ascendant_nakshatra: NakshatraInfo
+
+    # Divisional charts
+    d1_chart: Dict[str, Any] = Field(default_factory=dict, description="Rasi chart summary")
+    d9_chart: Dict[str, Any] = Field(default_factory=dict, description="Navamsa chart summary")
+
+    # Dasha
+    dasha_timeline: DashaTimeline
+
+    # House lordships
+    house_lords: Dict[int, Planet] = Field(default_factory=dict)
+
+
+class BirthChartOutput(BaseModel):
+    """Output from Birth Chart Engine."""
+    meta: Dict[str, Any]
+    summary: List[str]
+    chart_data: ChartData
+    key_yogas: List[Interpretation]
     rule_traces: List[RuleTrace]
-    timing_windows: Optional[List[str]] = None
+    disclaimers: List[str]
+
+
+class DomainAnalysis(BaseModel):
+    """Analysis of a specific life domain."""
+    domain: str
+    indicators: List[str]
+    nadi_statements: List[str]
+    bhrigu_themes: List[str]
+    timing_windows: List[str]
+    remedial_guidance: Optional[str] = None
+    rule_traces: List[RuleTrace]
 
 
 class HoroscopeOutput(BaseModel):
-    """Complete horoscope output."""
+    """Output from Horoscope Engine."""
     meta: Dict[str, Any]
-    chart_summary: Dict[str, Any]
-    nakshatra_summary: Dict[str, Any]
-    summary_bullets: List[str]
-    domains: List[DomainAnalysis]
-    dasha_timeline: Optional[DashaTimeline] = None
-    disclaimers: List[str]
-
-
-class MatchmakingInput(BaseModel):
-    """Input for matchmaking analysis."""
-    partner_a: BirthInfo
-    partner_b: BirthInfo
-
-
-class PartnerAnalysis(BaseModel):
-    """Individual partner analysis in matchmaking."""
-    name: str
-    personality_summary: str
-    key_traits: List[str]
-    marriage_house_analysis: str
-    venus_analysis: str
-
-
-class SynastryRule(BaseModel):
-    """Synastry rule for matchmaking."""
-    rule_id: str
-    description: str
-    compatibility_score: int = Field(..., ge=0, le=100)
-    narrative: str
-
-
-class MatchmakingOutput(BaseModel):
-    """Complete matchmaking output."""
-    meta: Dict[str, Any]
-    partner_a_analysis: PartnerAnalysis
-    partner_b_analysis: PartnerAnalysis
-    synastry_rules: List[SynastryRule]
-    overall_compatibility: int = Field(..., ge=0, le=100)
-    marriage_stability_indicators: List[str]
-    timing_overlap_windows: List[str]
-    cautions: List[str]
-    mitigations: List[str]
+    summary: List[str]
+    domains: Dict[str, DomainAnalysis]  # career, wealth, marriage, etc.
     rule_traces: List[RuleTrace]
     disclaimers: List[str]
 
 
-class TransitTrigger(BaseModel):
-    """Transit event triggering insights."""
-    transit_planet: Planet
-    natal_point: str  # e.g., "natal Moon", "7th house cusp"
-    aspect_type: str  # e.g., "conjunction", "opposition"
-    orb_degrees: float
-    narrative: str
+class CompatibilityAnalysis(BaseModel):
+    """Compatibility analysis for a couple."""
+    compatibility_score: float = Field(..., ge=0, le=36, description="Ashtakuta score out of 36")
+    kuta_breakdown: Dict[str, float]
+    marriage_stability: str
+    attraction_patterns: List[str]
+    conflict_areas: List[str]
+    dasha_synergy: List[str]
+    children_indications: str
+    mitigation_guidance: List[str]
+
+
+class MatchMakingOutput(BaseModel):
+    """Output from Match Making Engine."""
+    meta: Dict[str, Any]
+    partner_a_name: str
+    partner_b_name: str
+    summary: List[str]
+    compatibility_overview: str
+    compatibility_analysis: CompatibilityAnalysis
+    timing_windows: List[str]
+    rule_traces: List[RuleTrace]
+    disclaimers: List[str]
 
 
 class DailyInsight(BaseModel):
-    """Insight for a specific date."""
-    date: date
-    focus_areas: List[str]
+    """Insight for a specific day."""
+    date: str  # YYYY-MM-DD
+    overview: str
     do_list: List[str]
     dont_list: List[str]
-    transit_triggers: List[TransitTrigger]
-    energy_level: Literal["low", "medium", "high"]
+    focus_areas: List[str]
+    key_triggers: List[str]
 
 
 class DailyInsightsOutput(BaseModel):
-    """Complete daily insights output."""
+    """Output from Daily Insights Engine."""
     meta: Dict[str, Any]
+    summary: List[str]
     today: DailyInsight
     next_7_days: List[DailyInsight]
-    key_transit_triggers: List[TransitTrigger]
     rule_traces: List[RuleTrace]
     disclaimers: List[str]
 
 
-class ChartRequest(BaseModel):
-    """Request for birth chart calculation."""
-    birth_info: BirthInfo
-
-
-class HoroscopeRequest(BaseModel):
-    """Request for horoscope generation."""
-    birth_info: BirthInfo
-
-
-class MatchmakingRequest(BaseModel):
-    """Request for matchmaking analysis."""
-    partner_a: BirthInfo
-    partner_b: BirthInfo
-
-
-class DailyInsightsRequest(BaseModel):
-    """Request for daily insights."""
-    birth_info: BirthInfo
-    target_date: Optional[date] = Field(default=None, description="Target date for insights (default: today)")
+class MatchMakingInput(BaseModel):
+    """Input for matchmaking analysis."""
+    partner_a: PersonInput
+    partner_b: PersonInput

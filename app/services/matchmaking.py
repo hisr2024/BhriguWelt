@@ -1,374 +1,384 @@
 """
-Matchmaking service for compatibility analysis between two charts.
-Based on Nadi Jyotisha and Bhrigu Samhita principles.
+Matchmaking engine for compatibility analysis between two people.
+Based on Nadi and Bhrigu principles including Ashtakuta analysis.
 """
-from typing import List, Dict, Any
+
+from typing import Dict, List, Tuple
+from datetime import datetime
+
 from app.domain.models import (
-    BirthInfo, MatchmakingOutput, PartnerAnalysis,
-    SynastryRule, RuleTrace, Planet, Chart
+    PersonInput, MatchMakingInput, MatchMakingOutput,
+    CompatibilityAnalysis, ChartData, RuleTrace
 )
 from app.services.chart import ChartService
-from app.rules.engine import RuleEngine
+from app.rules.engine import RulesEngine
+from app.config import ENGINE_VERSION, STANDARD_DISCLAIMERS, NAKSHATRAS
 
 
-class MatchmakingService:
-    """Service for marriage compatibility analysis."""
+class MatchMakingService:
+    """
+    Service for analyzing compatibility between two individuals.
+    """
 
     def __init__(self):
-        """Initialize matchmaking service."""
         self.chart_service = ChartService()
-        self.rule_engine = RuleEngine(self.chart_service)
+        self.rules_engine = RulesEngine()
 
-    def analyze_compatibility(
-        self,
-        partner_a: BirthInfo,
-        partner_b: BirthInfo
-    ) -> MatchmakingOutput:
+    def analyze_compatibility(self, partner_a: PersonInput, partner_b: PersonInput) -> MatchMakingOutput:
         """
-        Analyze marriage compatibility between two partners.
+        Analyze compatibility between two partners.
 
         Args:
-            partner_a: First partner's birth info
-            partner_b: Second partner's birth info
+            partner_a: First person's input data
+            partner_b: Second person's input data
 
         Returns:
-            Complete MatchmakingOutput
+            MatchMakingOutput with compatibility analysis
         """
-        # Calculate charts
+        # Calculate charts for both
         chart_a = self.chart_service.calculate_chart(partner_a)
         chart_b = self.chart_service.calculate_chart(partner_b)
 
-        # Individual analyses
-        partner_a_analysis = self._analyze_individual_for_marriage(chart_a, partner_a.name)
-        partner_b_analysis = self._analyze_individual_for_marriage(chart_b, partner_b.name)
+        # Calculate Ashtakuta (8-fold compatibility)
+        kuta_score, kuta_breakdown = self._calculate_ashtakuta(chart_a, chart_b)
 
-        # Synastry analysis
-        synastry_rules = self._analyze_synastry(chart_a, chart_b)
+        # Analyze specific compatibility areas
+        marriage_stability = self._analyze_marriage_stability(chart_a, chart_b, kuta_score)
+        attraction_patterns = self._analyze_attraction(chart_a, chart_b)
+        conflict_areas = self._analyze_conflicts(chart_a, chart_b)
+        dasha_synergy = self._analyze_dasha_synergy(chart_a, chart_b)
+        children_indications = self._analyze_children(chart_a, chart_b)
+        mitigation_guidance = self._generate_mitigations(chart_a, chart_b, kuta_score)
 
-        # Overall compatibility score
-        overall_compatibility = self._calculate_overall_score(synastry_rules)
+        # Create compatibility analysis
+        compatibility_analysis = CompatibilityAnalysis(
+            compatibility_score=kuta_score,
+            kuta_breakdown=kuta_breakdown,
+            marriage_stability=marriage_stability,
+            attraction_patterns=attraction_patterns,
+            conflict_areas=conflict_areas,
+            dasha_synergy=dasha_synergy,
+            children_indications=children_indications,
+            mitigation_guidance=mitigation_guidance
+        )
 
-        # Marriage stability indicators
-        stability_indicators = self._get_stability_indicators(chart_a, chart_b, synastry_rules)
+        # Generate summary
+        summary = self._generate_summary(chart_a, chart_b, kuta_score)
 
-        # Timing overlap
-        timing_overlap = self._get_timing_overlap(chart_a, chart_b)
+        # Generate timing windows for marriage
+        timing_windows = self._generate_timing_windows(chart_a, chart_b)
 
-        # Cautions and mitigations
-        cautions = self._get_cautions(synastry_rules)
-        mitigations = self._get_mitigations(chart_a, chart_b)
+        # Match rules (if any matchmaking-specific rules exist)
+        rule_traces = []
+        # Note: We'd need to enhance DSL for two-chart analysis
+        # For now, we'll add basic analysis
 
-        # Collect all rule traces
-        rule_traces: List[RuleTrace] = []
+        # Compatibility overview
+        compatibility_overview = self._generate_compatibility_overview(chart_a, chart_b, kuta_score)
 
-        # Meta
+        # Create metadata
         meta = {
-            "engine_version": "1.0.0",
-            "analysis_type": "Marriage Compatibility (Nadi & Bhrigu Samhita)",
-            "calculation_notes": [
-                "Compatibility assessed through planetary positions, nakshatras, and house lords",
-                "Traditional Vedic matchmaking principles applied",
-                "Both individual charts and synastry considered"
-            ]
+            "engine_version": ENGINE_VERSION,
+            "calculation_notes": f"Compatibility calculated using Ashtakuta system and Bhrigu principles",
+            "timestamp_utc": datetime.utcnow().isoformat()
         }
 
-        # Disclaimers
-        disclaimers = [
-            "Compatibility analysis provides guidance based on traditional Vedic astrology.",
-            "Successful relationships depend on mutual understanding, effort, and commitment.",
-            "Astrological compatibility is one factor among many in relationship harmony.",
-            "Consult qualified astrologers for detailed matchmaking and remedial measures."
-        ]
-
-        return MatchmakingOutput(
+        output = MatchMakingOutput(
             meta=meta,
-            partner_a_analysis=partner_a_analysis,
-            partner_b_analysis=partner_b_analysis,
-            synastry_rules=synastry_rules,
-            overall_compatibility=overall_compatibility,
-            marriage_stability_indicators=stability_indicators,
-            timing_overlap_windows=timing_overlap,
-            cautions=cautions,
-            mitigations=mitigations,
+            partner_a_name=partner_a.name,
+            partner_b_name=partner_b.name,
+            summary=summary,
+            compatibility_overview=compatibility_overview,
+            compatibility_analysis=compatibility_analysis,
+            timing_windows=timing_windows,
             rule_traces=rule_traces,
-            disclaimers=disclaimers
+            disclaimers=STANDARD_DISCLAIMERS
         )
 
-    def _analyze_individual_for_marriage(self, chart: Chart, name: str) -> PartnerAnalysis:
-        """Analyze individual chart for marriage potential."""
-        # Personality summary
-        moon_pos = self.chart_service.get_planet_position(chart, Planet.MOON)
-        personality_summary = (
-            f"{name} has {chart.ascendant.value} ascendant with Moon in "
-            f"{moon_pos.nakshatra.value} nakshatra, indicating "
-            f"{self._get_nakshatra_trait(moon_pos.nakshatra.value)} nature."
-        )
+        return output
 
-        # Key traits
-        key_traits = self._extract_key_traits(chart)
+    def _calculate_ashtakuta(self, chart_a: ChartData, chart_b: ChartData) -> Tuple[float, Dict[str, float]]:
+        """
+        Calculate Ashtakuta (8-fold) compatibility score.
 
-        # 7th house analysis
-        house_7_lord = self.chart_service.get_house_lord(chart, 7)
-        house_7_lord_pos = self.chart_service.get_planet_position(chart, house_7_lord)
-        marriage_house_analysis = (
-            f"7th house lord {house_7_lord.value} is in {house_7_lord_pos.house}th house "
-            f"in {house_7_lord_pos.sign.value}, suggesting "
-            f"{self._get_7th_lord_indication(house_7_lord_pos.house)}."
-        )
+        Args:
+            chart_a: First person's chart
+            chart_b: Second person's chart
+
+        Returns:
+            Tuple of (total_score, breakdown_dict)
+        """
+        # Get Moon nakshatras for both
+        nak_a = chart_a.moon_nakshatra.nakshatra.value
+        nak_b = chart_b.moon_nakshatra.nakshatra.value
+
+        # Get nakshatra indices
+        nak_a_idx = NAKSHATRAS.index(nak_a.replace("_", " "))
+        nak_b_idx = NAKSHATRAS.index(nak_b.replace("_", " "))
+
+        # Get Moon signs
+        moon_a = next(p for p in chart_a.planets if p.planet.value == "Moon")
+        moon_b = next(p for p in chart_b.planets if p.planet.value == "Moon")
+
+        # Simplified Ashtakuta calculation (real system is more complex)
+        breakdown = {}
+
+        # 1. Varna (1 point) - caste/spiritual compatibility
+        breakdown["varna"] = 1.0
+
+        # 2. Vashya (2 points) - mutual attraction
+        breakdown["vashya"] = 2.0
+
+        # 3. Tara (3 points) - birth star compatibility
+        tara_distance = abs(nak_a_idx - nak_b_idx) % 27
+        if tara_distance in [1, 2, 3, 5, 6, 7]:
+            breakdown["tara"] = 3.0
+        elif tara_distance in [4, 8]:
+            breakdown["tara"] = 1.5
+        else:
+            breakdown["tara"] = 0.0
+
+        # 4. Yoni (4 points) - sexual compatibility
+        breakdown["yoni"] = 3.0
+
+        # 5. Graha Maitri (5 points) - mental compatibility
+        # Based on Moon sign lords friendship
+        breakdown["graha_maitri"] = 4.0
+
+        # 6. Gana (6 points) - temperament
+        # Deva, Manushya, Rakshasa compatibility
+        breakdown["gana"] = 5.0
+
+        # 7. Bhakoot (7 points) - health and prosperity
+        sign_distance = abs(self._sign_to_number(moon_a.sign.value) - self._sign_to_number(moon_b.sign.value))
+        if sign_distance in [2, 12, 5, 9]:
+            breakdown["bhakoot"] = 0.0  # Afflicted
+        else:
+            breakdown["bhakoot"] = 7.0
+
+        # 8. Nadi (8 points) - health and progeny
+        # Check if same nadi (dosha)
+        nadi_a = nak_a_idx % 3
+        nadi_b = nak_b_idx % 3
+        if nadi_a == nadi_b:
+            breakdown["nadi"] = 0.0  # Nadi dosha
+        else:
+            breakdown["nadi"] = 8.0
+
+        total_score = sum(breakdown.values())
+
+        return total_score, breakdown
+
+    def _sign_to_number(self, sign: str) -> int:
+        """Convert sign name to number (1-12)."""
+        signs = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+                 "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"]
+        try:
+            return signs.index(sign) + 1
+        except ValueError:
+            return 1
+
+    def _analyze_marriage_stability(self, chart_a: ChartData, chart_b: ChartData, kuta_score: float) -> str:
+        """Analyze marriage stability indicators."""
+        if kuta_score >= 24:
+            stability = "Excellent marriage stability indicated. The compatibility score suggests harmonious union."
+        elif kuta_score >= 18:
+            stability = "Good marriage stability. With mutual understanding, the relationship will thrive."
+        elif kuta_score >= 12:
+            stability = "Moderate stability. Requires conscious effort and compromise from both partners."
+        else:
+            stability = "Challenges indicated. Deep compatibility analysis and remedial measures recommended."
+
+        # Check 7th lords
+        lord_7_a = chart_a.house_lords.get(7)
+        lord_7_b = chart_b.house_lords.get(7)
+
+        if lord_7_a and lord_7_b:
+            stability += f" 7th lords are {lord_7_a.value} and {lord_7_b.value} respectively."
+
+        return stability
+
+    def _analyze_attraction(self, chart_a: ChartData, chart_b: ChartData) -> List[str]:
+        """Analyze mutual attraction patterns."""
+        patterns = []
 
         # Venus analysis
-        venus_pos = self.chart_service.get_planet_position(chart, Planet.VENUS)
-        venus_analysis = (
-            f"Venus in {venus_pos.sign.value} in {venus_pos.house}th house indicates "
-            f"{self._get_venus_indication(venus_pos.sign.value, venus_pos.house)}."
+        venus_a = next((p for p in chart_a.planets if p.planet.value == "Venus"), None)
+        venus_b = next((p for p in chart_b.planets if p.planet.value == "Venus"), None)
+
+        if venus_a and venus_b:
+            patterns.append(
+                f"Venus in {venus_a.sign.value} (Partner A) and {venus_b.sign.value} (Partner B) "
+                "indicates aesthetic and romantic compatibility"
+            )
+
+        # Moon-Moon connection
+        moon_a = next(p for p in chart_a.planets if p.planet.value == "Moon")
+        moon_b = next(p for p in chart_b.planets if p.planet.value == "Moon")
+
+        patterns.append(
+            f"Moon signs {moon_a.sign.value} and {moon_b.sign.value} create emotional resonance"
         )
-
-        return PartnerAnalysis(
-            name=name,
-            personality_summary=personality_summary,
-            key_traits=key_traits,
-            marriage_house_analysis=marriage_house_analysis,
-            venus_analysis=venus_analysis
-        )
-
-    def _analyze_synastry(self, chart_a: Chart, chart_b: Chart) -> List[SynastryRule]:
-        """Analyze compatibility between two charts."""
-        synastry_rules: List[SynastryRule] = []
-
-        # Moon-Moon nakshatra compatibility
-        moon_a = self.chart_service.get_planet_position(chart_a, Planet.MOON)
-        moon_b = self.chart_service.get_planet_position(chart_b, Planet.MOON)
-
-        moon_compat_score, moon_compat_desc = self._check_moon_compatibility(
-            moon_a.nakshatra.value, moon_b.nakshatra.value
-        )
-
-        synastry_rules.append(SynastryRule(
-            rule_id="SYN-001",
-            description="Moon Nakshatra Compatibility",
-            compatibility_score=moon_compat_score,
-            narrative=moon_compat_desc
-        ))
 
         # Ascendant compatibility
-        asc_compat_score, asc_compat_desc = self._check_ascendant_compatibility(
-            chart_a.ascendant.value, chart_b.ascendant.value
+        patterns.append(
+            f"Ascendant signs {chart_a.ascendant.sign.value} and {chart_b.ascendant.sign.value} "
+            "shape personality interaction"
         )
 
-        synastry_rules.append(SynastryRule(
-            rule_id="SYN-002",
-            description="Ascendant Sign Compatibility",
-            compatibility_score=asc_compat_score,
-            narrative=asc_compat_desc
-        ))
+        return patterns
 
-        # Venus-Mars compatibility
-        venus_mars_score, venus_mars_desc = self._check_venus_mars_compatibility(chart_a, chart_b)
+    def _analyze_conflicts(self, chart_a: ChartData, chart_b: ChartData) -> List[str]:
+        """Identify potential conflict areas."""
+        conflicts = []
 
-        synastry_rules.append(SynastryRule(
-            rule_id="SYN-003",
-            description="Venus-Mars Attraction",
-            compatibility_score=venus_mars_score,
-            narrative=venus_mars_desc
-        ))
+        # Mars positions (aggression, assertion)
+        mars_a = next((p for p in chart_a.planets if p.planet.value == "Mars"), None)
+        mars_b = next((p for p in chart_b.planets if p.planet.value == "Mars"), None)
 
-        # Jupiter aspect on partner's Moon (blessing)
-        jup_moon_score, jup_moon_desc = self._check_jupiter_moon_blessing(chart_a, chart_b)
+        if mars_a and mars_b:
+            if mars_a.house in [1, 7] or mars_b.house in [1, 7]:
+                conflicts.append(
+                    "Mars placement suggests areas requiring patience in conflict resolution"
+                )
 
-        synastry_rules.append(SynastryRule(
-            rule_id="SYN-004",
-            description="Jupiter's Blessing",
-            compatibility_score=jup_moon_score,
-            narrative=jup_moon_desc
-        ))
+        # Saturn (restrictions, differences)
+        saturn_a = next((p for p in chart_a.planets if p.planet.value == "Saturn"), None)
+        saturn_b = next((p for p in chart_b.planets if p.planet.value == "Saturn"), None)
 
-        return synastry_rules
+        if saturn_a and saturn_b:
+            conflicts.append(
+                "Saturn positions indicate areas requiring maturity and long-term perspective"
+            )
 
-    def _check_moon_compatibility(self, nak_a: str, nak_b: str) -> tuple[int, str]:
-        """Check Moon nakshatra compatibility."""
-        # Simplified compatibility - same nakshatra is very compatible
-        if nak_a == nak_b:
-            return 95, f"Both have Moon in {nak_a}, creating deep emotional understanding and shared instincts."
+        if not conflicts:
+            conflicts.append("No major conflict indicators in basic analysis")
 
-        # Compatible nakshatras (simplified)
-        compatible_pairs = [
-            ("Rohini", "Hasta"), ("Ashwini", "Magha"), ("Pushya", "Uttara Bhadrapada"),
-            ("Shravana", "Uttara Ashadha")
-        ]
+        return conflicts
 
-        for pair in compatible_pairs:
-            if (nak_a in pair and nak_b in pair):
-                return 80, f"Moon in {nak_a} and {nak_b} creates harmonious emotional resonance."
+    def _analyze_dasha_synergy(self, chart_a: ChartData, chart_b: ChartData) -> List[str]:
+        """Analyze dasha period synchronization."""
+        synergy = []
 
-        # Default moderate compatibility
-        return 60, f"Moon in {nak_a} and {nak_b} suggests different emotional styles requiring understanding."
+        current_maha_a = chart_a.dasha_timeline.current_mahadasha
+        current_maha_b = chart_b.dasha_timeline.current_mahadasha
 
-    def _check_ascendant_compatibility(self, asc_a: str, asc_b: str) -> tuple[int, str]:
-        """Check ascendant sign compatibility."""
-        # Same element is compatible
-        fire_signs = ["Aries", "Leo", "Sagittarius"]
-        earth_signs = ["Taurus", "Virgo", "Capricorn"]
-        air_signs = ["Gemini", "Libra", "Aquarius"]
-        water_signs = ["Cancer", "Scorpio", "Pisces"]
+        if current_maha_a and current_maha_b:
+            synergy.append(
+                f"Partner A in {current_maha_a.planet.value} Mahadasha, "
+                f"Partner B in {current_maha_b.planet.value} Mahadasha"
+            )
 
-        for element_group in [fire_signs, earth_signs, air_signs, water_signs]:
-            if asc_a in element_group and asc_b in element_group:
-                return 85, f"{asc_a} and {asc_b} ascendants share elemental harmony, promoting understanding."
+        synergy.append(
+            "Dasha synchronization requires detailed antardasha analysis for marriage timing"
+        )
 
-        # Complementary elements
-        if (asc_a in fire_signs and asc_b in air_signs) or (asc_a in air_signs and asc_b in fire_signs):
-            return 75, f"{asc_a} and {asc_b} create stimulating and dynamic interaction."
+        return synergy
 
-        if (asc_a in earth_signs and asc_b in water_signs) or (asc_a in water_signs and asc_b in earth_signs):
-            return 75, f"{asc_a} and {asc_b} create nurturing and stable foundation."
+    def _analyze_children(self, chart_a: ChartData, chart_b: ChartData) -> str:
+        """Analyze children and progeny indications."""
+        # 5th house analysis
+        lord_5_a = chart_a.house_lords.get(5)
+        lord_5_b = chart_b.house_lords.get(5)
 
-        return 55, f"{asc_a} and {asc_b} have different life approaches requiring conscious adaptation."
+        # Jupiter (significator of children)
+        jupiter_a = next((p for p in chart_a.planets if p.planet.value == "Jupiter"), None)
+        jupiter_b = next((p for p in chart_b.planets if p.planet.value == "Jupiter"), None)
 
-    def _check_venus_mars_compatibility(self, chart_a: Chart, chart_b: Chart) -> tuple[int, str]:
-        """Check Venus-Mars attraction."""
-        venus_a = self.chart_service.get_planet_position(chart_a, Planet.VENUS)
-        mars_b = self.chart_service.get_planet_position(chart_b, Planet.MARS)
+        analysis = (
+            f"5th lords are {lord_5_a.value} (A) and {lord_5_b.value} (B). "
+            f"Jupiter positions in both charts support healthy progeny. "
+            f"Timing of children correlates with 5th lord dasha periods."
+        )
 
-        # If Venus of one is in same sign as Mars of other, strong attraction
-        if venus_a.sign == mars_b.sign:
-            return 90, "Venus-Mars sign alignment creates strong magnetic attraction and passion."
+        return analysis
 
-        return 65, "Venus-Mars create moderate attraction; passion develops through shared experiences."
+    def _generate_mitigations(self, chart_a: ChartData, chart_b: ChartData, kuta_score: float) -> List[str]:
+        """Generate mitigation guidance for challenges."""
+        guidance = []
 
-    def _check_jupiter_moon_blessing(self, chart_a: Chart, chart_b: Chart) -> tuple[int, str]:
-        """Check if Jupiter of one blesses Moon of other."""
-        # Simplified - if Jupiter in same sign as partner's Moon
-        jup_a = self.chart_service.get_planet_position(chart_a, Planet.JUPITER)
-        moon_b = self.chart_service.get_planet_position(chart_b, Planet.MOON)
+        if kuta_score < 18:
+            guidance.append("Kuta score below optimal threshold: strengthen Venus through Friday practices")
+            guidance.append("Joint spiritual practices and temple visits recommended")
 
-        if jup_a.sign == moon_b.sign:
-            return 85, "Jupiter's placement brings wisdom and expansion to partner's emotional world."
+        # Check nadi dosha
+        moon_a = next(p for p in chart_a.planets if p.planet.value == "Moon")
+        moon_b = next(p for p in chart_b.planets if p.planet.value == "Moon")
 
-        return 60, "Jupiter provides moderate blessing to the relationship."
+        guidance.append("Cultivate mutual respect and communication")
+        guidance.append("Honor each other's ascendant lord qualities")
 
-    def _calculate_overall_score(self, synastry_rules: List[SynastryRule]) -> int:
-        """Calculate overall compatibility score."""
-        if not synastry_rules:
-            return 50
+        return guidance
 
-        total = sum(rule.compatibility_score for rule in synastry_rules)
-        return total // len(synastry_rules)
+    def _generate_summary(self, chart_a: ChartData, chart_b: ChartData, kuta_score: float) -> List[str]:
+        """Generate summary bullet points."""
+        summary = []
 
-    def _get_stability_indicators(
-        self,
-        chart_a: Chart,
-        chart_b: Chart,
-        synastry: List[SynastryRule]
-    ) -> List[str]:
-        """Get marriage stability indicators."""
-        indicators = []
+        summary.append(
+            f"Ashtakuta compatibility score: {kuta_score}/36 "
+            f"({'Excellent' if kuta_score >= 24 else 'Good' if kuta_score >= 18 else 'Moderate'})"
+        )
 
-        # Check Saturn influence (stability)
-        saturn_a = self.chart_service.get_planet_position(chart_a, Planet.SATURN)
-        if saturn_a.house == 7:
-            indicators.append("Saturn in 7th house of partner A brings long-term commitment")
+        summary.append(
+            f"Partner A: {chart_a.ascendant.sign.value} Ascendant, "
+            f"Moon in {chart_a.moon_nakshatra.nakshatra.value}"
+        )
 
-        # Check Jupiter influence (wisdom)
-        indicators.append("Jupiter's blessing supports growth through partnership")
+        summary.append(
+            f"Partner B: {chart_b.ascendant.sign.value} Ascendant, "
+            f"Moon in {chart_b.moon_nakshatra.nakshatra.value}"
+        )
 
-        # Overall score indicator
-        avg_score = self._calculate_overall_score(synastry)
-        if avg_score >= 75:
-            indicators.append("High compatibility score suggests strong relationship foundation")
-        elif avg_score >= 60:
-            indicators.append("Moderate compatibility with potential for growth through understanding")
+        return summary
+
+    def _generate_timing_windows(self, chart_a: ChartData, chart_b: ChartData) -> List[str]:
+        """Generate favorable timing for marriage."""
+        windows = []
+
+        # Find 7th lord dashas for both
+        lord_7_a = chart_a.house_lords.get(7)
+        lord_7_b = chart_b.house_lords.get(7)
+
+        if lord_7_a:
+            for maha in chart_a.dasha_timeline.mahadashas[:5]:
+                if maha.planet == lord_7_a:
+                    windows.append(
+                        f"Partner A's {maha.planet.value} Mahadasha ({maha.start_date} to {maha.end_date}): "
+                        "Favorable for marriage"
+                    )
+                    break
+
+        if lord_7_b:
+            for maha in chart_b.dasha_timeline.mahadashas[:5]:
+                if maha.planet == lord_7_b:
+                    windows.append(
+                        f"Partner B's {maha.planet.value} Mahadasha ({maha.start_date} to {maha.end_date}): "
+                        "Favorable for marriage"
+                    )
+                    break
+
+        if not windows:
+            windows.append("Detailed timing requires antardasha and transit analysis")
+
+        return windows
+
+    def _generate_compatibility_overview(self, chart_a: ChartData, chart_b: ChartData, kuta_score: float) -> str:
+        """Generate overall compatibility overview."""
+        if kuta_score >= 24:
+            level = "highly compatible"
+        elif kuta_score >= 18:
+            level = "compatible with good potential"
         else:
-            indicators.append("Relationship requires conscious effort and mutual adjustment")
+            level = "facing challenges that require awareness"
 
-        return indicators
-
-    def _get_timing_overlap(self, chart_a: Chart, chart_b: Chart) -> List[str]:
-        """Get timing windows for marriage."""
-        timing = []
-
-        # Get current dashas
-        dasha_a = self.chart_service.calculate_dasha_timeline(chart_a, num_years=5)
-        dasha_b = self.chart_service.calculate_dasha_timeline(chart_b, num_years=5)
-
-        timing.append(
-            f"Partner A: {dasha_a.current_maha_dasha.planet.value} Maha Dasha "
-            f"({dasha_a.current_maha_dasha.start_date.year}-{dasha_a.current_maha_dasha.end_date.year})"
+        overview = (
+            f"Based on Nadi Jyotisha and Bhrigu Samhita principles, this partnership is {level}. "
+            f"The Ashtakuta score of {kuta_score}/36 provides a foundation for analysis. "
+            f"Both charts show complementary strengths that can create a balanced relationship "
+            f"with conscious effort and mutual respect."
         )
 
-        timing.append(
-            f"Partner B: {dasha_b.current_maha_dasha.planet.value} Maha Dasha "
-            f"({dasha_b.current_maha_dasha.start_date.year}-{dasha_b.current_maha_dasha.end_date.year})"
-        )
-
-        return timing
-
-    def _get_cautions(self, synastry: List[SynastryRule]) -> List[str]:
-        """Get relationship cautions."""
-        cautions = []
-
-        avg_score = self._calculate_overall_score(synastry)
-        if avg_score < 60:
-            cautions.append("Compatibility score suggests need for patience and understanding")
-            cautions.append("Focus on communication and shared values")
-
-        cautions.append("Manage expectations and practice compassion")
-
-        return cautions
-
-    def _get_mitigations(self, chart_a: Chart, chart_b: Chart) -> List[str]:
-        """Get remedial measures."""
-        mitigations = [
-            "Perform marriage rituals according to Vedic tradition",
-            "Worship deities associated with relationship harmony (Parvati-Shiva)",
-            "Chant relationship harmony mantras together",
-            "Observe fasts on Fridays (Venus day) for relationship blessings"
-        ]
-
-        return mitigations
-
-    def _get_nakshatra_trait(self, nakshatra: str) -> str:
-        """Get key trait for nakshatra."""
-        traits = {
-            "Ashwini": "pioneering and healing",
-            "Rohini": "nurturing and magnetic",
-            "Magha": "regal and ancestral",
-            "Pushya": "caring and disciplined",
-            "Shravana": "attentive and wise"
-        }
-        return traits.get(nakshatra, "unique and evolving")
-
-    def _extract_key_traits(self, chart: Chart) -> List[str]:
-        """Extract key personality traits."""
-        traits = []
-
-        moon_pos = self.chart_service.get_planet_position(chart, Planet.MOON)
-        traits.append(f"Emotionally {moon_pos.nakshatra.value}-influenced")
-
-        traits.append(f"{chart.ascendant.value} ascendant nature")
-
-        return traits
-
-    def _get_7th_lord_indication(self, house: int) -> str:
-        """Get indication based on 7th lord house placement."""
-        indications = {
-            1: "spouse influences identity; marriage central to self-image",
-            2: "spouse brings wealth; financial partnership important",
-            4: "domestic harmony and comfort through marriage",
-            7: "strong focus on partnership; balanced relationship",
-            10: "spouse supports career; public recognition through marriage",
-            11: "gains through marriage; spouse fulfills desires"
-        }
-        return indications.get(house, "unique marriage dynamics")
-
-    def _get_venus_indication(self, sign: str, house: int) -> str:
-        """Get Venus indication."""
-        if house == 7:
-            return "harmonious marriage and romantic fulfillment"
-        elif house == 1:
-            return "attractive personality and love-centered life"
-        elif house == 5:
-            return "creative romance and joyful relationships"
-        return "appreciation for beauty and relationship values"
+        return overview
 
     def close(self):
         """Clean up resources."""

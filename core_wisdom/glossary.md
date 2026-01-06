@@ -1,338 +1,247 @@
-# Vedic Astrology Glossary
+# Nadi Jyotisha & Bhrigu Samhita Glossary
 
-## Basic Terms
+## A
 
-**Jyotisha**: Vedic astrology; the science of light and celestial influences.
+**Adhipati** - Lord or ruler of a house or sign
 
-**Kundali / Kundli**: Birth chart; horoscope diagram showing planetary positions at birth.
+**Antardasha** - Sub-period within a major dasha period
 
-**Lagna**: Ascendant; the zodiac sign rising on the eastern horizon at the time of birth.
+**Anuradha** - 17th nakshatra, ruled by Saturn, spans 3°20' to 16°40' Scorpio
 
-**Rashi**: Zodiac sign; one of the 12 divisions of the zodiac.
+**Ardra** - 6th nakshatra, ruled by Rahu, spans 6°40' to 20° Gemini
 
-**Bhava**: House; one of the 12 divisions of the chart representing life domains.
+**Ascendant (Lagna)** - The zodiacal degree rising on the eastern horizon at the time of birth; determines the 1st house cusp
 
-**Graha**: Planet; celestial body exerting influence (includes Sun, Moon, and lunar nodes).
+**Ashlesha** - 9th nakshatra, ruled by Mercury, spans 16°40' to 30° Cancer
 
-**Nakshatra**: Lunar mansion; one of 27 (or 28) divisions of the zodiac, each spanning 13°20'.
+**Ashwini** - 1st nakshatra, ruled by Ketu, spans 0° to 13°20' Aries
 
-**Pada**: Quarter; each nakshatra is divided into 4 padas of 3°20' each.
+**Aspect** - The angular relationship between planets that creates influence; Vedic uses full aspects and special aspects for Mars, Jupiter, Saturn
 
-## Planets (Grahas)
+**Ayanamsa** - The precession of equinoxes; difference between tropical and sidereal zodiacs (typically ~24° in modern era)
 
-**Surya**: Sun - Soul, father, authority, vitality, government.
+## B
 
-**Chandra**: Moon - Mind, mother, emotions, public, nurturing.
+**Benefic** - Planets that generally confer positive results: Jupiter, Venus, Mercury (when unafflicted), waxing Moon
 
-**Mangal / Kuja**: Mars - Energy, courage, siblings, property, conflicts.
+**Bharani** - 2nd nakshatra, ruled by Venus, spans 13°20' to 26°40' Aries
 
-**Budha**: Mercury - Intelligence, communication, trade, skills.
+**Bhrigu Samhita** - Ancient astrological text attributed to Maharishi Bhrigu, emphasizing house lordship analysis
 
-**Guru / Brihaspati**: Jupiter - Wisdom, children, dharma, expansion, teaching.
+**Bhukti** - Another term for antardasha (sub-period)
 
-**Shukra**: Venus - Love, marriage, luxury, arts, vehicles.
+## C
 
-**Shani**: Saturn - Karma, discipline, delays, longevity, service.
+**Chandra** - Moon
 
-**Rahu**: North Node of the Moon - Material desires, foreign influence, illusions, technology.
+**Chara Rashi** - Movable signs: Aries, Cancer, Libra, Capricorn
 
-**Ketu**: South Node of the Moon - Spirituality, liberation, past life, detachment.
+**Conjunction** - When two or more planets occupy the same sign or are within close degrees
 
-## Signs (Rashis)
+## D
 
-1. **Mesha**: Aries (Fire, Movable, Mars-ruled)
-2. **Vrishabha**: Taurus (Earth, Fixed, Venus-ruled)
-3. **Mithuna**: Gemini (Air, Dual, Mercury-ruled)
-4. **Karka**: Cancer (Water, Movable, Moon-ruled)
-5. **Simha**: Leo (Fire, Fixed, Sun-ruled)
-6. **Kanya**: Virgo (Earth, Dual, Mercury-ruled)
-7. **Tula**: Libra (Air, Movable, Venus-ruled)
-8. **Vrishchika**: Scorpio (Water, Fixed, Mars-ruled)
-9. **Dhanu**: Sagittarius (Fire, Dual, Jupiter-ruled)
-10. **Makara**: Capricorn (Earth, Movable, Saturn-ruled)
-11. **Kumbha**: Aquarius (Air, Fixed, Saturn-ruled)
-12. **Meena**: Pisces (Water, Dual, Jupiter-ruled)
+**D1** - Rasi chart, the main birth chart
 
-## Houses (Bhavas)
+**D9** - Navamsa chart, the 9th divisional chart, crucial for marriage and spiritual analysis
 
-**1st House (Tanu Bhava)**: Self, personality, health, appearance.
+**Dasha** - Planetary period system; Vimshottari dasha is most common (120-year cycle)
 
-**2nd House (Dhana Bhava)**: Wealth, family, speech, food, values.
+**Debilitation** - A planet in the sign of its weakness (e.g., Sun in Libra, Moon in Scorpio)
 
-**3rd House (Sahaja Bhava)**: Courage, siblings, short journeys, skills, communications.
+**Dhanishta** - 23rd nakshatra, ruled by Mars, spans 23°20' Capricorn to 6°40' Aquarius
 
-**4th House (Sukha Bhava)**: Mother, home, property, education, comfort.
+**Dhanayoga** - Wealth-producing planetary combination
 
-**5th House (Putra Bhava)**: Intelligence, children, creativity, romance, past life merit.
+**Dharma** - Righteous duty, spiritual law, cosmic order
 
-**6th House (Ripu/Roga Bhava)**: Enemies, diseases, debts, service, obstacles.
+## E
 
-**7th House (Kalatra Bhava)**: Marriage, partnerships, business, public relations.
+**Ephemeris** - Table of planetary positions at given dates and times
 
-**8th House (Ayu Bhava)**: Longevity, transformation, occult, inheritance, sudden events.
+**Exaltation** - A planet in the sign of its greatest strength (e.g., Sun in Aries, Moon in Taurus)
 
-**9th House (Dharma Bhava)**: Father, higher learning, religion, long journeys, fortune.
+## G
 
-**10th House (Karma Bhava)**: Career, status, achievements, reputation, authority.
+**Graha** - Planet or celestial body; literally "that which grasps"
 
-**11th House (Labha Bhava)**: Gains, income, friends, aspirations, elder siblings.
+**Guru** - Jupiter; also means spiritual teacher
 
-**12th House (Vyaya Bhava)**: Losses, expenses, foreign lands, spirituality, liberation, isolation.
+## H
 
-## House Classifications
+**Hamsa Yoga** - One of the Pancha Mahapurusha yogas, formed by Jupiter in a kendra in its own or exaltation sign
 
-**Kendras (Angular Houses)**: 1, 4, 7, 10 - Most powerful; represent pillars of life.
+**Hasta** - 13th nakshatra, ruled by Moon, spans 10° to 23°20' Virgo
 
-**Trikonas (Trinal Houses)**: 1, 5, 9 - Auspicious; represent dharma and fortune.
+**House (Bhava)** - One of the 12 divisions of the chart, each representing a life domain
 
-**Upachaya Houses**: 3, 6, 10, 11 - Improving; get better with time and effort.
+## J
 
-**Dusthana (Difficult Houses)**: 6, 8, 12 - Challenging; require careful navigation.
+**Jyotisha** - Vedic astrology; science of light
 
-## Yogas (Combinations)
+## K
 
-**Yoga**: Planetary combination producing specific effects.
+**Kendra** - Angular houses: 1st, 4th, 7th, 10th; strongest houses
 
-**Raja Yoga**: Royal combination; brings power, status, and success.
+**Ketu** - South node of the Moon; represents moksha, past life patterns, detachment
 
-**Dhana Yoga**: Wealth combination; brings financial prosperity.
+**Krittika** - 3rd nakshatra, ruled by Sun, spans 26°40' Aries to 10° Taurus
 
-**Mahapurusha Yoga**: Great person combination; formed by benefics in kendras in own/exaltation sign.
+**Kuta** - Compatibility factor in marriage matching; there are 8 kutas in the Ashtakuta system
 
-**Gajakesari Yoga**: Jupiter-Moon in kendras from each other; wisdom and fame.
+## L
 
-**Hamsa Yoga**: Jupiter in kendra in own/exaltation sign; knowledge and purity.
+**Lagna** - Ascendant
 
-**Malavya Yoga**: Venus in kendra in own/exaltation sign; luxury and refinement.
+**Longevity (Ayur)** - Lifespan indicators in the chart
 
-**Ruchaka Yoga**: Mars in kendra in own/exaltation sign; courage and victory.
+**Lord** - The planet that rules a particular sign or house
 
-**Bhadra Yoga**: Mercury in kendra in own/exaltation sign; intelligence and communication.
+## M
 
-**Shasha Yoga**: Saturn in kendra in own/exaltation sign; authority and discipline.
+**Magha** - 10th nakshatra, ruled by Ketu, spans 0° to 13°20' Leo
 
-**Neecha Bhanga Raja Yoga**: Cancellation of debilitation creating royal status.
+**Mahapurusha Yoga** - Five great yogas formed by Mars, Mercury, Jupiter, Venus, or Saturn in specific positions
 
-**Parivartan Yoga**: Exchange of house lords; mutual reception.
+**Malavya Yoga** - One of the Pancha Mahapurusha yogas, formed by Venus in a kendra in its own or exaltation sign
 
-**Viparita Raja Yoga**: Lords of dusthana houses in dusthanas; adversity turns to advantage.
+**Malefic** - Planets that generally confer challenging results: Saturn, Mars, Rahu, Ketu, waning Moon, afflicted Mercury
 
-**Mangal Dosha (Kuja Dosha)**: Mars in 1st, 4th, 7th, 8th, or 12th house; affects marriage.
+**Mangal** - Mars
 
-**Vish Yoga**: Saturn-Moon combination; emotional challenges.
+**Moksha** - Liberation from the cycle of rebirth; spiritual enlightenment
 
-## Dasha System
+**Moola** - 19th nakshatra, ruled by Ketu, spans 0° to 13°20' Sagittarius
 
-**Dasha**: Planetary period system for timing events.
+**Mrigashira** - 5th nakshatra, ruled by Mars, spans 23°20' Taurus to 6°40' Gemini
 
-**Vimshottari Dasha**: 120-year cycle system based on Moon's nakshatra; most widely used.
+## N
 
-**Maha Dasha**: Major period (e.g., Jupiter dasha = 16 years).
+**Nadi** - One of three categories in nakshatra matching (Vata, Pitta, Kapha); also refers to ancient palm-leaf manuscripts
 
-**Antar Dasha (Bhukti)**: Sub-period within a Maha Dasha.
+**Nadi Jyotisha** - Highly precise predictive astrology based on palm-leaf manuscripts, emphasizing nakshatra analysis
 
-**Pratyantar Dasha**: Sub-sub-period within Antar Dasha.
+**Nakshatra** - Lunar mansion; 27 (or 28) divisions of the zodiac, each spanning 13°20'
 
-## Dasha Sequence (Vimshottari)
+**Navamsa (D9)** - The 9th divisional chart; each sign divided into 9 parts; crucial for marriage and spiritual destiny
 
-1. Ketu - 7 years
-2. Venus - 20 years
-3. Sun - 6 years
-4. Moon - 10 years
-5. Mars - 7 years
-6. Rahu - 18 years
-7. Jupiter - 16 years
-8. Saturn - 19 years
-9. Mercury - 17 years
+## P
 
-## Nakshatras (27 Lunar Mansions)
+**Pada** - Quarter of a nakshatra; each nakshatra has 4 padas of 3°20' each
 
-1. **Ashwini** (0°-13°20' Aries) - Ketu - Healers, pioneers
-2. **Bharani** (13°20'-26°40' Aries) - Venus - Transformation, endurance
-3. **Krittika** (26°40' Aries-10° Taurus) - Sun - Purification, cutting
-4. **Rohini** (10°-23°20' Taurus) - Moon - Growth, beauty
-5. **Mrigashira** (23°20' Taurus-6°40' Gemini) - Mars - Seeking, gentle
-6. **Ardra** (6°40'-20° Gemini) - Rahu - Storm, transformation
-7. **Punarvasu** (20° Gemini-3°20' Cancer) - Jupiter - Renewal, return
-8. **Pushya** (3°20'-16°40' Cancer) - Saturn - Nourishment, auspiciousness
-9. **Ashlesha** (16°40'-30° Cancer) - Mercury - Serpent, mystical
-10. **Magha** (0°-13°20' Leo) - Ketu - Ancestors, throne
-11. **Purva Phalguni** (13°20'-26°40' Leo) - Venus - Pleasure, creativity
-12. **Uttara Phalguni** (26°40' Leo-10° Virgo) - Sun - Partnership, patronage
-13. **Hasta** (10°-23°20' Virgo) - Moon - Skill, craftsmanship
-14. **Chitra** (23°20' Virgo-6°40' Libra) - Mars - Brilliance, architecture
-15. **Swati** (6°40'-20° Libra) - Rahu - Independence, trade
-16. **Vishakha** (20° Libra-3°20' Scorpio) - Jupiter - Goal-oriented, fork
-17. **Anuradha** (3°20'-16°40' Scorpio) - Saturn - Devotion, friendship
-18. **Jyeshtha** (16°40'-30° Scorpio) - Mercury - Leadership, elder
-19. **Mula** (0°-13°20' Sagittarius) - Ketu - Root, foundation
-20. **Purva Ashadha** (13°20'-26°40' Sagittarius) - Venus - Invincible, purification
-21. **Uttara Ashadha** (26°40' Sagittarius-10° Capricorn) - Sun - Victory, dharma
-22. **Shravana** (10°-23°20' Capricorn) - Moon - Listening, learning
-23. **Dhanishtha** (23°20' Capricorn-6°40' Aquarius) - Mars - Wealth, music
-24. **Shatabhisha** (6°40'-20° Aquarius) - Rahu - 100 healers, secrecy
-25. **Purva Bhadrapada** (20° Aquarius-3°20' Pisces) - Jupiter - Intense, sacrifice
-26. **Uttara Bhadrapada** (3°20'-16°40' Pisces) - Saturn - Depth, wisdom
-27. **Revati** (16°40'-30° Pisces) - Mercury - Nourishment, journey's end
+**Pancha Mahapurusha Yoga** - Five great planetary yogas that confer exceptional qualities
 
-## Planetary States
+**Parivartana Yoga** - Exchange of signs between two house lords
 
-**Exaltation (Uccha)**: Planet at maximum strength in specific sign.
-- Sun: 10° Aries
-- Moon: 3° Taurus
-- Mars: 28° Capricorn
-- Mercury: 15° Virgo
-- Jupiter: 5° Cancer
-- Venus: 27° Pisces
-- Saturn: 20° Libra
+**Punarvasu** - 7th nakshatra, ruled by Jupiter, spans 20° Gemini to 3°20' Cancer
 
-**Debilitation (Neecha)**: Planet at minimum strength; opposite exaltation sign.
+**Purva Ashadha** - 20th nakshatra, ruled by Venus, spans 13°20' to 26°40' Sagittarius
 
-**Own Sign (Sva-griha)**: Planet in sign it rules.
+**Purva Bhadrapada** - 25th nakshatra, ruled by Jupiter, spans 20° Aquarius to 3°20' Pisces
 
-**Moolatrikona**: Root triplicity; specific portion of own sign where planet has special strength.
+**Purva Phalguni** - 11th nakshatra, ruled by Venus, spans 13°20' to 26°40' Leo
 
-**Friend's Sign**: Planet in sign of friendly planet.
+**Pushya** - 8th nakshatra, ruled by Saturn, spans 3°20' to 16°40' Cancer; highly auspicious
 
-**Enemy's Sign**: Planet in sign of enemy planet.
+## R
 
-**Retrograde (Vakri)**: Planet appearing to move backward; intensifies internal effects.
+**Rahu** - North node of the Moon; represents worldly desires, foreign elements, innovation
 
-**Combust**: Planet too close to Sun; weakened (except for Jupiter, Venus at certain distances).
+**Rajayoga** - Royal combination; planetary yogas that confer power, status, and success
 
-## Aspects (Drishti)
+**Rasi** - Zodiac sign; also refers to the D1 main chart
 
-**Aspect**: Planetary influence by sight/glance on other houses or planets.
+**Remedial Measures (Upayas)** - Astrological remedies to mitigate afflictions or enhance benefic influences
 
-**Full Aspect**: All planets aspect the 7th house from their position (180°).
+**Retrograde** - Apparent backward motion of a planet as seen from Earth
 
-**Special Aspects**:
-- Mars: 4th, 7th, 8th houses
-- Jupiter: 5th, 7th, 9th houses
-- Saturn: 3rd, 7th, 10th houses
+**Revati** - 27th nakshatra, ruled by Mercury, spans 16°40' to 30° Pisces
 
-## Strength (Bala)
+**Rohini** - 4th nakshatra, ruled by Moon, spans 10° to 23°20' Taurus; very auspicious
 
-**Shadbala**: Six-fold strength calculation.
+## S
 
-**Ashtakavarga**: Eight-source strength system.
+**Sade Sati** - Seven-and-a-half year transit of Saturn over natal Moon
 
-**Dig Bala**: Directional strength (certain planets strong in certain houses).
+**Shani** - Saturn
 
-## Divisional Charts (Vargas)
+**Shravana** - 22nd nakshatra, ruled by Moon, spans 10° to 23°20' Capricorn
 
-**D1 (Rashi)**: Birth chart; overall life.
+**Shukra** - Venus
 
-**D9 (Navamsa)**: 9th division; marriage, dharma, inner self.
+**Sidereal Zodiac** - Zodiac aligned with fixed stars; used in Vedic astrology
 
-**D10 (Dasamsa)**: 10th division; career and status.
+**Sign (Rashi)** - One of the 12 zodiacal divisions of 30° each
 
-**D12 (Dwadasamsa)**: 12th division; parents and ancestry.
+**Sthira Rashi** - Fixed signs: Taurus, Leo, Scorpio, Aquarius
 
-**D16 (Shodasamsa)**: 16th division; vehicles and comforts.
+**Surya** - Sun
 
-**D60 (Shashtiamsa)**: 60th division; karmic summary; most subtle.
+**Swarashi** - A planet or lord in its own sign
 
-## Traditions
+## T
 
-**Bhrigu Samhita**: Ancient text attributed to Maharishi Bhrigu; detailed predictions based on planetary positions.
+**Transit (Gochara)** - Current position of planets in the sky relative to natal positions
 
-**Nadi Jyotisha**: South Indian palm leaf system; nakshatra-based precise predictions.
+**Trikona** - Trinal houses: 1st, 5th, 9th; houses of dharma and fortune
 
-**Parashari**: System based on Sage Parashara's teachings; most common classical approach.
+**Tropical Zodiac** - Zodiac aligned with seasons; used in Western astrology
 
-**Jaimini**: Alternative system with different ascendant and aspect rules.
+## U
 
-## Timing Techniques
+**Upachaya** - Growing houses: 3rd, 6th, 10th, 11th; malefics do well here
 
-**Vimshottari Dasha**: 120-year planetary period system.
+**Uttara Ashadha** - 21st nakshatra, ruled by Sun, spans 26°40' Sagittarius to 10° Capricorn
 
-**Yogini Dasha**: 36-year cycle system.
+**Uttara Bhadrapada** - 26th nakshatra, ruled by Saturn, spans 3°20' to 16°40' Pisces
 
-**Transit (Gochara)**: Current planetary positions relative to natal chart.
+**Uttara Phalguni** - 12th nakshatra, ruled by Sun, spans 26°40' Leo to 10° Virgo
 
-**Ashtakavarga Transit**: Transit strength through bindu point system.
+## V
 
-**Varshaphal**: Annual chart cast for birthday; year ahead prediction.
+**Vargottama** - A planet occupying the same sign in both D1 and D9; strengthens the planet
 
-## Remedies (Upayas)
+**Vimshottari Dasha** - Most commonly used 120-year dasha system based on nakshatra of Moon
 
-**Mantra**: Sacred sound formulae for planetary appeasement.
+**Vishakha** - 16th nakshatra, ruled by Jupiter, spans 20° Libra to 3°20' Scorpio
 
-**Yantra**: Geometric diagram for meditation and energy.
+## Y
 
-**Gemstone (Ratna)**: Precious stone worn to strengthen beneficial planets.
+**Yoga** - Planetary combination that produces specific results
 
-**Dana**: Charity/donation of specific items on specific days.
+**Yuti** - Conjunction of planets
 
-**Puja**: Ritual worship of planetary deities.
+## Technical Terms
 
-**Fasting (Vrata)**: Abstinence on specific days related to planets.
+**Kendra Houses** - 1st, 4th, 7th, 10th (angular)
 
-## Important Concepts
+**Trikona Houses** - 1st, 5th, 9th (trinal)
 
-**Dharma**: Righteous duty; moral law.
+**Dusthana Houses** - 6th, 8th, 12th (difficult houses)
 
-**Karma**: Action and its consequences; cause and effect.
+**Upachaya Houses** - 3rd, 6th, 10th, 11th (growth houses)
 
-**Moksha**: Liberation from cycle of birth and death.
+**Maraka Houses** - 2nd and 7th (death-inflicting)
 
-**Kendra-Adhipati Dosha**: Kendras lords can create issues in certain chart types.
+**Artha Houses** - 2nd, 6th, 10th (wealth and career)
 
-**Maraka**: Death-inflicting planets (typically 2nd and 7th lords).
+**Kama Houses** - 3rd, 7th, 11th (desires)
 
-**Badhaka**: Obstruction-creating planet specific to ascendant type.
+**Moksha Houses** - 4th, 8th, 12th (liberation)
 
-**Atmakaraka**: Soul significator; planet at highest degree (excluding Rahu/Ketu).
+## Planetary Ownership
 
-**Amatyakaraka**: Minister significator; planet at second-highest degree.
+**Sun** - Leo
 
-## Time Measurements
+**Moon** - Cancer
 
-**Ghati**: 24 minutes (1/60th of a day).
+**Mars** - Aries, Scorpio
 
-**Tithi**: Lunar day; 12° separation between Sun and Moon.
+**Mercury** - Gemini, Virgo
 
-**Karana**: Half a tithi.
+**Jupiter** - Sagittarius, Pisces
 
-**Nakshatra Pada**: 1/4 of nakshatra; 3°20' of arc.
+**Venus** - Taurus, Libra
 
-**Hora**: Half a sign; 15° division.
+**Saturn** - Capricorn, Aquarius
 
-**Drekkana**: 1/3 of a sign; 10° division.
-
-## Relationship Classifications
-
-**Naisargika Mitra/Shatru**: Natural friends/enemies between planets.
-
-**Tatkalika Mitra/Shatru**: Temporary friends/enemies based on house positions.
-
-**Panchadha Maitri**: Five-fold friendship classification.
-
-**Kendra**: Planets in 1st, 4th, 7th, or 10th from each other.
-
-**Trikona**: Planets in 1st, 5th, or 9th from each other.
-
-## Eclipses
-
-**Surya Grahan**: Solar eclipse; karmic events affecting soul purpose.
-
-**Chandra Grahan**: Lunar eclipse; karmic events affecting mind and emotions.
-
-**Grahan Yoga**: Birth during eclipse; intense karmic pattern.
-
-## Special Lagnas
-
-**Hora Lagna**: Wealth and prosperity indicator.
-
-**Ghati Lagna**: Power and authority indicator.
-
-**Bhava Lagna**: Equal house system ascendant.
-
-**Varnada Lagna**: Social status indicator.
-
-## Ayanamsa
-
-**Ayanamsa**: Precessional difference between tropical and sidereal zodiacs; approximately 24° currently.
-
-**Lahiri Ayanamsa**: Most commonly used ayanamsa in Indian astrology (also called Chitrapaksha).
+**Rahu/Ketu** - No sign ownership; act through their sign and nakshatra placement

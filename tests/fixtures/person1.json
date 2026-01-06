@@ -1,0 +1,12 @@
+{
+  "name": "Rajesh Kumar",
+  "date_of_birth": "1985-03-15",
+  "time_of_birth": "14:30",
+  "place_of_birth": {
+    "city": "Delhi",
+    "country": "India",
+    "lat": 28.6139,
+    "lon": 77.2090,
+    "tz": "Asia/Kolkata"
+  }
+}

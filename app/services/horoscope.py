@@ -1,182 +1,299 @@
 """
-Horoscope service for generating complete horoscope reports.
-Integrates chart calculation, rule matching, and narrative generation.
+Horoscope engine for generating detailed domain-wise predictions.
+Produces comprehensive analysis across all life areas based on Bhrigu and Nadi principles.
 """
-from typing import List, Dict, Any
+
+from typing import Dict, List
+from datetime import datetime
+
 from app.domain.models import (
-    BirthInfo, HoroscopeOutput, DomainAnalysis,
-    Chart, RuleTrace
+    PersonInput, ChartData, HoroscopeOutput, DomainAnalysis,
+    RuleTrace
 )
 from app.services.chart import ChartService
-from app.rules.engine import RuleEngine
+from app.services.dasha import DashaService
+from app.rules.engine import RulesEngine
+from app.config import ENGINE_VERSION, STANDARD_DISCLAIMERS
 
 
 class HoroscopeService:
-    """Service for generating comprehensive horoscopes."""
+    """
+    Service for generating comprehensive horoscopes with domain-wise analysis.
+    """
 
     DOMAINS = [
-        "personality",
         "career",
         "wealth",
         "marriage",
+        "family",
+        "children",
         "health",
         "spirituality",
-        "family",
-        "education"
+        "education",
+        "travel",
+        "property"
     ]
 
     def __init__(self):
-        """Initialize horoscope service."""
         self.chart_service = ChartService()
-        self.rule_engine = RuleEngine(self.chart_service)
+        self.dasha_service = DashaService()
+        self.rules_engine = RulesEngine()
 
-    def generate_horoscope(self, birth_info: BirthInfo) -> HoroscopeOutput:
+    def generate_horoscope(self, person: PersonInput) -> HoroscopeOutput:
         """
-        Generate complete horoscope.
+        Generate comprehensive horoscope for a person.
 
         Args:
-            birth_info: Birth information
+            person: PersonInput with birth details
 
         Returns:
-            Complete HoroscopeOutput
+            HoroscopeOutput with domain-wise analysis
         """
         # Calculate chart
-        chart = self.chart_service.calculate_chart(birth_info)
-
-        # Match all rules
-        all_rule_traces = self.rule_engine.match_rules(chart)
-
-        # Generate domain analyses
-        domain_analyses: List[DomainAnalysis] = []
-        for domain in self.DOMAINS:
-            analysis = self._generate_domain_analysis(domain, chart, all_rule_traces)
-            if analysis:
-                domain_analyses.append(analysis)
-
-        # Calculate dasha timeline
-        dasha_timeline = self.chart_service.calculate_dasha_timeline(chart, num_years=30)
-
-        # Generate summaries
-        chart_summary = self.rule_engine.get_chart_summary(chart)
-        nakshatra_summary = self.rule_engine.get_nakshatra_summary(chart)
-        summary_bullets = self.rule_engine.generate_summary_bullets(chart, all_rule_traces)
-
-        # Meta information
-        meta = {
-            "engine_version": "1.0.0",
-            "calculation_notes": [
-                "Calculations use Lahiri Ayanamsa (sidereal zodiac)",
-                "House system: Placidus",
-                "Dasha system: Vimshottari (120-year cycle)"
-            ],
-            "assumptions": [
-                "Birth time is accurate to the minute",
-                "Timezone conversion is correctly applied",
-                "Coordinates are precise for birth location"
-            ]
-        }
-
-        # Disclaimers
-        disclaimers = [
-            "This horoscope provides interpretive guidance based on Nadi Jyotisha and Bhrigu Samhita traditions.",
-            "Astrological insights are meant for contemplation and self-understanding, not absolute prediction.",
-            "Free will and personal effort significantly influence life outcomes.",
-            "Consult qualified astrologers for personalized guidance and remedial measures."
-        ]
-
-        return HoroscopeOutput(
-            meta=meta,
-            chart_summary=chart_summary,
-            nakshatra_summary=nakshatra_summary,
-            summary_bullets=summary_bullets,
-            domains=domain_analyses,
-            dasha_timeline=dasha_timeline,
-            disclaimers=disclaimers
-        )
-
-    def _generate_domain_analysis(
-        self,
-        domain: str,
-        chart: Chart,
-        all_traces: List[RuleTrace]
-    ) -> DomainAnalysis:
-        """Generate analysis for a specific domain."""
-        # Filter traces for this domain
-        domain_traces = [t for t in all_traces if t.domain == domain]
-
-        if not domain_traces:
-            return None
+        chart_data = self.chart_service.calculate_chart(person)
 
         # Generate summary
-        summary = self._generate_domain_summary(domain, domain_traces)
+        summary = self._generate_summary(chart_data)
 
-        # Generate detailed narrative
-        detailed_narrative = self._generate_detailed_narrative(domain_traces)
+        # Analyze each domain
+        domains = {}
+        all_rule_traces = []
 
-        # Extract timing windows if relevant
-        timing_windows = self._extract_timing_windows(domain, chart)
+        for domain in self.DOMAINS:
+            domain_analysis = self._analyze_domain(domain, chart_data)
+            domains[domain] = domain_analysis
+            all_rule_traces.extend(domain_analysis.rule_traces)
 
-        return DomainAnalysis(
-            domain=domain,
+        # Create metadata
+        meta = {
+            "engine_version": ENGINE_VERSION,
+            "calculation_notes": f"Calculated using Lahiri ayanamsa ({chart_data.ayanamsa:.4f}°) at JD {chart_data.julian_day:.4f}",
+            "assumptions": "All timing is based on Vimshottari Dasha system and sidereal zodiac",
+            "timestamp_utc": datetime.utcnow().isoformat()
+        }
+
+        horoscope = HoroscopeOutput(
+            meta=meta,
             summary=summary,
-            detailed_narrative=detailed_narrative,
-            rule_traces=domain_traces,
-            timing_windows=timing_windows
+            domains=domains,
+            rule_traces=all_rule_traces,
+            disclaimers=STANDARD_DISCLAIMERS
         )
 
-    def _generate_domain_summary(self, domain: str, traces: List[RuleTrace]) -> str:
-        """Generate concise summary for a domain."""
-        if not traces:
-            return f"No specific {domain} patterns identified."
+        return horoscope
 
-        # Use highest priority trace for summary
-        top_trace = traces[0]
-        first_sentence = top_trace.narrative.split('.')[0] + '.'
+    def _generate_summary(self, chart_data: ChartData) -> List[str]:
+        """Generate high-level summary bullet points."""
+        summary = []
 
-        return first_sentence
-
-    def _generate_detailed_narrative(self, traces: List[RuleTrace]) -> str:
-        """Combine multiple rule narratives into detailed analysis."""
-        if not traces:
-            return ""
-
-        narratives = []
-        for trace in traces:
-            # Add narrative with citation
-            narrative_with_citation = f"{trace.narrative}\n*[{trace.rule_id}]*"
-            narratives.append(narrative_with_citation)
-
-        return "\n\n".join(narratives)
-
-    def _extract_timing_windows(self, domain: str, chart: Chart) -> List[str]:
-        """Extract timing windows from dasha timeline."""
-        dasha_timeline = self.chart_service.calculate_dasha_timeline(chart, num_years=10)
-
-        windows = []
-
-        # Current period
-        current_maha = dasha_timeline.current_maha_dasha
-        current_antar = dasha_timeline.current_antar_dasha
-
-        windows.append(
-            f"Current Maha Dasha: {current_maha.planet.value} "
-            f"({current_maha.start_date.year}-{current_maha.end_date.year})"
-        )
-        windows.append(
-            f"Current Antar Dasha: {current_antar.planet.value} "
-            f"({current_antar.start_date.strftime('%Y-%m')}-"
-            f"{current_antar.end_date.strftime('%Y-%m')})"
+        # Ascendant
+        summary.append(
+            f"Ascendant in {chart_data.ascendant.sign.value}, "
+            f"nakshatra {chart_data.ascendant_nakshatra.nakshatra.value}: "
+            f"Personality shaped by this rising sign's qualities"
         )
 
-        # Upcoming significant periods
-        if dasha_timeline.upcoming_maha_dashas:
-            next_maha = dasha_timeline.upcoming_maha_dashas[0]
-            windows.append(
-                f"Next Maha Dasha: {next_maha.planet.value} "
-                f"starts {next_maha.start_date.strftime('%B %Y')}"
+        # Moon
+        moon_pos = next(p for p in chart_data.planets if p.planet.value == "Moon")
+        summary.append(
+            f"Moon in {moon_pos.sign.value}, nakshatra {chart_data.moon_nakshatra.nakshatra.value}: "
+            f"Emotional nature and karmic patterns from past lives"
+        )
+
+        # Current dasha
+        if chart_data.dasha_timeline.current_mahadasha:
+            current_maha = chart_data.dasha_timeline.current_mahadasha
+            summary.append(
+                f"Currently in {current_maha.planet.value} Mahadasha "
+                f"({current_maha.start_date} to {current_maha.end_date})"
             )
 
-        return windows
+        # Key strength
+        # Simple heuristic: find planets in own sign or exalted
+        strong_planets = []
+        for planet_pos in chart_data.planets:
+            if self._is_planet_strong(planet_pos, chart_data):
+                strong_planets.append(planet_pos.planet.value)
+
+        if strong_planets:
+            summary.append(f"Strong planets enhancing life: {', '.join(strong_planets[:3])}")
+
+        return summary
+
+    def _analyze_domain(self, domain: str, chart_data: ChartData) -> DomainAnalysis:
+        """
+        Analyze a specific life domain.
+
+        Args:
+            domain: Domain name
+            chart_data: Birth chart data
+
+        Returns:
+            DomainAnalysis for the domain
+        """
+        # Match rules for this domain
+        rule_traces = self.rules_engine.match_rules(
+            chart_data,
+            domain=domain,
+            min_priority=65
+        )
+
+        # Generate indicators
+        indicators = self._generate_indicators(domain, chart_data)
+
+        # Extract Nadi and Bhrigu statements from rules
+        nadi_statements = []
+        bhrigu_themes = []
+
+        for trace in rule_traces:
+            if trace.tradition == "nadi":
+                nadi_statements.append(trace.rendered_narrative)
+            elif trace.tradition == "bhrigu":
+                bhrigu_themes.append(trace.rendered_narrative)
+
+        # Generate timing windows
+        timing_windows = self._generate_timing(domain, chart_data)
+
+        # Remedial guidance (optional)
+        remedial = self._generate_remedial(domain, chart_data)
+
+        analysis = DomainAnalysis(
+            domain=domain,
+            indicators=indicators,
+            nadi_statements=nadi_statements if nadi_statements else ["(Nadi analysis pending deeper rule coverage)"],
+            bhrigu_themes=bhrigu_themes if bhrigu_themes else ["(Bhrigu analysis pending deeper rule coverage)"],
+            timing_windows=timing_windows,
+            remedial_guidance=remedial,
+            rule_traces=rule_traces
+        )
+
+        return analysis
+
+    def _generate_indicators(self, domain: str, chart_data: ChartData) -> List[str]:
+        """Generate indicators for a domain based on house analysis."""
+        indicators = []
+
+        # Map domains to primary houses
+        domain_houses = {
+            "career": [10, 6],
+            "wealth": [2, 11],
+            "marriage": [7],
+            "family": [2, 4],
+            "children": [5],
+            "health": [1, 6],
+            "spirituality": [9, 12],
+            "education": [4, 5],
+            "travel": [3, 9, 12],
+            "property": [4]
+        }
+
+        houses = domain_houses.get(domain, [])
+
+        for house_num in houses:
+            lord = chart_data.house_lords.get(house_num)
+            if lord:
+                lord_pos = next((p for p in chart_data.planets if p.planet == lord), None)
+                if lord_pos:
+                    indicators.append(
+                        f"{house_num}th house lord {lord.value} in {lord_pos.house}th house, "
+                        f"{lord_pos.sign.value} sign"
+                    )
+
+            # Planets in the house
+            planets_in_house = [p for p in chart_data.planets if p.house == house_num]
+            if planets_in_house:
+                planet_names = [p.planet.value for p in planets_in_house]
+                indicators.append(f"Planets in {house_num}th house: {', '.join(planet_names)}")
+
+        return indicators if indicators else ["(Analysis based on overall chart patterns)"]
+
+    def _generate_timing(self, domain: str, chart_data: ChartData) -> List[str]:
+        """Generate timing windows based on dasha periods."""
+        timing = []
+
+        # Map domains to relevant planets/houses
+        domain_significators = {
+            "career": [10],
+            "wealth": [2, 11],
+            "marriage": [7],
+            "children": [5],
+            "spirituality": [9],
+            "education": [4, 5]
+        }
+
+        houses = domain_significators.get(domain, [])
+
+        # Find relevant dasha periods
+        for house_num in houses:
+            lord = chart_data.house_lords.get(house_num)
+            if lord:
+                # Find mahadasha of this lord
+                for maha in chart_data.dasha_timeline.mahadashas[:5]:  # Next 5 mahadashas
+                    if maha.planet == lord:
+                        timing.append(
+                            f"{maha.planet.value} Mahadasha ({maha.start_date} to {maha.end_date}): "
+                            f"Significant activation of {domain} matters"
+                        )
+                        break
+
+        if not timing:
+            timing.append("(Timing windows require deeper dasha-antardasha analysis)")
+
+        return timing
+
+    def _generate_remedial(self, domain: str, chart_data: ChartData) -> str:
+        """Generate simple remedial guidance."""
+        # Very basic remedial suggestions
+        remedial_map = {
+            "career": "Strengthen the 10th lord through appropriate practices",
+            "wealth": "Support 2nd and 11th lords; practice gratitude and generosity",
+            "marriage": "Strengthen Venus and 7th lord; cultivate relationship virtues",
+            "children": "Honor Jupiter and 5th lord; practice patience and nurturing",
+            "health": "Balance ascendant lord; maintain disciplined lifestyle",
+            "spirituality": "Support 9th lord through dharmic living and study",
+            "education": "Strengthen Mercury and 4th lord; consistent study habits",
+            "travel": "Support 9th and 12th lords; be open to new experiences",
+            "property": "Strengthen 4th lord and Mars; practice stability"
+        }
+
+        return remedial_map.get(domain, "Follow traditional Vedic remedial measures as appropriate")
+
+    def _is_planet_strong(self, planet_pos, chart_data: ChartData) -> bool:
+        """Check if a planet is strong (own sign, exaltation, etc.)."""
+        # Check own sign
+        ownerships = {
+            "Sun": ["Leo"],
+            "Moon": ["Cancer"],
+            "Mars": ["Aries", "Scorpio"],
+            "Mercury": ["Gemini", "Virgo"],
+            "Jupiter": ["Sagittarius", "Pisces"],
+            "Venus": ["Taurus", "Libra"],
+            "Saturn": ["Capricorn", "Aquarius"]
+        }
+
+        own_signs = ownerships.get(planet_pos.planet.value, [])
+        if planet_pos.sign.value in own_signs:
+            return True
+
+        # Check exaltation
+        exaltations = {
+            "Sun": "Aries",
+            "Moon": "Taurus",
+            "Mars": "Capricorn",
+            "Mercury": "Virgo",
+            "Jupiter": "Cancer",
+            "Venus": "Pisces",
+            "Saturn": "Libra"
+        }
+
+        if planet_pos.sign.value == exaltations.get(planet_pos.planet.value):
+            return True
+
+        # Check kendra/trikona placement
+        if planet_pos.house in [1, 4, 5, 7, 9, 10]:
+            return True
+
+        return False
 
     def close(self):
         """Clean up resources."""

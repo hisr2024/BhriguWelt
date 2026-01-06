@@ -1,0 +1,12 @@
+{
+  "name": "Priya Sharma",
+  "date_of_birth": "1987-07-22",
+  "time_of_birth": "09:15",
+  "place_of_birth": {
+    "city": "Mumbai",
+    "country": "India",
+    "lat": 19.0760,
+    "lon": 72.8777,
+    "tz": "Asia/Kolkata"
+  }
+}

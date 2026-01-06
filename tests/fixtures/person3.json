@@ -1,0 +1,12 @@
+{
+  "name": "Michael Chen",
+  "date_of_birth": "1990-12-05",
+  "time_of_birth": "18:45",
+  "place_of_birth": {
+    "city": "Singapore",
+    "country": "Singapore",
+    "lat": 1.3521,
+    "lon": 103.8198,
+    "tz": "Asia/Singapore"
+  }
+}
