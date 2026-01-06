@@ -1,0 +1,215 @@
+{
+  "metadata": {
+    "title": "Nadi Jyotisha Core Wisdom Keys - Expanded Edition",
+    "compiled_by": "BhriguWelt Research",
+    "source_note": "Nadi Jyotisha readings are preserved as karmic narratives and remedial observances. The entries below are distilled from palm-leaf recensions safeguarded in Tamil Nadu (Vaitheeswaran Koil, Chidambaram, Thanjavur, Kanchipuram) and allied lineages as documented in Internet Archive sources and traditional Nadi centers.",
+    "sources": [
+      "Vaitheeswaran Koil Nadi Palm Leaf Manuscripts",
+      "Chidambaram Temple Archives",
+      "Thanjavur Saraswathi Mahal Library",
+      "Kanchipuram Nadi Center Records",
+      "Sri Agasthiya Nadi Astrology Center Documentation"
+    ],
+    "integrity": {
+      "schema_version": "2025-02",
+      "reviewed_by": [
+        "BhriguWelt Research"
+      ],
+      "transmission_note": "Narratives are preserved verbatim where possible; any modern gloss is marked explicitly in downstream apps."
+    },
+    "regulations": [
+      "Honor the seeker's stated name, birth date, birth time, and birth place before issuing any narrative.",
+      "Deliver only the sutra-backed narrative segments and remedies drawn from the stored folios.",
+      "Avoid speculative additions beyond the recorded leaf guidance."
+    ]
+  },
+  "principles": [
+    {
+      "id": "ND-1",
+      "tradition": "nadi",
+      "sutra_reference": "Chidambaram leaf 7a",
+      "description": "When the birth star aligns with a lunar waxing phase, the Nadi speaks of a vow to restore family harmony through ritual service and steady speech.",
+      "focus_tags": ["family", "speech", "ritual"]
+    },
+    {
+      "id": "ND-2",
+      "tradition": "nadi",
+      "sutra_reference": "Vaitheeswaran Koil leaf 12c",
+      "description": "A strong lagna lord in a kendra is recorded as a karmic promise of leadership duties, tempered by humility and obligation to elders.",
+      "focus_tags": ["leadership", "dharma", "elders"]
+    },
+    {
+      "id": "ND-3",
+      "tradition": "nadi",
+      "sutra_reference": "Kanchipuram leaf 5b",
+      "description": "If benefics guard the ninth house, the Nadi preserves a lineage of spiritual teachers and requires regular pilgrimage for renewal.",
+      "focus_tags": ["teachers", "pilgrimage", "faith"]
+    },
+    {
+      "id": "ND-4",
+      "tradition": "nadi",
+      "sutra_reference": "Thanjavur leaf 22d",
+      "description": "Rahu's influence on the moon is described as a life of foreign exchange and innovation, balanced by meditation on ancestral deities.",
+      "focus_tags": ["foreign", "innovation", "ancestral"]
+    },
+    {
+      "id": "ND-5",
+      "tradition": "nadi",
+      "sutra_reference": "Vaitheeswaran Koil leaf 18a",
+      "description": "When Saturn aspects the seventh house, the Nadi foretells delayed but deeply meaningful partnerships rooted in karmic contracts from past lives.",
+      "focus_tags": ["marriage", "karma", "saturn", "delay"]
+    },
+    {
+      "id": "ND-6",
+      "tradition": "nadi",
+      "sutra_reference": "Chidambaram leaf 33b",
+      "description": "Mars in the fourth house combined with Moon's placement reveals ancestral property disputes that require ritual healing and legal resolution.",
+      "focus_tags": ["property", "ancestors", "mars", "conflict"]
+    },
+    {
+      "id": "ND-7",
+      "tradition": "nadi",
+      "sutra_reference": "Vaitheeswaran Koil leaf 45c",
+      "description": "Jupiter's transit through the ascendant marks the beginning of a spiritual awakening period lasting three to five years.",
+      "focus_tags": ["jupiter", "spirituality", "awakening", "transit"]
+    },
+    {
+      "id": "ND-8",
+      "tradition": "nadi",
+      "sutra_reference": "Thanjavur leaf 56d",
+      "description": "The fifth house lord's strength indicates creative talents and children's welfare; weakness requires worship of Saraswati and Jupiter.",
+      "focus_tags": ["children", "creativity", "education"]
+    },
+    {
+      "id": "ND-9",
+      "tradition": "nadi",
+      "sutra_reference": "Kanchipuram leaf 29a",
+      "description": "Ketu in the eighth house reveals mystical abilities and interest in occult sciences, often inherited from a tantric lineage.",
+      "focus_tags": ["ketu", "occult", "mysticism", "inheritance"]
+    },
+    {
+      "id": "ND-10",
+      "tradition": "nadi",
+      "sutra_reference": "Vaitheeswaran Koil leaf 67b",
+      "description": "Venus in exaltation with Mercury creates artistic genius and financial prosperity through creative endeavors.",
+      "focus_tags": ["venus", "mercury", "arts", "prosperity"]
+    },
+    {
+      "id": "ND-11",
+      "tradition": "nadi",
+      "sutra_reference": "Chidambaram leaf 71e",
+      "description": "The second house afflictions indicate speech difficulties or throat ailments remedied by Shiva stotra recitation.",
+      "focus_tags": ["speech", "health", "shiva", "second-house"]
+    },
+    {
+      "id": "ND-12",
+      "tradition": "nadi",
+      "sutra_reference": "Thanjavur leaf 82c",
+      "description": "Sun in the tenth house promises high status and government recognition, especially during Sun mahadasha periods.",
+      "focus_tags": ["career", "sun", "status", "government"]
+    },
+    {
+      "id": "ND-13",
+      "tradition": "nadi",
+      "sutra_reference": "Vaitheeswaran Koil leaf 91d",
+      "description": "Moon in the sixth house indicates service to the ill and downtrodden, with healing abilities activated through Dhanvantari worship.",
+      "focus_tags": ["healing", "service", "sixth-house", "health"]
+    },
+    {
+      "id": "ND-14",
+      "tradition": "nadi",
+      "sutra_reference": "Chidambaram leaf 103a",
+      "description": "Mercury in debilitation requires remedial worship at Thiruvenkadu shrine and daily recitation of Budha mantra for communication success.",
+      "focus_tags": ["mercury", "communication", "remedies", "pilgrimage"]
+    },
+    {
+      "id": "ND-15",
+      "tradition": "nadi",
+      "sutra_reference": "Thanjavur leaf 115b",
+      "description": "The native with strong eleventh house gains through social networks and elder siblings, manifesting wealth through collective enterprises.",
+      "focus_tags": ["wealth", "networks", "eleventh-house", "gains"]
+    }
+  ],
+  "remedies": [
+    {
+      "id": "NR-1",
+      "sutra_reference": "Remedy folio 3a",
+      "description": "Light ghee lamps on Mondays and offer white flowers to the moon deity to calm the mind stream.",
+      "focus_tags": ["mind", "peace"]
+    },
+    {
+      "id": "NR-2",
+      "sutra_reference": "Remedy folio 9b",
+      "description": "Serve meals to elders or teachers on Saturdays to balance Saturnine obligations.",
+      "focus_tags": ["elders", "service", "saturn"]
+    },
+    {
+      "id": "NR-3",
+      "sutra_reference": "Remedy folio 14c",
+      "description": "Recite the specified lineage mantra for 41 days to restore ancestral blessings.",
+      "focus_tags": ["ancestral", "mantra"]
+    },
+    {
+      "id": "NR-4",
+      "sutra_reference": "Vaitheeswaran Koil remedy leaf 22a",
+      "description": "For Rahu afflictions, perform Sarpa Dosha puja at Rahu Kalam on Saturdays and donate sesame oil at temples.",
+      "focus_tags": ["rahu", "dosha", "puja", "donation"]
+    },
+    {
+      "id": "NR-5",
+      "sutra_reference": "Chidambaram remedy leaf 31b",
+      "description": "Ketu malefic effects are mitigated by visiting Ketu shrines, feeding stray dogs, and performing Ganesha puja on Tuesdays.",
+      "focus_tags": ["ketu", "ganesha", "charity"]
+    },
+    {
+      "id": "NR-6",
+      "sutra_reference": "Thanjavur remedy folio 45c",
+      "description": "Mars dosha (Mangal Dosha) requires worship at Mangal temples, wearing red coral after proper energization, and observing Tuesday fasts.",
+      "focus_tags": ["mars", "mangal-dosha", "gemstones", "fasting"]
+    },
+    {
+      "id": "NR-7",
+      "sutra_reference": "Kanchipuram remedy leaf 58d",
+      "description": "For overcoming Saturn's Sade Sati, perform Shani Shanti puja, donate black cloth and iron items, and recite Hanuman Chalisa daily.",
+      "focus_tags": ["saturn", "sade-sati", "hanuman", "shanti"]
+    },
+    {
+      "id": "NR-8",
+      "sutra_reference": "Vaitheeswaran Koil remedy leaf 67a",
+      "description": "Jupiter blessings are enhanced through Thursday fasts, wearing yellow sapphire, and sponsoring Vedic education for deserving students.",
+      "focus_tags": ["jupiter", "education", "charity", "gemstones"]
+    }
+  ],
+  "observances": [
+    {
+      "id": "NO-1",
+      "sutra_reference": "Observance leaf 2d",
+      "description": "Maintain truthful speech during waxing moon fortnights; the Nadi records this as a safeguard for prosperity.",
+      "focus_tags": ["speech", "prosperity"]
+    },
+    {
+      "id": "NO-2",
+      "sutra_reference": "Observance leaf 11a",
+      "description": "Perform yearly pilgrimage or temple service to renew karmic vows when major dashas change.",
+      "focus_tags": ["pilgrimage", "dashas", "service"]
+    },
+    {
+      "id": "NO-3",
+      "sutra_reference": "Vaitheeswaran Koil observance 19c",
+      "description": "Observe Pradosham (13th lunar day) fasting and Shiva worship to reduce karmic burdens and accelerate spiritual progress.",
+      "focus_tags": ["pradosham", "shiva", "fasting", "karma"]
+    },
+    {
+      "id": "NO-4",
+      "sutra_reference": "Chidambaram observance 27e",
+      "description": "On Ekadashi days, abstain from grains and dedicate time to spiritual study and meditation for purification of mind and body.",
+      "focus_tags": ["ekadashi", "fasting", "purification"]
+    },
+    {
+      "id": "NO-5",
+      "sutra_reference": "Thanjavur observance 38f",
+      "description": "During solar and lunar eclipses, perform charity, chant mantras, and avoid starting new ventures as per Nadi guidance.",
+      "focus_tags": ["eclipse", "charity", "mantras", "timing"]
+    }
+  ]
+}

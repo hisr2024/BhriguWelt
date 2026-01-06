@@ -15,6 +15,14 @@ except ImportError:
     CORPUS_AVAILABLE = False
     print("Warning: Corpus loader not available. Predictions will use OpenAI general knowledge only.")
 
+# Import offline wisdom generator for category-specific fallbacks
+try:
+    from services.bhrigu_offline_wisdom import get_offline_wisdom_generator
+    OFFLINE_WISDOM_AVAILABLE = True
+except ImportError:
+    OFFLINE_WISDOM_AVAILABLE = False
+    print("Warning: Offline wisdom generator not available. Fallbacks will be generic.")
+
 class OpenAIService:
     """Service for interacting with OpenAI API"""
 
@@ -31,6 +39,15 @@ class OpenAIService:
                 print("✓ Corpus loader initialized - predictions will reference authentic Bhrigu/Nadi sources")
             except Exception as e:
                 print(f"Warning: Could not initialize corpus loader: {e}")
+
+        # Initialize offline wisdom generator for category-specific fallbacks
+        self.offline_wisdom = None
+        if OFFLINE_WISDOM_AVAILABLE:
+            try:
+                self.offline_wisdom = get_offline_wisdom_generator()
+                print("✓ Offline wisdom generator initialized - category-specific fallbacks available")
+            except Exception as e:
+                print(f"Warning: Could not initialize offline wisdom generator: {e}")
 
         if not self.enabled:
             print("WARNING: OPENAI_API_KEY not set. AI features will use fallback responses.")
@@ -344,7 +361,63 @@ Always provide detailed, specific predictions with timing when possible.''' + co
         }
 
     def _fallback_prediction(self, prompt: str, context: Dict[str, Any] = None) -> str:
-        """Fallback prediction when API is unavailable - provides meaningful Vedic guidance"""
+        """
+        Category-specific fallback prediction when API is unavailable
+        Uses offline wisdom generator for detailed, structured predictions
+        """
+        # Detect category from prompt
+        category = self._detect_category_from_prompt(prompt)
+
+        # If offline wisdom generator is available, use category-specific generation
+        if self.offline_wisdom and context:
+            try:
+                if category == 'karmic_journey':
+                    return self.offline_wisdom.generate_karmic_journey(context)
+                elif category == 'past_lives':
+                    return self.offline_wisdom.generate_past_lives(context)
+                elif category == 'future_lives':
+                    return self.offline_wisdom.generate_future_lives(context)
+                elif category == 'present_life':
+                    return self.offline_wisdom.generate_present_life(context)
+                elif category == 'life_events':
+                    return self.offline_wisdom.generate_life_events(context)
+                elif category == 'karmic_remedies':
+                    return self.offline_wisdom.generate_karmic_remedies(context)
+                elif category == 'relationships':
+                    return self.offline_wisdom.generate_relationships(context)
+                elif category == 'predictions':
+                    return self.offline_wisdom.generate_general_predictions(context)
+            except Exception as e:
+                print(f"Warning: Offline wisdom generation failed: {e}")
+
+        # Generic fallback if offline wisdom not available or failed
+        return self._generic_fallback(context)
+
+    def _detect_category_from_prompt(self, prompt: str) -> str:
+        """Detect prediction category from the prompt content"""
+        prompt_lower = prompt.lower()
+
+        if 'karmic journey' in prompt_lower or 'soul\'s purpose' in prompt_lower or 'soul purpose' in prompt_lower:
+            return 'karmic_journey'
+        elif 'past life' in prompt_lower or 'past lives' in prompt_lower or 'previous incarnation' in prompt_lower:
+            return 'past_lives'
+        elif 'future life' in prompt_lower or 'future lives' in prompt_lower or 'future incarnation' in prompt_lower or 'moksha' in prompt_lower:
+            return 'future_lives'
+        elif 'present life' in prompt_lower or 'current life' in prompt_lower:
+            return 'present_life'
+        elif 'life event' in prompt_lower or 'year-by-year' in prompt_lower or 'timing' in prompt_lower:
+            return 'life_events'
+        elif 'remed' in prompt_lower or 'mantra' in prompt_lower or 'gemstone' in prompt_lower:
+            return 'karmic_remedies'
+        elif 'relationship' in prompt_lower or 'marriage' in prompt_lower or 'partner' in prompt_lower:
+            return 'relationships'
+        elif 'daily' in prompt_lower or 'weekly' in prompt_lower or 'monthly' in prompt_lower or 'yearly' in prompt_lower:
+            return 'predictions'
+
+        return 'general'
+
+    def _generic_fallback(self, context: Dict[str, Any] = None) -> str:
+        """Generic fallback when category-specific generation is not possible"""
         zodiac = context.get('zodiac_sign', 'Unknown') if context else 'Unknown'
         nakshatra = context.get('nakshatra', 'Unknown') if context else 'Unknown'
         moon_sign = context.get('moon_sign', zodiac) if context else zodiac
