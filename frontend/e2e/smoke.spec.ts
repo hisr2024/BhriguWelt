@@ -37,6 +37,12 @@ test.describe('Smoke Tests', () => {
   test('app renders without console errors', async ({ page }) => {
     const consoleErrors: string[] = [];
     
+    // Expected error patterns that are acceptable
+    const ACCEPTABLE_ERROR_PATTERNS = [
+      'Failed to fetch',
+      'ECONNREFUSED',
+    ];
+    
     page.on('console', (msg) => {
       if (msg.type() === 'error') {
         consoleErrors.push(msg.text());
@@ -46,9 +52,9 @@ test.describe('Smoke Tests', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    // Allow for expected errors (like missing backend in dev)
+    // Filter out expected errors (like missing backend in dev)
     const criticalErrors = consoleErrors.filter(
-      (error) => !error.includes('Failed to fetch') && !error.includes('ECONNREFUSED')
+      (error) => !ACCEPTABLE_ERROR_PATTERNS.some(pattern => error.includes(pattern))
     );
 
     expect(criticalErrors).toHaveLength(0);

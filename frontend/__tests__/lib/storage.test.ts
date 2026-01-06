@@ -65,10 +65,6 @@ describe('Storage Utilities', () => {
   });
 
   describe('Database Operations', () => {
-    beforeEach(() => {
-      jest.clearAllMocks();
-    });
-
     it('should close database connection', () => {
       closeDB();
       // Verify database is closed
@@ -123,12 +119,21 @@ describe('Storage Utilities', () => {
   });
 
   describe('Store Names', () => {
+    // Helper to validate store names
+    const validateStoreNames = (expectedStores: Record<string, string>) => {
+      Object.entries(expectedStores).forEach(([key, value]) => {
+        expect(STORES[key as keyof typeof STORES]).toBe(value);
+      });
+    };
+
     it('should export STORES constant with correct names', () => {
-      expect(STORES.PROFILES).toBe('profiles');
-      expect(STORES.REPORTS).toBe('reports');
-      expect(STORES.WISDOM_CARDS).toBe('wisdomCards');
-      expect(STORES.SETTINGS).toBe('settings');
-      expect(STORES.METADATA).toBe('metadata');
+      validateStoreNames({
+        PROFILES: 'profiles',
+        REPORTS: 'reports',
+        WISDOM_CARDS: 'wisdomCards',
+        SETTINGS: 'settings',
+        METADATA: 'metadata',
+      });
     });
   });
 });
