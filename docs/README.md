@@ -22,6 +22,9 @@ The core of the Soul Journey app - generates deterministic, explainable Soul Jou
 
 ### Bhrigu Samhita Engine
 - **[Bhrigu Samhita Jyotish Engine](./bhrigu_samhita_jyotish_engine.md)** - Ancient palm-leaf astrology system
+- **[Astrology System](./features/ASTROLOGY_SYSTEM.md)** - Core astrology system documentation
+- **[Birth Chart Redesign Summary](./features/BIRTH_CHART_REDESIGN_SUMMARY.md)** - Birth chart improvements
+- **[Detailed Chart Implementation Summary](./features/DETAILED_CHART_IMPLEMENTATION_SUMMARY.md)** - Detailed chart features
 
 ### Engine Core Architecture
 - **[Engine Core Analyser Blueprint](./engine_core_analyser_blueprint.md)** - Integration layer connecting engines to platform
@@ -44,12 +47,20 @@ The core of the Soul Journey app - generates deterministic, explainable Soul Jou
 - **[AI Features API](./AI_FEATURES_API.md)** - AI-powered features
 - **[AI Implementation Guide](./AI_IMPLEMENTATION_GUIDE.md)** - How to implement AI features
 - **[AI Usage Examples](./AI_USAGE_EXAMPLES.md)** - Practical examples
+- **[AI Features Complete](./features/AI_FEATURES_COMPLETE.md)** - Completed AI features
+- **[AI Features README](./features/AI_FEATURES_README.md)** - AI features overview
 
 ### Chatbot
 - **[Bhrigu Chatbot Spec](./bhrigu_chatbot_spec.md)** - Conversational AI specifications
 
-### OpenAI
-- See project root for OpenAI integration documentation
+### OpenAI & Advanced Features
+- **[OpenAI Integration](./features/OPENAI_INTEGRATION.md)** - OpenAI integration documentation
+- **[Structured Predictions Implementation](./features/STRUCTURED_PREDICTIONS_IMPLEMENTATION.md)** - Structured predictions feature
+
+### Progressive Web App (PWA)
+- **[PWA Implementation](./features/PWA_IMPLEMENTATION.md)** - PWA setup and implementation
+- **[PWA Implementation Complete](./features/PWA_IMPLEMENTATION_COMPLETE.md)** - PWA completion status
+- **[PWA Addendum](./features/PWA_ADDENDUM.md)** - Additional PWA documentation
 
 ## 📊 API Documentation
 
@@ -137,13 +148,30 @@ The core of the Soul Journey app - generates deterministic, explainable Soul Jou
 
 ## 📊 Test Documentation
 
+### Test Reports
+- **[Test Evidence Enhancements](./test-reports/TEST_EVIDENCE_ENHANCEMENTS.md)** - Test evidence for enhancements
+- **[Test Evidence Fixes](./test-reports/TEST_EVIDENCE_FIXES.md)** - Test evidence for fixes
+- **[Test Evidence (Old)](./test-reports/TEST_EVIDENCE_OLD.md)** - Historical test evidence
+- **[Testing Validation](./test-reports/TESTING_VALIDATION.md)** - Test validation results
+- **[Final Verification Report](./test-reports/FINAL_VERIFICATION_REPORT.md)** - Final verification results
+- **[Final Verification - Structured Predictions](./test-reports/FINAL_VERIFICATION_STRUCTURED_PREDICTIONS.md)** - Structured predictions verification
+
 ### Test Runs & Evidence
 - **[Test Runs Report - Birth Horo](./test-runs-report-birth-horo.md)** - Birth chart test results
 - See `/docs/test-outputs/` for detailed test outputs
 
-## 🗂️ Implementation Summaries
+## 🗂️ Implementation Documentation
 
-- **[Implementation Summary](./implementation-summary.md)** - Project implementation details
+### Implementation Summaries
+- **[Implementation Complete](./implementation/IMPLEMENTATION_COMPLETE.md)** - Completed implementation details
+- **[Implementation Summary](./implementation-summary.md)** - General implementation overview
+- **[Corpus Integration Summary](./implementation/CORPUS_INTEGRATION_SUMMARY.md)** - Corpus integration details
+- **[Before/After Comparison](./implementation/BEFORE_AFTER_COMPARISON.md)** - Implementation comparison
+
+### Issue Resolution
+- **[Issue Resolution](./implementation/ISSUE_RESOLUTION.md)** - Resolved issues
+- **[Issue Resolution Complete](./implementation/ISSUE_RESOLUTION_COMPLETE.md)** - Complete issue resolution status
+- **[PR Summary](./implementation/PR_SUMMARY.md)** - Pull request summary
 
 ---
 
