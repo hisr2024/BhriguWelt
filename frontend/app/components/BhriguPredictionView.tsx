@@ -31,7 +31,7 @@ export default function BhriguPredictionView({
 
   // Category-specific section configurations
   const categorySections: Record<string, Array<{ key: string; title: string; color: string }>> = {
-    karmic_journey: [
+    'karmic-journey': [
       { key: 'soul_purpose', title: "Soul's Primary Purpose", color: 'cyan' },
       { key: 'karmic_blueprint', title: 'Karmic Blueprint', color: 'purple' },
       { key: 'evolution_stage', title: 'Soul Evolution Stage', color: 'blue' },
@@ -41,7 +41,7 @@ export default function BhriguPredictionView({
       { key: 'timing', title: 'Timing of Karmic Events', color: 'rose' },
       { key: 'spiritual_gifts', title: 'Spiritual Gifts & Abilities', color: 'amber' }
     ],
-    past_lives: [
+    'past-lives': [
       { key: 'recent_life', title: 'Most Recent Past Life', color: 'cyan' },
       { key: 'significant_lives', title: 'Significant Past Lives', color: 'purple' },
       { key: 'karmic_patterns', title: 'Recurring Karmic Patterns', color: 'blue' },
@@ -51,7 +51,7 @@ export default function BhriguPredictionView({
       { key: 'karmic_debts', title: 'Karmic Debts from Past Lives', color: 'rose' },
       { key: 'spiritual_progress', title: 'Past Life Spiritual Progress', color: 'amber' }
     ],
-    future_lives: [
+    'future-lives': [
       { key: 'next_incarnation', title: 'Next Incarnation', color: 'cyan' },
       { key: 'evolution_trajectory', title: 'Soul Evolution Trajectory', color: 'purple' },
       { key: 'final_birth_conditions', title: 'Final Birth Conditions', color: 'blue' },
@@ -61,7 +61,7 @@ export default function BhriguPredictionView({
       { key: 'bodhisattva_path', title: 'Bodhisattva Path', color: 'rose' },
       { key: 'ultimate_destiny', title: 'Ultimate Destiny', color: 'amber' }
     ],
-    present_life: [
+    'present-life': [
       { key: 'current_phase', title: 'Current Life Phase', color: 'cyan' },
       { key: 'career', title: 'Career & Professional Life', color: 'purple' },
       { key: 'relationships', title: 'Relationships & Love', color: 'blue' },
@@ -73,7 +73,7 @@ export default function BhriguPredictionView({
       { key: 'challenges', title: 'Current Challenges', color: 'orange' },
       { key: 'timing', title: 'Timing & Transitions', color: 'teal' }
     ],
-    life_events: [
+    'life-events': [
       { key: 'yearly_forecast', title: 'Yearly Forecast', color: 'cyan' },
       { key: 'marriage_timing', title: 'Marriage Timing', color: 'purple' },
       { key: 'career_milestones', title: 'Career Milestones', color: 'blue' },
@@ -88,7 +88,7 @@ export default function BhriguPredictionView({
       { key: 'transits', title: 'Key Planetary Transits', color: 'lime' },
       { key: 'age_milestones', title: 'Age Milestones', color: 'emerald' }
     ],
-    karmic_remedies: [
+    'karmic-remedies': [
       { key: 'mantras', title: 'Mantras & Chanting', color: 'cyan' },
       { key: 'gemstones', title: 'Gemstones & Crystals', color: 'purple' },
       { key: 'yantras', title: 'Yantras & Sacred Geometry', color: 'blue' },
@@ -102,7 +102,7 @@ export default function BhriguPredictionView({
       { key: 'service', title: 'Service & Seva', color: 'lime' },
       { key: 'meditation', title: 'Meditation & Yoga', color: 'emerald' }
     ],
-    relationships: [
+    'relationships': [
       { key: 'romantic_marriage', title: 'Romantic & Marriage Prospects', color: 'cyan' },
       { key: 'family', title: 'Family Relationships', color: 'purple' },
       { key: 'soul_connections', title: 'Soul Connections & Soulmates', color: 'blue' },
@@ -114,7 +114,7 @@ export default function BhriguPredictionView({
       { key: 'healing', title: 'Relationship Healing', color: 'orange' },
       { key: 'healthy_practices', title: 'Healthy Relationship Practices', color: 'teal' }
     ],
-    predictions: [
+    'predictions': [
       { key: 'daily', title: 'Daily Predictions', color: 'cyan' },
       { key: 'weekly', title: 'Weekly Forecast', color: 'purple' },
       { key: 'monthly', title: 'Monthly Outlook', color: 'blue' },
