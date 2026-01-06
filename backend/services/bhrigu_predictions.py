@@ -3,22 +3,32 @@ Bhrigu Samhita and Nadi Jyotisa Predictions Service
 Comprehensive predictions based on ancient Vedic wisdom
 """
 import os
+import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import json
 
 from services.openai_service import get_openai_service
 from services.astrology_calculator import AstrologyCalculator
+from services.section_parser import get_section_parser
+from services.bhrigu_corpus_db import get_corpus_database
+
+# Configure logging
+logger = logging.getLogger(__name__)
+
 
 class BhriguPredictionsService:
     """
     Comprehensive Bhrigu Samhita and Nadi Jyotisa predictions service
     Implements all 8 prediction categories with extensive AI-powered analysis
+    Enhanced with structured section extraction and corpus integration
     """
 
     def __init__(self):
         self.openai_service = get_openai_service()
         self.astrology_calculator = AstrologyCalculator()
+        self.section_parser = get_section_parser(self.openai_service)
+        self.corpus_db = get_corpus_database()
 
         # Bhrigu Samhita system prompts for enhanced accuracy and precision
         self.bhrigu_system_prompt = """You are a master Vedic astrologer deeply versed in the ancient texts of Bhrigu Samhita and Nadi Jyotisha.
@@ -224,18 +234,30 @@ Provide specific, actionable guidance rooted in Bhrigu Samhita and Nadi Jyotisa 
 
         prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
 
+        # Extract sections using section parser with auto-repair
+        sections = self.section_parser.extract_sections(
+            prediction_text, 
+            'karmic_journey', 
+            birth_data
+        )
+        
+        # Validate and ensure all sections are present
+        missing_sections = self.section_parser.get_missing_sections(sections, 'karmic_journey')
+        if missing_sections:
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for karmic_journey")
+            for section_key in missing_sections:
+                sections[section_key] = self.section_parser.generate_missing_section(
+                    section_key,
+                    prediction_text,
+                    'karmic_journey',
+                    birth_data
+                )
+
         return {
             'category': 'karmic_journey',
             'title': 'Your Karmic Journey & Soul Purpose',
             'full_analysis': prediction_text,
-            'soul_purpose': self._extract_section(prediction_text, "Soul's Primary Purpose"),
-            'karmic_blueprint': self._extract_section(prediction_text, "Karmic Blueprint"),
-            'evolution_stage': self._extract_section(prediction_text, "Soul Evolution Stage"),
-            'life_mission': self._extract_section(prediction_text, "Life Mission & Dharma"),
-            'karmic_lessons': self._extract_section(prediction_text, "Karmic Lessons"),
-            'soul_connections': self._extract_section(prediction_text, "Soul Group Connections"),
-            'timing': self._extract_section(prediction_text, "Timing of Karmic Events"),
-            'spiritual_gifts': self._extract_section(prediction_text, "Spiritual Gifts"),
+            **sections,  # Include all extracted/generated sections
             'metadata': self._generate_metadata(birth_data),
             'generated_at': datetime.utcnow().isoformat()
         }
@@ -317,18 +339,30 @@ Reference specific Nadi Jyotisa indicators and planetary positions."""
 
         prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
 
+        # Extract sections using section parser with auto-repair
+        sections = self.section_parser.extract_sections(
+            prediction_text, 
+            'past_lives', 
+            birth_data
+        )
+        
+        # Validate and ensure all sections are present
+        missing_sections = self.section_parser.get_missing_sections(sections, 'past_lives')
+        if missing_sections:
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for past_lives")
+            for section_key in missing_sections:
+                sections[section_key] = self.section_parser.generate_missing_section(
+                    section_key,
+                    prediction_text,
+                    'past_lives',
+                    birth_data
+                )
+
         return {
             'category': 'past_lives',
             'title': 'Your Past Lives & Karmic Patterns',
             'full_analysis': prediction_text,
-            'recent_life': self._extract_section(prediction_text, "Most Recent Past Life"),
-            'significant_lives': self._extract_section(prediction_text, "Significant Past Lives"),
-            'karmic_patterns': self._extract_section(prediction_text, "Recurring Karmic Patterns"),
-            'past_skills': self._extract_section(prediction_text, "Past Life Skills"),
-            'traumas_healing': self._extract_section(prediction_text, "Traumas Needing Healing"),
-            'past_relationships': self._extract_section(prediction_text, "Past Life Relationships"),
-            'karmic_debts': self._extract_section(prediction_text, "Karmic Debts"),
-            'spiritual_progress': self._extract_section(prediction_text, "Spiritual Progress"),
+            **sections,  # Include all extracted/generated sections
             'metadata': self._generate_metadata(birth_data),
             'generated_at': datetime.utcnow().isoformat()
         }
@@ -420,18 +454,30 @@ Ground predictions in Bhrigu Samhita principles of karmic progression."""
 
         prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
 
+        # Extract sections using section parser with auto-repair
+        sections = self.section_parser.extract_sections(
+            prediction_text, 
+            'future_lives', 
+            birth_data
+        )
+        
+        # Validate and ensure all sections are present
+        missing_sections = self.section_parser.get_missing_sections(sections, 'future_lives')
+        if missing_sections:
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for future_lives")
+            for section_key in missing_sections:
+                sections[section_key] = self.section_parser.generate_missing_section(
+                    section_key,
+                    prediction_text,
+                    'future_lives',
+                    birth_data
+                )
+
         return {
             'category': 'future_lives',
             'title': 'Your Future Lives & Soul Evolution',
             'full_analysis': prediction_text,
-            'next_incarnation': self._extract_section(prediction_text, "Next Immediate Incarnation"),
-            'evolution_trajectory': self._extract_section(prediction_text, "Soul Evolution Trajectory"),
-            'final_birth_conditions': self._extract_section(prediction_text, "Conditions for Final Birth"),
-            'future_scenarios': self._extract_section(prediction_text, "Future Life Scenarios"),
-            'moksha_timeline': self._extract_section(prediction_text, "Moksha Timeline"),
-            'higher_realms': self._extract_section(prediction_text, "Higher Realms"),
-            'bodhisattva_path': self._extract_section(prediction_text, "Bodhisattva Path"),
-            'ultimate_destiny': self._extract_section(prediction_text, "Soul's Ultimate Destiny"),
+            **sections,  # Include all extracted/generated sections
             'metadata': self._generate_metadata(birth_data),
             'generated_at': datetime.utcnow().isoformat()
         }
@@ -545,20 +591,30 @@ Base analysis on classical Bhrigu Samhita delineation methods."""
 
         prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
 
+        # Extract sections using section parser with auto-repair
+        sections = self.section_parser.extract_sections(
+            prediction_text, 
+            'present_life', 
+            birth_data
+        )
+        
+        # Validate and ensure all sections are present
+        missing_sections = self.section_parser.get_missing_sections(sections, 'present_life')
+        if missing_sections:
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for present_life")
+            for section_key in missing_sections:
+                sections[section_key] = self.section_parser.generate_missing_section(
+                    section_key,
+                    prediction_text,
+                    'present_life',
+                    birth_data
+                )
+
         return {
             'category': 'present_life',
             'title': 'Your Present Life Comprehensive Analysis',
             'full_analysis': prediction_text,
-            'current_phase': self._extract_section(prediction_text, "Current Life Phase"),
-            'career': self._extract_section(prediction_text, "Career & Professional Path"),
-            'relationships': self._extract_section(prediction_text, "Relationships & Partnerships"),
-            'health': self._extract_section(prediction_text, "Health & Wellbeing"),
-            'finances': self._extract_section(prediction_text, "Financial Prospects"),
-            'spiritual_growth': self._extract_section(prediction_text, "Spiritual Growth"),
-            'education': self._extract_section(prediction_text, "Education & Learning"),
-            'life_purpose': self._extract_section(prediction_text, "Life Purpose & Fulfillment"),
-            'challenges': self._extract_section(prediction_text, "Challenges & Growth Areas"),
-            'timing': self._extract_section(prediction_text, "Favorable & Challenging Periods"),
+            **sections,  # Include all extracted/generated sections
             'metadata': self._generate_metadata(birth_data),
             'generated_at': datetime.utcnow().isoformat()
         }
@@ -706,23 +762,30 @@ Provide month-level precision where possible using Nadi Jyotisa methods."""
 
         prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
 
+        # Extract sections using section parser with auto-repair
+        sections = self.section_parser.extract_sections(
+            prediction_text, 
+            'life_events', 
+            birth_data
+        )
+        
+        # Validate and ensure all sections are present
+        missing_sections = self.section_parser.get_missing_sections(sections, 'life_events')
+        if missing_sections:
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for life_events")
+            for section_key in missing_sections:
+                sections[section_key] = self.section_parser.generate_missing_section(
+                    section_key,
+                    prediction_text,
+                    'life_events',
+                    birth_data
+                )
+
         return {
             'category': 'life_events',
             'title': 'Your Life Events with Precision Timing',
             'full_analysis': prediction_text,
-            'yearly_forecast': self._extract_section(prediction_text, "Year-by-Year Forecast"),
-            'marriage_timing': self._extract_section(prediction_text, "Marriage & Partnerships"),
-            'career_milestones': self._extract_section(prediction_text, "Career Milestones"),
-            'children_family': self._extract_section(prediction_text, "Children & Family"),
-            'financial_events': self._extract_section(prediction_text, "Financial Breakthroughs"),
-            'health_alerts': self._extract_section(prediction_text, "Health Alerts"),
-            'spiritual_milestones': self._extract_section(prediction_text, "Spiritual Milestones"),
-            'relocations': self._extract_section(prediction_text, "Relocations & Travel"),
-            'education': self._extract_section(prediction_text, "Education & Skill Development"),
-            'favorable_periods': self._extract_section(prediction_text, "Favorable Dasha Periods"),
-            'challenging_periods': self._extract_section(prediction_text, "Challenging Dasha Periods"),
-            'transits': self._extract_section(prediction_text, "Critical Transit Events"),
-            'age_milestones': self._extract_section(prediction_text, "Specific Age Milestones"),
+            **sections,  # Include all extracted/generated sections
             'metadata': self._generate_metadata(birth_data),
             'generated_at': datetime.utcnow().isoformat()
         }
@@ -917,22 +980,30 @@ Provide practical, affordable, and effective remedies that can be integrated int
 
         prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
 
+        # Extract sections using section parser with auto-repair
+        sections = self.section_parser.extract_sections(
+            prediction_text, 
+            'karmic_remedies', 
+            birth_data
+        )
+        
+        # Validate and ensure all sections are present
+        missing_sections = self.section_parser.get_missing_sections(sections, 'karmic_remedies')
+        if missing_sections:
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for karmic_remedies")
+            for section_key in missing_sections:
+                sections[section_key] = self.section_parser.generate_missing_section(
+                    section_key,
+                    prediction_text,
+                    'karmic_remedies',
+                    birth_data
+                )
+
         return {
             'category': 'karmic_remedies',
             'title': 'Your Personalized Karmic Remedies',
             'full_analysis': prediction_text,
-            'mantras': self._extract_section(prediction_text, "Mantras & Sacred Sounds"),
-            'gemstones': self._extract_section(prediction_text, "Gemstone Therapy"),
-            'yantras': self._extract_section(prediction_text, "Yantras & Sacred Geometry"),
-            'charitable_activities': self._extract_section(prediction_text, "Charitable Activities"),
-            'fasting': self._extract_section(prediction_text, "Fasting & Dietary"),
-            'deity_worship': self._extract_section(prediction_text, "Deity Worship"),
-            'pilgrimage': self._extract_section(prediction_text, "Pilgrimage & Sacred Visits"),
-            'lifestyle': self._extract_section(prediction_text, "Lifestyle Modifications"),
-            'planetary_rituals': self._extract_section(prediction_text, "Planetary Propitiation"),
-            'karmic_cleansing': self._extract_section(prediction_text, "Karmic Cleansing"),
-            'service': self._extract_section(prediction_text, "Service & Seva"),
-            'meditation': self._extract_section(prediction_text, "Meditation & Inner Work"),
+            **sections,  # Include all extracted/generated sections
             'metadata': self._generate_metadata(birth_data),
             'generated_at': datetime.utcnow().isoformat()
         }
@@ -1128,20 +1199,30 @@ Provide specific, actionable relationship guidance based on classical astrology.
 
         prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
 
+        # Extract sections using section parser with auto-repair
+        sections = self.section_parser.extract_sections(
+            prediction_text, 
+            'relationships', 
+            birth_data
+        )
+        
+        # Validate and ensure all sections are present
+        missing_sections = self.section_parser.get_missing_sections(sections, 'relationships')
+        if missing_sections:
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for relationships")
+            for section_key in missing_sections:
+                sections[section_key] = self.section_parser.generate_missing_section(
+                    section_key,
+                    prediction_text,
+                    'relationships',
+                    birth_data
+                )
+
         return {
             'category': 'relationships',
             'title': 'Your Relationships & Soul Connections',
             'full_analysis': prediction_text,
-            'romantic_marriage': self._extract_section(prediction_text, "Romantic Relationships & Marriage"),
-            'family': self._extract_section(prediction_text, "Family Relationships"),
-            'soul_connections': self._extract_section(prediction_text, "Soul Connections & Soulmates"),
-            'friendships': self._extract_section(prediction_text, "Friendships & Social"),
-            'professional': self._extract_section(prediction_text, "Professional Relationships"),
-            'karmic_patterns': self._extract_section(prediction_text, "Karmic Relationship Patterns"),
-            'communication': self._extract_section(prediction_text, "Communication & Intimacy"),
-            'timing': self._extract_section(prediction_text, "Relationship Timing & Cycles"),
-            'healing': self._extract_section(prediction_text, "Healing Relationship Wounds"),
-            'healthy_practices': self._extract_section(prediction_text, "Creating Healthy Relationships"),
+            **sections,  # Include all extracted/generated sections
             'metadata': self._generate_metadata(birth_data),
             'generated_at': datetime.utcnow().isoformat()
         }
@@ -1204,14 +1285,30 @@ Base on current planetary transits and your natal chart."""
 
         prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
 
+        # Extract sections using section parser with auto-repair
+        sections = self.section_parser.extract_sections(
+            prediction_text, 
+            'predictions', 
+            birth_data
+        )
+        
+        # Validate and ensure all sections are present
+        missing_sections = self.section_parser.get_missing_sections(sections, 'predictions')
+        if missing_sections:
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for predictions")
+            for section_key in missing_sections:
+                sections[section_key] = self.section_parser.generate_missing_section(
+                    section_key,
+                    prediction_text,
+                    'predictions',
+                    birth_data
+                )
+
         return {
             'category': 'predictions',
             'title': 'Your General Predictions',
             'full_analysis': prediction_text,
-            'daily': self._extract_section(prediction_text, "Daily Forecast"),
-            'weekly': self._extract_section(prediction_text, "Weekly Forecast"),
-            'monthly': self._extract_section(prediction_text, "Monthly Forecast"),
-            'yearly': self._extract_section(prediction_text, "Yearly Forecast"),
+            **sections,  # Include all extracted/generated sections
             'metadata': self._generate_metadata(birth_data),
             'generated_at': datetime.utcnow().isoformat()
         }
