@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Loader2, RefreshCw, Download, Share2, BookOpen } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Profile } from '@/lib/types';
 
 interface BhriguPredictionViewProps {
@@ -27,6 +27,100 @@ export default function BhriguPredictionView({
   const [error, setError] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [question, setQuestion] = useState('');
+  const [showFullAnalysis, setShowFullAnalysis] = useState(false);
+
+  // Category-specific section configurations
+  const categorySections: Record<string, Array<{ key: string; title: string; color: string }>> = {
+    karmic_journey: [
+      { key: 'soul_purpose', title: "Soul's Primary Purpose", color: 'cyan' },
+      { key: 'karmic_blueprint', title: 'Karmic Blueprint', color: 'purple' },
+      { key: 'evolution_stage', title: 'Soul Evolution Stage', color: 'blue' },
+      { key: 'life_mission', title: 'Life Mission & Dharma', color: 'indigo' },
+      { key: 'karmic_lessons', title: 'Karmic Lessons', color: 'violet' },
+      { key: 'soul_connections', title: 'Soul Group Connections', color: 'pink' },
+      { key: 'timing', title: 'Timing of Karmic Events', color: 'rose' },
+      { key: 'spiritual_gifts', title: 'Spiritual Gifts & Abilities', color: 'amber' }
+    ],
+    past_lives: [
+      { key: 'recent_life', title: 'Most Recent Past Life', color: 'cyan' },
+      { key: 'significant_lives', title: 'Significant Past Lives', color: 'purple' },
+      { key: 'karmic_patterns', title: 'Recurring Karmic Patterns', color: 'blue' },
+      { key: 'past_skills', title: 'Past Life Skills & Talents', color: 'indigo' },
+      { key: 'traumas_healing', title: 'Past Life Traumas Needing Healing', color: 'violet' },
+      { key: 'past_relationships', title: 'Past Life Relationships', color: 'pink' },
+      { key: 'karmic_debts', title: 'Karmic Debts from Past Lives', color: 'rose' },
+      { key: 'spiritual_progress', title: 'Past Life Spiritual Progress', color: 'amber' }
+    ],
+    future_lives: [
+      { key: 'next_incarnation', title: 'Next Incarnation', color: 'cyan' },
+      { key: 'evolution_trajectory', title: 'Soul Evolution Trajectory', color: 'purple' },
+      { key: 'final_birth_conditions', title: 'Final Birth Conditions', color: 'blue' },
+      { key: 'future_scenarios', title: 'Future Life Scenarios', color: 'indigo' },
+      { key: 'moksha_timeline', title: 'Moksha Timeline', color: 'violet' },
+      { key: 'higher_realms', title: 'Higher Realms Access', color: 'pink' },
+      { key: 'bodhisattva_path', title: 'Bodhisattva Path', color: 'rose' },
+      { key: 'ultimate_destiny', title: 'Ultimate Destiny', color: 'amber' }
+    ],
+    present_life: [
+      { key: 'current_phase', title: 'Current Life Phase', color: 'cyan' },
+      { key: 'career', title: 'Career & Professional Life', color: 'purple' },
+      { key: 'relationships', title: 'Relationships & Love', color: 'blue' },
+      { key: 'health', title: 'Health & Wellness', color: 'indigo' },
+      { key: 'finances', title: 'Financial Prospects', color: 'violet' },
+      { key: 'spiritual_growth', title: 'Spiritual Growth', color: 'pink' },
+      { key: 'education', title: 'Education & Learning', color: 'rose' },
+      { key: 'life_purpose', title: 'Life Purpose', color: 'amber' },
+      { key: 'challenges', title: 'Current Challenges', color: 'orange' },
+      { key: 'timing', title: 'Timing & Transitions', color: 'teal' }
+    ],
+    life_events: [
+      { key: 'yearly_forecast', title: 'Yearly Forecast', color: 'cyan' },
+      { key: 'marriage_timing', title: 'Marriage Timing', color: 'purple' },
+      { key: 'career_milestones', title: 'Career Milestones', color: 'blue' },
+      { key: 'children_family', title: 'Children & Family', color: 'indigo' },
+      { key: 'financial_events', title: 'Financial Events', color: 'violet' },
+      { key: 'health_alerts', title: 'Health Alerts', color: 'pink' },
+      { key: 'spiritual_milestones', title: 'Spiritual Milestones', color: 'rose' },
+      { key: 'relocations', title: 'Relocations & Travel', color: 'amber' },
+      { key: 'education', title: 'Educational Achievements', color: 'orange' },
+      { key: 'favorable_periods', title: 'Favorable Periods', color: 'teal' },
+      { key: 'challenging_periods', title: 'Challenging Periods', color: 'red' },
+      { key: 'transits', title: 'Key Planetary Transits', color: 'lime' },
+      { key: 'age_milestones', title: 'Age Milestones', color: 'emerald' }
+    ],
+    karmic_remedies: [
+      { key: 'mantras', title: 'Mantras & Chanting', color: 'cyan' },
+      { key: 'gemstones', title: 'Gemstones & Crystals', color: 'purple' },
+      { key: 'yantras', title: 'Yantras & Sacred Geometry', color: 'blue' },
+      { key: 'charitable_activities', title: 'Charitable Activities', color: 'indigo' },
+      { key: 'fasting', title: 'Fasting & Dietary Practices', color: 'violet' },
+      { key: 'deity_worship', title: 'Deity Worship', color: 'pink' },
+      { key: 'pilgrimage', title: 'Pilgrimage & Sacred Sites', color: 'rose' },
+      { key: 'lifestyle', title: 'Lifestyle Modifications', color: 'amber' },
+      { key: 'planetary_rituals', title: 'Planetary Rituals', color: 'orange' },
+      { key: 'karmic_cleansing', title: 'Karmic Cleansing Practices', color: 'teal' },
+      { key: 'service', title: 'Service & Seva', color: 'lime' },
+      { key: 'meditation', title: 'Meditation & Yoga', color: 'emerald' }
+    ],
+    relationships: [
+      { key: 'romantic_marriage', title: 'Romantic & Marriage Prospects', color: 'cyan' },
+      { key: 'family', title: 'Family Relationships', color: 'purple' },
+      { key: 'soul_connections', title: 'Soul Connections & Soulmates', color: 'blue' },
+      { key: 'friendships', title: 'Friendships & Social Circle', color: 'indigo' },
+      { key: 'professional', title: 'Professional Relationships', color: 'violet' },
+      { key: 'karmic_patterns', title: 'Karmic Relationship Patterns', color: 'pink' },
+      { key: 'communication', title: 'Communication Dynamics', color: 'rose' },
+      { key: 'timing', title: 'Relationship Timing', color: 'amber' },
+      { key: 'healing', title: 'Relationship Healing', color: 'orange' },
+      { key: 'healthy_practices', title: 'Healthy Relationship Practices', color: 'teal' }
+    ],
+    predictions: [
+      { key: 'daily', title: 'Daily Predictions', color: 'cyan' },
+      { key: 'weekly', title: 'Weekly Forecast', color: 'purple' },
+      { key: 'monthly', title: 'Monthly Outlook', color: 'blue' },
+      { key: 'yearly', title: 'Yearly Overview', color: 'indigo' }
+    ]
+  };
 
   useEffect(() => {
     if (profile) {
@@ -66,15 +160,40 @@ export default function BhriguPredictionView({
     }
   };
 
-  const renderSection = (title: string, content: string) => {
-    if (!content || content === '' || content.includes('See full analysis')) {
+  const renderSection = (sectionKey: string, title: string, content: string, color: string) => {
+    if (!content || content === '' || content.toLowerCase().includes('see full analysis')) {
       return null;
     }
 
+    const colorClasses: Record<string, { border: string; accent: string; text: string }> = {
+      cyan: { border: 'border-cyan-500/30', accent: 'from-cyan-400 to-cyan-600', text: 'text-cyan-400' },
+      purple: { border: 'border-purple-500/30', accent: 'from-purple-400 to-purple-600', text: 'text-purple-400' },
+      blue: { border: 'border-blue-500/30', accent: 'from-blue-400 to-blue-600', text: 'text-blue-400' },
+      indigo: { border: 'border-indigo-500/30', accent: 'from-indigo-400 to-indigo-600', text: 'text-indigo-400' },
+      violet: { border: 'border-violet-500/30', accent: 'from-violet-400 to-violet-600', text: 'text-violet-400' },
+      pink: { border: 'border-pink-500/30', accent: 'from-pink-400 to-pink-600', text: 'text-pink-400' },
+      rose: { border: 'border-rose-500/30', accent: 'from-rose-400 to-rose-600', text: 'text-rose-400' },
+      amber: { border: 'border-amber-500/30', accent: 'from-amber-400 to-amber-600', text: 'text-amber-400' },
+      orange: { border: 'border-orange-500/30', accent: 'from-orange-400 to-orange-600', text: 'text-orange-400' },
+      teal: { border: 'border-teal-500/30', accent: 'from-teal-400 to-teal-600', text: 'text-teal-400' },
+      red: { border: 'border-red-500/30', accent: 'from-red-400 to-red-600', text: 'text-red-400' },
+      lime: { border: 'border-lime-500/30', accent: 'from-lime-400 to-lime-600', text: 'text-lime-400' },
+      emerald: { border: 'border-emerald-500/30', accent: 'from-emerald-400 to-emerald-600', text: 'text-emerald-400' }
+    };
+
+    const colorClass = colorClasses[color] || colorClasses.cyan;
+
     return (
-      <div className="mb-8">
-        <h3 className="text-xl font-bold text-cyan-400 mb-3 flex items-center gap-2">
-          <div className="w-1 h-6 bg-gradient-to-b from-cyan-400 to-purple-400 rounded-full" />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
+                   border ${colorClass.border} rounded-xl p-6
+                   hover:${colorClass.border.replace('/30', '/50')} transition-all`}
+      >
+        <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3`}>
+          <div className={`w-1.5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
           {title}
         </h3>
         <div className="prose prose-invert prose-cyan max-w-none">
@@ -82,64 +201,112 @@ export default function BhriguPredictionView({
             {content}
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   };
 
   const renderPredictionContent = () => {
     if (!prediction) return null;
 
-    const sections = Object.entries(prediction)
-      .filter(([key, value]) =>
-        key !== 'category' &&
-        key !== 'title' &&
-        key !== 'full_analysis' &&
-        key !== 'metadata' &&
-        key !== 'generated_at' &&
-        typeof value === 'string' &&
-        value.length > 0
-      );
+    // Get the sections configuration for this category
+    const sections = categorySections[category] || [];
+
+    // Filter sections that have meaningful content
+    const availableSections = sections.filter(section => {
+      const content = prediction[section.key];
+      return content && 
+             content !== '' && 
+             !content.toLowerCase().includes('see full analysis');
+    });
 
     return (
       <div className="space-y-6">
-        {/* Full Analysis */}
-        {prediction.full_analysis && (
-          <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50
-                        border border-cyan-500/20 rounded-xl p-8">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-              {icon}
-              Complete Analysis
-            </h2>
-            <div className="prose prose-invert prose-cyan max-w-none">
-              <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                {prediction.full_analysis}
-              </div>
+        {/* Show message if no sections were extracted successfully */}
+        {availableSections.length === 0 && prediction.full_analysis && (
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
+            <p className="text-amber-400 text-sm">
+              Note: Individual sections could not be extracted from the analysis. 
+              View the complete reading below for your comprehensive prediction.
+            </p>
+          </div>
+        )}
+
+        {/* Category-Specific Sections - Display FIRST and prominently */}
+        {availableSections.length > 0 && (
+          <div className="space-y-4">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-3">
+                {icon}
+                Detailed Insights
+              </h2>
+              <p className="text-gray-400 text-sm">
+                Explore each aspect of your {title.toLowerCase()} in detail
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-4">
+              {availableSections.map((section) => (
+                <div key={section.key}>
+                  {renderSection(
+                    section.key,
+                    section.title,
+                    prediction[section.key],
+                    section.color
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Individual Sections */}
-        <div className="grid grid-cols-1 gap-6">
-          {sections.map(([key, value]) => {
-            const sectionTitle = key
-              .split('_')
-              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(' ');
+        {/* Full Analysis - Collapsible at the bottom */}
+        {prediction.full_analysis && (
+          <div className="mt-8 pt-8 border-t border-gray-700/50">
+            <button
+              onClick={() => setShowFullAnalysis(!showFullAnalysis)}
+              className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
+                       border border-gray-700/50 rounded-xl p-6
+                       hover:border-cyan-500/30 transition-all
+                       flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-6 h-6 text-cyan-400" />
+                <div className="text-left">
+                  <h3 className="text-xl font-bold text-white">
+                    View Complete Reading
+                  </h3>
+                  <p className="text-sm text-gray-400 mt-1">
+                    {showFullAnalysis ? 'Hide' : 'Show'} the full unstructured analysis
+                  </p>
+                </div>
+              </div>
+              {showFullAnalysis ? (
+                <ChevronUp className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
+              ) : (
+                <ChevronDown className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
+              )}
+            </button>
 
-            return (
-              <motion.div
-                key={key}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-br from-gray-800/30 to-gray-900/30
-                         border border-gray-700/50 rounded-xl p-6
-                         hover:border-cyan-500/30 transition-all"
-              >
-                {renderSection(sectionTitle, value as string)}
-              </motion.div>
-            );
-          })}
-        </div>
+            <AnimatePresence>
+              {showFullAnalysis && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
+                           border border-gray-700/50 rounded-xl p-6"
+                >
+                  <div className="prose prose-invert prose-cyan max-w-none">
+                    <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                      {prediction.full_analysis}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
 
         {/* Metadata */}
         {prediction.metadata && (
