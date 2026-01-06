@@ -1,0 +1,82 @@
+{
+  "meta": {
+    "engine_version": "1.0.0",
+    "analysis_type": "Marriage Compatibility (Nadi & Bhrigu Samhita)",
+    "calculation_notes": [
+      "Compatibility assessed through planetary positions, nakshatras, and house lords",
+      "Traditional Vedic matchmaking principles applied",
+      "Both individual charts and synastry considered"
+    ]
+  },
+  "partner_a_analysis": {
+    "name": "Rajesh Kumar",
+    "personality_summary": "Rajesh Kumar has Scorpio ascendant with Moon in Mrigashira nakshatra, indicating unique and evolving nature.",
+    "key_traits": [
+      "Emotionally Mrigashira-influenced",
+      "Scorpio ascendant nature"
+    ],
+    "marriage_house_analysis": "7th house lord Venus is in 6th house in Taurus, suggesting unique marriage dynamics.",
+    "venus_analysis": "Venus in Taurus in 6th house indicates appreciation for beauty and relationship values."
+  },
+  "partner_b_analysis": {
+    "name": "Priya Sharma",
+    "personality_summary": "Priya Sharma has Aries ascendant with Moon in Jyeshtha nakshatra, indicating unique and evolving nature.",
+    "key_traits": [
+      "Emotionally Jyeshtha-influenced",
+      "Aries ascendant nature"
+    ],
+    "marriage_house_analysis": "7th house lord Venus is in 10th house in Capricorn, suggesting spouse supports career; public recognition through marriage.",
+    "venus_analysis": "Venus in Capricorn in 10th house indicates appreciation for beauty and relationship values."
+  },
+  "synastry_rules": [
+    {
+      "rule_id": "SYN-001",
+      "description": "Moon Nakshatra Compatibility",
+      "compatibility_score": 60,
+      "narrative": "Moon in Mrigashira and Jyeshtha suggests different emotional styles requiring understanding."
+    },
+    {
+      "rule_id": "SYN-002",
+      "description": "Ascendant Sign Compatibility",
+      "compatibility_score": 55,
+      "narrative": "Scorpio and Aries have different life approaches requiring conscious adaptation."
+    },
+    {
+      "rule_id": "SYN-003",
+      "description": "Venus-Mars Attraction",
+      "compatibility_score": 65,
+      "narrative": "Venus-Mars create moderate attraction; passion develops through shared experiences."
+    },
+    {
+      "rule_id": "SYN-004",
+      "description": "Jupiter's Blessing",
+      "compatibility_score": 60,
+      "narrative": "Jupiter provides moderate blessing to the relationship."
+    }
+  ],
+  "overall_compatibility": 60,
+  "marriage_stability_indicators": [
+    "Jupiter's blessing supports growth through partnership",
+    "Moderate compatibility with potential for growth through understanding"
+  ],
+  "timing_overlap_windows": [
+    "Partner A: Mars Maha Dasha (1985-1990)",
+    "Partner B: Mercury Maha Dasha (1987-1987)"
+  ],
+  "cautions": [
+    "Manage expectations and practice compassion"
+  ],
+  "mitigations": [
+    "Perform marriage rituals according to Vedic tradition",
+    "Worship deities associated with relationship harmony (Parvati-Shiva)",
+    "Chant relationship harmony mantras together",
+    "Observe fasts on Fridays (Venus day) for relationship blessings"
+  ],
+  "rule_traces": [],
+  "disclaimers": [
+    "Compatibility analysis provides guidance based on traditional Vedic astrology.",
+    "Successful relationships depend on mutual understanding, effort, and commitment.",
+    "Astrological compatibility is one factor among many in relationship harmony.",
+    "Consult qualified astrologers for detailed matchmaking and remedial measures."
+  ]
+}

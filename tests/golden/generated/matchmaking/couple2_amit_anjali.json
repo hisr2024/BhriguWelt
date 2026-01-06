@@ -1,0 +1,82 @@
+{
+  "meta": {
+    "engine_version": "1.0.0",
+    "analysis_type": "Marriage Compatibility (Nadi & Bhrigu Samhita)",
+    "calculation_notes": [
+      "Compatibility assessed through planetary positions, nakshatras, and house lords",
+      "Traditional Vedic matchmaking principles applied",
+      "Both individual charts and synastry considered"
+    ]
+  },
+  "partner_a_analysis": {
+    "name": "Amit Patel",
+    "personality_summary": "Amit Patel has Cancer ascendant with Moon in Pushya nakshatra, indicating caring and disciplined nature.",
+    "key_traits": [
+      "Emotionally Pushya-influenced",
+      "Cancer ascendant nature"
+    ],
+    "marriage_house_analysis": "7th house lord Saturn is in 6th house in Sagittarius, suggesting unique marriage dynamics.",
+    "venus_analysis": "Venus in Libra in 4th house indicates appreciation for beauty and relationship values."
+  },
+  "partner_b_analysis": {
+    "name": "Anjali Singh",
+    "personality_summary": "Anjali Singh has Taurus ascendant with Moon in Jyeshtha nakshatra, indicating unique and evolving nature.",
+    "key_traits": [
+      "Emotionally Jyeshtha-influenced",
+      "Taurus ascendant nature"
+    ],
+    "marriage_house_analysis": "7th house lord Mars is in 11th house in Pisces, suggesting gains through marriage; spouse fulfills desires.",
+    "venus_analysis": "Venus in Aries in 12th house indicates appreciation for beauty and relationship values."
+  },
+  "synastry_rules": [
+    {
+      "rule_id": "SYN-001",
+      "description": "Moon Nakshatra Compatibility",
+      "compatibility_score": 60,
+      "narrative": "Moon in Pushya and Jyeshtha suggests different emotional styles requiring understanding."
+    },
+    {
+      "rule_id": "SYN-002",
+      "description": "Ascendant Sign Compatibility",
+      "compatibility_score": 75,
+      "narrative": "Cancer and Taurus create nurturing and stable foundation."
+    },
+    {
+      "rule_id": "SYN-003",
+      "description": "Venus-Mars Attraction",
+      "compatibility_score": 65,
+      "narrative": "Venus-Mars create moderate attraction; passion develops through shared experiences."
+    },
+    {
+      "rule_id": "SYN-004",
+      "description": "Jupiter's Blessing",
+      "compatibility_score": 60,
+      "narrative": "Jupiter provides moderate blessing to the relationship."
+    }
+  ],
+  "overall_compatibility": 65,
+  "marriage_stability_indicators": [
+    "Jupiter's blessing supports growth through partnership",
+    "Moderate compatibility with potential for growth through understanding"
+  ],
+  "timing_overlap_windows": [
+    "Partner A: Saturn Maha Dasha (1990-1997)",
+    "Partner B: Mercury Maha Dasha (1992-2005)"
+  ],
+  "cautions": [
+    "Manage expectations and practice compassion"
+  ],
+  "mitigations": [
+    "Perform marriage rituals according to Vedic tradition",
+    "Worship deities associated with relationship harmony (Parvati-Shiva)",
+    "Chant relationship harmony mantras together",
+    "Observe fasts on Fridays (Venus day) for relationship blessings"
+  ],
+  "rule_traces": [],
+  "disclaimers": [
+    "Compatibility analysis provides guidance based on traditional Vedic astrology.",
+    "Successful relationships depend on mutual understanding, effort, and commitment.",
+    "Astrological compatibility is one factor among many in relationship harmony.",
+    "Consult qualified astrologers for detailed matchmaking and remedial measures."
+  ]
+}

@@ -1,0 +1,460 @@
+{
+  "rules": [
+    {
+      "rule_id": "BR-001",
+      "tradition": "bhrigu",
+      "domain": "career",
+      "triggers": [
+        "lord_of_house_in_house(10, 10)",
+        "planet_in_own_sign(lord_of_house(10))"
+      ],
+      "priority": 95,
+      "narrative_template": "The 10th house lord {planet_name} is positioned in the 10th house in its own sign {sign_name}, creating a powerful **Sva-Griha Yoga** for career. This configuration indicates that you will achieve high professional status through self-effort and determination. Your career path is self-made, and you possess natural authority in your chosen field. Success comes through your own abilities rather than external support.",
+      "citations": ["bhrigu_samhita_rules.md#BR-001", "Bhrigu Sutras Chapter on Planetary Significations"]
+    },
+    {
+      "rule_id": "BR-002",
+      "tradition": "bhrigu",
+      "domain": "wealth",
+      "triggers": [
+        "lord_of_house_in_house(10, 2)"
+      ],
+      "priority": 85,
+      "narrative_template": "The 10th lord {planet_name} placed in the 2nd house forms a **Dhana Yoga**, indicating that wealth accumulation occurs directly through your profession. Your career is the primary source of financial prosperity. This placement suggests that professional achievements translate directly into material gains.",
+      "citations": ["bhrigu_samhita_rules.md#BR-002"]
+    },
+    {
+      "rule_id": "BR-003",
+      "tradition": "bhrigu",
+      "domain": "career",
+      "triggers": [
+        "planet_in_house(Saturn, 10)"
+      ],
+      "priority": 80,
+      "narrative_template": "Saturn occupying the 10th house indicates a career that requires patience, discipline, and persistent effort. Success manifests gradually and typically achieves full fruition after age 35. Your professional life involves responsibility, structure, and long-term commitment. Though progress may seem slow initially, Saturn in the 10th ultimately grants enduring success and respected authority.",
+      "citations": ["bhrigu_samhita_rules.md#BR-003", "Maharishi Bhrigu's Horoscope Predictions"]
+    },
+    {
+      "rule_id": "BR-004",
+      "tradition": "bhrigu",
+      "domain": "career",
+      "triggers": [
+        "planet_in_house(Sun, 10)",
+        "planet_in_sign(Sun, Leo)"
+      ],
+      "priority": 90,
+      "narrative_template": "The Sun positioned in the 10th house in Leo creates a **Raja Yoga** for leadership and authority. You are naturally inclined toward positions of power and command respect in professional settings. Government service, administration, or executive leadership suits your temperament. Your career brings recognition and enhances your social status.",
+      "citations": ["bhrigu_samhita_rules.md#BR-004"]
+    },
+    {
+      "rule_id": "BR-101",
+      "tradition": "bhrigu",
+      "domain": "wealth",
+      "triggers": [
+        "lord_of_house_in_house(2, 11)"
+      ],
+      "priority": 88,
+      "narrative_template": "The 2nd lord {planet_name} positioned in the 11th house creates a powerful **Dhana Yoga**, indicating wealth accumulation through multiple income streams. Financial gains manifest steadily and increase over time. This placement favors diversified income sources and successful networking for monetary benefit.",
+      "citations": ["bhrigu_samhita_rules.md#BR-101"]
+    },
+    {
+      "rule_id": "BR-102",
+      "tradition": "bhrigu",
+      "domain": "wealth",
+      "triggers": [
+        "aspect(Jupiter, 2, any)"
+      ],
+      "priority": 75,
+      "narrative_template": "Jupiter's aspect on the 2nd house bestows **Guru Kataksha** (Jupiter's protective glance) on your wealth sector. This ensures financial wisdom, stability, and protection from severe monetary losses. You possess sound judgment in financial matters and tend to accumulate wealth through ethical means.",
+      "citations": ["bhrigu_samhita_rules.md#BR-102"]
+    },
+    {
+      "rule_id": "BR-103",
+      "tradition": "bhrigu",
+      "domain": "wealth",
+      "triggers": [
+        "planet_in_house(Venus, 2)",
+        "planet_in_sign(Venus, Taurus)"
+      ],
+      "priority": 85,
+      "narrative_template": "Venus in the 2nd house in Taurus (its own sign) creates **Malavya Yoga**, indicating refined wealth accumulation and attraction to luxury. Financial prosperity comes through artistic ventures, beauty, hospitality, or luxury goods. You appreciate quality and aesthetics in material possessions.",
+      "citations": ["bhrigu_samhita_rules.md#BR-103"]
+    },
+    {
+      "rule_id": "BR-103-ALT",
+      "tradition": "bhrigu",
+      "domain": "wealth",
+      "triggers": [
+        "planet_in_house(Venus, 2)",
+        "planet_in_sign(Venus, Libra)"
+      ],
+      "priority": 85,
+      "narrative_template": "Venus in the 2nd house in Libra (its own sign) creates **Malavya Yoga**, indicating refined wealth accumulation through partnerships and balanced ventures. Financial prosperity flows through diplomatic relationships, aesthetic pursuits, and harmonious business dealings.",
+      "citations": ["bhrigu_samhita_rules.md#BR-103"]
+    },
+    {
+      "rule_id": "BR-201",
+      "tradition": "bhrigu",
+      "domain": "marriage",
+      "triggers": [
+        "lord_of_house_in_house(7, 1)"
+      ],
+      "priority": 82,
+      "narrative_template": "The 7th lord {planet_name} positioned in the 1st house indicates that marriage plays a central role in your identity and life path. Your spouse is likely to be attractive, and the partnership significantly influences your personality and public image. Marriage becomes an integral part of how you define yourself.",
+      "citations": ["bhrigu_samhita_rules.md#BR-201"]
+    },
+    {
+      "rule_id": "BR-202",
+      "tradition": "bhrigu",
+      "domain": "marriage",
+      "triggers": [
+        "planet_in_house(Venus, 7)"
+      ],
+      "priority": 90,
+      "narrative_template": "Venus positioned in the 7th house indicates a harmonious and loving marriage. Your spouse embodies Venusian qualities: beauty, grace, artistic sensibility, and affection. The relationship tends toward mutual appreciation and romantic fulfillment. Partnership brings joy and aesthetic refinement to your life.",
+      "citations": ["bhrigu_samhita_rules.md#BR-202"]
+    },
+    {
+      "rule_id": "BR-203",
+      "tradition": "bhrigu",
+      "domain": "marriage",
+      "triggers": [
+        "planet_in_house(Mars, 7)"
+      ],
+      "priority": 85,
+      "narrative_template": "Mars in the 7th house creates **Mangal Dosha**, indicating a passionate and energetic spouse. While the relationship has strong attraction and vitality, there is potential for conflicts and heated disagreements. The spouse may have a dominant or assertive personality. Managing temperamental differences requires conscious effort and patience.",
+      "citations": ["bhrigu_samhita_rules.md#BR-203"]
+    },
+    {
+      "rule_id": "BR-204",
+      "tradition": "bhrigu",
+      "domain": "marriage",
+      "triggers": [
+        "aspect(Saturn, 7, any)"
+      ],
+      "priority": 78,
+      "narrative_template": "Saturn's aspect on the 7th house typically delays marriage, but when it occurs, the relationship tends to be stable, enduring, and mature. Your spouse may be older, serious-minded, or responsible in nature. Though romantic spontaneity may be limited, the partnership offers reliability and long-term commitment.",
+      "citations": ["bhrigu_samhita_rules.md#BR-204"]
+    },
+    {
+      "rule_id": "BR-Y001",
+      "tradition": "bhrigu",
+      "domain": "career",
+      "triggers": [
+        "conjunction(lord_of_house(9), lord_of_house(10), 10)"
+      ],
+      "priority": 95,
+      "narrative_template": "The conjunction of the 9th lord {planet1_name} and 10th lord {planet2_name} forms the powerful **Dharma Karma Adhipati Yoga**. This combination indicates that your career aligns with your dharmic path. Success comes through righteous means, and professional achievements bring both material success and spiritual fulfillment. You may gain recognition in fields related to teaching, philosophy, law, or ethical leadership.",
+      "citations": ["bhrigu_samhita_rules.md#BR-Y001", "Classical Yoga Texts"]
+    },
+    {
+      "rule_id": "BR-Y002",
+      "tradition": "bhrigu",
+      "domain": "wealth",
+      "triggers": [
+        "planet_in_kendra(Venus)",
+        "aspect(Venus, lord_of_house(9), any)"
+      ],
+      "priority": 88,
+      "narrative_template": "Venus in a kendra (1st, 4th, 7th, or 10th house) with connection to the 9th lord creates **Lakshmi Yoga**. This auspicious combination bestows fortune, wealth, and the grace of Goddess Lakshmi. Financial prosperity flows naturally, often through fortunate circumstances and beneficial relationships.",
+      "citations": ["bhrigu_samhita_rules.md#BR-Y002"]
+    },
+    {
+      "rule_id": "BR-Y003",
+      "tradition": "bhrigu",
+      "domain": "general",
+      "triggers": [
+        "jupiter_moon_kendra"
+      ],
+      "priority": 92,
+      "narrative_template": "Jupiter and Moon positioned in kendras from each other form the renowned **Gajakesari Yoga** (Elephant-Lion combination). This yoga bestows wisdom, intelligence, fame, and prosperity. You possess strong ethical values, good judgment, and the ability to influence others positively. Recognition and respect come naturally in society.",
+      "citations": ["bhrigu_samhita_rules.md#BR-Y003", "Classical Texts on Yogas"]
+    },
+    {
+      "rule_id": "ND-N004",
+      "tradition": "nadi",
+      "domain": "personality",
+      "triggers": [
+        "nakshatra(Moon) == Rohini"
+      ],
+      "priority": 85,
+      "narrative_template": "Your Moon is placed in **Rohini Nakshatra** (ruled by the Moon itself), the star of material abundance and emotional depth. This nakshatra is considered the most beautiful and fertile of all 27 nakshatras. You possess natural magnetism, emotional intelligence, and an appreciation for beauty and comfort. Creative expression flows naturally, and you attract resources and relationships effortlessly. The Moon's rulership intensifies emotional sensitivity and nurturing qualities.",
+      "citations": ["nadi_jyotisha_rules.md#ND-N004", "Sage Agastya Palm Leaf Manuscripts"]
+    },
+    {
+      "rule_id": "ND-N010",
+      "tradition": "nadi",
+      "domain": "personality",
+      "triggers": [
+        "nakshatra(Moon) == Magha"
+      ],
+      "priority": 85,
+      "narrative_template": "Your Moon resides in **Magha Nakshatra** (ruled by Ketu), the star of ancestral power and royal authority. This placement indicates a strong connection to your lineage and past-life karma. You carry yourself with dignity and possess natural leadership qualities. There is an inherent understanding of tradition, protocol, and hierarchy. Ketu's rulership brings spiritual depth beneath the regal exterior, and you may experience a pull between worldly authority and spiritual renunciation.",
+      "citations": ["nadi_jyotisha_rules.md#ND-N010", "Tamil Nadi Astrology Classical Commentaries"]
+    },
+    {
+      "rule_id": "ND-N001",
+      "tradition": "nadi",
+      "domain": "personality",
+      "triggers": [
+        "nakshatra(Moon) == Ashwini"
+      ],
+      "priority": 85,
+      "narrative_template": "Your Moon is positioned in **Ashwini Nakshatra** (ruled by Ketu), the star of divine healers and pioneers. This nakshatra bestows swift action, healing abilities, and pioneering spirit. You possess strong intuitive faculties and an inclination toward alternative healing modalities. Ketu's rulership indicates a spiritual instinct that guides your actions. You initiate projects quickly and prefer to lead rather than follow.",
+      "citations": ["nadi_jyotisha_rules.md#ND-N001"]
+    },
+    {
+      "rule_id": "ND-N008",
+      "tradition": "nadi",
+      "domain": "personality",
+      "triggers": [
+        "nakshatra(Moon) == Pushya"
+      ],
+      "priority": 85,
+      "narrative_template": "Your Moon occupies **Pushya Nakshatra** (ruled by Saturn), considered the most auspicious nakshatra. This star combines nourishment with discipline, creating a caring yet structured personality. You are naturally inclined toward supporting and nurturing others while maintaining boundaries. Saturn's rulership brings patience, responsibility, and spiritual inclination. This nakshatra is especially favorable for material and spiritual growth.",
+      "citations": ["nadi_jyotisha_rules.md#ND-N008", "Bhrigu Nadi Principles"]
+    },
+    {
+      "rule_id": "ND-N022",
+      "tradition": "nadi",
+      "domain": "personality",
+      "triggers": [
+        "nakshatra(Moon) == Shravana"
+      ],
+      "priority": 85,
+      "narrative_template": "Your Moon is placed in **Shravana Nakshatra** (ruled by the Moon itself), the star of listening and learning. This nakshatra grants exceptional receptivity and the ability to absorb knowledge. You learn through attentive listening and possess strong communication skills. The Moon's rulership amplifies emotional intelligence and intuitive understanding. Connection and networking come naturally to you.",
+      "citations": ["nadi_jyotisha_rules.md#ND-N022"]
+    },
+    {
+      "rule_id": "ND-101",
+      "tradition": "nadi",
+      "domain": "marriage",
+      "triggers": [
+        "planet_in_house(Venus, 7)"
+      ],
+      "priority": 88,
+      "narrative_template": "According to Nadi principles, Venus as the 7th house occupant is a primary **marriage significator**. Marriage timing is likely during Venus dasha or bhukti periods. The spouse embodies Venusian qualities: artistic, graceful, and affectionate. The union brings harmony and emotional fulfillment.",
+      "citations": ["nadi_jyotisha_rules.md#ND-101", "nadi_jyotisha_rules.md#ND-102"]
+    },
+    {
+      "rule_id": "ND-201",
+      "tradition": "nadi",
+      "domain": "career",
+      "triggers": [
+        "planet_in_house(Saturn, 10)"
+      ],
+      "priority": 82,
+      "narrative_template": "Saturn's connection to the 10th house indicates career in government, large organizations, or fields requiring discipline and structure. According to Nadi timing principles, major career events manifest during Saturn dasha or bhukti periods. The profession involves responsibility, administration, or long-term projects.",
+      "citations": ["nadi_jyotisha_rules.md#ND-202"]
+    },
+    {
+      "rule_id": "ND-203",
+      "tradition": "nadi",
+      "domain": "career",
+      "triggers": [
+        "planet_in_house(Mercury, 10)"
+      ],
+      "priority": 82,
+      "narrative_template": "Mercury's presence in the 10th house suggests career in business, communication, trade, or intellectual fields. Professional success comes through analytical abilities, networking, and adaptability. Career changes and opportunities manifest during Mercury dasha or bhukti periods.",
+      "citations": ["nadi_jyotisha_rules.md#ND-203"]
+    },
+    {
+      "rule_id": "ND-204",
+      "tradition": "nadi",
+      "domain": "career",
+      "triggers": [
+        "planet_in_house(Mars, 10)"
+      ],
+      "priority": 82,
+      "narrative_template": "Mars in the 10th house indicates technical, engineering, military, or action-oriented career paths. You excel in fields requiring courage, energy, and hands-on work. Professional advancement occurs during Mars dasha or bhukti periods. Leadership through decisive action characterizes your career approach.",
+      "citations": ["nadi_jyotisha_rules.md#ND-204"]
+    },
+    {
+      "rule_id": "ND-205",
+      "tradition": "nadi",
+      "domain": "career",
+      "triggers": [
+        "planet_in_house(Jupiter, 10)"
+      ],
+      "priority": 85,
+      "narrative_template": "Jupiter positioned in the 10th house suggests career in teaching, advisory roles, spiritual guidance, or fields related to higher knowledge. Your profession benefits society and aligns with dharmic principles. Career expansion and opportunities manifest during Jupiter dasha or bhukti periods. You are respected as a mentor or guide in your field.",
+      "citations": ["nadi_jyotisha_rules.md#ND-205"]
+    },
+    {
+      "rule_id": "ND-T001",
+      "tradition": "nadi",
+      "domain": "timing",
+      "triggers": [
+        "transit_sade_sati"
+      ],
+      "priority": 90,
+      "narrative_template": "Saturn is currently transiting in proximity to your natal Moon, indicating the **Sadhe Sati** period (7.5 years of Saturn's testing). This phase brings karmic lessons, increased responsibilities, and periods of introspection. While challenging, it ultimately strengthens character and brings maturity. Focus on discipline, patience, and addressing pending karmic obligations during this time.",
+      "citations": ["nadi_jyotisha_rules.md#ND-T001", "Classical Transit Texts"]
+    },
+    {
+      "rule_id": "GENERAL-001",
+      "tradition": "bhrigu",
+      "domain": "personality",
+      "triggers": [
+        "planet_in_house(Sun, 1)"
+      ],
+      "priority": 75,
+      "narrative_template": "The Sun in the 1st house creates a strong, confident personality with natural leadership abilities. You possess vitality, self-awareness, and the ability to influence others. Your identity is closely tied to your sense of purpose and authority. Physical vitality is generally strong, though there may be tendencies toward ego-centricity that require conscious balance.",
+      "citations": ["bhrigu_samhita_rules.md#Sun's Position"]
+    },
+    {
+      "rule_id": "GENERAL-002",
+      "tradition": "bhrigu",
+      "domain": "personality",
+      "triggers": [
+        "planet_in_house(Moon, 1)"
+      ],
+      "priority": 75,
+      "narrative_template": "Moon in the 1st house indicates a personality deeply influenced by emotions and mental fluctuations. You are intuitive, sensitive, and responsive to your environment. Public image may change based on emotional states. This placement often grants a nurturing demeanor and strong connection to maternal figures.",
+      "citations": ["bhrigu_samhita_rules.md#Moon's Position"]
+    },
+    {
+      "rule_id": "GENERAL-003",
+      "tradition": "bhrigu",
+      "domain": "personality",
+      "triggers": [
+        "planet_in_house(Jupiter, 1)"
+      ],
+      "priority": 80,
+      "narrative_template": "Jupiter in the 1st house bestows wisdom, optimism, and a philosophical outlook on life. You possess natural teaching abilities and tend to guide others. Physical appearance may be larger or more prominent. This placement is highly auspicious for overall life prosperity and spiritual growth.",
+      "citations": ["bhrigu_samhita_rules.md#Jupiter's Blessings"]
+    },
+    {
+      "rule_id": "ASCENDANT-ARIES",
+      "tradition": "bhrigu",
+      "domain": "personality",
+      "triggers": [
+        "ascendant_in_sign(Aries)"
+      ],
+      "priority": 70,
+      "narrative_template": "With Aries ascendant (Mesha Lagna), you possess a pioneering spirit, courage, and initiative. Mars as your ascendant lord gives you dynamic energy and competitive drive. You prefer to lead rather than follow and approach life with directness and enthusiasm. Physical activity and challenges appeal to your nature.",
+      "citations": ["Classical Texts on Ascendant Significations"]
+    },
+    {
+      "rule_id": "ASCENDANT-TAURUS",
+      "tradition": "bhrigu",
+      "domain": "personality",
+      "triggers": [
+        "ascendant_in_sign(Taurus)"
+      ],
+      "priority": 70,
+      "narrative_template": "With Taurus ascendant (Vrishabha Lagna), you value stability, material comfort, and sensory pleasures. Venus as your ascendant lord grants appreciation for beauty, art, and harmony. You approach life with patience and persistence, building security through steady effort. Loyalty and reliability characterize your relationships.",
+      "citations": ["Classical Texts on Ascendant Significations"]
+    },
+    {
+      "rule_id": "ASCENDANT-GEMINI",
+      "tradition": "bhrigu",
+      "domain": "personality",
+      "triggers": [
+        "ascendant_in_sign(Gemini)"
+      ],
+      "priority": 70,
+      "narrative_template": "With Gemini ascendant (Mithuna Lagna), you possess intellectual curiosity, adaptability, and strong communication skills. Mercury as your ascendant lord gives you a versatile mind and facility with language. You thrive on variety, information exchange, and social interaction. Mental stimulation is essential to your well-being.",
+      "citations": ["Classical Texts on Ascendant Significations"]
+    },
+    {
+      "rule_id": "ASCENDANT-CANCER",
+      "tradition": "bhrigu",
+      "domain": "personality",
+      "triggers": [
+        "ascendant_in_sign(Cancer)"
+      ],
+      "priority": 70,
+      "narrative_template": "With Cancer ascendant (Karka Lagna), you are emotionally sensitive, nurturing, and home-oriented. Moon as your ascendant lord creates a personality influenced by emotional tides and intuitive responses. You value family, security, and emotional connections. Protective instincts and caring for others come naturally.",
+      "citations": ["Classical Texts on Ascendant Significations"]
+    },
+    {
+      "rule_id": "ASCENDANT-LEO",
+      "tradition": "bhrigu",
+      "domain": "personality",
+      "triggers": [
+        "ascendant_in_sign(Leo)"
+      ],
+      "priority": 70,
+      "narrative_template": "With Leo ascendant (Simha Lagna), you possess natural authority, creativity, and a regal bearing. Sun as your ascendant lord bestows confidence, leadership abilities, and a desire for recognition. You approach life with dignity and generosity. Creative self-expression and being appreciated are important to your sense of self.",
+      "citations": ["Classical Texts on Ascendant Significations"]
+    },
+    {
+      "rule_id": "ASCENDANT-VIRGO",
+      "tradition": "bhrigu",
+      "domain": "personality",
+      "triggers": [
+        "ascendant_in_sign(Virgo)"
+      ],
+      "priority": 70,
+      "narrative_template": "With Virgo ascendant (Kanya Lagna), you are analytical, detail-oriented, and service-minded. Mercury as your ascendant lord gives you a discriminating intellect and practical skills. You excel at organization, problem-solving, and improving systems. Health consciousness and perfectionist tendencies characterize your approach to life.",
+      "citations": ["Classical Texts on Ascendant Significations"]
+    },
+    {
+      "rule_id": "ASCENDANT-LIBRA",
+      "tradition": "bhrigu",
+      "domain": "personality",
+      "triggers": [
+        "ascendant_in_sign(Libra)"
+      ],
+      "priority": 70,
+      "narrative_template": "With Libra ascendant (Tula Lagna), you value harmony, balance, and relationships. Venus as your ascendant lord bestows diplomatic skills, aesthetic sensibility, and a cooperative nature. You seek fairness and partnership in life. Social grace and the ability to see multiple perspectives are your strengths.",
+      "citations": ["Classical Texts on Ascendant Significations"]
+    },
+    {
+      "rule_id": "ASCENDANT-SCORPIO",
+      "tradition": "bhrigu",
+      "domain": "personality",
+      "triggers": [
+        "ascendant_in_sign(Scorpio)"
+      ],
+      "priority": 70,
+      "narrative_template": "With Scorpio ascendant (Vrishchika Lagna), you possess intensity, depth, and transformative power. Mars as your ascendant lord gives you determination and the ability to navigate crisis. You approach life with passion and seek to understand hidden truths. Resilience and the capacity for profound change characterize your journey.",
+      "citations": ["Classical Texts on Ascendant Significations"]
+    },
+    {
+      "rule_id": "ASCENDANT-SAGITTARIUS",
+      "tradition": "bhrigu",
+      "domain": "personality",
+      "triggers": [
+        "ascendant_in_sign(Sagittarius)"
+      ],
+      "priority": 70,
+      "narrative_template": "With Sagittarius ascendant (Dhanu Lagna), you are optimistic, philosophical, and adventurous. Jupiter as your ascendant lord bestows wisdom, enthusiasm, and a quest for meaning. You approach life with faith and seek to expand your horizons through learning and experience. Teaching and sharing knowledge come naturally.",
+      "citations": ["Classical Texts on Ascendant Significations"]
+    },
+    {
+      "rule_id": "ASCENDANT-CAPRICORN",
+      "tradition": "bhrigu",
+      "domain": "personality",
+      "triggers": [
+        "ascendant_in_sign(Capricorn)"
+      ],
+      "priority": 70,
+      "narrative_template": "With Capricorn ascendant (Makara Lagna), you are ambitious, disciplined, and patient. Saturn as your ascendant lord gives you endurance and the ability to work toward long-term goals. You approach life with practicality and seriousness. Achievement through perseverance and building lasting structures are your forte.",
+      "citations": ["Classical Texts on Ascendant Significations"]
+    },
+    {
+      "rule_id": "ASCENDANT-AQUARIUS",
+      "tradition": "bhrigu",
+      "domain": "personality",
+      "triggers": [
+        "ascendant_in_sign(Aquarius)"
+      ],
+      "priority": 70,
+      "narrative_template": "With Aquarius ascendant (Kumbha Lagna), you are innovative, humanitarian, and independent. Saturn as your ascendant lord combined with Aquarius's fixed air quality gives you progressive thinking and concern for collective welfare. You value freedom, equality, and intellectual pursuits. Unconventional approaches and community service appeal to you.",
+      "citations": ["Classical Texts on Ascendant Significations"]
+    },
+    {
+      "rule_id": "ASCENDANT-PISCES",
+      "tradition": "bhrigu",
+      "domain": "personality",
+      "triggers": [
+        "ascendant_in_sign(Pisces)"
+      ],
+      "priority": 70,
+      "narrative_template": "With Pisces ascendant (Meena Lagna), you are compassionate, intuitive, and spiritually inclined. Jupiter as your ascendant lord bestows imagination, empathy, and connection to subtle realms. You approach life with fluidity and sensitivity. Artistic expression, healing work, and spiritual practices resonate deeply with your nature.",
+      "citations": ["Classical Texts on Ascendant Significations"]
+    }
+  ]
+}

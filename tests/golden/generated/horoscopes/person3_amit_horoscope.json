@@ -1,0 +1,229 @@
+{
+  "meta": {
+    "engine_version": "1.0.0",
+    "calculation_notes": [
+      "Calculations use Lahiri Ayanamsa (sidereal zodiac)",
+      "House system: Placidus",
+      "Dasha system: Vimshottari (120-year cycle)"
+    ],
+    "assumptions": [
+      "Birth time is accurate to the minute",
+      "Timezone conversion is correctly applied",
+      "Coordinates are precise for birth location"
+    ]
+  },
+  "chart_summary": {
+    "ascendant": "Cancer",
+    "ascendant_degree": 26.28,
+    "planets": [
+      {
+        "planet": "Sun",
+        "sign": "Libra",
+        "house": 4,
+        "degree": 22.31,
+        "nakshatra": "Vishakha",
+        "pada": 1,
+        "retrograde": false
+      },
+      {
+        "planet": "Moon",
+        "sign": "Cancer",
+        "house": 12,
+        "degree": 11.94,
+        "nakshatra": "Pushya",
+        "pada": 3,
+        "retrograde": false
+      },
+      {
+        "planet": "Mars",
+        "sign": "Taurus",
+        "house": 10,
+        "degree": 18.23,
+        "nakshatra": "Rohini",
+        "pada": 3,
+        "retrograde": true
+      },
+      {
+        "planet": "Mercury",
+        "sign": "Scorpio",
+        "house": 4,
+        "degree": 2.78,
+        "nakshatra": "Vishakha",
+        "pada": 4,
+        "retrograde": false
+      },
+      {
+        "planet": "Jupiter",
+        "sign": "Cancer",
+        "house": 12,
+        "degree": 19.12,
+        "nakshatra": "Ashlesha",
+        "pada": 1,
+        "retrograde": false
+      },
+      {
+        "planet": "Venus",
+        "sign": "Libra",
+        "house": 4,
+        "degree": 24.09,
+        "nakshatra": "Vishakha",
+        "pada": 2,
+        "retrograde": false
+      },
+      {
+        "planet": "Saturn",
+        "sign": "Sagittarius",
+        "house": 6,
+        "degree": 26.7,
+        "nakshatra": "Uttara Ashadha",
+        "pada": 1,
+        "retrograde": false
+      },
+      {
+        "planet": "Rahu",
+        "sign": "Capricorn",
+        "house": 6,
+        "degree": 8.22,
+        "nakshatra": "Uttara Ashadha",
+        "pada": 4,
+        "retrograde": true
+      },
+      {
+        "planet": "Ketu",
+        "sign": "Cancer",
+        "house": 12,
+        "degree": 8.22,
+        "nakshatra": "Pushya",
+        "pada": 2,
+        "retrograde": false
+      }
+    ]
+  },
+  "nakshatra_summary": {
+    "moon_nakshatra": "Pushya",
+    "moon_pada": 3,
+    "moon_sign": "Cancer",
+    "sun_nakshatra": "Vishakha",
+    "sun_pada": 1,
+    "sun_sign": "Libra",
+    "ascendant_nakshatra": "Ashlesha"
+  },
+  "summary_bullets": [
+    "**Ascendant**: Cancer - defines core personality and life approach",
+    "**Moon Nakshatra**: Pushya - reveals karmic mission and emotional nature",
+    "**General**: Jupiter and Moon positioned in kendras from each other form the renowned **Gajakesari Yoga** (Elephant-Lion combination).",
+    "**Personality**: Your Moon occupies **Pushya Nakshatra** (ruled by Saturn), considered the most auspicious nakshatra.",
+    "**Career**: Mars in the 10th house indicates technical, engineering, military, or action-oriented career paths."
+  ],
+  "domains": [
+    {
+      "domain": "personality",
+      "summary": "Your Moon occupies **Pushya Nakshatra** (ruled by Saturn), considered the most auspicious nakshatra.",
+      "detailed_narrative": "Your Moon occupies **Pushya Nakshatra** (ruled by Saturn), considered the most auspicious nakshatra. This star combines nourishment with discipline, creating a caring yet structured personality. You are naturally inclined toward supporting and nurturing others while maintaining boundaries. Saturn's rulership brings patience, responsibility, and spiritual inclination. This nakshatra is especially favorable for material and spiritual growth.\n*[ND-N008]*\n\nWith Cancer ascendant (Karka Lagna), you are emotionally sensitive, nurturing, and home-oriented. Moon as your ascendant lord creates a personality influenced by emotional tides and intuitive responses. You value family, security, and emotional connections. Protective instincts and caring for others come naturally.\n*[ASCENDANT-CANCER]*",
+      "rule_traces": [
+        {
+          "rule_id": "ND-N008",
+          "tradition": "nadi",
+          "domain": "personality",
+          "matched_triggers": [
+            {
+              "expression": "nakshatra(Moon) == Pushya",
+              "evaluated": true,
+              "context": {
+                "planet": "Moon",
+                "expected_nakshatra": "Pushya",
+                "actual_nakshatra": "Pushya"
+              }
+            }
+          ],
+          "priority": 85,
+          "narrative": "Your Moon occupies **Pushya Nakshatra** (ruled by Saturn), considered the most auspicious nakshatra. This star combines nourishment with discipline, creating a caring yet structured personality. You are naturally inclined toward supporting and nurturing others while maintaining boundaries. Saturn's rulership brings patience, responsibility, and spiritual inclination. This nakshatra is especially favorable for material and spiritual growth.",
+          "citations": [
+            "nadi_jyotisha_rules.md#ND-N008",
+            "Bhrigu Nadi Principles"
+          ]
+        },
+        {
+          "rule_id": "ASCENDANT-CANCER",
+          "tradition": "bhrigu",
+          "domain": "personality",
+          "matched_triggers": [
+            {
+              "expression": "ascendant_in_sign(Cancer)",
+              "evaluated": true,
+              "context": {
+                "expected_sign": "Cancer",
+                "actual_ascendant": "Cancer"
+              }
+            }
+          ],
+          "priority": 70,
+          "narrative": "With Cancer ascendant (Karka Lagna), you are emotionally sensitive, nurturing, and home-oriented. Moon as your ascendant lord creates a personality influenced by emotional tides and intuitive responses. You value family, security, and emotional connections. Protective instincts and caring for others come naturally.",
+          "citations": [
+            "Classical Texts on Ascendant Significations"
+          ]
+        }
+      ],
+      "timing_windows": [
+        "Current Maha Dasha: Saturn (1990-1997)",
+        "Current Antar Dasha: Saturn (1990-11-1993-11)"
+      ]
+    },
+    {
+      "domain": "career",
+      "summary": "Mars in the 10th house indicates technical, engineering, military, or action-oriented career paths.",
+      "detailed_narrative": "Mars in the 10th house indicates technical, engineering, military, or action-oriented career paths. You excel in fields requiring courage, energy, and hands-on work. Professional advancement occurs during Mars dasha or bhukti periods. Leadership through decisive action characterizes your career approach.\n*[ND-204]*",
+      "rule_traces": [
+        {
+          "rule_id": "ND-204",
+          "tradition": "nadi",
+          "domain": "career",
+          "matched_triggers": [
+            {
+              "expression": "planet_in_house(Mars, 10)",
+              "evaluated": true,
+              "context": {
+                "planet": "Mars",
+                "house": 10,
+                "actual_house": 10
+              }
+            }
+          ],
+          "priority": 82,
+          "narrative": "Mars in the 10th house indicates technical, engineering, military, or action-oriented career paths. You excel in fields requiring courage, energy, and hands-on work. Professional advancement occurs during Mars dasha or bhukti periods. Leadership through decisive action characterizes your career approach.",
+          "citations": [
+            "nadi_jyotisha_rules.md#ND-204"
+          ]
+        }
+      ],
+      "timing_windows": [
+        "Current Maha Dasha: Saturn (1990-1997)",
+        "Current Antar Dasha: Saturn (1990-11-1993-11)"
+      ]
+    }
+  ],
+  "dasha_timeline": {
+    "birth_date": "1990-11-08",
+    "current_maha_dasha": {
+      "planet": "Saturn",
+      "start_date": "1990-11-08",
+      "end_date": "1997-08-03",
+      "level": "maha",
+      "parent_dasha": null
+    },
+    "current_antar_dasha": {
+      "planet": "Saturn",
+      "start_date": "1990-11-08",
+      "end_date": "1993-11-10",
+      "level": "antar",
+      "parent_dasha": "Saturn"
+    },
+    "upcoming_maha_dashas": []
+  },
+  "disclaimers": [
+    "This horoscope provides interpretive guidance based on Nadi Jyotisha and Bhrigu Samhita traditions.",
+    "Astrological insights are meant for contemplation and self-understanding, not absolute prediction.",
+    "Free will and personal effort significantly influence life outcomes.",
+    "Consult qualified astrologers for personalized guidance and remedial measures."
+  ]
+}

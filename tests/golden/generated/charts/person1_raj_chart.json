@@ -1,0 +1,179 @@
+{
+  "birth_info": {
+    "name": "Rajesh Kumar",
+    "date_of_birth": "1985-07-15",
+    "time_of_birth": "14:30:00",
+    "latitude": 28.6139,
+    "longitude": 77.209,
+    "timezone": "Asia/Kolkata"
+  },
+  "ascendant": "Scorpio",
+  "ascendant_longitude": 228.09460743176896,
+  "planets": [
+    {
+      "planet": "Sun",
+      "longitude": 89.16381178991122,
+      "sign": "Gemini",
+      "degree_in_sign": 29.16381178991122,
+      "nakshatra": "Punarvasu",
+      "nakshatra_pada": 3,
+      "house": 8,
+      "retrograde": false
+    },
+    {
+      "planet": "Moon",
+      "longitude": 58.04271145004023,
+      "sign": "Taurus",
+      "degree_in_sign": 28.04271145004023,
+      "nakshatra": "Mrigashira",
+      "nakshatra_pada": 2,
+      "house": 7,
+      "retrograde": false
+    },
+    {
+      "planet": "Mars",
+      "longitude": 89.99764687022473,
+      "sign": "Gemini",
+      "degree_in_sign": 29.997646870224727,
+      "nakshatra": "Punarvasu",
+      "nakshatra_pada": 3,
+      "house": 8,
+      "retrograde": false
+    },
+    {
+      "planet": "Mercury",
+      "longitude": 115.65588628929717,
+      "sign": "Cancer",
+      "degree_in_sign": 25.65588628929717,
+      "nakshatra": "Ashlesha",
+      "nakshatra_pada": 3,
+      "house": 9,
+      "retrograde": false
+    },
+    {
+      "planet": "Jupiter",
+      "longitude": 290.8685440365007,
+      "sign": "Capricorn",
+      "degree_in_sign": 20.86854403650068,
+      "nakshatra": "Shravana",
+      "nakshatra_pada": 4,
+      "house": 3,
+      "retrograde": true
+    },
+    {
+      "planet": "Venus",
+      "longitude": 46.16266294604005,
+      "sign": "Taurus",
+      "degree_in_sign": 16.16266294604005,
+      "nakshatra": "Rohini",
+      "nakshatra_pada": 2,
+      "house": 6,
+      "retrograde": false
+    },
+    {
+      "planet": "Saturn",
+      "longitude": 207.9039481373838,
+      "sign": "Libra",
+      "degree_in_sign": 27.903948137383793,
+      "nakshatra": "Vishakha",
+      "nakshatra_pada": 3,
+      "house": 12,
+      "retrograde": true
+    },
+    {
+      "planet": "Rahu",
+      "longitude": 21.1508844911448,
+      "sign": "Aries",
+      "degree_in_sign": 21.1508844911448,
+      "nakshatra": "Bharani",
+      "nakshatra_pada": 3,
+      "house": 5,
+      "retrograde": true
+    },
+    {
+      "planet": "Ketu",
+      "longitude": 201.1508844911448,
+      "sign": "Libra",
+      "degree_in_sign": 21.150884491144808,
+      "nakshatra": "Vishakha",
+      "nakshatra_pada": 1,
+      "house": 11,
+      "retrograde": false
+    }
+  ],
+  "house_cusps": [
+    {
+      "house": 1,
+      "longitude": 228.09460743176896,
+      "sign": "Scorpio",
+      "degree_in_sign": 18.094607431768964
+    },
+    {
+      "house": 2,
+      "longitude": 257.580944851483,
+      "sign": "Sagittarius",
+      "degree_in_sign": 17.580944851483025
+    },
+    {
+      "house": 3,
+      "longitude": 289.5127599064391,
+      "sign": "Capricorn",
+      "degree_in_sign": 19.5127599064391
+    },
+    {
+      "house": 4,
+      "longitude": 323.0274852586265,
+      "sign": "Aquarius",
+      "degree_in_sign": 23.027485258626484
+    },
+    {
+      "house": 5,
+      "longitude": 355.3221792054203,
+      "sign": "Pisces",
+      "degree_in_sign": 25.322179205420298
+    },
+    {
+      "house": 6,
+      "longitude": 23.74830985428804,
+      "sign": "Aries",
+      "degree_in_sign": 23.74830985428804
+    },
+    {
+      "house": 7,
+      "longitude": 48.094607431768964,
+      "sign": "Taurus",
+      "degree_in_sign": 18.094607431768964
+    },
+    {
+      "house": 8,
+      "longitude": 77.58094485148303,
+      "sign": "Gemini",
+      "degree_in_sign": 17.580944851483025
+    },
+    {
+      "house": 9,
+      "longitude": 109.5127599064391,
+      "sign": "Cancer",
+      "degree_in_sign": 19.5127599064391
+    },
+    {
+      "house": 10,
+      "longitude": 143.0274852586265,
+      "sign": "Leo",
+      "degree_in_sign": 23.027485258626513
+    },
+    {
+      "house": 11,
+      "longitude": 175.3221792054203,
+      "sign": "Virgo",
+      "degree_in_sign": 25.322179205420298
+    },
+    {
+      "house": 12,
+      "longitude": 203.74830985428804,
+      "sign": "Libra",
+      "degree_in_sign": 23.74830985428804
+    }
+  ],
+  "calculation_timestamp": "2026-01-06T14:47:14.572588"
+}

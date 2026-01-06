@@ -1,0 +1,179 @@
+{
+  "birth_info": {
+    "name": "Meera Iyer",
+    "date_of_birth": "1989-12-30",
+    "time_of_birth": "11:00:00",
+    "latitude": 13.0827,
+    "longitude": 80.2707,
+    "timezone": "Asia/Kolkata"
+  },
+  "ascendant": "Pisces",
+  "ascendant_longitude": 349.613598202546,
+  "planets": [
+    {
+      "planet": "Sun",
+      "longitude": 254.77848268662754,
+      "sign": "Sagittarius",
+      "degree_in_sign": 14.778482686627541,
+      "nakshatra": "Purva Ashadha",
+      "nakshatra_pada": 1,
+      "house": 9,
+      "retrograde": false
+    },
+    {
+      "planet": "Moon",
+      "longitude": 279.46207107258374,
+      "sign": "Capricorn",
+      "degree_in_sign": 9.46207107258374,
+      "nakshatra": "Uttara Ashadha",
+      "nakshatra_pada": 4,
+      "house": 10,
+      "retrograde": false
+    },
+    {
+      "planet": "Mars",
+      "longitude": 224.68277470734085,
+      "sign": "Scorpio",
+      "degree_in_sign": 14.682774707340855,
+      "nakshatra": "Anuradha",
+      "nakshatra_pada": 4,
+      "house": 8,
+      "retrograde": false
+    },
+    {
+      "planet": "Mercury",
+      "longitude": 272.12237917814184,
+      "sign": "Capricorn",
+      "degree_in_sign": 2.1223791781418413,
+      "nakshatra": "Uttara Ashadha",
+      "nakshatra_pada": 2,
+      "house": 10,
+      "retrograde": false
+    },
+    {
+      "planet": "Jupiter",
+      "longitude": 71.73469558578684,
+      "sign": "Gemini",
+      "degree_in_sign": 11.734695585786838,
+      "nakshatra": "Ardra",
+      "nakshatra_pada": 2,
+      "house": 3,
+      "retrograde": true
+    },
+    {
+      "planet": "Venus",
+      "longitude": 282.68904494942745,
+      "sign": "Capricorn",
+      "degree_in_sign": 12.689044949427455,
+      "nakshatra": "Shravana",
+      "nakshatra_pada": 1,
+      "house": 10,
+      "retrograde": true
+    },
+    {
+      "planet": "Saturn",
+      "longitude": 261.66861006591466,
+      "sign": "Sagittarius",
+      "degree_in_sign": 21.668610065914663,
+      "nakshatra": "Purva Ashadha",
+      "nakshatra_pada": 3,
+      "house": 9,
+      "retrograde": false
+    },
+    {
+      "planet": "Rahu",
+      "longitude": 294.834605882683,
+      "sign": "Capricorn",
+      "degree_in_sign": 24.83460588268298,
+      "nakshatra": "Dhanishtha",
+      "nakshatra_pada": 1,
+      "house": 11,
+      "retrograde": true
+    },
+    {
+      "planet": "Ketu",
+      "longitude": 114.83460588268298,
+      "sign": "Cancer",
+      "degree_in_sign": 24.83460588268298,
+      "nakshatra": "Ashlesha",
+      "nakshatra_pada": 3,
+      "house": 5,
+      "retrograde": false
+    }
+  ],
+  "house_cusps": [
+    {
+      "house": 1,
+      "longitude": 349.613598202546,
+      "sign": "Pisces",
+      "degree_in_sign": 19.613598202545973
+    },
+    {
+      "house": 2,
+      "longitude": 24.7335935307926,
+      "sign": "Aries",
+      "degree_in_sign": 24.7335935307926
+    },
+    {
+      "house": 3,
+      "longitude": 55.29259118158921,
+      "sign": "Taurus",
+      "degree_in_sign": 25.29259118158921
+    },
+    {
+      "house": 4,
+      "longitude": 82.11144279951992,
+      "sign": "Gemini",
+      "degree_in_sign": 22.11144279951992
+    },
+    {
+      "house": 5,
+      "longitude": 108.08823554109813,
+      "sign": "Cancer",
+      "degree_in_sign": 18.08823554109813
+    },
+    {
+      "house": 6,
+      "longitude": 136.42214806835455,
+      "sign": "Leo",
+      "degree_in_sign": 16.422148068354545
+    },
+    {
+      "house": 7,
+      "longitude": 169.61359820254597,
+      "sign": "Virgo",
+      "degree_in_sign": 19.613598202545973
+    },
+    {
+      "house": 8,
+      "longitude": 204.7335935307926,
+      "sign": "Libra",
+      "degree_in_sign": 24.733593530792604
+    },
+    {
+      "house": 9,
+      "longitude": 235.29259118158922,
+      "sign": "Scorpio",
+      "degree_in_sign": 25.292591181589216
+    },
+    {
+      "house": 10,
+      "longitude": 262.1114427995199,
+      "sign": "Sagittarius",
+      "degree_in_sign": 22.11144279951992
+    },
+    {
+      "house": 11,
+      "longitude": 288.08823554109813,
+      "sign": "Capricorn",
+      "degree_in_sign": 18.08823554109813
+    },
+    {
+      "house": 12,
+      "longitude": 316.42214806835455,
+      "sign": "Aquarius",
+      "degree_in_sign": 16.422148068354545
+    }
+  ],
+  "calculation_timestamp": "2026-01-06T14:47:14.586962"
+}
