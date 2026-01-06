@@ -20,7 +20,7 @@ export default defineConfig({
   reporter: [
     ['html'],
     ['list'],
-    ...(process.env.CI ? [['github']] : []),
+    ...(process.env.CI ? [['github'] as const] : []),
   ],
   
   // Shared settings for all projects
