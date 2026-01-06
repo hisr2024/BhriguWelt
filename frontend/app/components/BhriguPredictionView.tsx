@@ -141,6 +141,7 @@ export default function BhriguPredictionView({
   const [fromCache, setFromCache] = useState(false);
   const [question, setQuestion] = useState('');
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -181,7 +182,21 @@ export default function BhriguPredictionView({
   };
 
   const renderSection = (sectionKey: string, title: string, content: string, color: string) => {
-    if (!content || content === '' || content.toLowerCase().includes('see full analysis')) {
+    // More lenient filtering - only exclude truly empty or placeholder content
+    if (!content || content.trim() === '') {
+      return null;
+    }
+
+    // Check if content is just a redirect to full analysis (but allow partial content)
+    const trimmedContent = content.trim();
+    const isRedirectOnly = (
+      trimmedContent.length < 50 &&
+      (trimmedContent.toLowerCase().includes('see full analysis') ||
+       trimmedContent.toLowerCase().includes('see complete') ||
+       trimmedContent.toLowerCase().includes('refer to'))
+    );
+
+    if (isRedirectOnly) {
       return null;
     }
 
@@ -214,12 +229,23 @@ export default function BhriguPredictionView({
     // Get the sections configuration for this category
     const sections = CATEGORY_SECTIONS[category] || [];
 
-    // Filter sections that have meaningful content
+    // Filter sections that have meaningful content (more lenient filtering)
     const availableSections = sections.filter(section => {
       const content = prediction[section.key];
-      return content && 
-             content !== '' && 
-             !content.toLowerCase().includes('see full analysis');
+      if (!content || content.trim() === '') {
+        return false;
+      }
+
+      // Only exclude very short redirect-only content
+      const trimmedContent = content.trim();
+      const isRedirectOnly = (
+        trimmedContent.length < 50 &&
+        (trimmedContent.toLowerCase().includes('see full analysis') ||
+         trimmedContent.toLowerCase().includes('see complete') ||
+         trimmedContent.toLowerCase().includes('refer to'))
+      );
+
+      return !isRedirectOnly;
     });
 
     return (
@@ -336,6 +362,37 @@ export default function BhriguPredictionView({
             </div>
           </div>
         )}
+
+        {/* Debug Mode - Raw API Response */}
+        {debugMode && (
+          <div className="mt-8 pt-6 border-t border-red-500/30">
+            <div className="bg-gray-900/50 border border-red-500/30 rounded-xl p-6">
+              <h3 className="text-xl font-bold text-red-400 mb-4">🔧 Debug Mode - Raw API Response</h3>
+              <div className="bg-black/50 rounded-lg p-4 overflow-auto max-h-96">
+                <pre className="text-xs text-gray-300 whitespace-pre-wrap font-mono">
+                  {JSON.stringify(prediction, null, 2)}
+                </pre>
+              </div>
+              <div className="mt-4 text-sm text-gray-400">
+                <p className="mb-2">Section Keys Available:</p>
+                <div className="flex flex-wrap gap-2">
+                  {Object.keys(prediction).map(key => (
+                    <span
+                      key={key}
+                      className={`px-2 py-1 rounded ${
+                        prediction[key] && typeof prediction[key] === 'string' && prediction[key].length > 100
+                          ? 'bg-green-500/20 text-green-400'
+                          : 'bg-gray-700/50 text-gray-400'
+                      }`}
+                    >
+                      {key} ({typeof prediction[key] === 'string' ? prediction[key].length : 'N/A'} chars)
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -447,7 +504,7 @@ export default function BhriguPredictionView({
 
         {/* Actions */}
         {prediction && (
-          <div className="mt-12 flex gap-4 justify-center">
+          <div className="mt-12 flex gap-4 justify-center flex-wrap">
             <button
               onClick={() => loadPrediction(true)}
               disabled={loading}
@@ -473,6 +530,18 @@ export default function BhriguPredictionView({
             >
               <Share2 className="w-5 h-5" />
               Share
+            </button>
+            <button
+              onClick={() => setDebugMode(!debugMode)}
+              className={`px-6 py-3 border rounded-lg transition-all
+                       flex items-center gap-2 ${
+                         debugMode
+                           ? 'bg-red-500/20 border-red-500 text-red-400'
+                           : 'bg-gray-700/50 border-gray-600 text-white hover:bg-gray-700'
+                       }`}
+            >
+              <BookOpen className="w-5 h-5" />
+              {debugMode ? 'Hide Debug' : 'Debug Mode'}
             </button>
           </div>
         )}

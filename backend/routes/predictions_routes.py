@@ -5,7 +5,11 @@ General prediction endpoints
 from flask import Blueprint, request, jsonify
 from services.astrology_calculator import astrology_calculator
 from services.openai_service import openai_service
+from services.section_parser import get_section_parser
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 bp = Blueprint('predictions', __name__, url_prefix='/api/predictions')
 
@@ -213,4 +217,85 @@ def specific_question():
         }), 200
 
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/test-section-extraction', methods=['POST'])
+def test_section_extraction():
+    """
+    Test endpoint for debugging section extraction
+    Accepts raw text and category, returns extracted sections
+    """
+    try:
+        data = request.get_json()
+        raw_text = data.get('raw_text')
+        category = data.get('category', 'karmic_journey')
+
+        if not raw_text:
+            return jsonify({'error': 'raw_text is required'}), 400
+
+        # Get section parser
+        parser = get_section_parser()
+
+        # Extract sections
+        logger.info(f"Testing section extraction for category: {category}")
+        sections = parser.extract_sections(raw_text, category, {})
+
+        # Validate sections
+        validation = parser.validate_sections(sections, category)
+        missing_sections = parser.get_missing_sections(sections, category)
+
+        # Calculate statistics
+        total_sections = len(parser.REQUIRED_SECTIONS.get(category, []))
+        extracted_sections = sum(1 for v in validation.values() if v)
+        extraction_rate = (extracted_sections / total_sections * 100) if total_sections > 0 else 0
+
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'category': category,
+                'total_sections_required': total_sections,
+                'sections_extracted': extracted_sections,
+                'extraction_rate': f"{extraction_rate:.1f}%",
+                'sections': sections,
+                'validation': validation,
+                'missing_sections': missing_sections,
+                'raw_text_length': len(raw_text),
+                'section_lengths': {k: len(v) if v else 0 for k, v in sections.items()}
+            }
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error in test section extraction: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/debug-info', methods=['GET'])
+def debug_info():
+    """
+    Get debug information about section extraction configuration
+    """
+    try:
+        parser = get_section_parser()
+
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'available_categories': list(parser.REQUIRED_SECTIONS.keys()),
+                'category_sections': {
+                    category: {
+                        'required_sections': sections,
+                        'count': len(sections),
+                        'headers': {
+                            section: parser.SECTION_HEADERS.get(section, [])
+                            for section in sections
+                        }
+                    }
+                    for category, sections in parser.REQUIRED_SECTIONS.items()
+                },
+                'minimum_section_length': parser.MINIMUM_SECTION_LENGTH,
+                'header_extraction_min_length': parser.HEADER_EXTRACTION_MIN_LENGTH
+            }
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error in debug info: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500

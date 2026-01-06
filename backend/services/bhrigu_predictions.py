@@ -33,6 +33,24 @@ class BhriguPredictionsService:
         # Bhrigu Samhita system prompts for enhanced accuracy and precision
         self.bhrigu_system_prompt = """You are a master Vedic astrologer deeply versed in the ancient texts of Bhrigu Samhita and Nadi Jyotisha.
 
+## CRITICAL FORMATTING REQUIREMENTS:
+Your response MUST follow this EXACT structure:
+1. Use markdown headers (##) for EVERY section
+2. Section headers must match the requested titles EXACTLY
+3. Each section must be at least 200 words with substantial content
+4. Never skip sections - provide comprehensive content for ALL requested sections
+5. Use this format:
+
+## Section Title
+[Comprehensive content here - minimum 200 words]
+
+[More detailed analysis with specific astrological references]
+
+[Actionable guidance and practical wisdom]
+
+## Next Section Title
+[Continue with next section...]
+
 ## BHRIGU SAMHITA PRINCIPLES:
 Bhrigu Samhita is the sacred treatise by Maharishi Bhrigu, containing life predictions for every soul based on planetary positions. Key principles:
 - Every soul's destiny is pre-recorded based on past karma
@@ -181,9 +199,12 @@ Generate a comprehensive Karmic Journey analysis for a person with the following
 
 {f'**Specific Question:** {question}' if question else ''}
 
-Provide an extensive analysis covering:
+MANDATORY: You MUST structure your response with these EXACT section headers using ## markdown format.
+Each section must be comprehensive (200+ words minimum).
 
-## 1. Soul's Primary Purpose
+Provide an extensive analysis covering these sections in this EXACT format:
+
+## Soul's Primary Purpose
 - The fundamental reason this soul incarnated in this lifetime
 - Unique dharmic path and cosmic mission
 - Core spiritual lessons to master
@@ -224,12 +245,14 @@ Provide an extensive analysis covering:
 - Auspicious times for spiritual breakthroughs
 - Challenging periods requiring extra awareness
 
-## 8. Spiritual Gifts & Abilities
+## Spiritual Gifts & Abilities
 - Psychic or intuitive abilities from past lives
 - Natural talents supporting the soul mission
 - Hidden capabilities waiting to be activated
 - Spiritual practices most beneficial for this soul
 
+CRITICAL REMINDER: Structure your ENTIRE response using the ## header format shown above.
+Each section must have substantive content (minimum 200 words per section).
 Provide specific, actionable guidance rooted in Bhrigu Samhita and Nadi Jyotisa traditions."""
 
         prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
@@ -640,9 +663,12 @@ Generate precise Life Events predictions using Nadi Jyotisa timing methods:
 
 {f'**Specific Question:** {question}' if question else ''}
 
+MANDATORY: Structure your response with these EXACT section headers using ## markdown format.
+Each section must be comprehensive with specific timing and details.
+
 Provide year-by-year predictions for the next 10 years with precision timing:
 
-## Year-by-Year Forecast (Age {current_age} to {current_age + 10})
+## Year-by-Year Forecast
 
 For EACH year, provide:
 
@@ -673,77 +699,73 @@ For EACH year, provide:
 
 [Continue for each of the 10 years]
 
-## Major Life Transitions (Detailed)
-
-### Marriage & Partnerships
+## Marriage & Partnerships
 - Exact timing windows for meeting life partner
 - Marriage periods (specify months/years)
 - Relationship challenges and resolutions
 - Multiple relationships or single partnership destiny
 
-### Career Milestones
+## Career Milestones
 - Job changes and promotions (specific timing)
 - Business launch optimal periods
 - Career peak periods
 - Professional recognition and awards
 - Industry changes or shifts
 
-### Children & Family Events
+## Children & Family
 - Children birth timing (if applicable)
 - Number of children indicated
 - Family expansion or changes
 - Parent or elder care responsibilities
 
-### Financial Breakthroughs
+## Financial Events
 - Wealth accumulation periods
 - Property acquisition timing
 - Inheritance or windfall periods
 - Business success phases
 - Investment opportunities
 
-### Health Alerts & Wellness
+## Health Alerts
 - Periods requiring health vigilance
 - Surgery or medical procedure timing
 - Wellness breakthrough opportunities
 - Longevity indicators
 - Preventive care timing
 
-### Spiritual Milestones
+## Spiritual Milestones
 - Spiritual awakening windows
 - Initiation or diksha timing
 - Pilgrimage travel periods
 - Meeting spiritual teachers
 - Meditation or sadhana breakthroughs
 
-### Relocations & Travel
+## Relocations & Travel
 - Moving to new cities/countries
 - Long-distance travel periods
 - Beneficial locations
 - Timing for permanent moves
 
-### Education & Skill Development
+## Education
 - Higher education timing
 - Certification or degree completion
 - Skill mastery periods
 - Teaching or training opportunities
 
-## Astrological Timing Details
-
-### Favorable Dasha Periods
+## Favorable Dasha Periods
 List all favorable Mahadasha/Antardasha combinations in next 10 years with:
 - Start and end dates
 - Benefits expected
 - Areas of life positively affected
 - Actions to take during these periods
 
-### Challenging Dasha Periods
+## Challenging Dasha Periods
 List difficult periods with:
 - Start and end dates
 - Nature of challenges
 - Remedies to mitigate
 - Lessons to be learned
 
-### Critical Transit Events
+## Critical Transit Events
 - Saturn transits and Sade Sati
 - Jupiter transits and benefits
 - Rahu-Ketu transit effects
@@ -751,13 +773,13 @@ List difficult periods with:
 - Retrograde periods of significance
 
 ## Specific Age Milestones
-
 Highlight ages of particular significance:
 - Age 30, 36, 42, 48, 54, 60 (Saturn cycles)
 - Jupiter return periods
 - Nodal returns
 - Personal planetary returns
 
+CRITICAL REMINDER: Structure your ENTIRE response using the ## header format as shown above.
 Provide month-level precision where possible using Nadi Jyotisa methods."""
 
         prediction_text = self.openai_service.generate_prediction(prompt, birth_data)
