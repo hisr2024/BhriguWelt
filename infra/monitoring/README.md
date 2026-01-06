@@ -132,7 +132,29 @@ scrape_configs:
 
 **CloudWatch Setup:**
 
-The `cloudwatch-exporter.yml` configuration file is provided in this directory for AWS CloudWatch integration. Configure your AWS credentials and region as needed.
+The `cloudwatch-exporter.yml` configuration file is provided in this directory for AWS CloudWatch integration.
+
+**Required Environment Variables:**
+```bash
+# Add to your .env file
+AWS_ACCESS_KEY_ID=your-access-key-id
+AWS_SECRET_ACCESS_KEY=your-secret-access-key
+AWS_DEFAULT_REGION=us-east-1  # or your preferred region
+AWS_CLOUDWATCH_NAMESPACE=BhriguWelt  # Custom namespace for your metrics
+```
+
+**CloudWatch Metrics Configuration:**
+- Configure metric filters in AWS CloudWatch console
+- Set up log groups for backend and frontend
+- Create CloudWatch alarms for critical metrics
+- Enable detailed monitoring in your AWS services
+
+**Using CloudWatch with Docker:**
+```bash
+# Pass AWS credentials to container
+docker-compose up -d
+# Ensure cloudwatch-exporter service has access to AWS credentials
+```
 
 **Key Metrics to Track:**
 - Request rate (requests/second)

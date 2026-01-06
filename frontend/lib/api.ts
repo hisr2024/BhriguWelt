@@ -35,19 +35,30 @@ api.interceptors.request.use(
 );
 
 // Response interceptor with retry logic
+// Use WeakMap to track retry state without modifying config object
+const retryState = new WeakMap<any, { count: number; inProgress: boolean }>();
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const config = error.config;
     
+    // Initialize retry state for this config if not exists
+    if (!retryState.has(config)) {
+      retryState.set(config, { count: 0, inProgress: false });
+    }
+    
+    const state = retryState.get(config)!;
+    
     // Retry logic for 5xx errors
-    if (error.response?.status >= 500 && !config._retry && (config._retryCount || 0) < 3) {
-      config._retry = true;
-      config._retryCount = (config._retryCount || 0) + 1;
+    if (error.response?.status >= 500 && !state.inProgress && state.count < 3) {
+      state.count++;
+      state.inProgress = true;
       
       // Exponential backoff
-      await new Promise(resolve => setTimeout(resolve, 1000 * config._retryCount));
+      await new Promise(resolve => setTimeout(resolve, 1000 * state.count));
       
+      state.inProgress = false;
       return api(config);
     }
     

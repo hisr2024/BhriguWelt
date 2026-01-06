@@ -75,7 +75,7 @@ export const copy = {
     },
     karmicJourney: {
       title: 'Karmic Journey',
-      subtitle: 'Understand Your Soul\'s Path',
+      subtitle: "Understand Your Soul's Path",
       soulPurpose: 'Soul Purpose',
       karmicLessons: 'Karmic Lessons',
       soulEvolution: 'Soul Evolution',
