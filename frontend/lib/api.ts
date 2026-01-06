@@ -2,6 +2,15 @@
  * API Client for BhriguWelt Backend
  */
 import axios from 'axios';
+import type {
+  BirthDetails,
+  BirthChartAPI,
+  AIMode,
+  AIBirthData,
+  AIComposeRequest,
+  AIChatRequest,
+  AISummarizeRequest,
+} from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -14,38 +23,91 @@ export const api = axios.create({
   withCredentials: true,  // Enable CORS credentials for cross-origin requests
 });
 
-// Types
-export interface BirthDetails {
-  date_of_birth: string;
-  time_of_birth: string;
-  place_of_birth: string;
-  latitude?: number;
-  longitude?: number;
+// Request interceptor for logging
+api.interceptors.request.use(
+  (config) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.debug(`[API] ${config.method?.toUpperCase()} ${config.url}`);
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor with retry logic
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const config = error.config;
+    
+    // Retry logic for 5xx errors
+    if (error.response?.status >= 500 && !config._retry && (config._retryCount || 0) < 3) {
+      config._retry = true;
+      config._retryCount = (config._retryCount || 0) + 1;
+      
+      // Exponential backoff
+      await new Promise(resolve => setTimeout(resolve, 1000 * config._retryCount));
+      
+      return api(config);
+    }
+    
+    // Offline detection
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return Promise.reject(new Error('You are offline. Please check your connection.'));
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
+// Offline queue for failed requests
+export const offlineQueue: Array<() => Promise<any>> = [];
+
+/**
+ * Check if the browser is online
+ */
+export function isOnline(): boolean {
+  return typeof navigator !== 'undefined' ? navigator.onLine : true;
 }
 
-export interface BirthChart {
-  birth_details: {
-    date: string;
-    time: string;
-    place: string;
-    latitude: number;
-    longitude: number;
-    timezone: string;
-  };
-  zodiac_sign: string;
-  moon_sign: string;
-  ascendant: string;
-  nakshatra: string;
-  element: string;
-  planets: Record<string, any>;
-  houses: string[];
-  karmic_number: number;
-  soul_number: number;
-  dasha_period: {
-    maha_dasha: string;
-    years_remaining: number;
-  };
+/**
+ * Process queued requests when connection is restored
+ */
+export async function processOfflineQueue(): Promise<void> {
+  while (offlineQueue.length > 0 && isOnline()) {
+    const request = offlineQueue.shift();
+    if (request) {
+      try {
+        await request();
+      } catch (error) {
+        console.error('Failed to process queued request:', error);
+      }
+    }
+  }
 }
+
+// Listen for online/offline events
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    console.log('Connection restored. Processing offline queue...');
+    processOfflineQueue();
+  });
+
+  window.addEventListener('offline', () => {
+    console.warn('Connection lost. Requests will be queued.');
+  });
+}
+
+// Re-export types for convenience
+export type {
+  BirthDetails,
+  BirthChartAPI as BirthChart,
+  AIMode,
+  AIBirthData,
+  AIComposeRequest,
+  AIChatRequest,
+  AISummarizeRequest,
+} from './types';
 
 // API Methods
 export const astrologyAPI = {
@@ -288,45 +350,6 @@ export const predictionsAPI = {
     return response.data;
   },
 };
-
-// AI Features API
-export interface AIMode {
-  mode: 'offline' | 'hybrid' | 'conversational';
-  consent: boolean;
-  consentTimestamp?: string;
-}
-
-export interface AIBirthData {
-  zodiac_sign?: string;
-  nakshatra?: string;
-  moon_sign?: string;
-  ascendant?: string;
-  planetary_positions?: Record<string, any>;
-  houses?: string[];
-  dasha_period?: string;
-  yogas?: string[];
-  doshas?: string[];
-  elements?: string;
-  qualities?: string;
-  karmic_number?: number;
-}
-
-export interface AIComposeRequest {
-  report_section: string;
-  birth_data: AIBirthData;
-}
-
-export interface AIChatRequest {
-  message: string;
-  birth_data: AIBirthData;
-  conversation_history?: Array<{ role: string; content: string }>;
-}
-
-export interface AISummarizeRequest {
-  report_data: string;
-  birth_data: AIBirthData;
-  summary_type?: 'overview' | 'key_insights' | 'action_items' | 'detailed';
-}
 
 export const aiAPI = {
   /**

@@ -2,6 +2,78 @@
  * Type definitions for offline storage
  */
 
+// API Types for BhriguWelt Backend
+export interface BirthDetails {
+  date_of_birth: string;
+  time_of_birth: string;
+  place_of_birth: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface BirthChartAPI {
+  birth_details: {
+    date: string;
+    time: string;
+    place: string;
+    latitude: number;
+    longitude: number;
+    timezone: string;
+  };
+  zodiac_sign: string;
+  moon_sign: string;
+  ascendant: string;
+  nakshatra: string;
+  element: string;
+  planets: Record<string, any>;
+  houses: string[];
+  karmic_number: number;
+  soul_number: number;
+  dasha_period: {
+    maha_dasha: string;
+    years_remaining: number;
+  };
+}
+
+// AI Mode types
+export interface AIMode {
+  mode: 'offline' | 'hybrid' | 'conversational';
+  consent: boolean;
+  consentTimestamp?: string;
+}
+
+export interface AIBirthData {
+  zodiac_sign?: string;
+  nakshatra?: string;
+  moon_sign?: string;
+  ascendant?: string;
+  planetary_positions?: Record<string, any>;
+  houses?: string[];
+  dasha_period?: string;
+  yogas?: string[];
+  doshas?: string[];
+  elements?: string;
+  qualities?: string;
+  karmic_number?: number;
+}
+
+export interface AIComposeRequest {
+  report_section: string;
+  birth_data: AIBirthData;
+}
+
+export interface AIChatRequest {
+  message: string;
+  birth_data: AIBirthData;
+  conversation_history?: Array<{ role: string; content: string }>;
+}
+
+export interface AISummarizeRequest {
+  report_data: string;
+  birth_data: AIBirthData;
+  summary_type?: 'overview' | 'key_insights' | 'action_items' | 'detailed';
+}
+
 // Profile types
 export interface Profile {
   id?: number;
