@@ -1,0 +1,84 @@
+{
+  "timing_systems": {
+    "vimshottari_dasha": {
+      "total_years": 120,
+      "planetary_periods": {
+        "Ketu": 7,
+        "Venus": 20,
+        "Sun": 6,
+        "Moon": 10,
+        "Mars": 7,
+        "Rahu": 18,
+        "Jupiter": 16,
+        "Saturn": 19,
+        "Mercury": 17
+      },
+      "calculation": "Based on Moon's nakshatra at birth"
+    },
+    "yogini_dasha": {
+      "total_years": 36,
+      "goddesses": {
+        "Mangala": 1,
+        "Pingala": 2,
+        "Dhanya": 3,
+        "Bhramari": 4,
+        "Bhadrika": 5,
+        "Ulka": 6,
+        "Siddha": 7,
+        "Sankata": 8
+      },
+      "application": "Relationship and marriage timing"
+    }
+  },
+  "transit_rules": {
+    "jupiter": {
+      "duration_per_sign": "12 months",
+      "effects": "Growth, expansion, wisdom, marriage, children",
+      "favorable_houses": [1, 2, 5, 7, 9, 11],
+      "challenging_houses": [6, 8, 12]
+    },
+    "saturn": {
+      "duration_per_sign": "2.5 years",
+      "effects": "Discipline, delays, karma, maturity, responsibilities",
+      "sade_sati": "7.5 years when transiting 12th, 1st, and 2nd from Moon",
+      "favorable_houses": [3, 6, 11],
+      "challenging_houses": [1, 4, 7, 8, 10, 12]
+    },
+    "rahu_ketu": {
+      "duration_per_sign": "18 months",
+      "effects": "Unexpected changes, karmic events, transformation",
+      "favorable_positions": [3, 6, 11],
+      "challenging_positions": [1, 2, 4, 5, 7, 8, 9, 12]
+    }
+  },
+  "muhurta_principles": {
+    "auspicious_timing": {
+      "daily": "Abhijit Muhurta (noon), Brahma Muhurta (pre-dawn)",
+      "weekly": "Monday, Wednesday, Thursday, Friday generally favorable",
+      "monthly": "Waxing Moon (Shukla Paksha) for growth activities",
+      "yearly": "Uttarayana (Sun's northern course) for major initiations"
+    },
+    "avoid_timing": {
+      "daily": "Rahu Kala, Gulika Kala, Yamaghanda",
+      "monthly": "New Moon (Amavasya), Full Moon (Purnima) unless specific ritual",
+      "special": "Eclipse periods for mundane activities"
+    }
+  },
+  "precision_methods": {
+    "month_level": {
+      "method": "Antardasha periods combined with major transits",
+      "accuracy": "High for major life events",
+      "example": "Marriage during Venus Antardasha with Jupiter transit over 7th house"
+    },
+    "week_level": {
+      "method": "Pratyantardasha with daily transits",
+      "accuracy": "Moderate, useful for important decisions",
+      "example": "Job offer during Sun Pratyantardasha in 10th lord Dasha"
+    },
+    "day_level": {
+      "method": "Hora analysis, lunar day (Tithi), nakshatra of the day",
+      "accuracy": "Variable, best for auspicious timings (Muhurta)",
+      "example": "Marriage ceremony on auspicious Tithi during favorable Hora"
+    }
+  }
+}

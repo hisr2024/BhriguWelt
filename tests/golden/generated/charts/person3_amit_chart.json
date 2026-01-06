@@ -1,0 +1,179 @@
+{
+  "birth_info": {
+    "name": "Amit Patel",
+    "date_of_birth": "1990-11-08",
+    "time_of_birth": "22:45:00",
+    "latitude": 23.0225,
+    "longitude": 72.5714,
+    "timezone": "Asia/Kolkata"
+  },
+  "ascendant": "Cancer",
+  "ascendant_longitude": 116.28054767485402,
+  "planets": [
+    {
+      "planet": "Sun",
+      "longitude": 202.30665989293107,
+      "sign": "Libra",
+      "degree_in_sign": 22.306659892931066,
+      "nakshatra": "Vishakha",
+      "nakshatra_pada": 1,
+      "house": 4,
+      "retrograde": false
+    },
+    {
+      "planet": "Moon",
+      "longitude": 101.94001926944443,
+      "sign": "Cancer",
+      "degree_in_sign": 11.940019269444434,
+      "nakshatra": "Pushya",
+      "nakshatra_pada": 3,
+      "house": 12,
+      "retrograde": false
+    },
+    {
+      "planet": "Mars",
+      "longitude": 48.22786733348073,
+      "sign": "Taurus",
+      "degree_in_sign": 18.22786733348073,
+      "nakshatra": "Rohini",
+      "nakshatra_pada": 3,
+      "house": 10,
+      "retrograde": true
+    },
+    {
+      "planet": "Mercury",
+      "longitude": 212.7777466812067,
+      "sign": "Scorpio",
+      "degree_in_sign": 2.7777466812067075,
+      "nakshatra": "Vishakha",
+      "nakshatra_pada": 4,
+      "house": 4,
+      "retrograde": false
+    },
+    {
+      "planet": "Jupiter",
+      "longitude": 109.1200062936825,
+      "sign": "Cancer",
+      "degree_in_sign": 19.120006293682493,
+      "nakshatra": "Ashlesha",
+      "nakshatra_pada": 1,
+      "house": 12,
+      "retrograde": false
+    },
+    {
+      "planet": "Venus",
+      "longitude": 204.0939467364985,
+      "sign": "Libra",
+      "degree_in_sign": 24.09394673649851,
+      "nakshatra": "Vishakha",
+      "nakshatra_pada": 2,
+      "house": 4,
+      "retrograde": false
+    },
+    {
+      "planet": "Saturn",
+      "longitude": 266.70281357753083,
+      "sign": "Sagittarius",
+      "degree_in_sign": 26.702813577530833,
+      "nakshatra": "Uttara Ashadha",
+      "nakshatra_pada": 1,
+      "house": 6,
+      "retrograde": false
+    },
+    {
+      "planet": "Rahu",
+      "longitude": 278.22215914893434,
+      "sign": "Capricorn",
+      "degree_in_sign": 8.222159148934338,
+      "nakshatra": "Uttara Ashadha",
+      "nakshatra_pada": 4,
+      "house": 6,
+      "retrograde": true
+    },
+    {
+      "planet": "Ketu",
+      "longitude": 98.22215914893434,
+      "sign": "Cancer",
+      "degree_in_sign": 8.222159148934338,
+      "nakshatra": "Pushya",
+      "nakshatra_pada": 2,
+      "house": 12,
+      "retrograde": false
+    }
+  ],
+  "house_cusps": [
+    {
+      "house": 1,
+      "longitude": 116.28054767485402,
+      "sign": "Cancer",
+      "degree_in_sign": 26.28054767485402
+    },
+    {
+      "house": 2,
+      "longitude": 140.78570544759376,
+      "sign": "Leo",
+      "degree_in_sign": 20.785705447593756
+    },
+    {
+      "house": 3,
+      "longitude": 168.67588082269592,
+      "sign": "Virgo",
+      "degree_in_sign": 18.675880822695916
+    },
+    {
+      "house": 4,
+      "longitude": 200.52125155273467,
+      "sign": "Libra",
+      "degree_in_sign": 20.521251552734668
+    },
+    {
+      "house": 5,
+      "longitude": 234.09898026241774,
+      "sign": "Scorpio",
+      "degree_in_sign": 24.09898026241774
+    },
+    {
+      "house": 6,
+      "longitude": 266.34237864112964,
+      "sign": "Sagittarius",
+      "degree_in_sign": 26.342378641129642
+    },
+    {
+      "house": 7,
+      "longitude": 296.280547674854,
+      "sign": "Capricorn",
+      "degree_in_sign": 26.280547674854006
+    },
+    {
+      "house": 8,
+      "longitude": 320.7857054475937,
+      "sign": "Aquarius",
+      "degree_in_sign": 20.785705447593728
+    },
+    {
+      "house": 9,
+      "longitude": 348.67588082269594,
+      "sign": "Pisces",
+      "degree_in_sign": 18.675880822695945
+    },
+    {
+      "house": 10,
+      "longitude": 20.521251552734654,
+      "sign": "Aries",
+      "degree_in_sign": 20.521251552734654
+    },
+    {
+      "house": 11,
+      "longitude": 54.09898026241773,
+      "sign": "Taurus",
+      "degree_in_sign": 24.098980262417733
+    },
+    {
+      "house": 12,
+      "longitude": 86.34237864112964,
+      "sign": "Gemini",
+      "degree_in_sign": 26.342378641129642
+    }
+  ],
+  "calculation_timestamp": "2026-01-06T14:47:14.578490"
+}

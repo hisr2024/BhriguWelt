@@ -40,6 +40,10 @@ jobs:
           PYTHONPATH: src
         run: pytest --cov=src --cov-report=xml --cov-fail-under=95
 
+      - name: Run mypy type checking
+        working-directory: backend
+        run: mypy --config-file=mypy.ini routes services middleware utils app.py models.py
+
   security:
     runs-on: ubuntu-latest
     steps:

@@ -1,0 +1,173 @@
+{
+  "meta": {
+    "engine_version": "1.0.0",
+    "calculation_notes": [
+      "Calculations use Lahiri Ayanamsa (sidereal zodiac)",
+      "House system: Placidus",
+      "Dasha system: Vimshottari (120-year cycle)"
+    ],
+    "assumptions": [
+      "Birth time is accurate to the minute",
+      "Timezone conversion is correctly applied",
+      "Coordinates are precise for birth location"
+    ]
+  },
+  "chart_summary": {
+    "ascendant": "Scorpio",
+    "ascendant_degree": 18.09,
+    "planets": [
+      {
+        "planet": "Sun",
+        "sign": "Gemini",
+        "house": 8,
+        "degree": 29.16,
+        "nakshatra": "Punarvasu",
+        "pada": 3,
+        "retrograde": false
+      },
+      {
+        "planet": "Moon",
+        "sign": "Taurus",
+        "house": 7,
+        "degree": 28.04,
+        "nakshatra": "Mrigashira",
+        "pada": 2,
+        "retrograde": false
+      },
+      {
+        "planet": "Mars",
+        "sign": "Gemini",
+        "house": 8,
+        "degree": 30.0,
+        "nakshatra": "Punarvasu",
+        "pada": 3,
+        "retrograde": false
+      },
+      {
+        "planet": "Mercury",
+        "sign": "Cancer",
+        "house": 9,
+        "degree": 25.66,
+        "nakshatra": "Ashlesha",
+        "pada": 3,
+        "retrograde": false
+      },
+      {
+        "planet": "Jupiter",
+        "sign": "Capricorn",
+        "house": 3,
+        "degree": 20.87,
+        "nakshatra": "Shravana",
+        "pada": 4,
+        "retrograde": true
+      },
+      {
+        "planet": "Venus",
+        "sign": "Taurus",
+        "house": 6,
+        "degree": 16.16,
+        "nakshatra": "Rohini",
+        "pada": 2,
+        "retrograde": false
+      },
+      {
+        "planet": "Saturn",
+        "sign": "Libra",
+        "house": 12,
+        "degree": 27.9,
+        "nakshatra": "Vishakha",
+        "pada": 3,
+        "retrograde": true
+      },
+      {
+        "planet": "Rahu",
+        "sign": "Aries",
+        "house": 5,
+        "degree": 21.15,
+        "nakshatra": "Bharani",
+        "pada": 3,
+        "retrograde": true
+      },
+      {
+        "planet": "Ketu",
+        "sign": "Libra",
+        "house": 11,
+        "degree": 21.15,
+        "nakshatra": "Vishakha",
+        "pada": 1,
+        "retrograde": false
+      }
+    ]
+  },
+  "nakshatra_summary": {
+    "moon_nakshatra": "Mrigashira",
+    "moon_pada": 2,
+    "moon_sign": "Taurus",
+    "sun_nakshatra": "Punarvasu",
+    "sun_pada": 3,
+    "sun_sign": "Gemini",
+    "ascendant_nakshatra": "Jyeshtha"
+  },
+  "summary_bullets": [
+    "**Ascendant**: Scorpio - defines core personality and life approach",
+    "**Moon Nakshatra**: Mrigashira - reveals karmic mission and emotional nature",
+    "**Personality**: With Scorpio ascendant (Vrishchika Lagna), you possess intensity, depth, and transformative power."
+  ],
+  "domains": [
+    {
+      "domain": "personality",
+      "summary": "With Scorpio ascendant (Vrishchika Lagna), you possess intensity, depth, and transformative power.",
+      "detailed_narrative": "With Scorpio ascendant (Vrishchika Lagna), you possess intensity, depth, and transformative power. Mars as your ascendant lord gives you determination and the ability to navigate crisis. You approach life with passion and seek to understand hidden truths. Resilience and the capacity for profound change characterize your journey.\n*[ASCENDANT-SCORPIO]*",
+      "rule_traces": [
+        {
+          "rule_id": "ASCENDANT-SCORPIO",
+          "tradition": "bhrigu",
+          "domain": "personality",
+          "matched_triggers": [
+            {
+              "expression": "ascendant_in_sign(Scorpio)",
+              "evaluated": true,
+              "context": {
+                "expected_sign": "Scorpio",
+                "actual_ascendant": "Scorpio"
+              }
+            }
+          ],
+          "priority": 70,
+          "narrative": "With Scorpio ascendant (Vrishchika Lagna), you possess intensity, depth, and transformative power. Mars as your ascendant lord gives you determination and the ability to navigate crisis. You approach life with passion and seek to understand hidden truths. Resilience and the capacity for profound change characterize your journey.",
+          "citations": [
+            "Classical Texts on Ascendant Significations"
+          ]
+        }
+      ],
+      "timing_windows": [
+        "Current Maha Dasha: Mars (1985-1990)",
+        "Current Antar Dasha: Mars (1985-07-1985-12)"
+      ]
+    }
+  ],
+  "dasha_timeline": {
+    "birth_date": "1985-07-15",
+    "current_maha_dasha": {
+      "planet": "Mars",
+      "start_date": "1985-07-15",
+      "end_date": "1990-01-23",
+      "level": "maha",
+      "parent_dasha": null
+    },
+    "current_antar_dasha": {
+      "planet": "Mars",
+      "start_date": "1985-07-15",
+      "end_date": "1985-12-11",
+      "level": "antar",
+      "parent_dasha": "Mars"
+    },
+    "upcoming_maha_dashas": []
+  },
+  "disclaimers": [
+    "This horoscope provides interpretive guidance based on Nadi Jyotisha and Bhrigu Samhita traditions.",
+    "Astrological insights are meant for contemplation and self-understanding, not absolute prediction.",
+    "Free will and personal effort significantly influence life outcomes.",
+    "Consult qualified astrologers for personalized guidance and remedial measures."
+  ]
+}

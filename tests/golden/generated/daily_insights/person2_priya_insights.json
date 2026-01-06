@@ -1,0 +1,229 @@
+{
+  "meta": {
+    "engine_version": "1.0.0",
+    "target_date": "2025-01-15",
+    "calculation_notes": [
+      "Transit positions calculated for 12:00 UTC on target date",
+      "Insights based on Nadi Jyotisha transit principles",
+      "Focus on practical guidance for daily navigation"
+    ]
+  },
+  "today": {
+    "date": "2025-01-15",
+    "focus_areas": [
+      "Mystical studies",
+      "Deep contemplation"
+    ],
+    "do_list": [
+      "Maintain regular routines",
+      "Act with awareness"
+    ],
+    "dont_list": [
+      "Distrust intuition",
+      "Ignore subtle signs"
+    ],
+    "transit_triggers": [
+      {
+        "transit_planet": "Moon",
+        "natal_point": "general",
+        "aspect_type": "daily_motion",
+        "orb_degrees": 0.0,
+        "narrative": "Daily Moon transit influences general emotional tone and receptivity."
+      }
+    ],
+    "energy_level": "medium"
+  },
+  "next_7_days": [
+    {
+      "date": "2025-01-16",
+      "focus_areas": [
+        "Ancestral matters",
+        "Authority and responsibility"
+      ],
+      "do_list": [
+        "Honor ancestors",
+        "Take leadership roles"
+      ],
+      "dont_list": [
+        "Disrespect traditions",
+        "Ignore responsibilities"
+      ],
+      "transit_triggers": [
+        {
+          "transit_planet": "Moon",
+          "natal_point": "general",
+          "aspect_type": "daily_motion",
+          "orb_degrees": 0.0,
+          "narrative": "Daily Moon transit influences general emotional tone and receptivity."
+        }
+      ],
+      "energy_level": "high"
+    },
+    {
+      "date": "2025-01-17",
+      "focus_areas": [
+        "Creativity",
+        "Relationships"
+      ],
+      "do_list": [
+        "Maintain regular routines",
+        "Act with awareness"
+      ],
+      "dont_list": [
+        "Avoid impulsive actions",
+        "Don't ignore intuition"
+      ],
+      "transit_triggers": [
+        {
+          "transit_planet": "Moon",
+          "natal_point": "general",
+          "aspect_type": "daily_motion",
+          "orb_degrees": 0.0,
+          "narrative": "Daily Moon transit influences general emotional tone and receptivity."
+        }
+      ],
+      "energy_level": "medium"
+    },
+    {
+      "date": "2025-01-18",
+      "focus_areas": [
+        "Partnerships",
+        "Generous actions"
+      ],
+      "do_list": [
+        "Maintain regular routines",
+        "Act with awareness"
+      ],
+      "dont_list": [
+        "Avoid impulsive actions",
+        "Don't ignore intuition"
+      ],
+      "transit_triggers": [
+        {
+          "transit_planet": "Moon",
+          "natal_point": "general",
+          "aspect_type": "daily_motion",
+          "orb_degrees": 0.0,
+          "narrative": "Daily Moon transit influences general emotional tone and receptivity."
+        }
+      ],
+      "energy_level": "medium"
+    },
+    {
+      "date": "2025-01-19",
+      "focus_areas": [
+        "Partnerships",
+        "Generous actions"
+      ],
+      "do_list": [
+        "Maintain regular routines",
+        "Act with awareness"
+      ],
+      "dont_list": [
+        "Avoid impulsive actions",
+        "Don't ignore intuition"
+      ],
+      "transit_triggers": [
+        {
+          "transit_planet": "Moon",
+          "natal_point": "general",
+          "aspect_type": "daily_motion",
+          "orb_degrees": 0.0,
+          "narrative": "Daily Moon transit influences general emotional tone and receptivity."
+        }
+      ],
+      "energy_level": "medium"
+    },
+    {
+      "date": "2025-01-20",
+      "focus_areas": [
+        "Skills development",
+        "Detailed work"
+      ],
+      "do_list": [
+        "Work with hands",
+        "Pay attention to details"
+      ],
+      "dont_list": [
+        "Avoid impulsive actions",
+        "Don't ignore intuition"
+      ],
+      "transit_triggers": [
+        {
+          "transit_planet": "Moon",
+          "natal_point": "general",
+          "aspect_type": "daily_motion",
+          "orb_degrees": 0.0,
+          "narrative": "Daily Moon transit influences general emotional tone and receptivity."
+        }
+      ],
+      "energy_level": "medium"
+    },
+    {
+      "date": "2025-01-21",
+      "focus_areas": [
+        "Artistic expression",
+        "Brilliance"
+      ],
+      "do_list": [
+        "Maintain regular routines",
+        "Act with awareness"
+      ],
+      "dont_list": [
+        "Avoid impulsive actions",
+        "Don't ignore intuition"
+      ],
+      "transit_triggers": [
+        {
+          "transit_planet": "Moon",
+          "natal_point": "general",
+          "aspect_type": "daily_motion",
+          "orb_degrees": 0.0,
+          "narrative": "Daily Moon transit influences general emotional tone and receptivity."
+        }
+      ],
+      "energy_level": "medium"
+    },
+    {
+      "date": "2025-01-22",
+      "focus_areas": [
+        "Independence",
+        "Flexibility"
+      ],
+      "do_list": [
+        "Network and trade",
+        "Be flexible in approach"
+      ],
+      "dont_list": [
+        "Avoid impulsive actions",
+        "Don't ignore intuition"
+      ],
+      "transit_triggers": [
+        {
+          "transit_planet": "Moon",
+          "natal_point": "general",
+          "aspect_type": "daily_motion",
+          "orb_degrees": 0.0,
+          "narrative": "Daily Moon transit influences general emotional tone and receptivity."
+        }
+      ],
+      "energy_level": "medium"
+    }
+  ],
+  "key_transit_triggers": [
+    {
+      "transit_planet": "Moon",
+      "natal_point": "general",
+      "aspect_type": "daily_motion",
+      "orb_degrees": 0.0,
+      "narrative": "Daily Moon transit influences general emotional tone and receptivity."
+    }
+  ],
+  "rule_traces": [],
+  "disclaimers": [
+    "Daily insights are general guidance based on transits to your natal chart.",
+    "Personal free will and conscious choice influence outcomes significantly.",
+    "Use insights for awareness and planning, not rigid prediction.",
+    "Major life decisions should consider comprehensive astrological consultation."
+  ]
+}

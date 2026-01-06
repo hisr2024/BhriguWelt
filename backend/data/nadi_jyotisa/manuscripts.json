@@ -1,0 +1,158 @@
+{
+  "manuscripts": {
+    "volume_1": {
+      "title": "Nadi Jyotisha - Foundational Principles",
+      "principles": [
+        "Thumb impression determines manuscript leaf identification",
+        "Each leaf contains 7-10 life predictions with precise timing",
+        "Past life karmic debts revealed through nodal axis",
+        "Specific remedies prescribed for planetary afflictions"
+      ]
+    },
+    "volume_2": {
+      "title": "Life Event Timing Methods",
+      "principles": [
+        "Dasha-Bhukti-Antardasha system provides month-level accuracy",
+        "Transits activate natal promises at specific times",
+        "Yogini Dasha for relationship and marriage timing",
+        "Narayana Dasha for career and financial predictions"
+      ]
+    }
+  },
+  "predictive_techniques": {
+    "marriage_prediction": {
+      "primary_indicators": [
+        "7th house lord placement and strength",
+        "Venus position and dignity",
+        "Jupiter aspect to 7th house or Venus",
+        "Upapada Lagna for marriage circumstances"
+      ],
+      "timing_methods": [
+        "7th lord Dasha or Antardasha",
+        "Venus Mahadasha or Antardasha",
+        "Jupiter transit through 7th from Moon",
+        "Activation of Darakaraka planet"
+      ]
+    },
+    "career_prediction": {
+      "primary_indicators": [
+        "10th house lord and planets in 10th",
+        "Atmakaraka for soul's career direction",
+        "Sun placement for authority and recognition",
+        "Saturn for career longevity and discipline"
+      ],
+      "timing_methods": [
+        "10th lord Dasha period",
+        "Saturn transit over 10th house",
+        "Sun Dasha for leadership roles",
+        "Jupiter aspect to 10th for growth"
+      ]
+    },
+    "financial_prediction": {
+      "primary_indicators": [
+        "2nd house for accumulated wealth",
+        "11th house for gains and income",
+        "Dhan Yogas (wealth combinations)",
+        "Jupiter and Venus strength"
+      ],
+      "timing_methods": [
+        "2nd or 11th lord Dasha",
+        "Jupiter transit through 2nd or 11th",
+        "Venus Dasha with wealth yogas",
+        "Dhan Yoga activation periods"
+      ]
+    },
+    "health_prediction": {
+      "primary_indicators": [
+        "6th house for diseases and health issues",
+        "8th house for chronic conditions and surgeries",
+        "Ascendant lord for overall vitality",
+        "Moon for mental and emotional health"
+      ],
+      "timing_methods": [
+        "6th lord Dasha periods",
+        "8th lord activation",
+        "Saturn or Mars afflicting health houses",
+        "Rahu-Ketu axis through health houses"
+      ]
+    }
+  },
+  "remedial_measures": {
+    "planetary_remedies": {
+      "sun": {
+        "mantra": "Om Suryaya Namaha",
+        "gemstone": "Ruby (3-5 carats)",
+        "donation": "Wheat, jaggery on Sundays",
+        "fast": "Sunday sunrise water fast"
+      },
+      "moon": {
+        "mantra": "Om Chandraya Namaha",
+        "gemstone": "Pearl (5-7 carats)",
+        "donation": "White items, rice on Mondays",
+        "fast": "Monday milk fast"
+      },
+      "mars": {
+        "mantra": "Om Mangalaya Namaha",
+        "gemstone": "Red Coral (5-7 carats)",
+        "donation": "Red lentils on Tuesdays",
+        "fast": "Tuesday for Hanuman"
+      },
+      "mercury": {
+        "mantra": "Om Budhaya Namaha",
+        "gemstone": "Emerald (3-5 carats)",
+        "donation": "Green items on Wednesdays",
+        "fast": "Wednesday for Vishnu"
+      },
+      "jupiter": {
+        "mantra": "Om Gurave Namaha",
+        "gemstone": "Yellow Sapphire (3-5 carats)",
+        "donation": "Yellow items, turmeric on Thursdays",
+        "fast": "Thursday for Brihaspati"
+      },
+      "venus": {
+        "mantra": "Om Shukraya Namaha",
+        "gemstone": "Diamond or White Sapphire (1-3 carats)",
+        "donation": "White items, sweets on Fridays",
+        "fast": "Friday for Lakshmi"
+      },
+      "saturn": {
+        "mantra": "Om Shanaye Namaha",
+        "gemstone": "Blue Sapphire (3-5 carats, test first)",
+        "donation": "Black items, iron on Saturdays",
+        "fast": "Saturday oil lamp for Shani"
+      },
+      "rahu": {
+        "mantra": "Om Rahave Namaha",
+        "gemstone": "Hessonite (5-7 carats)",
+        "donation": "Blue or black items on Saturdays",
+        "remedy": "Worship Durga, donate to outcasts"
+      },
+      "ketu": {
+        "mantra": "Om Ketave Namaha",
+        "gemstone": "Cat's Eye (3-5 carats)",
+        "donation": "Multi-colored items",
+        "remedy": "Worship Ganesha, spiritual practices"
+      }
+    },
+    "dosha_remedies": {
+      "mangal_dosha": [
+        "Mangal Shanti Puja before marriage",
+        "Marry another Manglik person",
+        "Kuja Dosha Nivarana mantra (10,000 times)",
+        "Donate red lentils on Tuesdays"
+      ],
+      "kala_sarpa": [
+        "Rahu-Ketu Shanti Puja",
+        "Visit Trimbakeshwar or Kalahasti temples",
+        "Naga Pratishtha at Rahu Kala",
+        "Sarpa Suktam recitation"
+      ],
+      "pitru_dosha": [
+        "Perform Shraddha rituals properly",
+        "Narayan Nagbali Puja",
+        "Feed Brahmins on Amavasya",
+        "Visit Gaya for ancestral rites"
+      ]
+    }
+  }
+}

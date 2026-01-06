@@ -1,0 +1,179 @@
+{
+  "birth_info": {
+    "name": "Priya Sharma",
+    "date_of_birth": "1987-03-22",
+    "time_of_birth": "08:15:00",
+    "latitude": 19.076,
+    "longitude": 72.8777,
+    "timezone": "Asia/Kolkata"
+  },
+  "ascendant": "Aries",
+  "ascendant_longitude": 29.178913017226858,
+  "planets": [
+    {
+      "planet": "Sun",
+      "longitude": 337.26935002834875,
+      "sign": "Pisces",
+      "degree_in_sign": 7.269350028348754,
+      "nakshatra": "Uttara Bhadrapada",
+      "nakshatra_pada": 2,
+      "house": 11,
+      "retrograde": false
+    },
+    {
+      "planet": "Moon",
+      "longitude": 239.803032977085,
+      "sign": "Scorpio",
+      "degree_in_sign": 29.803032977084996,
+      "nakshatra": "Jyeshtha",
+      "nakshatra_pada": 4,
+      "house": 7,
+      "retrograde": false
+    },
+    {
+      "planet": "Mars",
+      "longitude": 26.498144062674204,
+      "sign": "Aries",
+      "degree_in_sign": 26.498144062674204,
+      "nakshatra": "Bharani",
+      "nakshatra_pada": 4,
+      "house": 12,
+      "retrograde": false
+    },
+    {
+      "planet": "Mercury",
+      "longitude": 310.03079280573,
+      "sign": "Aquarius",
+      "degree_in_sign": 10.030792805730016,
+      "nakshatra": "Shatabhisha",
+      "nakshatra_pada": 2,
+      "house": 10,
+      "retrograde": false
+    },
+    {
+      "planet": "Jupiter",
+      "longitude": 340.95976743128114,
+      "sign": "Pisces",
+      "degree_in_sign": 10.959767431281136,
+      "nakshatra": "Uttara Bhadrapada",
+      "nakshatra_pada": 3,
+      "house": 11,
+      "retrograde": false
+    },
+    {
+      "planet": "Venus",
+      "longitude": 298.4945156137542,
+      "sign": "Capricorn",
+      "degree_in_sign": 28.494515613754174,
+      "nakshatra": "Dhanishtha",
+      "nakshatra_pada": 2,
+      "house": 10,
+      "retrograde": false
+    },
+    {
+      "planet": "Saturn",
+      "longitude": 237.41617155413562,
+      "sign": "Scorpio",
+      "degree_in_sign": 27.416171554135616,
+      "nakshatra": "Jyeshtha",
+      "nakshatra_pada": 4,
+      "house": 7,
+      "retrograde": false
+    },
+    {
+      "planet": "Rahu",
+      "longitude": 348.5745891206601,
+      "sign": "Pisces",
+      "degree_in_sign": 18.574589120660107,
+      "nakshatra": "Revati",
+      "nakshatra_pada": 1,
+      "house": 11,
+      "retrograde": true
+    },
+    {
+      "planet": "Ketu",
+      "longitude": 168.5745891206601,
+      "sign": "Virgo",
+      "degree_in_sign": 18.574589120660107,
+      "nakshatra": "Hasta",
+      "nakshatra_pada": 3,
+      "house": 5,
+      "retrograde": false
+    }
+  ],
+  "house_cusps": [
+    {
+      "house": 1,
+      "longitude": 29.178913017226858,
+      "sign": "Aries",
+      "degree_in_sign": 29.178913017226858
+    },
+    {
+      "house": 2,
+      "longitude": 60.25239437734769,
+      "sign": "Gemini",
+      "degree_in_sign": 0.25239437734769155
+    },
+    {
+      "house": 3,
+      "longitude": 86.39689878098487,
+      "sign": "Gemini",
+      "degree_in_sign": 26.39689878098487
+    },
+    {
+      "house": 4,
+      "longitude": 111.4710861136279,
+      "sign": "Cancer",
+      "degree_in_sign": 21.471086113627905
+    },
+    {
+      "house": 5,
+      "longitude": 138.99013858112636,
+      "sign": "Leo",
+      "degree_in_sign": 18.99013858112636
+    },
+    {
+      "house": 6,
+      "longitude": 171.7832030026375,
+      "sign": "Virgo",
+      "degree_in_sign": 21.783203002637492
+    },
+    {
+      "house": 7,
+      "longitude": 209.17891301722685,
+      "sign": "Libra",
+      "degree_in_sign": 29.178913017226847
+    },
+    {
+      "house": 8,
+      "longitude": 240.25239437734768,
+      "sign": "Sagittarius",
+      "degree_in_sign": 0.25239437734768444
+    },
+    {
+      "house": 9,
+      "longitude": 266.3968987809849,
+      "sign": "Sagittarius",
+      "degree_in_sign": 26.396898780984884
+    },
+    {
+      "house": 10,
+      "longitude": 291.4710861136279,
+      "sign": "Capricorn",
+      "degree_in_sign": 21.471086113627905
+    },
+    {
+      "house": 11,
+      "longitude": 318.99013858112636,
+      "sign": "Aquarius",
+      "degree_in_sign": 18.99013858112636
+    },
+    {
+      "house": 12,
+      "longitude": 351.7832030026375,
+      "sign": "Pisces",
+      "degree_in_sign": 21.783203002637492
+    }
+  ],
+  "calculation_timestamp": "2026-01-06T14:47:14.575732"
+}

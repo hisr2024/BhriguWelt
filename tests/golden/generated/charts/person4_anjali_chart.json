@@ -1,0 +1,179 @@
+{
+  "birth_info": {
+    "name": "Anjali Singh",
+    "date_of_birth": "1992-05-18",
+    "time_of_birth": "05:20:00",
+    "latitude": 26.9124,
+    "longitude": 75.7873,
+    "timezone": "Asia/Kolkata"
+  },
+  "ascendant": "Taurus",
+  "ascendant_longitude": 51.16173696363957,
+  "planets": [
+    {
+      "planet": "Sun",
+      "longitude": 33.54393499340179,
+      "sign": "Taurus",
+      "degree_in_sign": 3.543934993401791,
+      "nakshatra": "Krittika",
+      "nakshatra_pada": 3,
+      "house": 12,
+      "retrograde": false
+    },
+    {
+      "planet": "Moon",
+      "longitude": 229.35017288307796,
+      "sign": "Scorpio",
+      "degree_in_sign": 19.35017288307796,
+      "nakshatra": "Jyeshtha",
+      "nakshatra_pada": 1,
+      "house": 6,
+      "retrograde": false
+    },
+    {
+      "planet": "Mars",
+      "longitude": 345.4848787276212,
+      "sign": "Pisces",
+      "degree_in_sign": 15.484878727621208,
+      "nakshatra": "Uttara Bhadrapada",
+      "nakshatra_pada": 4,
+      "house": 11,
+      "retrograde": false
+    },
+    {
+      "planet": "Mercury",
+      "longitude": 18.283195923660397,
+      "sign": "Aries",
+      "degree_in_sign": 18.283195923660397,
+      "nakshatra": "Bharani",
+      "nakshatra_pada": 2,
+      "house": 12,
+      "retrograde": false
+    },
+    {
+      "planet": "Jupiter",
+      "longitude": 131.32407128476325,
+      "sign": "Leo",
+      "degree_in_sign": 11.32407128476325,
+      "nakshatra": "Magha",
+      "nakshatra_pada": 4,
+      "house": 4,
+      "retrograde": false
+    },
+    {
+      "planet": "Venus",
+      "longitude": 26.339472093100756,
+      "sign": "Aries",
+      "degree_in_sign": 26.339472093100756,
+      "nakshatra": "Bharani",
+      "nakshatra_pada": 4,
+      "house": 12,
+      "retrograde": false
+    },
+    {
+      "planet": "Saturn",
+      "longitude": 294.6419621014452,
+      "sign": "Capricorn",
+      "degree_in_sign": 24.641962101445188,
+      "nakshatra": "Dhanishtha",
+      "nakshatra_pada": 1,
+      "house": 9,
+      "retrograde": false
+    },
+    {
+      "planet": "Rahu",
+      "longitude": 248.74405979148824,
+      "sign": "Sagittarius",
+      "degree_in_sign": 8.74405979148824,
+      "nakshatra": "Mula",
+      "nakshatra_pada": 3,
+      "house": 7,
+      "retrograde": true
+    },
+    {
+      "planet": "Ketu",
+      "longitude": 68.74405979148821,
+      "sign": "Gemini",
+      "degree_in_sign": 8.744059791488212,
+      "nakshatra": "Ardra",
+      "nakshatra_pada": 1,
+      "house": 1,
+      "retrograde": false
+    }
+  ],
+  "house_cusps": [
+    {
+      "house": 1,
+      "longitude": 51.16173696363957,
+      "sign": "Taurus",
+      "degree_in_sign": 21.16173696363957
+    },
+    {
+      "house": 2,
+      "longitude": 78.4855804266512,
+      "sign": "Gemini",
+      "degree_in_sign": 18.485580426651197
+    },
+    {
+      "house": 3,
+      "longitude": 102.26650774478505,
+      "sign": "Cancer",
+      "degree_in_sign": 12.266507744785045
+    },
+    {
+      "house": 4,
+      "longitude": 126.8164370773124,
+      "sign": "Leo",
+      "degree_in_sign": 6.816437077312401
+    },
+    {
+      "house": 5,
+      "longitude": 155.8156258975671,
+      "sign": "Virgo",
+      "degree_in_sign": 5.815625897567088
+    },
+    {
+      "house": 6,
+      "longitude": 191.727495001956,
+      "sign": "Libra",
+      "degree_in_sign": 11.727495001955987
+    },
+    {
+      "house": 7,
+      "longitude": 231.16173696363956,
+      "sign": "Scorpio",
+      "degree_in_sign": 21.161736963639555
+    },
+    {
+      "house": 8,
+      "longitude": 258.4855804266512,
+      "sign": "Sagittarius",
+      "degree_in_sign": 18.48558042665121
+    },
+    {
+      "house": 9,
+      "longitude": 282.26650774478503,
+      "sign": "Capricorn",
+      "degree_in_sign": 12.26650774478503
+    },
+    {
+      "house": 10,
+      "longitude": 306.8164370773124,
+      "sign": "Aquarius",
+      "degree_in_sign": 6.816437077312401
+    },
+    {
+      "house": 11,
+      "longitude": 335.81562589756703,
+      "sign": "Pisces",
+      "degree_in_sign": 5.815625897567031
+    },
+    {
+      "house": 12,
+      "longitude": 11.727495001955983,
+      "sign": "Aries",
+      "degree_in_sign": 11.727495001955983
+    }
+  ],
+  "calculation_timestamp": "2026-01-06T14:47:14.581476"
+}
