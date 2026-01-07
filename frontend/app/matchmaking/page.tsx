@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, ArrowLeft, Loader2 } from 'lucide-react';
+import { Heart, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import AnimatedBackground, { FloatingElements } from '../components/AnimatedBackground';
 import GenZCard from '../components/GenZCard';
@@ -11,8 +11,6 @@ import GenZButton from '../components/GenZButton';
 import BottomNav from '../components/BottomNav';
 
 export default function MatchmakingPage() {
-  const [loading] = useState(false);
-
   return (
     <div className="min-h-screen relative overflow-hidden pb-24 md:pb-8">
       <AnimatedBackground />
@@ -94,18 +92,9 @@ export default function MatchmakingPage() {
               </div>
             </div>
             <div className="mt-8">
-              <GenZButton variant="primary" size="lg" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Heart className="w-5 h-5 mr-2" />
-                    Start Matching (Coming Soon)
-                  </>
-                )}
+              <GenZButton variant="primary" size="lg" disabled>
+                <Heart className="w-5 h-5 mr-2" />
+                Start Matching (Coming Soon)
               </GenZButton>
             </div>
           </div>

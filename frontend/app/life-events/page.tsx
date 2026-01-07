@@ -160,6 +160,10 @@ export default function LifeEventsPage() {
     return null;
   };
 
+  // Constants for text parsing
+  const MAX_MATCHED_LINES = 4;
+  const MAX_SUBSTRING_LENGTH = 200;
+
   const parseTextSection = (text: string, section: string): string[] => {
     const sectionKeywords = {
       'career': ['career', 'professional', 'work', 'job'],
@@ -176,7 +180,7 @@ export default function LifeEventsPage() {
       const lowerLine = line.toLowerCase();
       if (keywords.some(keyword => lowerLine.includes(keyword))) {
         matchedLines.push(line.trim());
-        if (matchedLines.length >= 4) break;
+        if (matchedLines.length >= MAX_MATCHED_LINES) break;
       }
     }
     

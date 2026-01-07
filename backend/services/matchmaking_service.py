@@ -226,15 +226,15 @@ class MatchmakingService:
             diff = (idx2 - idx1) % 27
             tara_position = (diff % 9) + 1
             
-            # Favorable taras: 1, 3, 5, 7
+            # Favorable taras: 1, 3, 5, 7 - return integer scores
             if tara_position in [1, 3, 5, 7]:
                 return 3
             elif tara_position in [2, 4, 6]:
-                return 1.5
+                return 2  # Changed from 1.5 to integer
             else:
                 return 0
         except ValueError:
-            return 1.5  # Default neutral score
+            return 2  # Default neutral score (changed from 1.5)
     
     def _calculate_yoni(self, nakshatra1: str, nakshatra2: str) -> int:
         """Yoni Kuta - Physical and sexual compatibility (4 points)"""

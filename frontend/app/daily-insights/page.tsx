@@ -87,11 +87,17 @@ export default function DailyInsightsPage() {
     // Parse the prediction text into categories
     const text = prediction?.data?.prediction || prediction?.prediction || '';
     
+    // Try to extract overall energy from response
+    const overallEnergy = prediction?.data?.overall_energy || 'High';
+    const overallRating = prediction?.data?.overall_rating || 5;
+    const overallMessage = prediction?.data?.overall_message || 
+      'Today brings powerful cosmic energy for manifestation and growth.';
+    
     return {
       overall: {
-        energy: 'High',
-        rating: 5,
-        message: 'Today brings powerful cosmic energy for manifestation and growth.'
+        energy: overallEnergy,
+        rating: overallRating,
+        message: overallMessage
       },
       categories: [
         {
