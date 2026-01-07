@@ -300,15 +300,17 @@ class SectionParser:
             # Try multiple pattern variations for maximum flexibility
             patterns = [
                 # Standard markdown with ## (most common)
-                rf'##\s*{re.escape(header)}\s*\n(.*?)(?=\n##|\n#[^#]|\Z)',
+                rf'##\s*\d*\. ?\s*{re.escape(header)}\s*\n(.*?)(?=\n##|\n#[^#]|\Z)',
                 # Markdown with any number of # symbols
-                rf'#+\s*{re.escape(header)}\s*[:\n](.*?)(?=\n#+\s|\Z)',
+                rf'#+\s*\d*\.?\s*{re.escape(header)}\s*[:\n](.*?)(?=\n#+\s|\Z)',
+                # Numbered sections (1., 2., etc.) - IMPROVED
+                rf'\n\d+\.\s*{re.escape(header)}\s*[:\n]?(.*?)(?=\n\d+\. |\n##|\Z)',
                 # Without markdown symbols (plain text headers)
-                rf'{re.escape(header)}\s*[:\n](.*?)(?=\n[A-Z][^\n]*[:\n]|\Z)',
-                # Numbered sections (1., 2., etc.)
-                rf'\d+\.\s*{re.escape(header)}\s*[:\n](.*?)(?=\n\d+\.|\Z)',
+                rf'\n{re.escape(header)}\s*[:\n](.*?)(?=\n[A-Z][a-z]+[^\n]*[:\n]|\n\d+\. |\Z)',
                 # Bold or emphasized headers
-                rf'\*\*{re.escape(header)}\*\*\s*[:\n](.*?)(?=\n\*\*|\Z)',
+                rf'\*\*\d*\.?\s*{re. escape(header)}\*\*\s*[:\n]?(.*?)(?=\n\*\*|\n##|\Z)',
+                # Header with colon on same line
+                rf'{re.escape(header)}:\s*(.*?)(?=\n[A-Z][a-z]+.*? :|\n##|\n\d+\.|\Z)',
             ]
 
             for i, pattern in enumerate(patterns):
