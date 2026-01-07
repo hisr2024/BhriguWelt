@@ -6,25 +6,25 @@ import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp 
 import type { Profile } from '@/lib/types';
 
 // Category-specific section configurations (moved outside component for performance)
-const CATEGORY_SECTIONS: Record<string, Array<{ key: string; title: string; color: string }>> = {
+const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; color: string }>> = {
   'karmic-journey': [
     { key: 'soul_purpose', title: "Soul's Primary Purpose", color: 'cyan' },
     { key: 'karmic_blueprint', title: 'Karmic Blueprint', color: 'purple' },
     { key: 'evolution_stage', title: 'Soul Evolution Stage', color: 'blue' },
     { key: 'life_mission', title: 'Life Mission & Dharma', color: 'indigo' },
     { key: 'karmic_lessons', title: 'Karmic Lessons', color: 'violet' },
-    { key: 'soul_connections', title: 'Soul Group Connections', color: 'pink' },
+    { key: 'soul_connections', title: 'Soul Group Connections', color:  'pink' },
     { key: 'timing', title: 'Timing of Karmic Events', color: 'rose' },
-    { key: 'spiritual_gifts', title: 'Spiritual Gifts & Abilities', color: 'amber' }
+    { key: 'spiritual_gifts', title: 'Spiritual Gifts & Abilities', color:  'amber' }
   ],
   'past-lives': [
-    { key: 'recent_life', title: 'Most Recent Past Life', color: 'cyan' },
+    { key: 'recent_life', title:  'Most Recent Past Life', color: 'cyan' },
     { key: 'significant_lives', title: 'Significant Past Lives', color: 'purple' },
     { key: 'karmic_patterns', title: 'Recurring Karmic Patterns', color: 'blue' },
     { key: 'past_skills', title: 'Past Life Skills & Talents', color: 'indigo' },
     { key: 'traumas_healing', title: 'Past Life Traumas Needing Healing', color: 'violet' },
-    { key: 'past_relationships', title: 'Past Life Relationships', color: 'pink' },
-    { key: 'karmic_debts', title: 'Karmic Debts from Past Lives', color: 'rose' },
+    { key: 'past_relationships', title:  'Past Life Relationships', color:  'pink' },
+    { key:  'karmic_debts', title: 'Karmic Debts from Past Lives', color:  'rose' },
     { key: 'spiritual_progress', title: 'Past Life Spiritual Progress', color: 'amber' }
   ],
   'future-lives': [
@@ -34,8 +34,8 @@ const CATEGORY_SECTIONS: Record<string, Array<{ key: string; title: string; colo
     { key: 'future_scenarios', title: 'Future Life Scenarios', color: 'indigo' },
     { key: 'moksha_timeline', title: 'Moksha Timeline', color: 'violet' },
     { key: 'higher_realms', title: 'Higher Realms Access', color: 'pink' },
-    { key: 'bodhisattva_path', title: 'Bodhisattva Path', color: 'rose' },
-    { key: 'ultimate_destiny', title: 'Ultimate Destiny', color: 'amber' }
+    { key: 'bodhisattva_path', title: 'Bodhisattva Path', color:  'rose' },
+    { key:  'ultimate_destiny', title: 'Ultimate Destiny', color: 'amber' }
   ],
   'present-life': [
     { key: 'current_phase', title: 'Current Life Phase', color: 'cyan' },
@@ -45,74 +45,74 @@ const CATEGORY_SECTIONS: Record<string, Array<{ key: string; title: string; colo
     { key: 'finances', title: 'Financial Prospects', color: 'violet' },
     { key: 'spiritual_growth', title: 'Spiritual Growth', color: 'pink' },
     { key: 'education', title: 'Education & Learning', color: 'rose' },
-    { key: 'life_purpose', title: 'Life Purpose', color: 'amber' },
-    { key: 'challenges', title: 'Current Challenges', color: 'orange' },
-    { key: 'timing', title: 'Timing & Transitions', color: 'teal' }
+    { key: 'life_purpose', title:  'Life Purpose', color: 'amber' },
+    { key:  'challenges', title: 'Current Challenges', color:  'orange' },
+    { key:  'timing', title: 'Timing & Transitions', color: 'teal' }
   ],
   'life-events': [
     { key: 'yearly_forecast', title: 'Yearly Forecast', color: 'cyan' },
     { key: 'marriage_timing', title: 'Marriage Timing', color: 'purple' },
-    { key: 'career_milestones', title: 'Career Milestones', color: 'blue' },
-    { key: 'children_family', title: 'Children & Family', color: 'indigo' },
-    { key: 'financial_events', title: 'Financial Events', color: 'violet' },
-    { key: 'health_alerts', title: 'Health Alerts', color: 'pink' },
-    { key: 'spiritual_milestones', title: 'Spiritual Milestones', color: 'rose' },
+    { key: 'career_milestones', title:  'Career Milestones', color:  'blue' },
+    { key:  'children_family', title: 'Children & Family', color: 'indigo' },
+    { key: 'financial_events', title: 'Financial Events', color:  'violet' },
+    { key:  'health_alerts', title: 'Health Alerts', color: 'pink' },
+    { key: 'spiritual_milestones', title:  'Spiritual Milestones', color: 'rose' },
     { key: 'relocations', title: 'Relocations & Travel', color: 'amber' },
     { key: 'education', title: 'Educational Achievements', color: 'orange' },
-    { key: 'favorable_periods', title: 'Favorable Periods', color: 'teal' },
-    { key: 'challenging_periods', title: 'Challenging Periods', color: 'red' },
-    { key: 'transits', title: 'Key Planetary Transits', color: 'lime' },
-    { key: 'age_milestones', title: 'Age Milestones', color: 'emerald' }
+    { key:  'favorable_periods', title: 'Favorable Periods', color: 'teal' },
+    { key:  'challenging_periods', title: 'Challenging Periods', color: 'red' },
+    { key:  'transits', title: 'Key Planetary Transits', color: 'lime' },
+    { key:  'age_milestones', title:  'Age Milestones', color:  'emerald' }
   ],
   'karmic-remedies': [
     { key: 'mantras', title: 'Mantras & Chanting', color: 'cyan' },
-    { key: 'gemstones', title: 'Gemstones & Crystals', color: 'purple' },
-    { key: 'yantras', title: 'Yantras & Sacred Geometry', color: 'blue' },
-    { key: 'charitable_activities', title: 'Charitable Activities', color: 'indigo' },
+    { key: 'gemstones', title:  'Gemstones & Crystals', color: 'purple' },
+    { key: 'yantras', title:  'Yantras & Sacred Geometry', color:  'blue' },
+    { key:  'charitable_activities', title: 'Charitable Activities', color: 'indigo' },
     { key: 'fasting', title: 'Fasting & Dietary Practices', color: 'violet' },
-    { key: 'deity_worship', title: 'Deity Worship', color: 'pink' },
-    { key: 'pilgrimage', title: 'Pilgrimage & Sacred Sites', color: 'rose' },
+    { key: 'deity_worship', title:  'Deity Worship', color: 'pink' },
+    { key: 'pilgrimage', title:  'Pilgrimage & Sacred Sites', color: 'rose' },
     { key: 'lifestyle', title: 'Lifestyle Modifications', color: 'amber' },
     { key: 'planetary_rituals', title: 'Planetary Rituals', color: 'orange' },
-    { key: 'karmic_cleansing', title: 'Karmic Cleansing Practices', color: 'teal' },
-    { key: 'service', title: 'Service & Seva', color: 'lime' },
-    { key: 'meditation', title: 'Meditation & Yoga', color: 'emerald' }
+    { key: 'karmic_cleansing', title:  'Karmic Cleansing Practices', color: 'teal' },
+    { key:  'service', title: 'Service & Seva', color: 'lime' },
+    { key:  'meditation', title: 'Meditation & Yoga', color: 'emerald' }
   ],
   'relationships': [
     { key: 'romantic_marriage', title: 'Romantic & Marriage Prospects', color: 'cyan' },
     { key: 'family', title: 'Family Relationships', color: 'purple' },
-    { key: 'soul_connections', title: 'Soul Connections & Soulmates', color: 'blue' },
-    { key: 'friendships', title: 'Friendships & Social Circle', color: 'indigo' },
-    { key: 'professional', title: 'Professional Relationships', color: 'violet' },
-    { key: 'karmic_patterns', title: 'Karmic Relationship Patterns', color: 'pink' },
+    { key: 'soul_connections', title: 'Soul Connections & Soulmates', color:  'blue' },
+    { key:  'friendships', title: 'Friendships & Social Circle', color: 'indigo' },
+    { key: 'professional', title: 'Professional Relationships', color:  'violet' },
+    { key:  'karmic_patterns', title: 'Karmic Relationship Patterns', color:  'pink' },
     { key: 'communication', title: 'Communication Dynamics', color: 'rose' },
-    { key: 'timing', title: 'Relationship Timing', color: 'amber' },
-    { key: 'healing', title: 'Relationship Healing', color: 'orange' },
-    { key: 'healthy_practices', title: 'Healthy Relationship Practices', color: 'teal' }
+    { key: 'timing', title: 'Relationship Timing', color:  'amber' },
+    { key:  'healing', title: 'Relationship Healing', color:  'orange' },
+    { key: 'healthy_practices', title: 'Healthy Relationship Practices', color:  'teal' }
   ],
   'predictions': [
-    { key: 'daily', title: 'Daily Predictions', color: 'cyan' },
-    { key: 'weekly', title: 'Weekly Forecast', color: 'purple' },
+    { key: 'daily', title: 'Daily Predictions', color:  'cyan' },
+    { key:  'weekly', title: 'Weekly Forecast', color: 'purple' },
     { key: 'monthly', title: 'Monthly Outlook', color: 'blue' },
     { key: 'yearly', title: 'Yearly Overview', color: 'indigo' }
   ]
 };
 
 // Color classes configuration (moved outside component for performance)
-const COLOR_CLASSES: Record<string, { border: string; hover: string; accent: string; text: string }> = {
+const COLOR_CLASSES:  Record<string, { border: string; hover: string; accent: string; text: string }> = {
   cyan: { border: 'border-cyan-500/30', hover: 'hover:border-cyan-500/50', accent: 'from-cyan-400 to-cyan-600', text: 'text-cyan-400' },
-  purple: { border: 'border-purple-500/30', hover: 'hover:border-purple-500/50', accent: 'from-purple-400 to-purple-600', text: 'text-purple-400' },
+  purple: { border: 'border-purple-500/30', hover: 'hover: border-purple-500/50', accent:  'from-purple-400 to-purple-600', text: 'text-purple-400' },
   blue: { border: 'border-blue-500/30', hover: 'hover:border-blue-500/50', accent: 'from-blue-400 to-blue-600', text: 'text-blue-400' },
   indigo: { border: 'border-indigo-500/30', hover: 'hover:border-indigo-500/50', accent: 'from-indigo-400 to-indigo-600', text: 'text-indigo-400' },
-  violet: { border: 'border-violet-500/30', hover: 'hover:border-violet-500/50', accent: 'from-violet-400 to-violet-600', text: 'text-violet-400' },
+  violet: { border: 'border-violet-500/30', hover: 'hover: border-violet-500/50', accent:  'from-violet-400 to-violet-600', text: 'text-violet-400' },
   pink: { border: 'border-pink-500/30', hover: 'hover:border-pink-500/50', accent: 'from-pink-400 to-pink-600', text: 'text-pink-400' },
-  rose: { border: 'border-rose-500/30', hover: 'hover:border-rose-500/50', accent: 'from-rose-400 to-rose-600', text: 'text-rose-400' },
+  rose: { border: 'border-rose-500/30', hover: 'hover: border-rose-500/50', accent:  'from-rose-400 to-rose-600', text: 'text-rose-400' },
   amber: { border: 'border-amber-500/30', hover: 'hover:border-amber-500/50', accent: 'from-amber-400 to-amber-600', text: 'text-amber-400' },
-  orange: { border: 'border-orange-500/30', hover: 'hover:border-orange-500/50', accent: 'from-orange-400 to-orange-600', text: 'text-orange-400' },
-  teal: { border: 'border-teal-500/30', hover: 'hover:border-teal-500/50', accent: 'from-teal-400 to-teal-600', text: 'text-teal-400' },
-  red: { border: 'border-red-500/30', hover: 'hover:border-red-500/50', accent: 'from-red-400 to-red-600', text: 'text-red-400' },
-  lime: { border: 'border-lime-500/30', hover: 'hover:border-lime-500/50', accent: 'from-lime-400 to-lime-600', text: 'text-lime-400' },
-  emerald: { border: 'border-emerald-500/30', hover: 'hover:border-emerald-500/50', accent: 'from-emerald-400 to-emerald-600', text: 'text-emerald-400' }
+  orange: { border:  'border-orange-500/30', hover: 'hover:border-orange-500/50', accent: 'from-orange-400 to-orange-600', text: 'text-orange-400' },
+  teal: { border: 'border-teal-500/30', hover: 'hover:border-teal-500/50', accent: 'from-teal-400 to-teal-600', text:  'text-teal-400' },
+  red: { border: 'border-red-500/30', hover: 'hover: border-red-500/50', accent:  'from-red-400 to-red-600', text: 'text-red-400' },
+  lime: { border: 'border-lime-500/30', hover: 'hover: border-lime-500/50', accent:  'from-lime-400 to-lime-600', text: 'text-lime-400' },
+  emerald:  { border: 'border-emerald-500/30', hover: 'hover: border-emerald-500/50', accent: 'from-emerald-400 to-emerald-600', text: 'text-emerald-400' }
 };
 
 // Default color for sections without a specific color mapping
@@ -150,7 +150,7 @@ export default function BhriguPredictionView({
   }, [profile]);
 
   const loadPrediction = async (forceRegenerate = false) => {
-    if (!profile) return;
+    if (! profile) return;
 
     setLoading(true);
     setError(null);
@@ -158,8 +158,8 @@ export default function BhriguPredictionView({
     try {
       const profileData = {
         date_of_birth: profile.dateOfBirth,
-        time_of_birth: profile.timeOfBirth,
-        place_of_birth: profile.placeOfBirth,
+        time_of_birth:  profile.timeOfBirth,
+        place_of_birth:  profile.placeOfBirth,
         latitude: profile.latitude,
         longitude: profile.longitude,
         question: question || undefined,
@@ -168,29 +168,69 @@ export default function BhriguPredictionView({
 
       const response = await fetchPrediction(profileData);
 
-      if (response.status === 'success') {
+      if (response. status === 'success') {
         setPrediction(response.data);
-        setFromCache(response.message?.includes('cache') || false);
+        setFromCache(response.message?. includes('cache') || false);
       } else {
         setError(response.message || 'Failed to generate prediction');
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'An error occurred');
+    } catch (err:  any) {
+      setError(err. response?.data?.message || err.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
   };
 
-  const renderSection = (sectionKey: string, title: string, content: string, color: string) => {
+  // Client-side fallback to parse full_analysis into sections
+  const parseFullAnalysisIntoSections = (fullAnalysis: string, cat: string): Record<string, string> => {
+    const parsedSections: Record<string, string> = {};
+    const categoryConfig = CATEGORY_SECTIONS[cat] || [];
+    
+    if (! fullAnalysis) return parsedSections;
+    
+    for (const section of categoryConfig) {
+      // Escape special regex characters in title
+      const escapedTitle = section.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      
+      // Try multiple patterns to find section content
+      const patterns = [
+        // ## Header format (most common)
+        new RegExp(`##\\s*(? :\\d+\\.? \\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
+        // Numbered format (1.  Header)
+        new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
+        // Bold format (**Header**)
+        new RegExp(`\\*\\*${escapedTitle}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n##|$)`, 'i'),
+        // Plain header with colon
+        new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i'),
+      ];
+      
+      for (const pattern of patterns) {
+        try {
+          const match = fullAnalysis. match(pattern);
+          if (match && match[1]?.trim().length > 50) {
+            parsedSections[section.key] = match[1].trim();
+            break;
+          }
+        } catch (e) {
+          // Pattern failed, try next
+          continue;
+        }
+      }
+    }
+    
+    return parsedSections;
+  };
+
+  const renderSection = (sectionKey: string, sectionTitle: string, content: string, color: string) => {
     // More lenient filtering - only exclude truly empty or placeholder content
-    if (!content || content.trim() === '') {
+    if (! content || content.trim() === '') {
       return null;
     }
 
     // Check if content is just a redirect to full analysis (but allow partial content)
-    const trimmedContent = content.trim();
+    const trimmedContent = content. trim();
     const isRedirectOnly = (
-      trimmedContent.length < 50 &&
+      trimmedContent. length < 50 &&
       (trimmedContent.toLowerCase().includes('see full analysis') ||
        trimmedContent.toLowerCase().includes('see complete') ||
        trimmedContent.toLowerCase().includes('refer to'))
@@ -211,8 +251,8 @@ export default function BhriguPredictionView({
                    border ${colorClass.border} ${colorClass.hover} rounded-xl p-6 transition-all`}
       >
         <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3`}>
-          <div className={`w-1.5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
-          {title}
+          <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
+          {sectionTitle}
         </h3>
         <div className="prose prose-invert prose-cyan max-w-none">
           <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
@@ -223,8 +263,8 @@ export default function BhriguPredictionView({
     );
   };
 
-    const renderPredictionContent = () => {
-    if (!prediction) return null;
+  const renderPredictionContent = () => {
+    if (! prediction) return null;
 
     // Get the sections configuration for this category
     const sections = CATEGORY_SECTIONS[category] || [];
@@ -232,14 +272,14 @@ export default function BhriguPredictionView({
     // First, try to get sections from the API response
     let availableSections = sections. filter(section => {
       const content = prediction[section.key];
-      if (! content || content.trim() === '') {
+      if (! content || typeof content !== 'string' || content.trim() === '') {
         return false;
       }
       const trimmedContent = content.trim();
       const isRedirectOnly = (
         trimmedContent.length < 50 &&
-        (trimmedContent.toLowerCase().includes('see full analysis') ||
-         trimmedContent.toLowerCase().includes('see complete') ||
+        (trimmedContent. toLowerCase().includes('see full analysis') ||
+         trimmedContent. toLowerCase().includes('see complete') ||
          trimmedContent.toLowerCase().includes('refer to'))
       );
       return !isRedirectOnly;
@@ -252,46 +292,20 @@ export default function BhriguPredictionView({
       
       // Update availableSections based on parsed content
       availableSections = sections.filter(section => {
-        const content = parsedFromFullAnalysis[section. key];
+        const content = parsedFromFullAnalysis[section.key];
         return content && content.trim().length > 50;
       });
     }
 
-    // Use parsed sections if API sections were empty
+    // Helper function to get section content from either source
     const getSectionContent = (key: string): string => {
       return prediction[key] || parsedFromFullAnalysis[key] || '';
     };
 
-
-  const renderPredictionContent = () => {
-    if (!prediction) return null;
-
-    // Get the sections configuration for this category
-    const sections = CATEGORY_SECTIONS[category] || [];
-
-    // Filter sections that have meaningful content (more lenient filtering)
-    const availableSections = sections.filter(section => {
-      const content = prediction[section.key];
-      if (!content || content.trim() === '') {
-        return false;
-      }
-
-      // Only exclude very short redirect-only content
-      const trimmedContent = content.trim();
-      const isRedirectOnly = (
-        trimmedContent.length < 50 &&
-        (trimmedContent.toLowerCase().includes('see full analysis') ||
-         trimmedContent.toLowerCase().includes('see complete') ||
-         trimmedContent.toLowerCase().includes('refer to'))
-      );
-
-      return !isRedirectOnly;
-    });
-
     return (
       <div className="space-y-6">
         {/* Show message if no sections were extracted successfully */}
-        {availableSections.length === 0 && prediction.full_analysis && (
+        {availableSections. length === 0 && prediction.full_analysis && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
             <p className="text-amber-400 text-sm">
               Note: Individual sections could not be extracted from the analysis. 
@@ -309,7 +323,7 @@ export default function BhriguPredictionView({
                 Detailed Insights
               </h2>
               <p className="text-gray-400 text-sm">
-                Explore each aspect of your {title.toLowerCase()} in detail
+                Explore each aspect of your {title. toLowerCase()} in detail
               </p>
             </div>
             
@@ -317,7 +331,7 @@ export default function BhriguPredictionView({
               {availableSections.map((section) => (
                 <div key={section.key}>
                   {renderSection(
-                    section. key,
+                    section.key,
                     section.title,
                     getSectionContent(section.key),
                     section.color
@@ -325,6 +339,8 @@ export default function BhriguPredictionView({
                 </div>
               ))}
             </div>
+          </div>
+        )}
 
         {/* Full Analysis - Collapsible at the bottom */}
         {prediction.full_analysis && (
@@ -347,7 +363,7 @@ export default function BhriguPredictionView({
                   </p>
                 </div>
               </div>
-              {showFullAnalysis ? (
+              {showFullAnalysis ?  (
                 <ChevronUp className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
               ) : (
                 <ChevronDown className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
@@ -360,7 +376,7 @@ export default function BhriguPredictionView({
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3 }}
+                  transition={{ duration:  0.3 }}
                   className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
                            border border-gray-700/50 rounded-xl p-6"
                 >
@@ -388,7 +404,7 @@ export default function BhriguPredictionView({
               {prediction.metadata.nakshatra && (
                 <div className="flex items-center gap-2">
                   <span className="text-purple-400">Nakshatra:</span>
-                  <span>{prediction.metadata.nakshatra}</span>
+                  <span>{prediction.metadata. nakshatra}</span>
                 </div>
               )}
               {prediction.metadata.tradition && (
@@ -420,14 +436,27 @@ export default function BhriguPredictionView({
                       className={`px-2 py-1 rounded ${
                         prediction[key] && typeof prediction[key] === 'string' && prediction[key].length > 100
                           ? 'bg-green-500/20 text-green-400'
-                          : 'bg-gray-700/50 text-gray-400'
+                          :  'bg-gray-700/50 text-gray-400'
                       }`}
                     >
-                      {key} ({typeof prediction[key] === 'string' ? prediction[key].length : 'N/A'} chars)
+                      {key} ({typeof prediction[key] === 'string' ?  prediction[key].length :  'N/A'} chars)
                     </span>
                   ))}
                 </div>
               </div>
+              {/* Show parsed sections if fallback was used */}
+              {Object.keys(parsedFromFullAnalysis).length > 0 && (
+                <div className="mt-4 text-sm">
+                  <p className="text-yellow-400 mb-2">Client-side Parsed Sections:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.keys(parsedFromFullAnalysis).map(key => (
+                      <span key={key} className="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">
+                        {key} ({parsedFromFullAnalysis[key]?.length || 0} chars)
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -435,7 +464,7 @@ export default function BhriguPredictionView({
     );
   };
 
-  if (!profile) {
+  if (! profile) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -475,7 +504,7 @@ export default function BhriguPredictionView({
               type="text"
               placeholder="Ask a specific question (optional)..."
               value={question}
-              onChange={(e) => setQuestion(e.target.value)}
+              onChange={(e) => setQuestion(e. target.value)}
               className="flex-1 bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-3
                        text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400
                        transition-colors"
@@ -484,8 +513,8 @@ export default function BhriguPredictionView({
               onClick={() => loadPrediction(false)}
               disabled={loading}
               className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500
-                       text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600
-                       disabled:opacity-50 disabled:cursor-not-allowed transition-all
+                       text-white rounded-lg font-semibold hover:from-cyan-600 hover: to-blue-600
+                       disabled: opacity-50 disabled:cursor-not-allowed transition-all
                        flex items-center gap-2"
             >
               {loading ? (
@@ -513,11 +542,11 @@ export default function BhriguPredictionView({
 
       {/* Content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {loading && !prediction && (
+        {loading && ! prediction && (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="w-12 h-12 text-cyan-400 animate-spin mb-4" />
             <p className="text-lg text-gray-400">
-              Consulting ancient Bhrigu Samhita wisdom...
+              Consulting ancient Bhrigu Samhita wisdom... 
             </p>
             <p className="text-sm text-gray-500 mt-2">
               This may take a moment as we generate your personalized prediction
@@ -530,7 +559,7 @@ export default function BhriguPredictionView({
             <p className="text-red-400">{error}</p>
             <button
               onClick={() => loadPrediction(false)}
-              className="mt-4 text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
+              className="mt-4 text-sm text-cyan-400 hover: text-cyan-300 flex items-center gap-2"
             >
               <RefreshCw className="w-4 h-4" />
               Try Again
@@ -538,7 +567,7 @@ export default function BhriguPredictionView({
           </div>
         )}
 
-        {prediction && !loading && renderPredictionContent()}
+        {prediction && ! loading && renderPredictionContent()}
 
         {/* Actions */}
         {prediction && (
@@ -575,7 +604,7 @@ export default function BhriguPredictionView({
                        flex items-center gap-2 ${
                          debugMode
                            ? 'bg-red-500/20 border-red-500 text-red-400'
-                           : 'bg-gray-700/50 border-gray-600 text-white hover:bg-gray-700'
+                           :  'bg-gray-700/50 border-gray-600 text-white hover:bg-gray-700'
                        }`}
             >
               <BookOpen className="w-5 h-5" />
