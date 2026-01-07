@@ -1,0 +1,121 @@
+{
+  "category": "spirituality",
+  "tradition": "bhrigu_samhita",
+  "rules": [
+    {
+      "rule_id": "SPI-001",
+      "priority": 95,
+      "trigger": "planet_in_house(Jupiter, 9)",
+      "interpretation": {
+        "en": "Jupiter in 9th house creates exceptional spiritual fortune. Natural wisdom, connection to teachers, and dharmic living bring grace.",
+        "hi": "नवें भाव में गुरु असाधारण आध्यात्मिक भाग्य बनाता है। प्राकृतिक ज्ञान और धार्मिक जीवन।",
+        "sa": "नवमभावे गुरुः विशिष्टां आध्यात्मिकभाग्यं करोति। स्वाभाविकज्ञानं धार्मिकजीवनं च।"
+      },
+      "citations": ["Bhrigu Samhita Jupiter Spirituality, Verse 15"]
+    },
+    {
+      "rule_id": "SPI-002",
+      "priority": 93,
+      "trigger": "planet_in_house(Ketu, 12)",
+      "interpretation": {
+        "en": "Ketu in 12th house indicates strong past-life spiritual practice. Natural inclination toward meditation, solitude, and liberation.",
+        "hi": "बारहवें भाव में केतु पिछले जन्म की मजबूत आध्यात्मिक साधना दर्शाता है।",
+        "sa": "द्वादशभावे केतुः पूर्वजन्मस्य दृढं आध्यात्मिकसाधनां सूचयति।"
+      },
+      "citations": ["Bhrigu Samhita Ketu Moksha Indicators"]
+    },
+    {
+      "rule_id": "SPI-003",
+      "priority": 91,
+      "trigger": "lord_of_house_in_house(9, 9)",
+      "interpretation": {
+        "en": "The 9th lord in 9th house strengthens dharma, fortune, and spiritual wisdom. Connection to higher teachings and sacred places.",
+        "hi": "नवें भाव में नवम भाव का स्वामी धर्म, भाग्य और आध्यात्मिक ज्ञान को मजबूत करता है।",
+        "sa": "नवमभावे नवमस्वामी धर्मं भाग्यं आध्यात्मिकज्ञानं च वर्धयति।"
+      },
+      "citations": ["Bhrigu Samhita Dharma House Strength"]
+    },
+    {
+      "rule_id": "SPI-004",
+      "priority": 90,
+      "trigger": "planet_in_house(Jupiter, 12)",
+      "interpretation": {
+        "en": "Jupiter in 12th house creates inclination for meditation, foreign spiritual journeys, and moksha pursuit. Wisdom in solitude.",
+        "hi": "बारहवें भाव में गुरु ध्यान, विदेशी आध्यात्मिक यात्राओं और मोक्ष की खोज के लिए झुकाव पैदा करता है।",
+        "sa": "द्वादशभावे गुरुः ध्यानाय विदेशीयाध्यात्मिकयात्राभ्यः मोक्षप्रयत्नाय च प्रवृत्तिं करोति।"
+      },
+      "citations": ["Bhrigu Samhita Jupiter 12th House Moksha"]
+    },
+    {
+      "rule_id": "SPI-005",
+      "priority": 89,
+      "trigger": "planet_in_house(Ketu, 9)",
+      "interpretation": {
+        "en": "Ketu in 9th house indicates spontaneous spiritual understanding. Detachment from dogma, direct experience of truth.",
+        "hi": "नवें भाव में केतु स्वतःस्फूर्त आध्यात्मिक समझ दर्शाता है। सत्य का प्रत्यक्ष अनुभव।",
+        "sa": "नवमभावे केतुः स्वतःस्फूर्तां आध्यात्मिकबोधं सूचयति। सत्यस्य प्रत्यक्षानुभवः।"
+      },
+      "citations": ["Bhrigu Samhita Ketu Dharma Effects"]
+    },
+    {
+      "rule_id": "SPI-006",
+      "priority": 88,
+      "trigger": "lord_of_house_in_house(12, 9)",
+      "interpretation": {
+        "en": "The 12th lord in 9th house connects moksha with dharma. Foreign spiritual teachers or pilgrimage to distant holy places.",
+        "hi": "नवें भाव में बारहवें भाव का स्वामी मोक्ष को धर्म से जोड़ता है।",
+        "sa": "नवमभावे द्वादशस्वामी मोक्षं धर्मेण सम्बध्नाति। विदेशीयगुरवः दूरतीर्थयात्रा वा।"
+      },
+      "citations": ["Bhrigu Samhita Moksha-Dharma Connection"]
+    },
+    {
+      "rule_id": "SPI-007",
+      "priority": 87,
+      "trigger": "planet_in_house(Saturn, 12)",
+      "interpretation": {
+        "en": "Saturn in 12th house brings spiritual discipline through solitude. Long-term meditation practice and renunciation tendencies.",
+        "hi": "बारहवें भाव में शनि एकांत के माध्यम से आध्यात्मिक अनुशासन लाता है।",
+        "sa": "द्वादशभावे शनिः एकान्तेन आध्यात्मिकानुशासनं प्रददाति। दीर्घकालीनध्यानसाधना त्यागप्रवृत्तिः च।"
+      },
+      "citations": ["Bhrigu Samhita Saturn Renunciation"]
+    },
+    {
+      "rule_id": "SPI-008",
+      "priority": 86,
+      "trigger": "conjunction(Jupiter, Ketu, 9)",
+      "interpretation": {
+        "en": "Jupiter-Ketu conjunction in 9th house creates Gyana Yoga. Exceptional spiritual wisdom and potential for enlightenment.",
+        "hi": "नवें भाव में गुरु-केतु युति ज्ञान योग बनाती है। असाधारण आध्यात्मिक ज्ञान।",
+        "sa": "नवमभावे गुरुकेतुयुतिः ज्ञानयोगं करोति। विशिष्टां आध्यात्मिकज्ञानं ज्ञानोदयसम्भावना च।"
+      },
+      "citations": ["Bhrigu Samhita Gyana Yoga Formation"]
+    },
+    {
+      "rule_id": "SPI-009",
+      "priority": 85,
+      "trigger": "planet_in_house(Moon, 9)",
+      "interpretation": {
+        "en": "Moon in 9th house brings emotional connection to spirituality. Devotional path, pilgrimage attraction, and intuitive wisdom.",
+        "hi": "नवें भाव में चंद्र आध्यात्मिकता से भावनात्मक संबंध लाता है।",
+        "sa": "नवमभावे चन्द्रः आध्यात्मिकतायाः भावनात्मकसम्बन्धं प्रददाति। भक्तिमार्गः तीर्थाकर्षणं च।"
+      },
+      "citations": ["Bhrigu Samhita Moon Devotional Path"]
+    },
+    {
+      "rule_id": "SPI-010",
+      "priority": 84,
+      "trigger": "lord_of_house_in_house(5, 9)",
+      "interpretation": {
+        "en": "The 5th lord in 9th house forms Dharma-Karma Adhipati Yoga. Spiritual intelligence, mantras, and creative spiritual expression.",
+        "hi": "नवें भाव में पंचम भाव का स्वामी धर्म-कर्म अधिपति योग बनाता है।",
+        "sa": "नवमभावे पञ्चमस्वामी धर्मकर्माधिपतियोगं करोति। आध्यात्मिकबुद्धिः मन्त्राः च।"
+      },
+      "citations": ["Bhrigu Samhita Dharma-Karma Yoga"]
+    }
+  ],
+  "metadata": {
+    "total_rules": 10,
+    "last_updated": "2026-01-07",
+    "sources": ["Bhrigu Samhita", "Moksha Shastra Texts"]
+  }
+}

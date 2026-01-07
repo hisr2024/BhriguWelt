@@ -205,7 +205,16 @@ try:
         ai_routes,
         bhrigu_predictions_routes
     )
-    print("✓ All route modules imported successfully")
+    print("✓ Legacy route modules imported successfully")
+    
+    # Import new unified predictions routes
+    try:
+        from routes import predictions_unified
+        print("✓ Unified predictions routes imported successfully")
+    except Exception as e:
+        print(f"WARNING: Failed to import unified predictions routes: {e}", file=sys.stderr)
+        predictions_unified = None
+        
 except Exception as e:
     print(f"ERROR: Failed to import routes: {e}", file=sys.stderr)
     raise
@@ -223,6 +232,12 @@ app.register_blueprint(predictions_routes.bp)
 app.register_blueprint(user_routes.bp)
 app.register_blueprint(ai_routes.bp)
 app.register_blueprint(bhrigu_predictions_routes.bp)
+
+# Register new unified predictions blueprint
+if predictions_unified:
+    app.register_blueprint(predictions_unified.bp)
+    print("✓ Unified predictions blueprint registered")
+
 print("✓ All blueprints registered")
 
 @app.route('/')
@@ -231,7 +246,7 @@ def index():
     return jsonify({
         'status': 'success',
         'message': 'BhriguWelt Astrology API is running',
-        'version': '1.0.0',
+        'version': '2.0.0',
         'timestamp': datetime.utcnow().isoformat(),
         'endpoints': {
             'astrology': '/api/astrology',
@@ -242,22 +257,53 @@ def index():
             'life_events': '/api/life-events',
             'karmic_remedies': '/api/karmic-remedies',
             'predictions': '/api/predictions',
+            'predictions_unified': '/api/predictions/<category>',
+            'cosmic_blueprint': '/api/predictions/cosmic-blueprint',
             'users': '/api/users',
             'ai': '/api/ai',
             'bhrigu_predictions': '/api/bhrigu-predictions'
+        },
+        'features': {
+            'online_mode': 'OpenAI-powered predictions with authentic corpus',
+            'offline_mode': 'Local Bhrigu Samhita & Nadi Jyotisha wisdom',
+            'hybrid_mode': 'Automatic fallback from online to offline',
+            'trilingual': 'English, Hindi, Sanskrit support',
+            'categories': '14+ prediction categories supported'
         }
     })
 
 @app.route('/health')
 def health():
     """Detailed health check"""
+    # Check orchestrator status
+    orchestrator_status = 'not_initialized'
+    online_available = False
+    offline_available = False
+    
+    try:
+        from services.prediction_orchestrator import get_prediction_orchestrator
+        orchestrator = get_prediction_orchestrator()
+        orchestrator_status = 'operational'
+        online_available = bool(orchestrator.openai_service and orchestrator.openai_service.enabled)
+        offline_available = bool(orchestrator.offline_wisdom)
+    except Exception as e:
+        logger.warning(f"Orchestrator check failed: {e}")
+    
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.utcnow().isoformat(),
         'services': {
             'api': 'operational',
             'database': 'operational',
-            'openai': 'operational'
+            'openai': 'operational' if online_available else 'offline',
+            'prediction_orchestrator': orchestrator_status,
+            'offline_wisdom': 'operational' if offline_available else 'unavailable'
+        },
+        'features': {
+            'online_predictions': online_available,
+            'offline_predictions': offline_available,
+            'hybrid_mode': online_available and offline_available,
+            'trilingual_support': True
         }
     })
 

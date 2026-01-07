@@ -1,0 +1,121 @@
+{
+  "category": "career",
+  "tradition": "bhrigu_samhita",
+  "rules": [
+    {
+      "rule_id": "CAR-001",
+      "priority": 90,
+      "trigger": "lord_of_house_in_house(10, 1)",
+      "interpretation": {
+        "en": "The 10th lord in the ascendant indicates strong career focus and self-made success. Professional identity is central to self-image.",
+        "hi": "दशम भाव का स्वामी लग्न में होने से करियर पर मजबूत ध्यान और स्व-निर्मित सफलता मिलती है।",
+        "sa": "दशमभावस्य स्वामी लग्ने स्थितः कर्मणि दृढं ध्यानं स्वनिर्मितं च सफलतां सूचयति।"
+      },
+      "citations": ["Bhrigu Samhita Chapter 10, Verse 15"]
+    },
+    {
+      "rule_id": "CAR-002",
+      "priority": 88,
+      "trigger": "planet_in_house(Sun, 10)",
+      "interpretation": {
+        "en": "Sun in the 10th house brings authority, leadership roles, and government connections. Career brings recognition and status.",
+        "hi": "दशम भाव में सूर्य अधिकार, नेतृत्व भूमिका और सरकारी संबंध लाता है।",
+        "sa": "दशमभावे सूर्यः अधिकारं नेतृत्वं सरकारसम्बन्धं च प्रददाति।"
+      },
+      "citations": ["Bhrigu Samhita Solar Principles, Folio 42"]
+    },
+    {
+      "rule_id": "CAR-003",
+      "priority": 85,
+      "trigger": "planet_in_house(Saturn, 10)",
+      "interpretation": {
+        "en": "Saturn in the 10th house indicates career success through hard work, discipline, and long-term planning. Delays may occur but results are stable.",
+        "hi": "दशम भाव में शनि कड़ी मेहनत और अनुशासन से करियर सफलता दिखाता है।",
+        "sa": "दशमभावे शनिः कठोरपरिश्रमेण अनुशासनेन च कर्मसफलतां सूचयति।"
+      },
+      "citations": ["Bhrigu Samhita Saturn Chapter, Verse 28"]
+    },
+    {
+      "rule_id": "CAR-004",
+      "priority": 87,
+      "trigger": "planet_in_house(Jupiter, 10)",
+      "interpretation": {
+        "en": "Jupiter in the 10th house brings careers in teaching, law, counseling, or spiritual guidance. Ethical reputation and wisdom-based success.",
+        "hi": "दशम भाव में गुरु शिक्षण, कानून या आध्यात्मिक मार्गदर्शन में करियर लाता है।",
+        "sa": "दशमभावे गुरुः शिक्षणे विधौ आध्यात्मिकमार्गदर्शने वा कर्म प्रददाति।"
+      },
+      "citations": ["Bhrigu Samhita Jupiter Principles"]
+    },
+    {
+      "rule_id": "CAR-005",
+      "priority": 86,
+      "trigger": "planet_in_house(Mars, 10)",
+      "interpretation": {
+        "en": "Mars in the 10th house indicates careers in engineering, military, sports, or technical fields. Dynamic action and competitive success.",
+        "hi": "दशम भाव में मंगल इंजीनियरिंग, सेना या तकनीकी क्षेत्रों में करियर दिखाता है।",
+        "sa": "दशमभावे मङ्गलः इञ्जीनियरिङ्ग सैन्यं तान्त्रिकक्षेत्राणि वा सूचयति।"
+      },
+      "citations": ["Bhrigu Samhita Mars Chapter"]
+    },
+    {
+      "rule_id": "CAR-006",
+      "priority": 84,
+      "trigger": "planet_in_house(Mercury, 10)",
+      "interpretation": {
+        "en": "Mercury in the 10th house favors careers in communication, business, writing, or information technology. Intellectual and versatile approach.",
+        "hi": "दशम भाव में बुध संचार, व्यापार या लेखन में करियर के लिए अनुकूल है।",
+        "sa": "दशमभावे बुधः संचारे व्यापारे लेखने वा कर्मणि अनुकूलः।"
+      },
+      "citations": ["Bhrigu Samhita Mercury Principles"]
+    },
+    {
+      "rule_id": "CAR-007",
+      "priority": 83,
+      "trigger": "planet_in_house(Venus, 10)",
+      "interpretation": {
+        "en": "Venus in the 10th house brings careers in arts, entertainment, luxury goods, or beauty industries. Creative and aesthetic success.",
+        "hi": "दशम भाव में शुक्र कला, मनोरंजन या सौंदर्य उद्योगों में करियर लाता है।",
+        "sa": "दशमभावे शुक्रः कलासु मनोरञ्जने सौन्दर्योद्योगेषु वा कर्म प्रददाति।"
+      },
+      "citations": ["Bhrigu Samhita Venus Chapter"]
+    },
+    {
+      "rule_id": "CAR-008",
+      "priority": 89,
+      "trigger": "lord_of_house_in_house(10, 10)",
+      "interpretation": {
+        "en": "The 10th lord in its own house (Swarashi) creates Rajayoga. Strong professional authority, career stability, and recognition.",
+        "hi": "दशम भाव का स्वामी अपने ही भाव में राजयोग बनाता है। मजबूत पेशेवर प्राधिकरण।",
+        "sa": "दशमभावस्य स्वामी स्वभावे स्थितः राजयोगं करोति। दृढं कर्मप्राधिकरणम्।"
+      },
+      "citations": ["Bhrigu Samhita Rajayoga Principles, Verse 12"]
+    },
+    {
+      "rule_id": "CAR-009",
+      "priority": 82,
+      "trigger": "conjunction(Sun, Mercury, 10)",
+      "interpretation": {
+        "en": "Sun-Mercury conjunction in 10th house creates Budhaditya Yoga. Brilliant intellect applied to career. Success in administration or communication.",
+        "hi": "दशम भाव में सूर्य-बुध युति बुधादित्य योग बनाती है। करियर में उत्कृष्ट बुद्धि।",
+        "sa": "दशमभावे सूर्यबुधयुतिः बुधादित्ययोगं करोति। कर्मणि तीक्ष्णबुद्धिः।"
+      },
+      "citations": ["Bhrigu Samhita Special Yogas"]
+    },
+    {
+      "rule_id": "CAR-010",
+      "priority": 81,
+      "trigger": "lord_of_house_in_house(10, 11)",
+      "interpretation": {
+        "en": "The 10th lord in 11th house indicates career gains through networks, large organizations, and elder siblings. Financial success from profession.",
+        "hi": "ग्यारहवें भाव में दशम भाव का स्वामी नेटवर्क के माध्यम से करियर लाभ दिखाता है।",
+        "sa": "एकादशभावे दशमस्वामी जालकैः महासंस्थाभिः च कर्मलाभं सूचयति।"
+      },
+      "citations": ["Bhrigu Samhita House Lordship Combinations"]
+    }
+  ],
+  "metadata": {
+    "total_rules": 10,
+    "last_updated": "2026-01-07",
+    "sources": ["Bhrigu Samhita", "Classical Vedic Texts"]
+  }
+}
