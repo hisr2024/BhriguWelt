@@ -1,0 +1,275 @@
+{
+  "category": "mantras",
+  "mantras": [
+    {
+      "id": "gayatri",
+      "name": {
+        "en": "Gayatri Mantra",
+        "hi": "गायत्री मंत्र",
+        "sa": "गायत्रीमन्त्रः"
+      },
+      "mantra": "Om Bhur Bhuva Swaha, Tat Savitur Varenyam, Bhargo Devasya Dhimahi, Dhiyo Yo Nah Prachodayat",
+      "deity": "Savitar (Solar deity)",
+      "purpose": {
+        "en": "Universal enlightenment and spiritual illumination",
+        "hi": "सार्वभौमिक ज्ञान और आध्यात्मिक प्रकाश",
+        "sa": "सार्वभौमिकज्ञानं आध्यात्मिकप्रकाशः च"
+      },
+      "repetitions": 108,
+      "best_time": "Sunrise",
+      "benefits": {
+        "en": "Removes darkness of ignorance, enhances intellect, spiritual protection",
+        "hi": "अज्ञान के अंधकार को दूर करता है, बुद्धि बढ़ाता है",
+        "sa": "अज्ञानान्धकारं नाशयति, बुद्धिं वर्धयति"
+      }
+    },
+    {
+      "id": "maha_mrityunjaya",
+      "name": {
+        "en": "Maha Mrityunjaya Mantra",
+        "hi": "महा मृत्युंजय मंत्र",
+        "sa": "महामृत्युञ्जयमन्त्रः"
+      },
+      "mantra": "Om Tryambakam Yajamahe Sugandhim Pushti Vardhanam, Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat",
+      "deity": "Shiva",
+      "purpose": {
+        "en": "Victory over death, healing, protection from diseases",
+        "hi": "मृत्यु पर विजय, उपचार, रोगों से सुरक्षा",
+        "sa": "मृत्युविजयः, चिकित्सा, रोगेभ्यः रक्षा"
+      },
+      "repetitions": 108,
+      "best_time": "Early morning or during Rahu Kaal",
+      "benefits": {
+        "en": "Healing, longevity, protection from accidents and diseases",
+        "hi": "उपचार, दीर्घायु, दुर्घटनाओं और रोगों से सुरक्षा",
+        "sa": "चिकित्सा, दीर्घजीवनं, दुर्घटनारोगेभ्यः रक्षा"
+      }
+    },
+    {
+      "id": "sun_mantra",
+      "name": {
+        "en": "Surya Mantra",
+        "hi": "सूर्य मंत्र",
+        "sa": "सूर्यमन्त्रः"
+      },
+      "mantra": "Om Suryaya Namah",
+      "deity": "Surya (Sun)",
+      "purpose": {
+        "en": "Strengthen Sun, enhance vitality, leadership, father relationship",
+        "hi": "सूर्य को मजबूत करें, जीवन शक्ति बढ़ाएं, नेतृत्व",
+        "sa": "सूर्यं बलीकुर्यात्, प्राणशक्तिं वर्धयेत्, नेतृत्वम्"
+      },
+      "repetitions": "7 on Sundays, 108 daily",
+      "best_time": "Sunrise",
+      "benefits": {
+        "en": "Confidence, vitality, authority, career success",
+        "hi": "आत्मविश्वास, जीवन शक्ति, अधिकार, करियर सफलता",
+        "sa": "आत्मविश्वासः, प्राणशक्तिः, अधिकारः, कर्मसफलता"
+      }
+    },
+    {
+      "id": "moon_mantra",
+      "name": {
+        "en": "Chandra Mantra",
+        "hi": "चंद्र मंत्र",
+        "sa": "चन्द्रमन्त्रः"
+      },
+      "mantra": "Om Chandraya Namah",
+      "deity": "Chandra (Moon)",
+      "purpose": {
+        "en": "Emotional balance, mental peace, mother relationship",
+        "hi": "भावनात्मक संतुलन, मानसिक शांति, मां के साथ संबंध",
+        "sa": "भावनात्मकसाम्यं, मानसिकशान्तिः, मातृसम्बन्धः"
+      },
+      "repetitions": "11 on Mondays, 108 daily",
+      "best_time": "Evening during moonrise",
+      "benefits": {
+        "en": "Emotional stability, mental clarity, intuition",
+        "hi": "भावनात्मक स्थिरता, मानसिक स्पष्टता, अंतर्ज्ञान",
+        "sa": "भावनात्मकस्थैर्यं, मानसिकस्पष्टता, अन्तर्ज्ञानम्"
+      }
+    },
+    {
+      "id": "mars_mantra",
+      "name": {
+        "en": "Mangal Mantra",
+        "hi": "मंगल मंत्र",
+        "sa": "मङ्गलमन्त्रः"
+      },
+      "mantra": "Om Mangalaya Namah",
+      "deity": "Mangal (Mars)",
+      "purpose": {
+        "en": "Courage, energy, remove Mangal Dosha, brother relationship",
+        "hi": "साहस, ऊर्जा, मंगल दोष को दूर करें, भाई का रिश्ता",
+        "sa": "साहसं, शक्तिः, मङ्गलदोषनाशः, भ्रातृसम्बन्धः"
+      },
+      "repetitions": "7 on Tuesdays, 108 daily",
+      "best_time": "Tuesday morning",
+      "benefits": {
+        "en": "Physical strength, courage, property, siblings harmony",
+        "hi": "शारीरिक शक्ति, साहस, संपत्ति, भाई-बहन सामंजस्य",
+        "sa": "शारीरिकशक्तिः, साहसं, सम्पत्तिः, भ्रातृसामञ्जस्यम्"
+      }
+    },
+    {
+      "id": "mercury_mantra",
+      "name": {
+        "en": "Budha Mantra",
+        "hi": "बुध मंत्र",
+        "sa": "बुधमन्त्रः"
+      },
+      "mantra": "Om Budhaya Namah",
+      "deity": "Budha (Mercury)",
+      "purpose": {
+        "en": "Intelligence, communication, business success",
+        "hi": "बुद्धि, संचार, व्यापार सफलता",
+        "sa": "बुद्धिः, संचारः, व्यापारसफलता"
+      },
+      "repetitions": "9 on Wednesdays, 108 daily",
+      "best_time": "Wednesday morning",
+      "benefits": {
+        "en": "Sharp intellect, eloquence, business acumen, learning",
+        "hi": "तीक्ष्ण बुद्धि, वाक्पटुता, व्यापार कौशल, सीखना",
+        "sa": "तीक्ष्णबुद्धिः, वाक्पटुता, व्यापारकौशलं, शिक्षणम्"
+      }
+    },
+    {
+      "id": "jupiter_mantra",
+      "name": {
+        "en": "Guru Mantra",
+        "hi": "गुरु मंत्र",
+        "sa": "गुरुमन्त्रः"
+      },
+      "mantra": "Om Gurave Namah",
+      "deity": "Guru (Jupiter)",
+      "purpose": {
+        "en": "Wisdom, prosperity, teacher relationship, children",
+        "hi": "ज्ञान, समृद्धि, शिक्षक संबंध, बच्चे",
+        "sa": "ज्ञानं, समृद्धिः, गुरुसम्बन्धः, सन्तानम्"
+      },
+      "repetitions": "19 on Thursdays, 108 daily",
+      "best_time": "Thursday morning",
+      "benefits": {
+        "en": "Spiritual wisdom, wealth, children, teaching ability",
+        "hi": "आध्यात्मिक ज्ञान, धन, बच्चे, शिक्षण क्षमता",
+        "sa": "आध्यात्मिकज्ञानं, धनं, सन्तानं, शिक्षणक्षमता"
+      }
+    },
+    {
+      "id": "venus_mantra",
+      "name": {
+        "en": "Shukra Mantra",
+        "hi": "शुक्र मंत्र",
+        "sa": "शुक्रमन्त्रः"
+      },
+      "mantra": "Om Shukraya Namah",
+      "deity": "Shukra (Venus)",
+      "purpose": {
+        "en": "Love, marriage, arts, luxury, spouse relationship",
+        "hi": "प्रेम, विवाह, कला, विलासिता, पति/पत्नी संबंध",
+        "sa": "प्रेम, विवाहः, कला, विलासिता, पतिपत्नीसम्बन्धः"
+      },
+      "repetitions": "16 on Fridays, 108 daily",
+      "best_time": "Friday morning",
+      "benefits": {
+        "en": "Harmonious relationships, artistic talent, luxury, beauty",
+        "hi": "सामंजस्यपूर्ण संबंध, कलात्मक प्रतिभा, विलासिता",
+        "sa": "सामञ्जस्यपूर्णाः सम्बन्धाः, कलात्मकप्रतिभा, विलासिता"
+      }
+    },
+    {
+      "id": "saturn_mantra",
+      "name": {
+        "en": "Shani Mantra",
+        "hi": "शनि मंत्र",
+        "sa": "शनिमन्त्रः"
+      },
+      "mantra": "Om Shanicharaya Namah",
+      "deity": "Shani (Saturn)",
+      "purpose": {
+        "en": "Remove Saturn afflictions, discipline, patience, karma",
+        "hi": "शनि पीड़ा दूर करें, अनुशासन, धैर्य, कर्म",
+        "sa": "शनिपीडानाशः, अनुशासनं, धैर्यं, कर्म"
+      },
+      "repetitions": "23 on Saturdays, 108 daily",
+      "best_time": "Saturday evening",
+      "benefits": {
+        "en": "Discipline, patience, karmic resolution, longevity",
+        "hi": "अनुशासन, धैर्य, कर्म समाधान, दीर्घायु",
+        "sa": "अनुशासनं, धैर्यं, कर्मसमाधानं, दीर्घजीवनम्"
+      }
+    },
+    {
+      "id": "rahu_mantra",
+      "name": {
+        "en": "Rahu Mantra",
+        "hi": "राहु मंत्र",
+        "sa": "राहुमन्त्रः"
+      },
+      "mantra": "Om Rahave Namah",
+      "deity": "Rahu (North Node)",
+      "purpose": {
+        "en": "Remove Rahu afflictions, material success, foreign connections",
+        "hi": "राहु पीड़ा दूर करें, भौतिक सफलता, विदेशी संबंध",
+        "sa": "राहुपीडानाशः, भौतिकसफलता, विदेशसम्बन्धः"
+      },
+      "repetitions": "18 on Saturdays",
+      "best_time": "Saturday evening",
+      "benefits": {
+        "en": "Material gains, technology, foreign opportunities",
+        "hi": "भौतिक लाभ, प्रौद्योगिकी, विदेशी अवसर",
+        "sa": "भौतिकलाभः, तन्त्रज्ञानं, विदेशावसराः"
+      }
+    },
+    {
+      "id": "ketu_mantra",
+      "name": {
+        "en": "Ketu Mantra",
+        "hi": "केतु मंत्र",
+        "sa": "केतुमन्त्रः"
+      },
+      "mantra": "Om Ketave Namah",
+      "deity": "Ketu (South Node)",
+      "purpose": {
+        "en": "Spiritual liberation, remove Ketu afflictions, moksha",
+        "hi": "आध्यात्मिक मुक्ति, केतु पीड़ा दूर करें, मोक्ष",
+        "sa": "आध्यात्मिकमुक्तिः, केतुपीडानाशः, मोक्षः"
+      },
+      "repetitions": "17 on Tuesdays",
+      "best_time": "Tuesday evening",
+      "benefits": {
+        "en": "Spiritual insight, detachment, mystical knowledge",
+        "hi": "आध्यात्मिक अंतर्दृष्टि, वैराग्य, रहस्यमय ज्ञान",
+        "sa": "आध्यात्मिकबोधः, वैराग्यं, रहस्यज्ञानम्"
+      }
+    },
+    {
+      "id": "ganesh_mantra",
+      "name": {
+        "en": "Ganesh Mantra",
+        "hi": "गणेश मंत्र",
+        "sa": "गणेशमन्त्रः"
+      },
+      "mantra": "Om Gam Ganapataye Namah",
+      "deity": "Ganesha",
+      "purpose": {
+        "en": "Remove obstacles, new beginnings, success",
+        "hi": "बाधाओं को दूर करें, नई शुरुआत, सफलता",
+        "sa": "विघ्ननाशः, नवप्रारम्भः, सफलता"
+      },
+      "repetitions": 108,
+      "best_time": "Beginning of any new venture",
+      "benefits": {
+        "en": "Obstacle removal, wisdom, success in endeavors",
+        "hi": "बाधा निवारण, ज्ञान, प्रयासों में सफलता",
+        "sa": "विघ्ननाशः, ज्ञानं, प्रयत्नेषु सफलता"
+      }
+    }
+  ],
+  "metadata": {
+    "total_mantras": 12,
+    "tradition": "Vedic Mantras",
+    "last_updated": "2026-01-07",
+    "sources": ["Vedic Texts", "Mantra Shastra"]
+  }
+}

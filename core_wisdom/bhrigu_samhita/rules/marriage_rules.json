@@ -1,0 +1,121 @@
+{
+  "category": "marriage",
+  "tradition": "bhrigu_samhita",
+  "rules": [
+    {
+      "rule_id": "MAR-001",
+      "priority": 90,
+      "trigger": "planet_in_house(Venus, 7)",
+      "interpretation": {
+        "en": "Venus in 7th house brings beautiful, artistic, and harmonious spouse. Partnership characterized by mutual appreciation and comfort.",
+        "hi": "सातवें भाव में शुक्र सुंदर, कलात्मक और सामंजस्यपूर्ण जीवनसाथी लाता है।",
+        "sa": "सप्तमभावे शुक्रः सुन्दरं कलात्मकं सामञ्जस्यपूर्णं च पतिं/पत्नीं प्रददाति।"
+      },
+      "citations": ["Bhrigu Samhita Marriage Chapter, Verse 21"]
+    },
+    {
+      "rule_id": "MAR-002",
+      "priority": 88,
+      "trigger": "lord_of_house_in_house(7, 1)",
+      "interpretation": {
+        "en": "The 7th lord in ascendant indicates spouse brings support to self-development. Marriage enhances personal identity and confidence.",
+        "hi": "लग्न में सातवें भाव का स्वामी दर्शाता है कि जीवनसाथी आत्म-विकास में सहायता लाता है।",
+        "sa": "लग्ने सप्तमस्वामी पतिः/पत्नी आत्मविकासे साहाय्यं करोतीति सूचयति।"
+      },
+      "citations": ["Bhrigu Samhita 7th Lord Placement"]
+    },
+    {
+      "rule_id": "MAR-003",
+      "priority": 87,
+      "trigger": "lord_of_house_in_house(7, 4)",
+      "interpretation": {
+        "en": "The 7th lord in 4th house suggests spouse from same region or through family. Marriage enhances domestic harmony and emotional security.",
+        "hi": "चौथे भाव में सातवें भाव का स्वामी परिवार के माध्यम से जीवनसाथी का सुझाव देता है।",
+        "sa": "चतुर्थभावे सप्तमस्वामी स्वप्रदेशात् कुटुम्बेन वा पतिं/पत्नीं सूचयति।"
+      },
+      "citations": ["Bhrigu Samhita Spouse Origin Principles"]
+    },
+    {
+      "rule_id": "MAR-004",
+      "priority": 89,
+      "trigger": "planet_in_house(Jupiter, 7)",
+      "interpretation": {
+        "en": "Jupiter in 7th house brings wise, virtuous, and supportive spouse. Marriage based on mutual respect and philosophical alignment.",
+        "hi": "सातवें भाव में गुरु बुद्धिमान, सदाचारी और सहायक जीवनसाथी लाता है।",
+        "sa": "सप्तमभावे गुरुः विद्वान् सदाचारी साहाय्यकारी च पतिं/पत्नीं प्रददाति।"
+      },
+      "citations": ["Bhrigu Samhita Jupiter Marriage Blessings"]
+    },
+    {
+      "rule_id": "MAR-005",
+      "priority": 85,
+      "trigger": "conjunction(Venus, Jupiter, 7)",
+      "interpretation": {
+        "en": "Venus-Jupiter conjunction in 7th house creates highly auspicious marriage yoga. Harmonious, prosperous, and spiritually aligned partnership.",
+        "hi": "सातवें भाव में शुक्र-गुरु युति अत्यंत शुभ विवाह योग बनाती है।",
+        "sa": "सप्तमभावे शुक्रगुरुयुतिः अतिशुभं विवाहयोगं करोति।"
+      },
+      "citations": ["Bhrigu Samhita Special Marriage Combinations"]
+    },
+    {
+      "rule_id": "MAR-006",
+      "priority": 84,
+      "trigger": "lord_of_house_in_house(7, 10)",
+      "interpretation": {
+        "en": "The 7th lord in 10th house indicates spouse supports career. Public partnership or business collaboration with spouse possible.",
+        "hi": "दसवें भाव में सातवें भाव का स्वामी दर्शाता है कि जीवनसाथी करियर का समर्थन करता है।",
+        "sa": "दशमभावे सप्तमस्वामी पतिः/पत्नी कर्मणि साहाय्यं करोतीति सूचयति।"
+      },
+      "citations": ["Bhrigu Samhita Partnership Career Connection"]
+    },
+    {
+      "rule_id": "MAR-007",
+      "priority": 86,
+      "trigger": "planet_in_house(Moon, 7)",
+      "interpretation": {
+        "en": "Moon in 7th house brings emotionally expressive and nurturing spouse. Strong emotional bond and public popularity through partnership.",
+        "hi": "सातवें भाव में चंद्र भावनात्मक रूप से अभिव्यक्त और पोषण करने वाला जीवनसाथी लाता है।",
+        "sa": "सप्तमभावे चन्द्रः भावनात्मकं पोषणकारिणं च पतिं/पत्नीं प्रददाति।"
+      },
+      "citations": ["Bhrigu Samhita Moon Partnership Effects"]
+    },
+    {
+      "rule_id": "MAR-008",
+      "priority": 83,
+      "trigger": "lord_of_house_in_house(7, 9)",
+      "interpretation": {
+        "en": "The 7th lord in 9th house indicates spouse from different culture or met during travel. Marriage brings fortune and spiritual growth.",
+        "hi": "नवें भाव में सातवें भाव का स्वामी विभिन्न संस्कृति से जीवनसाथी का संकेत देता है।",
+        "sa": "नवमभावे सप्तमस्वामी भिन्नसंस्कृतेः पतिं/पत्नीं सूचयति। विवाहः भाग्यं वृद्धयति।"
+      },
+      "citations": ["Bhrigu Samhita Foreign Marriage Indicators"]
+    },
+    {
+      "rule_id": "MAR-009",
+      "priority": 82,
+      "trigger": "planet_in_house(Mercury, 7)",
+      "interpretation": {
+        "en": "Mercury in 7th house brings intellectually compatible and communicative spouse. Partnership thrives on mental connection and dialogue.",
+        "hi": "सातवें भाव में बुध बौद्धिक रूप से संगत और संवादी जीवनसाथी लाता है।",
+        "sa": "सप्तमभावे बुधः बौद्धिकरूपेण संगतं संवादशीलं च पतिं/पत्नीं प्रददाति।"
+      },
+      "citations": ["Bhrigu Samhita Mercury Marriage Qualities"]
+    },
+    {
+      "rule_id": "MAR-010",
+      "priority": 81,
+      "trigger": "lord_of_house_in_house(1, 7)",
+      "interpretation": {
+        "en": "The ascendant lord in 7th house creates strong focus on partnership. Life purpose fulfilled through relationships and collaborations.",
+        "hi": "सातवें भाव में लग्न का स्वामी साझेदारी पर मजबूत ध्यान केंद्रित करता है।",
+        "sa": "सप्तमभावे लग्नस्वामी साझेदारिभिः जीवनोद्देश्यं सिद्ध्यतीति सूचयति।"
+      },
+      "citations": ["Bhrigu Samhita Life Purpose Through Partnership"]
+    }
+  ],
+  "metadata": {
+    "total_rules": 10,
+    "last_updated": "2026-01-07",
+    "sources": ["Bhrigu Samhita", "Classical Marriage Astrology"]
+  }
+}

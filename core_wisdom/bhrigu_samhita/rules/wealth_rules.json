@@ -1,0 +1,121 @@
+{
+  "category": "wealth",
+  "tradition": "bhrigu_samhita",
+  "rules": [
+    {
+      "rule_id": "WEA-001",
+      "priority": 88,
+      "trigger": "lord_of_house_in_house(2, 11)",
+      "interpretation": {
+        "en": "The 2nd lord in 11th house brings wealth through networks, elder siblings, and large organizations. Multiple income streams.",
+        "hi": "ग्यारहवें भाव में द्वितीय भाव का स्वामी नेटवर्क के माध्यम से धन लाता है।",
+        "sa": "एकादशभावे द्वितीयस्वामी जालकैः एतसंघैः च धनं प्रददाति।"
+      },
+      "citations": ["Bhrigu Samhita Wealth Principles, Verse 8"]
+    },
+    {
+      "rule_id": "WEA-002",
+      "priority": 90,
+      "trigger": "planet_in_house(Jupiter, 2)",
+      "interpretation": {
+        "en": "Jupiter in 2nd house expands family wealth and brings prosperity through righteous means. Generous and truthful speech.",
+        "hi": "द्वितीय भाव में गुरु पारिवारिक धन का विस्तार करता है और धार्मिक तरीकों से समृद्धि लाता है।",
+        "sa": "द्वितीयभावे गुरुः कुटुम्बधनं वर्धयति धर्मेण च समृद्धिं प्रददाति।"
+      },
+      "citations": ["Bhrigu Samhita Jupiter in 2nd House"]
+    },
+    {
+      "rule_id": "WEA-003",
+      "priority": 87,
+      "trigger": "planet_in_house(Venus, 2)",
+      "interpretation": {
+        "en": "Venus in 2nd house brings wealth through arts, luxury goods, and beauty industries. Pleasant speech attracts financial opportunities.",
+        "hi": "द्वितीय भाव में शुक्र कला और विलासिता के सामान के माध्यम से धन लाता है।",
+        "sa": "द्वितीयभावे शुक्रः कलाभिः विलासद्रव्यैः च धनं प्रददाति।"
+      },
+      "citations": ["Bhrigu Samhita Venus Wealth Yogas"]
+    },
+    {
+      "rule_id": "WEA-004",
+      "priority": 85,
+      "trigger": "lord_of_house_in_house(11, 2)",
+      "interpretation": {
+        "en": "The 11th lord in 2nd house creates direct connection between gains and family wealth. Income readily converts to savings.",
+        "hi": "द्वितीय भाव में एकादश भाव का स्वामी लाभ और पारिवारिक धन के बीच सीधा संबंध बनाता है।",
+        "sa": "द्वितीयभावे एकादशस्वामी लाभस्य कुटुम्बधनस्य च प्रत्यक्षं सम्बन्धं करोति।"
+      },
+      "citations": ["Bhrigu Samhita Wealth Accumulation"]
+    },
+    {
+      "rule_id": "WEA-005",
+      "priority": 86,
+      "trigger": "planet_in_house(Mercury, 2)",
+      "interpretation": {
+        "en": "Mercury in 2nd house brings wealth through communication, business acumen, and intellectual pursuits. Clever financial management.",
+        "hi": "द्वितीय भाव में बुध संचार और व्यापारिक कौशल के माध्यम से धन लाता है।",
+        "sa": "द्वितीयभावे बुधः संचारेण व्यापारकौशलेन च धनं प्रददाति।"
+      },
+      "citations": ["Bhrigu Samhita Mercury Financial Yogas"]
+    },
+    {
+      "rule_id": "WEA-006",
+      "priority": 89,
+      "trigger": "conjunction(Jupiter, Venus, 2)",
+      "interpretation": {
+        "en": "Jupiter-Venus conjunction in 2nd house creates exceptional wealth yoga. Abundance through ethical and aesthetic means.",
+        "hi": "द्वितीय भाव में गुरु-शुक्र युति असाधारण धन योग बनाती है।",
+        "sa": "द्वितीयभावे गुरुशुक्रयुतिः विशिष्टं धनयोगं करोति।"
+      },
+      "citations": ["Bhrigu Samhita Special Wealth Combinations"]
+    },
+    {
+      "rule_id": "WEA-007",
+      "priority": 84,
+      "trigger": "lord_of_house_in_house(9, 2)",
+      "interpretation": {
+        "en": "The 9th lord in 2nd house brings wealth through father, teachers, foreign connections, or spiritual work. Fortune supports family prosperity.",
+        "hi": "द्वितीय भाव में नवम भाव का स्वामी पिता, शिक्षकों या विदेशी संबंधों के माध्यम से धन लाता है।",
+        "sa": "द्वितीयभावे नवमस्वामी पित्रा गुरुभिः विदेशसम्बन्धैः वा धनं प्रददाति।"
+      },
+      "citations": ["Bhrigu Samhita Dharma-Artha Connection"]
+    },
+    {
+      "rule_id": "WEA-008",
+      "priority": 82,
+      "trigger": "planet_in_house(Mars, 2)",
+      "interpretation": {
+        "en": "Mars in 2nd house creates wealth through courage, technical skills, or real estate. Direct and assertive financial approach.",
+        "hi": "द्वितीय भाव में मंगल साहस, तकनीकी कौशल या अचल संपत्ति के माध्यम से धन बनाता है।",
+        "sa": "द्वितीयभावे मङ्गलः साहसेन तान्त्रिककौशलेन भूसम्पत्त्या वा धनं करोति।"
+      },
+      "citations": ["Bhrigu Samhita Mars Financial Effects"]
+    },
+    {
+      "rule_id": "WEA-009",
+      "priority": 83,
+      "trigger": "lord_of_house_in_house(10, 2)",
+      "interpretation": {
+        "en": "The 10th lord in 2nd house creates direct career-to-wealth pipeline. Professional success directly enhances family prosperity.",
+        "hi": "द्वितीय भाव में दशम भाव का स्वामी करियर से धन के लिए सीधा मार्ग बनाता है।",
+        "sa": "द्वितीयभावे दशमस्वामी कर्मतः धनस्य प्रत्यक्षमार्गं करोति।"
+      },
+      "citations": ["Bhrigu Samhita Career-Wealth Axis"]
+    },
+    {
+      "rule_id": "WEA-010",
+      "priority": 81,
+      "trigger": "planet_in_house(Moon, 11)",
+      "interpretation": {
+        "en": "Moon in 11th house brings gains through public, women, or liquid products. Fluctuating but consistent income from masses.",
+        "hi": "ग्यारहवें भाव में चंद्र जनता, महिलाओं या तरल उत्पादों के माध्यम से लाभ लाता है।",
+        "sa": "एकादशभावे चन्द्रः जनेन स्त्रीभिः द्रवद्रव्यैः वा लाभं प्रददाति।"
+      },
+      "citations": ["Bhrigu Samhita Moon Gain Principles"]
+    }
+  ],
+  "metadata": {
+    "total_rules": 10,
+    "last_updated": "2026-01-07",
+    "sources": ["Bhrigu Samhita", "Wealth Yogas Compilation"]
+  }
+}
