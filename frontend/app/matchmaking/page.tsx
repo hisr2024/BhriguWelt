@@ -76,13 +76,15 @@ export default function MatchmakingPage() {
   }, [useMyProfile, encryptionKey]);
 
   const loadMyProfile = async () => {
+    if (! encryptionKey) return;
+    
     try {
-      const profile = await getItem(STORES.PROFILES, 'current_profile', encryptionKey);
+      const profile = await getItem(STORES. PROFILES, 'current_profile', encryptionKey);
       if (profile) {
         setPerson1({
           name: profile.name || 'Me',
           date_of_birth: profile.dateOfBirth || '',
-          time_of_birth: profile.timeOfBirth || '',
+          time_of_birth: profile. timeOfBirth || '',
           place_of_birth: profile.placeOfBirth || '',
         });
       }
