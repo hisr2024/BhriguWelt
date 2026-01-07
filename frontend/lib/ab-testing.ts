@@ -315,21 +315,25 @@ export async function trackConversion(testId: string, variantId?: string): Promi
   const userId = getUserId();
 
   // If variantId not provided, get from assignment
-  if (!variantId) {
+  let resolvedVariantId = variantId;
+  if (!resolvedVariantId) {
     const assignment = await getAssignment(testId, userId);
     if (!assignment) return;
-    variantId = assignment.variantId;
+    resolvedVariantId = assignment.variantId;
   }
+
+  // Ensure variantId is defined
+  if (!resolvedVariantId) return;
 
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(METRICS_STORE, 'readwrite');
     const store = transaction.objectStore(METRICS_STORE);
-    const request = store.get([testId, variantId]);
+    const request = store.get([testId, resolvedVariantId]);
 
     request.onsuccess = () => {
       const metrics: ABTestMetrics = request.result || {
         testId,
-        variantId: variantId!,
+        variantId: resolvedVariantId,
         impressions: 0,
         conversions: 0,
         conversionRate: 0,
