@@ -557,3 +557,50 @@ export const bhriguPredictionsAPI = {
     return response.data;
   },
 };
+
+/**
+ * Matchmaking API
+ * Kundali matching and compatibility analysis using Ashtakoot system
+ */
+export const matchmakingAPI = {
+  /**
+   * Calculate detailed compatibility between two individuals
+   * Uses Ashtakoot (8-fold) Guna Milan system
+   */
+  calculateCompatibility: async (data: {
+    person1: BirthDetails & { name?: string };
+    person2: BirthDetails & { name?: string };
+    mode?: 'online' | 'offline' | 'hybrid';
+  }) => {
+    const response = await api.post('/api/matchmaking/compatibility', data);
+    return response.data;
+  },
+
+  /**
+   * Quick compatibility check using zodiac signs
+   */
+  quickMatch: async (data: { zodiac1: string; zodiac2: string }) => {
+    const response = await api.post('/api/matchmaking/quick-match', data);
+    return response.data;
+  },
+
+  /**
+   * Check for marriage doshas (Mangal Dosha, etc.)
+   */
+  checkDoshas: async (data: BirthDetails) => {
+    const response = await api.post('/api/matchmaking/doshas', data);
+    return response.data;
+  },
+
+  /**
+   * Get remedies for improving compatibility
+   */
+  getRemedies: async (data: {
+    compatibility_score: number;
+    doshas?: string[];
+    weak_kutas?: string[];
+  }) => {
+    const response = await api.post('/api/matchmaking/remedies', data);
+    return response.data;
+  },
+};

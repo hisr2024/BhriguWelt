@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, ArrowLeft, Star, Zap } from 'lucide-react';
+import { Heart, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import AnimatedBackground, { FloatingElements } from '../components/AnimatedBackground';
 import GenZCard from '../components/GenZCard';
@@ -41,47 +42,63 @@ export default function MatchmakingPage() {
             💫 Cosmic Matchmaking
           </GenZBadge>
           <h1 className="genz-title mb-6">
-            Find Your Soul Connection
+            Kundali Matching
           </h1>
-          <p className="text-xl text-white/80 leading-relaxed mb-8">
-            Discover compatibility based on cosmic alignment and astrological synergy
+          <p className="text-xl text-white/80 leading-relaxed mb-2">
+            Traditional Ashtakoot (8-fold) Guna Milan system
           </p>
+          <p className="text-sm text-white/60">
+            Discover compatibility based on Vedic astrology principles
+          </p>
+        </motion.div>
 
-          <GenZCard variant="gradient" className="p-12">
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-genz-electric-blue to-genz-purple-haze flex items-center justify-center shadow-genz-glow text-2xl">
-                  ✨
-                </div>
-                <div className="flex-1 text-left">
-                  <h3 className="text-lg font-bold text-white mb-1">Compatibility Score</h3>
-                  <p className="text-white/70">Based on planetary positions</p>
-                </div>
-                <div className="text-4xl font-display font-bold text-genz-neon-green">
-                  95%
+        <GenZCard variant="gradient" className="p-12 text-center">
+          <div className="space-y-6">
+            <div className="text-7xl mb-4">🔮</div>
+            <h2 className="text-3xl font-display font-bold text-white mb-4">
+              Matchmaking Feature Coming Soon
+            </h2>
+            <p className="text-white/80 text-lg max-w-2xl mx-auto mb-8">
+              We're implementing a comprehensive Kundali matching system with:
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto text-left">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">✨</span>
+                <div>
+                  <h3 className="font-bold text-white">Ashtakoot Analysis</h3>
+                  <p className="text-sm text-white/70">8-fold compatibility scoring</p>
                 </div>
               </div>
-
-              <div className="pt-6 border-t border-white/10">
-                <h3 className="text-lg font-bold text-white mb-4">Top Matches</h3>
-                <div className="space-y-3">
-                  {['Aries', 'Leo', 'Sagittarius'].map((sign, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 bg-white/5 rounded-2xl">
-                      <Star className="w-5 h-5 text-genz-cyber-yellow fill-genz-cyber-yellow" />
-                      <span className="flex-1 text-white font-medium">{sign}</span>
-                      <Zap className="w-4 h-4 text-genz-electric-blue" />
-                    </div>
-                  ))}
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">🌟</span>
+                <div>
+                  <h3 className="font-bold text-white">Dosha Detection</h3>
+                  <p className="text-sm text-white/70">Mangal Dosha and more</p>
                 </div>
               </div>
-
-              <GenZButton variant="primary" size="lg" fullWidth className="mt-6">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">💫</span>
+                <div>
+                  <h3 className="font-bold text-white">36-Point System</h3>
+                  <p className="text-sm text-white/70">Traditional Guna Milan</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">🔥</span>
+                <div>
+                  <h3 className="font-bold text-white">Remedies</h3>
+                  <p className="text-sm text-white/70">Personalized solutions</p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-8">
+              <GenZButton variant="primary" size="lg" disabled>
                 <Heart className="w-5 h-5 mr-2" />
-                Explore Matches
+                Start Matching (Coming Soon)
               </GenZButton>
             </div>
-          </GenZCard>
-        </motion.div>
+          </div>
+        </GenZCard>
       </div>
 
       <BottomNav />
