@@ -203,7 +203,8 @@ try:
         predictions_routes,
         user_routes,
         ai_routes,
-        bhrigu_predictions_routes
+        bhrigu_predictions_routes,
+        matchmaking_routes
     )
     print("✓ Legacy route modules imported successfully")
     
@@ -232,6 +233,7 @@ app.register_blueprint(predictions_routes.bp)
 app.register_blueprint(user_routes.bp)
 app.register_blueprint(ai_routes.bp)
 app.register_blueprint(bhrigu_predictions_routes.bp)
+app.register_blueprint(matchmaking_routes.bp)
 
 # Register new unified predictions blueprint
 if predictions_unified:
@@ -259,6 +261,7 @@ def index():
             'predictions': '/api/predictions',
             'predictions_unified': '/api/predictions/<category>',
             'cosmic_blueprint': '/api/predictions/cosmic-blueprint',
+            'matchmaking': '/api/matchmaking',
             'users': '/api/users',
             'ai': '/api/ai',
             'bhrigu_predictions': '/api/bhrigu-predictions'
@@ -268,7 +271,8 @@ def index():
             'offline_mode': 'Local Bhrigu Samhita & Nadi Jyotisha wisdom',
             'hybrid_mode': 'Automatic fallback from online to offline',
             'trilingual': 'English, Hindi, Sanskrit support',
-            'categories': '14+ prediction categories supported'
+            'categories': '14+ prediction categories supported',
+            'matchmaking': 'Ashtakoot Kundali matching with Guna Milan'
         }
     })
 
