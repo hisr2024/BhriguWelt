@@ -603,4 +603,27 @@ export const matchmakingAPI = {
     const response = await api.post('/api/matchmaking/remedies', data);
     return response.data;
   },
+
+export const matchmakingAPI = {
+  /**
+   * Calculate Kundali compatibility between two people
+   */
+  getCompatibility: async (person1: BirthDetails, person2: BirthDetails) => {
+    const response = await api.post('/api/matchmaking/compatibility', {
+      person1,
+      person2,
+    });
+    return response.data;
+  },
+
+  /**
+   * Get detailed Ashtakoot analysis
+   */
+  getAshtakootAnalysis: async (person1: BirthDetails, person2: BirthDetails) => {
+    const response = await api. post('/api/matchmaking/ashtakoot', {
+      person1,
+      person2,
+    });
+    return response.data;
+  },
 };
