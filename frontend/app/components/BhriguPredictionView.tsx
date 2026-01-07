@@ -223,6 +223,46 @@ export default function BhriguPredictionView({
     );
   };
 
+    const renderPredictionContent = () => {
+    if (!prediction) return null;
+
+    // Get the sections configuration for this category
+    const sections = CATEGORY_SECTIONS[category] || [];
+
+    // First, try to get sections from the API response
+    let availableSections = sections. filter(section => {
+      const content = prediction[section.key];
+      if (! content || content.trim() === '') {
+        return false;
+      }
+      const trimmedContent = content.trim();
+      const isRedirectOnly = (
+        trimmedContent.length < 50 &&
+        (trimmedContent.toLowerCase().includes('see full analysis') ||
+         trimmedContent.toLowerCase().includes('see complete') ||
+         trimmedContent.toLowerCase().includes('refer to'))
+      );
+      return !isRedirectOnly;
+    });
+
+    // FALLBACK: If no sections found but full_analysis exists, parse it client-side
+    let parsedFromFullAnalysis:  Record<string, string> = {};
+    if (availableSections.length === 0 && prediction.full_analysis) {
+      parsedFromFullAnalysis = parseFullAnalysisIntoSections(prediction.full_analysis, category);
+      
+      // Update availableSections based on parsed content
+      availableSections = sections.filter(section => {
+        const content = parsedFromFullAnalysis[section. key];
+        return content && content.trim().length > 50;
+      });
+    }
+
+    // Use parsed sections if API sections were empty
+    const getSectionContent = (key: string): string => {
+      return prediction[key] || parsedFromFullAnalysis[key] || '';
+    };
+
+
   const renderPredictionContent = () => {
     if (!prediction) return null;
 
@@ -277,16 +317,14 @@ export default function BhriguPredictionView({
               {availableSections.map((section) => (
                 <div key={section.key}>
                   {renderSection(
-                    section.key,
+                    section. key,
                     section.title,
-                    prediction[section.key],
+                    getSectionContent(section.key),
                     section.color
                   )}
                 </div>
               ))}
             </div>
-          </div>
-        )}
 
         {/* Full Analysis - Collapsible at the bottom */}
         {prediction.full_analysis && (
