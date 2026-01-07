@@ -14,6 +14,7 @@ import AIChatInterface from '../components/AIChatInterface';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
 import { useRouter } from 'next/navigation';
+import { astrologyAPI } from '@/lib/api';
 
 export default function BirthChartPage() {
   const [chartData, setChartData] = useState<any>(null);
@@ -47,11 +48,34 @@ export default function BirthChartPage() {
     if (!encryptionKey) return;
 
     try {
+      const profile = await getItem(STORES.PROFILES, 'current_profile', encryptionKey);
+      
+      // Try API first if profile exists
+      if (profile) {
+        try {
+          const response = await astrologyAPI.calculateBirthChart({
+            date_of_birth: profile.dateOfBirth,
+            time_of_birth: profile.timeOfBirth,
+            place_of_birth: profile.placeOfBirth,
+            latitude: profile.latitude,
+            longitude: profile.longitude
+          });
+          
+          if (response && response.data) {
+            setChartData(response.data);
+            return;
+          }
+        } catch (apiError) {
+          console.warn('API call failed, trying stored data:', apiError);
+        }
+      }
+      
+      // Try stored report
       const report = await getItem(STORES.REPORTS, 'current_birth_chart', encryptionKey);
       if (report && report.data) {
         setChartData(report.data);
-      } else {
-        // Mock data for demonstration
+      } else if (profile) {
+        // Only use mock data if we have profile but no stored/API data
         setChartData({
           ascendant: 'Aries',
           zodiac_sign: 'Leo',
