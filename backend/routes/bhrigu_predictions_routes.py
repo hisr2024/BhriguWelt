@@ -81,7 +81,7 @@ def karmic_journey():
             metadata
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in karmic_journey: {str(e)}")
@@ -130,7 +130,7 @@ def past_lives():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in past_lives: {str(e)}")
@@ -176,7 +176,7 @@ def future_lives():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in future_lives: {str(e)}")
@@ -222,7 +222,7 @@ def present_life():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in present_life: {str(e)}")
@@ -268,7 +268,7 @@ def life_events():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in life_events: {str(e)}")
@@ -314,7 +314,7 @@ def karmic_remedies():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in karmic_remedies: {str(e)}")
@@ -360,7 +360,7 @@ def relationships():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in relationships: {str(e)}")
@@ -406,7 +406,7 @@ def predictions():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in predictions: {str(e)}")
