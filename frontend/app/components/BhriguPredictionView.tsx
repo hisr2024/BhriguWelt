@@ -260,10 +260,7 @@ export default function BhriguPredictionView({
   const [question, setQuestion] = useState('');
   const [showFullAnalysis, setShowFullAnalysis] = useState(true);
   const [debugMode, setDebugMode] = useState(false);
-  const searchParams = useSearchParams();
-  const debugFlagEnabled = process.env.NEXT_PUBLIC_DEBUG_PREDICTIONS === 'true';
-  const debugQueryEnabled = searchParams.get('debug') === '1';
-  const debugAllowed = debugFlagEnabled || (process.env.NODE_ENV === 'production' && debugQueryEnabled);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (profile) {
@@ -397,12 +394,52 @@ export default function BhriguPredictionView({
 
     const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES[DEFAULT_COLOR];
 
+    const isExpanded = expandedSections[sectionKey] ?? true;
+
     return (
-      <SectionCard
-        sectionTitle={sectionTitle}
-        content={content}
-        colorClass={colorClass}
-      />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
+                   border ${colorClass.border} ${colorClass.hover} rounded-xl p-6 transition-all`}
+      >
+        <button
+          type="button"
+          onClick={() =>
+            setExpandedSections((prev) => ({
+              ...prev,
+              [sectionKey]: !(prev[sectionKey] ?? true)
+            }))
+          }
+          aria-expanded={isExpanded}
+          className={`w-full text-left text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3`}
+        >
+          <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
+          <span className="flex-1">{sectionTitle}</span>
+          {isExpanded ? (
+            <ChevronUp className="w-5 h-5 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-gray-400" />
+          )}
+        </button>
+        <AnimatePresence initial={false}>
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25 }}
+            >
+              <div className="prose prose-invert prose-cyan max-w-none">
+                <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                  {content}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     );
   };
 
