@@ -141,6 +141,7 @@ export default function BhriguPredictionView({
   const [fromCache, setFromCache] = useState(false);
   const [question, setQuestion] = useState('');
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [debugMode, setDebugMode] = useState(false);
 
   useEffect(() => {
@@ -247,6 +248,14 @@ export default function BhriguPredictionView({
 
     const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES[DEFAULT_COLOR];
 
+    const isExpanded = expandedSections[sectionKey] ?? true;
+    const toggleSection = () => {
+      setExpandedSections((prev) => ({
+        ...prev,
+        [sectionKey]: !(prev[sectionKey] ?? true),
+      }));
+    };
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -257,13 +266,32 @@ export default function BhriguPredictionView({
       >
         <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3`}>
           <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
-          {sectionTitle}
+          <button
+            type="button"
+            onClick={(event) => {
+              if (event.detail > 0) {
+                toggleSection();
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleSection();
+              }
+            }}
+            aria-expanded={isExpanded}
+            className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
+          >
+            {sectionTitle}
+          </button>
         </h3>
-        <div className="prose prose-invert prose-cyan max-w-none">
-          <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-            {content}
+        {isExpanded && (
+          <div className="prose prose-invert prose-cyan max-w-none">
+            <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+              {content}
+            </div>
           </div>
-        </div>
+        )}
       </motion.div>
     );
   };
@@ -351,11 +379,22 @@ export default function BhriguPredictionView({
         {prediction.full_analysis && (
           <div className="mt-8 pt-8 border-t border-gray-700/50">
             <button
-              onClick={() => setShowFullAnalysis(!showFullAnalysis)}
+              onClick={(event) => {
+                if (event.detail > 0) {
+                  setShowFullAnalysis(!showFullAnalysis);
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  setShowFullAnalysis((prev) => !prev);
+                }
+              }}
               className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
                        border border-gray-700/50 rounded-xl p-6
                        hover:border-cyan-500/30 transition-all
-                       flex items-center justify-between group"
+                       flex items-center justify-between group
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
             >
               <div className="flex items-center gap-3">
                 <BookOpen className="w-6 h-6 text-cyan-400" />
