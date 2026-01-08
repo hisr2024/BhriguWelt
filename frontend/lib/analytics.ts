@@ -88,12 +88,16 @@ function getSessionId(): string {
   // Check localStorage for existing session
   const stored = localStorage.getItem('analytics_session');
   if (stored) {
-    const session = JSON.parse(stored);
-    const sessionAge = Date.now() - new Date(session.startTime).getTime();
-    // Session expires after 30 minutes of inactivity
-    if (sessionAge < 30 * 60 * 1000) {
-      currentSessionId = session.id;
-      return currentSessionId;
+    const session = JSON.parse(stored) as { id?: unknown; startTime?: unknown };
+    const storedSessionId = typeof session.id === 'string' ? session.id : null;
+    const storedStartTime = typeof session.startTime === 'string' ? session.startTime : null;
+    if (storedSessionId && storedStartTime) {
+      const sessionAge = Date.now() - new Date(storedStartTime).getTime();
+      // Session expires after 30 minutes of inactivity
+      if (!Number.isNaN(sessionAge) && sessionAge < 30 * 60 * 1000) {
+        currentSessionId = storedSessionId;
+        return currentSessionId;
+      }
     }
   }
 
