@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Activity } from 'lucide-react';
 import BhriguPredictionView from '@/app/components/BhriguPredictionView';
 import PredictionErrorBoundary from '@/app/components/PredictionErrorBoundary';
+import { PredictionViewSkeleton } from '@/app/components/LoadingStates';
 import { bhriguPredictionsAPI } from '@/lib/api';
 import { useEncryptedStorage } from '@/lib/hooks/useEncryptedStorage';
 import type { Profile } from '@/lib/types';
