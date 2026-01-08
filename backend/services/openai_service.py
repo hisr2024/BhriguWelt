@@ -29,6 +29,10 @@ class OpenAIService:
     def __init__(self):
         self.api_key = os.getenv('OPENAI_API_KEY')
         self.base_url = os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
+        self.prompt_token_limit = int(os.getenv('PROMPT_TOKEN_LIMIT', '6000'))
+        self.response_token_limit = int(
+            os.getenv('RESPONSE_TOKEN_LIMIT', os.getenv('OPENAI_MAX_TOKENS', '4000'))
+        )
         self.enabled = bool(self.api_key)
         
         # Initialize corpus loader for authentic source integration
@@ -56,6 +60,46 @@ class OpenAIService:
             'Authorization': f'Bearer {self.api_key}',
             'Content-Type': 'application/json'
         } if self.enabled else {}
+
+    def _approx_token_count(self, text: str) -> int:
+        if not text:
+            return 0
+        return max(1, len(text) // 4)
+
+    def _trim_text_to_token_budget(self, text: str, token_budget: int) -> str:
+        if not text or token_budget <= 0:
+            return ""
+        max_chars = token_budget * 4
+        if len(text) <= max_chars:
+            return text
+        trimmed = text[:max_chars].rstrip()
+        return f"{trimmed}\n\n[Context truncated to fit token budget]"
+
+    def normalize_prompt(self, base_prompt: str, context_text: str, token_budget: int) -> str:
+        if not context_text:
+            return ""
+        base_tokens = self._approx_token_count(base_prompt)
+        remaining_budget = max(token_budget - base_tokens, 0)
+        return self._trim_text_to_token_budget(context_text, remaining_budget)
+
+    def _format_context_summary(self, context: Dict[str, Any]) -> str:
+        if not context:
+            return ""
+        summary_lines = []
+        key_order = [
+            'date_of_birth', 'time_of_birth', 'place_of_birth', 'zodiac_sign', 'moon_sign', 'nakshatra',
+            'ascendant', 'sun_sign', 'rising_sign', 'gender'
+        ]
+        for key in key_order:
+            if key in context and context[key] not in (None, ""):
+                summary_lines.append(f"- {key.replace('_', ' ').title()}: {context[key]}")
+        remaining_keys = [key for key in context.keys() if key not in key_order]
+        for key in sorted(remaining_keys):
+            value = context[key]
+            if value in (None, "", [], {}):
+                continue
+            summary_lines.append(f"- {key.replace('_', ' ').title()}: {value}")
+        return "\n".join(summary_lines)
 
     def generate_prediction(self, prompt: str, context: Dict[str, Any] = None) -> str:
         """
@@ -92,12 +136,7 @@ class OpenAIService:
                     corpus_context += "\n\n**IMPORTANT**: Reference these authentic sutras and folios in your predictions with proper citations.\n"
             
             # Prepare the request payload with enhanced settings for comprehensive predictions
-            payload = {
-                'model': os.getenv('OPENAI_MODEL', 'gpt-4'),
-                'messages': [
-                    {
-                        'role': 'system',
-                        'content': '''You are a master Vedic astrologer deeply versed in the ancient texts of Bhrigu Samhita and Nadi Jyotisha.
+            system_content = '''You are a master Vedic astrologer deeply versed in the ancient texts of Bhrigu Samhita and Nadi Jyotisha.
 
 Your expertise includes:
 - Bhrigu Samhita: The sacred treatise by Maharishi Bhrigu containing life predictions based on planetary positions
@@ -118,6 +157,33 @@ Your predictions must:
 9. **Include confidence scores and source references where applicable**
 
 Always provide detailed, specific predictions with timing when possible.''' + corpus_context
+
+            if context:
+                structured_summary = self._format_context_summary(context)
+                base_prompt = f"{system_content}\n\nUser Prompt:\n{prompt}"
+                normalized_summary = self.normalize_prompt(
+                    base_prompt,
+                    structured_summary,
+                    self.prompt_token_limit
+                )
+                if normalized_summary:
+                    system_content += f"\n\nBirth Chart Summary:\n{normalized_summary}"
+                else:
+                    raw_context = json.dumps(context, ensure_ascii=False)
+                    normalized_raw_context = self.normalize_prompt(
+                        base_prompt,
+                        raw_context,
+                        self.prompt_token_limit
+                    )
+                    if normalized_raw_context:
+                        system_content += f"\n\nBirth Chart Context (raw JSON): {normalized_raw_context}"
+
+            payload = {
+                'model': os.getenv('OPENAI_MODEL', 'gpt-4'),
+                'messages': [
+                    {
+                        'role': 'system',
+                        'content': system_content
                     },
                     {
                         'role': 'user',
@@ -125,11 +191,8 @@ Always provide detailed, specific predictions with timing when possible.''' + co
                     }
                 ],
                 'temperature': float(os.getenv('OPENAI_TEMPERATURE', '0.7')),
-                'max_tokens': int(os.getenv('OPENAI_MAX_TOKENS', '4000'))  # Increased for comprehensive predictions
+                'max_tokens': self.response_token_limit
             }
-
-            if context and not corpus_context:  # Only add raw context if no corpus was injected
-                payload['messages'][0]['content'] += f"\n\nBirth Chart Context: {json.dumps(context)}"
 
             # Make API call with extended timeout for comprehensive predictions
             response = requests.post(
