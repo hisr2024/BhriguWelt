@@ -2,6 +2,7 @@
 Centralized logging configuration for BhriguWelt backend
 """
 import logging
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -88,5 +89,50 @@ def log_response(logger: logging.Logger, response_data: dict, endpoint: str, sta
 
 def log_error(logger: logging.Logger, error: Exception, context: str = None):
     """Log error with context"""
-    error_msg = f"Error in {context}: {str(error)}" if context else str(error)
-    logger.error(error_msg, exc_info=True)
+    log_exception(logger, error, context=context)
+
+
+def _redact_pii(value: str) -> str:
+    """Redact common PII patterns from log messages."""
+    if not value:
+        return value
+
+    patterns = [
+        (r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b', '[REDACTED_EMAIL]'),
+        (r'\b\d{3}-\d{2}-\d{4}\b', '[REDACTED_SSN]'),
+        (r'\b(?:\d[ -]*?){13,16}\b', '[REDACTED_CARD]'),
+        (r'\b(?:\+?\d{1,3}[ -]?)?(?:\(?\d{3}\)?[ -]?)?\d{3}[ -]?\d{4}\b', '[REDACTED_PHONE]'),
+    ]
+
+    redacted = value
+    for pattern, replacement in patterns:
+        redacted = re.sub(pattern, replacement, redacted)
+    return redacted
+
+
+def _get_request_id() -> str:
+    try:
+        from flask import g, request
+    except Exception:
+        return None
+
+    return (
+        getattr(g, 'correlation_id', None)
+        or request.headers.get('X-Request-ID')
+        or request.headers.get('X-Correlation-ID')
+    )
+
+
+def log_exception(logger: logging.Logger, error: Exception, context: str = None, request_id: str = None):
+    """Log exception with PII redaction and request ID."""
+    resolved_request_id = request_id or _get_request_id()
+    redacted_error = _redact_pii(str(error))
+    redacted_context = _redact_pii(context) if context else None
+
+    request_prefix = f"Request ID {resolved_request_id} - " if resolved_request_id else ""
+    if redacted_context:
+        message = f"{request_prefix}{redacted_context}: {redacted_error}"
+    else:
+        message = f"{request_prefix}{redacted_error}"
+
+    logger.error(message, exc_info=True)

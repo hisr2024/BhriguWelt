@@ -5,6 +5,8 @@ Kundali matching and compatibility analysis endpoints
 from flask import Blueprint, request, jsonify
 from services.matchmaking_service import get_matchmaking_service
 import logging
+from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
+from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +49,10 @@ def calculate_compatibility():
         person2_data = data.get('person2')
         mode = data.get('mode', 'hybrid')
         
+        calculator = get_astrology_calculator()
+        if not calculator:
+            return dependency_error_response(get_astrology_dependency_error())
+
         # Validate input
         if not person1_data or not person2_data:
             return jsonify({'error': 'Both person1 and person2 data required'}), 400
@@ -177,14 +183,19 @@ def check_doshas():
     try:
         data = request.get_json()
         
-        from services.astrology_calculator import AstrologyCalculator
-        
-        calculator = AstrologyCalculator()
-        chart = calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=data['place_of_birth']
+            )
+        else:
+            chart = cached_birth_data
         
         # Check Mangal Dosha
         matchmaking_service = get_matchmaking_service()
