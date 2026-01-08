@@ -304,11 +304,11 @@ const loadRelationshipCorpus = async (mode: RelationshipsMode, cacheTtlMs: numbe
   if ((mode === 'online' || mode === 'hybrid') && rules.length < 6) {
     try {
       const remoteTexts = await hydrateRemoteSources();
-      for (const [index, text] of remoteTexts.entries()) {
+      remoteTexts.forEach((text, index) => {
         const source = REMOTE_SOURCES[index] ?? 'remote';
         sources.push(source);
         rules.push(...extractMarkdownRules(text, source));
-      }
+      });
     } catch (error) {
       logger.warn('Failed to hydrate remote relationship sources:', error);
     }
