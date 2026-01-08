@@ -5,6 +5,7 @@ Handles all Bhrigu Samhita and Nadi Jyotisa prediction requests
 from flask import Blueprint, request, jsonify
 from services.bhrigu_predictions import get_bhrigu_service
 from services.astrology_calculator import AstrologyCalculator
+from services.health_reporter import get_health_reporter
 from models import db, BhriguPredictionCache, BhriguWisdomEntry, BhriguSessionLog
 from middleware.rate_limiter import limiter
 from utils.validators import validate_birth_data
@@ -18,6 +19,14 @@ bp = Blueprint('bhrigu_predictions', __name__, url_prefix='/api/bhrigu-predictio
 
 bhrigu_service = get_bhrigu_service()
 astrology_calc = AstrologyCalculator()
+health_reporter = get_health_reporter()
+
+
+@bp.route('/health', methods=['GET'])
+def bhrigu_health():
+    """Return health status of prediction dependencies."""
+    status = health_reporter.get_dependency_status()
+    return success_response(status, message="Bhrigu prediction dependency health")
 
 
 def validate_chart_inputs(data):

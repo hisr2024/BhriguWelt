@@ -15,6 +15,7 @@ class CorpusLoader:
     def __init__(self):
         self.bhrigu_data = None
         self.nadi_data = None
+        self.initialization_errors: List[str] = []
         self._load_corpus()
     
     def _load_corpus(self):
@@ -39,9 +40,13 @@ class CorpusLoader:
                     print(f"✓ Loaded Bhrigu and Nadi corpus from: {base_path}")
                     return
                 except Exception as e:
-                    print(f"Warning: Error loading corpus from {base_path}: {e}")
+                    message = f"Error loading corpus from {base_path}: {e}"
+                    self.initialization_errors.append(message)
+                    print(f"Warning: {message}")
         
-        print("Warning: Could not load Bhrigu/Nadi corpus files. Predictions will rely on OpenAI general knowledge.")
+        message = "Could not load Bhrigu/Nadi corpus files. Predictions will rely on OpenAI general knowledge."
+        self.initialization_errors.append(message)
+        print(f"Warning: {message}")
         self.bhrigu_data = {"principles": [], "remedies": [], "past_life_engines": [], "future_engines": []}
         self.nadi_data = {"principles": [], "remedies": [], "observances": []}
     
@@ -195,3 +200,10 @@ def get_corpus_loader():
     if _corpus_loader is None:
         _corpus_loader = CorpusLoader()
     return _corpus_loader
+
+
+def get_corpus_loader_initialization_errors() -> List[str]:
+    """Get initialization errors recorded during corpus loader setup."""
+    if _corpus_loader and getattr(_corpus_loader, "initialization_errors", None):
+        return list(_corpus_loader.initialization_errors)
+    return []
