@@ -780,6 +780,18 @@ def get_openai_service():
         _openai_service_instance = OpenAIService()
     return _openai_service_instance
 
+
+def get_openai_initialization_errors() -> List[str]:
+    """Get initialization errors recorded during OpenAI service setup."""
+    errors: List[str] = []
+    if CORPUS_IMPORT_ERROR:
+        errors.append(f"Corpus loader import error: {CORPUS_IMPORT_ERROR}")
+    if OFFLINE_WISDOM_IMPORT_ERROR:
+        errors.append(f"Offline wisdom import error: {OFFLINE_WISDOM_IMPORT_ERROR}")
+    if _openai_service_instance and getattr(_openai_service_instance, "initialization_errors", None):
+        errors.extend(_openai_service_instance.initialization_errors)
+    return errors
+
 # Backwards compatibility - creates instance on first access
 class _LazyProxy:
     def __getattr__(self, name):

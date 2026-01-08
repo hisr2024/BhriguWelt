@@ -617,7 +617,7 @@ According to classical Vedic principles, individuals with {zodiac} as their zodi
 [More comprehensive data will be available in the next update]
 """
     
-    def validate_sections(self, sections: Dict[str, Any], category: str) -> Dict[str, bool]:
+    def validate_sections(self, sections: Dict[str, Any], category: str) -> Dict[str, str]:
         """
         Validate that all required sections are present and have content
         
@@ -632,12 +632,15 @@ According to classical Vedic principles, individuals with {zodiac} as their zodi
         validation = {}
         
         for section_key in required:
-            has_content = (
-                section_key in sections and 
-                sections[section_key] and 
-                len(str(sections[section_key]).strip()) >= self.MINIMUM_SECTION_LENGTH
-            )
-            validation[section_key] = has_content
+            if section_key not in sections or not sections[section_key]:
+                validation[section_key] = "missing"
+                continue
+
+            content = str(sections[section_key]).strip()
+            if len(content) < self.MINIMUM_SECTION_LENGTH:
+                validation[section_key] = "short"
+            else:
+                validation[section_key] = "ok"
             
         return validation
     
@@ -653,7 +656,7 @@ According to classical Vedic principles, individuals with {zodiac} as their zodi
             List of missing section keys
         """
         validation = self.validate_sections(sections, category)
-        return [key for key, valid in validation.items() if not valid]
+        return [key for key, status in validation.items() if status != "ok"]
 
 
 # Module-level singleton
