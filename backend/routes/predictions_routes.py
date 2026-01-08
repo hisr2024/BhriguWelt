@@ -6,6 +6,7 @@ from flask import Blueprint, request, jsonify
 from services.astrology_calculator import astrology_calculator
 from services.openai_service import openai_service
 from services.section_parser import get_section_parser
+from utils.client_status import parse_client_online
 from datetime import datetime
 import logging
 
@@ -40,10 +41,20 @@ def daily_prediction():
         6. Auspicious timing
         """
 
-        prediction = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            prediction = openai_service.offline_wisdom.generate_general_predictions(birth_chart)
+            mode = 'offline'
+        else:
+            prediction = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'date': today,
                 'zodiac_sign': birth_chart['zodiac_sign'],
@@ -78,10 +89,20 @@ def weekly_prediction():
         5. Key dates and timing
         """
 
-        prediction = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            prediction = openai_service.offline_wisdom.generate_general_predictions(birth_chart)
+            mode = 'offline'
+        else:
+            prediction = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'zodiac_sign': birth_chart['zodiac_sign'],
                 'weekly_prediction': prediction
@@ -117,10 +138,20 @@ def monthly_prediction():
         6. Challenges and solutions
         """
 
-        prediction = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            prediction = openai_service.offline_wisdom.generate_general_predictions(birth_chart)
+            mode = 'offline'
+        else:
+            prediction = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'month': current_month,
                 'zodiac_sign': birth_chart['zodiac_sign'],
@@ -158,10 +189,20 @@ def yearly_prediction():
         7. Quarter-by-quarter breakdown
         """
 
-        prediction = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            prediction = openai_service.offline_wisdom.generate_general_predictions(birth_chart)
+            mode = 'offline'
+        else:
+            prediction = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'year': current_year,
                 'zodiac_sign': birth_chart['zodiac_sign'],
@@ -205,10 +246,20 @@ def specific_question():
         4. Remedies if needed
         """
 
-        answer = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            answer = openai_service.offline_wisdom.generate_general_predictions(birth_chart)
+            mode = 'offline'
+        else:
+            answer = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'question': question,
                 'answer': answer,
