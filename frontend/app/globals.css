@@ -188,6 +188,21 @@
   }
 }
 
+@layer utilities {
+  .text-muted {
+    @apply text-gray-200;
+  }
+
+  .text-muted-secondary {
+    @apply text-gray-300;
+  }
+
+  [data-contrast='high'] .text-muted,
+  [data-contrast='high'] .text-muted-secondary {
+    @apply text-gray-100;
+  }
+}
+
 /* Enhanced Animations */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
