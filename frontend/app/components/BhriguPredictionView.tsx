@@ -393,6 +393,8 @@ export default function BhriguPredictionView({
     }
 
     const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES[DEFAULT_COLOR];
+    const isExpanded = expandedSections[sectionKey] ?? false;
+    const contentId = `prediction-section-${sectionKey}`;
 
     const isExpanded = expandedSections[sectionKey] ?? true;
 
@@ -404,41 +406,37 @@ export default function BhriguPredictionView({
         className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
                    border ${colorClass.border} ${colorClass.hover} rounded-xl p-6 transition-all`}
       >
-        <button
-          type="button"
-          onClick={() =>
-            setExpandedSections((prev) => ({
-              ...prev,
-              [sectionKey]: !(prev[sectionKey] ?? true)
-            }))
-          }
-          aria-expanded={isExpanded}
-          className={`w-full text-left text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3`}
+        <h3 className="mb-4">
+          <button
+            type="button"
+            onClick={() =>
+              setExpandedSections((prev) => ({ ...prev, [sectionKey]: !isExpanded }))
+            }
+            aria-expanded={isExpanded}
+            aria-controls={contentId}
+            tabIndex={0}
+            className={`w-full text-left text-xl font-bold ${colorClass.text} flex items-center justify-between gap-3`}
+          >
+            <span className="flex items-center gap-3">
+              <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
+              {sectionTitle}
+            </span>
+            {isExpanded ? (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            )}
+          </button>
+        </h3>
+        <div
+          id={contentId}
+          hidden={!isExpanded}
+          className="prose prose-invert prose-cyan max-w-none"
         >
-          <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
-          <span className="flex-1">{sectionTitle}</span>
-          {isExpanded ? (
-            <ChevronUp className="w-5 h-5 text-gray-400" />
-          ) : (
-            <ChevronDown className="w-5 h-5 text-gray-400" />
-          )}
-        </button>
-        <AnimatePresence initial={false}>
-          {isExpanded && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.25 }}
-            >
-              <div className="prose prose-invert prose-cyan max-w-none">
-                <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                  {content}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+            {content}
+          </div>
+        </div>
       </motion.div>
     );
   };
