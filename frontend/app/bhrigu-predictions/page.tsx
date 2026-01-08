@@ -81,11 +81,16 @@ export default function BhriguPredictionsPage() {
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isProfileReady, setIsProfileReady] = useState(false);
 
   useEffect(() => {
     loadProfiles();
-    startSession();
   }, []);
+
+  useEffect(() => {
+    if (!isProfileReady) return;
+    startSession();
+  }, [isProfileReady]);
 
   const loadProfiles = async () => {
     try {
@@ -96,6 +101,8 @@ export default function BhriguPredictionsPage() {
       }
     } catch (error) {
       console.error('Error loading profiles:', error);
+    } finally {
+      setIsProfileReady(true);
     }
   };
 
@@ -183,6 +190,28 @@ export default function BhriguPredictionsPage() {
     }
     router.push(category.route);
   };
+
+  if (!isProfileReady) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="animate-pulse space-y-8">
+            <div className="h-8 w-40 bg-gray-700/60 rounded-full" />
+            <div className="h-12 w-3/4 bg-gray-700/60 rounded-xl" />
+            <div className="h-6 w-2/3 bg-gray-700/60 rounded-lg" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div
+                  key={`skeleton-${index}`}
+                  className="h-36 bg-gray-800/60 border border-cyan-500/10 rounded-2xl"
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
