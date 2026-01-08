@@ -5,21 +5,7 @@ Future incarnation predictions and soul evolution
 from flask import Blueprint, request, jsonify
 from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.openai_service import openai_service
-from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
-
-
-def _get_birth_chart(data):
-    calculator = get_astrology_calculator()
-    cached_birth_data = get_cached_birth_data(data)
-    if calculator:
-        return calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        ), None
-    if cached_birth_data:
-        return cached_birth_data, None
-    return None, dependency_error_response(get_astrology_dependency_error())
+from utils.client_status import parse_client_online
 
 bp = Blueprint('future_lives', __name__, url_prefix='/api/future-lives')
 
@@ -43,11 +29,20 @@ def future_lives_prediction():
         if error:
             return error
 
-        # Generate future lives prediction
-        future_prediction = openai_service.generate_future_lives_prediction(birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            future_prediction = openai_service.offline_wisdom.generate_future_lives(birth_chart)
+            mode = 'offline'
+        else:
+            future_prediction = openai_service.generate_future_lives_prediction(birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'birth_chart': birth_chart,
                 'future_lives_prediction': future_prediction
@@ -80,10 +75,20 @@ def evolution_path():
         5. Timeline to higher dimensional existence
         """
 
-        evolution_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            evolution = openai_service.offline_wisdom.generate_future_lives(birth_chart)
+            mode = 'offline'
+        else:
+            evolution = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'evolution_path': evolution_result['text'],
                 'north_node': birth_chart['planets']['Rahu'],
@@ -118,10 +123,20 @@ def moksha_timeline():
         5. Signs of approaching enlightenment
         """
 
-        moksha_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            moksha = openai_service.offline_wisdom.generate_future_lives(birth_chart)
+            mode = 'offline'
+        else:
+            moksha = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'moksha_timeline': moksha_result['text'],
                 'moksha_house': birth_chart['houses'][11],
@@ -156,10 +171,20 @@ def future_missions():
         5. Role in collective evolution
         """
 
-        missions_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            missions = openai_service.offline_wisdom.generate_future_lives(birth_chart)
+            mode = 'offline'
+        else:
+            missions = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'future_missions': missions_result['text'],
                 'destiny_point': birth_chart['planets']['Rahu'],
@@ -196,10 +221,20 @@ def soul_advancement():
         5. Ascension pathway and timeline
         """
 
-        advancement_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            advancement = openai_service.offline_wisdom.generate_future_lives(birth_chart)
+            mode = 'offline'
+        else:
+            advancement = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'soul_advancement': advancement_result['text'],
                 'current_nakshatra': birth_chart['nakshatra'],

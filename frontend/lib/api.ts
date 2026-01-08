@@ -29,6 +29,10 @@ api.interceptors.request.use(
     if (process.env.NODE_ENV === 'development') {
       console.debug(`[API] ${config.method?. toUpperCase()} ${config.url}`);
     }
+    if (typeof navigator !== 'undefined') {
+      config.headers = config.headers ?? {};
+      config.headers['X-Client-Online'] = navigator.onLine ? 'true' : 'false';
+    }
     return config;
   },
   (error) => Promise.reject(error)

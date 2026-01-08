@@ -5,21 +5,7 @@ Current life analysis and guidance endpoints
 from flask import Blueprint, request, jsonify
 from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.openai_service import openai_service
-from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
-
-
-def _get_birth_chart(data):
-    calculator = get_astrology_calculator()
-    cached_birth_data = get_cached_birth_data(data)
-    if calculator:
-        return calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        ), None
-    if cached_birth_data:
-        return cached_birth_data, None
-    return None, dependency_error_response(get_astrology_dependency_error())
+from utils.client_status import parse_client_online
 
 bp = Blueprint('present_life', __name__, url_prefix='/api/present-life')
 
@@ -43,11 +29,20 @@ def comprehensive_analysis():
         if error:
             return error
 
-        # Generate present life analysis
-        present_life = openai_service.generate_present_life_analysis(birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            present_life = openai_service.offline_wisdom.generate_present_life(birth_chart)
+            mode = 'offline'
+        else:
+            present_life = openai_service.generate_present_life_analysis(birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'birth_chart': birth_chart,
                 'present_life_analysis': present_life
@@ -82,10 +77,20 @@ def career_guidance():
         6. Financial prosperity timeline
         """
 
-        career_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            career = openai_service.offline_wisdom.generate_present_life(birth_chart)
+            mode = 'offline'
+        else:
+            career = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'career_guidance': career_result['text'],
                 'career_house': birth_chart['houses'][9],
@@ -122,10 +127,20 @@ def relationships_analysis():
         6. Family and friendship dynamics
         """
 
-        relationships_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            relationships = openai_service.offline_wisdom.generate_relationships(birth_chart)
+            mode = 'offline'
+        else:
+            relationships = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'relationships_analysis': relationships_result['text'],
                 'partnership_house': birth_chart['houses'][6],
@@ -162,10 +177,20 @@ def health_wellness():
         6. Energy management and vitality
         """
 
-        health_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            health = openai_service.offline_wisdom.generate_present_life(birth_chart)
+            mode = 'offline'
+        else:
+            health = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'health_guidance': health_result['text'],
                 'health_house': birth_chart['houses'][5],
@@ -202,10 +227,20 @@ def financial_prospects():
         6. Financial planning recommendations
         """
 
-        financial_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            financial = openai_service.offline_wisdom.generate_present_life(birth_chart)
+            mode = 'offline'
+        else:
+            financial = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'financial_prospects': financial_result['text'],
                 'wealth_house': birth_chart['houses'][1],
@@ -242,10 +277,20 @@ def spiritual_growth():
         6. Spiritual breakthroughs timeline
         """
 
-        spiritual_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            spiritual = openai_service.offline_wisdom.generate_present_life(birth_chart)
+            mode = 'offline'
+        else:
+            spiritual = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'spiritual_guidance': spiritual_result['text'],
                 'dharma_house': birth_chart['houses'][8],
@@ -282,10 +327,20 @@ def current_dasha():
         5. Making the most of current period
         """
 
-        dasha_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            dasha = openai_service.offline_wisdom.generate_present_life(birth_chart)
+            mode = 'offline'
+        else:
+            dasha = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'dasha_analysis': dasha_result['text'],
                 'current_dasha': birth_chart['dasha_period'],

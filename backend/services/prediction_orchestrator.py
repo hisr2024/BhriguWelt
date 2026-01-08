@@ -63,8 +63,9 @@ class PredictionOrchestrator:
         except Exception as e:
             logger.warning(f"Rule engine not available: {e}")
 
-    def generate_prediction(self, category: str, chart_data: Dict[str, Any], 
-                          mode: str = "hybrid", language: str = "en") -> Dict[str, Any]:
+    def generate_prediction(self, category: str, chart_data: Dict[str, Any],
+                          mode: str = "hybrid", language: str = "en",
+                          client_online: Optional[bool] = None) -> Dict[str, Any]:
         """
         Generate prediction for any category with guaranteed results
         
@@ -85,8 +86,7 @@ class PredictionOrchestrator:
                 pred_mode = PredictionMode.HYBRID
                 logger.warning(f"Invalid mode '{mode}', using hybrid")
 
-            if pred_mode != PredictionMode.OFFLINE and not self._online_dependencies_ready():
-                logger.info("Online dependencies unavailable. Switching to offline mode.")
+            if client_online is False:
                 pred_mode = PredictionMode.OFFLINE
             
             # Route to appropriate generation method
@@ -423,8 +423,9 @@ Based on Vedic astrology principles:
             {'id': 'predictions', 'name': 'General Predictions'},
         ]
 
-    def generate_cosmic_blueprint(self, chart_data: Dict[str, Any], 
-                                 mode: str = "hybrid", language: str = "en") -> Dict[str, Any]:
+    def generate_cosmic_blueprint(self, chart_data: Dict[str, Any],
+                                 mode: str = "hybrid", language: str = "en",
+                                 client_online: Optional[bool] = None) -> Dict[str, Any]:
         """
         Generate complete cosmic blueprint with all subcategories
         
@@ -452,7 +453,13 @@ Based on Vedic astrology principles:
         # Generate each section
         for section in sections:
             try:
-                result = self.generate_prediction(section, chart_data, mode, language)
+                result = self.generate_prediction(
+                    section,
+                    chart_data,
+                    mode,
+                    language,
+                    client_online=client_online,
+                )
                 blueprint['sections'][section] = result.get('prediction', '')
             except Exception as e:
                 logger.error(f"Failed to generate {section}: {e}")
