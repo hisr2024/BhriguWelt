@@ -324,18 +324,13 @@ export default function BhriguPredictionView({
         className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
                    border ${colorClass.border} ${colorClass.hover} rounded-xl transition-all`}
       >
-        <button
-          type="button"
-          onClick={() => handleSectionToggle(sectionKey)}
-          className="w-full flex items-center justify-between text-left"
-          aria-expanded={isExpanded}
-        >
-          <h3 className={`text-xl font-bold ${colorClass.text} flex items-center gap-3`}>
-            <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
-            {sectionTitle}
-          </h3>
-          <div className="text-gray-400">
-            {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+        <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3 relative z-10`}>
+          <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
+          {sectionTitle}
+        </h3>
+        <div className="prose prose-invert prose-cyan max-w-none">
+          <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+            {content}
           </div>
         </button>
         <AnimatePresence>
@@ -473,7 +468,7 @@ export default function BhriguPredictionView({
         {availableSections.length > 0 && (
           <div className="space-y-4">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-3">
+              <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-3 relative z-10">
                 {icon}
                 Detailed Insights
               </h2>
@@ -507,13 +502,12 @@ export default function BhriguPredictionView({
               className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
                        border border-gray-700/50 rounded-xl p-6
                        hover:border-cyan-500/30 transition-all
-                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900
-                       flex items-center justify-between group"
+                       flex items-center justify-between group relative z-10"
             >
               <div className="flex items-center gap-3">
                 <BookOpen className="w-6 h-6 text-cyan-400" />
                 <div className="text-left">
-                  <h3 className="text-xl font-bold text-white">
+                  <h3 className="text-xl font-bold text-white relative z-10">
                     View Complete Reading
                   </h3>
                   <p className="text-sm text-gray-400 mt-1">
