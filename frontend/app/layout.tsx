@@ -1,36 +1,7 @@
 import type { Metadata, Viewport } from 'next'
-import { Crimson_Pro, Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google'
 import './globals.css'
 import { PWAInstaller } from './components/PWAInstaller'
 import { Providers } from './providers'
-
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-  weight: ['400', '500', '600', '700'],
-})
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-space-grotesk',
-  weight: ['400', '500', '600', '700'],
-})
-
-const jetBrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-jetbrains-mono',
-  weight: ['400', '500', '600'],
-})
-
-const crimsonPro = Crimson_Pro({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-crimson-pro',
-  weight: ['400', '600'],
-})
 
 export const metadata: Metadata = {
   title: 'BhriguWelt - Discover Your Soul\'s Journey',
@@ -68,14 +39,17 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${spaceGrotesk.variable} ${jetBrainsMono.variable} ${crimsonPro.variable}`}
-    >
+    <html lang="en">
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="icon" href="/icons/icon-192x192.svg" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.svg" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Crimson+Pro:wght@400;600&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body className="font-sans">
         <Providers>

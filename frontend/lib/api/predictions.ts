@@ -181,7 +181,7 @@ export interface LifestylePractice {
   timing: string;
 }
 
-const getClientOnlineHeader = () =>
+const getClientOnlineHeader = (): Record<string, string> =>
   typeof navigator !== 'undefined'
     ? { 'X-Client-Online': navigator.onLine ? 'true' : 'false' }
     : {};
@@ -205,13 +205,20 @@ export class PredictionsAPI {
     language: PredictionLanguage = 'en'
   ): Promise<PredictionResult> {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      const clientOnlineHeader = getClientOnlineHeader();
+      Object.assign(headers, clientOnlineHeader);
+
+      if (this.apiKey) {
+        headers['X-API-Key'] = this.apiKey;
+      }
+
       const response = await fetch(`${this.baseURL}/predictions/generate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getClientOnlineHeader(),
-          ...(this.apiKey && { 'X-API-Key': this.apiKey }),
-        },
+        headers,
         body: JSON.stringify({
           engine,
           birth_data: birthData,
