@@ -7,6 +7,8 @@ import logging
 import difflib
 from typing import Dict, List, Any, Optional, Tuple
 
+from services.bhrigu_offline_wisdom import get_offline_wisdom_generator
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -245,8 +247,45 @@ class SectionParser:
     def __init__(self, openai_service=None):
         """Initialize section parser with optional OpenAI service for generation"""
         self.openai_service = openai_service
+        self.normalized_title_map = self._build_normalized_title_map()
+
+    def _build_normalized_title_map(self) -> Dict[str, str]:
+        normalized_map = {}
+        for section_key, headers in self.SECTION_HEADERS.items():
+            titles = list(headers) + [section_key.replace('_', ' ')]
+            for title in titles:
+                normalized = self._normalize_title(title)
+                if normalized:
+                    normalized_map.setdefault(normalized, section_key)
+        return normalized_map
+
+    def _normalize_title(self, title: str) -> str:
+        if not title:
+            return ""
+        cleaned = re.sub(r"^[#>*\-\+\d\.\)\s]+", "", title.strip())
+        cleaned = re.sub(r"[^\w\s]", "", cleaned.lower())
+        return re.sub(r"\s+", " ", cleaned).strip()
+
+    def _match_normalized_title(self, normalized: str) -> str:
+        if normalized in self.normalized_title_map:
+            return self.normalized_title_map[normalized]
+        close = difflib.get_close_matches(
+            normalized,
+            self.normalized_title_map.keys(),
+            n=1,
+            cutoff=0.82
+        )
+        if close:
+            return self.normalized_title_map[close[0]]
+        return ""
         
-    def extract_sections(self, raw_text: str, category: str, birth_data: Dict = None) -> Dict[str, Any]:
+    def extract_sections(
+        self,
+        raw_text: str,
+        category: str,
+        birth_data: Dict = None,
+        max_repairs_per_request: int = 3
+    ) -> Dict[str, Any]:
         """
         Extract all required sections from raw text
         Generate missing sections using AI
@@ -260,7 +299,10 @@ class SectionParser:
             Dictionary with all section keys mapped to their content
         """
         sections = {}
+        section_generation_status = {}
         required = self.REQUIRED_SECTIONS.get(category, [])
+        request_id = str(uuid.uuid4())
+        repairs_used = 0
         
         for section_key in required:
             section_data, extraction_source = self._extract_section_content_with_status(raw_text, section_key)
@@ -286,7 +328,8 @@ class SectionParser:
                 )
                 
             sections[section_key] = section_data
-            
+
+        sections['section_generation_status'] = section_generation_status
         return sections
     
     def extract_section_content(self, text: str, section_key: str) -> str:
@@ -315,18 +358,32 @@ class SectionParser:
         logger.info(f"Extracting section '{section_key}' with {len(headers)} header patterns")
 
         for header in headers:
+            markdown_section = self._extract_markdown_section(text, header)
+            if markdown_section:
+                logger.info(
+                    "Section '%s': Extracted %s chars using markdown header '%s'",
+                    section_key,
+                    len(markdown_section),
+                    header
+                )
+                return markdown_section
+
             # Try multiple pattern variations for maximum flexibility
             patterns = [
                 # Standard markdown with ## (most common)
                 rf'##\s*\d*\. ?\s*{re.escape(header)}\s*\n(.*?)(?=\n##|\n#[^#]|\Z)',
                 # Markdown with any number of # symbols
                 rf'#+\s*\d*\.?\s*{re.escape(header)}\s*[:\n](.*?)(?=\n#+\s|\Z)',
+                # Markdown with # or ### headers
+                rf'^\s*#{1,3}\s*\d*\.?\s*{re.escape(header)}\s*[:\n](.*?)(?=\n\s*#{1,3}\s|\Z)',
                 # Numbered sections (1., 2., etc.) - IMPROVED
-                rf'\n\d+\.\s*{re.escape(header)}\s*[:\n]?(.*?)(?=\n\d+\. |\n##|\Z)',
+                rf'\n\d+(?:\.\d+)*\.?\s*{re.escape(header)}\s*[:\n]?(.*?)(?=\n\d+(?:\.\d+)*\.?\s|\n##|\Z)',
                 # Without markdown symbols (plain text headers)
                 rf'\n{re.escape(header)}\s*[:\n](.*?)(?=\n[A-Z][a-z]+[^\n]*[:\n]|\n\d+\. |\Z)',
                 # Bold or emphasized headers
-                rf'\*\*\d*\.?\s*{re. escape(header)}\*\*\s*[:\n]?(.*?)(?=\n\*\*|\n##|\Z)',
+                rf'\*\*\d*\.?\s*{re.escape(header)}\*\*\s*[:\n]?(.*?)(?=\n\*\*|\n##|\Z)',
+                # Bullet list headers
+                rf'^\s*[-*+]\s*\d*\.?\s*{re.escape(header)}\s*[:\n](.*?)(?=\n\s*[-*+]\s|\n#+\s|\Z)',
                 # Header with colon on same line
                 rf'{re.escape(header)}:\s*(.*?)(?=\n[A-Z][a-z]+.*? :|\n##|\n\d+\.|\Z)',
             ]
@@ -350,6 +407,11 @@ class SectionParser:
                     continue
 
         # Try generic extraction by section number or keywords
+        fuzzy_result = self._extract_by_fuzzy_title(text, section_key)
+        if fuzzy_result:
+            logger.info(f"Section '{section_key}': Extracted {len(fuzzy_result)} chars via fuzzy title matching")
+            return fuzzy_result
+
         logger.info(f"Section '{section_key}': No header match found, trying keyword extraction")
         keyword_result = self._extract_by_keywords(text, section_key)
 
@@ -450,7 +512,8 @@ class SectionParser:
         section_key: str, 
         full_text: str, 
         category: str, 
-        birth_data: Dict
+        birth_data: Dict,
+        request_id: Optional[str] = None
     ) -> str:
         """
         Generate missing section using AI with specific prompts
@@ -462,7 +525,8 @@ class SectionParser:
             birth_data: Birth chart data
             
         Returns:
-            Generated section content or fallback text
+            Generated section content or fallback text. When include_status is True,
+            returns a tuple of (content, status, fallback_reason).
         """
         
         if not self.openai_service:
@@ -483,6 +547,8 @@ class SectionParser:
                 section_prompt,
                 birth_data
             )
+            if include_status:
+                return generated, "generated", None
             return generated
         except Exception as e:
             logger.error(f"Error generating section {section_key}: {e}")
@@ -685,8 +751,38 @@ According to classical Vedic principles, individuals with {zodiac} as their zodi
 
 [More comprehensive data will be available in the next update]
 """
+
+    def _get_offline_wisdom_fallback(
+        self,
+        section_key: str,
+        category: str,
+        birth_data: Dict
+    ) -> str:
+        """Deterministic fallback content using offline wisdom corpus."""
+        offline_wisdom = get_offline_wisdom_generator()
+        category_generators = {
+            'karmic_journey': offline_wisdom.generate_karmic_journey,
+            'past_lives': offline_wisdom.generate_past_lives,
+            'future_lives': offline_wisdom.generate_future_lives,
+            'present_life': offline_wisdom.generate_present_life,
+            'life_events': offline_wisdom.generate_life_events,
+            'karmic_remedies': offline_wisdom.generate_karmic_remedies,
+            'relationships': offline_wisdom.generate_relationships,
+            'predictions': offline_wisdom.generate_general_predictions
+        }
+
+        generator = category_generators.get(category)
+        if not generator:
+            return self._get_fallback_section(section_key, birth_data)
+
+        offline_text = generator(birth_data)
+        section_data = self.extract_section_content(offline_text, section_key)
+        if section_data and len(section_data.strip()) >= self.MINIMUM_SECTION_LENGTH:
+            return section_data
+
+        return self._get_fallback_section(section_key, birth_data)
     
-    def validate_sections(self, sections: Dict[str, Any], category: str) -> Dict[str, bool]:
+    def validate_sections(self, sections: Dict[str, Any], category: str) -> Dict[str, str]:
         """
         Validate that all required sections are present and have content
         
@@ -701,12 +797,15 @@ According to classical Vedic principles, individuals with {zodiac} as their zodi
         validation = {}
         
         for section_key in required:
-            has_content = (
-                section_key in sections and 
-                sections[section_key] and 
-                len(str(sections[section_key]).strip()) >= self.MINIMUM_SECTION_LENGTH
-            )
-            validation[section_key] = has_content
+            if section_key not in sections or not sections[section_key]:
+                validation[section_key] = "missing"
+                continue
+
+            content = str(sections[section_key]).strip()
+            if len(content) < self.MINIMUM_SECTION_LENGTH:
+                validation[section_key] = "short"
+            else:
+                validation[section_key] = "ok"
             
         return validation
     
@@ -722,7 +821,7 @@ According to classical Vedic principles, individuals with {zodiac} as their zodi
             List of missing section keys
         """
         validation = self.validate_sections(sections, category)
-        return [key for key, valid in validation.items() if not valid]
+        return [key for key, status in validation.items() if status != "ok"]
 
     def _track_fallback_usage(self, event: str, section_key: str, category: Optional[str] = None) -> None:
         logger.info(

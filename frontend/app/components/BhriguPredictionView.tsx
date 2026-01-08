@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
-import type { Profile } from '@/lib/types';
+import type { BhriguPrediction, Profile } from '@/lib/types';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; color: string }>> = {
@@ -117,13 +117,130 @@ const COLOR_CLASSES:  Record<string, { border: string; hover: string; accent: st
 
 // Default color for sections without a specific color mapping
 const DEFAULT_COLOR = 'cyan';
+const ESCAPED_TITLE_PATTERN = /[.*+?^${}()|[\]\\]/g;
+const SECTION_REGEX_CACHE = new Map<string, Map<string, RegExp[]>>();
+
+const getSectionPatterns = (cat: string): Map<string, RegExp[]> => {
+  const cached = SECTION_REGEX_CACHE.get(cat);
+  if (cached) return cached;
+
+  const patternMap = new Map<string, RegExp[]>();
+  const categoryConfig = CATEGORY_SECTIONS[cat] || [];
+
+  for (const section of categoryConfig) {
+    const escapedTitle = section.title.replace(ESCAPED_TITLE_PATTERN, '\\$&');
+    patternMap.set(section.key, [
+      // ## Header format (most common)
+      new RegExp(`##\\s*(?:\\d+\\.? \\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
+      // Numbered format (1.  Header)
+      new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
+      // Bold format (**Header**)
+      new RegExp(`\\*\\*${escapedTitle}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n##|$)`, 'i'),
+      // Plain header with colon
+      new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i'),
+    ]);
+  }
+
+  SECTION_REGEX_CACHE.set(cat, patternMap);
+  return patternMap;
+};
+
+const SectionCard = React.memo(function SectionCard({
+  sectionTitle,
+  content,
+  colorClass
+}: {
+  sectionTitle: string;
+  content: string;
+  colorClass: { border: string; hover: string; accent: string; text: string };
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
+                   border ${colorClass.border} ${colorClass.hover} rounded-xl p-6 transition-all`}
+    >
+      <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3`}>
+        <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
+        {sectionTitle}
+      </h3>
+      <div className="prose prose-invert prose-cyan max-w-none">
+        <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+          {content}
+        </div>
+      </div>
+    </motion.div>
+  );
+});
+
+const FullAnalysisPanel = React.memo(function FullAnalysisPanel({
+  showFullAnalysis,
+  onToggle,
+  fullAnalysis
+}: {
+  showFullAnalysis: boolean;
+  onToggle: () => void;
+  fullAnalysis: string;
+}) {
+  return (
+    <div className="mt-8 pt-8 border-t border-gray-700/50">
+      <button
+        onClick={onToggle}
+        className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
+                       border border-gray-700/50 rounded-xl p-6
+                       hover:border-cyan-500/30 transition-all
+                       flex items-center justify-between group"
+      >
+        <div className="flex items-center gap-3">
+          <BookOpen className="w-6 h-6 text-cyan-400" />
+          <div className="text-left">
+            <h3 className="text-xl font-bold text-white">
+              View Complete Reading
+            </h3>
+            <p className="text-sm text-gray-400 mt-1">
+              {showFullAnalysis ? 'Hide' : 'Show'} the full unstructured analysis
+            </p>
+          </div>
+        </div>
+        {showFullAnalysis ? (
+          <ChevronUp className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
+        ) : (
+          <ChevronDown className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
+        )}
+      </button>
+
+      <AnimatePresence>
+        {showFullAnalysis && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration:  0.3 }}
+            className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
+                           border border-gray-700/50 rounded-xl p-6"
+          >
+            <div className="prose prose-invert prose-cyan max-w-none">
+              <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                {fullAnalysis}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+});
 
 interface BhriguPredictionViewProps {
   category: string;
   title: string;
   description: string;
   icon: React.ReactNode;
-  fetchPrediction: (profileData: any) => Promise<any>;
+  fetchPrediction: (
+    profileData: BirthDetails & { question?: string; force_regenerate?: boolean }
+  ) => Promise<PredictionResult>;
   profile: Profile | null;
 }
 
@@ -135,13 +252,19 @@ export default function BhriguPredictionView({
   fetchPrediction,
   profile
 }: BhriguPredictionViewProps) {
-  const [prediction, setPrediction] = useState<any>(null);
+  const [prediction, setPrediction] = useState<BhriguPrediction | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [question, setQuestion] = useState('');
-  const [showFullAnalysis, setShowFullAnalysis] = useState(false);
+  const [showFullAnalysis, setShowFullAnalysis] = useState(true);
   const [debugMode, setDebugMode] = useState(false);
+  const [profileValidation, setProfileValidation] = useState<ProfileValidationResult | null>(null);
+
+  const parsedFromFullAnalysis = useMemo(() => {
+    if (!prediction?.full_analysis) return {};
+    return parseFullAnalysisIntoSections(prediction.full_analysis, category);
+  }, [prediction?.full_analysis, category]);
 
   useEffect(() => {
     if (profile) {
@@ -149,9 +272,28 @@ export default function BhriguPredictionView({
     }
   }, [profile]);
 
+  const isCachedPrediction = (
+    data: PredictionResult['data']
+  ): data is CachedPrediction => {
+    return typeof (data as CachedPrediction).prediction !== 'undefined';
+  };
+
+  const getPredictionPayload = (data: PredictionResult['data']): PredictionPayload => {
+    return isCachedPrediction(data) ? data.prediction : data;
+  };
+
   const loadPrediction = async (forceRegenerate = false) => {
     if (! profile) return;
 
+    const validationResult = validateProfile(profile);
+    if (! validationResult.isValid) {
+      setPrediction(null);
+      setError('Please complete your profile to generate a prediction.');
+      setProfileValidation(validationResult);
+      return;
+    }
+
+    setProfileValidation(null);
     setLoading(true);
     setError(null);
 
@@ -167,14 +309,15 @@ export default function BhriguPredictionView({
       };
 
       const response = await fetchPrediction(profileData);
+      const normalized = normalizePredictionResponse(response);
 
       if (response. status === 'success') {
-        const predictionData = response.data?.prediction ?? response.data;
+        const predictionData = getPredictionPayload(response.data);
         setPrediction(predictionData);
         setFromCache(
+          isCachedPrediction(response.data) ||
           response.message?.includes('cache') ||
-          response.message?.toLowerCase().includes('cache') ||
-          Boolean(response.data?.prediction)
+          response.message?.toLowerCase().includes('cache')
         );
       } else {
         setError(response.message || 'Failed to generate prediction');
@@ -190,24 +333,12 @@ export default function BhriguPredictionView({
   const parseFullAnalysisIntoSections = (fullAnalysis: string, cat: string): Record<string, string> => {
     const parsedSections: Record<string, string> = {};
     const categoryConfig = CATEGORY_SECTIONS[cat] || [];
+    const cachedPatterns = getSectionPatterns(cat);
     
     if (! fullAnalysis) return parsedSections;
     
     for (const section of categoryConfig) {
-      // Escape special regex characters in title
-      const escapedTitle = section.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      
-      // Try multiple patterns to find section content
-      const patterns = [
-        // ## Header format (most common)
-        new RegExp(`##\\s*(?:\\d+\\.? \\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
-        // Numbered format (1.  Header)
-        new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
-        // Bold format (**Header**)
-        new RegExp(`\\*\\*${escapedTitle}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n##|$)`, 'i'),
-        // Plain header with colon
-        new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i'),
-      ];
+      const patterns = cachedPatterns.get(section.key) ?? [];
       
       for (const pattern of patterns) {
         try {
@@ -248,23 +379,11 @@ export default function BhriguPredictionView({
     const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES[DEFAULT_COLOR];
 
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
-                   border ${colorClass.border} ${colorClass.hover} rounded-xl p-6 transition-all`}
-      >
-        <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3`}>
-          <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
-          {sectionTitle}
-        </h3>
-        <div className="prose prose-invert prose-cyan max-w-none">
-          <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-            {content}
-          </div>
-        </div>
-      </motion.div>
+      <SectionCard
+        sectionTitle={sectionTitle}
+        content={content}
+        colorClass={colorClass}
+      />
     );
   };
 
@@ -291,30 +410,44 @@ export default function BhriguPredictionView({
     });
 
     // FALLBACK: If no sections found but full_analysis exists, parse it client-side
-    let parsedFromFullAnalysis:  Record<string, string> = {};
     if (availableSections.length === 0 && prediction.full_analysis) {
-      parsedFromFullAnalysis = parseFullAnalysisIntoSections(prediction.full_analysis, category);
-      
       // Update availableSections based on parsed content
       availableSections = sections.filter(section => {
         const content = parsedFromFullAnalysis[section.key];
         return content && content.trim().length > 50;
       });
     }
+    const parsedFromFullAnalysisActive = Object.keys(parsedFromFullAnalysis).length > 0;
 
     // Helper function to get section content from either source
     const getSectionContent = (key: string): string => {
-      return prediction[key] || parsedFromFullAnalysis[key] || '';
+      const directContent = prediction[key];
+      if (typeof directContent === 'string') {
+        return directContent;
+      }
+      return parsedFromFullAnalysis[key] || '';
     };
 
     return (
       <div className="space-y-6">
+        {/* Banner for client-side parsed sections */}
+        {parsedFromFullAnalysisActive && (
+          <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
+            <p className="text-cyan-300 text-sm font-semibold uppercase tracking-wide">
+              Parsed from full analysis
+            </p>
+            <p className="text-gray-300 text-sm mt-1">
+              These insights were extracted from the full reading for easier scanning.
+            </p>
+          </div>
+        )}
+
         {/* Show message if no sections were extracted successfully */}
-        {availableSections. length === 0 && prediction.full_analysis && (
+        {availableSections. length === 0 && fullAnalysis && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
             <p className="text-amber-400 text-sm">
-              Note: Individual sections could not be extracted from the analysis. 
-              View the complete reading below for your comprehensive prediction.
+              Note: Individual sections could not be extracted from the analysis.
+              The complete reading is shown below.
             </p>
           </div>
         )}
@@ -349,73 +482,45 @@ export default function BhriguPredictionView({
 
         {/* Full Analysis - Collapsible at the bottom */}
         {prediction.full_analysis && (
-          <div className="mt-8 pt-8 border-t border-gray-700/50">
-            <button
-              onClick={() => setShowFullAnalysis(!showFullAnalysis)}
-              className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
-                       border border-gray-700/50 rounded-xl p-6
-                       hover:border-cyan-500/30 transition-all
-                       flex items-center justify-between group"
-            >
-              <div className="flex items-center gap-3">
-                <BookOpen className="w-6 h-6 text-cyan-400" />
-                <div className="text-left">
-                  <h3 className="text-xl font-bold text-white">
-                    View Complete Reading
-                  </h3>
-                  <p className="text-sm text-gray-400 mt-1">
-                    {showFullAnalysis ? 'Hide' : 'Show'} the full unstructured analysis
-                  </p>
-                </div>
-              </div>
-              {showFullAnalysis ?  (
-                <ChevronUp className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
-              ) : (
-                <ChevronDown className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
-              )}
-            </button>
+          <FullAnalysisPanel
+            showFullAnalysis={showFullAnalysis}
+            onToggle={() => setShowFullAnalysis(!showFullAnalysis)}
+            fullAnalysis={prediction.full_analysis}
+          />
+        )}
 
-            <AnimatePresence>
-              {showFullAnalysis && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration:  0.3 }}
-                  className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
-                           border border-gray-700/50 rounded-xl p-6"
-                >
-                  <div className="prose prose-invert prose-cyan max-w-none">
-                    <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                      {prediction.full_analysis}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+        {/* Default Full Analysis Panel (when no sections are available) */}
+        {prediction.full_analysis && availableSections.length === 0 && (
+          <div className="space-y-4">
+            {renderSection(
+              'full_analysis',
+              'Full Analysis',
+              prediction.full_analysis,
+              DEFAULT_COLOR
+            )}
           </div>
         )}
 
         {/* Metadata */}
-        {prediction.metadata && (
+        {metadata && (
           <div className="mt-8 pt-6 border-t border-gray-700/50">
             <div className="flex flex-wrap gap-4 text-sm text-gray-400">
-              {prediction.metadata.zodiac_sign && (
+              {metadata.zodiac_sign && (
                 <div className="flex items-center gap-2">
                   <span className="text-cyan-400">Zodiac:</span>
-                  <span>{prediction.metadata.zodiac_sign}</span>
+                  <span>{metadata.zodiac_sign}</span>
                 </div>
               )}
-              {prediction.metadata.nakshatra && (
+              {metadata.nakshatra && (
                 <div className="flex items-center gap-2">
                   <span className="text-purple-400">Nakshatra:</span>
-                  <span>{prediction.metadata. nakshatra}</span>
+                  <span>{metadata.nakshatra}</span>
                 </div>
               )}
-              {prediction.metadata.tradition && (
+              {metadata.tradition && (
                 <div className="flex items-center gap-2">
                   <span className="text-pink-400">Tradition:</span>
-                  <span>{prediction.metadata.tradition}</span>
+                  <span>{metadata.tradition}</span>
                 </div>
               )}
             </div>
@@ -562,13 +667,32 @@ export default function BhriguPredictionView({
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6">
             <p className="text-red-400">{error}</p>
-            <button
-              onClick={() => loadPrediction(false)}
-              className="mt-4 text-sm text-cyan-400 hover: text-cyan-300 flex items-center gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Try Again
-            </button>
+            {profileValidation && !profileValidation.isValid ? (
+              <div className="mt-4 space-y-3">
+                <p className="text-sm text-gray-300">
+                  Update these details to continue:
+                </p>
+                <ul className="text-sm text-gray-300 list-disc list-inside space-y-1">
+                  {profileValidation.missingFields.map((field) => (
+                    <li key={field}>{field}</li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => window.location.href = '/profile'}
+                  className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
+                >
+                  Complete Profile
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => loadPrediction(false)}
+                className="mt-4 text-sm text-cyan-400 hover: text-cyan-300 flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Try Again
+              </button>
+            )}
           </div>
         )}
 
