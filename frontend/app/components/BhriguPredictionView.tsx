@@ -5,9 +5,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Profile } from '@/lib/types';
 
+const CATEGORY_KEY_MAP: Record<string, string> = {
+  'karmic-journey': 'karmic_journey',
+  'past-lives': 'past_lives',
+  'future-lives': 'future_lives',
+  'present-life': 'present_life',
+  'life-events': 'life_events',
+  'karmic-remedies': 'karmic_remedies',
+  relationships: 'relationships',
+  predictions: 'predictions'
+};
+
+const normalizeCategoryKey = (value: string | undefined | null): string => {
+  if (!value) return '';
+  return CATEGORY_KEY_MAP[value] ?? value.replace(/-/g, '_');
+};
+
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; color: string }>> = {
-  'karmic-journey': [
+  karmic_journey: [
     { key: 'soul_purpose', title: "Soul's Primary Purpose", color: 'cyan' },
     { key: 'karmic_blueprint', title: 'Karmic Blueprint', color: 'purple' },
     { key: 'evolution_stage', title: 'Soul Evolution Stage', color: 'blue' },
@@ -17,7 +33,7 @@ const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; co
     { key: 'timing', title: 'Timing of Karmic Events', color: 'rose' },
     { key: 'spiritual_gifts', title: 'Spiritual Gifts & Abilities', color:  'amber' }
   ],
-  'past-lives': [
+  past_lives: [
     { key: 'recent_life', title:  'Most Recent Past Life', color: 'cyan' },
     { key: 'significant_lives', title: 'Significant Past Lives', color: 'purple' },
     { key: 'karmic_patterns', title: 'Recurring Karmic Patterns', color: 'blue' },
@@ -27,7 +43,7 @@ const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; co
     { key:  'karmic_debts', title: 'Karmic Debts from Past Lives', color:  'rose' },
     { key: 'spiritual_progress', title: 'Past Life Spiritual Progress', color: 'amber' }
   ],
-  'future-lives': [
+  future_lives: [
     { key: 'next_incarnation', title: 'Next Incarnation', color: 'cyan' },
     { key: 'evolution_trajectory', title: 'Soul Evolution Trajectory', color: 'purple' },
     { key: 'final_birth_conditions', title: 'Final Birth Conditions', color: 'blue' },
@@ -37,7 +53,7 @@ const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; co
     { key: 'bodhisattva_path', title: 'Bodhisattva Path', color:  'rose' },
     { key:  'ultimate_destiny', title: 'Ultimate Destiny', color: 'amber' }
   ],
-  'present-life': [
+  present_life: [
     { key: 'current_phase', title: 'Current Life Phase', color: 'cyan' },
     { key: 'career', title: 'Career & Professional Life', color: 'purple' },
     { key: 'relationships', title: 'Relationships & Love', color: 'blue' },
@@ -49,7 +65,7 @@ const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; co
     { key:  'challenges', title: 'Current Challenges', color:  'orange' },
     { key:  'timing', title: 'Timing & Transitions', color: 'teal' }
   ],
-  'life-events': [
+  life_events: [
     { key: 'yearly_forecast', title: 'Yearly Forecast', color: 'cyan' },
     { key: 'marriage_timing', title: 'Marriage Timing', color: 'purple' },
     { key: 'career_milestones', title:  'Career Milestones', color:  'blue' },
@@ -64,7 +80,7 @@ const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; co
     { key:  'transits', title: 'Key Planetary Transits', color: 'lime' },
     { key:  'age_milestones', title:  'Age Milestones', color:  'emerald' }
   ],
-  'karmic-remedies': [
+  karmic_remedies: [
     { key: 'mantras', title: 'Mantras & Chanting', color: 'cyan' },
     { key: 'gemstones', title:  'Gemstones & Crystals', color: 'purple' },
     { key: 'yantras', title:  'Yantras & Sacred Geometry', color:  'blue' },
@@ -78,7 +94,7 @@ const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; co
     { key:  'service', title: 'Service & Seva', color: 'lime' },
     { key:  'meditation', title: 'Meditation & Yoga', color: 'emerald' }
   ],
-  'relationships': [
+  relationships: [
     { key: 'romantic_marriage', title: 'Romantic & Marriage Prospects', color: 'cyan' },
     { key: 'family', title: 'Family Relationships', color: 'purple' },
     { key: 'soul_connections', title: 'Soul Connections & Soulmates', color:  'blue' },
@@ -90,7 +106,7 @@ const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; co
     { key:  'healing', title: 'Relationship Healing', color:  'orange' },
     { key: 'healthy_practices', title: 'Healthy Relationship Practices', color:  'teal' }
   ],
-  'predictions': [
+  predictions: [
     { key: 'daily', title: 'Daily Predictions', color:  'cyan' },
     { key:  'weekly', title: 'Weekly Forecast', color: 'purple' },
     { key: 'monthly', title: 'Monthly Outlook', color: 'blue' },
@@ -272,7 +288,10 @@ export default function BhriguPredictionView({
     if (! prediction) return null;
 
     // Get the sections configuration for this category
-    const sections = CATEGORY_SECTIONS[category] || [];
+    const normalizedCategory = normalizeCategoryKey(
+      prediction?.metadata?.category ?? prediction?.category ?? category
+    );
+    const sections = CATEGORY_SECTIONS[normalizedCategory] || [];
 
     // First, try to get sections from the API response
     let availableSections = sections. filter(section => {
@@ -293,7 +312,10 @@ export default function BhriguPredictionView({
     // FALLBACK: If no sections found but full_analysis exists, parse it client-side
     let parsedFromFullAnalysis:  Record<string, string> = {};
     if (availableSections.length === 0 && prediction.full_analysis) {
-      parsedFromFullAnalysis = parseFullAnalysisIntoSections(prediction.full_analysis, category);
+      parsedFromFullAnalysis = parseFullAnalysisIntoSections(
+        prediction.full_analysis,
+        normalizedCategory
+      );
       
       // Update availableSections based on parsed content
       availableSections = sections.filter(section => {
