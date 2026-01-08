@@ -27,7 +27,7 @@ export default function GenZButton({
   fullWidth = false,
   type = 'button',
 }: GenZButtonProps) {
-  const baseClass = 'font-bold transition-all duration-300 haptic-feedback inline-flex items-center justify-center gap-2';
+  const baseClass = 'font-bold transition-all duration-300 haptic-feedback inline-flex min-h-[44px] items-center justify-center gap-2 py-3';
 
   const variantClasses = {
     primary: 'genz-button',
@@ -38,9 +38,9 @@ export default function GenZButton({
   };
 
   const sizeClasses = {
-    sm: 'py-2 px-4 text-sm rounded-xl',
-    md: 'py-3 px-6 text-base rounded-2xl',
-    lg: 'py-4 px-8 text-lg rounded-2xl',
+    sm: 'px-4 text-sm rounded-xl',
+    md: 'px-6 text-base rounded-2xl',
+    lg: 'px-8 text-lg rounded-2xl',
   };
 
   const disabledClass = disabled || loading ? 'opacity-50 cursor-not-allowed' : '';

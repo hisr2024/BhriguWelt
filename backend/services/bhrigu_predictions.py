@@ -25,10 +25,31 @@ class BhriguPredictionsService:
     """
 
     def __init__(self):
-        self.openai_service = get_openai_service()
-        self.astrology_calculator = AstrologyCalculator()
-        self.section_parser = get_section_parser(self.openai_service)
-        self.corpus_db = get_corpus_database()
+        self.init_errors: List[Dict[str, Any]] = []
+
+        try:
+            self.openai_service = get_openai_service()
+        except Exception as exc:
+            self.openai_service = None
+            self._record_init_error('openai_service', exc)
+
+        try:
+            self.astrology_calculator = AstrologyCalculator()
+        except Exception as exc:
+            self.astrology_calculator = None
+            self._record_init_error('astrology_calculator', exc)
+
+        try:
+            self.section_parser = get_section_parser(self.openai_service)
+        except Exception as exc:
+            self.section_parser = None
+            self._record_init_error('section_parser', exc)
+
+        try:
+            self.corpus_db = get_corpus_database()
+        except Exception as exc:
+            self.corpus_db = None
+            self._record_init_error('corpus_db', exc)
 
         # Bhrigu Samhita system prompts for enhanced accuracy and precision
         self.bhrigu_system_prompt = """You are a master Vedic astrologer deeply versed in the ancient texts of Bhrigu Samhita and Nadi Jyotisha. 
@@ -122,18 +143,25 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
         Returns:
             Comprehensive prediction dictionary with standalone sections and complete_analysis
         """
+        fallback = self._get_fallback_if_unavailable(category, birth_data)
+        if fallback:
+            return fallback
+
         # Calculate birth chart if not already provided
         if 'zodiac_sign' not in birth_data:
-            try:
-                chart_data = self.astrology_calculator.calculate_birth_chart(
-                    birth_data['date_of_birth'],
-                    birth_data['time_of_birth'],
-                    birth_data['latitude'],
-                    birth_data['longitude']
-                )
-                birth_data.update(chart_data)
-            except Exception as e:
-                print(f"Error calculating chart: {e}")
+            if self.astrology_calculator:
+                try:
+                    chart_data = self.astrology_calculator.calculate_birth_chart(
+                        birth_data['date_of_birth'],
+                        birth_data['time_of_birth'],
+                        birth_data['latitude'],
+                        birth_data['longitude']
+                    )
+                    birth_data.update(chart_data)
+                except Exception as e:
+                    print(f"Error calculating chart: {e}")
+            else:
+                logger.warning("Astrology calculator unavailable; proceeding without chart enrichment.")
 
         # Route to specific prediction method
         category_methods = {
@@ -163,6 +191,11 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
         This is separate from individual sections and provides an integrated view
         """
         full_text = section_result.get('full_analysis', '')
+        if not self.openai_service:
+            return (
+                f"Complete analysis synthesis unavailable due to missing AI services. "
+                f"Review the detailed sections for insights into your {category.replace('_', ' ')}."
+            )
         
         synthesis_prompt = f"""
         Based on the following extensive {category.replace('_', ' ')} analysis, create a 
@@ -193,6 +226,10 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
         Karmic Journey: Discover your soul's purpose and life mission
         Based on Bhrigu Samhita principles of soul evolution
         """
+        fallback = self._get_fallback_if_unavailable('karmic_journey', birth_data)
+        if fallback:
+            return fallback
+
         prompt = f"""{self.bhrigu_system_prompt}
 
 Generate a comprehensive Karmic Journey analysis for a person with the following birth details:
@@ -278,16 +315,12 @@ Provide specific, actionable guidance rooted in Bhrigu Samhita and Nadi Jyotisa 
         )
         
         # Validate and ensure all sections are present
-        missing_sections = self.section_parser.get_missing_sections(sections, 'karmic_journey')
-        if missing_sections:
-            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for karmic_journey")
-            for section_key in missing_sections:
-                sections[section_key] = self.section_parser.generate_missing_section(
-                    section_key,
-                    prediction_text,
-                    'karmic_journey',
-                    birth_data
-                )
+        sections = self._auto_repair_sections(
+            sections,
+            prediction_text,
+            'karmic_journey',
+            birth_data
+        )
 
         return {
             'category': 'karmic_journey',
@@ -303,6 +336,10 @@ Provide specific, actionable guidance rooted in Bhrigu Samhita and Nadi Jyotisa 
         """
         Past Lives: Explore previous incarnations and karmic patterns
         """
+        fallback = self._get_fallback_if_unavailable('past_lives', birth_data)
+        if fallback:
+            return fallback
+
         prompt = f"""{self.bhrigu_system_prompt}
 
 Generate a detailed Past Lives analysis based on Nadi Jyotisa principles:
@@ -383,16 +420,12 @@ Reference specific Nadi Jyotisa indicators and planetary positions."""
         )
         
         # Validate and ensure all sections are present
-        missing_sections = self.section_parser.get_missing_sections(sections, 'past_lives')
-        if missing_sections:
-            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for past_lives")
-            for section_key in missing_sections:
-                sections[section_key] = self.section_parser.generate_missing_section(
-                    section_key,
-                    prediction_text,
-                    'past_lives',
-                    birth_data
-                )
+        sections = self._auto_repair_sections(
+            sections,
+            prediction_text,
+            'past_lives',
+            birth_data
+        )
 
         return {
             'category': 'past_lives',
@@ -408,6 +441,10 @@ Reference specific Nadi Jyotisa indicators and planetary positions."""
         """
         Future Lives: Envision soul's evolution and future incarnations
         """
+        fallback = self._get_fallback_if_unavailable('future_lives', birth_data)
+        if fallback:
+            return fallback
+
         prompt = f"""{self.bhrigu_system_prompt}
 
 Generate Future Lives predictions based on current karmic trajectory:
@@ -498,16 +535,12 @@ Ground predictions in Bhrigu Samhita principles of karmic progression."""
         )
         
         # Validate and ensure all sections are present
-        missing_sections = self.section_parser.get_missing_sections(sections, 'future_lives')
-        if missing_sections:
-            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for future_lives")
-            for section_key in missing_sections:
-                sections[section_key] = self.section_parser.generate_missing_section(
-                    section_key,
-                    prediction_text,
-                    'future_lives',
-                    birth_data
-                )
+        sections = self._auto_repair_sections(
+            sections,
+            prediction_text,
+            'future_lives',
+            birth_data
+        )
 
         return {
             'category': 'future_lives',
@@ -523,6 +556,10 @@ Ground predictions in Bhrigu Samhita principles of karmic progression."""
         """
         Present Life: Comprehensive analysis of current life and opportunities
         """
+        fallback = self._get_fallback_if_unavailable('present_life', birth_data)
+        if fallback:
+            return fallback
+
         prompt = f"""{self.bhrigu_system_prompt}
 
 Generate comprehensive Present Life analysis:
@@ -635,16 +672,12 @@ Base analysis on classical Bhrigu Samhita delineation methods."""
         )
         
         # Validate and ensure all sections are present
-        missing_sections = self.section_parser.get_missing_sections(sections, 'present_life')
-        if missing_sections:
-            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for present_life")
-            for section_key in missing_sections:
-                sections[section_key] = self.section_parser.generate_missing_section(
-                    section_key,
-                    prediction_text,
-                    'present_life',
-                    birth_data
-                )
+        sections = self._auto_repair_sections(
+            sections,
+            prediction_text,
+            'present_life',
+            birth_data
+        )
 
         return {
             'category': 'present_life',
@@ -660,6 +693,10 @@ Base analysis on classical Bhrigu Samhita delineation methods."""
         """
         Life Events: Predict major transitions with precision timing
         """
+        fallback = self._get_fallback_if_unavailable('life_events', birth_data)
+        if fallback:
+            return fallback
+
         current_age = birth_data.get('age', self._calculate_age(birth_data.get('date_of_birth')))
 
         prompt = f"""{self.bhrigu_system_prompt}
@@ -805,16 +842,12 @@ Provide month-level precision where possible using Nadi Jyotisa methods."""
         )
         
         # Validate and ensure all sections are present
-        missing_sections = self.section_parser.get_missing_sections(sections, 'life_events')
-        if missing_sections:
-            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for life_events")
-            for section_key in missing_sections:
-                sections[section_key] = self.section_parser.generate_missing_section(
-                    section_key,
-                    prediction_text,
-                    'life_events',
-                    birth_data
-                )
+        sections = self._auto_repair_sections(
+            sections,
+            prediction_text,
+            'life_events',
+            birth_data
+        )
 
         return {
             'category': 'life_events',
@@ -830,6 +863,10 @@ Provide month-level precision where possible using Nadi Jyotisa methods."""
         """
         Karmic Remedies: Personalized spiritual practices and remedies
         """
+        fallback = self._get_fallback_if_unavailable('karmic_remedies', birth_data)
+        if fallback:
+            return fallback
+
         prompt = f"""{self.bhrigu_system_prompt}
 
 Generate comprehensive Karmic Remedies based on Bhrigu Samhita tradition:
@@ -1023,16 +1060,12 @@ Provide practical, affordable, and effective remedies that can be integrated int
         )
         
         # Validate and ensure all sections are present
-        missing_sections = self.section_parser.get_missing_sections(sections, 'karmic_remedies')
-        if missing_sections:
-            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for karmic_remedies")
-            for section_key in missing_sections:
-                sections[section_key] = self.section_parser.generate_missing_section(
-                    section_key,
-                    prediction_text,
-                    'karmic_remedies',
-                    birth_data
-                )
+        sections = self._auto_repair_sections(
+            sections,
+            prediction_text,
+            'karmic_remedies',
+            birth_data
+        )
 
         return {
             'category': 'karmic_remedies',
@@ -1048,6 +1081,10 @@ Provide practical, affordable, and effective remedies that can be integrated int
         """
         Relationships: Soul connections and compatibility analysis
         """
+        fallback = self._get_fallback_if_unavailable('relationships', birth_data)
+        if fallback:
+            return fallback
+
         prompt = f"""{self.bhrigu_system_prompt}
 
 Generate comprehensive Relationships analysis:
@@ -1242,16 +1279,12 @@ Provide specific, actionable relationship guidance based on classical astrology.
         )
         
         # Validate and ensure all sections are present
-        missing_sections = self.section_parser.get_missing_sections(sections, 'relationships')
-        if missing_sections:
-            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for relationships")
-            for section_key in missing_sections:
-                sections[section_key] = self.section_parser.generate_missing_section(
-                    section_key,
-                    prediction_text,
-                    'relationships',
-                    birth_data
-                )
+        sections = self._auto_repair_sections(
+            sections,
+            prediction_text,
+            'relationships',
+            birth_data
+        )
 
         return {
             'category': 'relationships',
@@ -1267,6 +1300,10 @@ Provide specific, actionable relationship guidance based on classical astrology.
         """
         General Predictions: Daily, weekly, monthly forecasts
         """
+        fallback = self._get_fallback_if_unavailable('predictions', birth_data)
+        if fallback:
+            return fallback
+
         prompt = f"""{self.bhrigu_system_prompt}
 
 Generate general astrological predictions:
@@ -1328,16 +1365,12 @@ Base on current planetary transits and your natal chart."""
         )
         
         # Validate and ensure all sections are present
-        missing_sections = self.section_parser.get_missing_sections(sections, 'predictions')
-        if missing_sections:
-            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for predictions")
-            for section_key in missing_sections:
-                sections[section_key] = self.section_parser.generate_missing_section(
-                    section_key,
-                    prediction_text,
-                    'predictions',
-                    birth_data
-                )
+        sections = self._auto_repair_sections(
+            sections,
+            prediction_text,
+            'predictions',
+            birth_data
+        )
 
         return {
             'category': 'predictions',
@@ -1349,6 +1382,39 @@ Base on current planetary transits and your natal chart."""
         }
 
     # Helper methods
+
+    def _auto_repair_sections(
+        self,
+        sections: Dict[str, Any],
+        prediction_text: str,
+        category: str,
+        birth_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Generate any missing or insufficient sections and update status metadata."""
+        missing_sections = self.section_parser.get_missing_sections(sections, category)
+        if missing_sections:
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for {category}")
+            status_map = sections.get('section_generation_status', {})
+            for section_key in missing_sections:
+                section_data, generation_status, fallback_reason = self.section_parser.generate_missing_section(
+                    section_key,
+                    prediction_text,
+                    category,
+                    birth_data,
+                    include_status=True
+                )
+                sections[section_key] = section_data
+                status_entry = {'status': generation_status}
+                if generation_status == "generated":
+                    status_entry['fallback_reason'] = "post_validation_missing"
+                else:
+                    combined_reason = "post_validation_missing"
+                    if fallback_reason:
+                        combined_reason = f"{combined_reason};{fallback_reason}"
+                    status_entry['fallback_reason'] = combined_reason
+                status_map[section_key] = status_entry
+            sections['section_generation_status'] = status_map
+        return sections
 
     def _extract_section(self, text: str, section_header: str) -> str:
         """Extract a specific section from the prediction text"""
@@ -1394,6 +1460,7 @@ Base on current planetary transits and your natal chart."""
             'moon_sign': birth_data.get('moon_sign'),
             'ascendant': birth_data.get('ascendant'),
             'ai_model': 'gpt-4',
+            'corpus_available': self.openai_service.corpus_available,
             'tradition': 'Bhrigu Samhita & Nadi Jyotisa'
         }
 
@@ -1413,10 +1480,28 @@ Base on current planetary transits and your natal chart."""
 
 # Singleton instance
 _bhrigu_service = None
+_bhrigu_service_init_error = None
 
-def get_bhrigu_service():
+
+def get_bhrigu_service(force_reinit: bool = False):
     """Get or create Bhrigu Predictions Service singleton"""
-    global _bhrigu_service
+    global _bhrigu_service, _bhrigu_service_init_error
+    if force_reinit:
+        _bhrigu_service = None
     if _bhrigu_service is None:
-        _bhrigu_service = BhriguPredictionsService()
+        try:
+            _bhrigu_service = BhriguPredictionsService()
+            _bhrigu_service_init_error = None
+        except Exception as exc:
+            _bhrigu_service_init_error = {
+                'error': str(exc),
+                'type': exc.__class__.__name__,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            raise
     return _bhrigu_service
+
+
+def get_bhrigu_service_init_error() -> Optional[Dict[str, str]]:
+    """Return the last initialization error for the Bhrigu service."""
+    return _bhrigu_service_init_error
