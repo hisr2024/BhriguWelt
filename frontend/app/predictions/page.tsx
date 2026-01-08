@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Compass, Sun, Calendar, TrendingUp, ArrowLeft, Loader2 } from 'lucide-react';
@@ -10,7 +10,7 @@ import GenZButton from '../components/GenZButton';
 import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
-import { getItem, STORES } from '@/lib/storage';
+import { getItem, setItem, STORES } from '@/lib/storage';
 import { predictionsAPI, BirthDetails } from '@/lib/api';
 import Link from 'next/link';
 
@@ -20,6 +20,10 @@ export default function PredictionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
   const [wisdomCards, setWisdomCards] = useState<any[]>([]);
+  const [isOffline, setIsOffline] = useState(false);
+  const [syncWhenOnline, setSyncWhenOnline] = useState(true);
+  const [cacheTimestamp, setCacheTimestamp] = useState<string | null>(null);
+  const [usingCache, setUsingCache] = useState(false);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
 
@@ -51,12 +55,17 @@ export default function PredictionsPage() {
   }, []);
 
   useEffect(() => {
-    if (encryptionKey) {
-      loadData();
-    }
-  }, [encryptionKey, activeTab]);
+    if (!encryptionKey) return;
+    const loadSyncPreference = async () => {
+      const savedPreference = await getItem(STORES.SETTINGS, 'predictions_sync_when_online', encryptionKey);
+      if (typeof savedPreference === 'boolean') {
+        setSyncWhenOnline(savedPreference);
+      }
+    };
+    loadSyncPreference();
+  }, [encryptionKey]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!encryptionKey) return;
 
     try {
@@ -78,6 +87,34 @@ export default function PredictionsPage() {
         longitude: profile.longitude,
       };
 
+      const cacheKey = `predictions_cache_${activeTab}`;
+      const offlineMode = !navigator.onLine;
+      setIsOffline(offlineMode);
+
+      if (offlineMode) {
+        const cached = await getItem(STORES.SETTINGS, cacheKey, encryptionKey);
+        if (cached?.data) {
+          setData({ ...cached.data, offline: true });
+          setCacheTimestamp(cached.fetchedAt);
+          setUsingCache(true);
+        } else {
+          setData({
+            offline: true,
+            overall: getOfflinePrediction(activeTab),
+            career: getOfflineCareerPrediction(activeTab),
+            love: getOfflineLovePrediction(activeTab),
+            health: getOfflineHealthPrediction(activeTab),
+            finance: getOfflineFinancePrediction(activeTab),
+            lucky_color: getLuckyColor(),
+            lucky_number: Math.floor(Math.random() * 9) + 1,
+            advice: getOfflineAdvice(activeTab)
+          });
+          setCacheTimestamp(null);
+          setUsingCache(false);
+        }
+        return;
+      }
+
       try {
         let prediction;
         switch (activeTab) {
@@ -95,19 +132,38 @@ export default function PredictionsPage() {
             break;
         }
         setData(prediction);
+        setCacheTimestamp(null);
+        setUsingCache(false);
+        setIsOffline(false);
+        await setItem(
+          STORES.SETTINGS,
+          cacheKey,
+          { data: prediction, fetchedAt: new Date().toISOString() },
+          encryptionKey
+        );
       } catch (apiError) {
         console.error('API error, using offline mode:', apiError);
-        setData({
-          offline: true,
-          overall: getOfflinePrediction(activeTab),
-          career: getOfflineCareerPrediction(activeTab),
-          love: getOfflineLovePrediction(activeTab),
-          health: getOfflineHealthPrediction(activeTab),
-          finance: getOfflineFinancePrediction(activeTab),
-          lucky_color: getLuckyColor(),
-          lucky_number: Math.floor(Math.random() * 9) + 1,
-          advice: getOfflineAdvice(activeTab)
-        });
+        const cached = await getItem(STORES.SETTINGS, cacheKey, encryptionKey);
+        if (cached?.data) {
+          setData({ ...cached.data, offline: true });
+          setCacheTimestamp(cached.fetchedAt);
+          setUsingCache(true);
+        } else {
+          setData({
+            offline: true,
+            overall: getOfflinePrediction(activeTab),
+            career: getOfflineCareerPrediction(activeTab),
+            love: getOfflineLovePrediction(activeTab),
+            health: getOfflineHealthPrediction(activeTab),
+            finance: getOfflineFinancePrediction(activeTab),
+            lucky_color: getLuckyColor(),
+            lucky_number: Math.floor(Math.random() * 9) + 1,
+            advice: getOfflineAdvice(activeTab)
+          });
+          setCacheTimestamp(null);
+          setUsingCache(false);
+        }
+        setIsOffline(true);
       }
     } catch (error) {
       console.error('Error loading predictions:', error);
@@ -115,7 +171,33 @@ export default function PredictionsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, encryptionKey]);
+
+  useEffect(() => {
+    if (encryptionKey) {
+      loadData();
+    }
+  }, [encryptionKey, activeTab, loadData]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      if (syncWhenOnline && encryptionKey) {
+        loadData();
+      }
+    };
+    const handleOffline = () => {
+      setIsOffline(true);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [loadData, syncWhenOnline, encryptionKey]);
 
   const getOfflinePrediction = (period: string) => {
     const predictions: Record<string, string> = {
@@ -259,7 +341,7 @@ export default function PredictionsPage() {
               Back to Dashboard
             </GenZButton>
           </Link>
-          
+
           <div className="flex items-center gap-4 mb-4">
             <GenZBadge variant="neon">
               {data?.offline ? 'Offline Mode' : 'Live'}
@@ -270,6 +352,51 @@ export default function PredictionsPage() {
             Forecasts with actionable insights
           </p>
         </motion.div>
+
+        {usingCache && cacheTimestamp && (
+          <GenZCard variant="glass" className="mb-6 border border-genz-electric-blue/40">
+            <div className="flex flex-col gap-2 text-white/90">
+              <span className="font-semibold">Offline cache in use</span>
+              <span className="text-sm text-white/70">
+                Showing your last saved prediction from {new Date(cacheTimestamp).toLocaleString()}.
+              </span>
+            </div>
+          </GenZCard>
+        )}
+
+        <GenZCard variant="glass" className="mb-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-white font-semibold">Sync when online</p>
+              <p className="text-white/70 text-sm">
+                Automatically refresh cached predictions when you regain connectivity.
+              </p>
+            </div>
+            <label className="flex items-center gap-2 text-white">
+              <span className="text-sm">{syncWhenOnline ? 'On' : 'Off'}</span>
+              <input
+                type="checkbox"
+                checked={syncWhenOnline}
+                onChange={async (event) => {
+                  const nextValue = event.target.checked;
+                  setSyncWhenOnline(nextValue);
+                  if (encryptionKey) {
+                    await setItem(
+                      STORES.SETTINGS,
+                      'predictions_sync_when_online',
+                      nextValue,
+                      encryptionKey
+                    );
+                  }
+                  if (nextValue && isOffline === false) {
+                    loadData();
+                  }
+                }}
+                className="h-5 w-5 accent-genz-electric-blue"
+              />
+            </label>
+          </div>
+        </GenZCard>
 
         {/* Tabs */}
         <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
