@@ -1,10 +1,10 @@
 import type { ChartData, PredictionMetadata, PredictionResult, Subcategory } from '../api/predictions';
 
-type PastLivesMode = 'offline' | 'online' | 'auto';
+export type PastLivesMode = 'offline' | 'online' | 'auto';
 
-type PastLivesLogger = Pick<Console, 'debug' | 'info' | 'warn' | 'error'>;
+export type PastLivesLogger = Pick<Console, 'debug' | 'info' | 'warn' | 'error'>;
 
-interface PastLivesEngineOptions {
+export interface PastLivesEngineOptions {
   mode?: PastLivesMode;
   aiEnabled?: boolean;
   cacheTTLms?: number;
