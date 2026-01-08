@@ -1391,6 +1391,7 @@ Base on current planetary transits and your natal chart."""
             'moon_sign': birth_data.get('moon_sign'),
             'ascendant': birth_data.get('ascendant'),
             'ai_model': 'gpt-4',
+            'corpus_available': self.openai_service.corpus_available,
             'tradition': 'Bhrigu Samhita & Nadi Jyotisa'
         }
 
