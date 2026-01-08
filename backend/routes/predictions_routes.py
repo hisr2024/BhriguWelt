@@ -260,7 +260,11 @@ def test_section_extraction():
                 'validation': validation,
                 'missing_sections': missing_sections,
                 'raw_text_length': len(raw_text),
-                'section_lengths': {k: len(v) if v else 0 for k, v in sections.items()}
+                'section_lengths': {
+                    k: len(v) if v else 0
+                    for k, v in sections.items()
+                    if k != 'section_generation_status'
+                }
             }
         }), 200
 
