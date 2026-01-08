@@ -3,8 +3,23 @@ Present Life API Routes
 Current life analysis and guidance endpoints
 """
 from flask import Blueprint, request, jsonify
-from services.astrology_calculator import astrology_calculator
+from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.openai_service import openai_service
+from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
+
+
+def _get_birth_chart(data):
+    calculator = get_astrology_calculator()
+    cached_birth_data = get_cached_birth_data(data)
+    if calculator:
+        return calculator.calculate_birth_chart(
+            date_of_birth=data['date_of_birth'],
+            time_of_birth=data['time_of_birth'],
+            place=data['place_of_birth']
+        ), None
+    if cached_birth_data:
+        return cached_birth_data, None
+    return None, dependency_error_response(get_astrology_dependency_error())
 
 bp = Blueprint('present_life', __name__, url_prefix='/api/present-life')
 
@@ -24,11 +39,9 @@ def comprehensive_analysis():
         data = request.get_json()
 
         # Calculate birth chart
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         # Generate present life analysis
         present_life = openai_service.generate_present_life_analysis(birth_chart)
@@ -49,11 +62,9 @@ def career_guidance():
     """Get detailed career and professional guidance"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Provide comprehensive career guidance:
@@ -90,11 +101,9 @@ def relationships_analysis():
     """Analyze current relationship patterns and guidance"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Analyze relationship dynamics:
@@ -131,11 +140,9 @@ def health_wellness():
     """Get health and wellness guidance"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Provide health and wellness guidance:
@@ -172,11 +179,9 @@ def financial_prospects():
     """Analyze financial prospects and wealth potential"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Analyze financial prospects:
@@ -213,11 +218,9 @@ def spiritual_growth():
     """Guide spiritual growth and development"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Guide spiritual growth:

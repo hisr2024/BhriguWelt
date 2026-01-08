@@ -3,8 +3,23 @@ Karmic Remedies API Routes
 Personalized remedies and spiritual practices
 """
 from flask import Blueprint, request, jsonify
-from services.astrology_calculator import astrology_calculator
+from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.openai_service import openai_service
+from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
+
+
+def _get_birth_chart(data):
+    calculator = get_astrology_calculator()
+    cached_birth_data = get_cached_birth_data(data)
+    if calculator:
+        return calculator.calculate_birth_chart(
+            date_of_birth=data['date_of_birth'],
+            time_of_birth=data['time_of_birth'],
+            place=data['place_of_birth']
+        ), None
+    if cached_birth_data:
+        return cached_birth_data, None
+    return None, dependency_error_response(get_astrology_dependency_error())
 
 bp = Blueprint('karmic_remedies', __name__, url_prefix='/api/karmic-remedies')
 
@@ -25,11 +40,9 @@ def comprehensive_remedies():
         data = request.get_json()
 
         # Calculate birth chart
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         # Generate remedies
         challenges = data.get('challenges', [])
@@ -51,11 +64,9 @@ def mantra_recommendations():
     """Get personalized mantra recommendations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend powerful mantras for:
@@ -91,11 +102,9 @@ def gemstone_therapy():
     """Get gemstone therapy recommendations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend therapeutic gemstones:
@@ -132,11 +141,9 @@ def ritual_recommendations():
     """Get ritual and puja recommendations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend Vedic rituals and pujas:
@@ -172,11 +179,9 @@ def charitable_acts():
     """Get dana (charitable) recommendations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend charitable acts (dana):
@@ -211,11 +216,9 @@ def lifestyle_modifications():
     """Get lifestyle and dietary recommendations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend lifestyle modifications:
@@ -251,11 +254,9 @@ def meditation_practices():
     """Get personalized meditation practices"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend meditation practices:
