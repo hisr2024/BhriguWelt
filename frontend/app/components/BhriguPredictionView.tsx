@@ -570,12 +570,37 @@ export default function BhriguPredictionView({
 
         {/* Full Analysis - Collapsible at the bottom */}
         {prediction.full_analysis && (
-          <FullAnalysisPanel
-            showFullAnalysis={showFullAnalysis}
-            onToggle={() => setShowFullAnalysis(!showFullAnalysis)}
-            fullAnalysis={prediction.full_analysis}
-          />
-        )}
+          <div className="mt-8 pt-8 border-t border-gray-700/50">
+            <button
+              onClick={() => setShowFullAnalysis(!showFullAnalysis)}
+              className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
+                       border border-gray-700/50 rounded-xl p-6
+                       hover:border-cyan-500/60 hover:shadow-[0_0_24px_rgba(34,211,238,0.18)]
+                       focus-visible:border-cyan-400/70 focus-visible:ring-2 focus-visible:ring-cyan-400/60
+                       focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900/70
+                       focus-visible:shadow-[0_0_28px_rgba(34,211,238,0.25)] transition-all
+                       flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-6 h-6 text-cyan-400" />
+                <div className="text-left">
+                  <h3 className="text-xl font-bold text-white">
+                    View Complete Reading
+                  </h3>
+                  <p className="text-sm text-gray-400 mt-1">
+                    {showFullAnalysis ? 'Hide' : 'Show'} the full unstructured analysis
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-sm font-semibold text-gray-400 group-hover:text-cyan-300 transition-colors">
+                <span>{showFullAnalysis ? 'Collapse' : 'Expand'}</span>
+                {showFullAnalysis ? (
+                  <ChevronUp className="w-6 h-6" />
+                ) : (
+                  <ChevronDown className="w-6 h-6" />
+                )}
+              </div>
+            </button>
 
         {/* Default Full Analysis Panel (when no sections are available) */}
         {prediction.full_analysis && availableSections.length === 0 && (
