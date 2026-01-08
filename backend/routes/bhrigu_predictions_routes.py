@@ -4,20 +4,72 @@ Handles all Bhrigu Samhita and Nadi Jyotisa prediction requests
 """
 from flask import Blueprint, request, jsonify
 from services.bhrigu_predictions import get_bhrigu_service
-from services.astrology_calculator import AstrologyCalculator
+from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from models import db, BhriguPredictionCache, BhriguWisdomEntry, BhriguSessionLog
 from middleware.rate_limiter import limiter
+from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
 from utils.validators import validate_birth_data
-from utils.response_formatter import success_response, error_response
+from utils.response_formatter import (
+    success_response,
+    error_response,
+    prediction_response,
+    prediction_error_response
+)
 import traceback
 from datetime import datetime
+from typing import Optional
 import uuid
 import json
+import time
 
 bp = Blueprint('bhrigu_predictions', __name__, url_prefix='/api/bhrigu-predictions')
 
 bhrigu_service = get_bhrigu_service()
-astrology_calc = AstrologyCalculator()
+
+
+def _get_chart_data(data):
+    calculator = get_astrology_calculator()
+    cached_birth_data = get_cached_birth_data(data)
+    if calculator:
+        return calculator.calculate_birth_chart(
+            date_of_birth=data['date_of_birth'],
+            time_of_birth=data['time_of_birth'],
+            place=data.get('place_of_birth', ''),
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude')
+        ), None
+    if cached_birth_data:
+        return cached_birth_data, None
+    return None, dependency_error_response(get_astrology_dependency_error())
+
+
+def _build_cache_metadata(cached):
+    return {
+        'zodiac_sign': cached.zodiac_sign,
+        'nakshatra': cached.nakshatra,
+        'moon_sign': cached.moon_sign,
+        'ascendant': cached.ascendant,
+        'category': cached.category,
+        'from_cache': True,
+        'cached_at': cached.created_at.isoformat() if cached.created_at else None,
+        'access_count': cached.access_count
+    }
+
+
+def _build_chart_metadata(chart_data, category=None, extra=None):
+    metadata = {
+        'zodiac_sign': chart_data.get('zodiac_sign'),
+        'nakshatra': chart_data.get('nakshatra'),
+        'moon_sign': chart_data.get('moon_sign'),
+        'ascendant': chart_data.get('ascendant'),
+        'category': category,
+        'from_cache': False
+    }
+
+    if extra:
+        metadata.update(extra)
+
+    return metadata
 
 
 @bp.route('/karmic-journey', methods=['POST'])
@@ -30,10 +82,16 @@ def karmic_journey():
     try:
         data = request.get_json()
 
-        # Validate birth data
-        validation_error = validate_birth_data(data)
-        if validation_error:
-            return error_response(validation_error, 400)
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            # Validate birth data
+            validation_error = validate_birth_data(data)
+            if validation_error:
+                return error_response(validation_error, 400)
 
         # Check cache first
         cached = BhriguPredictionCache.get_cached_prediction(
@@ -41,27 +99,28 @@ def karmic_journey():
         )
 
         if cached and not data.get('force_regenerate'):
-            return success_response(
-                cached.to_dict(),
+            cached_prediction = cached.to_dict().get('prediction')
+            return prediction_response(
+                cached_prediction,
+                metadata=_build_cache_metadata(cached),
                 message="Retrieved from Bhrigu wisdom cache"
             )
 
-        # Calculate birth chart
-        chart_data = astrology_calc.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data.get('place_of_birth', ''),
-            latitude=data.get('latitude'),
-            longitude=data.get('longitude')
-        )
+        chart_data, error = _get_chart_data(data)
+        if error:
+            return error
 
         # Merge chart data with input
         birth_data = {**data, **chart_data}
 
         # Generate prediction
-        prediction = bhrigu_service.generate_karmic_journey_prediction(
+        prediction = _generate_prediction(
+            "karmic_journey",
             birth_data,
-            data.get('question')
+            lambda: bhrigu_service.generate_karmic_journey_prediction(
+                birth_data,
+                data.get('question')
+            )
         )
 
         # Cache the prediction
@@ -81,12 +140,19 @@ def karmic_journey():
             metadata
         )
 
-        return success_response(prediction)
+        return prediction_response(
+            prediction,
+            metadata=_build_chart_metadata(chart_data, category='karmic_journey', extra=metadata)
+        )
 
     except Exception as e:
         print(f"Error in karmic_journey: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate karmic journey analysis: {str(e)}", 500)
+        return prediction_error_response(
+            f"Failed to generate karmic journey analysis: {str(e)}",
+            500,
+            metadata={'category': 'karmic_journey'}
+        )
 
 
 @bp.route('/past-lives', methods=['POST'])
@@ -98,29 +164,44 @@ def past_lives():
     """
     try:
         data = request.get_json()
-        validation_error = validate_birth_data(data)
-        if validation_error:
-            return error_response(validation_error, 400)
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            validation_error = validate_birth_data(data)
+            if validation_error:
+                return error_response(validation_error, 400)
 
         # Check cache
         cached = BhriguPredictionCache.get_cached_prediction(
             data, 'past_lives', data.get('question')
         )
         if cached and not data.get('force_regenerate'):
-            return success_response(cached.to_dict(), message="From cache")
+            cached_prediction = cached.to_dict().get('prediction')
+            return prediction_response(
+                cached_prediction,
+                metadata=_build_cache_metadata(cached),
+                message="From cache"
+            )
+
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
 
         # Calculate and generate
-        chart_data = astrology_calc.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data.get('place_of_birth', ''),
-            latitude=data.get('latitude'),
-            longitude=data.get('longitude')
-        )
+        chart_data, error = _get_chart_data(data)
+        if error:
+            return error
         birth_data = {**data, **chart_data}
 
-        prediction = bhrigu_service.generate_past_lives_prediction(
-            birth_data, data.get('question')
+        prediction = _generate_prediction(
+            "past_lives",
+            birth_data,
+            lambda: bhrigu_service.generate_past_lives_prediction(
+                birth_data, data.get('question')
+            )
         )
 
         # Cache
@@ -130,12 +211,19 @@ def past_lives():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return prediction_response(
+            prediction,
+            metadata=_build_chart_metadata(chart_data, category='past_lives')
+        )
 
     except Exception as e:
         print(f"Error in past_lives: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate past lives analysis: {str(e)}", 500)
+        return prediction_error_response(
+            f"Failed to generate past lives analysis: {str(e)}",
+            500,
+            metadata={'category': 'past_lives'}
+        )
 
 
 @bp.route('/future-lives', methods=['POST'])
@@ -147,27 +235,38 @@ def future_lives():
     """
     try:
         data = request.get_json()
-        validation_error = validate_birth_data(data)
-        if validation_error:
-            return error_response(validation_error, 400)
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            validation_error = validate_birth_data(data)
+            if validation_error:
+                return error_response(validation_error, 400)
 
         cached = BhriguPredictionCache.get_cached_prediction(
             data, 'future_lives', data.get('question')
         )
         if cached and not data.get('force_regenerate'):
-            return success_response(cached.to_dict(), message="From cache")
+            cached_prediction = cached.to_dict().get('prediction')
+            return prediction_response(
+                cached_prediction,
+                metadata=_build_cache_metadata(cached),
+                message="From cache"
+            )
 
-        chart_data = astrology_calc.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data.get('place_of_birth', ''),
-            latitude=data.get('latitude'),
-            longitude=data.get('longitude')
-        )
+        chart_data, error = _get_chart_data(data)
+        if error:
+            return error
         birth_data = {**data, **chart_data}
 
-        prediction = bhrigu_service.generate_future_lives_prediction(
-            birth_data, data.get('question')
+        prediction = _generate_prediction(
+            "future_lives",
+            birth_data,
+            lambda: bhrigu_service.generate_future_lives_prediction(
+                birth_data, data.get('question')
+            )
         )
 
         BhriguPredictionCache.cache_prediction(
@@ -176,12 +275,19 @@ def future_lives():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return prediction_response(
+            prediction,
+            metadata=_build_chart_metadata(chart_data, category='future_lives')
+        )
 
     except Exception as e:
         print(f"Error in future_lives: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate future lives prediction: {str(e)}", 500)
+        return prediction_error_response(
+            f"Failed to generate future lives prediction: {str(e)}",
+            500,
+            metadata={'category': 'future_lives'}
+        )
 
 
 @bp.route('/present-life', methods=['POST'])
@@ -193,27 +299,38 @@ def present_life():
     """
     try:
         data = request.get_json()
-        validation_error = validate_birth_data(data)
-        if validation_error:
-            return error_response(validation_error, 400)
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            validation_error = validate_birth_data(data)
+            if validation_error:
+                return error_response(validation_error, 400)
 
         cached = BhriguPredictionCache.get_cached_prediction(
             data, 'present_life', data.get('question')
         )
         if cached and not data.get('force_regenerate'):
-            return success_response(cached.to_dict(), message="From cache")
+            cached_prediction = cached.to_dict().get('prediction')
+            return prediction_response(
+                cached_prediction,
+                metadata=_build_cache_metadata(cached),
+                message="From cache"
+            )
 
-        chart_data = astrology_calc.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data.get('place_of_birth', ''),
-            latitude=data.get('latitude'),
-            longitude=data.get('longitude')
-        )
+        chart_data, error = _get_chart_data(data)
+        if error:
+            return error
         birth_data = {**data, **chart_data}
 
-        prediction = bhrigu_service.generate_present_life_prediction(
-            birth_data, data.get('question')
+        prediction = _generate_prediction(
+            "present_life",
+            birth_data,
+            lambda: bhrigu_service.generate_present_life_prediction(
+                birth_data, data.get('question')
+            )
         )
 
         BhriguPredictionCache.cache_prediction(
@@ -222,12 +339,19 @@ def present_life():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return prediction_response(
+            prediction,
+            metadata=_build_chart_metadata(chart_data, category='present_life')
+        )
 
     except Exception as e:
         print(f"Error in present_life: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate present life analysis: {str(e)}", 500)
+        return prediction_error_response(
+            f"Failed to generate present life analysis: {str(e)}",
+            500,
+            metadata={'category': 'present_life'}
+        )
 
 
 @bp.route('/life-events', methods=['POST'])
@@ -239,27 +363,38 @@ def life_events():
     """
     try:
         data = request.get_json()
-        validation_error = validate_birth_data(data)
-        if validation_error:
-            return error_response(validation_error, 400)
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            validation_error = validate_birth_data(data)
+            if validation_error:
+                return error_response(validation_error, 400)
 
         cached = BhriguPredictionCache.get_cached_prediction(
             data, 'life_events', data.get('question')
         )
         if cached and not data.get('force_regenerate'):
-            return success_response(cached.to_dict(), message="From cache")
+            cached_prediction = cached.to_dict().get('prediction')
+            return prediction_response(
+                cached_prediction,
+                metadata=_build_cache_metadata(cached),
+                message="From cache"
+            )
 
-        chart_data = astrology_calc.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data.get('place_of_birth', ''),
-            latitude=data.get('latitude'),
-            longitude=data.get('longitude')
-        )
+        chart_data, error = _get_chart_data(data)
+        if error:
+            return error
         birth_data = {**data, **chart_data}
 
-        prediction = bhrigu_service.generate_life_events_prediction(
-            birth_data, data.get('question')
+        prediction = _generate_prediction(
+            "life_events",
+            birth_data,
+            lambda: bhrigu_service.generate_life_events_prediction(
+                birth_data, data.get('question')
+            )
         )
 
         BhriguPredictionCache.cache_prediction(
@@ -268,12 +403,19 @@ def life_events():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return prediction_response(
+            prediction,
+            metadata=_build_chart_metadata(chart_data, category='life_events')
+        )
 
     except Exception as e:
         print(f"Error in life_events: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate life events prediction: {str(e)}", 500)
+        return prediction_error_response(
+            f"Failed to generate life events prediction: {str(e)}",
+            500,
+            metadata={'category': 'life_events'}
+        )
 
 
 @bp.route('/karmic-remedies', methods=['POST'])
@@ -285,27 +427,38 @@ def karmic_remedies():
     """
     try:
         data = request.get_json()
-        validation_error = validate_birth_data(data)
-        if validation_error:
-            return error_response(validation_error, 400)
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            validation_error = validate_birth_data(data)
+            if validation_error:
+                return error_response(validation_error, 400)
 
         cached = BhriguPredictionCache.get_cached_prediction(
             data, 'karmic_remedies', data.get('question')
         )
         if cached and not data.get('force_regenerate'):
-            return success_response(cached.to_dict(), message="From cache")
+            cached_prediction = cached.to_dict().get('prediction')
+            return prediction_response(
+                cached_prediction,
+                metadata=_build_cache_metadata(cached),
+                message="From cache"
+            )
 
-        chart_data = astrology_calc.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data.get('place_of_birth', ''),
-            latitude=data.get('latitude'),
-            longitude=data.get('longitude')
-        )
+        chart_data, error = _get_chart_data(data)
+        if error:
+            return error
         birth_data = {**data, **chart_data}
 
-        prediction = bhrigu_service.generate_karmic_remedies_prediction(
-            birth_data, data.get('question')
+        prediction = _generate_prediction(
+            "karmic_remedies",
+            birth_data,
+            lambda: bhrigu_service.generate_karmic_remedies_prediction(
+                birth_data, data.get('question')
+            )
         )
 
         BhriguPredictionCache.cache_prediction(
@@ -314,12 +467,19 @@ def karmic_remedies():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return prediction_response(
+            prediction,
+            metadata=_build_chart_metadata(chart_data, category='karmic_remedies')
+        )
 
     except Exception as e:
         print(f"Error in karmic_remedies: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate karmic remedies: {str(e)}", 500)
+        return prediction_error_response(
+            f"Failed to generate karmic remedies: {str(e)}",
+            500,
+            metadata={'category': 'karmic_remedies'}
+        )
 
 
 @bp.route('/relationships', methods=['POST'])
@@ -331,27 +491,38 @@ def relationships():
     """
     try:
         data = request.get_json()
-        validation_error = validate_birth_data(data)
-        if validation_error:
-            return error_response(validation_error, 400)
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            validation_error = validate_birth_data(data)
+            if validation_error:
+                return error_response(validation_error, 400)
 
         cached = BhriguPredictionCache.get_cached_prediction(
             data, 'relationships', data.get('question')
         )
         if cached and not data.get('force_regenerate'):
-            return success_response(cached.to_dict(), message="From cache")
+            cached_prediction = cached.to_dict().get('prediction')
+            return prediction_response(
+                cached_prediction,
+                metadata=_build_cache_metadata(cached),
+                message="From cache"
+            )
 
-        chart_data = astrology_calc.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data.get('place_of_birth', ''),
-            latitude=data.get('latitude'),
-            longitude=data.get('longitude')
-        )
+        chart_data, error = _get_chart_data(data)
+        if error:
+            return error
         birth_data = {**data, **chart_data}
 
-        prediction = bhrigu_service.generate_relationships_prediction(
-            birth_data, data.get('question')
+        prediction = _generate_prediction(
+            "relationships",
+            birth_data,
+            lambda: bhrigu_service.generate_relationships_prediction(
+                birth_data, data.get('question')
+            )
         )
 
         BhriguPredictionCache.cache_prediction(
@@ -360,12 +531,19 @@ def relationships():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return prediction_response(
+            prediction,
+            metadata=_build_chart_metadata(chart_data, category='relationships')
+        )
 
     except Exception as e:
         print(f"Error in relationships: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate relationships analysis: {str(e)}", 500)
+        return prediction_error_response(
+            f"Failed to generate relationships analysis: {str(e)}",
+            500,
+            metadata={'category': 'relationships'}
+        )
 
 
 @bp.route('/predictions', methods=['POST'])
@@ -377,27 +555,38 @@ def predictions():
     """
     try:
         data = request.get_json()
-        validation_error = validate_birth_data(data)
-        if validation_error:
-            return error_response(validation_error, 400)
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            validation_error = validate_birth_data(data)
+            if validation_error:
+                return error_response(validation_error, 400)
 
         cached = BhriguPredictionCache.get_cached_prediction(
             data, 'predictions', data.get('question')
         )
         if cached and not data.get('force_regenerate'):
-            return success_response(cached.to_dict(), message="From cache")
+            cached_prediction = cached.to_dict().get('prediction')
+            return prediction_response(
+                cached_prediction,
+                metadata=_build_cache_metadata(cached),
+                message="From cache"
+            )
 
-        chart_data = astrology_calc.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data.get('place_of_birth', ''),
-            latitude=data.get('latitude'),
-            longitude=data.get('longitude')
-        )
+        chart_data, error = _get_chart_data(data)
+        if error:
+            return error
         birth_data = {**data, **chart_data}
 
-        prediction = bhrigu_service.generate_general_predictions(
-            birth_data, data.get('question')
+        prediction = _generate_prediction(
+            "predictions",
+            birth_data,
+            lambda: bhrigu_service.generate_general_predictions(
+                birth_data, data.get('question')
+            )
         )
 
         BhriguPredictionCache.cache_prediction(
@@ -406,12 +595,19 @@ def predictions():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return prediction_response(
+            prediction,
+            metadata=_build_chart_metadata(chart_data, category='predictions')
+        )
 
     except Exception as e:
         print(f"Error in predictions: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate predictions: {str(e)}", 500)
+        return prediction_error_response(
+            f"Failed to generate predictions: {str(e)}",
+            500,
+            metadata={'category': 'predictions'}
+        )
 
 
 @bp.route('/wisdom-search', methods=['POST'])
@@ -515,18 +711,20 @@ def comprehensive_prediction():
     """
     try:
         data = request.get_json()
-        validation_error = validate_birth_data(data)
-        if validation_error:
-            return error_response(validation_error, 400)
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            validation_error = validate_birth_data(data)
+            if validation_error:
+                return error_response(validation_error, 400)
 
         # Calculate birth chart once
-        chart_data = astrology_calc.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data.get('place_of_birth', ''),
-            latitude=data.get('latitude'),
-            longitude=data.get('longitude')
-        )
+        chart_data, error = _get_chart_data(data)
+        if error:
+            return error
         birth_data = {**data, **chart_data}
 
         # Generate all 8 categories
@@ -547,8 +745,12 @@ def comprehensive_prediction():
                 comprehensive_result[category] = cached.to_dict()
             else:
                 # Generate new prediction
-                prediction = bhrigu_service.generate_comprehensive_prediction(
-                    birth_data, category
+                prediction = _generate_prediction(
+                    category,
+                    birth_data,
+                    lambda: bhrigu_service.generate_comprehensive_prediction(
+                        birth_data, category
+                    )
                 )
 
                 # Cache it
@@ -564,32 +766,39 @@ def comprehensive_prediction():
 
                 comprehensive_result[category] = prediction
 
-        return success_response({
-            'comprehensive_analysis': comprehensive_result,
-            'birth_data': {
-                'zodiac_sign': chart_data.get('zodiac_sign'),
-                'nakshatra': chart_data.get('nakshatra'),
-                'moon_sign': chart_data.get('moon_sign'),
-                'ascendant': chart_data.get('ascendant')
+        return prediction_response(
+            {
+                'comprehensive_analysis': comprehensive_result,
+                'birth_data': {
+                    'zodiac_sign': chart_data.get('zodiac_sign'),
+                    'nakshatra': chart_data.get('nakshatra'),
+                    'moon_sign': chart_data.get('moon_sign'),
+                    'ascendant': chart_data.get('ascendant')
+                },
+                'categories_included': categories,
+                'generated_at': datetime.utcnow().isoformat()
             },
-            'categories_included': categories,
-            'generated_at': datetime.utcnow().isoformat()
-        })
+            metadata=_build_chart_metadata(chart_data, category='comprehensive')
+        )
 
     except Exception as e:
         print(f"Error in comprehensive_prediction: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate comprehensive prediction: {str(e)}", 500)
+        return prediction_error_response(
+            f"Failed to generate comprehensive prediction: {str(e)}",
+            500,
+            metadata={'category': 'comprehensive'}
+        )
 
 
 # Error handlers for this blueprint
 @bp.errorhandler(429)
 def ratelimit_handler(e):
-    return error_response("Rate limit exceeded. Please try again later.", 429)
+    return prediction_error_response("Rate limit exceeded. Please try again later.", 429)
 
 
 @bp.errorhandler(Exception)
 def handle_error(e):
     print(f"Unhandled error in bhrigu_predictions: {str(e)}")
     traceback.print_exc()
-    return error_response("An unexpected error occurred", 500)
+    return prediction_error_response("An unexpected error occurred", 500)

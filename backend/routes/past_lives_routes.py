@@ -2,9 +2,10 @@
 Past Lives API Routes
 Past life analysis and regression endpoints
 """
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 from services.astrology_calculator import astrology_calculator
 from services.openai_service import openai_service
+from utils.response_formatter import prediction_response, prediction_error_response
 
 bp = Blueprint('past_lives', __name__, url_prefix='/api/past-lives')
 
@@ -23,37 +24,35 @@ def past_lives_analysis():
     try:
         data = request.get_json()
 
-        # Calculate birth chart
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         # Generate past lives analysis
         past_lives = openai_service.generate_past_lives_analysis(birth_chart)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'birth_chart': birth_chart,
                 'past_lives_analysis': past_lives
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate past lives analysis: {str(e)}", 500)
 
 @bp.route('/karmic-patterns', methods=['POST'])
 def karmic_patterns():
     """Identify karmic patterns from past lives"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Identify karmic patterns from past lives based on:
@@ -69,30 +68,31 @@ def karmic_patterns():
         5. Unfinished business from past lives
         """
 
-        patterns = openai_service.generate_prediction(prompt, birth_chart)
+        patterns_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'karmic_patterns': patterns,
                 'ketu_position': birth_chart['planets']['Ketu'],
                 'past_life_house': birth_chart['houses'][11]
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate karmic patterns: {str(e)}", 500)
 
 @bp.route('/past-relationships', methods=['POST'])
 def past_relationships():
     """Explore past life relationships affecting current life"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Analyze past life relationships for:
@@ -108,19 +108,22 @@ def past_relationships():
         5. Lessons through relationships
         """
 
-        relationships = openai_service.generate_prediction(prompt, birth_chart)
+        relationships_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'past_relationships': relationships,
                 'venus_position': birth_chart['planets']['Venus'],
                 'partnership_house': birth_chart['houses'][6]
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate past relationships: {str(e)}", 500)
 
 @bp.route('/talents-carried-forward', methods=['POST'])
 def talents_carried_forward():
@@ -147,19 +150,22 @@ def talents_carried_forward():
         5. How to activate these talents
         """
 
-        talents = openai_service.generate_prediction(prompt, birth_chart)
+        talents_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'talents': talents,
                 'mercury_position': birth_chart['planets']['Mercury'],
                 'creativity_house': birth_chart['houses'][4]
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate talents carried forward: {str(e)}", 500)
 
 @bp.route('/past-traumas', methods=['POST'])
 def past_traumas():
@@ -186,16 +192,19 @@ def past_traumas():
         5. Steps toward karmic healing
         """
 
-        traumas = openai_service.generate_prediction(prompt, birth_chart)
+        traumas_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'past_traumas': traumas,
                 'saturn_position': birth_chart['planets']['Saturn'],
                 'transformation_house': birth_chart['houses'][7]
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate past traumas: {str(e)}", 500)

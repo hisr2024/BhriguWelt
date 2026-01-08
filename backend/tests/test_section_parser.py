@@ -357,6 +357,44 @@ Content without spaces.
         result = parser.extract_section_content(text, 'soul_purpose')
         assert len(result) > 10
 
+    def test_markdown_header_levels(self, parser):
+        """Test extraction with ### and #### markdown headers"""
+        text = """
+### 1.1 Soul's Primary Purpose
+This section uses a third-level header with numbering.
+
+#### Supporting Details
+Additional nested details should be included in the parent section.
+
+## Karmic Blueprint
+Next section starts here.
+"""
+        result = parser.extract_section_content(text, 'soul_purpose')
+        assert 'third-level header' in result.lower()
+        assert 'supporting details' in result.lower()
+        assert 'karmic blueprint' not in result.lower()
+
+    def test_nested_markdown_sections(self, parser):
+        """Test nested markdown headers merge into nearest known section"""
+        text = """
+## 2. Soul's Primary Purpose
+Primary content starts here.
+
+### Subtheme A
+Details for subtheme A that should stay with soul purpose.
+
+#### Subtheme A.1
+More nested details.
+
+## 3. Karmic Blueprint
+Different section content.
+"""
+        result = parser.extract_section_content(text, 'soul_purpose')
+        assert 'primary content starts here' in result.lower()
+        assert 'subtheme a' in result.lower()
+        assert 'more nested details' in result.lower()
+        assert 'karmic blueprint' not in result.lower()
+
 
 class TestSectionParserLifeEvents:
     """Test life_events category extraction"""
