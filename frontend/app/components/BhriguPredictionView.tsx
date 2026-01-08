@@ -142,9 +142,16 @@ export default function BhriguPredictionView({
   const [question, setQuestion] = useState('');
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+  const [cacheAgeSeconds, setCacheAgeSeconds] = useState<number | null>(null);
+  const [cacheKey, setCacheKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile) {
+      setPrediction(null);
+      setFromCache(false);
+      setCacheAgeSeconds(null);
+      setCacheKey(null);
+      setError(null);
       loadPrediction();
     }
   }, [profile]);
@@ -154,6 +161,8 @@ export default function BhriguPredictionView({
 
     setLoading(true);
     setError(null);
+    setCacheAgeSeconds(null);
+    setCacheKey(null);
 
     try {
       const profileData = {
@@ -170,12 +179,15 @@ export default function BhriguPredictionView({
 
       if (response. status === 'success') {
         const predictionData = response.data?.prediction ?? response.data;
+        const cacheAge = response.data?.cache_age ?? null;
+        const cacheKeyValue = response.data?.cache_key ?? null;
         setPrediction(predictionData);
         setFromCache(
-          response.message?.includes('cache') ||
-          response.message?.toLowerCase().includes('cache') ||
-          Boolean(response.data?.prediction)
+          Boolean(response.message?.toLowerCase().includes('cache')) ||
+          cacheAge !== null
         );
+        setCacheAgeSeconds(cacheAge);
+        setCacheKey(cacheKeyValue);
       } else {
         setError(response.message || 'Failed to generate prediction');
       }
@@ -184,6 +196,17 @@ export default function BhriguPredictionView({
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatCacheAge = (ageSeconds: number | null) => {
+    if (ageSeconds === null) return 'Unknown';
+    if (ageSeconds < 60) return `${ageSeconds}s`;
+    const minutes = Math.floor(ageSeconds / 60);
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ${minutes % 60}m`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ${hours % 24}h`;
   };
 
   // Client-side fallback to parse full_analysis into sections
@@ -427,6 +450,11 @@ export default function BhriguPredictionView({
           <div className="mt-8 pt-6 border-t border-red-500/30">
             <div className="bg-gray-900/50 border border-red-500/30 rounded-xl p-6">
               <h3 className="text-xl font-bold text-red-400 mb-4">🔧 Debug Mode - Raw API Response</h3>
+              {cacheKey && (
+                <p className="mb-4 text-xs text-gray-400">
+                  Cache key: <span className="text-gray-200">{cacheKey}</span>
+                </p>
+              )}
               <div className="bg-black/50 rounded-lg p-4 overflow-auto max-h-96">
                 <pre className="text-xs text-gray-300 whitespace-pre-wrap font-mono">
                   {JSON.stringify(prediction, null, 2)}
@@ -537,9 +565,23 @@ export default function BhriguPredictionView({
           </div>
 
           {fromCache && (
-            <div className="mt-3 text-sm text-cyan-400 flex items-center gap-2">
-              <div className="w-2 h-2 bg-cyan-400 rounded-full" />
-              Loaded from Bhrigu wisdom cache
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-cyan-400">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-cyan-400 rounded-full" />
+                <span>Loaded from Bhrigu wisdom cache</span>
+              </div>
+              <span className="text-xs text-gray-400">
+                Cache age: {formatCacheAge(cacheAgeSeconds)}
+              </span>
+              <button
+                onClick={() => loadPrediction(true)}
+                disabled={loading}
+                className="inline-flex items-center gap-1 rounded-full border border-cyan-500/40 px-3 py-1 text-xs text-cyan-300
+                         transition hover:border-cyan-400 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <RefreshCw className="w-3 h-3" />
+                Refresh
+              </button>
             </div>
           )}
         </div>
