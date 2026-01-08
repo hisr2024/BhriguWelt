@@ -35,7 +35,7 @@ export default function RelationshipsPage() {
   }
 
   return (
-    <PredictionErrorBoundary>
+    <PredictionErrorBoundary context="relationships">
       <BhriguPredictionView
         category="relationships"
         title="Relationships"

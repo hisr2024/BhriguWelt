@@ -35,7 +35,7 @@ export default function KarmicJourneyPage() {
   }
 
   return (
-    <PredictionErrorBoundary>
+    <PredictionErrorBoundary context="karmic-journey">
       <BhriguPredictionView
         category="karmic-journey"
         title="Karmic Journey"

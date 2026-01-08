@@ -35,7 +35,7 @@ export default function PastLivesPage() {
   }
 
   return (
-    <PredictionErrorBoundary>
+    <PredictionErrorBoundary context="past-lives">
       <BhriguPredictionView
         category="past-lives"
         title="Past Lives"

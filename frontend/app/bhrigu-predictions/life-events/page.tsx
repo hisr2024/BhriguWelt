@@ -35,7 +35,7 @@ export default function LifeEventsPage() {
   }
 
   return (
-    <PredictionErrorBoundary>
+    <PredictionErrorBoundary context="life-events">
       <BhriguPredictionView
         category="life-events"
         title="Life Events"

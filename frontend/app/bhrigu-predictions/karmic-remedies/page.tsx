@@ -35,7 +35,7 @@ export default function KarmicRemediesPage() {
   }
 
   return (
-    <PredictionErrorBoundary>
+    <PredictionErrorBoundary context="karmic-remedies">
       <BhriguPredictionView
         category="karmic-remedies"
         title="Karmic Remedies"

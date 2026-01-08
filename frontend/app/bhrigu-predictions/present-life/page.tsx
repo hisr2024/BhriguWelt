@@ -35,7 +35,7 @@ export default function PresentLifePage() {
   }
 
   return (
-    <PredictionErrorBoundary>
+    <PredictionErrorBoundary context="present-life">
       <BhriguPredictionView
         category="present-life"
         title="Present Life"

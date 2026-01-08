@@ -35,7 +35,7 @@ export default function FutureLivesPage() {
   }
 
   return (
-    <PredictionErrorBoundary>
+    <PredictionErrorBoundary context="future-lives">
       <BhriguPredictionView
         category="future-lives"
         title="Future Lives"

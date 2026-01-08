@@ -2,19 +2,17 @@
 
 import React from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { captureException } from '@/lib/sentry';
 
-interface PredictionErrorBoundaryProps {
+type PredictionErrorBoundaryProps = {
   children: React.ReactNode;
-  title?: string;
-  description?: string;
-  onRetry?: () => void;
-}
+  context?: string;
+};
 
-interface PredictionErrorBoundaryState {
+type PredictionErrorBoundaryState = {
   hasError: boolean;
-  error?: Error;
-  resetKey: number;
-}
+  error: Error | null;
+};
 
 export default class PredictionErrorBoundary extends React.Component<
   PredictionErrorBoundaryProps,
@@ -22,62 +20,55 @@ export default class PredictionErrorBoundary extends React.Component<
 > {
   state: PredictionErrorBoundaryState = {
     hasError: false,
-    error: undefined,
-    resetKey: 0
+    error: null,
   };
 
   static getDerivedStateFromError(error: Error): PredictionErrorBoundaryState {
-    return {
-      hasError: true,
-      error,
-      resetKey: 0
-    };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error('Prediction view error:', error, info);
+    captureException(error, {
+      boundary: 'PredictionErrorBoundary',
+      context: this.props.context,
+      componentStack: info.componentStack,
+    });
   }
 
-  handleRetry = () => {
-    this.setState((prevState) => ({
-      hasError: false,
-      error: undefined,
-      resetKey: prevState.resetKey + 1
-    }));
-    this.props.onRetry?.();
+  handleReset = () => {
+    this.setState({ hasError: false, error: null });
   };
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-6 rounded-3xl border border-rose-500/30 bg-slate-950/40 px-6 py-10 text-center shadow-[0_0_60px_rgba(244,63,94,0.12)]">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-rose-500/40 bg-rose-500/10 text-rose-300">
-            <AlertTriangle className="h-8 w-8" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-semibold text-white">
-              {this.props.title ?? 'Prediction temporarily unavailable'}
-            </h2>
-            <p className="text-sm text-slate-300">
-              {this.props.description ??
-                'Something went wrong while loading this prediction. Please try again to continue.'}
+        <div className="min-h-[60vh] flex items-center justify-center px-6">
+          <div className="max-w-xl w-full rounded-2xl border border-purple-500/30 bg-slate-900/60 p-8 text-center shadow-xl">
+            <div className="flex justify-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-purple-500/10 text-purple-300">
+                <AlertTriangle className="h-7 w-7" />
+              </div>
+            </div>
+            <h2 className="mt-6 text-2xl font-semibold text-white">Prediction unavailable</h2>
+            <p className="mt-3 text-sm text-slate-300">
+              We hit a snag while preparing your Bhrigu prediction. Please try again in a moment.
             </p>
-            {this.state.error?.message && (
-              <p className="text-xs text-rose-200/80">{this.state.error.message}</p>
-            )}
+            {this.state.error?.message ? (
+              <p className="mt-2 text-xs text-slate-500">{this.state.error.message}</p>
+            ) : null}
+            <button
+              type="button"
+              onClick={this.handleReset}
+              className="mt-6 inline-flex items-center justify-center gap-2 rounded-full border border-purple-400/40 bg-purple-500/10 px-5 py-2 text-sm font-medium text-purple-100 transition hover:border-purple-300/70 hover:bg-purple-500/20"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Try again
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={this.handleRetry}
-            className="inline-flex items-center gap-2 rounded-full border border-rose-400/40 bg-rose-500/10 px-5 py-2 text-sm font-medium text-rose-100 transition hover:border-rose-300/60 hover:bg-rose-500/20"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Retry prediction
-          </button>
         </div>
       );
     }
 
-    return <React.Fragment key={this.state.resetKey}>{this.props.children}</React.Fragment>;
+    return this.props.children;
   }
 }
