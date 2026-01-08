@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
-import type { Profile } from '@/lib/types';
-import { validateProfile, type ProfileValidationResult } from '@/lib/validators';
+import type { BirthDetails, CachedPrediction, PredictionPayload, PredictionResult, Profile } from '@/lib/types';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; color: string }>> = {
@@ -126,7 +125,7 @@ interface BhriguPredictionViewProps {
   icon: React.ReactNode;
   fetchPrediction: (
     profileData: BirthDetails & { question?: string; force_regenerate?: boolean }
-  ) => Promise<PredictionAPIResponse>;
+  ) => Promise<PredictionResult>;
   profile: Profile | null;
 }
 
@@ -139,7 +138,6 @@ export default function BhriguPredictionView({
   profile
 }: BhriguPredictionViewProps) {
   const [prediction, setPrediction] = useState<PredictionPayload | null>(null);
-  const [metadata, setMetadata] = useState<PredictionMetadata | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
@@ -153,6 +151,16 @@ export default function BhriguPredictionView({
       loadPrediction();
     }
   }, [profile]);
+
+  const isCachedPrediction = (
+    data: PredictionResult['data']
+  ): data is CachedPrediction => {
+    return typeof (data as CachedPrediction).prediction !== 'undefined';
+  };
+
+  const getPredictionPayload = (data: PredictionResult['data']): PredictionPayload => {
+    return isCachedPrediction(data) ? data.prediction : data;
+  };
 
   const loadPrediction = async (forceRegenerate = false) => {
     if (! profile) return;
@@ -183,13 +191,13 @@ export default function BhriguPredictionView({
       const response = await fetchPrediction(profileData);
       const normalized = normalizePredictionResponse(response);
 
-      if (normalized.status === 'success') {
-        setPrediction(normalized.prediction);
-        setMetadata(normalized.metadata);
+      if (response. status === 'success') {
+        const predictionData = getPredictionPayload(response.data);
+        setPrediction(predictionData);
         setFromCache(
+          isCachedPrediction(response.data) ||
           response.message?.includes('cache') ||
-          response.message?.toLowerCase().includes('cache') ||
-          (response.data && typeof response.data === 'object' && 'prediction' in response.data)
+          response.message?.toLowerCase().includes('cache')
         );
       } else {
         setError(response.message || 'Failed to generate prediction');
@@ -320,7 +328,11 @@ export default function BhriguPredictionView({
 
     // Helper function to get section content from either source
     const getSectionContent = (key: string): string => {
-      return prediction[key] || parsedFromFullAnalysis[key] || '';
+      const directContent = prediction[key];
+      if (typeof directContent === 'string') {
+        return directContent;
+      }
+      return parsedFromFullAnalysis[key] || '';
     };
 
     return (
