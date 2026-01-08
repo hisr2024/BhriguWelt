@@ -32,6 +32,10 @@ class OpenAIService:
     def __init__(self):
         self.api_key = os.getenv('OPENAI_API_KEY')
         self.base_url = os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
+        self.prompt_token_limit = int(os.getenv('PROMPT_TOKEN_LIMIT', '6000'))
+        self.response_token_limit = int(
+            os.getenv('RESPONSE_TOKEN_LIMIT', os.getenv('OPENAI_MAX_TOKENS', '4000'))
+        )
         self.enabled = bool(self.api_key)
         self.last_error: Optional[Dict[str, Any]] = None
         
@@ -96,12 +100,47 @@ class OpenAIService:
             'Content-Type': 'application/json'
         } if self.enabled else {}
 
-    def generate_prediction(
-        self,
-        prompt: str,
-        context: Dict[str, Any] = None,
-        return_metadata: bool = False
-    ) -> Union[str, Dict[str, Any]]:
+    def _approx_token_count(self, text: str) -> int:
+        if not text:
+            return 0
+        return max(1, len(text) // 4)
+
+    def _trim_text_to_token_budget(self, text: str, token_budget: int) -> str:
+        if not text or token_budget <= 0:
+            return ""
+        max_chars = token_budget * 4
+        if len(text) <= max_chars:
+            return text
+        trimmed = text[:max_chars].rstrip()
+        return f"{trimmed}\n\n[Context truncated to fit token budget]"
+
+    def normalize_prompt(self, base_prompt: str, context_text: str, token_budget: int) -> str:
+        if not context_text:
+            return ""
+        base_tokens = self._approx_token_count(base_prompt)
+        remaining_budget = max(token_budget - base_tokens, 0)
+        return self._trim_text_to_token_budget(context_text, remaining_budget)
+
+    def _format_context_summary(self, context: Dict[str, Any]) -> str:
+        if not context:
+            return ""
+        summary_lines = []
+        key_order = [
+            'date_of_birth', 'time_of_birth', 'place_of_birth', 'zodiac_sign', 'moon_sign', 'nakshatra',
+            'ascendant', 'sun_sign', 'rising_sign', 'gender'
+        ]
+        for key in key_order:
+            if key in context and context[key] not in (None, ""):
+                summary_lines.append(f"- {key.replace('_', ' ').title()}: {context[key]}")
+        remaining_keys = [key for key in context.keys() if key not in key_order]
+        for key in sorted(remaining_keys):
+            value = context[key]
+            if value in (None, "", [], {}):
+                continue
+            summary_lines.append(f"- {key.replace('_', ' ').title()}: {value}")
+        return "\n".join(summary_lines)
+
+    def generate_prediction(self, prompt: str, context: Dict[str, Any] = None) -> str:
         """
         Generate AI-powered predictions using OpenAI with authentic corpus integration
 
@@ -299,16 +338,54 @@ Your predictions must:
 
 Always provide detailed, specific predictions with timing when possible.''' + corpus_context
 
-            if context and not corpus_context:  # Only add raw context if no corpus was injected
-                system_content += f"\n\nBirth Chart Context: {json.dumps(context)}"
+            if context:
+                structured_summary = self._format_context_summary(context)
+                base_prompt = f"{system_content}\n\nUser Prompt:\n{prompt}"
+                normalized_summary = self.normalize_prompt(
+                    base_prompt,
+                    structured_summary,
+                    self.prompt_token_limit
+                )
+                if normalized_summary:
+                    system_content += f"\n\nBirth Chart Summary:\n{normalized_summary}"
+                else:
+                    raw_context = json.dumps(context, ensure_ascii=False)
+                    normalized_raw_context = self.normalize_prompt(
+                        base_prompt,
+                        raw_context,
+                        self.prompt_token_limit
+                    )
+                    if normalized_raw_context:
+                        system_content += f"\n\nBirth Chart Context (raw JSON): {normalized_raw_context}"
 
-            prediction, partial = self._generate_with_chunking(prompt, system_content)
-            if return_metadata:
-                return {
-                    'text': prediction,
-                    'partial': partial
-                }
-            return prediction
+            payload = {
+                'model': os.getenv('OPENAI_MODEL', 'gpt-4'),
+                'messages': [
+                    {
+                        'role': 'system',
+                        'content': system_content
+                    },
+                    {
+                        'role': 'user',
+                        'content': prompt
+                    }
+                ],
+                'temperature': float(os.getenv('OPENAI_TEMPERATURE', '0.7')),
+                'max_tokens': self.response_token_limit
+            }
+
+            # Make API call with extended timeout for comprehensive predictions
+            response = requests.post(
+                f'{self.base_url}/chat/completions',
+                headers=self.headers,
+                json=payload,
+                timeout=int(os.getenv('OPENAI_TIMEOUT', '90'))  # 90 seconds for AI processing
+            )
+
+            response.raise_for_status()
+            result = response.json()
+
+            return result['choices'][0]['message']['content']
 
         except requests.exceptions.RequestException as e:
             # Log the error for debugging
