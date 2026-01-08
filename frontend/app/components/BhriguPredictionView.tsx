@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import type { Profile } from '@/lib/types';
+import { Accordion } from '@/app/components/ui/Accordion';
+import { AccordionItem } from '@/app/components/ui/AccordionItem';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; color: string }>> = {
@@ -399,45 +401,25 @@ export default function BhriguPredictionView({
     const isExpanded = expandedSections[sectionKey] ?? true;
 
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+      <AccordionItem
+        id={`section-${sectionKey}`}
+        title={(
+          <span className={`text-lg font-semibold ${colorClass.text} flex items-center gap-3`}>
+            <span className={`w-1.5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
+            {sectionTitle}
+          </span>
+        )}
         className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
-                   border ${colorClass.border} ${colorClass.hover} rounded-xl p-6 transition-all`}
+                   border ${colorClass.border} ${colorClass.hover} rounded-xl transition-all`}
+        triggerClassName="px-6 py-5"
+        panelClassName="px-6 pb-6"
       >
-        <h3 className="mb-4">
-          <button
-            type="button"
-            onClick={() =>
-              setExpandedSections((prev) => ({ ...prev, [sectionKey]: !isExpanded }))
-            }
-            aria-expanded={isExpanded}
-            aria-controls={contentId}
-            tabIndex={0}
-            className={`w-full text-left text-xl font-bold ${colorClass.text} flex items-center justify-between gap-3`}
-          >
-            <span className="flex items-center gap-3">
-              <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
-              {sectionTitle}
-            </span>
-            {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
-            )}
-          </button>
-        </h3>
-        <div
-          id={contentId}
-          hidden={!isExpanded}
-          className="prose prose-invert prose-cyan max-w-none"
-        >
+        <div className="prose prose-invert prose-cyan max-w-none">
           <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
             {content}
           </div>
         </div>
-      </motion.div>
+      </AccordionItem>
     );
   };
 
@@ -519,7 +501,7 @@ export default function BhriguPredictionView({
               </p>
             </div>
             
-            <div className="grid grid-cols-1 gap-4">
+            <Accordion className="grid grid-cols-1 gap-4">
               {availableSections.map((section) => (
                 <div key={section.key}>
                   {renderSection(
@@ -530,7 +512,7 @@ export default function BhriguPredictionView({
                   )}
                 </div>
               ))}
-            </div>
+            </Accordion>
           </div>
         )}
 
