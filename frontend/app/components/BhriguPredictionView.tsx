@@ -4,9 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import type { Profile } from '@/lib/types';
+import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
 import { getCurrentLanguage, type Language } from '@/lib/copy';
 import { tLocale } from '@/lib/locales';
+import { Accordion } from '@/app/components/ui/Accordion';
+import { AccordionItem } from '@/app/components/ui/AccordionItem';
+import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS: Record<string, Array<{ key: string; titleKey: string; color: string }>> = {
@@ -102,26 +105,43 @@ const CATEGORY_SECTIONS: Record<string, Array<{ key: string; titleKey: string; c
 };
 
 // Color classes configuration (moved outside component for performance)
-const COLOR_CLASSES:  Record<string, { border: string; hover: string; accent: string; text: string }> = {
+const COLOR_CLASSES: Record<string, { border: string; hover: string; accent: string; text: string }> = {
   cyan: { border: 'border-cyan-500/30', hover: 'hover:border-cyan-500/50', accent: 'from-cyan-400 to-cyan-600', text: 'text-cyan-400' },
-  purple: { border: 'border-purple-500/30', hover: 'hover: border-purple-500/50', accent:  'from-purple-400 to-purple-600', text: 'text-purple-400' },
+  purple: { border: 'border-purple-500/30', hover: 'hover:border-purple-500/50', accent: 'from-purple-400 to-purple-600', text: 'text-purple-400' },
   blue: { border: 'border-blue-500/30', hover: 'hover:border-blue-500/50', accent: 'from-blue-400 to-blue-600', text: 'text-blue-400' },
   indigo: { border: 'border-indigo-500/30', hover: 'hover:border-indigo-500/50', accent: 'from-indigo-400 to-indigo-600', text: 'text-indigo-400' },
-  violet: { border: 'border-violet-500/30', hover: 'hover: border-violet-500/50', accent:  'from-violet-400 to-violet-600', text: 'text-violet-400' },
+  violet: { border: 'border-violet-500/30', hover: 'hover:border-violet-500/50', accent: 'from-violet-400 to-violet-600', text: 'text-violet-400' },
   pink: { border: 'border-pink-500/30', hover: 'hover:border-pink-500/50', accent: 'from-pink-400 to-pink-600', text: 'text-pink-400' },
-  rose: { border: 'border-rose-500/30', hover: 'hover: border-rose-500/50', accent:  'from-rose-400 to-rose-600', text: 'text-rose-400' },
+  rose: { border: 'border-rose-500/30', hover: 'hover:border-rose-500/50', accent: 'from-rose-400 to-rose-600', text: 'text-rose-400' },
   amber: { border: 'border-amber-500/30', hover: 'hover:border-amber-500/50', accent: 'from-amber-400 to-amber-600', text: 'text-amber-400' },
-  orange: { border:  'border-orange-500/30', hover: 'hover:border-orange-500/50', accent: 'from-orange-400 to-orange-600', text: 'text-orange-400' },
-  teal: { border: 'border-teal-500/30', hover: 'hover:border-teal-500/50', accent: 'from-teal-400 to-teal-600', text:  'text-teal-400' },
-  red: { border: 'border-red-500/30', hover: 'hover: border-red-500/50', accent:  'from-red-400 to-red-600', text: 'text-red-400' },
-  lime: { border: 'border-lime-500/30', hover: 'hover: border-lime-500/50', accent:  'from-lime-400 to-lime-600', text: 'text-lime-400' },
-  emerald:  { border: 'border-emerald-500/30', hover: 'hover: border-emerald-500/50', accent: 'from-emerald-400 to-emerald-600', text: 'text-emerald-400' }
+  orange: { border: 'border-orange-500/30', hover: 'hover:border-orange-500/50', accent: 'from-orange-400 to-orange-600', text: 'text-orange-400' },
+  teal: { border: 'border-teal-500/30', hover: 'hover:border-teal-500/50', accent: 'from-teal-400 to-teal-600', text: 'text-teal-400' },
+  red: { border: 'border-red-500/30', hover: 'hover:border-red-500/50', accent: 'from-red-400 to-red-600', text: 'text-red-400' },
+  lime: { border: 'border-lime-500/30', hover: 'hover:border-lime-500/50', accent: 'from-lime-400 to-lime-600', text: 'text-lime-400' },
+  emerald: { border: 'border-emerald-500/30', hover: 'hover:border-emerald-500/50', accent: 'from-emerald-400 to-emerald-600', text: 'text-emerald-400' }
 };
 
 // Default color for sections without a specific color mapping
 const DEFAULT_COLOR = 'cyan';
 const PROFILE_HASH_PREFIX = 'profile_hash_';
 const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_';
+const SKELETON_LINES = 5;
+
+// Helper function to check if profile has required fields
+const hasRequiredProfileFields = (profile: Profile): boolean => {
+  return !!(
+    profile.dateOfBirth &&
+    profile.timeOfBirth &&
+    profile.placeOfBirth &&
+    profile.latitude != null &&
+    profile.longitude != null
+  );
+};
+
+// Helper function to normalize category keys
+const normalizeCategoryKey = (category: string): string => {
+  return category?.toLowerCase().replace(/[^a-z0-9-]/g, '-') || '';
+};
 
 interface BhriguPredictionViewProps {
   category: string;
@@ -193,6 +213,18 @@ export default function BhriguPredictionView({
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [debugMode, setDebugMode] = useState(false);
   const [profileUpdated, setProfileUpdated] = useState(false);
+  const [parsedFromFullAnalysis, setParsedFromFullAnalysis] = useState<Record<string, string>>({});
+  const [isParsing, setIsParsing] = useState(false);
+  const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
+  const [expandingSections, setExpandingSections] = useState<Record<string, boolean>>({});
+
+  const workerRef = useRef<Worker | null>(null);
+  const workerRequestId = useRef(0);
+  const expandingTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
+
+  const searchParams = useSearchParams();
+  const language = getCurrentLanguage();
+  const debugAllowed = searchParams?.get('debug') === 'true';
 
   useEffect(() => {
     if (profile) {
@@ -212,12 +244,10 @@ export default function BhriguPredictionView({
       };
       checkProfile();
     }
-
-    loadPrediction();
   }, [profile]);
 
   const loadPrediction = async (forceRegenerate = false, profileHash?: string) => {
-    if (! profile) return;
+    if (!profile) return;
 
     if (!hasRequiredProfileFields(profile)) {
       setError('Please complete your birth details in your profile to generate predictions.');
@@ -265,8 +295,6 @@ export default function BhriguPredictionView({
       const response = await fetchPrediction(profileData);
       const normalized = normalizePredictionResponse(response);
 
-      const normalized = normalizePredictionResponse(response);
-
       if (normalized.status === 'success') {
         setPrediction(normalized.prediction);
         setFromCache(
@@ -278,13 +306,13 @@ export default function BhriguPredictionView({
           cacheKey,
           JSON.stringify({
             profileHash: resolvedHash,
-            prediction: predictionData,
+            prediction: normalized.prediction,
           })
         );
       } else {
         setError(normalized.message || 'Failed to generate prediction');
       }
-    } catch (err:  any) {
+    } catch (err: any) {
       const status = err?.response?.status;
       const apiMessage = err?.response?.data?.message || err?.response?.data?.error;
       const message = apiMessage || err?.message || 'An error occurred';
@@ -323,9 +351,8 @@ export default function BhriguPredictionView({
   const parseFullAnalysisIntoSections = (fullAnalysis: string, cat: string): Record<string, string> => {
     const parsedSections: Record<string, string> = {};
     const categoryConfig = CATEGORY_SECTIONS[cat] || [];
-    const cachedPatterns = getSectionPatterns(cat);
-    
-    if (! fullAnalysis) return parsedSections;
+
+    if (!fullAnalysis) return parsedSections;
     
     for (const section of categoryConfig) {
       const sectionTitle = tLocale(section.titleKey, 'en');
@@ -343,10 +370,10 @@ export default function BhriguPredictionView({
         // Plain header with colon
         new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i'),
       ];
-      
+
       for (const pattern of patterns) {
         try {
-          const match = fullAnalysis. match(pattern);
+          const match = fullAnalysis.match(pattern);
           if (match && match[1]?.trim().length > 50) {
             parsedSections[section.key] = match[1].trim();
             break;
@@ -357,7 +384,7 @@ export default function BhriguPredictionView({
         }
       }
     }
-    
+
     return parsedSections;
   };
 
@@ -389,14 +416,14 @@ export default function BhriguPredictionView({
 
   const renderSection = (sectionKey: string, sectionTitle: string, content: string, color: string) => {
     // More lenient filtering - only exclude truly empty or placeholder content
-    if (! content || content.trim() === '') {
+    if (!content || content.trim() === '') {
       return null;
     }
 
     // Check if content is just a redirect to full analysis (but allow partial content)
-    const trimmedContent = content. trim();
+    const trimmedContent = content.trim();
     const isRedirectOnly = (
-      trimmedContent. length < 50 &&
+      trimmedContent.length < 50 &&
       (trimmedContent.toLowerCase().includes('see full analysis') ||
        trimmedContent.toLowerCase().includes('see complete') ||
        trimmedContent.toLowerCase().includes('refer to'))
@@ -407,10 +434,6 @@ export default function BhriguPredictionView({
     }
 
     const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES[DEFAULT_COLOR];
-    const isExpanded = expandedSections[sectionKey] ?? false;
-    const hasRendered = expandedOnce[sectionKey] ?? false;
-    const isExpanding = expandingSections[sectionKey] ?? false;
-    const shouldShowSkeleton = (isParsing && !hasRendered) || isExpanding;
 
     return (
       <AccordionItem
@@ -422,86 +445,19 @@ export default function BhriguPredictionView({
           </span>
         )}
         className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
-                   border ${colorClass.border} ${colorClass.hover} rounded-xl transition-all`}
+                   border ${colorClass.border} ${colorClass.hover} rounded-xl transition-all p-6`}
       >
-        <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3 relative z-10`}>
-          <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
-          {sectionTitle}
-        </h3>
         <div className="prose prose-invert prose-cyan max-w-none">
-          <div className="text-gray-300 leading-relaxed whitespace-pre-wrap max-h-[60vh] overflow-auto pr-2">
+          <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
             {content}
           </div>
-        </button>
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="mt-4"
-            >
-              {shouldShowSkeleton ? (
-                <SectionSkeleton />
-              ) : (
-                hasRendered && (
-                  <div className="prose prose-invert prose-cyan max-w-none">
-                    <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                      {content}
-                    </div>
-                  </div>
-                )
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+        </div>
+      </AccordionItem>
     );
   };
 
-  const handleSectionToggle = (sectionKey: string) => {
-    const wasExpanded = expandedSections[sectionKey] ?? false;
-    const hasRendered = expandedOnce[sectionKey] ?? false;
-    setExpandedSections(prev => ({ ...prev, [sectionKey]: !wasExpanded }));
-
-    if (wasExpanded) {
-      if (expandingTimeouts.current[sectionKey]) {
-        clearTimeout(expandingTimeouts.current[sectionKey]);
-        delete expandingTimeouts.current[sectionKey];
-      }
-      setExpandingSections(prev => ({ ...prev, [sectionKey]: false }));
-      return;
-    }
-
-    if (hasRendered) {
-      return;
-    }
-
-    setExpandingSections(prev => ({ ...prev, [sectionKey]: true }));
-    const timeout = setTimeout(() => {
-      setExpandedOnce(prev => ({ ...prev, [sectionKey]: true }));
-      setExpandingSections(prev => ({ ...prev, [sectionKey]: false }));
-      delete expandingTimeouts.current[sectionKey];
-    }, 250);
-    expandingTimeouts.current[sectionKey] = timeout;
-  };
-
-  const SectionSkeleton = () => (
-    <div className="space-y-3 animate-pulse">
-      {Array.from({ length: SKELETON_LINES }).map((_, index) => (
-        <div
-          key={`section-skeleton-${index}`}
-          className={`h-4 rounded bg-gray-700/60 ${
-            index === 0 ? 'w-11/12' : index === 1 ? 'w-10/12' : 'w-9/12'
-          }`}
-        />
-      ))}
-    </div>
-  );
-
   const renderPredictionContent = () => {
-    if (! prediction) return null;
+    if (!prediction) return null;
 
     // Get the sections configuration for this category
     const normalizedCategory = normalizeCategoryKey(
@@ -510,16 +466,16 @@ export default function BhriguPredictionView({
     const sections = CATEGORY_SECTIONS[normalizedCategory] || [];
 
     // First, try to get sections from the API response
-    let availableSections = sections. filter(section => {
+    let availableSections = sections.filter(section => {
       const content = prediction[section.key];
-      if (! content || typeof content !== 'string' || content.trim() === '') {
+      if (!content || typeof content !== 'string' || content.trim() === '') {
         return false;
       }
       const trimmedContent = content.trim();
       const isRedirectOnly = (
         trimmedContent.length < 50 &&
-        (trimmedContent. toLowerCase().includes('see full analysis') ||
-         trimmedContent. toLowerCase().includes('see complete') ||
+        (trimmedContent.toLowerCase().includes('see full analysis') ||
+         trimmedContent.toLowerCase().includes('see complete') ||
          trimmedContent.toLowerCase().includes('refer to'))
       );
       return !isRedirectOnly;
@@ -558,7 +514,7 @@ export default function BhriguPredictionView({
         )}
 
         {/* Show message if no sections were extracted successfully */}
-        {availableSections. length === 0 && prediction.full_analysis && !isParsing && (
+        {availableSections.length === 0 && prediction.full_analysis && !isParsing && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
             <p className="text-amber-400 text-sm">
               Note: Individual sections could not be extracted from the analysis.
@@ -576,7 +532,7 @@ export default function BhriguPredictionView({
                 Detailed Insights
               </h2>
               <p className="text-gray-400 text-sm">
-                Explore each aspect of your {title. toLowerCase()} in detail
+                Explore each aspect of your {title.toLowerCase()} in detail
               </p>
             </div>
             
@@ -618,7 +574,7 @@ export default function BhriguPredictionView({
                   </p>
                 </div>
               </div>
-              {showFullAnalysis ?  (
+              {showFullAnalysis ? (
                 <ChevronUp className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
               ) : (
                 <ChevronDown className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
@@ -635,7 +591,7 @@ export default function BhriguPredictionView({
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration:  0.3 }}
+                  transition={{ duration: 0.3 }}
                   id="full-analysis-content"
                   className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
                            border border-gray-700/50 rounded-xl p-6 overflow-visible"
@@ -652,25 +608,25 @@ export default function BhriguPredictionView({
         )}
 
         {/* Metadata */}
-        {metadata && (
+        {prediction.metadata && (
           <div className="mt-8 pt-6 border-t border-gray-700/50">
             <div className="flex flex-wrap gap-4 text-sm text-gray-400">
-              {metadata.zodiac_sign && (
+              {prediction.metadata.zodiac_sign && (
                 <div className="flex items-center gap-2">
                   <span className="text-cyan-400">Zodiac:</span>
-                  <span>{metadata.zodiac_sign}</span>
+                  <span>{prediction.metadata.zodiac_sign}</span>
                 </div>
               )}
-              {metadata.nakshatra && (
+              {prediction.metadata.nakshatra && (
                 <div className="flex items-center gap-2">
                   <span className="text-purple-400">Nakshatra:</span>
-                  <span>{metadata.nakshatra}</span>
+                  <span>{prediction.metadata.nakshatra}</span>
                 </div>
               )}
-              {metadata.tradition && (
+              {prediction.metadata.tradition && (
                 <div className="flex items-center gap-2">
                   <span className="text-pink-400">Tradition:</span>
-                  <span>{metadata.tradition}</span>
+                  <span>{prediction.metadata.tradition}</span>
                 </div>
               )}
             </div>
@@ -682,11 +638,6 @@ export default function BhriguPredictionView({
           <div className="mt-8 pt-6 border-t border-red-500/30">
             <div className="bg-gray-900/50 border border-red-500/30 rounded-xl p-6">
               <h3 className="text-xl font-bold text-red-400 mb-4">🔧 Debug Mode - Raw API Response</h3>
-              {cacheKey && (
-                <p className="mb-4 text-xs text-gray-400">
-                  Cache key: <span className="text-gray-200">{cacheKey}</span>
-                </p>
-              )}
               <div className="bg-black/50 rounded-lg p-4 overflow-auto max-h-96">
                 <pre className="text-xs text-gray-300 whitespace-pre-wrap font-mono">
                   {JSON.stringify(prediction, null, 2)}
@@ -701,10 +652,10 @@ export default function BhriguPredictionView({
                       className={`px-2 py-1 rounded ${
                         prediction[key] && typeof prediction[key] === 'string' && prediction[key].length > 100
                           ? 'bg-green-500/20 text-green-400'
-                          :  'bg-gray-700/50 text-gray-400'
+                          : 'bg-gray-700/50 text-gray-400'
                       }`}
                     >
-                      {key} ({typeof prediction[key] === 'string' ?  prediction[key].length :  'N/A'} chars)
+                      {key} ({typeof prediction[key] === 'string' ? prediction[key].length : 'N/A'} chars)
                     </span>
                   ))}
                 </div>
@@ -769,7 +720,7 @@ export default function BhriguPredictionView({
               type="text"
               placeholder="Ask a specific question (optional)..."
               value={question}
-              onChange={(e) => setQuestion(e. target.value)}
+              onChange={(e) => setQuestion(e.target.value)}
               className="flex-1 bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-3
                        text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400
                        transition-colors"
@@ -778,8 +729,8 @@ export default function BhriguPredictionView({
               onClick={() => loadPrediction(false)}
               disabled={loading}
               className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500
-                       text-white rounded-lg font-semibold hover:from-cyan-600 hover: to-blue-600
-                       disabled: opacity-50 disabled:cursor-not-allowed transition-all
+                       text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600
+                       disabled:opacity-50 disabled:cursor-not-allowed transition-all
                        flex items-center gap-2"
             >
               {loading ? (
@@ -809,7 +760,7 @@ export default function BhriguPredictionView({
                 <span>Loaded from Bhrigu wisdom cache</span>
               </div>
               <span className="text-xs text-gray-400">
-                Cache age: {formatCacheAge(cacheAgeSeconds)}
+                Loaded from cache
               </span>
               <button
                 onClick={() => loadPrediction(true)}
@@ -875,11 +826,11 @@ export default function BhriguPredictionView({
 
       {/* Content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {loading && ! prediction && (
+        {loading && !prediction && (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="w-12 h-12 text-cyan-400 animate-spin mb-4" />
             <p className="text-lg text-gray-400">
-              Consulting ancient Bhrigu Samhita wisdom... 
+              Consulting ancient Bhrigu Samhita wisdom...
             </p>
             <p className="text-sm text-gray-500 mt-2">
               This may take a moment as we generate your personalized prediction
@@ -917,7 +868,7 @@ export default function BhriguPredictionView({
           </div>
         )}
 
-        {prediction && ! loading && renderPredictionContent()}
+        {prediction && !loading && renderPredictionContent()}
 
         {/* Actions */}
         {prediction && (
@@ -955,7 +906,7 @@ export default function BhriguPredictionView({
                          flex items-center gap-2 ${
                            debugMode
                              ? 'bg-red-500/20 border-red-500 text-red-400'
-                             :  'bg-gray-700/50 border-gray-600 text-white hover:bg-gray-700'
+                             : 'bg-gray-700/50 border-gray-600 text-white hover:bg-gray-700'
                          }`}
               >
                 <BookOpen className="w-5 h-5" />
