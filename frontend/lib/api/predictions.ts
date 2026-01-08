@@ -10,6 +10,10 @@ import {
   generateGeneralPredictions,
   type GeneralPredictionOptions,
 } from '../engines/generalPredictionsEngine';
+import {
+  generateRelationshipsPrediction,
+  type RelationshipsEngineOptions,
+} from '../engines/relationshipsEngine';
 
 export type PredictionEngine =
   | 'karmic_journey'
@@ -305,6 +309,24 @@ export class PredictionsAPI {
    */
   async getRelationships(birthData: ChartData, useAI: boolean = true): Promise<PredictionResult> {
     return this.generatePrediction('relationships', birthData, useAI);
+  }
+
+  /**
+   * Generate Relationships analysis using two-phase engine
+   */
+  async generateRelationships(
+    birthData: ChartData,
+    options: RelationshipsEngineOptions = {}
+  ): Promise<PredictionResult> {
+    try {
+      return await generateRelationshipsPrediction(birthData, options);
+    } catch (error) {
+      console.error('Relationships engine failed, falling back to API:', error);
+      if (options.useAI ?? true) {
+        return this.generatePrediction('relationships', birthData, options.useAI ?? true);
+      }
+      throw error;
+    }
   }
 
   /**
