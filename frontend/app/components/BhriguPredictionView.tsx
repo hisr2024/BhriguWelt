@@ -3,7 +3,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
-import type { Profile } from '@/lib/types';
+import type { BirthDetails, Profile } from '@/lib/types';
+import {
+  normalizePredictionResponse,
+  type PredictionAPIResponse,
+  type PredictionMetadata,
+  type PredictionPayload,
+} from '@/lib/api';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; color: string }>> = {
@@ -123,7 +129,9 @@ interface BhriguPredictionViewProps {
   title: string;
   description: string;
   icon: React.ReactNode;
-  fetchPrediction: (profileData: any) => Promise<any>;
+  fetchPrediction: (
+    profileData: BirthDetails & { question?: string; force_regenerate?: boolean }
+  ) => Promise<PredictionAPIResponse>;
   profile: Profile | null;
 }
 
@@ -135,7 +143,8 @@ export default function BhriguPredictionView({
   fetchPrediction,
   profile
 }: BhriguPredictionViewProps) {
-  const [prediction, setPrediction] = useState<any>(null);
+  const [prediction, setPrediction] = useState<PredictionPayload | null>(null);
+  const [metadata, setMetadata] = useState<PredictionMetadata | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
@@ -167,14 +176,15 @@ export default function BhriguPredictionView({
       };
 
       const response = await fetchPrediction(profileData);
+      const normalized = normalizePredictionResponse(response);
 
-      if (response. status === 'success') {
-        const predictionData = response.data?.prediction ?? response.data;
-        setPrediction(predictionData);
+      if (normalized.status === 'success') {
+        setPrediction(normalized.prediction);
+        setMetadata(normalized.metadata);
         setFromCache(
           response.message?.includes('cache') ||
           response.message?.toLowerCase().includes('cache') ||
-          Boolean(response.data?.prediction)
+          (response.data && typeof response.data === 'object' && 'prediction' in response.data)
         );
       } else {
         setError(response.message || 'Failed to generate prediction');
@@ -397,25 +407,25 @@ export default function BhriguPredictionView({
         )}
 
         {/* Metadata */}
-        {prediction.metadata && (
+        {metadata && (
           <div className="mt-8 pt-6 border-t border-gray-700/50">
             <div className="flex flex-wrap gap-4 text-sm text-gray-400">
-              {prediction.metadata.zodiac_sign && (
+              {metadata.zodiac_sign && (
                 <div className="flex items-center gap-2">
                   <span className="text-cyan-400">Zodiac:</span>
-                  <span>{prediction.metadata.zodiac_sign}</span>
+                  <span>{metadata.zodiac_sign}</span>
                 </div>
               )}
-              {prediction.metadata.nakshatra && (
+              {metadata.nakshatra && (
                 <div className="flex items-center gap-2">
                   <span className="text-purple-400">Nakshatra:</span>
-                  <span>{prediction.metadata. nakshatra}</span>
+                  <span>{metadata.nakshatra}</span>
                 </div>
               )}
-              {prediction.metadata.tradition && (
+              {metadata.tradition && (
                 <div className="flex items-center gap-2">
                   <span className="text-pink-400">Tradition:</span>
-                  <span>{prediction.metadata.tradition}</span>
+                  <span>{metadata.tradition}</span>
                 </div>
               )}
             </div>
