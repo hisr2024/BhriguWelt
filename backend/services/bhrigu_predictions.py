@@ -25,10 +25,31 @@ class BhriguPredictionsService:
     """
 
     def __init__(self):
-        self.openai_service = get_openai_service()
-        self.astrology_calculator = AstrologyCalculator()
-        self.section_parser = get_section_parser(self.openai_service)
-        self.corpus_db = get_corpus_database()
+        self.init_errors: List[Dict[str, Any]] = []
+
+        try:
+            self.openai_service = get_openai_service()
+        except Exception as exc:
+            self.openai_service = None
+            self._record_init_error('openai_service', exc)
+
+        try:
+            self.astrology_calculator = AstrologyCalculator()
+        except Exception as exc:
+            self.astrology_calculator = None
+            self._record_init_error('astrology_calculator', exc)
+
+        try:
+            self.section_parser = get_section_parser(self.openai_service)
+        except Exception as exc:
+            self.section_parser = None
+            self._record_init_error('section_parser', exc)
+
+        try:
+            self.corpus_db = get_corpus_database()
+        except Exception as exc:
+            self.corpus_db = None
+            self._record_init_error('corpus_db', exc)
 
         # Bhrigu Samhita system prompts for enhanced accuracy and precision
         self.bhrigu_system_prompt = """You are a master Vedic astrologer deeply versed in the ancient texts of Bhrigu Samhita and Nadi Jyotisha. 
@@ -122,18 +143,25 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
         Returns:
             Comprehensive prediction dictionary with standalone sections and complete_analysis
         """
+        fallback = self._get_fallback_if_unavailable(category, birth_data)
+        if fallback:
+            return fallback
+
         # Calculate birth chart if not already provided
         if 'zodiac_sign' not in birth_data:
-            try:
-                chart_data = self.astrology_calculator.calculate_birth_chart(
-                    birth_data['date_of_birth'],
-                    birth_data['time_of_birth'],
-                    birth_data['latitude'],
-                    birth_data['longitude']
-                )
-                birth_data.update(chart_data)
-            except Exception as e:
-                print(f"Error calculating chart: {e}")
+            if self.astrology_calculator:
+                try:
+                    chart_data = self.astrology_calculator.calculate_birth_chart(
+                        birth_data['date_of_birth'],
+                        birth_data['time_of_birth'],
+                        birth_data['latitude'],
+                        birth_data['longitude']
+                    )
+                    birth_data.update(chart_data)
+                except Exception as e:
+                    print(f"Error calculating chart: {e}")
+            else:
+                logger.warning("Astrology calculator unavailable; proceeding without chart enrichment.")
 
         # Route to specific prediction method
         category_methods = {
@@ -163,6 +191,11 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
         This is separate from individual sections and provides an integrated view
         """
         full_text = section_result.get('full_analysis', '')
+        if not self.openai_service:
+            return (
+                f"Complete analysis synthesis unavailable due to missing AI services. "
+                f"Review the detailed sections for insights into your {category.replace('_', ' ')}."
+            )
         
         synthesis_prompt = f"""
         Based on the following extensive {category.replace('_', ' ')} analysis, create a 
@@ -193,6 +226,10 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
         Karmic Journey: Discover your soul's purpose and life mission
         Based on Bhrigu Samhita principles of soul evolution
         """
+        fallback = self._get_fallback_if_unavailable('karmic_journey', birth_data)
+        if fallback:
+            return fallback
+
         prompt = f"""{self.bhrigu_system_prompt}
 
 Generate a comprehensive Karmic Journey analysis for a person with the following birth details:
@@ -303,6 +340,10 @@ Provide specific, actionable guidance rooted in Bhrigu Samhita and Nadi Jyotisa 
         """
         Past Lives: Explore previous incarnations and karmic patterns
         """
+        fallback = self._get_fallback_if_unavailable('past_lives', birth_data)
+        if fallback:
+            return fallback
+
         prompt = f"""{self.bhrigu_system_prompt}
 
 Generate a detailed Past Lives analysis based on Nadi Jyotisa principles:
@@ -408,6 +449,10 @@ Reference specific Nadi Jyotisa indicators and planetary positions."""
         """
         Future Lives: Envision soul's evolution and future incarnations
         """
+        fallback = self._get_fallback_if_unavailable('future_lives', birth_data)
+        if fallback:
+            return fallback
+
         prompt = f"""{self.bhrigu_system_prompt}
 
 Generate Future Lives predictions based on current karmic trajectory:
@@ -523,6 +568,10 @@ Ground predictions in Bhrigu Samhita principles of karmic progression."""
         """
         Present Life: Comprehensive analysis of current life and opportunities
         """
+        fallback = self._get_fallback_if_unavailable('present_life', birth_data)
+        if fallback:
+            return fallback
+
         prompt = f"""{self.bhrigu_system_prompt}
 
 Generate comprehensive Present Life analysis:
@@ -660,6 +709,10 @@ Base analysis on classical Bhrigu Samhita delineation methods."""
         """
         Life Events: Predict major transitions with precision timing
         """
+        fallback = self._get_fallback_if_unavailable('life_events', birth_data)
+        if fallback:
+            return fallback
+
         current_age = birth_data.get('age', self._calculate_age(birth_data.get('date_of_birth')))
 
         prompt = f"""{self.bhrigu_system_prompt}
@@ -830,6 +883,10 @@ Provide month-level precision where possible using Nadi Jyotisa methods."""
         """
         Karmic Remedies: Personalized spiritual practices and remedies
         """
+        fallback = self._get_fallback_if_unavailable('karmic_remedies', birth_data)
+        if fallback:
+            return fallback
+
         prompt = f"""{self.bhrigu_system_prompt}
 
 Generate comprehensive Karmic Remedies based on Bhrigu Samhita tradition:
@@ -1048,6 +1105,10 @@ Provide practical, affordable, and effective remedies that can be integrated int
         """
         Relationships: Soul connections and compatibility analysis
         """
+        fallback = self._get_fallback_if_unavailable('relationships', birth_data)
+        if fallback:
+            return fallback
+
         prompt = f"""{self.bhrigu_system_prompt}
 
 Generate comprehensive Relationships analysis:
@@ -1267,6 +1328,10 @@ Provide specific, actionable relationship guidance based on classical astrology.
         """
         General Predictions: Daily, weekly, monthly forecasts
         """
+        fallback = self._get_fallback_if_unavailable('predictions', birth_data)
+        if fallback:
+            return fallback
+
         prompt = f"""{self.bhrigu_system_prompt}
 
 Generate general astrological predictions:
@@ -1392,6 +1457,82 @@ Base on current planetary transits and your natal chart."""
             'ascendant': birth_data.get('ascendant'),
             'ai_model': 'gpt-4',
             'tradition': 'Bhrigu Samhita & Nadi Jyotisa'
+        }
+
+    def _record_init_error(self, service_name: str, error: Exception) -> None:
+        """Store structured initialization errors for service dependencies."""
+        error_entry = {
+            'service': service_name,
+            'error_type': type(error).__name__,
+            'message': str(error)
+        }
+        self.init_errors.append(error_entry)
+        logger.exception("Failed to initialize %s", service_name)
+
+    def _missing_critical_services(self) -> List[str]:
+        """Return a list of missing critical services for prediction generation."""
+        missing = []
+        if self.openai_service is None:
+            missing.append('openai_service')
+        if self.section_parser is None:
+            missing.append('section_parser')
+        return missing
+
+    def _get_fallback_if_unavailable(self, category: str, birth_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        missing = self._missing_critical_services()
+        if missing:
+            return self._build_fallback_prediction(category, birth_data, missing)
+        return None
+
+    def _build_fallback_prediction(
+        self,
+        category: str,
+        birth_data: Dict[str, Any],
+        missing_services: List[str]
+    ) -> Dict[str, Any]:
+        """Create a structured fallback payload when critical services are unavailable."""
+        missing_text = ", ".join(missing_services)
+        message = (
+            "Prediction unavailable because required services failed to initialize: "
+            f"{missing_text}. Configure the missing dependencies and retry."
+        )
+        section_keys = []
+        if self.section_parser and hasattr(self.section_parser, 'REQUIRED_SECTIONS'):
+            section_keys = self.section_parser.REQUIRED_SECTIONS.get(category, [])
+        sections = {key: message for key in section_keys}
+
+        result = {
+            'category': category,
+            'title': f"Prediction Unavailable: {category.replace('_', ' ').title()}",
+            'full_analysis': message,
+            **sections,
+            'metadata': self._generate_metadata(birth_data),
+            'generated_at': datetime.utcnow().isoformat(),
+            'fallback': {
+                'reason': 'missing_critical_services',
+                'missing_services': missing_services,
+                'errors': self.init_errors
+            },
+            'status': self.get_status()
+        }
+
+        if category in ['past_lives', 'future_lives', 'karmic_remedies', 'relationships']:
+            result['complete_analysis'] = message
+
+        return result
+
+    def get_status(self) -> Dict[str, Any]:
+        """Expose initialization status for route-layer diagnostics."""
+        services = {
+            'openai_service': self.openai_service is not None,
+            'astrology_calculator': self.astrology_calculator is not None,
+            'section_parser': self.section_parser is not None,
+            'corpus_db': self.corpus_db is not None
+        }
+        return {
+            'ready': all(services.values()),
+            'services': services,
+            'init_errors': self.init_errors
         }
 
     def _calculate_age(self, date_of_birth: str) -> int:
