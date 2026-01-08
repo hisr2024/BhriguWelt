@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import type { Profile } from '@/lib/types';
@@ -120,121 +120,7 @@ const COLOR_CLASSES:  Record<string, { border: string; hover: string; accent: st
 
 // Default color for sections without a specific color mapping
 const DEFAULT_COLOR = 'cyan';
-const ESCAPED_TITLE_PATTERN = /[.*+?^${}()|[\]\\]/g;
-const SECTION_REGEX_CACHE = new Map<string, Map<string, RegExp[]>>();
-
-const getSectionPatterns = (cat: string): Map<string, RegExp[]> => {
-  const cached = SECTION_REGEX_CACHE.get(cat);
-  if (cached) return cached;
-
-  const patternMap = new Map<string, RegExp[]>();
-  const categoryConfig = CATEGORY_SECTIONS[cat] || [];
-
-  for (const section of categoryConfig) {
-    const escapedTitle = section.title.replace(ESCAPED_TITLE_PATTERN, '\\$&');
-    patternMap.set(section.key, [
-      // ## Header format (most common)
-      new RegExp(`##\\s*(?:\\d+\\.? \\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
-      // Numbered format (1.  Header)
-      new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
-      // Bold format (**Header**)
-      new RegExp(`\\*\\*${escapedTitle}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n##|$)`, 'i'),
-      // Plain header with colon
-      new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i'),
-    ]);
-  }
-
-  SECTION_REGEX_CACHE.set(cat, patternMap);
-  return patternMap;
-};
-
-const SectionCard = React.memo(function SectionCard({
-  sectionTitle,
-  content,
-  colorClass
-}: {
-  sectionTitle: string;
-  content: string;
-  colorClass: { border: string; hover: string; accent: string; text: string };
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
-                   border ${colorClass.border} ${colorClass.hover} rounded-xl p-6 transition-all`}
-    >
-      <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3`}>
-        <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
-        {sectionTitle}
-      </h3>
-      <div className="prose prose-invert prose-cyan max-w-none">
-        <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-          {content}
-        </div>
-      </div>
-    </motion.div>
-  );
-});
-
-const FullAnalysisPanel = React.memo(function FullAnalysisPanel({
-  showFullAnalysis,
-  onToggle,
-  fullAnalysis
-}: {
-  showFullAnalysis: boolean;
-  onToggle: () => void;
-  fullAnalysis: string;
-}) {
-  return (
-    <div className="mt-8 pt-8 border-t border-gray-700/50">
-      <button
-        onClick={onToggle}
-        className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
-                       border border-gray-700/50 rounded-xl p-6
-                       hover:border-cyan-500/30 transition-all
-                       flex items-center justify-between group"
-      >
-        <div className="flex items-center gap-3">
-          <BookOpen className="w-6 h-6 text-cyan-400" />
-          <div className="text-left">
-            <h3 className="text-xl font-bold text-white">
-              View Complete Reading
-            </h3>
-            <p className="text-sm text-gray-400 mt-1">
-              {showFullAnalysis ? 'Hide' : 'Show'} the full unstructured analysis
-            </p>
-          </div>
-        </div>
-        {showFullAnalysis ? (
-          <ChevronUp className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
-        ) : (
-          <ChevronDown className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
-        )}
-      </button>
-
-      <AnimatePresence>
-        {showFullAnalysis && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration:  0.3 }}
-            className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
-                           border border-gray-700/50 rounded-xl p-6"
-          >
-            <div className="prose prose-invert prose-cyan max-w-none">
-              <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                {fullAnalysis}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-});
+const SKELETON_LINES = 3;
 
 interface BhriguPredictionViewProps {
   category: string;
@@ -263,7 +149,12 @@ export default function BhriguPredictionView({
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [debugMode, setDebugMode] = useState(false);
-  const shouldReduceMotion = useReducedMotion();
+  const [parsedFromFullAnalysis, setParsedFromFullAnalysis] = useState<Record<string, string>>({});
+  const [isParsing, setIsParsing] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
+  const [expandingSections, setExpandingSections] = useState<Record<string, boolean>>({});
+  const expandingTimeouts = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
     if (profile) {
@@ -279,15 +170,30 @@ export default function BhriguPredictionView({
   }, [profile]);
 
   useEffect(() => {
-    if (! debugAllowed) {
-      setDebugMode(false);
+    if (!prediction?.full_analysis) {
+      setParsedFromFullAnalysis({});
       return;
     }
 
-    if (debugQueryEnabled) {
-      setDebugMode(true);
-    }
-  }, [debugAllowed, debugQueryEnabled]);
+    setIsParsing(true);
+    const parsed = parseFullAnalysisIntoSections(prediction.full_analysis, category);
+    setParsedFromFullAnalysis(parsed);
+    setIsParsing(false);
+  }, [prediction?.full_analysis, category]);
+
+  useEffect(() => {
+    setExpandedSections({});
+    setExpandedOnce({});
+    setExpandingSections({});
+    Object.values(expandingTimeouts.current).forEach(timeout => clearTimeout(timeout));
+    expandingTimeouts.current = {};
+  }, [prediction, category]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(expandingTimeouts.current).forEach(timeout => clearTimeout(timeout));
+    };
+  }, []);
 
   const loadPrediction = async (forceRegenerate = false) => {
     if (! profile) return;
@@ -376,7 +282,12 @@ export default function BhriguPredictionView({
     return parsedSections;
   };
 
-  const renderSection = (sectionKey: string, sectionTitle: string, content: string, color: string) => {
+  const renderSection = (
+    sectionKey: string,
+    sectionTitle: string,
+    content: string,
+    color: string
+  ) => {
     // More lenient filtering - only exclude truly empty or placeholder content
     if (! content || content.trim() === '') {
       return null;
@@ -397,19 +308,9 @@ export default function BhriguPredictionView({
 
     const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES[DEFAULT_COLOR];
     const isExpanded = expandedSections[sectionKey] ?? false;
-    const contentId = `prediction-section-${sectionKey}`;
-
-    const isExpanded = expandedSections[sectionKey] ?? true;
-
-    const isExpanded = expandedSections[sectionKey] ?? false;
-
-    const isExpanded = expandedSections[sectionKey] ?? true;
-    const toggleSection = () => {
-      setExpandedSections((prev) => ({
-        ...prev,
-        [sectionKey]: !(prev[sectionKey] ?? true),
-      }));
-    };
+    const hasRendered = expandedOnce[sectionKey] ?? false;
+    const isExpanding = expandingSections[sectionKey] ?? false;
+    const shouldShowSkeleton = (isParsing && !hasRendered) || isExpanding;
 
     return (
       <AccordionItem
@@ -423,37 +324,86 @@ export default function BhriguPredictionView({
         className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
                    border ${colorClass.border} ${colorClass.hover} rounded-xl transition-all`}
       >
-        <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3`}>
-          <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
-          <button
-            type="button"
-            onClick={(event) => {
-              if (event.detail > 0) {
-                toggleSection();
-              }
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                toggleSection();
-              }
-            }}
-            aria-expanded={isExpanded}
-            className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
-          >
+        <button
+          type="button"
+          onClick={() => handleSectionToggle(sectionKey)}
+          className="w-full flex items-center justify-between text-left"
+          aria-expanded={isExpanded}
+        >
+          <h3 className={`text-xl font-bold ${colorClass.text} flex items-center gap-3`}>
+            <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
             {sectionTitle}
-          </button>
-        </h3>
-        {isExpanded && (
-          <div className="prose prose-invert prose-cyan max-w-none">
-            <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-              {content}
-            </div>
+          </h3>
+          <div className="text-gray-400">
+            {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
           </div>
-        )}
+        </button>
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="mt-4"
+            >
+              {shouldShowSkeleton ? (
+                <SectionSkeleton />
+              ) : (
+                hasRendered && (
+                  <div className="prose prose-invert prose-cyan max-w-none">
+                    <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                      {content}
+                    </div>
+                  </div>
+                )
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     );
   };
+
+  const handleSectionToggle = (sectionKey: string) => {
+    const wasExpanded = expandedSections[sectionKey] ?? false;
+    const hasRendered = expandedOnce[sectionKey] ?? false;
+    setExpandedSections(prev => ({ ...prev, [sectionKey]: !wasExpanded }));
+
+    if (wasExpanded) {
+      if (expandingTimeouts.current[sectionKey]) {
+        clearTimeout(expandingTimeouts.current[sectionKey]);
+        delete expandingTimeouts.current[sectionKey];
+      }
+      setExpandingSections(prev => ({ ...prev, [sectionKey]: false }));
+      return;
+    }
+
+    if (hasRendered) {
+      return;
+    }
+
+    setExpandingSections(prev => ({ ...prev, [sectionKey]: true }));
+    const timeout = setTimeout(() => {
+      setExpandedOnce(prev => ({ ...prev, [sectionKey]: true }));
+      setExpandingSections(prev => ({ ...prev, [sectionKey]: false }));
+      delete expandingTimeouts.current[sectionKey];
+    }, 250);
+    expandingTimeouts.current[sectionKey] = timeout;
+  };
+
+  const SectionSkeleton = () => (
+    <div className="space-y-3 animate-pulse">
+      {Array.from({ length: SKELETON_LINES }).map((_, index) => (
+        <div
+          key={`section-skeleton-${index}`}
+          className={`h-4 rounded bg-gray-700/60 ${
+            index === 0 ? 'w-11/12' : index === 1 ? 'w-10/12' : 'w-9/12'
+          }`}
+        />
+      ))}
+    </div>
+  );
 
   const renderPredictionContent = () => {
     if (! prediction) return null;
@@ -477,9 +427,8 @@ export default function BhriguPredictionView({
       return !isRedirectOnly;
     });
 
-    // FALLBACK: If no sections found but full_analysis exists, parse it client-side
+    // FALLBACK: If no sections found but full_analysis exists, use parsed data
     if (availableSections.length === 0 && prediction.full_analysis) {
-      // Update availableSections based on parsed content
       availableSections = sections.filter(section => {
         const content = parsedFromFullAnalysis[section.key];
         return content && content.trim().length > 50;
@@ -511,7 +460,7 @@ export default function BhriguPredictionView({
         )}
 
         {/* Show message if no sections were extracted successfully */}
-        {availableSections. length === 0 && fullAnalysis && (
+        {availableSections. length === 0 && prediction.full_analysis && !isParsing && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
             <p className="text-amber-400 text-sm">
               Note: Individual sections could not be extracted from the analysis.
