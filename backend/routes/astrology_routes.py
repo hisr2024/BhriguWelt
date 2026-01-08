@@ -3,8 +3,9 @@ Astrology API Routes
 Core astrology calculation endpoints with enhanced validation and error handling
 """
 from flask import Blueprint, request, jsonify
-from services.astrology_calculator import astrology_calculator
+from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.openai_service import openai_service
+from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
 from utils.logger import setup_logger, log_request, log_response, log_error
 from utils.validators import validate_birth_details, validate_coordinates, sanitize_input
 from utils.response_formatter import (
@@ -37,42 +38,54 @@ def calculate_birth_chart():
         data = request.get_json()
         log_request(logger, data, '/api/astrology/birth-chart')
 
-        # Validate birth details
-        is_valid, error_msg = validate_birth_details(data)
-        if not is_valid:
-            logger.warning(f"Validation failed: {error_msg}")
-            return validation_error_response(error_msg)
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
 
-        # Sanitize inputs
-        sanitized_data = {
-            'date_of_birth': data['date_of_birth'],
-            'time_of_birth': data['time_of_birth'],
-            'place_of_birth': sanitize_input(data['place_of_birth'], max_length=200)
-        }
-
-        # Validate coordinates if provided
-        if 'latitude' in data and 'longitude' in data:
-            is_valid, error_msg = validate_coordinates(data['latitude'], data['longitude'])
+        if calculator:
+            # Validate birth details
+            is_valid, error_msg = validate_birth_details(data)
             if not is_valid:
-                logger.warning(f"Coordinate validation failed: {error_msg}")
+                logger.warning(f"Validation failed: {error_msg}")
                 return validation_error_response(error_msg)
-            sanitized_data['latitude'] = data['latitude']
-            sanitized_data['longitude'] = data['longitude']
 
-        # Calculate birth chart
-        logger.info(f"Calculating birth chart for {sanitized_data['place_of_birth']}")
-        chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=sanitized_data['date_of_birth'],
-            time_of_birth=sanitized_data['time_of_birth'],
-            place=sanitized_data['place_of_birth'],
-            latitude=sanitized_data.get('latitude'),
-            longitude=sanitized_data.get('longitude')
-        )
+            # Sanitize inputs
+            sanitized_data = {
+                'date_of_birth': data['date_of_birth'],
+                'time_of_birth': data['time_of_birth'],
+                'place_of_birth': sanitize_input(data['place_of_birth'], max_length=200)
+            }
 
-        logger.info("Birth chart calculated successfully")
+            # Validate coordinates if provided
+            if 'latitude' in data and 'longitude' in data:
+                is_valid, error_msg = validate_coordinates(data['latitude'], data['longitude'])
+                if not is_valid:
+                    logger.warning(f"Coordinate validation failed: {error_msg}")
+                    return validation_error_response(error_msg)
+                sanitized_data['latitude'] = data['latitude']
+                sanitized_data['longitude'] = data['longitude']
+
+            # Calculate birth chart
+            logger.info(f"Calculating birth chart for {sanitized_data['place_of_birth']}")
+            chart = calculator.calculate_birth_chart(
+                date_of_birth=sanitized_data['date_of_birth'],
+                time_of_birth=sanitized_data['time_of_birth'],
+                place=sanitized_data['place_of_birth'],
+                latitude=sanitized_data.get('latitude'),
+                longitude=sanitized_data.get('longitude')
+            )
+
+            logger.info("Birth chart calculated successfully")
+            return success_response(
+                data=chart,
+                message="Birth chart calculated successfully"
+            )
+
+        logger.warning("Astrology calculator unavailable; returning cached birth data.")
         return success_response(
-            data=chart,
-            message="Birth chart calculated successfully"
+            data=cached_birth_data,
+            message="Returned cached birth data because calculator is unavailable."
         )
 
     except ValueError as e:
@@ -92,19 +105,28 @@ def zodiac_analysis():
         data = request.get_json()
         log_request(logger, data, '/api/astrology/zodiac-analysis')
 
-        # Validate birth details
-        is_valid, error_msg = validate_birth_details(data)
-        if not is_valid:
-            logger.warning(f"Validation failed: {error_msg}")
-            return validation_error_response(error_msg)
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
 
-        # Calculate birth chart
-        logger.info("Calculating birth chart for zodiac analysis")
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=sanitize_input(data['place_of_birth'], max_length=200)
-        )
+        if calculator:
+            # Validate birth details
+            is_valid, error_msg = validate_birth_details(data)
+            if not is_valid:
+                logger.warning(f"Validation failed: {error_msg}")
+                return validation_error_response(error_msg)
+
+            # Calculate birth chart
+            logger.info("Calculating birth chart for zodiac analysis")
+            birth_chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=sanitize_input(data['place_of_birth'], max_length=200)
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
 
         # Generate AI-powered analysis
         logger.info("Generating AI-powered zodiac analysis")
@@ -151,18 +173,27 @@ def planetary_positions():
         data = request.get_json()
         log_request(logger, data, '/api/astrology/planetary-positions')
 
-        # Validate birth details
-        is_valid, error_msg = validate_birth_details(data)
-        if not is_valid:
-            logger.warning(f"Validation failed: {error_msg}")
-            return validation_error_response(error_msg)
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
 
-        logger.info("Calculating planetary positions")
-        chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=sanitize_input(data['place_of_birth'], max_length=200)
-        )
+        if calculator:
+            # Validate birth details
+            is_valid, error_msg = validate_birth_details(data)
+            if not is_valid:
+                logger.warning(f"Validation failed: {error_msg}")
+                return validation_error_response(error_msg)
+
+            logger.info("Calculating planetary positions")
+            chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=sanitize_input(data['place_of_birth'], max_length=200)
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            chart = cached_birth_data
 
         logger.info("Planetary positions calculated successfully")
         return success_response(
@@ -195,33 +226,44 @@ def compatibility_analysis():
         if 'person1' not in data:
             return validation_error_response("Missing person1 data", field="person1")
 
-        is_valid, error_msg = validate_birth_details(data['person1'])
-        if not is_valid:
-            logger.warning(f"Person1 validation failed: {error_msg}")
-            return validation_error_response(f"Person1: {error_msg}")
-
         # Validate person2 data
         if 'person2' not in data:
             return validation_error_response("Missing person2 data", field="person2")
 
-        is_valid, error_msg = validate_birth_details(data['person2'])
-        if not is_valid:
-            logger.warning(f"Person2 validation failed: {error_msg}")
-            return validation_error_response(f"Person2: {error_msg}")
+        calculator = get_astrology_calculator()
+        cached_chart1 = get_cached_birth_data(data['person1'])
+        cached_chart2 = get_cached_birth_data(data['person2'])
+        if not calculator and not (cached_chart1 and cached_chart2):
+            return dependency_error_response(get_astrology_dependency_error())
 
-        # Calculate charts for both people
-        logger.info("Calculating compatibility charts")
-        chart1 = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['person1']['date_of_birth'],
-            time_of_birth=data['person1']['time_of_birth'],
-            place=sanitize_input(data['person1']['place_of_birth'], max_length=200)
-        )
+        if calculator:
+            is_valid, error_msg = validate_birth_details(data['person1'])
+            if not is_valid:
+                logger.warning(f"Person1 validation failed: {error_msg}")
+                return validation_error_response(f"Person1: {error_msg}")
 
-        chart2 = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['person2']['date_of_birth'],
-            time_of_birth=data['person2']['time_of_birth'],
-            place=sanitize_input(data['person2']['place_of_birth'], max_length=200)
-        )
+            is_valid, error_msg = validate_birth_details(data['person2'])
+            if not is_valid:
+                logger.warning(f"Person2 validation failed: {error_msg}")
+                return validation_error_response(f"Person2: {error_msg}")
+
+            # Calculate charts for both people
+            logger.info("Calculating compatibility charts")
+            chart1 = calculator.calculate_birth_chart(
+                date_of_birth=data['person1']['date_of_birth'],
+                time_of_birth=data['person1']['time_of_birth'],
+                place=sanitize_input(data['person1']['place_of_birth'], max_length=200)
+            )
+
+            chart2 = calculator.calculate_birth_chart(
+                date_of_birth=data['person2']['date_of_birth'],
+                time_of_birth=data['person2']['time_of_birth'],
+                place=sanitize_input(data['person2']['place_of_birth'], max_length=200)
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            chart1 = cached_chart1
+            chart2 = cached_chart2
 
         # Generate compatibility analysis
         logger.info("Generating AI-powered compatibility analysis")

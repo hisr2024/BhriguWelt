@@ -3,11 +3,12 @@ Predictions API Routes
 General prediction endpoints
 """
 from flask import Blueprint, request, jsonify
-from services.astrology_calculator import astrology_calculator
+from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.openai_service import openai_service
 from services.section_parser import get_section_parser
 from datetime import datetime
 import logging
+from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
 
 logger = logging.getLogger(__name__)
 
@@ -18,11 +19,20 @@ def daily_prediction():
     """Get daily horoscope prediction"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            birth_chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=data['place_of_birth']
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
 
         today = datetime.now().strftime("%Y-%m-%d")
         prompt = f"""
@@ -59,11 +69,20 @@ def weekly_prediction():
     """Get weekly horoscope prediction"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            birth_chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=data['place_of_birth']
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
 
         prompt = f"""
         Provide weekly horoscope:
@@ -96,11 +115,20 @@ def monthly_prediction():
     """Get monthly horoscope prediction"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            birth_chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=data['place_of_birth']
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
 
         current_month = datetime.now().strftime("%B %Y")
         prompt = f"""
@@ -136,11 +164,20 @@ def yearly_prediction():
     """Get yearly horoscope prediction"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            birth_chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=data['place_of_birth']
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
 
         current_year = datetime.now().year
         prompt = f"""
@@ -182,11 +219,20 @@ def specific_question():
         if not question:
             return jsonify({'error': 'Question is required'}), 400
 
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            birth_chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=data['place_of_birth']
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
 
         prompt = f"""
         Answer this specific question based on Vedic astrology:
