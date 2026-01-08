@@ -10,6 +10,7 @@ import type {
   AIComposeRequest,
   AIChatRequest,
   AISummarizeRequest,
+  PredictionResult,
 } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -118,6 +119,7 @@ export type {
   AIComposeRequest,
   AIChatRequest,
   AISummarizeRequest,
+  PredictionResult,
 } from './types';
 
 // API Methods
@@ -449,7 +451,7 @@ export const bhriguPredictionsAPI = {
    * Discover soul's purpose and life mission
    */
   getKarmicJourney:  async (data: BirthDetails & { question?:  string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/karmic-journey', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/karmic-journey', data);
     return response. data;
   },
 
@@ -458,7 +460,7 @@ export const bhriguPredictionsAPI = {
    * Explore previous incarnations and karmic patterns
    */
   getPastLives: async (data: BirthDetails & { question?: string; force_regenerate?:  boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/past-lives', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/past-lives', data);
     return response.data;
   },
 
@@ -467,7 +469,7 @@ export const bhriguPredictionsAPI = {
    * Envision soul's evolution and future incarnations
    */
   getFutureLives: async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/future-lives', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/future-lives', data);
     return response.data;
   },
 
@@ -476,7 +478,7 @@ export const bhriguPredictionsAPI = {
    * Comprehensive current life opportunities and challenges
    */
   getPresentLife:  async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/present-life', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/present-life', data);
     return response.data;
   },
 
@@ -485,7 +487,7 @@ export const bhriguPredictionsAPI = {
    * Major transitions with precision timing
    */
   getLifeEvents:  async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/life-events', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/life-events', data);
     return response.data;
   },
 
@@ -494,7 +496,7 @@ export const bhriguPredictionsAPI = {
    * Personalized spiritual practices for balance
    */
   getKarmicRemedies: async (data: BirthDetails & { question?:  string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/karmic-remedies', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/karmic-remedies', data);
     return response.data;
   },
 
@@ -503,7 +505,7 @@ export const bhriguPredictionsAPI = {
    * Soul connections and compatibility
    */
   getRelationships:  async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/relationships', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/relationships', data);
     return response. data;
   },
 
@@ -512,7 +514,7 @@ export const bhriguPredictionsAPI = {
    * Daily, weekly, monthly, yearly forecasts
    */
   getPredictions: async (data: BirthDetails & { question?:  string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/predictions', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/predictions', data);
     return response.data;
   },
 
@@ -521,7 +523,7 @@ export const bhriguPredictionsAPI = {
    * Complete Bhrigu Samhita analysis covering all 8 aspects
    */
   getComprehensive:  async (data: BirthDetails & { force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/comprehensive', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/comprehensive', data);
     return response. data;
   },
 
