@@ -489,5 +489,3 @@ export const generatePastLivesPrediction = async (
   setCachedResult(cacheKey, result, cacheTTL);
   return result;
 };
-
-export type { PastLivesEngineOptions, PastLivesMode, PastLivesLogger };
