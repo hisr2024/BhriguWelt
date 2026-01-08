@@ -18,6 +18,10 @@ import {
   generateRelationshipsPrediction,
   type RelationshipsEngineOptions,
 } from '../engines/relationshipsEngine';
+import {
+  generateKarmicJourneyPrediction,
+  type KarmicJourneyOptions,
+} from '../engines/karmicJourneyEngine';
 
 export type PredictionEngine =
   | 'karmic_journey'
