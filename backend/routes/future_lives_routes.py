@@ -2,9 +2,10 @@
 Future Lives API Routes
 Future incarnation predictions and soul evolution
 """
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 from services.astrology_calculator import astrology_calculator
 from services.openai_service import openai_service
+from utils.response_formatter import prediction_response, prediction_error_response
 
 bp = Blueprint('future_lives', __name__, url_prefix='/api/future-lives')
 
@@ -24,36 +25,40 @@ def future_lives_prediction():
         data = request.get_json()
 
         # Calculate birth chart
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
-        # Generate future lives prediction
-        future_prediction = openai_service.generate_future_lives_prediction(birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            future_prediction = openai_service.offline_wisdom.generate_future_lives(birth_chart)
+            mode = 'offline'
+        else:
+            future_prediction = openai_service.generate_future_lives_prediction(birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'birth_chart': birth_chart,
                 'future_lives_prediction': future_prediction
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate future lives prediction: {str(e)}", 500)
 
 @bp.route('/evolution-path', methods=['POST'])
 def evolution_path():
     """Map soul evolution path across future incarnations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Map soul evolution path for future lives:
@@ -69,30 +74,37 @@ def evolution_path():
         5. Timeline to higher dimensional existence
         """
 
-        evolution = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            evolution = openai_service.offline_wisdom.generate_future_lives(birth_chart)
+            mode = 'offline'
+        else:
+            evolution = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'evolution_path': evolution,
                 'north_node': birth_chart['planets']['Rahu'],
                 'soul_essence': birth_chart['zodiac_sign']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate evolution path: {str(e)}", 500)
 
 @bp.route('/moksha-timeline', methods=['POST'])
 def moksha_timeline():
     """Calculate timeline to liberation (moksha)"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Calculate path to moksha (liberation):
@@ -108,30 +120,37 @@ def moksha_timeline():
         5. Signs of approaching enlightenment
         """
 
-        moksha = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            moksha = openai_service.offline_wisdom.generate_future_lives(birth_chart)
+            mode = 'offline'
+        else:
+            moksha = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'moksha_timeline': moksha,
                 'moksha_house': birth_chart['houses'][11],
                 'spiritual_guide': birth_chart['planets']['Jupiter']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate moksha timeline: {str(e)}", 500)
 
 @bp.route('/future-missions', methods=['POST'])
 def future_missions():
     """Identify future life missions and purposes"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Predict future life missions:
@@ -147,19 +166,28 @@ def future_missions():
         5. Role in collective evolution
         """
 
-        missions = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            missions = openai_service.offline_wisdom.generate_future_lives(birth_chart)
+            mode = 'offline'
+        else:
+            missions = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'future_missions': missions,
                 'destiny_point': birth_chart['planets']['Rahu'],
                 'purpose_house': birth_chart['houses'][9]
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate future missions: {str(e)}", 500)
 
 @bp.route('/soul-advancement', methods=['POST'])
 def soul_advancement():
@@ -186,16 +214,25 @@ def soul_advancement():
         5. Ascension pathway and timeline
         """
 
-        advancement = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            advancement = openai_service.offline_wisdom.generate_future_lives(birth_chart)
+            mode = 'offline'
+        else:
+            advancement = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'soul_advancement': advancement,
                 'current_nakshatra': birth_chart['nakshatra'],
                 'higher_learning_house': birth_chart['houses'][8]
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate soul advancement: {str(e)}", 500)

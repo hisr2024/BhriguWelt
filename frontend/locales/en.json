@@ -1,0 +1,95 @@
+{
+  "bhriguPrediction": {
+    "sections": {
+      "karmic-journey": {
+        "soul_purpose": "Soul's Primary Purpose",
+        "karmic_blueprint": "Karmic Blueprint",
+        "evolution_stage": "Soul Evolution Stage",
+        "life_mission": "Life Mission & Dharma",
+        "karmic_lessons": "Karmic Lessons",
+        "soul_connections": "Soul Group Connections",
+        "timing": "Timing of Karmic Events",
+        "spiritual_gifts": "Spiritual Gifts & Abilities"
+      },
+      "past-lives": {
+        "recent_life": "Most Recent Past Life",
+        "significant_lives": "Significant Past Lives",
+        "karmic_patterns": "Recurring Karmic Patterns",
+        "past_skills": "Past Life Skills & Talents",
+        "traumas_healing": "Past Life Traumas Needing Healing",
+        "past_relationships": "Past Life Relationships",
+        "karmic_debts": "Karmic Debts from Past Lives",
+        "spiritual_progress": "Past Life Spiritual Progress"
+      },
+      "future-lives": {
+        "next_incarnation": "Next Incarnation",
+        "evolution_trajectory": "Soul Evolution Trajectory",
+        "final_birth_conditions": "Final Birth Conditions",
+        "future_scenarios": "Future Life Scenarios",
+        "moksha_timeline": "Moksha Timeline",
+        "higher_realms": "Higher Realms Access",
+        "bodhisattva_path": "Bodhisattva Path",
+        "ultimate_destiny": "Ultimate Destiny"
+      },
+      "present-life": {
+        "current_phase": "Current Life Phase",
+        "career": "Career & Professional Life",
+        "relationships": "Relationships & Love",
+        "health": "Health & Wellness",
+        "finances": "Financial Prospects",
+        "spiritual_growth": "Spiritual Growth",
+        "education": "Education & Learning",
+        "life_purpose": "Life Purpose",
+        "challenges": "Current Challenges",
+        "timing": "Timing & Transitions"
+      },
+      "life-events": {
+        "yearly_forecast": "Yearly Forecast",
+        "marriage_timing": "Marriage Timing",
+        "career_milestones": "Career Milestones",
+        "children_family": "Children & Family",
+        "financial_events": "Financial Events",
+        "health_alerts": "Health Alerts",
+        "spiritual_milestones": "Spiritual Milestones",
+        "relocations": "Relocations & Travel",
+        "education": "Educational Achievements",
+        "favorable_periods": "Favorable Periods",
+        "challenging_periods": "Challenging Periods",
+        "transits": "Key Planetary Transits",
+        "age_milestones": "Age Milestones"
+      },
+      "karmic-remedies": {
+        "mantras": "Mantras & Chanting",
+        "gemstones": "Gemstones & Crystals",
+        "yantras": "Yantras & Sacred Geometry",
+        "charitable_activities": "Charitable Activities",
+        "fasting": "Fasting & Dietary Practices",
+        "deity_worship": "Deity Worship",
+        "pilgrimage": "Pilgrimage & Sacred Sites",
+        "lifestyle": "Lifestyle Modifications",
+        "planetary_rituals": "Planetary Rituals",
+        "karmic_cleansing": "Karmic Cleansing Practices",
+        "service": "Service & Seva",
+        "meditation": "Meditation & Yoga"
+      },
+      "relationships": {
+        "romantic_marriage": "Romantic & Marriage Prospects",
+        "family": "Family Relationships",
+        "soul_connections": "Soul Connections & Soulmates",
+        "friendships": "Friendships & Social Circle",
+        "professional": "Professional Relationships",
+        "karmic_patterns": "Karmic Relationship Patterns",
+        "communication": "Communication Dynamics",
+        "timing": "Relationship Timing",
+        "healing": "Relationship Healing",
+        "healthy_practices": "Healthy Relationship Practices"
+      },
+      "predictions": {
+        "daily": "Daily Predictions",
+        "weekly": "Weekly Forecast",
+        "monthly": "Monthly Outlook",
+        "yearly": "Yearly Overview"
+      }
+    }
+  }
+}

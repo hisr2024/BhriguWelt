@@ -11,6 +11,7 @@ import type { Profile } from '@/lib/types';
 export default function LifeEventsPage() {
   const { getAllProfiles } = useEncryptedStorage();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileReady, setProfileReady] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -24,8 +25,14 @@ export default function LifeEventsPage() {
       }
     } catch (error) {
       console.error('Error loading profile:', error);
+    } finally {
+      setProfileReady(true);
     }
   };
+
+  if (!profileReady) {
+    return <PredictionViewSkeleton />;
+  }
 
   return (
     <PredictionErrorBoundary context="life-events">

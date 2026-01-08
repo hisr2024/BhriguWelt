@@ -2,9 +2,10 @@
 Karmic Remedies API Routes
 Personalized remedies and spiritual practices
 """
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 from services.astrology_calculator import astrology_calculator
 from services.openai_service import openai_service
+from utils.response_formatter import prediction_response, prediction_error_response
 
 bp = Blueprint('karmic_remedies', __name__, url_prefix='/api/karmic-remedies')
 
@@ -25,37 +26,37 @@ def comprehensive_remedies():
         data = request.get_json()
 
         # Calculate birth chart
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         # Generate remedies
         challenges = data.get('challenges', [])
         remedies = openai_service.generate_karmic_remedies(birth_chart, challenges)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'birth_chart': birth_chart,
                 'remedies': remedies
+            },
+            metadata={
+                'challenges': challenges,
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate comprehensive remedies: {str(e)}", 500)
 
 @bp.route('/mantras', methods=['POST'])
 def mantra_recommendations():
     """Get personalized mantra recommendations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend powerful mantras for:
@@ -72,30 +73,31 @@ def mantra_recommendations():
         6. Benefits and timing for chanting
         """
 
-        mantras = openai_service.generate_prediction(prompt, birth_chart)
+        mantras_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'mantras': mantras,
                 'nakshatra': birth_chart['nakshatra'],
                 'current_dasha': birth_chart['dasha_period']['maha_dasha']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate mantra recommendations: {str(e)}", 500)
 
 @bp.route('/gemstones', methods=['POST'])
 def gemstone_therapy():
     """Get gemstone therapy recommendations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend therapeutic gemstones:
@@ -113,30 +115,31 @@ def gemstone_therapy():
         6. Mantra for energizing gemstone
         """
 
-        gemstones = openai_service.generate_prediction(prompt, birth_chart)
+        gemstones_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'gemstone_therapy': gemstones,
                 'ascendant': birth_chart['ascendant'],
                 'moon_sign': birth_chart['moon_sign']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate gemstone recommendations: {str(e)}", 500)
 
 @bp.route('/rituals', methods=['POST'])
 def ritual_recommendations():
     """Get ritual and puja recommendations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend Vedic rituals and pujas:
@@ -153,30 +156,31 @@ def ritual_recommendations():
         6. Pilgrimage sites
         """
 
-        rituals = openai_service.generate_prediction(prompt, birth_chart)
+        rituals_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'ritual_recommendations': rituals,
                 'nakshatra_lord': birth_chart['nakshatra_lord'],
                 'dasha_lord': birth_chart['dasha_period']['maha_dasha']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate ritual recommendations: {str(e)}", 500)
 
 @bp.route('/charitable-acts', methods=['POST'])
 def charitable_acts():
     """Get dana (charitable) recommendations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend charitable acts (dana):
@@ -192,30 +196,31 @@ def charitable_acts():
         5. Karmic debt clearing through service
         """
 
-        charity = openai_service.generate_prediction(prompt, birth_chart)
+        charity_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'charitable_recommendations': charity,
                 'saturn_position': birth_chart['planets']['Saturn'],
                 'jupiter_position': birth_chart['planets']['Jupiter']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate charitable recommendations: {str(e)}", 500)
 
 @bp.route('/lifestyle-modifications', methods=['POST'])
 def lifestyle_modifications():
     """Get lifestyle and dietary recommendations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend lifestyle modifications:
@@ -232,30 +237,31 @@ def lifestyle_modifications():
         6. Direction and spatial guidance
         """
 
-        lifestyle = openai_service.generate_prediction(prompt, birth_chart)
+        lifestyle_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'lifestyle_recommendations': lifestyle,
                 'element': birth_chart['element'],
                 'ascendant': birth_chart['ascendant']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate lifestyle recommendations: {str(e)}", 500)
 
 @bp.route('/meditation-practices', methods=['POST'])
 def meditation_practices():
     """Get personalized meditation practices"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend meditation practices:
@@ -272,19 +278,22 @@ def meditation_practices():
         6. Duration and frequency
         """
 
-        meditation = openai_service.generate_prediction(prompt, birth_chart)
+        meditation_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'meditation_practices': meditation,
                 'nakshatra': birth_chart['nakshatra'],
                 'moon_sign': birth_chart['moon_sign']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate meditation practices: {str(e)}", 500)
 
 @bp.route('/yantra-recommendations', methods=['POST'])
 def yantra_recommendations():
@@ -311,15 +320,18 @@ def yantra_recommendations():
         5. Materials and specifications
         """
 
-        yantras = openai_service.generate_prediction(prompt, birth_chart)
+        yantras_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'yantra_recommendations': yantras,
                 'current_dasha': birth_chart['dasha_period']['maha_dasha']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate yantra recommendations: {str(e)}", 500)

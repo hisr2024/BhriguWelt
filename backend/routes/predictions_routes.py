@@ -3,11 +3,13 @@ Predictions API Routes
 General prediction endpoints
 """
 from flask import Blueprint, request, jsonify
-from services.astrology_calculator import astrology_calculator
+from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.openai_service import openai_service
 from services.section_parser import get_section_parser
+from utils.client_status import parse_client_online
 from datetime import datetime
 import logging
+from utils.response_formatter import prediction_response, prediction_error_response
 
 logger = logging.getLogger(__name__)
 
@@ -18,11 +20,20 @@ def daily_prediction():
     """Get daily horoscope prediction"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            birth_chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=data['place_of_birth']
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
 
         today = datetime.now().strftime("%Y-%m-%d")
         prompt = f"""
@@ -40,30 +51,50 @@ def daily_prediction():
         6. Auspicious timing
         """
 
-        prediction = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            prediction = openai_service.offline_wisdom.generate_general_predictions(birth_chart)
+            mode = 'offline'
+        else:
+            prediction = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'date': today,
                 'zodiac_sign': birth_chart['zodiac_sign'],
                 'prediction': prediction
+            },
+            metadata={
+                'timeframe': 'daily',
+                'zodiac_sign': birth_chart['zodiac_sign'],
+                'moon_sign': birth_chart['moon_sign'],
+                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate daily prediction: {str(e)}", 500)
 
 @bp.route('/weekly', methods=['POST'])
 def weekly_prediction():
     """Get weekly horoscope prediction"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            birth_chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=data['place_of_birth']
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
 
         prompt = f"""
         Provide weekly horoscope:
@@ -78,29 +109,48 @@ def weekly_prediction():
         5. Key dates and timing
         """
 
-        prediction = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            prediction = openai_service.offline_wisdom.generate_general_predictions(birth_chart)
+            mode = 'offline'
+        else:
+            prediction = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'zodiac_sign': birth_chart['zodiac_sign'],
                 'weekly_prediction': prediction
+            },
+            metadata={
+                'timeframe': 'weekly',
+                'zodiac_sign': birth_chart['zodiac_sign'],
+                'nakshatra': birth_chart['nakshatra']
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate weekly prediction: {str(e)}", 500)
 
 @bp.route('/monthly', methods=['POST'])
 def monthly_prediction():
     """Get monthly horoscope prediction"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            birth_chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=data['place_of_birth']
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
 
         current_month = datetime.now().strftime("%B %Y")
         prompt = f"""
@@ -117,30 +167,49 @@ def monthly_prediction():
         6. Challenges and solutions
         """
 
-        prediction = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            prediction = openai_service.offline_wisdom.generate_general_predictions(birth_chart)
+            mode = 'offline'
+        else:
+            prediction = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'month': current_month,
                 'zodiac_sign': birth_chart['zodiac_sign'],
                 'monthly_prediction': prediction
+            },
+            metadata={
+                'timeframe': 'monthly',
+                'zodiac_sign': birth_chart['zodiac_sign'],
+                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate monthly prediction: {str(e)}", 500)
 
 @bp.route('/yearly', methods=['POST'])
 def yearly_prediction():
     """Get yearly horoscope prediction"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            birth_chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=data['place_of_birth']
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
 
         current_year = datetime.now().year
         prompt = f"""
@@ -158,19 +227,29 @@ def yearly_prediction():
         7. Quarter-by-quarter breakdown
         """
 
-        prediction = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            prediction = openai_service.offline_wisdom.generate_general_predictions(birth_chart)
+            mode = 'offline'
+        else:
+            prediction = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'year': current_year,
                 'zodiac_sign': birth_chart['zodiac_sign'],
                 'yearly_prediction': prediction
+            },
+            metadata={
+                'timeframe': 'yearly',
+                'zodiac_sign': birth_chart['zodiac_sign'],
+                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate yearly prediction: {str(e)}", 500)
 
 @bp.route('/question', methods=['POST'])
 def specific_question():
@@ -180,13 +259,22 @@ def specific_question():
         question = data.get('question')
 
         if not question:
-            return jsonify({'error': 'Question is required'}), 400
+            return prediction_error_response('Question is required', 400)
 
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            birth_chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=data['place_of_birth']
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
 
         prompt = f"""
         Answer this specific question based on Vedic astrology:
@@ -205,19 +293,31 @@ def specific_question():
         4. Remedies if needed
         """
 
-        answer = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            answer = openai_service.offline_wisdom.generate_general_predictions(birth_chart)
+            mode = 'offline'
+        else:
+            answer = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'question': question,
-                'answer': answer,
+                'answer': answer_result['text'],
+                'partial': answer_result['partial'],
                 'zodiac_sign': birth_chart['zodiac_sign']
+            },
+            metadata={
+                'timeframe': 'question',
+                'zodiac_sign': birth_chart['zodiac_sign'],
+                'nakshatra': birth_chart['nakshatra'],
+                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to answer prediction question: {str(e)}", 500)
 
 @bp.route('/test-section-extraction', methods=['POST'])
 def test_section_extraction():
@@ -260,7 +360,11 @@ def test_section_extraction():
                 'validation': validation,
                 'missing_sections': missing_sections,
                 'raw_text_length': len(raw_text),
-                'section_lengths': {k: len(v) if v else 0 for k, v in sections.items()}
+                'section_lengths': {
+                    k: len(v) if v else 0
+                    for k, v in sections.items()
+                    if k != 'section_generation_status'
+                }
             }
         }), 200
 
