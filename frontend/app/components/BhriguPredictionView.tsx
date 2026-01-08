@@ -352,6 +352,8 @@ export default function BhriguPredictionView({
           <div className="mt-8 pt-8 border-t border-gray-700/50">
             <button
               onClick={() => setShowFullAnalysis(!showFullAnalysis)}
+              aria-expanded={showFullAnalysis}
+              aria-controls="full-analysis-content"
               className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
                        border border-gray-700/50 rounded-xl p-6
                        hover:border-cyan-500/30 transition-all
@@ -373,6 +375,9 @@ export default function BhriguPredictionView({
               ) : (
                 <ChevronDown className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
               )}
+              <span className="sr-only">
+                {showFullAnalysis ? 'Hide full analysis' : 'Show full analysis'}
+              </span>
             </button>
 
             <AnimatePresence>
@@ -382,6 +387,7 @@ export default function BhriguPredictionView({
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration:  0.3 }}
+                  id="full-analysis-content"
                   className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
                            border border-gray-700/50 rounded-xl p-6"
                 >
