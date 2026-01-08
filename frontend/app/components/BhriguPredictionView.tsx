@@ -143,14 +143,34 @@ export default function BhriguPredictionView({
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
 
+  const hasRequiredProfileFields = (currentProfile: Profile) => {
+    return Boolean(
+      currentProfile.dateOfBirth &&
+      currentProfile.timeOfBirth &&
+      currentProfile.placeOfBirth &&
+      typeof currentProfile.latitude === 'number' &&
+      typeof currentProfile.longitude === 'number'
+    );
+  };
+
   useEffect(() => {
-    if (profile) {
-      loadPrediction();
+    if (!profile) return;
+
+    if (!hasRequiredProfileFields(profile)) {
+      setError('Please complete your birth details in your profile to generate predictions.');
+      return;
     }
+
+    loadPrediction();
   }, [profile]);
 
   const loadPrediction = async (forceRegenerate = false) => {
     if (! profile) return;
+
+    if (!hasRequiredProfileFields(profile)) {
+      setError('Please complete your birth details in your profile to generate predictions.');
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -185,6 +205,7 @@ export default function BhriguPredictionView({
       setLoading(false);
     }
   };
+
 
   // Client-side fallback to parse full_analysis into sections
   const parseFullAnalysisIntoSections = (fullAnalysis: string, cat: string): Record<string, string> => {
