@@ -10,7 +10,90 @@ import type {
   AIComposeRequest,
   AIChatRequest,
   AISummarizeRequest,
+  PredictionResult,
 } from './types';
+import { buildIssueReportUrl, emitToast } from './toast';
+
+export type PredictionStatus = 'success' | 'error';
+
+export interface PredictionMetadata {
+  zodiac_sign?: string;
+  nakshatra?: string;
+  moon_sign?: string;
+  ascendant?: string;
+  tradition?: string;
+  [key: string]: unknown;
+}
+
+export interface PredictionPayload {
+  full_analysis?: string;
+  metadata?: PredictionMetadata;
+  [key: string]: unknown;
+}
+
+export interface CachedPredictionData {
+  prediction: PredictionPayload;
+  zodiac_sign?: string;
+  nakshatra?: string;
+  moon_sign?: string;
+  ascendant?: string;
+  tradition?: string;
+  metadata?: PredictionMetadata;
+  [key: string]: unknown;
+}
+
+export interface PredictionAPIResponse {
+  status: PredictionStatus;
+  message?: string;
+  data?: PredictionPayload | CachedPredictionData;
+  timestamp?: string;
+}
+
+export interface PredictionResult {
+  prediction: PredictionPayload | null;
+  metadata: PredictionMetadata | null;
+  status: PredictionStatus;
+}
+
+export function normalizePredictionResponse(
+  response?: PredictionAPIResponse | null
+): PredictionResult {
+  const status: PredictionStatus = response?.status === 'success' ? 'success' : 'error';
+  const data = response?.data;
+  let prediction: PredictionPayload | null = null;
+  let metadata: PredictionMetadata | null = null;
+
+  if (data) {
+    if (typeof data === 'object' && 'prediction' in data) {
+      const cachedData = data as CachedPredictionData;
+      prediction = cachedData.prediction ?? null;
+      metadata = {
+        ...(cachedData.metadata ?? {}),
+        ...(cachedData.zodiac_sign ? { zodiac_sign: cachedData.zodiac_sign } : {}),
+        ...(cachedData.nakshatra ? { nakshatra: cachedData.nakshatra } : {}),
+        ...(cachedData.moon_sign ? { moon_sign: cachedData.moon_sign } : {}),
+        ...(cachedData.ascendant ? { ascendant: cachedData.ascendant } : {}),
+        ...(cachedData.tradition ? { tradition: cachedData.tradition } : {}),
+      };
+    } else {
+      prediction = data as PredictionPayload;
+    }
+  }
+
+  if (prediction && prediction.metadata) {
+    metadata = { ...(metadata ?? {}), ...prediction.metadata };
+  }
+
+  if (metadata && Object.keys(metadata).length === 0) {
+    metadata = null;
+  }
+
+  return {
+    prediction,
+    metadata,
+    status,
+  };
+}
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -29,6 +112,10 @@ api.interceptors.request.use(
     if (process.env.NODE_ENV === 'development') {
       console.debug(`[API] ${config.method?. toUpperCase()} ${config.url}`);
     }
+    if (typeof navigator !== 'undefined') {
+      config.headers = config.headers ?? {};
+      config.headers['X-Client-Online'] = navigator.onLine ? 'true' : 'false';
+    }
     return config;
   },
   (error) => Promise.reject(error)
@@ -37,6 +124,10 @@ api.interceptors.request.use(
 // Response interceptor with retry logic
 // Use WeakMap to track retry state without modifying config object
 const retryState = new WeakMap<any, { count: number; inProgress: boolean }>();
+const MAX_RETRIES = 3;
+const BASE_RETRY_DELAY_MS = 1000;
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 api.interceptors.response.use(
   (response) => response,
@@ -44,19 +135,23 @@ api.interceptors.response.use(
     const config = error.config;
     
     // Initialize retry state for this config if not exists
-    if (!retryState. has(config)) {
+    if (config && !retryState.has(config)) {
       retryState.set(config, { count: 0, inProgress: false });
     }
     
-    const state = retryState. get(config)!;
+    const state = config ? retryState.get(config)! : undefined;
+    const status = error.response?.status;
+    const responseData = error.response?.data ?? {};
+    const retryable = Boolean(responseData?.retryable);
     
-    // Retry logic for 5xx errors
-    if (error.response?. status >= 500 && ! state.inProgress && state.count < 3) {
+    // Retry logic for retryable responses or transient 5xx errors
+    if (state && (retryable || (status >= 500 && status < 600)) && !state.inProgress && state.count < MAX_RETRIES) {
       state.count++;
       state.inProgress = true;
       
       // Exponential backoff
-      await new Promise(resolve => setTimeout(resolve, 1000 * state.count));
+      const delayMs = BASE_RETRY_DELAY_MS * Math.pow(2, state.count - 1);
+      await delay(delayMs);
       
       state.inProgress = false;
       return api(config);
@@ -66,7 +161,27 @@ api.interceptors.response.use(
     if (typeof navigator !== 'undefined' && ! navigator.onLine) {
       return Promise.reject(new Error('You are offline.  Please check your connection. '));
     }
-    
+
+    const message = responseData?.message || error.message || 'Request failed';
+    const errorCode = responseData?.error_code;
+    const reportIssueUrl = buildIssueReportUrl({
+      message,
+      errorCode,
+      details: responseData?.details,
+      status,
+      method: config?.method?.toUpperCase(),
+      url: config?.url,
+    });
+
+    emitToast({
+      type: 'error',
+      title: 'Request failed',
+      message,
+      errorCode,
+      details: responseData?.details,
+      reportIssueUrl,
+    });
+
     return Promise.reject(error);
   }
 );
@@ -118,6 +233,7 @@ export type {
   AIComposeRequest,
   AIChatRequest,
   AISummarizeRequest,
+  PredictionResult,
 } from './types';
 
 // API Methods
@@ -449,7 +565,7 @@ export const bhriguPredictionsAPI = {
    * Discover soul's purpose and life mission
    */
   getKarmicJourney:  async (data: BirthDetails & { question?:  string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/karmic-journey', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/karmic-journey', data);
     return response. data;
   },
 
@@ -458,7 +574,7 @@ export const bhriguPredictionsAPI = {
    * Explore previous incarnations and karmic patterns
    */
   getPastLives: async (data: BirthDetails & { question?: string; force_regenerate?:  boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/past-lives', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/past-lives', data);
     return response.data;
   },
 
@@ -467,7 +583,7 @@ export const bhriguPredictionsAPI = {
    * Envision soul's evolution and future incarnations
    */
   getFutureLives: async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/future-lives', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/future-lives', data);
     return response.data;
   },
 
@@ -476,7 +592,7 @@ export const bhriguPredictionsAPI = {
    * Comprehensive current life opportunities and challenges
    */
   getPresentLife:  async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/present-life', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/present-life', data);
     return response.data;
   },
 
@@ -485,7 +601,7 @@ export const bhriguPredictionsAPI = {
    * Major transitions with precision timing
    */
   getLifeEvents:  async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/life-events', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/life-events', data);
     return response.data;
   },
 
@@ -494,7 +610,7 @@ export const bhriguPredictionsAPI = {
    * Personalized spiritual practices for balance
    */
   getKarmicRemedies: async (data: BirthDetails & { question?:  string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/karmic-remedies', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/karmic-remedies', data);
     return response.data;
   },
 
@@ -503,7 +619,7 @@ export const bhriguPredictionsAPI = {
    * Soul connections and compatibility
    */
   getRelationships:  async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/relationships', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/relationships', data);
     return response. data;
   },
 
@@ -512,7 +628,7 @@ export const bhriguPredictionsAPI = {
    * Daily, weekly, monthly, yearly forecasts
    */
   getPredictions: async (data: BirthDetails & { question?:  string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/predictions', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/predictions', data);
     return response.data;
   },
 
@@ -521,7 +637,7 @@ export const bhriguPredictionsAPI = {
    * Complete Bhrigu Samhita analysis covering all 8 aspects
    */
   getComprehensive:  async (data: BirthDetails & { force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/comprehensive', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/comprehensive', data);
     return response. data;
   },
 
