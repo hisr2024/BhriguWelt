@@ -6,6 +6,7 @@ from flask import Blueprint, request, jsonify
 from services.bhrigu_predictions import get_bhrigu_service
 from services.prediction_orchestrator import PredictionOrchestrator
 from services.astrology_calculator import AstrologyCalculator
+from services.health_reporter import get_health_reporter
 from models import db, BhriguPredictionCache, BhriguWisdomEntry, BhriguSessionLog
 from middleware.rate_limiter import limiter
 from utils.validators import validate_birth_data
@@ -109,6 +110,10 @@ def karmic_journey():
                 message="Retrieved from Bhrigu wisdom cache"
             )
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         # Calculate birth chart
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
@@ -117,6 +122,9 @@ def karmic_journey():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
 
         # Merge chart data with input
         birth_data = {**data, **chart_data}
@@ -148,7 +156,7 @@ def karmic_journey():
             metadata
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in karmic_journey: {str(e)}")
@@ -187,6 +195,10 @@ def past_lives():
         if cached and not data.get('force_regenerate'):
             return success_response(cached.to_dict(), message="From cache")
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         # Calculate and generate
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
@@ -195,6 +207,9 @@ def past_lives():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
         birth_data = {**data, **chart_data}
 
         prediction = _generate_prediction(
@@ -212,7 +227,7 @@ def past_lives():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in past_lives: {str(e)}")
@@ -250,6 +265,10 @@ def future_lives():
         if cached and not data.get('force_regenerate'):
             return success_response(cached.to_dict(), message="From cache")
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
@@ -257,6 +276,9 @@ def future_lives():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
         birth_data = {**data, **chart_data}
 
         prediction = _generate_prediction(
@@ -273,7 +295,7 @@ def future_lives():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in future_lives: {str(e)}")
@@ -311,6 +333,10 @@ def present_life():
         if cached and not data.get('force_regenerate'):
             return success_response(cached.to_dict(), message="From cache")
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
@@ -318,6 +344,9 @@ def present_life():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
         birth_data = {**data, **chart_data}
 
         prediction = _generate_prediction(
@@ -334,7 +363,7 @@ def present_life():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in present_life: {str(e)}")
@@ -372,6 +401,10 @@ def life_events():
         if cached and not data.get('force_regenerate'):
             return success_response(cached.to_dict(), message="From cache")
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
@@ -379,6 +412,9 @@ def life_events():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
         birth_data = {**data, **chart_data}
 
         prediction = _generate_prediction(
@@ -395,7 +431,7 @@ def life_events():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in life_events: {str(e)}")
@@ -433,6 +469,10 @@ def karmic_remedies():
         if cached and not data.get('force_regenerate'):
             return success_response(cached.to_dict(), message="From cache")
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
@@ -440,6 +480,9 @@ def karmic_remedies():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
         birth_data = {**data, **chart_data}
 
         prediction = _generate_prediction(
@@ -456,7 +499,7 @@ def karmic_remedies():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in karmic_remedies: {str(e)}")
@@ -494,6 +537,10 @@ def relationships():
         if cached and not data.get('force_regenerate'):
             return success_response(cached.to_dict(), message="From cache")
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
@@ -501,6 +548,9 @@ def relationships():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
         birth_data = {**data, **chart_data}
 
         prediction = _generate_prediction(
@@ -517,7 +567,7 @@ def relationships():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in relationships: {str(e)}")
@@ -555,6 +605,10 @@ def predictions():
         if cached and not data.get('force_regenerate'):
             return success_response(cached.to_dict(), message="From cache")
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
@@ -562,6 +616,9 @@ def predictions():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
         birth_data = {**data, **chart_data}
 
         prediction = _generate_prediction(
@@ -578,7 +635,7 @@ def predictions():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in predictions: {str(e)}")
@@ -702,6 +759,10 @@ def comprehensive_prediction():
                 retryable=False
             )
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         # Calculate birth chart once
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
@@ -710,6 +771,9 @@ def comprehensive_prediction():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
         birth_data = {**data, **chart_data}
 
         # Generate all 8 categories

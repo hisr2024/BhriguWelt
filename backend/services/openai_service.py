@@ -8,19 +8,23 @@ from typing import Dict, Any, List, Optional
 import json
 
 # Import corpus loader for RAG-style context injection
+CORPUS_IMPORT_ERROR = None
 try:
     from services.corpus_loader import get_corpus_loader
     CORPUS_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     CORPUS_AVAILABLE = False
+    CORPUS_IMPORT_ERROR = str(e)
     print("Warning: Corpus loader not available. Predictions will use OpenAI general knowledge only.")
 
 # Import offline wisdom generator for category-specific fallbacks
+OFFLINE_WISDOM_IMPORT_ERROR = None
 try:
     from services.bhrigu_offline_wisdom import get_offline_wisdom_generator
     OFFLINE_WISDOM_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     OFFLINE_WISDOM_AVAILABLE = False
+    OFFLINE_WISDOM_IMPORT_ERROR = str(e)
     print("Warning: Offline wisdom generator not available. Fallbacks will be generic.")
 
 class OpenAIService:
@@ -30,6 +34,7 @@ class OpenAIService:
         self.api_key = os.getenv('OPENAI_API_KEY')
         self.base_url = os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
         self.enabled = bool(self.api_key)
+        self.initialization_errors: List[str] = []
         
         # Initialize corpus loader for authentic source integration
         self.corpus_loader = None
@@ -38,7 +43,12 @@ class OpenAIService:
                 self.corpus_loader = get_corpus_loader()
                 print("✓ Corpus loader initialized - predictions will reference authentic Bhrigu/Nadi sources")
             except Exception as e:
-                print(f"Warning: Could not initialize corpus loader: {e}")
+                message = f"Could not initialize corpus loader: {e}"
+                self.initialization_errors.append(message)
+                print(f"Warning: {message}")
+        elif CORPUS_IMPORT_ERROR:
+            message = f"Corpus loader import error: {CORPUS_IMPORT_ERROR}"
+            self.initialization_errors.append(message)
 
         # Initialize offline wisdom generator for category-specific fallbacks
         self.offline_wisdom = None
@@ -47,10 +57,17 @@ class OpenAIService:
                 self.offline_wisdom = get_offline_wisdom_generator()
                 print("✓ Offline wisdom generator initialized - category-specific fallbacks available")
             except Exception as e:
-                print(f"Warning: Could not initialize offline wisdom generator: {e}")
+                message = f"Could not initialize offline wisdom generator: {e}"
+                self.initialization_errors.append(message)
+                print(f"Warning: {message}")
+        elif OFFLINE_WISDOM_IMPORT_ERROR:
+            message = f"Offline wisdom import error: {OFFLINE_WISDOM_IMPORT_ERROR}"
+            self.initialization_errors.append(message)
 
         if not self.enabled:
-            print("WARNING: OPENAI_API_KEY not set. AI features will use fallback responses.")
+            message = "OPENAI_API_KEY not set. AI features will use fallback responses."
+            self.initialization_errors.append(message)
+            print(f"WARNING: {message}")
 
         self.headers = {
             'Authorization': f'Bearer {self.api_key}',
@@ -684,6 +701,18 @@ def get_openai_service():
     if _openai_service_instance is None:
         _openai_service_instance = OpenAIService()
     return _openai_service_instance
+
+
+def get_openai_initialization_errors() -> List[str]:
+    """Get initialization errors recorded during OpenAI service setup."""
+    errors: List[str] = []
+    if CORPUS_IMPORT_ERROR:
+        errors.append(f"Corpus loader import error: {CORPUS_IMPORT_ERROR}")
+    if OFFLINE_WISDOM_IMPORT_ERROR:
+        errors.append(f"Offline wisdom import error: {OFFLINE_WISDOM_IMPORT_ERROR}")
+    if _openai_service_instance and getattr(_openai_service_instance, "initialization_errors", None):
+        errors.extend(_openai_service_instance.initialization_errors)
+    return errors
 
 # Backwards compatibility - creates instance on first access
 class _LazyProxy:
