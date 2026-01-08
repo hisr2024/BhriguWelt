@@ -14,14 +14,26 @@ import GenZButton from './components/GenZButton';
 import GenZCard, { GenZCardGradient } from './components/GenZCard';
 import GenZBadge, { StatusBadge } from './components/GenZBadge';
 import BottomNav from './components/BottomNav';
+import OnboardingTutorial from './components/OnboardingTutorial';
 
 export default function HomePage() {
   const [activeFeature, setActiveFeature] = useState(0);
   const [email, setEmail] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const { scrollYProgress } = useScroll();
   const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
   const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.8]);
+
+  // Check if tutorial has been completed on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const tutorialCompleted = localStorage.getItem('tutorialCompleted');
+      if (!tutorialCompleted) {
+        setShowTutorial(true);
+      }
+    }
+  }, []);
 
   const features = [
     {
@@ -879,6 +891,18 @@ export default function HomePage() {
 
       {/* Mobile Bottom Navigation */}
       <BottomNav />
+
+      {/* Onboarding Tutorial */}
+      {showTutorial && (
+        <OnboardingTutorial
+          onComplete={() => {
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('tutorialCompleted', 'true');
+            }
+            setShowTutorial(false);
+          }}
+        />
+      )}
     </div>
   );
 }

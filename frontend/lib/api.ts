@@ -559,6 +559,55 @@ export const bhriguPredictionsAPI = {
 };
 
 /**
+ * Generate report with progress tracking
+ * Provides real-time progress updates during report generation
+ */
+export async function generateReportWithProgress(
+  data: BirthDetails,
+  engine: string,
+  onProgress?: (progress: number, message: string) => void
+) {
+  const response = await api.post(`/api/bhrigu-predictions/${engine}`, data, {
+    responseType: 'text',
+  });
+
+  if (!response.data) {
+    throw new Error('No response data');
+  }
+
+  // If the response is not streaming (no newlines), return it directly
+  if (!response.data.includes('\n')) {
+    try {
+      return JSON.parse(response.data);
+    } catch {
+      return response.data;
+    }
+  }
+
+  // Parse streaming response
+  const lines = response.data.split('\n');
+  let result: any = null;
+
+  for (const line of lines) {
+    if (line.startsWith('data: ')) {
+      try {
+        const data = JSON.parse(line.slice(6));
+        if (data.progress !== undefined) {
+          onProgress?.(data.progress, data.message || 'Generating...');
+        }
+        if (data.result) {
+          result = data.result;
+        }
+      } catch (error) {
+        console.error('Error parsing progress data:', error);
+      }
+    }
+  }
+
+  return result || JSON.parse(response.data);
+}
+
+/**
  * Matchmaking API
  * Kundali matching and compatibility analysis using Ashtakoot system
  */
