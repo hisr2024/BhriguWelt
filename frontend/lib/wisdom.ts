@@ -6,6 +6,32 @@
 import { WisdomCard } from './types';
 import { initDB, setItem, getAllItems, STORES } from './storage';
 
+// Cache for wisdom card matching results
+const wisdomCache = new Map<string, WisdomCard[]>();
+
+// Cache TTL (time to live) in milliseconds - 5 minutes
+const CACHE_TTL = 5 * 60 * 1000;
+
+// Cache metadata to track expiry
+interface CacheEntry {
+  data: WisdomCard[];
+  timestamp: number;
+}
+
+const wisdomCacheWithTTL = new Map<string, CacheEntry>();
+
+/**
+ * Clear expired cache entries
+ */
+function clearExpiredCache() {
+  const now = Date.now();
+  for (const [key, entry] of wisdomCacheWithTTL.entries()) {
+    if (now - entry.timestamp > CACHE_TTL) {
+      wisdomCacheWithTTL.delete(key);
+    }
+  }
+}
+
 /**
  * Load wisdom cards from local JSON file
  */
@@ -85,8 +111,24 @@ export async function matchWisdomCards(
   limit: number = 10
 ): Promise<WisdomCard[]> {
   try {
+    // Clear expired cache entries
+    clearExpiredCache();
+
+    // Create cache key from chart features
+    const cacheKey = JSON.stringify({ ...chartFeatures, limit });
+
+    // Check if result is in cache and not expired
+    const cachedEntry = wisdomCacheWithTTL.get(cacheKey);
+    if (cachedEntry) {
+      const now = Date.now();
+      if (now - cachedEntry.timestamp < CACHE_TTL) {
+        console.log('[WisdomCards] Cache hit for matchWisdomCards');
+        return cachedEntry.data;
+      }
+    }
+
     const allCards = await getWisdomCards(encryptionKey);
-    
+
     // Score each card based on matching conditions
     const scored = allCards.map((card) => {
       let score = 0;
@@ -136,11 +178,19 @@ export async function matchWisdomCards(
     });
     
     // Filter cards with score > 0 and sort by score
-    return scored
+    const result = scored
       .filter(({ score }) => score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, limit)
       .map(({ card }) => card);
+
+    // Store result in cache
+    wisdomCacheWithTTL.set(cacheKey, {
+      data: result,
+      timestamp: Date.now(),
+    });
+
+    return result;
   } catch (error) {
     console.error('[WisdomCards] Error matching cards:', error);
     return [];
