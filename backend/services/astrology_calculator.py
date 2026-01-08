@@ -295,4 +295,24 @@ class AstrologyCalculator:
         return degrees % 360
 
 # Singleton instance
-astrology_calculator = AstrologyCalculator()
+_astrology_calculator_instance = None
+_ASTROLOGY_INIT_ERROR = None
+
+
+def get_astrology_calculator() -> "AstrologyCalculator":
+    """Get or create the astrology calculator singleton."""
+    global _astrology_calculator_instance, _ASTROLOGY_INIT_ERROR
+    if _astrology_calculator_instance is None and _ASTROLOGY_INIT_ERROR is None:
+        try:
+            _astrology_calculator_instance = AstrologyCalculator()
+        except Exception as e:
+            _ASTROLOGY_INIT_ERROR = str(e)
+    return _astrology_calculator_instance
+
+
+def get_astrology_calculator_initialization_error() -> str:
+    """Get initialization error recorded during calculator setup."""
+    return _ASTROLOGY_INIT_ERROR
+
+
+astrology_calculator = get_astrology_calculator()
