@@ -18,6 +18,7 @@ import {
   generateRelationshipsPrediction,
   type RelationshipsEngineOptions,
 } from '../engines/relationshipsEngine';
+import { generateRemediesPrediction } from '../engines/remediesEngine';
 
 export type PredictionEngine =
   | 'karmic_journey'
