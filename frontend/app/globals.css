@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
 :root {
   /* Legacy colors */
   --cosmic-cyan: #4DEEEA;
@@ -29,6 +27,11 @@
   --dark-surface: #121218;
   --dark-elevated: #1A1A24;
   --dark-card: #1F1F2E;
+
+  --font-size-adjust-sans: 0.52;
+  --font-size-adjust-display: 0.53;
+  --font-size-adjust-serif: 0.46;
+  --font-size-adjust-mono: 0.53;
 }
 
 @layer base {
@@ -40,10 +43,23 @@
     @apply bg-dark-base min-h-screen text-white antialiased;
     background: linear-gradient(135deg, #0A0A0F 0%, #1A1A24 50%, #0A0A0F 100%);
     background-attachment: fixed;
+    font-size-adjust: var(--font-size-adjust-sans);
   }
 
   html {
     scroll-behavior: smooth;
+  }
+
+  .font-display {
+    font-size-adjust: var(--font-size-adjust-display);
+  }
+
+  .font-serif {
+    font-size-adjust: var(--font-size-adjust-serif);
+  }
+
+  .font-mono {
+    font-size-adjust: var(--font-size-adjust-mono);
   }
 }
 
