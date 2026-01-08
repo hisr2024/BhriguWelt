@@ -2,13 +2,16 @@
 BhriguWelt - Comprehensive Astrology API
 Main application entry point
 """
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, g
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 import os
 import sys
+import json
+import uuid
 from datetime import datetime
+from utils.logger import setup_logger, log_exception
 
 print("=" * 60)
 print("BhriguWelt Backend Initialization")
@@ -42,6 +45,7 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-pro
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///bhriguwelt.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+logger = setup_logger(__name__)
 print("✓ Flask app initialized")
 
 # Initialize CORS with strict origin checking
@@ -118,9 +122,19 @@ def is_origin_allowed(origin: str) -> bool:
         )
 
 # Explicit preflight handler for all routes - MUST return proper headers
+def _assign_correlation_id():
+    """Set a per-request correlation ID for response tracking."""
+    request_id = request.headers.get('X-Request-ID') or request.headers.get('X-Correlation-ID')
+    g.correlation_id = request_id or str(uuid.uuid4())
+
+@app.before_request
+def ensure_correlation_id():
+    _assign_correlation_id()
+
 @app.before_request
 def handle_preflight():
     """Handle CORS preflight requests explicitly for all routes"""
+    _assign_correlation_id()
     if request.method == 'OPTIONS':
         # Get the origin from the request
         origin = request.headers.get('Origin', '')
@@ -145,6 +159,7 @@ def handle_preflight():
 def add_cors_headers(response):
     """Add CORS headers to all responses - ensures headers are present"""
     origin = request.headers.get('Origin', '')
+    correlation_id = getattr(g, 'correlation_id', None)
 
     # Check if origin is allowed using helper function
     if is_origin_allowed(origin):
@@ -154,6 +169,14 @@ def add_cors_headers(response):
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode'
         response.headers['Vary'] = 'Origin'
+
+    if correlation_id:
+        response.headers['X-Correlation-ID'] = correlation_id
+        response_data = response.get_json(silent=True)
+        if isinstance(response_data, dict) and 'correlation_id' not in response_data:
+            response_data['correlation_id'] = correlation_id
+            response.set_data(json.dumps(response_data))
+            response.headers['Content-Type'] = 'application/json'
 
     return response
 
@@ -283,6 +306,7 @@ def health():
     orchestrator_status = 'not_initialized'
     online_available = False
     offline_available = False
+    bhrigu_init_error = None
     
     try:
         from services.prediction_orchestrator import get_prediction_orchestrator
@@ -292,6 +316,12 @@ def health():
         offline_available = bool(orchestrator.offline_wisdom)
     except Exception as e:
         logger.warning(f"Orchestrator check failed: {e}")
+
+    try:
+        from services.bhrigu_predictions import get_bhrigu_service_init_error
+        bhrigu_init_error = get_bhrigu_service_init_error()
+    except Exception as e:
+        logger.warning(f"Bhrigu service error check failed: {e}")
     
     return jsonify({
         'status': 'healthy',
@@ -302,6 +332,9 @@ def health():
             'openai': 'operational' if online_available else 'offline',
             'prediction_orchestrator': orchestrator_status,
             'offline_wisdom': 'operational' if offline_available else 'unavailable'
+        },
+        'errors': {
+            'bhrigu_predictions_init': bhrigu_init_error
         },
         'features': {
             'online_predictions': online_available,
@@ -329,6 +362,7 @@ def not_found(error):
 def internal_error(error):
     """Handle 500 errors with CORS headers"""
     origin = request.headers.get('Origin', '')
+    log_exception(logger, error, context="Internal server error")
     response = jsonify({'error': 'Internal server error', 'message': str(error)})
     response.status_code = 500
     
@@ -345,9 +379,7 @@ def handle_exception(e):
     origin = request.headers.get('Origin', '')
     
     # Log the full error for debugging
-    import traceback
-    print(f"Unhandled exception: {str(e)}")
-    traceback.print_exc()
+    log_exception(logger, e, context="Unhandled exception")
     
     # Only expose safe error messages
     error_message = 'An unexpected error occurred'
