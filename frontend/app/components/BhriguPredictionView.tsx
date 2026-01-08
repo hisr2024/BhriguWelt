@@ -260,7 +260,8 @@ export default function BhriguPredictionView({
   const [error, setError] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [question, setQuestion] = useState('');
-  const [showFullAnalysis, setShowFullAnalysis] = useState(true);
+  const [showFullAnalysis, setShowFullAnalysis] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [debugMode, setDebugMode] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
@@ -422,6 +423,14 @@ export default function BhriguPredictionView({
 
     const isExpanded = expandedSections[sectionKey] ?? false;
 
+    const isExpanded = expandedSections[sectionKey] ?? true;
+    const toggleSection = () => {
+      setExpandedSections((prev) => ({
+        ...prev,
+        [sectionKey]: !(prev[sectionKey] ?? true),
+      }));
+    };
+
     return (
       <AccordionItem
         id={`section-${sectionKey}`}
@@ -434,43 +443,34 @@ export default function BhriguPredictionView({
         className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
                    border ${colorClass.border} ${colorClass.hover} rounded-xl transition-all`}
       >
-        <button
-          type="button"
-          onClick={() =>
-            setExpandedSections((prev) => ({
-              ...prev,
-              [sectionKey]: !(prev[sectionKey] ?? false)
-            }))
-          }
-          className="w-full p-6 flex items-center justify-between gap-4"
-        >
-          <div className="flex items-center gap-3">
-            <div className={`w-1.5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
-            <h3 className={`text-xl font-bold ${colorClass.text}`}>{sectionTitle}</h3>
+        <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3`}>
+          <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
+          <button
+            type="button"
+            onClick={(event) => {
+              if (event.detail > 0) {
+                toggleSection();
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleSection();
+              }
+            }}
+            aria-expanded={isExpanded}
+            className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
+          >
+            {sectionTitle}
+          </button>
+        </h3>
+        {isExpanded && (
+          <div className="prose prose-invert prose-cyan max-w-none">
+            <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+              {content}
+            </div>
           </div>
-          {isExpanded ? (
-            <ChevronUp className="w-5 h-5 text-gray-300" />
-          ) : (
-            <ChevronDown className="w-5 h-5 text-gray-300" />
-          )}
-        </button>
-        <AnimatePresence initial={false}>
-          {isExpanded && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.25 }}
-              className="px-6 pb-6"
-            >
-              <div className="prose prose-invert prose-cyan max-w-none">
-                <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                  {content}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        )}
       </motion.div>
     );
   };
@@ -572,14 +572,22 @@ export default function BhriguPredictionView({
         {prediction.full_analysis && (
           <div className="mt-8 pt-8 border-t border-gray-700/50">
             <button
-              onClick={() => setShowFullAnalysis(!showFullAnalysis)}
+              onClick={(event) => {
+                if (event.detail > 0) {
+                  setShowFullAnalysis(!showFullAnalysis);
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  setShowFullAnalysis((prev) => !prev);
+                }
+              }}
               className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
                        border border-gray-700/50 rounded-xl p-6
-                       hover:border-cyan-500/60 hover:shadow-[0_0_24px_rgba(34,211,238,0.18)]
-                       focus-visible:border-cyan-400/70 focus-visible:ring-2 focus-visible:ring-cyan-400/60
-                       focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900/70
-                       focus-visible:shadow-[0_0_28px_rgba(34,211,238,0.25)] transition-all
-                       flex items-center justify-between group"
+                       hover:border-cyan-500/30 transition-all
+                       flex items-center justify-between group
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
             >
               <div className="flex items-center gap-3">
                 <BookOpen className="w-6 h-6 text-cyan-400" />
