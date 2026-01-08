@@ -3,11 +3,12 @@ Predictions API Routes
 General prediction endpoints
 """
 from flask import Blueprint, request, jsonify
-from services.astrology_calculator import astrology_calculator
+from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.openai_service import openai_service
 from services.section_parser import get_section_parser
 from datetime import datetime
 import logging
+from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
 
 logger = logging.getLogger(__name__)
 
@@ -18,11 +19,20 @@ def daily_prediction():
     """Get daily horoscope prediction"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            birth_chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=data['place_of_birth']
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
 
         today = datetime.now().strftime("%Y-%m-%d")
         prompt = f"""
@@ -40,14 +50,15 @@ def daily_prediction():
         6. Auspicious timing
         """
 
-        prediction = openai_service.generate_prediction(prompt, birth_chart)
+        prediction_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
                 'date': today,
                 'zodiac_sign': birth_chart['zodiac_sign'],
-                'prediction': prediction
+                'prediction': prediction_result['text'],
+                'partial': prediction_result['partial']
             }
         }), 200
 
@@ -59,11 +70,20 @@ def weekly_prediction():
     """Get weekly horoscope prediction"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            birth_chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=data['place_of_birth']
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
 
         prompt = f"""
         Provide weekly horoscope:
@@ -78,13 +98,14 @@ def weekly_prediction():
         5. Key dates and timing
         """
 
-        prediction = openai_service.generate_prediction(prompt, birth_chart)
+        prediction_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
                 'zodiac_sign': birth_chart['zodiac_sign'],
-                'weekly_prediction': prediction
+                'weekly_prediction': prediction_result['text'],
+                'partial': prediction_result['partial']
             }
         }), 200
 
@@ -96,11 +117,20 @@ def monthly_prediction():
     """Get monthly horoscope prediction"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            birth_chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=data['place_of_birth']
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
 
         current_month = datetime.now().strftime("%B %Y")
         prompt = f"""
@@ -117,14 +147,15 @@ def monthly_prediction():
         6. Challenges and solutions
         """
 
-        prediction = openai_service.generate_prediction(prompt, birth_chart)
+        prediction_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
                 'month': current_month,
                 'zodiac_sign': birth_chart['zodiac_sign'],
-                'monthly_prediction': prediction
+                'monthly_prediction': prediction_result['text'],
+                'partial': prediction_result['partial']
             }
         }), 200
 
@@ -136,11 +167,20 @@ def yearly_prediction():
     """Get yearly horoscope prediction"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            birth_chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=data['place_of_birth']
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
 
         current_year = datetime.now().year
         prompt = f"""
@@ -158,14 +198,15 @@ def yearly_prediction():
         7. Quarter-by-quarter breakdown
         """
 
-        prediction = openai_service.generate_prediction(prompt, birth_chart)
+        prediction_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
                 'year': current_year,
                 'zodiac_sign': birth_chart['zodiac_sign'],
-                'yearly_prediction': prediction
+                'yearly_prediction': prediction_result['text'],
+                'partial': prediction_result['partial']
             }
         }), 200
 
@@ -182,11 +223,20 @@ def specific_question():
         if not question:
             return jsonify({'error': 'Question is required'}), 400
 
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            birth_chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=data['place_of_birth']
+            )
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
 
         prompt = f"""
         Answer this specific question based on Vedic astrology:
@@ -205,13 +255,14 @@ def specific_question():
         4. Remedies if needed
         """
 
-        answer = openai_service.generate_prediction(prompt, birth_chart)
+        answer_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
                 'question': question,
-                'answer': answer,
+                'answer': answer_result['text'],
+                'partial': answer_result['partial'],
                 'zodiac_sign': birth_chart['zodiac_sign']
             }
         }), 200
@@ -260,7 +311,11 @@ def test_section_extraction():
                 'validation': validation,
                 'missing_sections': missing_sections,
                 'raw_text_length': len(raw_text),
-                'section_lengths': {k: len(v) if v else 0 for k, v in sections.items()}
+                'section_lengths': {
+                    k: len(v) if v else 0
+                    for k, v in sections.items()
+                    if k != 'section_generation_status'
+                }
             }
         }), 200
 

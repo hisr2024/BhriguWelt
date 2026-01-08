@@ -3,8 +3,23 @@ Future Lives API Routes
 Future incarnation predictions and soul evolution
 """
 from flask import Blueprint, request, jsonify
-from services.astrology_calculator import astrology_calculator
+from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.openai_service import openai_service
+from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
+
+
+def _get_birth_chart(data):
+    calculator = get_astrology_calculator()
+    cached_birth_data = get_cached_birth_data(data)
+    if calculator:
+        return calculator.calculate_birth_chart(
+            date_of_birth=data['date_of_birth'],
+            time_of_birth=data['time_of_birth'],
+            place=data['place_of_birth']
+        ), None
+    if cached_birth_data:
+        return cached_birth_data, None
+    return None, dependency_error_response(get_astrology_dependency_error())
 
 bp = Blueprint('future_lives', __name__, url_prefix='/api/future-lives')
 
@@ -24,11 +39,9 @@ def future_lives_prediction():
         data = request.get_json()
 
         # Calculate birth chart
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         # Generate future lives prediction
         future_prediction = openai_service.generate_future_lives_prediction(birth_chart)
@@ -49,11 +62,9 @@ def evolution_path():
     """Map soul evolution path across future incarnations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Map soul evolution path for future lives:
@@ -69,14 +80,15 @@ def evolution_path():
         5. Timeline to higher dimensional existence
         """
 
-        evolution = openai_service.generate_prediction(prompt, birth_chart)
+        evolution_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'evolution_path': evolution,
+                'evolution_path': evolution_result['text'],
                 'north_node': birth_chart['planets']['Rahu'],
-                'soul_essence': birth_chart['zodiac_sign']
+                'soul_essence': birth_chart['zodiac_sign'],
+                'partial': evolution_result['partial']
             }
         }), 200
 
@@ -88,11 +100,9 @@ def moksha_timeline():
     """Calculate timeline to liberation (moksha)"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Calculate path to moksha (liberation):
@@ -108,14 +118,15 @@ def moksha_timeline():
         5. Signs of approaching enlightenment
         """
 
-        moksha = openai_service.generate_prediction(prompt, birth_chart)
+        moksha_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'moksha_timeline': moksha,
+                'moksha_timeline': moksha_result['text'],
                 'moksha_house': birth_chart['houses'][11],
-                'spiritual_guide': birth_chart['planets']['Jupiter']
+                'spiritual_guide': birth_chart['planets']['Jupiter'],
+                'partial': moksha_result['partial']
             }
         }), 200
 
@@ -127,11 +138,9 @@ def future_missions():
     """Identify future life missions and purposes"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Predict future life missions:
@@ -147,14 +156,15 @@ def future_missions():
         5. Role in collective evolution
         """
 
-        missions = openai_service.generate_prediction(prompt, birth_chart)
+        missions_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'future_missions': missions,
+                'future_missions': missions_result['text'],
                 'destiny_point': birth_chart['planets']['Rahu'],
-                'purpose_house': birth_chart['houses'][9]
+                'purpose_house': birth_chart['houses'][9],
+                'partial': missions_result['partial']
             }
         }), 200
 
@@ -186,14 +196,15 @@ def soul_advancement():
         5. Ascension pathway and timeline
         """
 
-        advancement = openai_service.generate_prediction(prompt, birth_chart)
+        advancement_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'soul_advancement': advancement,
+                'soul_advancement': advancement_result['text'],
                 'current_nakshatra': birth_chart['nakshatra'],
-                'higher_learning_house': birth_chart['houses'][8]
+                'higher_learning_house': birth_chart['houses'][8],
+                'partial': advancement_result['partial']
             }
         }), 200
 

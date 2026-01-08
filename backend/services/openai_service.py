@@ -3,25 +3,28 @@ OpenAI Integration Service
 Handles all AI-powered predictions and insights with authentic Bhrigu/Nadi corpus integration
 """
 import os
-import requests
-from typing import Dict, Any, List, Optional
 import json
+import random
+import re
+import time
+from typing import Dict, Any, List, Optional, Tuple, Union
+import requests
 
 # Import corpus loader for RAG-style context injection
-try:
+CORPUS_AVAILABLE = importlib.util.find_spec("services.corpus_loader") is not None
+if CORPUS_AVAILABLE:
     from services.corpus_loader import get_corpus_loader
-    CORPUS_AVAILABLE = True
-except ImportError:
-    CORPUS_AVAILABLE = False
-    print("Warning: Corpus loader not available. Predictions will use OpenAI general knowledge only.")
+else:
+    get_corpus_loader = None
 
 # Import offline wisdom generator for category-specific fallbacks
-try:
+OFFLINE_WISDOM_AVAILABLE = importlib.util.find_spec("services.bhrigu_offline_wisdom") is not None
+if OFFLINE_WISDOM_AVAILABLE:
     from services.bhrigu_offline_wisdom import get_offline_wisdom_generator
-    OFFLINE_WISDOM_AVAILABLE = True
-except ImportError:
-    OFFLINE_WISDOM_AVAILABLE = False
-    print("Warning: Offline wisdom generator not available. Fallbacks will be generic.")
+else:
+    get_offline_wisdom_generator = None
+
+logger = logging.getLogger(__name__)
 
 class OpenAIService:
     """Service for interacting with OpenAI API"""
@@ -34,14 +37,27 @@ class OpenAIService:
             os.getenv('RESPONSE_TOKEN_LIMIT', os.getenv('OPENAI_MAX_TOKENS', '4000'))
         )
         self.enabled = bool(self.api_key)
+        self.last_error: Optional[Dict[str, Any]] = None
         
         # Initialize corpus loader for authentic source integration
         self.corpus_loader = None
+        self.corpus_available = False
+        self.corpus_error = None
         if CORPUS_AVAILABLE:
             try:
-                self.corpus_loader = get_corpus_loader()
-                print("✓ Corpus loader initialized - predictions will reference authentic Bhrigu/Nadi sources")
+                corpus_result = get_corpus_loader()
+                self.corpus_loader = corpus_result.get("loader")
+                self.corpus_error = corpus_result.get("error")
+                if self.corpus_error:
+                    print(f"Warning: Corpus files missing: {self.corpus_error.get('message')}")
+                else:
+                    self.corpus_available = True
+                    print("✓ Corpus loader initialized - predictions will reference authentic Bhrigu/Nadi sources")
             except Exception as e:
+                self.corpus_error = {
+                    "code": "corpus_loader_error",
+                    "message": str(e),
+                }
                 print(f"Warning: Could not initialize corpus loader: {e}")
 
         # Initialize offline wisdom generator for category-specific fallbacks
@@ -49,12 +65,35 @@ class OpenAIService:
         if OFFLINE_WISDOM_AVAILABLE:
             try:
                 self.offline_wisdom = get_offline_wisdom_generator()
-                print("✓ Offline wisdom generator initialized - category-specific fallbacks available")
+                logger.info(
+                    "Offline wisdom generator initialized - category-specific fallbacks available",
+                    extra={"error_code": "OPENAI_OFFLINE_WISDOM_READY"},
+                )
             except Exception as e:
-                print(f"Warning: Could not initialize offline wisdom generator: {e}")
+                self._set_last_error(
+                    "OPENAI_OFFLINE_WISDOM_INIT_FAILED",
+                    "Could not initialize offline wisdom generator.",
+                    {"error": str(e)},
+                )
+                logger.warning(
+                    "Could not initialize offline wisdom generator",
+                    extra={"error_code": "OPENAI_OFFLINE_WISDOM_INIT_FAILED", "error": str(e)},
+                )
+        else:
+            logger.warning(
+                "Offline wisdom generator not available. Fallbacks will be generic.",
+                extra={"error_code": "OPENAI_OFFLINE_WISDOM_MISSING"},
+            )
 
         if not self.enabled:
-            print("WARNING: OPENAI_API_KEY not set. AI features will use fallback responses.")
+            self._set_last_error(
+                "OPENAI_API_KEY_MISSING",
+                "OPENAI_API_KEY not set. AI features will use fallback responses.",
+            )
+            logger.warning(
+                "OPENAI_API_KEY not set. AI features will use fallback responses.",
+                extra={"error_code": "OPENAI_API_KEY_MISSING"},
+            )
 
         self.headers = {
             'Authorization': f'Bearer {self.api_key}',
@@ -114,12 +153,153 @@ class OpenAIService:
         """
         # Use fallback if AI is not enabled
         if not self.enabled:
-            return self._fallback_prediction(prompt, context)
+            fallback = self._fallback_prediction(prompt, context)
+            if return_metadata:
+                return {
+                    'text': fallback,
+                    'partial': False
+                }
+            return fallback
+
+    def _generate_with_chunking(self, prompt: str, system_content: str) -> Tuple[str, bool]:
+        max_prompt_tokens = int(os.getenv('OPENAI_PROMPT_TOKEN_BUDGET', '8000'))
+        system_tokens = self._estimate_tokens(system_content)
+        prompt_tokens = self._estimate_tokens(prompt)
+
+        if system_tokens + prompt_tokens <= max_prompt_tokens:
+            prediction, partial = self._request_completion(prompt, system_content)
+            return prediction, partial
+
+        preamble, sections = self._split_prompt_sections(prompt)
+        if not sections:
+            prediction, partial = self._request_completion(prompt, system_content)
+            return prediction, partial
+
+        chunk_prompts = []
+        base_prompt = preamble.strip()
+        base_tokens = self._estimate_tokens(base_prompt) if base_prompt else 0
+        current_sections = []
+        current_tokens = system_tokens + base_tokens
+
+        for section in sections:
+            section_tokens = self._estimate_tokens(section)
+            if current_sections and current_tokens + section_tokens > max_prompt_tokens:
+                chunk_prompts.append(self._assemble_chunk_prompt(base_prompt, current_sections))
+                current_sections = [section]
+                current_tokens = system_tokens + base_tokens + section_tokens
+            else:
+                current_sections.append(section)
+                current_tokens += section_tokens
+
+        if current_sections:
+            chunk_prompts.append(self._assemble_chunk_prompt(base_prompt, current_sections))
+
+        responses = []
+        partial = False
+        for chunk_prompt in chunk_prompts:
+            chunk_response, chunk_partial = self._request_completion(chunk_prompt, system_content)
+            responses.append(chunk_response)
+            partial = partial or chunk_partial
+
+        return "\n\n".join(responses), partial
+
+    def _assemble_chunk_prompt(self, preamble: str, sections: List[str]) -> str:
+        if preamble:
+            return f"{preamble}\n\n" + "\n\n".join(sections)
+        return "\n\n".join(sections)
+
+    def _request_completion(self, prompt: str, system_content: str) -> Tuple[str, bool]:
+        payload = {
+            'model': os.getenv('OPENAI_MODEL', 'gpt-4'),
+            'messages': [
+                {
+                    'role': 'system',
+                    'content': system_content
+                },
+                {
+                    'role': 'user',
+                    'content': prompt
+                }
+            ],
+            'temperature': float(os.getenv('OPENAI_TEMPERATURE', '0.7')),
+            'max_tokens': int(os.getenv('OPENAI_MAX_TOKENS', '4000'))  # Increased for comprehensive predictions
+        }
+
+        response = self._post_with_retry(payload)
+        result = response.json()
+        choice = result['choices'][0]
+        content = choice['message']['content']
+        finish_reason = choice.get('finish_reason')
+        return content, finish_reason == 'length'
+
+    def _post_with_retry(self, payload: Dict[str, Any]) -> requests.Response:
+        max_retries = int(os.getenv('OPENAI_MAX_RETRIES', '3'))
+        backoff_base = float(os.getenv('OPENAI_BACKOFF_BASE', '1'))
+        timeout = int(os.getenv('OPENAI_TIMEOUT', '90'))
+
+        for attempt in range(max_retries + 1):
+            response = requests.post(
+                f'{self.base_url}/chat/completions',
+                headers=self.headers,
+                json=payload,
+                timeout=timeout
+            )
+            if response.status_code == 429 or response.status_code >= 500:
+                if attempt >= max_retries:
+                    response.raise_for_status()
+                retry_after = response.headers.get('Retry-After')
+                delay = backoff_base * (2 ** attempt)
+                if retry_after:
+                    try:
+                        delay = max(delay, float(retry_after))
+                    except ValueError:
+                        pass
+                time.sleep(delay + random.uniform(0, 0.25))
+                continue
+
+            response.raise_for_status()
+            return response
+
+        raise requests.exceptions.RequestException("OpenAI API retries exhausted.")
+
+    def _estimate_tokens(self, text: str) -> int:
+        if not text:
+            return 0
+        return max(1, len(text) // 4)
+
+    def _split_prompt_sections(self, prompt: str) -> Tuple[str, List[str]]:
+        lines = prompt.splitlines()
+        preamble_lines = []
+        sections: List[str] = []
+        current_lines: List[str] = []
+        in_section = False
+
+        for line in lines:
+            if re.match(r'^\s*(\d+\.|##)\s+', line):
+                if in_section:
+                    sections.append("\n".join(current_lines).strip())
+                    current_lines = []
+                else:
+                    preamble_lines = current_lines
+                    current_lines = []
+                    in_section = True
+                current_lines.append(line)
+            else:
+                current_lines.append(line)
+
+        if in_section:
+            sections.append("\n".join(current_lines).strip())
+        else:
+            preamble_lines = current_lines
+
+        preamble = "\n".join(preamble_lines).strip()
+        sections = [section for section in sections if section]
+        return preamble, sections
 
         try:
             # Inject authentic corpus data into the context
             corpus_context = ""
-            if self.corpus_loader and context:
+            if self.corpus_loader and context and self.corpus_available:
                 # Get relevant principles from corpus
                 bhrigu_principles = self.corpus_loader.get_relevant_bhrigu_principles(context, limit=5)
                 nadi_principles = self.corpus_loader.get_relevant_nadi_principles(context, limit=5)
@@ -209,9 +389,23 @@ Always provide detailed, specific predictions with timing when possible.''' + co
 
         except requests.exceptions.RequestException as e:
             # Log the error for debugging
-            print(f"ERROR: OpenAI API call failed: {str(e)}")
+            self._set_last_error(
+                "OPENAI_API_REQUEST_FAILED",
+                "OpenAI API call failed.",
+                {"error": str(e)},
+            )
+            logger.error(
+                "OpenAI API call failed",
+                extra={"error_code": "OPENAI_API_REQUEST_FAILED", "error": str(e)},
+            )
             # Fallback to traditional analysis if API fails
-            return self._fallback_prediction(prompt, context)
+            fallback = self._fallback_prediction(prompt, context)
+            if return_metadata:
+                return {
+                    'text': fallback,
+                    'partial': False
+                }
+            return fallback
     def generate_karmic_journey(self, birth_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate comprehensive karmic journey analysis"""
         prompt = f"""
@@ -231,13 +425,15 @@ Always provide detailed, specific predictions with timing when possible.''' + co
         6. Soul group connections
         """
 
-        prediction = self.generate_prediction(prompt, birth_data)
+        prediction_result = self.generate_prediction(prompt, birth_data, return_metadata=True)
+        prediction = prediction_result['text']
 
         return {
             'journey_analysis': prediction,
             'soul_purpose': self._extract_section(prediction, 'purpose'),
             'karmic_lessons': self._extract_section(prediction, 'lessons'),
             'dharmic_path': self._extract_section(prediction, 'dharmic path'),
+            'partial': prediction_result['partial'],
             'timestamp': self._get_timestamp()
         }
 
@@ -270,13 +466,15 @@ Always provide detailed, specific predictions with timing when possible.''' + co
         **Reference the authentic corpus patterns above and cite specific sutras/folios.**
         """
 
-        analysis = self.generate_prediction(prompt, birth_data)
+        analysis_result = self.generate_prediction(prompt, birth_data, return_metadata=True)
+        analysis = analysis_result['text']
 
         return {
             'past_life_analysis': analysis,
             'significant_lives': self._extract_lives(analysis),
             'karmic_patterns': self._extract_patterns(analysis),
             'carried_talents': self._extract_section(analysis, 'skills and talents'),
+            'partial': analysis_result['partial'],
             'timestamp': self._get_timestamp()
         }
 
@@ -308,13 +506,15 @@ Always provide detailed, specific predictions with timing when possible.''' + co
         **Reference the authentic corpus trajectories above and cite specific sutras/folios.**
         """
 
-        prediction = self.generate_prediction(prompt, birth_data)
+        prediction_result = self.generate_prediction(prompt, birth_data, return_metadata=True)
+        prediction = prediction_result['text']
 
         return {
             'future_prediction': prediction,
             'evolution_path': self._extract_section(prediction, 'evolution'),
             'future_scenarios': self._extract_scenarios(prediction),
             'moksha_timeline': self._extract_section(prediction, 'liberation'),
+            'partial': prediction_result['partial'],
             'timestamp': self._get_timestamp()
         }
 
@@ -338,7 +538,8 @@ Always provide detailed, specific predictions with timing when possible.''' + co
         7. Current karmic lessons in progress
         """
 
-        analysis = self.generate_prediction(prompt, birth_data)
+        analysis_result = self.generate_prediction(prompt, birth_data, return_metadata=True)
+        analysis = analysis_result['text']
 
         return {
             'life_analysis': analysis,
@@ -347,6 +548,7 @@ Always provide detailed, specific predictions with timing when possible.''' + co
             'relationships': self._extract_section(analysis, 'relationships'),
             'health_guidance': self._extract_section(analysis, 'health'),
             'spiritual_growth': self._extract_section(analysis, 'spiritual'),
+            'partial': analysis_result['partial'],
             'timestamp': self._get_timestamp()
         }
 
@@ -368,13 +570,15 @@ Always provide detailed, specific predictions with timing when possible.''' + co
         7. Auspicious times for major decisions
         """
 
-        prediction = self.generate_prediction(prompt, birth_data)
+        prediction_result = self.generate_prediction(prompt, birth_data, return_metadata=True)
+        prediction = prediction_result['text']
 
         return {
             'events_prediction': prediction,
             'yearly_forecast': self._extract_yearly_forecast(prediction, years_ahead),
             'major_transitions': self._extract_transitions(prediction),
             'auspicious_periods': self._extract_auspicious_times(prediction),
+            'partial': prediction_result['partial'],
             'timestamp': self._get_timestamp()
         }
 
@@ -411,7 +615,8 @@ Always provide detailed, specific predictions with timing when possible.''' + co
         **Reference the authentic remedial practices above and cite specific sutras/folios.**
         """
 
-        remedies = self.generate_prediction(prompt, birth_data)
+        remedies_result = self.generate_prediction(prompt, birth_data, return_metadata=True)
+        remedies = remedies_result['text']
 
         return {
             'remedies_analysis': remedies,
@@ -420,6 +625,7 @@ Always provide detailed, specific predictions with timing when possible.''' + co
             'rituals': self._extract_rituals(remedies),
             'lifestyle_changes': self._extract_section(remedies, 'lifestyle'),
             'meditation_practices': self._extract_section(remedies, 'meditation'),
+            'partial': remedies_result['partial'],
             'timestamp': self._get_timestamp()
         }
 
@@ -435,26 +641,66 @@ Always provide detailed, specific predictions with timing when possible.''' + co
         if self.offline_wisdom and context:
             try:
                 if category == 'karmic_journey':
-                    return self.offline_wisdom.generate_karmic_journey(context)
+                    return self._ensure_fallback_headers(
+                        self.offline_wisdom.generate_karmic_journey(context)
+                    )
                 elif category == 'past_lives':
-                    return self.offline_wisdom.generate_past_lives(context)
+                    return self._ensure_fallback_headers(
+                        self.offline_wisdom.generate_past_lives(context)
+                    )
                 elif category == 'future_lives':
-                    return self.offline_wisdom.generate_future_lives(context)
+                    return self._ensure_fallback_headers(
+                        self.offline_wisdom.generate_future_lives(context)
+                    )
                 elif category == 'present_life':
-                    return self.offline_wisdom.generate_present_life(context)
+                    return self._ensure_fallback_headers(
+                        self.offline_wisdom.generate_present_life(context)
+                    )
                 elif category == 'life_events':
-                    return self.offline_wisdom.generate_life_events(context)
+                    return self._ensure_fallback_headers(
+                        self.offline_wisdom.generate_life_events(context)
+                    )
                 elif category == 'karmic_remedies':
-                    return self.offline_wisdom.generate_karmic_remedies(context)
+                    return self._ensure_fallback_headers(
+                        self.offline_wisdom.generate_karmic_remedies(context)
+                    )
                 elif category == 'relationships':
-                    return self.offline_wisdom.generate_relationships(context)
+                    return self._ensure_fallback_headers(
+                        self.offline_wisdom.generate_relationships(context)
+                    )
                 elif category == 'predictions':
-                    return self.offline_wisdom.generate_general_predictions(context)
+                    return self._ensure_fallback_headers(
+                        self.offline_wisdom.generate_general_predictions(context)
+                    )
             except Exception as e:
-                print(f"Warning: Offline wisdom generation failed: {e}")
+                self._set_last_error(
+                    "OPENAI_OFFLINE_WISDOM_FAILED",
+                    "Offline wisdom generation failed.",
+                    {"error": str(e)},
+                )
+                logger.warning(
+                    "Offline wisdom generation failed",
+                    extra={"error_code": "OPENAI_OFFLINE_WISDOM_FAILED", "error": str(e)},
+                )
 
         # Generic fallback if offline wisdom not available or failed
-        return self._generic_fallback(context)
+        return self._ensure_fallback_headers(self._generic_fallback(context))
+
+    def _set_last_error(self, code: str, message: str, details: Optional[Dict[str, Any]] = None) -> None:
+        error_payload: Dict[str, Any] = {"code": code, "message": message}
+        if details:
+            error_payload["details"] = details
+        self.last_error = error_payload
+
+    def _clear_last_error(self) -> None:
+        self.last_error = None
+
+    def _ensure_fallback_headers(self, text: str) -> str:
+        if not text:
+            return text
+        if any(line.strip().startswith("##") for line in text.splitlines()):
+            return text
+        return f"## Summary\n\n{text}"
 
     def _detect_category_from_prompt(self, prompt: str) -> str:
         """Detect prediction category from the prompt content"""
@@ -747,6 +993,18 @@ def get_openai_service():
     if _openai_service_instance is None:
         _openai_service_instance = OpenAIService()
     return _openai_service_instance
+
+
+def get_openai_initialization_errors() -> List[str]:
+    """Get initialization errors recorded during OpenAI service setup."""
+    errors: List[str] = []
+    if CORPUS_IMPORT_ERROR:
+        errors.append(f"Corpus loader import error: {CORPUS_IMPORT_ERROR}")
+    if OFFLINE_WISDOM_IMPORT_ERROR:
+        errors.append(f"Offline wisdom import error: {OFFLINE_WISDOM_IMPORT_ERROR}")
+    if _openai_service_instance and getattr(_openai_service_instance, "initialization_errors", None):
+        errors.extend(_openai_service_instance.initialization_errors)
+    return errors
 
 # Backwards compatibility - creates instance on first access
 class _LazyProxy:

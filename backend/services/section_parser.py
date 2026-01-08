@@ -4,7 +4,7 @@ Ensures 100% structured output with AI-powered section generation
 """
 import re
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple, Union
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -259,6 +259,7 @@ class SectionParser:
             Dictionary with all section keys mapped to their content
         """
         sections = {}
+        section_generation_status = {}
         required = self.REQUIRED_SECTIONS.get(category, [])
         
         for section_key in required:
@@ -267,15 +268,33 @@ class SectionParser:
             # If section missing or insufficient, generate it specifically
             if not section_data or len(section_data.strip()) < self.MINIMUM_SECTION_LENGTH:
                 logger.warning(f"Section '{section_key}' missing or insufficient, generating...")
-                section_data = self.generate_missing_section(
-                    section_key, 
-                    raw_text, 
-                    category, 
-                    birth_data or {}
+                failure_reason = (
+                    "parser_extraction_failed"
+                    if not section_data
+                    else "insufficient_extracted_content"
                 )
-                
+                section_data, generation_status, fallback_reason = self.generate_missing_section(
+                    section_key,
+                    raw_text,
+                    category,
+                    birth_data or {},
+                    include_status=True
+                )
+                status_entry = {'status': generation_status}
+                if generation_status == "generated":
+                    status_entry['fallback_reason'] = failure_reason
+                else:
+                    combined_reason = failure_reason
+                    if fallback_reason:
+                        combined_reason = f"{failure_reason};{fallback_reason}"
+                    status_entry['fallback_reason'] = combined_reason
+                section_generation_status[section_key] = status_entry
+            else:
+                section_generation_status[section_key] = {'status': 'extracted'}
+
             sections[section_key] = section_data
-            
+
+        sections['section_generation_status'] = section_generation_status
         return sections
     
     def extract_section_content(self, text: str, section_key: str) -> str:
@@ -379,12 +398,13 @@ class SectionParser:
         return result
     
     def generate_missing_section(
-        self, 
-        section_key: str, 
-        full_text: str, 
-        category: str, 
-        birth_data: Dict
-    ) -> str:
+        self,
+        section_key: str,
+        full_text: str,
+        category: str,
+        birth_data: Dict,
+        include_status: bool = False
+    ) -> Union[str, Tuple[str, str, Optional[str]]]:
         """
         Generate missing section using AI with specific prompts
         
@@ -395,11 +415,15 @@ class SectionParser:
             birth_data: Birth chart data
             
         Returns:
-            Generated section content or fallback text
+            Generated section content or fallback text. When include_status is True,
+            returns a tuple of (content, status, fallback_reason).
         """
         
         if not self.openai_service:
-            return self._get_fallback_section(section_key, birth_data)
+            fallback = self._get_fallback_section(section_key, birth_data)
+            if include_status:
+                return fallback, "fallback", "openai_unavailable"
+            return fallback
         
         # Create targeted prompt for missing section
         section_prompt = self._create_section_specific_prompt(
@@ -415,10 +439,15 @@ class SectionParser:
                 section_prompt,
                 birth_data
             )
+            if include_status:
+                return generated, "generated", None
             return generated
         except Exception as e:
             logger.error(f"Error generating section {section_key}: {e}")
-            return self._get_fallback_section(section_key, birth_data)
+            fallback = self._get_fallback_section(section_key, birth_data)
+            if include_status:
+                return fallback, "fallback", "openai_error"
+            return fallback
     
     def _create_section_specific_prompt(
         self, 
@@ -617,7 +646,7 @@ According to classical Vedic principles, individuals with {zodiac} as their zodi
 [More comprehensive data will be available in the next update]
 """
     
-    def validate_sections(self, sections: Dict[str, Any], category: str) -> Dict[str, bool]:
+    def validate_sections(self, sections: Dict[str, Any], category: str) -> Dict[str, str]:
         """
         Validate that all required sections are present and have content
         
@@ -632,12 +661,15 @@ According to classical Vedic principles, individuals with {zodiac} as their zodi
         validation = {}
         
         for section_key in required:
-            has_content = (
-                section_key in sections and 
-                sections[section_key] and 
-                len(str(sections[section_key]).strip()) >= self.MINIMUM_SECTION_LENGTH
-            )
-            validation[section_key] = has_content
+            if section_key not in sections or not sections[section_key]:
+                validation[section_key] = "missing"
+                continue
+
+            content = str(sections[section_key]).strip()
+            if len(content) < self.MINIMUM_SECTION_LENGTH:
+                validation[section_key] = "short"
+            else:
+                validation[section_key] = "ok"
             
         return validation
     
@@ -653,7 +685,7 @@ According to classical Vedic principles, individuals with {zodiac} as their zodi
             List of missing section keys
         """
         validation = self.validate_sections(sections, category)
-        return [key for key, valid in validation.items() if not valid]
+        return [key for key, status in validation.items() if status != "ok"]
 
 
 # Module-level singleton

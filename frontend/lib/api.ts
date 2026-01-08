@@ -50,8 +50,9 @@ api.interceptors.response.use(
     
     const state = retryState. get(config)!;
     
-    // Retry logic for 5xx errors
-    if (error.response?. status >= 500 && ! state.inProgress && state.count < 3) {
+    // Retry logic for 429 and 5xx errors
+    if ((error.response?. status === 429 || error.response?. status >= 500)
+      && ! state.inProgress && state.count < 3) {
       state.count++;
       state.inProgress = true;
       

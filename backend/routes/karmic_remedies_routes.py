@@ -3,8 +3,23 @@ Karmic Remedies API Routes
 Personalized remedies and spiritual practices
 """
 from flask import Blueprint, request, jsonify
-from services.astrology_calculator import astrology_calculator
+from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.openai_service import openai_service
+from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
+
+
+def _get_birth_chart(data):
+    calculator = get_astrology_calculator()
+    cached_birth_data = get_cached_birth_data(data)
+    if calculator:
+        return calculator.calculate_birth_chart(
+            date_of_birth=data['date_of_birth'],
+            time_of_birth=data['time_of_birth'],
+            place=data['place_of_birth']
+        ), None
+    if cached_birth_data:
+        return cached_birth_data, None
+    return None, dependency_error_response(get_astrology_dependency_error())
 
 bp = Blueprint('karmic_remedies', __name__, url_prefix='/api/karmic-remedies')
 
@@ -25,11 +40,9 @@ def comprehensive_remedies():
         data = request.get_json()
 
         # Calculate birth chart
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         # Generate remedies
         challenges = data.get('challenges', [])
@@ -51,11 +64,9 @@ def mantra_recommendations():
     """Get personalized mantra recommendations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend powerful mantras for:
@@ -72,14 +83,15 @@ def mantra_recommendations():
         6. Benefits and timing for chanting
         """
 
-        mantras = openai_service.generate_prediction(prompt, birth_chart)
+        mantras_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'mantras': mantras,
+                'mantras': mantras_result['text'],
                 'nakshatra': birth_chart['nakshatra'],
-                'current_dasha': birth_chart['dasha_period']['maha_dasha']
+                'current_dasha': birth_chart['dasha_period']['maha_dasha'],
+                'partial': mantras_result['partial']
             }
         }), 200
 
@@ -91,11 +103,9 @@ def gemstone_therapy():
     """Get gemstone therapy recommendations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend therapeutic gemstones:
@@ -113,14 +123,15 @@ def gemstone_therapy():
         6. Mantra for energizing gemstone
         """
 
-        gemstones = openai_service.generate_prediction(prompt, birth_chart)
+        gemstones_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'gemstone_therapy': gemstones,
+                'gemstone_therapy': gemstones_result['text'],
                 'ascendant': birth_chart['ascendant'],
-                'moon_sign': birth_chart['moon_sign']
+                'moon_sign': birth_chart['moon_sign'],
+                'partial': gemstones_result['partial']
             }
         }), 200
 
@@ -132,11 +143,9 @@ def ritual_recommendations():
     """Get ritual and puja recommendations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend Vedic rituals and pujas:
@@ -153,14 +162,15 @@ def ritual_recommendations():
         6. Pilgrimage sites
         """
 
-        rituals = openai_service.generate_prediction(prompt, birth_chart)
+        rituals_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'ritual_recommendations': rituals,
+                'ritual_recommendations': rituals_result['text'],
                 'nakshatra_lord': birth_chart['nakshatra_lord'],
-                'dasha_lord': birth_chart['dasha_period']['maha_dasha']
+                'dasha_lord': birth_chart['dasha_period']['maha_dasha'],
+                'partial': rituals_result['partial']
             }
         }), 200
 
@@ -172,11 +182,9 @@ def charitable_acts():
     """Get dana (charitable) recommendations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend charitable acts (dana):
@@ -192,14 +200,15 @@ def charitable_acts():
         5. Karmic debt clearing through service
         """
 
-        charity = openai_service.generate_prediction(prompt, birth_chart)
+        charity_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'charitable_recommendations': charity,
+                'charitable_recommendations': charity_result['text'],
                 'saturn_position': birth_chart['planets']['Saturn'],
-                'jupiter_position': birth_chart['planets']['Jupiter']
+                'jupiter_position': birth_chart['planets']['Jupiter'],
+                'partial': charity_result['partial']
             }
         }), 200
 
@@ -211,11 +220,9 @@ def lifestyle_modifications():
     """Get lifestyle and dietary recommendations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend lifestyle modifications:
@@ -232,14 +239,15 @@ def lifestyle_modifications():
         6. Direction and spatial guidance
         """
 
-        lifestyle = openai_service.generate_prediction(prompt, birth_chart)
+        lifestyle_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'lifestyle_recommendations': lifestyle,
+                'lifestyle_recommendations': lifestyle_result['text'],
                 'element': birth_chart['element'],
-                'ascendant': birth_chart['ascendant']
+                'ascendant': birth_chart['ascendant'],
+                'partial': lifestyle_result['partial']
             }
         }), 200
 
@@ -251,11 +259,9 @@ def meditation_practices():
     """Get personalized meditation practices"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Recommend meditation practices:
@@ -272,14 +278,15 @@ def meditation_practices():
         6. Duration and frequency
         """
 
-        meditation = openai_service.generate_prediction(prompt, birth_chart)
+        meditation_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'meditation_practices': meditation,
+                'meditation_practices': meditation_result['text'],
                 'nakshatra': birth_chart['nakshatra'],
-                'moon_sign': birth_chart['moon_sign']
+                'moon_sign': birth_chart['moon_sign'],
+                'partial': meditation_result['partial']
             }
         }), 200
 
@@ -311,13 +318,14 @@ def yantra_recommendations():
         5. Materials and specifications
         """
 
-        yantras = openai_service.generate_prediction(prompt, birth_chart)
+        yantras_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'yantra_recommendations': yantras,
-                'current_dasha': birth_chart['dasha_period']['maha_dasha']
+                'yantra_recommendations': yantras_result['text'],
+                'current_dasha': birth_chart['dasha_period']['maha_dasha'],
+                'partial': yantras_result['partial']
             }
         }), 200
 

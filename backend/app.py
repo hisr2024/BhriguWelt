@@ -283,6 +283,7 @@ def health():
     orchestrator_status = 'not_initialized'
     online_available = False
     offline_available = False
+    bhrigu_init_error = None
     
     try:
         from services.prediction_orchestrator import get_prediction_orchestrator
@@ -292,6 +293,12 @@ def health():
         offline_available = bool(orchestrator.offline_wisdom)
     except Exception as e:
         logger.warning(f"Orchestrator check failed: {e}")
+
+    try:
+        from services.bhrigu_predictions import get_bhrigu_service_init_error
+        bhrigu_init_error = get_bhrigu_service_init_error()
+    except Exception as e:
+        logger.warning(f"Bhrigu service error check failed: {e}")
     
     return jsonify({
         'status': 'healthy',
@@ -302,6 +309,9 @@ def health():
             'openai': 'operational' if online_available else 'offline',
             'prediction_orchestrator': orchestrator_status,
             'offline_wisdom': 'operational' if offline_available else 'unavailable'
+        },
+        'errors': {
+            'bhrigu_predictions_init': bhrigu_init_error
         },
         'features': {
             'online_predictions': online_available,
