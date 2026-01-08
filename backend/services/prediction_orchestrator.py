@@ -196,6 +196,10 @@ class PredictionOrchestrator:
             # Fallback to offline
             return self._generate_offline(category, chart_data, language)
 
+    def _online_dependencies_ready(self) -> bool:
+        """Check if online dependencies are available for prediction generation."""
+        return bool(self.openai_service and getattr(self.openai_service, "enabled", False))
+
     def _call_openai_for_category(self, category: str, chart_data: Dict[str, Any],
                                   wisdom_context: Optional[Dict[str, Any]], 
                                   language: str) -> str:
