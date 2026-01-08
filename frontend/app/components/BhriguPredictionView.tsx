@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Profile } from '@/lib/types';
@@ -117,6 +117,121 @@ const COLOR_CLASSES:  Record<string, { border: string; hover: string; accent: st
 
 // Default color for sections without a specific color mapping
 const DEFAULT_COLOR = 'cyan';
+const ESCAPED_TITLE_PATTERN = /[.*+?^${}()|[\]\\]/g;
+const SECTION_REGEX_CACHE = new Map<string, Map<string, RegExp[]>>();
+
+const getSectionPatterns = (cat: string): Map<string, RegExp[]> => {
+  const cached = SECTION_REGEX_CACHE.get(cat);
+  if (cached) return cached;
+
+  const patternMap = new Map<string, RegExp[]>();
+  const categoryConfig = CATEGORY_SECTIONS[cat] || [];
+
+  for (const section of categoryConfig) {
+    const escapedTitle = section.title.replace(ESCAPED_TITLE_PATTERN, '\\$&');
+    patternMap.set(section.key, [
+      // ## Header format (most common)
+      new RegExp(`##\\s*(?:\\d+\\.? \\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
+      // Numbered format (1.  Header)
+      new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
+      // Bold format (**Header**)
+      new RegExp(`\\*\\*${escapedTitle}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n##|$)`, 'i'),
+      // Plain header with colon
+      new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i'),
+    ]);
+  }
+
+  SECTION_REGEX_CACHE.set(cat, patternMap);
+  return patternMap;
+};
+
+const SectionCard = React.memo(function SectionCard({
+  sectionTitle,
+  content,
+  colorClass
+}: {
+  sectionTitle: string;
+  content: string;
+  colorClass: { border: string; hover: string; accent: string; text: string };
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
+                   border ${colorClass.border} ${colorClass.hover} rounded-xl p-6 transition-all`}
+    >
+      <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3`}>
+        <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
+        {sectionTitle}
+      </h3>
+      <div className="prose prose-invert prose-cyan max-w-none">
+        <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+          {content}
+        </div>
+      </div>
+    </motion.div>
+  );
+});
+
+const FullAnalysisPanel = React.memo(function FullAnalysisPanel({
+  showFullAnalysis,
+  onToggle,
+  fullAnalysis
+}: {
+  showFullAnalysis: boolean;
+  onToggle: () => void;
+  fullAnalysis: string;
+}) {
+  return (
+    <div className="mt-8 pt-8 border-t border-gray-700/50">
+      <button
+        onClick={onToggle}
+        className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
+                       border border-gray-700/50 rounded-xl p-6
+                       hover:border-cyan-500/30 transition-all
+                       flex items-center justify-between group"
+      >
+        <div className="flex items-center gap-3">
+          <BookOpen className="w-6 h-6 text-cyan-400" />
+          <div className="text-left">
+            <h3 className="text-xl font-bold text-white">
+              View Complete Reading
+            </h3>
+            <p className="text-sm text-gray-400 mt-1">
+              {showFullAnalysis ? 'Hide' : 'Show'} the full unstructured analysis
+            </p>
+          </div>
+        </div>
+        {showFullAnalysis ? (
+          <ChevronUp className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
+        ) : (
+          <ChevronDown className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
+        )}
+      </button>
+
+      <AnimatePresence>
+        {showFullAnalysis && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration:  0.3 }}
+            className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
+                           border border-gray-700/50 rounded-xl p-6"
+          >
+            <div className="prose prose-invert prose-cyan max-w-none">
+              <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                {fullAnalysis}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+});
 
 interface BhriguPredictionViewProps {
   category: string;
@@ -142,6 +257,11 @@ export default function BhriguPredictionView({
   const [question, setQuestion] = useState('');
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+
+  const parsedFromFullAnalysis = useMemo(() => {
+    if (!prediction?.full_analysis) return {};
+    return parseFullAnalysisIntoSections(prediction.full_analysis, category);
+  }, [prediction?.full_analysis, category]);
 
   useEffect(() => {
     if (profile) {
@@ -190,24 +310,12 @@ export default function BhriguPredictionView({
   const parseFullAnalysisIntoSections = (fullAnalysis: string, cat: string): Record<string, string> => {
     const parsedSections: Record<string, string> = {};
     const categoryConfig = CATEGORY_SECTIONS[cat] || [];
+    const cachedPatterns = getSectionPatterns(cat);
     
     if (! fullAnalysis) return parsedSections;
     
     for (const section of categoryConfig) {
-      // Escape special regex characters in title
-      const escapedTitle = section.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      
-      // Try multiple patterns to find section content
-      const patterns = [
-        // ## Header format (most common)
-        new RegExp(`##\\s*(?:\\d+\\.? \\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
-        // Numbered format (1.  Header)
-        new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
-        // Bold format (**Header**)
-        new RegExp(`\\*\\*${escapedTitle}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n##|$)`, 'i'),
-        // Plain header with colon
-        new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i'),
-      ];
+      const patterns = cachedPatterns.get(section.key) ?? [];
       
       for (const pattern of patterns) {
         try {
@@ -248,23 +356,11 @@ export default function BhriguPredictionView({
     const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES[DEFAULT_COLOR];
 
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
-                   border ${colorClass.border} ${colorClass.hover} rounded-xl p-6 transition-all`}
-      >
-        <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3`}>
-          <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
-          {sectionTitle}
-        </h3>
-        <div className="prose prose-invert prose-cyan max-w-none">
-          <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-            {content}
-          </div>
-        </div>
-      </motion.div>
+      <SectionCard
+        sectionTitle={sectionTitle}
+        content={content}
+        colorClass={colorClass}
+      />
     );
   };
 
@@ -291,10 +387,7 @@ export default function BhriguPredictionView({
     });
 
     // FALLBACK: If no sections found but full_analysis exists, parse it client-side
-    let parsedFromFullAnalysis:  Record<string, string> = {};
     if (availableSections.length === 0 && prediction.full_analysis) {
-      parsedFromFullAnalysis = parseFullAnalysisIntoSections(prediction.full_analysis, category);
-      
       // Update availableSections based on parsed content
       availableSections = sections.filter(section => {
         const content = parsedFromFullAnalysis[section.key];
@@ -349,51 +442,11 @@ export default function BhriguPredictionView({
 
         {/* Full Analysis - Collapsible at the bottom */}
         {prediction.full_analysis && (
-          <div className="mt-8 pt-8 border-t border-gray-700/50">
-            <button
-              onClick={() => setShowFullAnalysis(!showFullAnalysis)}
-              className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
-                       border border-gray-700/50 rounded-xl p-6
-                       hover:border-cyan-500/30 transition-all
-                       flex items-center justify-between group"
-            >
-              <div className="flex items-center gap-3">
-                <BookOpen className="w-6 h-6 text-cyan-400" />
-                <div className="text-left">
-                  <h3 className="text-xl font-bold text-white">
-                    View Complete Reading
-                  </h3>
-                  <p className="text-sm text-gray-400 mt-1">
-                    {showFullAnalysis ? 'Hide' : 'Show'} the full unstructured analysis
-                  </p>
-                </div>
-              </div>
-              {showFullAnalysis ?  (
-                <ChevronUp className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
-              ) : (
-                <ChevronDown className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
-              )}
-            </button>
-
-            <AnimatePresence>
-              {showFullAnalysis && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration:  0.3 }}
-                  className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
-                           border border-gray-700/50 rounded-xl p-6"
-                >
-                  <div className="prose prose-invert prose-cyan max-w-none">
-                    <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                      {prediction.full_analysis}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <FullAnalysisPanel
+            showFullAnalysis={showFullAnalysis}
+            onToggle={() => setShowFullAnalysis(!showFullAnalysis)}
+            fullAnalysis={prediction.full_analysis}
+          />
         )}
 
         {/* Metadata */}
