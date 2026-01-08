@@ -25,11 +25,11 @@ const wisdomCacheWithTTL = new Map<string, CacheEntry>();
  */
 function clearExpiredCache() {
   const now = Date.now();
-  for (const [key, entry] of wisdomCacheWithTTL.entries()) {
+  wisdomCacheWithTTL.forEach((entry, key) => {
     if (now - entry.timestamp > CACHE_TTL) {
       wisdomCacheWithTTL.delete(key);
     }
-  }
+  });
 }
 
 /**
