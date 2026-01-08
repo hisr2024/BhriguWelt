@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import type { Profile } from '@/lib/types';
+import { Accordion } from '@/app/components/ui/Accordion';
+import { AccordionItem } from '@/app/components/ui/AccordionItem';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; color: string }>> = {
@@ -117,13 +120,16 @@ const COLOR_CLASSES:  Record<string, { border: string; hover: string; accent: st
 
 // Default color for sections without a specific color mapping
 const DEFAULT_COLOR = 'cyan';
+const SKELETON_LINES = 3;
 
 interface BhriguPredictionViewProps {
   category: string;
   title: string;
   description: string;
   icon: React.ReactNode;
-  fetchPrediction: (profileData: any) => Promise<any>;
+  fetchPrediction: (
+    profileData: BirthDetails & { question?: string; force_regenerate?: boolean }
+  ) => Promise<PredictionResult>;
   profile: Profile | null;
 }
 
@@ -135,25 +141,72 @@ export default function BhriguPredictionView({
   fetchPrediction,
   profile
 }: BhriguPredictionViewProps) {
-  const [prediction, setPrediction] = useState<any>(null);
+  const [prediction, setPrediction] = useState<BhriguPrediction | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [question, setQuestion] = useState('');
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [debugMode, setDebugMode] = useState(false);
+  const [parsedFromFullAnalysis, setParsedFromFullAnalysis] = useState<Record<string, string>>({});
+  const [isParsing, setIsParsing] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
+  const [expandingSections, setExpandingSections] = useState<Record<string, boolean>>({});
+  const expandingTimeouts = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
     if (profile) {
+      setPrediction(null);
+      setFromCache(false);
+      setCacheAgeSeconds(null);
+      setCacheKey(null);
+      setError(null);
       loadPrediction();
     }
+
+    loadPrediction();
   }, [profile]);
+
+  useEffect(() => {
+    if (!prediction?.full_analysis) {
+      setParsedFromFullAnalysis({});
+      return;
+    }
+
+    setIsParsing(true);
+    const parsed = parseFullAnalysisIntoSections(prediction.full_analysis, category);
+    setParsedFromFullAnalysis(parsed);
+    setIsParsing(false);
+  }, [prediction?.full_analysis, category]);
+
+  useEffect(() => {
+    setExpandedSections({});
+    setExpandedOnce({});
+    setExpandingSections({});
+    Object.values(expandingTimeouts.current).forEach(timeout => clearTimeout(timeout));
+    expandingTimeouts.current = {};
+  }, [prediction, category]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(expandingTimeouts.current).forEach(timeout => clearTimeout(timeout));
+    };
+  }, []);
 
   const loadPrediction = async (forceRegenerate = false) => {
     if (! profile) return;
 
+    if (!hasRequiredProfileFields(profile)) {
+      setError('Please complete your birth details in your profile to generate predictions.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    setCacheAgeSeconds(null);
+    setCacheKey(null);
 
     try {
       const profileData = {
@@ -167,15 +220,19 @@ export default function BhriguPredictionView({
       };
 
       const response = await fetchPrediction(profileData);
+      const normalized = normalizePredictionResponse(response);
 
       if (response. status === 'success') {
         const predictionData = response.data?.prediction ?? response.data;
+        const cacheAge = response.data?.cache_age ?? null;
+        const cacheKeyValue = response.data?.cache_key ?? null;
         setPrediction(predictionData);
         setFromCache(
-          response.message?.includes('cache') ||
-          response.message?.toLowerCase().includes('cache') ||
-          Boolean(response.data?.prediction)
+          Boolean(response.message?.toLowerCase().includes('cache')) ||
+          cacheAge !== null
         );
+        setCacheAgeSeconds(cacheAge);
+        setCacheKey(cacheKeyValue);
       } else {
         setError(response.message || 'Failed to generate prediction');
       }
@@ -186,28 +243,27 @@ export default function BhriguPredictionView({
     }
   };
 
+  const formatCacheAge = (ageSeconds: number | null) => {
+    if (ageSeconds === null) return 'Unknown';
+    if (ageSeconds < 60) return `${ageSeconds}s`;
+    const minutes = Math.floor(ageSeconds / 60);
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ${minutes % 60}m`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ${hours % 24}h`;
+  };
+
   // Client-side fallback to parse full_analysis into sections
   const parseFullAnalysisIntoSections = (fullAnalysis: string, cat: string): Record<string, string> => {
     const parsedSections: Record<string, string> = {};
     const categoryConfig = CATEGORY_SECTIONS[cat] || [];
+    const cachedPatterns = getSectionPatterns(cat);
     
     if (! fullAnalysis) return parsedSections;
     
     for (const section of categoryConfig) {
-      // Escape special regex characters in title
-      const escapedTitle = section.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      
-      // Try multiple patterns to find section content
-      const patterns = [
-        // ## Header format (most common)
-        new RegExp(`##\\s*(?:\\d+\\.? \\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
-        // Numbered format (1.  Header)
-        new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
-        // Bold format (**Header**)
-        new RegExp(`\\*\\*${escapedTitle}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n##|$)`, 'i'),
-        // Plain header with colon
-        new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i'),
-      ];
+      const patterns = cachedPatterns.get(section.key) ?? [];
       
       for (const pattern of patterns) {
         try {
@@ -226,7 +282,12 @@ export default function BhriguPredictionView({
     return parsedSections;
   };
 
-  const renderSection = (sectionKey: string, sectionTitle: string, content: string, color: string) => {
+  const renderSection = (
+    sectionKey: string,
+    sectionTitle: string,
+    content: string,
+    color: string
+  ) => {
     // More lenient filtering - only exclude truly empty or placeholder content
     if (! content || content.trim() === '') {
       return null;
@@ -246,14 +307,22 @@ export default function BhriguPredictionView({
     }
 
     const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES[DEFAULT_COLOR];
+    const isExpanded = expandedSections[sectionKey] ?? false;
+    const hasRendered = expandedOnce[sectionKey] ?? false;
+    const isExpanding = expandingSections[sectionKey] ?? false;
+    const shouldShowSkeleton = (isParsing && !hasRendered) || isExpanding;
 
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+      <AccordionItem
+        id={`section-${sectionKey}`}
+        title={(
+          <span className={`text-lg font-semibold ${colorClass.text} flex items-center gap-3`}>
+            <span className={`w-1.5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
+            {sectionTitle}
+          </span>
+        )}
         className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
-                   border ${colorClass.border} ${colorClass.hover} rounded-xl p-6 transition-all`}
+                   border ${colorClass.border} ${colorClass.hover} rounded-xl transition-all`}
       >
         <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3 relative z-10`}>
           <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
@@ -263,10 +332,73 @@ export default function BhriguPredictionView({
           <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
             {content}
           </div>
-        </div>
+        </button>
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="mt-4"
+            >
+              {shouldShowSkeleton ? (
+                <SectionSkeleton />
+              ) : (
+                hasRendered && (
+                  <div className="prose prose-invert prose-cyan max-w-none">
+                    <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                      {content}
+                    </div>
+                  </div>
+                )
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     );
   };
+
+  const handleSectionToggle = (sectionKey: string) => {
+    const wasExpanded = expandedSections[sectionKey] ?? false;
+    const hasRendered = expandedOnce[sectionKey] ?? false;
+    setExpandedSections(prev => ({ ...prev, [sectionKey]: !wasExpanded }));
+
+    if (wasExpanded) {
+      if (expandingTimeouts.current[sectionKey]) {
+        clearTimeout(expandingTimeouts.current[sectionKey]);
+        delete expandingTimeouts.current[sectionKey];
+      }
+      setExpandingSections(prev => ({ ...prev, [sectionKey]: false }));
+      return;
+    }
+
+    if (hasRendered) {
+      return;
+    }
+
+    setExpandingSections(prev => ({ ...prev, [sectionKey]: true }));
+    const timeout = setTimeout(() => {
+      setExpandedOnce(prev => ({ ...prev, [sectionKey]: true }));
+      setExpandingSections(prev => ({ ...prev, [sectionKey]: false }));
+      delete expandingTimeouts.current[sectionKey];
+    }, 250);
+    expandingTimeouts.current[sectionKey] = timeout;
+  };
+
+  const SectionSkeleton = () => (
+    <div className="space-y-3 animate-pulse">
+      {Array.from({ length: SKELETON_LINES }).map((_, index) => (
+        <div
+          key={`section-skeleton-${index}`}
+          className={`h-4 rounded bg-gray-700/60 ${
+            index === 0 ? 'w-11/12' : index === 1 ? 'w-10/12' : 'w-9/12'
+          }`}
+        />
+      ))}
+    </div>
+  );
 
   const renderPredictionContent = () => {
     if (! prediction) return null;
@@ -290,31 +422,44 @@ export default function BhriguPredictionView({
       return !isRedirectOnly;
     });
 
-    // FALLBACK: If no sections found but full_analysis exists, parse it client-side
-    let parsedFromFullAnalysis:  Record<string, string> = {};
+    // FALLBACK: If no sections found but full_analysis exists, use parsed data
     if (availableSections.length === 0 && prediction.full_analysis) {
-      parsedFromFullAnalysis = parseFullAnalysisIntoSections(prediction.full_analysis, category);
-      
-      // Update availableSections based on parsed content
       availableSections = sections.filter(section => {
         const content = parsedFromFullAnalysis[section.key];
         return content && content.trim().length > 50;
       });
     }
+    const parsedFromFullAnalysisActive = Object.keys(parsedFromFullAnalysis).length > 0;
 
     // Helper function to get section content from either source
     const getSectionContent = (key: string): string => {
-      return prediction[key] || parsedFromFullAnalysis[key] || '';
+      const directContent = prediction[key];
+      if (typeof directContent === 'string') {
+        return directContent;
+      }
+      return parsedFromFullAnalysis[key] || '';
     };
 
     return (
       <div className="space-y-6">
+        {/* Banner for client-side parsed sections */}
+        {parsedFromFullAnalysisActive && (
+          <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
+            <p className="text-cyan-300 text-sm font-semibold uppercase tracking-wide">
+              Parsed from full analysis
+            </p>
+            <p className="text-gray-300 text-sm mt-1">
+              These insights were extracted from the full reading for easier scanning.
+            </p>
+          </div>
+        )}
+
         {/* Show message if no sections were extracted successfully */}
-        {availableSections. length === 0 && prediction.full_analysis && (
+        {availableSections. length === 0 && prediction.full_analysis && !isParsing && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
             <p className="text-amber-400 text-sm">
-              Note: Individual sections could not be extracted from the analysis. 
-              View the complete reading below for your comprehensive prediction.
+              Note: Individual sections could not be extracted from the analysis.
+              The complete reading is shown below.
             </p>
           </div>
         )}
@@ -332,7 +477,7 @@ export default function BhriguPredictionView({
               </p>
             </div>
             
-            <div className="grid grid-cols-1 gap-4">
+            <Accordion className="grid grid-cols-1 gap-4">
               {availableSections.map((section) => (
                 <div key={section.key}>
                   {renderSection(
@@ -343,7 +488,7 @@ export default function BhriguPredictionView({
                   )}
                 </div>
               ))}
-            </div>
+            </Accordion>
           </div>
         )}
 
@@ -352,6 +497,8 @@ export default function BhriguPredictionView({
           <div className="mt-8 pt-8 border-t border-gray-700/50">
             <button
               onClick={() => setShowFullAnalysis(!showFullAnalysis)}
+              aria-expanded={showFullAnalysis}
+              aria-controls="full-analysis-content"
               className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
                        border border-gray-700/50 rounded-xl p-6
                        hover:border-cyan-500/30 transition-all
@@ -368,22 +515,26 @@ export default function BhriguPredictionView({
                   </p>
                 </div>
               </div>
-              {showFullAnalysis ?  (
-                <ChevronUp className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
-              ) : (
-                <ChevronDown className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
-              )}
+              <div className="flex items-center gap-2 text-sm font-semibold text-gray-400 group-hover:text-cyan-300 transition-colors">
+                <span>{showFullAnalysis ? 'Collapse' : 'Expand'}</span>
+                {showFullAnalysis ? (
+                  <ChevronUp className="w-6 h-6" />
+                ) : (
+                  <ChevronDown className="w-6 h-6" />
+                )}
+              </div>
             </button>
 
-            <AnimatePresence>
+            <AnimatePresence initial={false}>
               {showFullAnalysis && (
                 <motion.div
+                  key="full-analysis"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration:  0.3 }}
+                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3, ease: 'easeInOut' }}
                   className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
-                           border border-gray-700/50 rounded-xl p-6"
+                           border border-gray-700/50 rounded-xl p-6 overflow-hidden"
                 >
                   <div className="prose prose-invert prose-cyan max-w-none">
                     <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
@@ -397,25 +548,25 @@ export default function BhriguPredictionView({
         )}
 
         {/* Metadata */}
-        {prediction.metadata && (
+        {metadata && (
           <div className="mt-8 pt-6 border-t border-gray-700/50">
             <div className="flex flex-wrap gap-4 text-sm text-gray-400">
-              {prediction.metadata.zodiac_sign && (
+              {metadata.zodiac_sign && (
                 <div className="flex items-center gap-2">
                   <span className="text-cyan-400">Zodiac:</span>
-                  <span>{prediction.metadata.zodiac_sign}</span>
+                  <span>{metadata.zodiac_sign}</span>
                 </div>
               )}
-              {prediction.metadata.nakshatra && (
+              {metadata.nakshatra && (
                 <div className="flex items-center gap-2">
                   <span className="text-purple-400">Nakshatra:</span>
-                  <span>{prediction.metadata. nakshatra}</span>
+                  <span>{metadata.nakshatra}</span>
                 </div>
               )}
-              {prediction.metadata.tradition && (
+              {metadata.tradition && (
                 <div className="flex items-center gap-2">
                   <span className="text-pink-400">Tradition:</span>
-                  <span>{prediction.metadata.tradition}</span>
+                  <span>{metadata.tradition}</span>
                 </div>
               )}
             </div>
@@ -423,10 +574,15 @@ export default function BhriguPredictionView({
         )}
 
         {/* Debug Mode - Raw API Response */}
-        {debugMode && (
+        {debugAllowed && debugMode && (
           <div className="mt-8 pt-6 border-t border-red-500/30">
             <div className="bg-gray-900/50 border border-red-500/30 rounded-xl p-6">
               <h3 className="text-xl font-bold text-red-400 mb-4">🔧 Debug Mode - Raw API Response</h3>
+              {cacheKey && (
+                <p className="mb-4 text-xs text-gray-400">
+                  Cache key: <span className="text-gray-200">{cacheKey}</span>
+                </p>
+              )}
               <div className="bg-black/50 rounded-lg p-4 overflow-auto max-h-96">
                 <pre className="text-xs text-gray-300 whitespace-pre-wrap font-mono">
                   {JSON.stringify(prediction, null, 2)}
@@ -537,9 +693,23 @@ export default function BhriguPredictionView({
           </div>
 
           {fromCache && (
-            <div className="mt-3 text-sm text-cyan-400 flex items-center gap-2">
-              <div className="w-2 h-2 bg-cyan-400 rounded-full" />
-              Loaded from Bhrigu wisdom cache
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-cyan-400">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-cyan-400 rounded-full" />
+                <span>Loaded from Bhrigu wisdom cache</span>
+              </div>
+              <span className="text-xs text-gray-400">
+                Cache age: {formatCacheAge(cacheAgeSeconds)}
+              </span>
+              <button
+                onClick={() => loadPrediction(true)}
+                disabled={loading}
+                className="inline-flex items-center gap-1 rounded-full border border-cyan-500/40 px-3 py-1 text-xs text-cyan-300
+                         transition hover:border-cyan-400 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <RefreshCw className="w-3 h-3" />
+                Refresh
+              </button>
             </div>
           )}
         </div>
@@ -562,13 +732,32 @@ export default function BhriguPredictionView({
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6">
             <p className="text-red-400">{error}</p>
-            <button
-              onClick={() => loadPrediction(false)}
-              className="mt-4 text-sm text-cyan-400 hover: text-cyan-300 flex items-center gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Try Again
-            </button>
+            {profileValidation && !profileValidation.isValid ? (
+              <div className="mt-4 space-y-3">
+                <p className="text-sm text-gray-300">
+                  Update these details to continue:
+                </p>
+                <ul className="text-sm text-gray-300 list-disc list-inside space-y-1">
+                  {profileValidation.missingFields.map((field) => (
+                    <li key={field}>{field}</li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => window.location.href = '/profile'}
+                  className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
+                >
+                  Complete Profile
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => loadPrediction(false)}
+                className="mt-4 text-sm text-cyan-400 hover: text-cyan-300 flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Try Again
+              </button>
+            )}
           </div>
         )}
 
@@ -603,18 +792,20 @@ export default function BhriguPredictionView({
               <Share2 className="w-5 h-5" />
               Share
             </button>
-            <button
-              onClick={() => setDebugMode(!debugMode)}
-              className={`px-6 py-3 border rounded-lg transition-all
-                       flex items-center gap-2 ${
-                         debugMode
-                           ? 'bg-red-500/20 border-red-500 text-red-400'
-                           :  'bg-gray-700/50 border-gray-600 text-white hover:bg-gray-700'
-                       }`}
-            >
-              <BookOpen className="w-5 h-5" />
-              {debugMode ? 'Hide Debug' : 'Debug Mode'}
-            </button>
+            {debugAllowed && (
+              <button
+                onClick={() => setDebugMode(!debugMode)}
+                className={`px-6 py-3 border rounded-lg transition-all
+                         flex items-center gap-2 ${
+                           debugMode
+                             ? 'bg-red-500/20 border-red-500 text-red-400'
+                             :  'bg-gray-700/50 border-gray-600 text-white hover:bg-gray-700'
+                         }`}
+              >
+                <BookOpen className="w-5 h-5" />
+                {debugMode ? 'Hide Debug' : 'Debug Mode'}
+              </button>
+            )}
           </div>
         )}
       </div>
