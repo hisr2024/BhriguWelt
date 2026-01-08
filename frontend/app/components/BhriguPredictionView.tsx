@@ -140,7 +140,7 @@ export default function BhriguPredictionView({
   const [error, setError] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [question, setQuestion] = useState('');
-  const [showFullAnalysis, setShowFullAnalysis] = useState(false);
+  const [showFullAnalysis, setShowFullAnalysis] = useState(true);
   const [debugMode, setDebugMode] = useState(false);
 
   useEffect(() => {
@@ -291,7 +291,7 @@ export default function BhriguPredictionView({
     });
 
     // FALLBACK: If no sections found but full_analysis exists, parse it client-side
-    let parsedFromFullAnalysis:  Record<string, string> = {};
+    let parsedFromFullAnalysis: Record<string, string> = {};
     if (availableSections.length === 0 && prediction.full_analysis) {
       parsedFromFullAnalysis = parseFullAnalysisIntoSections(prediction.full_analysis, category);
       
@@ -301,6 +301,7 @@ export default function BhriguPredictionView({
         return content && content.trim().length > 50;
       });
     }
+    const parsedFromFullAnalysisActive = Object.keys(parsedFromFullAnalysis).length > 0;
 
     // Helper function to get section content from either source
     const getSectionContent = (key: string): string => {
@@ -309,12 +310,24 @@ export default function BhriguPredictionView({
 
     return (
       <div className="space-y-6">
+        {/* Banner for client-side parsed sections */}
+        {parsedFromFullAnalysisActive && (
+          <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
+            <p className="text-cyan-300 text-sm font-semibold uppercase tracking-wide">
+              Parsed from full analysis
+            </p>
+            <p className="text-gray-300 text-sm mt-1">
+              These insights were extracted from the full reading for easier scanning.
+            </p>
+          </div>
+        )}
+
         {/* Show message if no sections were extracted successfully */}
-        {availableSections. length === 0 && prediction.full_analysis && (
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
+        {availableSections.length === 0 && prediction.full_analysis && (
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6">
             <p className="text-amber-400 text-sm">
-              Note: Individual sections could not be extracted from the analysis. 
-              View the complete reading below for your comprehensive prediction.
+              Note: Individual sections could not be extracted from the analysis.
+              The complete reading is shown below.
             </p>
           </div>
         )}
@@ -348,7 +361,7 @@ export default function BhriguPredictionView({
         )}
 
         {/* Full Analysis - Collapsible at the bottom */}
-        {prediction.full_analysis && (
+        {prediction.full_analysis && availableSections.length > 0 && (
           <div className="mt-8 pt-8 border-t border-gray-700/50">
             <button
               onClick={() => setShowFullAnalysis(!showFullAnalysis)}
@@ -393,6 +406,18 @@ export default function BhriguPredictionView({
                 </motion.div>
               )}
             </AnimatePresence>
+          </div>
+        )}
+
+        {/* Default Full Analysis Panel (when no sections are available) */}
+        {prediction.full_analysis && availableSections.length === 0 && (
+          <div className="space-y-4">
+            {renderSection(
+              'full_analysis',
+              'Full Analysis',
+              prediction.full_analysis,
+              DEFAULT_COLOR
+            )}
           </div>
         )}
 
