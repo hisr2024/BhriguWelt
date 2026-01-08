@@ -354,7 +354,10 @@ export default function BhriguPredictionView({
               onClick={() => setShowFullAnalysis(!showFullAnalysis)}
               className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
                        border border-gray-700/50 rounded-xl p-6
-                       hover:border-cyan-500/30 transition-all
+                       hover:border-cyan-500/60 hover:shadow-[0_0_24px_rgba(34,211,238,0.18)]
+                       focus-visible:border-cyan-400/70 focus-visible:ring-2 focus-visible:ring-cyan-400/60
+                       focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900/70
+                       focus-visible:shadow-[0_0_28px_rgba(34,211,238,0.25)] transition-all
                        flex items-center justify-between group"
             >
               <div className="flex items-center gap-3">
@@ -368,11 +371,14 @@ export default function BhriguPredictionView({
                   </p>
                 </div>
               </div>
-              {showFullAnalysis ?  (
-                <ChevronUp className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
-              ) : (
-                <ChevronDown className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
-              )}
+              <div className="flex items-center gap-2 text-sm font-semibold text-gray-400 group-hover:text-cyan-300 transition-colors">
+                <span>{showFullAnalysis ? 'Collapse' : 'Expand'}</span>
+                {showFullAnalysis ? (
+                  <ChevronUp className="w-6 h-6" />
+                ) : (
+                  <ChevronDown className="w-6 h-6" />
+                )}
+              </div>
             </button>
 
             <AnimatePresence>
