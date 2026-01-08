@@ -165,11 +165,8 @@ export default function BhriguPredictionView({
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [debugMode, setDebugMode] = useState(false);
   const [parsedFromFullAnalysis, setParsedFromFullAnalysis] = useState<Record<string, string>>({});
-  const [isParsing, setIsParsing] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
-  const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
-  const [expandingSections, setExpandingSections] = useState<Record<string, boolean>>({});
-  const expandingTimeouts = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const workerRef = useRef<Worker | null>(null);
+  const workerRequestId = useRef(0);
 
   useEffect(() => {
     if (profile) {
@@ -185,28 +182,22 @@ export default function BhriguPredictionView({
   }, [profile]);
 
   useEffect(() => {
-    if (!prediction?.full_analysis) {
-      setParsedFromFullAnalysis({});
-      return;
-    }
+    workerRef.current = new Worker(
+      new URL('../workers/markdownSectionWorker.ts', import.meta.url),
+      { type: 'module' }
+    );
 
-    setIsParsing(true);
-    const parsed = parseFullAnalysisIntoSections(prediction.full_analysis, category);
-    setParsedFromFullAnalysis(parsed);
-    setIsParsing(false);
-  }, [prediction?.full_analysis, category]);
+    workerRef.current.onmessage = (event: MessageEvent<{ id: number; sections: Record<string, string> }>) => {
+      const { id, sections: parsedSections } = event.data || {};
+      if (id !== workerRequestId.current) {
+        return;
+      }
+      setParsedFromFullAnalysis(parsedSections || {});
+    };
 
-  useEffect(() => {
-    setExpandedSections({});
-    setExpandedOnce({});
-    setExpandingSections({});
-    Object.values(expandingTimeouts.current).forEach(timeout => clearTimeout(timeout));
-    expandingTimeouts.current = {};
-  }, [prediction, category]);
-
-  useEffect(() => {
     return () => {
-      Object.values(expandingTimeouts.current).forEach(timeout => clearTimeout(timeout));
+      workerRef.current?.terminate();
+      workerRef.current = null;
     };
   }, []);
 
@@ -297,12 +288,33 @@ export default function BhriguPredictionView({
     return parsedSections;
   };
 
-  const renderSection = (
-    sectionKey: string,
-    sectionTitle: string,
-    content: string,
-    color: string
-  ) => {
+  useEffect(() => {
+    if (!prediction?.full_analysis) {
+      setParsedFromFullAnalysis({});
+      return;
+    }
+
+    const categoryConfig = CATEGORY_SECTIONS[category] || [];
+    if (categoryConfig.length === 0) {
+      setParsedFromFullAnalysis({});
+      return;
+    }
+
+    const worker = workerRef.current;
+    if (!worker) {
+      setParsedFromFullAnalysis(parseFullAnalysisIntoSections(prediction.full_analysis, category));
+      return;
+    }
+
+    workerRequestId.current += 1;
+    worker.postMessage({
+      id: workerRequestId.current,
+      markdown: prediction.full_analysis,
+      sections: categoryConfig.map(section => ({ key: section.key, title: section.title }))
+    });
+  }, [prediction?.full_analysis, category]);
+
+  const renderSection = (sectionKey: string, sectionTitle: string, content: string, color: string) => {
     // More lenient filtering - only exclude truly empty or placeholder content
     if (! content || content.trim() === '') {
       return null;
@@ -440,14 +452,8 @@ export default function BhriguPredictionView({
       return !isRedirectOnly;
     });
 
-    // FALLBACK: If no sections found but full_analysis exists, use parsed data
+    // FALLBACK: If no sections found but full_analysis exists, use worker/regex results
     if (availableSections.length === 0 && prediction.full_analysis) {
-      parsedFromFullAnalysis = parseFullAnalysisIntoSections(
-        prediction.full_analysis,
-        normalizedCategory
-      );
-      
-      // Update availableSections based on parsed content
       availableSections = sections.filter(section => {
         const content = parsedFromFullAnalysis[section.key];
         return content && content.trim().length > 50;
