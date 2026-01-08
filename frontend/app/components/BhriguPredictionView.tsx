@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import type { Profile } from '@/lib/types';
@@ -263,27 +263,7 @@ export default function BhriguPredictionView({
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [debugMode, setDebugMode] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const storedState = sessionStorage.getItem(`bhrigu-section-expanded:${category}`);
-    if (storedState) {
-      try {
-        const parsedState = JSON.parse(storedState) as Record<string, boolean>;
-        setExpandedSections(parsedState);
-        return;
-      } catch (error) {
-        console.warn('Failed to parse saved section expansion state:', error);
-      }
-    }
-    setExpandedSections({});
-  }, [category]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    sessionStorage.setItem(`bhrigu-section-expanded:${category}`, JSON.stringify(expandedSections));
-  }, [category, expandedSections]);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (profile) {
@@ -602,16 +582,16 @@ export default function BhriguPredictionView({
               </div>
             </button>
 
-            <AnimatePresence>
+            <AnimatePresence initial={false}>
               {showFullAnalysis && (
                 <motion.div
+                  key="full-analysis"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration:  0.3 }}
-                  id="full-analysis-content"
+                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3, ease: 'easeInOut' }}
                   className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
-                           border border-gray-700/50 rounded-xl p-6"
+                           border border-gray-700/50 rounded-xl p-6 overflow-hidden"
                 >
                   <div className="prose prose-invert prose-cyan max-w-none">
                     <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
