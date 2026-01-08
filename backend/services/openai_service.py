@@ -36,28 +36,24 @@ class OpenAIService:
         
         # Initialize corpus loader for authentic source integration
         self.corpus_loader = None
+        self.corpus_available = False
+        self.corpus_error = None
         if CORPUS_AVAILABLE:
             try:
-                self.corpus_loader = get_corpus_loader()
-                logger.info(
-                    "Corpus loader initialized - predictions will reference authentic Bhrigu/Nadi sources",
-                    extra={"error_code": "OPENAI_CORPUS_LOADER_READY"},
-                )
+                corpus_result = get_corpus_loader()
+                self.corpus_loader = corpus_result.get("loader")
+                self.corpus_error = corpus_result.get("error")
+                if self.corpus_error:
+                    print(f"Warning: Corpus files missing: {self.corpus_error.get('message')}")
+                else:
+                    self.corpus_available = True
+                    print("✓ Corpus loader initialized - predictions will reference authentic Bhrigu/Nadi sources")
             except Exception as e:
-                self._set_last_error(
-                    "OPENAI_CORPUS_LOADER_INIT_FAILED",
-                    "Could not initialize corpus loader.",
-                    {"error": str(e)},
-                )
-                logger.warning(
-                    "Could not initialize corpus loader",
-                    extra={"error_code": "OPENAI_CORPUS_LOADER_INIT_FAILED", "error": str(e)},
-                )
-        else:
-            logger.warning(
-                "Corpus loader not available. Predictions will use OpenAI general knowledge only.",
-                extra={"error_code": "OPENAI_CORPUS_LOADER_MISSING"},
-            )
+                self.corpus_error = {
+                    "code": "corpus_loader_error",
+                    "message": str(e),
+                }
+                print(f"Warning: Could not initialize corpus loader: {e}")
 
         # Initialize offline wisdom generator for category-specific fallbacks
         self.offline_wisdom = None
@@ -121,7 +117,7 @@ class OpenAIService:
         try:
             # Inject authentic corpus data into the context
             corpus_context = ""
-            if self.corpus_loader and context:
+            if self.corpus_loader and context and self.corpus_available:
                 # Get relevant principles from corpus
                 bhrigu_principles = self.corpus_loader.get_relevant_bhrigu_principles(context, limit=5)
                 nadi_principles = self.corpus_loader.get_relevant_nadi_principles(context, limit=5)

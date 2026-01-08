@@ -15,7 +15,10 @@ class CorpusLoader:
     def __init__(self):
         self.bhrigu_data = None
         self.nadi_data = None
-        self.initialization_errors: List[str] = []
+        self.corpus_loaded = False
+        self.corpus_base_path = None
+        self.search_paths = []
+        self.missing_files = []
         self._load_corpus()
     
     def _load_corpus(self):
@@ -26,6 +29,7 @@ class CorpusLoader:
             Path(__file__).parent.parent / "archive" / "legacy_backend" / "data",
             Path("/home/runner/work/BhriguWelt/BhriguWelt/archive/legacy_backend/data"),
         ]
+        self.search_paths = [str(path) for path in possible_paths]
         
         for base_path in possible_paths:
             bhrigu_path = base_path / "bhrigu_samhita_principles.yml"
@@ -37,6 +41,8 @@ class CorpusLoader:
                         self.bhrigu_data = json.load(f)  # Files are JSON format
                     with open(nadi_path, 'r', encoding='utf-8') as f:
                         self.nadi_data = json.load(f)
+                    self.corpus_loaded = True
+                    self.corpus_base_path = str(base_path)
                     print(f"✓ Loaded Bhrigu and Nadi corpus from: {base_path}")
                     return
                 except Exception as e:
@@ -49,6 +55,12 @@ class CorpusLoader:
         print(f"Warning: {message}")
         self.bhrigu_data = {"principles": [], "remedies": [], "past_life_engines": [], "future_engines": []}
         self.nadi_data = {"principles": [], "remedies": [], "observances": []}
+        self.corpus_loaded = False
+        self.corpus_base_path = None
+        self.missing_files = [
+            "bhrigu_samhita_principles.yml",
+            "nadi_jyotisha_principles.yml",
+        ]
     
     def get_relevant_bhrigu_principles(self, context: Dict[str, Any], limit: int = 5) -> List[Dict]:
         """
@@ -199,11 +211,12 @@ def get_corpus_loader():
     global _corpus_loader
     if _corpus_loader is None:
         _corpus_loader = CorpusLoader()
-    return _corpus_loader
-
-
-def get_corpus_loader_initialization_errors() -> List[str]:
-    """Get initialization errors recorded during corpus loader setup."""
-    if _corpus_loader and getattr(_corpus_loader, "initialization_errors", None):
-        return list(_corpus_loader.initialization_errors)
-    return []
+    result = {"loader": _corpus_loader}
+    if not _corpus_loader.corpus_loaded:
+        result["error"] = {
+            "code": "corpus_files_missing",
+            "message": "Bhrigu/Nadi corpus files could not be found.",
+            "missing_files": _corpus_loader.missing_files,
+            "search_paths": _corpus_loader.search_paths,
+        }
+    return result
