@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Profile } from '@/lib/types';
@@ -117,6 +117,7 @@ const COLOR_CLASSES:  Record<string, { border: string; hover: string; accent: st
 
 // Default color for sections without a specific color mapping
 const DEFAULT_COLOR = 'cyan';
+const SKELETON_LINES = 3;
 
 interface BhriguPredictionViewProps {
   category: string;
@@ -142,12 +143,44 @@ export default function BhriguPredictionView({
   const [question, setQuestion] = useState('');
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+  const [parsedFromFullAnalysis, setParsedFromFullAnalysis] = useState<Record<string, string>>({});
+  const [isParsing, setIsParsing] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
+  const [expandingSections, setExpandingSections] = useState<Record<string, boolean>>({});
+  const expandingTimeouts = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
     if (profile) {
       loadPrediction();
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (!prediction?.full_analysis) {
+      setParsedFromFullAnalysis({});
+      return;
+    }
+
+    setIsParsing(true);
+    const parsed = parseFullAnalysisIntoSections(prediction.full_analysis, category);
+    setParsedFromFullAnalysis(parsed);
+    setIsParsing(false);
+  }, [prediction?.full_analysis, category]);
+
+  useEffect(() => {
+    setExpandedSections({});
+    setExpandedOnce({});
+    setExpandingSections({});
+    Object.values(expandingTimeouts.current).forEach(timeout => clearTimeout(timeout));
+    expandingTimeouts.current = {};
+  }, [prediction, category]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(expandingTimeouts.current).forEach(timeout => clearTimeout(timeout));
+    };
+  }, []);
 
   const loadPrediction = async (forceRegenerate = false) => {
     if (! profile) return;
@@ -226,7 +259,12 @@ export default function BhriguPredictionView({
     return parsedSections;
   };
 
-  const renderSection = (sectionKey: string, sectionTitle: string, content: string, color: string) => {
+  const renderSection = (
+    sectionKey: string,
+    sectionTitle: string,
+    content: string,
+    color: string
+  ) => {
     // More lenient filtering - only exclude truly empty or placeholder content
     if (! content || content.trim() === '') {
       return null;
@@ -246,6 +284,10 @@ export default function BhriguPredictionView({
     }
 
     const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES[DEFAULT_COLOR];
+    const isExpanded = expandedSections[sectionKey] ?? false;
+    const hasRendered = expandedOnce[sectionKey] ?? false;
+    const isExpanding = expandingSections[sectionKey] ?? false;
+    const shouldShowSkeleton = (isParsing && !hasRendered) || isExpanding;
 
     return (
       <motion.div
@@ -255,18 +297,86 @@ export default function BhriguPredictionView({
         className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
                    border ${colorClass.border} ${colorClass.hover} rounded-xl p-6 transition-all`}
       >
-        <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3`}>
-          <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
-          {sectionTitle}
-        </h3>
-        <div className="prose prose-invert prose-cyan max-w-none">
-          <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-            {content}
+        <button
+          type="button"
+          onClick={() => handleSectionToggle(sectionKey)}
+          className="w-full flex items-center justify-between text-left"
+          aria-expanded={isExpanded}
+        >
+          <h3 className={`text-xl font-bold ${colorClass.text} flex items-center gap-3`}>
+            <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
+            {sectionTitle}
+          </h3>
+          <div className="text-gray-400">
+            {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
           </div>
-        </div>
+        </button>
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="mt-4"
+            >
+              {shouldShowSkeleton ? (
+                <SectionSkeleton />
+              ) : (
+                hasRendered && (
+                  <div className="prose prose-invert prose-cyan max-w-none">
+                    <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                      {content}
+                    </div>
+                  </div>
+                )
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     );
   };
+
+  const handleSectionToggle = (sectionKey: string) => {
+    const wasExpanded = expandedSections[sectionKey] ?? false;
+    const hasRendered = expandedOnce[sectionKey] ?? false;
+    setExpandedSections(prev => ({ ...prev, [sectionKey]: !wasExpanded }));
+
+    if (wasExpanded) {
+      if (expandingTimeouts.current[sectionKey]) {
+        clearTimeout(expandingTimeouts.current[sectionKey]);
+        delete expandingTimeouts.current[sectionKey];
+      }
+      setExpandingSections(prev => ({ ...prev, [sectionKey]: false }));
+      return;
+    }
+
+    if (hasRendered) {
+      return;
+    }
+
+    setExpandingSections(prev => ({ ...prev, [sectionKey]: true }));
+    const timeout = setTimeout(() => {
+      setExpandedOnce(prev => ({ ...prev, [sectionKey]: true }));
+      setExpandingSections(prev => ({ ...prev, [sectionKey]: false }));
+      delete expandingTimeouts.current[sectionKey];
+    }, 250);
+    expandingTimeouts.current[sectionKey] = timeout;
+  };
+
+  const SectionSkeleton = () => (
+    <div className="space-y-3 animate-pulse">
+      {Array.from({ length: SKELETON_LINES }).map((_, index) => (
+        <div
+          key={`section-skeleton-${index}`}
+          className={`h-4 rounded bg-gray-700/60 ${
+            index === 0 ? 'w-11/12' : index === 1 ? 'w-10/12' : 'w-9/12'
+          }`}
+        />
+      ))}
+    </div>
+  );
 
   const renderPredictionContent = () => {
     if (! prediction) return null;
@@ -290,12 +400,8 @@ export default function BhriguPredictionView({
       return !isRedirectOnly;
     });
 
-    // FALLBACK: If no sections found but full_analysis exists, parse it client-side
-    let parsedFromFullAnalysis:  Record<string, string> = {};
+    // FALLBACK: If no sections found but full_analysis exists, use parsed data
     if (availableSections.length === 0 && prediction.full_analysis) {
-      parsedFromFullAnalysis = parseFullAnalysisIntoSections(prediction.full_analysis, category);
-      
-      // Update availableSections based on parsed content
       availableSections = sections.filter(section => {
         const content = parsedFromFullAnalysis[section.key];
         return content && content.trim().length > 50;
@@ -310,7 +416,7 @@ export default function BhriguPredictionView({
     return (
       <div className="space-y-6">
         {/* Show message if no sections were extracted successfully */}
-        {availableSections. length === 0 && prediction.full_analysis && (
+        {availableSections. length === 0 && prediction.full_analysis && !isParsing && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
             <p className="text-amber-400 text-sm">
               Note: Individual sections could not be extracted from the analysis. 
