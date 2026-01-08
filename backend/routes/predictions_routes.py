@@ -40,14 +40,15 @@ def daily_prediction():
         6. Auspicious timing
         """
 
-        prediction = openai_service.generate_prediction(prompt, birth_chart)
+        prediction_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
                 'date': today,
                 'zodiac_sign': birth_chart['zodiac_sign'],
-                'prediction': prediction
+                'prediction': prediction_result['text'],
+                'partial': prediction_result['partial']
             }
         }), 200
 
@@ -78,13 +79,14 @@ def weekly_prediction():
         5. Key dates and timing
         """
 
-        prediction = openai_service.generate_prediction(prompt, birth_chart)
+        prediction_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
                 'zodiac_sign': birth_chart['zodiac_sign'],
-                'weekly_prediction': prediction
+                'weekly_prediction': prediction_result['text'],
+                'partial': prediction_result['partial']
             }
         }), 200
 
@@ -117,14 +119,15 @@ def monthly_prediction():
         6. Challenges and solutions
         """
 
-        prediction = openai_service.generate_prediction(prompt, birth_chart)
+        prediction_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
                 'month': current_month,
                 'zodiac_sign': birth_chart['zodiac_sign'],
-                'monthly_prediction': prediction
+                'monthly_prediction': prediction_result['text'],
+                'partial': prediction_result['partial']
             }
         }), 200
 
@@ -158,14 +161,15 @@ def yearly_prediction():
         7. Quarter-by-quarter breakdown
         """
 
-        prediction = openai_service.generate_prediction(prompt, birth_chart)
+        prediction_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
                 'year': current_year,
                 'zodiac_sign': birth_chart['zodiac_sign'],
-                'yearly_prediction': prediction
+                'yearly_prediction': prediction_result['text'],
+                'partial': prediction_result['partial']
             }
         }), 200
 
@@ -205,13 +209,14 @@ def specific_question():
         4. Remedies if needed
         """
 
-        answer = openai_service.generate_prediction(prompt, birth_chart)
+        answer_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
                 'question': question,
-                'answer': answer,
+                'answer': answer_result['text'],
+                'partial': answer_result['partial'],
                 'zodiac_sign': birth_chart['zodiac_sign']
             }
         }), 200

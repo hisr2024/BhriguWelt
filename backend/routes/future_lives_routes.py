@@ -69,14 +69,15 @@ def evolution_path():
         5. Timeline to higher dimensional existence
         """
 
-        evolution = openai_service.generate_prediction(prompt, birth_chart)
+        evolution_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'evolution_path': evolution,
+                'evolution_path': evolution_result['text'],
                 'north_node': birth_chart['planets']['Rahu'],
-                'soul_essence': birth_chart['zodiac_sign']
+                'soul_essence': birth_chart['zodiac_sign'],
+                'partial': evolution_result['partial']
             }
         }), 200
 
@@ -108,14 +109,15 @@ def moksha_timeline():
         5. Signs of approaching enlightenment
         """
 
-        moksha = openai_service.generate_prediction(prompt, birth_chart)
+        moksha_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'moksha_timeline': moksha,
+                'moksha_timeline': moksha_result['text'],
                 'moksha_house': birth_chart['houses'][11],
-                'spiritual_guide': birth_chart['planets']['Jupiter']
+                'spiritual_guide': birth_chart['planets']['Jupiter'],
+                'partial': moksha_result['partial']
             }
         }), 200
 
@@ -147,14 +149,15 @@ def future_missions():
         5. Role in collective evolution
         """
 
-        missions = openai_service.generate_prediction(prompt, birth_chart)
+        missions_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'future_missions': missions,
+                'future_missions': missions_result['text'],
                 'destiny_point': birth_chart['planets']['Rahu'],
-                'purpose_house': birth_chart['houses'][9]
+                'purpose_house': birth_chart['houses'][9],
+                'partial': missions_result['partial']
             }
         }), 200
 
@@ -186,14 +189,15 @@ def soul_advancement():
         5. Ascension pathway and timeline
         """
 
-        advancement = openai_service.generate_prediction(prompt, birth_chart)
+        advancement_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'soul_advancement': advancement,
+                'soul_advancement': advancement_result['text'],
                 'current_nakshatra': birth_chart['nakshatra'],
-                'higher_learning_house': birth_chart['houses'][8]
+                'higher_learning_house': birth_chart['houses'][8],
+                'partial': advancement_result['partial']
             }
         }), 200
 

@@ -123,13 +123,14 @@ def zodiac_analysis():
         5. Career and professional path
         """
 
-        analysis = openai_service.generate_prediction(prompt, birth_chart)
+        analysis_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         logger.info("Zodiac analysis completed successfully")
         return success_response(
             data={
                 'chart': birth_chart,
-                'analysis': analysis
+                'analysis': analysis_result['text'],
+                'partial': analysis_result['partial']
             },
             message="Zodiac analysis completed successfully"
         )
@@ -241,17 +242,18 @@ def compatibility_analysis():
         8. Strengths of the relationship
         """
 
-        compatibility = openai_service.generate_prediction(prompt, {
+        compatibility_result = openai_service.generate_prediction(prompt, {
             'person1': chart1,
             'person2': chart2
-        })
+        }, return_metadata=True)
 
         logger.info("Compatibility analysis completed successfully")
         return success_response(
             data={
                 'person1_chart': chart1,
                 'person2_chart': chart2,
-                'compatibility_analysis': compatibility,
+                'compatibility_analysis': compatibility_result['text'],
+                'partial': compatibility_result['partial'],
                 'compatibility_factors': {
                     'sun_sign_compatibility': calculate_element_compatibility(
                         chart1.get('zodiac_sign'), chart2.get('zodiac_sign')

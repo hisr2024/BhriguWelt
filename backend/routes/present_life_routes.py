@@ -71,14 +71,15 @@ def career_guidance():
         6. Financial prosperity timeline
         """
 
-        career = openai_service.generate_prediction(prompt, birth_chart)
+        career_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'career_guidance': career,
+                'career_guidance': career_result['text'],
                 'career_house': birth_chart['houses'][9],
-                'authority_sign': birth_chart['zodiac_sign']
+                'authority_sign': birth_chart['zodiac_sign'],
+                'partial': career_result['partial']
             }
         }), 200
 
@@ -112,14 +113,15 @@ def relationships_analysis():
         6. Family and friendship dynamics
         """
 
-        relationships = openai_service.generate_prediction(prompt, birth_chart)
+        relationships_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'relationships_analysis': relationships,
+                'relationships_analysis': relationships_result['text'],
                 'partnership_house': birth_chart['houses'][6],
-                'venus_position': birth_chart['planets']['Venus']
+                'venus_position': birth_chart['planets']['Venus'],
+                'partial': relationships_result['partial']
             }
         }), 200
 
@@ -153,14 +155,15 @@ def health_wellness():
         6. Energy management and vitality
         """
 
-        health = openai_service.generate_prediction(prompt, birth_chart)
+        health_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'health_guidance': health,
+                'health_guidance': health_result['text'],
                 'health_house': birth_chart['houses'][5],
-                'vitality_sign': birth_chart['ascendant']
+                'vitality_sign': birth_chart['ascendant'],
+                'partial': health_result['partial']
             }
         }), 200
 
@@ -194,14 +197,15 @@ def financial_prospects():
         6. Financial planning recommendations
         """
 
-        financial = openai_service.generate_prediction(prompt, birth_chart)
+        financial_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'financial_prospects': financial,
+                'financial_prospects': financial_result['text'],
                 'wealth_house': birth_chart['houses'][1],
-                'prosperity_planet': birth_chart['planets']['Jupiter']
+                'prosperity_planet': birth_chart['planets']['Jupiter'],
+                'partial': financial_result['partial']
             }
         }), 200
 
@@ -235,14 +239,15 @@ def spiritual_growth():
         6. Spiritual breakthroughs timeline
         """
 
-        spiritual = openai_service.generate_prediction(prompt, birth_chart)
+        spiritual_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'spiritual_guidance': spiritual,
+                'spiritual_guidance': spiritual_result['text'],
                 'dharma_house': birth_chart['houses'][8],
-                'wisdom_planet': birth_chart['planets']['Jupiter']
+                'wisdom_planet': birth_chart['planets']['Jupiter'],
+                'partial': spiritual_result['partial']
             }
         }), 200
 
@@ -274,14 +279,15 @@ def current_dasha():
         5. Making the most of current period
         """
 
-        dasha = openai_service.generate_prediction(prompt, birth_chart)
+        dasha_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'dasha_analysis': dasha,
+                'dasha_analysis': dasha_result['text'],
                 'current_dasha': birth_chart['dasha_period'],
-                'nakshatra': birth_chart['nakshatra']
+                'nakshatra': birth_chart['nakshatra'],
+                'partial': dasha_result['partial']
             }
         }), 200
 
