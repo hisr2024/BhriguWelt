@@ -268,6 +268,7 @@ class SectionParser:
             Dictionary with all section keys mapped to their content
         """
         sections = {}
+        section_generation_status = {}
         required = self.REQUIRED_SECTIONS.get(category, [])
         request_id = str(uuid.uuid4())
         repairs_used = 0
@@ -321,7 +322,8 @@ class SectionParser:
                         )
                 
             sections[section_key] = section_data
-            
+
+        sections['section_generation_status'] = section_generation_status
         return sections
     
     def extract_section_content(self, text: str, section_key: str) -> str:
@@ -442,7 +444,8 @@ class SectionParser:
             birth_data: Birth chart data
             
         Returns:
-            Generated section content or fallback text
+            Generated section content or fallback text. When include_status is True,
+            returns a tuple of (content, status, fallback_reason).
         """
         
         if not self.openai_service:
@@ -468,6 +471,8 @@ class SectionParser:
                 section_prompt,
                 birth_data
             )
+            if include_status:
+                return generated, "generated", None
             return generated
         except Exception as e:
             logger.error(
@@ -705,7 +710,7 @@ According to classical Vedic principles, individuals with {zodiac} as their zodi
 
         return self._get_fallback_section(section_key, birth_data)
     
-    def validate_sections(self, sections: Dict[str, Any], category: str) -> Dict[str, bool]:
+    def validate_sections(self, sections: Dict[str, Any], category: str) -> Dict[str, str]:
         """
         Validate that all required sections are present and have content
         
@@ -720,12 +725,15 @@ According to classical Vedic principles, individuals with {zodiac} as their zodi
         validation = {}
         
         for section_key in required:
-            has_content = (
-                section_key in sections and 
-                sections[section_key] and 
-                len(str(sections[section_key]).strip()) >= self.MINIMUM_SECTION_LENGTH
-            )
-            validation[section_key] = has_content
+            if section_key not in sections or not sections[section_key]:
+                validation[section_key] = "missing"
+                continue
+
+            content = str(sections[section_key]).strip()
+            if len(content) < self.MINIMUM_SECTION_LENGTH:
+                validation[section_key] = "short"
+            else:
+                validation[section_key] = "ok"
             
         return validation
     
@@ -741,7 +749,7 @@ According to classical Vedic principles, individuals with {zodiac} as their zodi
             List of missing section keys
         """
         validation = self.validate_sections(sections, category)
-        return [key for key, valid in validation.items() if not valid]
+        return [key for key, status in validation.items() if status != "ok"]
 
 
 # Module-level singleton

@@ -84,6 +84,10 @@ class PredictionOrchestrator:
             except ValueError:
                 pred_mode = PredictionMode.HYBRID
                 logger.warning(f"Invalid mode '{mode}', using hybrid")
+
+            if pred_mode != PredictionMode.OFFLINE and not self._online_dependencies_ready():
+                logger.info("Online dependencies unavailable. Switching to offline mode.")
+                pred_mode = PredictionMode.OFFLINE
             
             # Route to appropriate generation method
             if pred_mode == PredictionMode.OFFLINE:
@@ -191,6 +195,10 @@ class PredictionOrchestrator:
             logger.error(f"Hybrid generation error: {e}")
             # Fallback to offline
             return self._generate_offline(category, chart_data, language)
+
+    def _online_dependencies_ready(self) -> bool:
+        """Check if online dependencies are available for prediction generation."""
+        return bool(self.openai_service and getattr(self.openai_service, "enabled", False))
 
     def _call_openai_for_category(self, category: str, chart_data: Dict[str, Any],
                                   wisdom_context: Optional[Dict[str, Any]], 

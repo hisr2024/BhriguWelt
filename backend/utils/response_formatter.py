@@ -41,7 +41,8 @@ def error_response(
     message: str,
     status_code: int = 400,
     error_code: Optional[str] = None,
-    details: Optional[Dict] = None
+    details: Optional[Dict] = None,
+    retryable: Optional[bool] = None
 ) -> tuple:
     """
     Format error API response
@@ -63,6 +64,9 @@ def error_response(
 
     if error_code:
         response['error_code'] = error_code
+
+    if retryable is not None:
+        response['retryable'] = retryable
 
     if details:
         response['details'] = details
