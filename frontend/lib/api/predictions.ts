@@ -37,6 +37,11 @@ export interface ChartData extends BirthData {
   nakshatra?: string;
   planets?: Record<string, PlanetPosition>;
   houses?: string[];
+  dasha_period?: {
+    maha_dasha?: string;
+    years_remaining?: number;
+    antar_dasha?: string;
+  };
 }
 
 export interface PlanetPosition {
@@ -269,6 +274,40 @@ export class PredictionsAPI {
    */
   async getPresentLife(birthData: ChartData, useAI: boolean = true): Promise<PredictionResult> {
     return this.generatePrediction('present_life', birthData, useAI);
+  }
+
+  /**
+   * Generate Present Life analysis using two-phase engine
+   */
+  async generatePresentLife(
+    birthData: ChartData,
+    options: { useAI?: boolean; mode?: 'offline' | 'online' | 'hybrid'; language?: string } = {}
+  ): Promise<PredictionResult> {
+    try {
+      const response = await fetch(`${this.baseURL}/predictions/present-life`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.apiKey && { 'X-API-Key': this.apiKey }),
+        },
+        body: JSON.stringify({
+          birth_data: birthData,
+          use_ai: options.useAI ?? true,
+          mode: options.mode ?? 'offline',
+          language: options.language ?? 'en',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`);
+      }
+
+      const data: PredictionResult = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Present life generation failed:', error);
+      throw error;
+    }
   }
 
   /**
