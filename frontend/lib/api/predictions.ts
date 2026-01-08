@@ -3,6 +3,8 @@
  * TypeScript client for comprehensive prediction service
  */
 
+import { generateRemediesPrediction } from '@/lib/engines/remediesEngine';
+
 export type PredictionEngine =
   | 'karmic_journey'
   | 'past_lives'
@@ -223,7 +225,22 @@ export class PredictionsAPI {
    * Generate Karmic Remedies
    */
   async getKarmicRemedies(birthData: ChartData, useAI: boolean = true): Promise<PredictionResult> {
-    return this.generatePrediction('karmic_remedies', birthData, useAI);
+    return this.generateRemedies(birthData, useAI);
+  }
+
+  /**
+   * Generate Karmic Remedies with two-phase validation
+   */
+  async generateRemedies(birthData: ChartData, useAI: boolean = true): Promise<PredictionResult> {
+    try {
+      return await generateRemediesPrediction(birthData, { useAI });
+    } catch (error) {
+      console.error('Remedies engine failed, falling back to API:', error);
+      if (useAI) {
+        return this.generatePrediction('karmic_remedies', birthData, useAI);
+      }
+      throw error;
+    }
   }
 
   /**
