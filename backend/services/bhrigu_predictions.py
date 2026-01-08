@@ -315,24 +315,22 @@ Provide specific, actionable guidance rooted in Bhrigu Samhita and Nadi Jyotisa 
         )
         
         # Validate and ensure all sections are present
-        missing_sections = self.section_parser.get_missing_sections(sections, 'karmic_journey')
-        if missing_sections:
-            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for karmic_journey")
-            for section_key in missing_sections:
-                sections[section_key] = self.section_parser.generate_missing_section(
-                    section_key,
-                    prediction_text,
-                    'karmic_journey',
-                    birth_data
-                )
-        section_status = self._finalize_section_status(sections, 'karmic_journey')
+        sections = self._auto_repair_sections(
+            sections,
+            prediction_text,
+            'karmic_journey',
+            birth_data
+        )
 
         return {
             'category': 'karmic_journey',
             'title': 'Your Karmic Journey & Soul Purpose',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(birth_data, section_status),
+            'metadata': self._generate_metadata(
+                birth_data,
+                sections.get('section_generation_status')
+            ),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -425,24 +423,22 @@ Reference specific Nadi Jyotisa indicators and planetary positions."""
         )
         
         # Validate and ensure all sections are present
-        missing_sections = self.section_parser.get_missing_sections(sections, 'past_lives')
-        if missing_sections:
-            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for past_lives")
-            for section_key in missing_sections:
-                sections[section_key] = self.section_parser.generate_missing_section(
-                    section_key,
-                    prediction_text,
-                    'past_lives',
-                    birth_data
-                )
-        section_status = self._finalize_section_status(sections, 'past_lives')
+        sections = self._auto_repair_sections(
+            sections,
+            prediction_text,
+            'past_lives',
+            birth_data
+        )
 
         return {
             'category': 'past_lives',
             'title': 'Your Past Lives & Karmic Patterns',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(birth_data, section_status),
+            'metadata': self._generate_metadata(
+                birth_data,
+                sections.get('section_generation_status')
+            ),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -545,24 +541,22 @@ Ground predictions in Bhrigu Samhita principles of karmic progression."""
         )
         
         # Validate and ensure all sections are present
-        missing_sections = self.section_parser.get_missing_sections(sections, 'future_lives')
-        if missing_sections:
-            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for future_lives")
-            for section_key in missing_sections:
-                sections[section_key] = self.section_parser.generate_missing_section(
-                    section_key,
-                    prediction_text,
-                    'future_lives',
-                    birth_data
-                )
-        section_status = self._finalize_section_status(sections, 'future_lives')
+        sections = self._auto_repair_sections(
+            sections,
+            prediction_text,
+            'future_lives',
+            birth_data
+        )
 
         return {
             'category': 'future_lives',
             'title': 'Your Future Lives & Soul Evolution',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(birth_data, section_status),
+            'metadata': self._generate_metadata(
+                birth_data,
+                sections.get('section_generation_status')
+            ),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -687,24 +681,22 @@ Base analysis on classical Bhrigu Samhita delineation methods."""
         )
         
         # Validate and ensure all sections are present
-        missing_sections = self.section_parser.get_missing_sections(sections, 'present_life')
-        if missing_sections:
-            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for present_life")
-            for section_key in missing_sections:
-                sections[section_key] = self.section_parser.generate_missing_section(
-                    section_key,
-                    prediction_text,
-                    'present_life',
-                    birth_data
-                )
-        section_status = self._finalize_section_status(sections, 'present_life')
+        sections = self._auto_repair_sections(
+            sections,
+            prediction_text,
+            'present_life',
+            birth_data
+        )
 
         return {
             'category': 'present_life',
             'title': 'Your Present Life Comprehensive Analysis',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(birth_data, section_status),
+            'metadata': self._generate_metadata(
+                birth_data,
+                sections.get('section_generation_status')
+            ),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -862,24 +854,22 @@ Provide month-level precision where possible using Nadi Jyotisa methods."""
         )
         
         # Validate and ensure all sections are present
-        missing_sections = self.section_parser.get_missing_sections(sections, 'life_events')
-        if missing_sections:
-            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for life_events")
-            for section_key in missing_sections:
-                sections[section_key] = self.section_parser.generate_missing_section(
-                    section_key,
-                    prediction_text,
-                    'life_events',
-                    birth_data
-                )
-        section_status = self._finalize_section_status(sections, 'life_events')
+        sections = self._auto_repair_sections(
+            sections,
+            prediction_text,
+            'life_events',
+            birth_data
+        )
 
         return {
             'category': 'life_events',
             'title': 'Your Life Events with Precision Timing',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(birth_data, section_status),
+            'metadata': self._generate_metadata(
+                birth_data,
+                sections.get('section_generation_status')
+            ),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -1085,24 +1075,22 @@ Provide practical, affordable, and effective remedies that can be integrated int
         )
         
         # Validate and ensure all sections are present
-        missing_sections = self.section_parser.get_missing_sections(sections, 'karmic_remedies')
-        if missing_sections:
-            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for karmic_remedies")
-            for section_key in missing_sections:
-                sections[section_key] = self.section_parser.generate_missing_section(
-                    section_key,
-                    prediction_text,
-                    'karmic_remedies',
-                    birth_data
-                )
-        section_status = self._finalize_section_status(sections, 'karmic_remedies')
+        sections = self._auto_repair_sections(
+            sections,
+            prediction_text,
+            'karmic_remedies',
+            birth_data
+        )
 
         return {
             'category': 'karmic_remedies',
             'title': 'Your Personalized Karmic Remedies',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(birth_data, section_status),
+            'metadata': self._generate_metadata(
+                birth_data,
+                sections.get('section_generation_status')
+            ),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -1309,24 +1297,22 @@ Provide specific, actionable relationship guidance based on classical astrology.
         )
         
         # Validate and ensure all sections are present
-        missing_sections = self.section_parser.get_missing_sections(sections, 'relationships')
-        if missing_sections:
-            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for relationships")
-            for section_key in missing_sections:
-                sections[section_key] = self.section_parser.generate_missing_section(
-                    section_key,
-                    prediction_text,
-                    'relationships',
-                    birth_data
-                )
-        section_status = self._finalize_section_status(sections, 'relationships')
+        sections = self._auto_repair_sections(
+            sections,
+            prediction_text,
+            'relationships',
+            birth_data
+        )
 
         return {
             'category': 'relationships',
             'title': 'Your Relationships & Soul Connections',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(birth_data, section_status),
+            'metadata': self._generate_metadata(
+                birth_data,
+                sections.get('section_generation_status')
+            ),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -1400,28 +1386,59 @@ Base on current planetary transits and your natal chart."""
         )
         
         # Validate and ensure all sections are present
-        missing_sections = self.section_parser.get_missing_sections(sections, 'predictions')
-        if missing_sections:
-            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for predictions")
-            for section_key in missing_sections:
-                sections[section_key] = self.section_parser.generate_missing_section(
-                    section_key,
-                    prediction_text,
-                    'predictions',
-                    birth_data
-                )
-        section_status = self._finalize_section_status(sections, 'predictions')
+        sections = self._auto_repair_sections(
+            sections,
+            prediction_text,
+            'predictions',
+            birth_data
+        )
 
         return {
             'category': 'predictions',
             'title': 'Your General Predictions',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(birth_data, section_status),
+            'metadata': self._generate_metadata(
+                birth_data,
+                sections.get('section_generation_status')
+            ),
             'generated_at': datetime.utcnow().isoformat()
         }
 
     # Helper methods
+
+    def _auto_repair_sections(
+        self,
+        sections: Dict[str, Any],
+        prediction_text: str,
+        category: str,
+        birth_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Generate any missing or insufficient sections and update status metadata."""
+        missing_sections = self.section_parser.get_missing_sections(sections, category)
+        if missing_sections:
+            logger.info(f"Auto-repairing {len(missing_sections)} missing sections for {category}")
+            status_map = sections.get('section_generation_status', {})
+            for section_key in missing_sections:
+                section_data, generation_status, fallback_reason = self.section_parser.generate_missing_section(
+                    section_key,
+                    prediction_text,
+                    category,
+                    birth_data,
+                    include_status=True
+                )
+                sections[section_key] = section_data
+                status_entry = {'status': generation_status}
+                if generation_status == "generated":
+                    status_entry['fallback_reason'] = "post_validation_missing"
+                else:
+                    combined_reason = "post_validation_missing"
+                    if fallback_reason:
+                        combined_reason = f"{combined_reason};{fallback_reason}"
+                    status_entry['fallback_reason'] = combined_reason
+                status_map[section_key] = status_entry
+            sections['section_generation_status'] = status_map
+        return sections
 
     def _extract_section(self, text: str, section_header: str) -> str:
         """Extract a specific section from the prediction text"""
@@ -1456,8 +1473,11 @@ Base on current planetary transits and your natal chart."""
         result = '\n'.join(section_lines).strip()
         return result if result else f"See full analysis for {section_header}"
 
-    def _generate_metadata(self, birth_data: Dict[str, Any],
-                           section_status: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+    def _generate_metadata(
+        self,
+        birth_data: Dict[str, Any],
+        section_generation_status: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Generate metadata for the prediction"""
         metadata = {
             'zodiac_sign': birth_data.get('zodiac_sign'),
@@ -1465,7 +1485,8 @@ Base on current planetary transits and your natal chart."""
             'moon_sign': birth_data.get('moon_sign'),
             'ascendant': birth_data.get('ascendant'),
             'ai_model': 'gpt-4',
-            'tradition': 'Bhrigu Samhita & Nadi Jyotisa'
+            'tradition': 'Bhrigu Samhita & Nadi Jyotisa',
+            'section_generation_status': section_generation_status or {}
         }
         if section_status is not None:
             metadata['section_status'] = section_status
