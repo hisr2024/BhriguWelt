@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
-import type { BhriguPrediction, Profile } from '@/lib/types';
+import { useSearchParams } from 'next/navigation';
+import type { Profile } from '@/lib/types';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; color: string }>> = {
@@ -259,8 +260,10 @@ export default function BhriguPredictionView({
   const [question, setQuestion] = useState('');
   const [showFullAnalysis, setShowFullAnalysis] = useState(true);
   const [debugMode, setDebugMode] = useState(false);
-  const [cacheAgeSeconds, setCacheAgeSeconds] = useState<number | null>(null);
-  const [cacheKey, setCacheKey] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const debugFlagEnabled = process.env.NEXT_PUBLIC_DEBUG_PREDICTIONS === 'true';
+  const debugQueryEnabled = searchParams.get('debug') === '1';
+  const debugAllowed = debugFlagEnabled || (process.env.NODE_ENV === 'production' && debugQueryEnabled);
 
   useEffect(() => {
     if (profile) {
@@ -275,15 +278,16 @@ export default function BhriguPredictionView({
     loadPrediction();
   }, [profile]);
 
-  const isCachedPrediction = (
-    data: PredictionResult['data']
-  ): data is CachedPrediction => {
-    return typeof (data as CachedPrediction).prediction !== 'undefined';
-  };
+  useEffect(() => {
+    if (! debugAllowed) {
+      setDebugMode(false);
+      return;
+    }
 
-  const getPredictionPayload = (data: PredictionResult['data']): PredictionPayload => {
-    return isCachedPrediction(data) ? data.prediction : data;
-  };
+    if (debugQueryEnabled) {
+      setDebugMode(true);
+    }
+  }, [debugAllowed, debugQueryEnabled]);
 
   const loadPrediction = async (forceRegenerate = false) => {
     if (! profile) return;
@@ -543,7 +547,7 @@ export default function BhriguPredictionView({
         )}
 
         {/* Debug Mode - Raw API Response */}
-        {debugMode && (
+        {debugAllowed && debugMode && (
           <div className="mt-8 pt-6 border-t border-red-500/30">
             <div className="bg-gray-900/50 border border-red-500/30 rounded-xl p-6">
               <h3 className="text-xl font-bold text-red-400 mb-4">🔧 Debug Mode - Raw API Response</h3>
@@ -761,18 +765,20 @@ export default function BhriguPredictionView({
               <Share2 className="w-5 h-5" />
               Share
             </button>
-            <button
-              onClick={() => setDebugMode(!debugMode)}
-              className={`px-6 py-3 border rounded-lg transition-all
-                       flex items-center gap-2 ${
-                         debugMode
-                           ? 'bg-red-500/20 border-red-500 text-red-400'
-                           :  'bg-gray-700/50 border-gray-600 text-white hover:bg-gray-700'
-                       }`}
-            >
-              <BookOpen className="w-5 h-5" />
-              {debugMode ? 'Hide Debug' : 'Debug Mode'}
-            </button>
+            {debugAllowed && (
+              <button
+                onClick={() => setDebugMode(!debugMode)}
+                className={`px-6 py-3 border rounded-lg transition-all
+                         flex items-center gap-2 ${
+                           debugMode
+                             ? 'bg-red-500/20 border-red-500 text-red-400'
+                             :  'bg-gray-700/50 border-gray-600 text-white hover:bg-gray-700'
+                         }`}
+              >
+                <BookOpen className="w-5 h-5" />
+                {debugMode ? 'Hide Debug' : 'Debug Mode'}
+              </button>
+            )}
           </div>
         )}
       </div>
