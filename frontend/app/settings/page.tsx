@@ -5,8 +5,6 @@ import { motion } from 'framer-motion';
 import {
   Settings as SettingsIcon,
   Bell,
-  Moon,
-  Sun,
   Globe,
   Lock,
   Trash2,
@@ -14,8 +12,7 @@ import {
   Save,
   ChevronRight,
   Shield,
-  Eye,
-  EyeOff
+  Eye
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -24,6 +21,7 @@ import GenZCard from '../components/GenZCard';
 import GenZBadge from '../components/GenZBadge';
 import GenZButton from '../components/GenZButton';
 import BottomNav from '../components/BottomNav';
+import { applyHighContrast } from '@/lib/accessibility';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 
 // Type definitions for settings items
@@ -69,7 +67,7 @@ type SettingSection = {
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { isSetup, isUnlocked, lock } = useEncryption();
+  const { lock } = useEncryption();
   const [settings, setSettings] = useState({
     notifications: true,
     dailyReminders: true,
@@ -78,6 +76,7 @@ export default function SettingsPage() {
     showPasscode: false,
     aiEnabled: true,
     offlineMode: false,
+    highContrast: false,
   });
   const [showClearDataConfirm, setShowClearDataConfirm] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -87,12 +86,20 @@ export default function SettingsPage() {
     const savedSettings = localStorage.getItem('app_settings');
     if (savedSettings) {
       try {
-        setSettings(JSON.parse(savedSettings));
+        const parsedSettings = JSON.parse(savedSettings);
+        setSettings((prev) => ({
+          ...prev,
+          ...parsedSettings,
+        }));
       } catch (error) {
         console.error('Error loading settings:', error);
       }
     }
   }, []);
+
+  useEffect(() => {
+    applyHighContrast(settings.highContrast);
+  }, [settings.highContrast]);
 
   const handleSaveSettings = () => {
     localStorage.setItem('app_settings', JSON.stringify(settings));
@@ -187,6 +194,18 @@ export default function SettingsPage() {
           description: 'Use app without internet',
           type: 'toggle',
           key: 'offlineMode',
+        },
+      ],
+    },
+    {
+      title: 'Accessibility',
+      items: [
+        {
+          icon: <Eye className="w-5 h-5" />,
+          label: 'High Contrast',
+          description: 'Boost text contrast for easier reading',
+          type: 'toggle',
+          key: 'highContrast',
         },
       ],
     },

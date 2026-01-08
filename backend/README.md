@@ -69,6 +69,8 @@ See `DEPLOYMENT_GUIDE.md` for complete instructions.
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `OPENAI_API_KEY` | Yes | OpenAI API key |
+| `PROMPT_TOKEN_LIMIT` | No | Maximum tokens allocated to the prompt (context trimming) |
+| `RESPONSE_TOKEN_LIMIT` | No | Maximum tokens allowed in the model response |
 | `SECRET_KEY` | Yes | Flask secret key |
 | `JWT_SECRET_KEY` | Yes | JWT signing key |
 | `FRONTEND_URL` | Yes | Frontend URL for CORS |

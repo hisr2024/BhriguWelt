@@ -10,7 +10,9 @@ import type {
   AIComposeRequest,
   AIChatRequest,
   AISummarizeRequest,
+  PredictionResult,
 } from './types';
+import { unwrapPredictionPayload } from './api/predictionResponse';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -29,6 +31,10 @@ api.interceptors.request.use(
     if (process.env.NODE_ENV === 'development') {
       console.debug(`[API] ${config.method?. toUpperCase()} ${config.url}`);
     }
+    if (typeof navigator !== 'undefined') {
+      config.headers = config.headers ?? {};
+      config.headers['X-Client-Online'] = navigator.onLine ? 'true' : 'false';
+    }
     return config;
   },
   (error) => Promise.reject(error)
@@ -37,6 +43,10 @@ api.interceptors.request.use(
 // Response interceptor with retry logic
 // Use WeakMap to track retry state without modifying config object
 const retryState = new WeakMap<any, { count: number; inProgress: boolean }>();
+const MAX_RETRIES = 3;
+const BASE_RETRY_DELAY_MS = 1000;
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 api.interceptors.response.use(
   (response) => response,
@@ -44,19 +54,23 @@ api.interceptors.response.use(
     const config = error.config;
     
     // Initialize retry state for this config if not exists
-    if (!retryState. has(config)) {
+    if (config && !retryState.has(config)) {
       retryState.set(config, { count: 0, inProgress: false });
     }
     
-    const state = retryState. get(config)!;
+    const state = config ? retryState.get(config)! : undefined;
+    const status = error.response?.status;
+    const responseData = error.response?.data ?? {};
+    const retryable = Boolean(responseData?.retryable);
     
-    // Retry logic for 5xx errors
-    if (error.response?. status >= 500 && ! state.inProgress && state.count < 3) {
+    // Retry logic for retryable responses or transient 5xx errors
+    if (state && (retryable || (status >= 500 && status < 600)) && !state.inProgress && state.count < MAX_RETRIES) {
       state.count++;
       state.inProgress = true;
       
       // Exponential backoff
-      await new Promise(resolve => setTimeout(resolve, 1000 * state.count));
+      const delayMs = BASE_RETRY_DELAY_MS * Math.pow(2, state.count - 1);
+      await delay(delayMs);
       
       state.inProgress = false;
       return api(config);
@@ -66,7 +80,27 @@ api.interceptors.response.use(
     if (typeof navigator !== 'undefined' && ! navigator.onLine) {
       return Promise.reject(new Error('You are offline.  Please check your connection. '));
     }
-    
+
+    const message = responseData?.message || error.message || 'Request failed';
+    const errorCode = responseData?.error_code;
+    const reportIssueUrl = buildIssueReportUrl({
+      message,
+      errorCode,
+      details: responseData?.details,
+      status,
+      method: config?.method?.toUpperCase(),
+      url: config?.url,
+    });
+
+    emitToast({
+      type: 'error',
+      title: 'Request failed',
+      message,
+      errorCode,
+      details: responseData?.details,
+      reportIssueUrl,
+    });
+
     return Promise.reject(error);
   }
 );
@@ -118,6 +152,7 @@ export type {
   AIComposeRequest,
   AIChatRequest,
   AISummarizeRequest,
+  PredictionResult,
 } from './types';
 
 // API Methods
@@ -141,224 +176,224 @@ export const astrologyAPI = {
 export const karmicJourneyAPI = {
   getAnalysis: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-journey/analysis', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getSoulPurpose: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-journey/soul-purpose', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getKarmicLessons: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-journey/karmic-lessons', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getSoulEvolution: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-journey/soul-evolution', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getDharmicPath: async (data:  BirthDetails) => {
     const response = await api. post('/api/karmic-journey/dharmic-path', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 };
 
 export const pastLivesAPI = {
   getAnalysis: async (data: BirthDetails) => {
     const response = await api.post('/api/past-lives/analysis', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getKarmicPatterns: async (data: BirthDetails) => {
     const response = await api.post('/api/past-lives/karmic-patterns', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getPastRelationships: async (data: BirthDetails) => {
     const response = await api.post('/api/past-lives/past-relationships', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getTalentsCarriedForward: async (data: BirthDetails) => {
     const response = await api.post('/api/past-lives/talents-carried-forward', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getPastTraumas: async (data:  BirthDetails) => {
     const response = await api. post('/api/past-lives/past-traumas', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 };
 
 export const futureLivesAPI = {
   getPrediction: async (data:  BirthDetails) => {
     const response = await api. post('/api/future-lives/prediction', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getEvolutionPath: async (data: BirthDetails) => {
     const response = await api.post('/api/future-lives/evolution-path', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getMokshaTimeline: async (data: BirthDetails) => {
     const response = await api.post('/api/future-lives/moksha-timeline', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getFutureMissions: async (data:  BirthDetails) => {
     const response = await api. post('/api/future-lives/future-missions', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getSoulAdvancement: async (data:  BirthDetails) => {
     const response = await api. post('/api/future-lives/soul-advancement', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 };
 
 export const presentLifeAPI = {
   getComprehensiveAnalysis:  async (data: BirthDetails) => {
     const response = await api.post('/api/present-life/comprehensive-analysis', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getCareerGuidance: async (data: BirthDetails) => {
     const response = await api.post('/api/present-life/career-guidance', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getRelationshipsAnalysis: async (data: BirthDetails) => {
     const response = await api.post('/api/present-life/relationships', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getHealthWellness: async (data: BirthDetails) => {
     const response = await api.post('/api/present-life/health-wellness', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getFinancialProspects: async (data: BirthDetails) => {
     const response = await api.post('/api/present-life/financial-prospects', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getSpiritualGrowth: async (data: BirthDetails) => {
     const response = await api.post('/api/present-life/spiritual-growth', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getCurrentDasha: async (data:  BirthDetails) => {
     const response = await api. post('/api/present-life/current-dasha', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 };
 
 export const lifeEventsAPI = {
   getPrediction: async (data: BirthDetails & { years_ahead?:  number }) => {
     const response = await api.post('/api/life-events/prediction', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getCareerMilestones: async (data: BirthDetails) => {
     const response = await api.post('/api/life-events/career-milestones', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getRelationshipEvents: async (data:  BirthDetails) => {
     const response = await api. post('/api/life-events/relationship-events', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getFinancialEvents: async (data:  BirthDetails) => {
     const response = await api. post('/api/life-events/financial-events', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getHealthAlerts: async (data: BirthDetails) => {
     const response = await api.post('/api/life-events/health-alerts', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getSpiritualBreakthroughs: async (data: BirthDetails) => {
     const response = await api.post('/api/life-events/spiritual-breakthroughs', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getAuspiciousTimings: async (data:  BirthDetails) => {
     const response = await api. post('/api/life-events/auspicious-timings', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 };
 
 export const karmicRemediesAPI = {
   getComprehensive: async (data:  BirthDetails & { challenges?: string[] }) => {
     const response = await api.post('/api/karmic-remedies/comprehensive', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getMantras: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-remedies/mantras', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getGemstones: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-remedies/gemstones', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getRituals: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-remedies/rituals', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getCharitableActs: async (data:  BirthDetails) => {
     const response = await api. post('/api/karmic-remedies/charitable-acts', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getLifestyleModifications: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-remedies/lifestyle-modifications', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getMeditationPractices: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-remedies/meditation-practices', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getYantraRecommendations: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-remedies/yantra-recommendations', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 };
 
 export const predictionsAPI = {
   getDaily: async (data:  BirthDetails) => {
     const response = await api. post('/api/predictions/daily', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getWeekly: async (data:  BirthDetails) => {
     const response = await api. post('/api/predictions/weekly', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getMonthly: async (data: BirthDetails) => {
     const response = await api.post('/api/predictions/monthly', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getYearly: async (data: BirthDetails) => {
     const response = await api.post('/api/predictions/yearly', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   askQuestion: async (data: BirthDetails & { question: string }) => {
     const response = await api. post('/api/predictions/question', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 };
 
@@ -449,7 +484,7 @@ export const bhriguPredictionsAPI = {
    * Discover soul's purpose and life mission
    */
   getKarmicJourney:  async (data: BirthDetails & { question?:  string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/karmic-journey', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/karmic-journey', data);
     return response. data;
   },
 
@@ -458,7 +493,7 @@ export const bhriguPredictionsAPI = {
    * Explore previous incarnations and karmic patterns
    */
   getPastLives: async (data: BirthDetails & { question?: string; force_regenerate?:  boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/past-lives', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/past-lives', data);
     return response.data;
   },
 
@@ -467,7 +502,7 @@ export const bhriguPredictionsAPI = {
    * Envision soul's evolution and future incarnations
    */
   getFutureLives: async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/future-lives', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/future-lives', data);
     return response.data;
   },
 
@@ -476,7 +511,7 @@ export const bhriguPredictionsAPI = {
    * Comprehensive current life opportunities and challenges
    */
   getPresentLife:  async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/present-life', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/present-life', data);
     return response.data;
   },
 
@@ -485,7 +520,7 @@ export const bhriguPredictionsAPI = {
    * Major transitions with precision timing
    */
   getLifeEvents:  async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/life-events', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/life-events', data);
     return response.data;
   },
 
@@ -494,7 +529,7 @@ export const bhriguPredictionsAPI = {
    * Personalized spiritual practices for balance
    */
   getKarmicRemedies: async (data: BirthDetails & { question?:  string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/karmic-remedies', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/karmic-remedies', data);
     return response.data;
   },
 
@@ -503,7 +538,7 @@ export const bhriguPredictionsAPI = {
    * Soul connections and compatibility
    */
   getRelationships:  async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/relationships', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/relationships', data);
     return response. data;
   },
 
@@ -512,7 +547,7 @@ export const bhriguPredictionsAPI = {
    * Daily, weekly, monthly, yearly forecasts
    */
   getPredictions: async (data: BirthDetails & { question?:  string; force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/predictions', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/predictions', data);
     return response.data;
   },
 
@@ -521,7 +556,7 @@ export const bhriguPredictionsAPI = {
    * Complete Bhrigu Samhita analysis covering all 8 aspects
    */
   getComprehensive:  async (data: BirthDetails & { force_regenerate?: boolean }) => {
-    const response = await api.post('/api/bhrigu-predictions/comprehensive', data);
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/comprehensive', data);
     return response. data;
   },
 
