@@ -14,6 +14,10 @@ import {
   generateGeneralPredictions,
   type GeneralPredictionOptions,
 } from '../engines/generalPredictionsEngine';
+import {
+  generateRelationshipsPrediction,
+  type RelationshipsEngineOptions,
+} from '../engines/relationshipsEngine';
 
 export type PredictionEngine =
   | 'karmic_journey'
@@ -218,6 +222,27 @@ export class PredictionsAPI {
   }
 
   /**
+   * Generate Karmic Journey prediction using two-phase engine
+   */
+  async generateKarmicJourney(
+    birthData: ChartData,
+    options: KarmicJourneyOptions = {}
+  ): Promise<PredictionResult> {
+    try {
+      return await generateKarmicJourneyPrediction(birthData, {
+        ...options,
+        useAI: options.useAI ?? true,
+      });
+    } catch (error) {
+      console.error('Karmic journey engine failed, falling back to API:', error);
+      if (options.useAI ?? true) {
+        return this.generatePrediction('karmic_journey', birthData, options.useAI ?? true);
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Generate Past Lives analysis
    */
   async getPastLives(birthData: ChartData, useAI: boolean = true): Promise<PredictionResult> {
@@ -341,6 +366,24 @@ export class PredictionsAPI {
    */
   async getRelationships(birthData: ChartData, useAI: boolean = true): Promise<PredictionResult> {
     return this.generatePrediction('relationships', birthData, useAI);
+  }
+
+  /**
+   * Generate Relationships analysis using two-phase engine
+   */
+  async generateRelationships(
+    birthData: ChartData,
+    options: RelationshipsEngineOptions = {}
+  ): Promise<PredictionResult> {
+    try {
+      return await generateRelationshipsPrediction(birthData, options);
+    } catch (error) {
+      console.error('Relationships engine failed, falling back to API:', error);
+      if (options.useAI ?? true) {
+        return this.generatePrediction('relationships', birthData, options.useAI ?? true);
+      }
+      throw error;
+    }
   }
 
   /**
