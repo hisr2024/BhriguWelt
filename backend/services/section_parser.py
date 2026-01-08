@@ -4,6 +4,7 @@ Ensures 100% structured output with AI-powered section generation
 """
 import re
 import logging
+import unicodedata
 from typing import Dict, List, Any, Optional
 
 # Configure logging
@@ -119,125 +120,150 @@ class SectionParser:
             'Soul\'s Primary Purpose',
             'Primary Purpose',
             'Soul Purpose',
-            'Soul\'s Purpose'
+            'Soul\'s Purpose',
+            'Propósito del Alma'
         ],
         'karmic_blueprint': [
             'Karmic Blueprint',
-            'Karmic Patterns'
+            'Karmic Patterns',
+            'Plano Kármico'
         ],
         'evolution_stage': [
             'Soul Evolution Stage',
             'Evolution Stage',
-            'Spiritual Evolution'
+            'Spiritual Evolution',
+            'Etapa de Evolución'
         ],
         'life_mission': [
             'Life Mission & Dharma',
             'Life Mission',
-            'Dharma'
+            'Dharma',
+            'Misión de Vida'
         ],
         'karmic_lessons': [
             'Karmic Lessons',
-            'Lessons'
+            'Lessons',
+            'Lecciones Kármicas'
         ],
         'soul_connections': [
             'Soul Group Connections',
             'Soul Connections',
-            'Soulmates'
+            'Soulmates',
+            'Conexiones del Alma'
         ],
         'timing': [
             'Timing of Karmic Events',
             'Timing',
             'Key Timing',
-            'Favorable & Challenging Periods'
+            'Favorable & Challenging Periods',
+            'Cronología Kármica'
         ],
         'spiritual_gifts': [
             'Spiritual Gifts',
             'Spiritual Gifts & Abilities',
-            'Gifts'
+            'Gifts',
+            'Dones Espirituales'
         ],
         'yearly_forecast': [
             'Year-by-Year Forecast',
             'Yearly Forecast',
-            'Annual Forecast'
+            'Annual Forecast',
+            'Pronóstico Anual'
         ],
         'marriage_timing': [
             'Marriage & Partnerships',
             'Marriage Timing',
-            'Marriage'
+            'Marriage',
+            'Momento del Matrimonio'
         ],
         'career_milestones': [
             'Career Milestones',
-            'Career'
+            'Career',
+            'Hitos de Carrera'
         ],
         'children_family': [
             'Children & Family',
             'Family Events',
-            'Children'
+            'Children',
+            'Niños y Familia'
         ],
         'financial_events': [
             'Financial Breakthroughs',
             'Financial Events',
-            'Finances'
+            'Finances',
+            'Eventos Financieros'
         ],
         'health_alerts': [
             'Health Alerts',
             'Health',
-            'Wellness'
+            'Wellness',
+            'Alertas de Salud'
         ],
         'spiritual_milestones': [
             'Spiritual Milestones',
-            'Spiritual Growth'
+            'Spiritual Growth',
+            'Hitos Espirituales'
         ],
         'relocations': [
             'Relocations & Travel',
             'Relocations',
-            'Travel'
+            'Travel',
+            'Reubicaciones y Viajes'
         ],
         'education': [
             'Education',
             'Education & Skill Development',
-            'Learning'
+            'Learning',
+            'Educación'
         ],
         'favorable_periods': [
             'Favorable Dasha Periods',
             'Favorable Periods',
-            'Auspicious Times'
+            'Auspicious Times',
+            'Períodos Favorables'
         ],
         'challenging_periods': [
             'Challenging Dasha Periods',
             'Challenging Periods',
-            'Difficult Times'
+            'Difficult Times',
+            'Períodos Desafiantes'
         ],
         'transits': [
             'Critical Transit Events',
             'Transits',
-            'Planetary Transits'
+            'Planetary Transits',
+            'Tránsitos Planetarios'
         ],
         'age_milestones': [
             'Specific Age Milestones',
             'Age Milestones',
-            'Key Ages'
+            'Key Ages',
+            'Hitos de Edad'
         ],
         'daily': [
             'Daily Forecast',
             'Daily',
-            'Today'
+            'Today',
+            'Pronóstico Diario'
         ],
         'weekly': [
             'Weekly Forecast',
             'Weekly',
-            'This Week'
+            'This Week',
+            'Pronóstico Semanal'
         ],
         'monthly': [
             'Monthly Forecast',
             'Monthly',
-            'This Month'
+            'This Month',
+            'Pronóstico Mensual'
         ],
         'yearly': [
             'Yearly Forecast',
             'Yearly',
             'Annual',
-            'This Year'
+            'This Year',
+            'Pronóstico Anual'
         ]
     }
     
@@ -328,6 +354,11 @@ class SectionParser:
                     logger.warning(f"Section '{section_key}': Pattern {i+1} failed: {e}")
                     continue
 
+        normalized_result = self._extract_by_normalized_headers(text, section_key)
+        if normalized_result:
+            logger.info(f"Section '{section_key}': Extracted {len(normalized_result)} chars via normalized header match")
+            return normalized_result
+
         # Try generic extraction by section number or keywords
         logger.info(f"Section '{section_key}': No header match found, trying keyword extraction")
         keyword_result = self._extract_by_keywords(text, section_key)
@@ -338,6 +369,91 @@ class SectionParser:
             logger.warning(f"Section '{section_key}': No content extracted by any method")
 
         return keyword_result
+
+    def _normalize_header_text(self, text: str) -> str:
+        """
+        Normalize header text by stripping punctuation and diacritics.
+
+        Args:
+            text: Header text to normalize
+
+        Returns:
+            Normalized text for matching
+        """
+        if not text:
+            return ""
+        normalized = unicodedata.normalize("NFKD", text)
+        normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+        normalized = re.sub(r"[^\w\s]", "", normalized)
+        normalized = re.sub(r"\s+", " ", normalized).strip().lower()
+        return normalized
+
+    def _strip_header_markers(self, line: str) -> str:
+        """Strip common markdown or numbering markers from a header line."""
+        if not line:
+            return ""
+        cleaned = line.strip()
+        cleaned = re.sub(r"^\s*#{1,6}\s*", "", cleaned)
+        cleaned = re.sub(r"^\s*\d+\.\s*", "", cleaned)
+        cleaned = re.sub(r"^\s*\*\*\s*", "", cleaned)
+        cleaned = re.sub(r"\s*\*\*\s*$", "", cleaned)
+        cleaned = cleaned.rstrip(":").strip()
+        return cleaned
+
+    def _is_header_line(self, line: str) -> bool:
+        """Check if a line looks like a header."""
+        stripped = line.strip()
+        if not stripped:
+            return False
+        if stripped.startswith("#"):
+            return True
+        if re.match(r"^\d+\.\s+\S", stripped):
+            return True
+        if re.match(r"^\*\*.+\*\*$", stripped):
+            return True
+        if stripped.endswith(":") and len(stripped.split()) <= 6:
+            return True
+        return False
+
+    def _extract_by_normalized_headers(self, text: str, section_key: str) -> str:
+        """
+        Extract section content by matching normalized header text.
+
+        Args:
+            text: Full text to search
+            section_key: Section key to extract
+
+        Returns:
+            Extracted section content or empty string
+        """
+        headers = self.SECTION_HEADERS.get(section_key, [])
+        if not headers or not text:
+            return ""
+
+        normalized_headers = {
+            self._normalize_header_text(header) for header in headers if header
+        }
+        lines = text.splitlines()
+
+        for index, line in enumerate(lines):
+            if not self._is_header_line(line):
+                continue
+            candidate = self._strip_header_markers(line)
+            normalized_candidate = self._normalize_header_text(candidate)
+            if normalized_candidate not in normalized_headers:
+                continue
+
+            next_index = None
+            for following in range(index + 1, len(lines)):
+                if self._is_header_line(lines[following]):
+                    next_index = following
+                    break
+
+            content_lines = lines[index + 1:next_index] if next_index else lines[index + 1:]
+            content = "\n".join(content_lines).strip()
+            if len(content) > self.HEADER_EXTRACTION_MIN_LENGTH:
+                return content
+        return ""
     
     def _extract_by_keywords(self, text: str, section_key: str) -> str:
         """
