@@ -37,6 +37,66 @@ def success_response(
     return jsonify(response), status_code
 
 
+def prediction_response(
+    prediction: Any,
+    metadata: Optional[Dict] = None,
+    status: str = "success",
+    status_code: int = 200,
+    message: Optional[str] = None
+) -> tuple:
+    """
+    Format prediction API response with a consistent envelope.
+
+    Args:
+        prediction: Prediction payload (string or structured object)
+        metadata: Optional metadata about the prediction
+        status: Response status ("success" or "error")
+        status_code: HTTP status code
+        message: Optional message for client display
+
+    Returns:
+        JSON response tuple (response, status_code)
+    """
+    response = {
+        'status': status,
+        'prediction': prediction,
+        'metadata': metadata,
+        'timestamp': datetime.utcnow().isoformat()
+    }
+
+    if message:
+        response['message'] = message
+
+    return jsonify(response), status_code
+
+
+def prediction_error_response(
+    message: str,
+    status_code: int = 400,
+    metadata: Optional[Dict] = None
+) -> tuple:
+    """
+    Format prediction error response with prediction envelope.
+
+    Args:
+        message: Error message
+        status_code: HTTP status code
+        metadata: Optional metadata about the failure
+
+    Returns:
+        JSON response tuple (response, status_code)
+    """
+    error_metadata = metadata or {}
+    error_metadata['error'] = message
+    return prediction_response(
+        prediction=None,
+        metadata=error_metadata,
+        status='error',
+        status_code=status_code,
+        message=message
+    )
+
+
 def error_response(
     message: str,
     status_code: int = 400,

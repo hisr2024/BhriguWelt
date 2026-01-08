@@ -2,9 +2,10 @@
 Life Events API Routes
 Important life events prediction endpoints
 """
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 from services.astrology_calculator import astrology_calculator
 from services.openai_service import openai_service
+from utils.response_formatter import prediction_response, prediction_error_response
 
 bp = Blueprint('life_events', __name__, url_prefix='/api/life-events')
 
@@ -35,16 +36,20 @@ def life_events_prediction():
         # Generate life events prediction
         events = openai_service.generate_life_events_prediction(birth_chart, years_ahead)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'birth_chart': birth_chart,
                 'life_events': events
+            },
+            metadata={
+                'years_ahead': years_ahead,
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate life events prediction: {str(e)}", 500)
 
 @bp.route('/career-milestones', methods=['POST'])
 def career_milestones():
@@ -74,16 +79,19 @@ def career_milestones():
 
         milestones = openai_service.generate_prediction(prompt, birth_chart)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'career_milestones': milestones,
                 'career_house': birth_chart['houses'][9]
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate career milestones: {str(e)}", 500)
 
 @bp.route('/relationship-events', methods=['POST'])
 def relationship_events():
@@ -113,17 +121,20 @@ def relationship_events():
 
         events = openai_service.generate_prediction(prompt, birth_chart)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'relationship_events': events,
                 'partnership_house': birth_chart['houses'][6],
                 'venus_position': birth_chart['planets']['Venus']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate relationship events: {str(e)}", 500)
 
 @bp.route('/financial-events', methods=['POST'])
 def financial_events():
@@ -153,17 +164,20 @@ def financial_events():
 
         events = openai_service.generate_prediction(prompt, birth_chart)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'financial_events': events,
                 'wealth_house': birth_chart['houses'][1],
                 'gains_house': birth_chart['houses'][10]
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate financial events: {str(e)}", 500)
 
 @bp.route('/health-alerts', methods=['POST'])
 def health_alerts():
@@ -193,17 +207,20 @@ def health_alerts():
 
         alerts = openai_service.generate_prediction(prompt, birth_chart)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'health_alerts': alerts,
                 'health_house': birth_chart['houses'][5],
                 'saturn_position': birth_chart['planets']['Saturn']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate health alerts: {str(e)}", 500)
 
 @bp.route('/spiritual-breakthroughs', methods=['POST'])
 def spiritual_breakthroughs():
@@ -233,17 +250,20 @@ def spiritual_breakthroughs():
 
         breakthroughs = openai_service.generate_prediction(prompt, birth_chart)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'spiritual_breakthroughs': breakthroughs,
                 'dharma_house': birth_chart['houses'][8],
                 'liberation_house': birth_chart['houses'][11]
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate spiritual breakthroughs: {str(e)}", 500)
 
 @bp.route('/auspicious-timings', methods=['POST'])
 def auspicious_timings():
@@ -273,14 +293,17 @@ def auspicious_timings():
 
         timings = openai_service.generate_prediction(prompt, birth_chart)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'auspicious_timings': timings,
                 'jupiter_position': birth_chart['planets']['Jupiter'],
                 'current_dasha': birth_chart['dasha_period']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate auspicious timings: {str(e)}", 500)

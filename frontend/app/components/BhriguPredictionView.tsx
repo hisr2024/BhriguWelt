@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Profile } from '@/lib/types';
+import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; color: string }>> = {
@@ -168,16 +169,17 @@ export default function BhriguPredictionView({
 
       const response = await fetchPrediction(profileData);
 
-      if (response. status === 'success') {
-        const predictionData = response.data?.prediction ?? response.data;
-        setPrediction(predictionData);
+      const normalized = normalizePredictionResponse(response);
+
+      if (normalized.status === 'success') {
+        setPrediction(normalized.prediction);
         setFromCache(
-          response.message?.includes('cache') ||
-          response.message?.toLowerCase().includes('cache') ||
-          Boolean(response.data?.prediction)
+          Boolean(normalized.metadata?.from_cache) ||
+          normalized.metadata?.source === 'cache' ||
+          normalized.message?.toLowerCase().includes('cache')
         );
       } else {
-        setError(response.message || 'Failed to generate prediction');
+        setError(normalized.message || 'Failed to generate prediction');
       }
     } catch (err:  any) {
       setError(err. response?.data?.message || err.message || 'An error occurred');

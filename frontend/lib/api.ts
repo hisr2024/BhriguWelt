@@ -11,6 +11,7 @@ import type {
   AIChatRequest,
   AISummarizeRequest,
 } from './types';
+import { unwrapPredictionPayload } from './api/predictionResponse';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -141,224 +142,224 @@ export const astrologyAPI = {
 export const karmicJourneyAPI = {
   getAnalysis: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-journey/analysis', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getSoulPurpose: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-journey/soul-purpose', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getKarmicLessons: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-journey/karmic-lessons', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getSoulEvolution: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-journey/soul-evolution', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getDharmicPath: async (data:  BirthDetails) => {
     const response = await api. post('/api/karmic-journey/dharmic-path', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 };
 
 export const pastLivesAPI = {
   getAnalysis: async (data: BirthDetails) => {
     const response = await api.post('/api/past-lives/analysis', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getKarmicPatterns: async (data: BirthDetails) => {
     const response = await api.post('/api/past-lives/karmic-patterns', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getPastRelationships: async (data: BirthDetails) => {
     const response = await api.post('/api/past-lives/past-relationships', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getTalentsCarriedForward: async (data: BirthDetails) => {
     const response = await api.post('/api/past-lives/talents-carried-forward', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getPastTraumas: async (data:  BirthDetails) => {
     const response = await api. post('/api/past-lives/past-traumas', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 };
 
 export const futureLivesAPI = {
   getPrediction: async (data:  BirthDetails) => {
     const response = await api. post('/api/future-lives/prediction', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getEvolutionPath: async (data: BirthDetails) => {
     const response = await api.post('/api/future-lives/evolution-path', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getMokshaTimeline: async (data: BirthDetails) => {
     const response = await api.post('/api/future-lives/moksha-timeline', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getFutureMissions: async (data:  BirthDetails) => {
     const response = await api. post('/api/future-lives/future-missions', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getSoulAdvancement: async (data:  BirthDetails) => {
     const response = await api. post('/api/future-lives/soul-advancement', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 };
 
 export const presentLifeAPI = {
   getComprehensiveAnalysis:  async (data: BirthDetails) => {
     const response = await api.post('/api/present-life/comprehensive-analysis', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getCareerGuidance: async (data: BirthDetails) => {
     const response = await api.post('/api/present-life/career-guidance', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getRelationshipsAnalysis: async (data: BirthDetails) => {
     const response = await api.post('/api/present-life/relationships', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getHealthWellness: async (data: BirthDetails) => {
     const response = await api.post('/api/present-life/health-wellness', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getFinancialProspects: async (data: BirthDetails) => {
     const response = await api.post('/api/present-life/financial-prospects', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getSpiritualGrowth: async (data: BirthDetails) => {
     const response = await api.post('/api/present-life/spiritual-growth', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getCurrentDasha: async (data:  BirthDetails) => {
     const response = await api. post('/api/present-life/current-dasha', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 };
 
 export const lifeEventsAPI = {
   getPrediction: async (data: BirthDetails & { years_ahead?:  number }) => {
     const response = await api.post('/api/life-events/prediction', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getCareerMilestones: async (data: BirthDetails) => {
     const response = await api.post('/api/life-events/career-milestones', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getRelationshipEvents: async (data:  BirthDetails) => {
     const response = await api. post('/api/life-events/relationship-events', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getFinancialEvents: async (data:  BirthDetails) => {
     const response = await api. post('/api/life-events/financial-events', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getHealthAlerts: async (data: BirthDetails) => {
     const response = await api.post('/api/life-events/health-alerts', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getSpiritualBreakthroughs: async (data: BirthDetails) => {
     const response = await api.post('/api/life-events/spiritual-breakthroughs', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getAuspiciousTimings: async (data:  BirthDetails) => {
     const response = await api. post('/api/life-events/auspicious-timings', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 };
 
 export const karmicRemediesAPI = {
   getComprehensive: async (data:  BirthDetails & { challenges?: string[] }) => {
     const response = await api.post('/api/karmic-remedies/comprehensive', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getMantras: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-remedies/mantras', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getGemstones: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-remedies/gemstones', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getRituals: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-remedies/rituals', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getCharitableActs: async (data:  BirthDetails) => {
     const response = await api. post('/api/karmic-remedies/charitable-acts', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getLifestyleModifications: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-remedies/lifestyle-modifications', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getMeditationPractices: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-remedies/meditation-practices', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getYantraRecommendations: async (data: BirthDetails) => {
     const response = await api.post('/api/karmic-remedies/yantra-recommendations', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 };
 
 export const predictionsAPI = {
   getDaily: async (data:  BirthDetails) => {
     const response = await api. post('/api/predictions/daily', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getWeekly: async (data:  BirthDetails) => {
     const response = await api. post('/api/predictions/weekly', data);
-    return response. data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getMonthly: async (data: BirthDetails) => {
     const response = await api.post('/api/predictions/monthly', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   getYearly: async (data: BirthDetails) => {
     const response = await api.post('/api/predictions/yearly', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 
   askQuestion: async (data: BirthDetails & { question: string }) => {
     const response = await api. post('/api/predictions/question', data);
-    return response.data;
+    return unwrapPredictionPayload(response.data);
   },
 };
 
