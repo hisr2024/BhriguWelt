@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
-import type { BirthDetails, CachedPrediction, PredictionPayload, PredictionResult, Profile } from '@/lib/types';
+import type { BhriguPrediction, Profile } from '@/lib/types';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; color: string }>> = {
@@ -137,7 +137,7 @@ export default function BhriguPredictionView({
   fetchPrediction,
   profile
 }: BhriguPredictionViewProps) {
-  const [prediction, setPrediction] = useState<PredictionPayload | null>(null);
+  const [prediction, setPrediction] = useState<BhriguPrediction | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
@@ -315,8 +315,9 @@ export default function BhriguPredictionView({
 
     // FALLBACK: If no sections found but full_analysis exists, parse it client-side
     let parsedFromFullAnalysis: Record<string, string> = {};
-    if (availableSections.length === 0 && prediction.full_analysis) {
-      parsedFromFullAnalysis = parseFullAnalysisIntoSections(prediction.full_analysis, category);
+    const fullAnalysis = typeof prediction.full_analysis === 'string' ? prediction.full_analysis : '';
+    if (availableSections.length === 0 && fullAnalysis) {
+      parsedFromFullAnalysis = parseFullAnalysisIntoSections(fullAnalysis, category);
       
       // Update availableSections based on parsed content
       availableSections = sections.filter(section => {
@@ -350,8 +351,8 @@ export default function BhriguPredictionView({
         )}
 
         {/* Show message if no sections were extracted successfully */}
-        {availableSections.length === 0 && prediction.full_analysis && (
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6">
+        {availableSections. length === 0 && fullAnalysis && (
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
             <p className="text-amber-400 text-sm">
               Note: Individual sections could not be extracted from the analysis.
               The complete reading is shown below.
@@ -388,7 +389,7 @@ export default function BhriguPredictionView({
         )}
 
         {/* Full Analysis - Collapsible at the bottom */}
-        {prediction.full_analysis && availableSections.length > 0 && (
+        {fullAnalysis && (
           <div className="mt-8 pt-8 border-t border-gray-700/50">
             <button
               onClick={() => setShowFullAnalysis(!showFullAnalysis)}
@@ -427,7 +428,7 @@ export default function BhriguPredictionView({
                 >
                   <div className="prose prose-invert prose-cyan max-w-none">
                     <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                      {prediction.full_analysis}
+                      {fullAnalysis}
                     </div>
                   </div>
                 </motion.div>

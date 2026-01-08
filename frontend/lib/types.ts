@@ -155,6 +155,24 @@ export interface Report {
   updatedAt: string;
 }
 
+// Bhrigu Predictions
+export interface BhriguPrediction {
+  category: string;
+  title: string;
+  full_analysis: string;
+  complete_analysis?: string;
+  metadata?: {
+    zodiac_sign?: string;
+    nakshatra?: string;
+    moon_sign?: string;
+    ascendant?: string;
+    tradition?: string;
+    [key: string]: unknown;
+  };
+  generated_at?: string;
+  [key: string]: unknown;
+}
+
 // Birth chart data
 export interface BirthChart {
   birthDetails: {

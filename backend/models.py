@@ -29,6 +29,8 @@ class BhriguPredictionCache(db.Model):
 
     # Full prediction response from AI
     prediction_data = db.Column(db.Text, nullable=False)
+    # Synthesized analysis stored separately to avoid overwriting full_analysis
+    complete_analysis = db.Column(db.Text, nullable=True)
 
     # Metadata
     zodiac_sign = db.Column(db.String(20), index=True)
@@ -56,7 +58,10 @@ class BhriguPredictionCache(db.Model):
         except:
             prediction_dict = {'raw': self.prediction_data}
 
-        response = {
+        if self.complete_analysis and 'complete_analysis' not in prediction_dict:
+            prediction_dict['complete_analysis'] = self.complete_analysis
+
+        return {
             'id': self.id,
             'category': self.category,
             'question': self.question,
@@ -99,11 +104,14 @@ class BhriguPredictionCache(db.Model):
     def cache_prediction(cls, birth_data: dict, category: str, prediction: dict,
                         question: str = None, metadata: dict = None):
         """Cache a new prediction"""
+        prediction_payload = dict(prediction)
+        complete_analysis = prediction_payload.pop('complete_analysis', None)
         cache_entry = cls(
             birth_data_hash=cls.create_hash(birth_data, category),
             category=category,
             question=question,
-            prediction_data=json.dumps(prediction),
+            prediction_data=json.dumps(prediction_payload),
+            complete_analysis=complete_analysis,
             zodiac_sign=metadata.get('zodiac_sign') if metadata else None,
             nakshatra=metadata.get('nakshatra') if metadata else None,
             moon_sign=metadata.get('moon_sign') if metadata else None,

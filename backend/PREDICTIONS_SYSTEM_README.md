@@ -272,6 +272,7 @@ Every prediction includes properly extracted sections that the frontend can disp
   "category": "karmic_journey",
   "title": "Your Karmic Journey & Soul Purpose",
   "full_analysis": "Complete narrative text...",
+  "complete_analysis": "Synthesis summary stored separately from full_analysis...",
   "soul_purpose": "Section 1 content...",
   "karmic_blueprint": "Section 2 content...",
   "evolution_stage": "Section 3 content...",
@@ -280,6 +281,8 @@ Every prediction includes properly extracted sections that the frontend can disp
   "generated_at": "2026-01-06T12:00:00"
 }
 ```
+
+**Parsing guidance:** the frontend extracts sections only from `full_analysis`; `complete_analysis` is stored and returned separately as a synthesis summary and should not be parsed into sections.
 
 ### 🎯 Auto-Repair Mechanism
 
