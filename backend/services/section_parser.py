@@ -376,6 +376,16 @@ class SectionParser:
         logger.info(f"Extracting section '{section_key}' with {len(headers)} header patterns")
 
         for header in headers:
+            markdown_section = self._extract_markdown_section(text, header)
+            if markdown_section:
+                logger.info(
+                    "Section '%s': Extracted %s chars using markdown header '%s'",
+                    section_key,
+                    len(markdown_section),
+                    header
+                )
+                return markdown_section
+
             # Try multiple pattern variations for maximum flexibility
             patterns = [
                 # Standard markdown with ## (most common)
@@ -385,7 +395,7 @@ class SectionParser:
                 # Markdown with # or ### headers
                 rf'^\s*#{1,3}\s*\d*\.?\s*{re.escape(header)}\s*[:\n](.*?)(?=\n\s*#{1,3}\s|\Z)',
                 # Numbered sections (1., 2., etc.) - IMPROVED
-                rf'\n\d+\.\s*{re.escape(header)}\s*[:\n]?(.*?)(?=\n\d+\. |\n##|\Z)',
+                rf'\n\d+(?:\.\d+)*\.?\s*{re.escape(header)}\s*[:\n]?(.*?)(?=\n\d+(?:\.\d+)*\.?\s|\n##|\Z)',
                 # Without markdown symbols (plain text headers)
                 rf'\n{re.escape(header)}\s*[:\n](.*?)(?=\n[A-Z][a-z]+[^\n]*[:\n]|\n\d+\. |\Z)',
                 # Bold or emphasized headers
@@ -427,34 +437,41 @@ class SectionParser:
 
         return keyword_result
 
-    def _extract_by_fuzzy_title(self, text: str, section_key: str) -> str:
+    def _extract_markdown_section(self, text: str, header: str) -> str:
         """
-        Extract content by splitting on double newlines and matching title fuzzily.
+        Extract markdown section content, preserving nested headers.
 
         Args:
             text: Full text to search
-            section_key: Section key to derive fuzzy title match
+            header: Header title to match
 
         Returns:
             Extracted content or empty string
         """
-        if not text:
-            return ""
+        header_pattern = re.compile(
+            rf'^(?P<hashes>#{2,4})\s*(?P<number>\d+(?:\.\d+)*)?\.?\s*'
+            rf'{re.escape(header)}\s*:?[\t ]*$',
+            re.IGNORECASE | re.MULTILINE
+        )
+        boundary_pattern = re.compile(
+            r'^(#{1,4})\s*(?:\d+(?:\.\d+)*)?\.?\s*\S+',
+            re.MULTILINE
+        )
 
-        blocks = [block for block in text.split("\n\n") if block.strip()]
-        for block in blocks:
-            lines = [line for line in block.splitlines() if line.strip()]
-            if not lines:
-                continue
-            raw_title = lines[0]
-            normalized_title = self._normalize_title(raw_title)
-            if not normalized_title:
-                continue
-            matched_key = self._match_normalized_title(normalized_title)
-            if matched_key != section_key:
-                continue
-            content = "\n".join(lines[1:]).strip()
-            if len(content) >= self.HEADER_EXTRACTION_MIN_LENGTH:
+        for match in header_pattern.finditer(text):
+            level = len(match.group('hashes'))
+            content_start = match.end()
+            if content_start < len(text) and text[content_start] == '\n':
+                content_start += 1
+
+            content_end = len(text)
+            for boundary in boundary_pattern.finditer(text, content_start):
+                if len(boundary.group(1)) <= level:
+                    content_end = boundary.start()
+                    break
+
+            content = text[content_start:content_end].strip()
+            if len(content) > self.HEADER_EXTRACTION_MIN_LENGTH:
                 return content
 
         return ""
