@@ -4,6 +4,7 @@ Ensures 100% structured output with AI-powered section generation
 """
 import re
 import logging
+import difflib
 from typing import Dict, List, Any, Optional
 
 # Configure logging
@@ -244,6 +245,37 @@ class SectionParser:
     def __init__(self, openai_service=None):
         """Initialize section parser with optional OpenAI service for generation"""
         self.openai_service = openai_service
+        self.normalized_title_map = self._build_normalized_title_map()
+
+    def _build_normalized_title_map(self) -> Dict[str, str]:
+        normalized_map = {}
+        for section_key, headers in self.SECTION_HEADERS.items():
+            titles = list(headers) + [section_key.replace('_', ' ')]
+            for title in titles:
+                normalized = self._normalize_title(title)
+                if normalized:
+                    normalized_map.setdefault(normalized, section_key)
+        return normalized_map
+
+    def _normalize_title(self, title: str) -> str:
+        if not title:
+            return ""
+        cleaned = re.sub(r"^[#>*\-\+\d\.\)\s]+", "", title.strip())
+        cleaned = re.sub(r"[^\w\s]", "", cleaned.lower())
+        return re.sub(r"\s+", " ", cleaned).strip()
+
+    def _match_normalized_title(self, normalized: str) -> str:
+        if normalized in self.normalized_title_map:
+            return self.normalized_title_map[normalized]
+        close = difflib.get_close_matches(
+            normalized,
+            self.normalized_title_map.keys(),
+            n=1,
+            cutoff=0.82
+        )
+        if close:
+            return self.normalized_title_map[close[0]]
+        return ""
         
     def extract_sections(self, raw_text: str, category: str, birth_data: Dict = None) -> Dict[str, Any]:
         """
@@ -303,12 +335,16 @@ class SectionParser:
                 rf'##\s*\d*\. ?\s*{re.escape(header)}\s*\n(.*?)(?=\n##|\n#[^#]|\Z)',
                 # Markdown with any number of # symbols
                 rf'#+\s*\d*\.?\s*{re.escape(header)}\s*[:\n](.*?)(?=\n#+\s|\Z)',
+                # Markdown with # or ### headers
+                rf'^\s*#{1,3}\s*\d*\.?\s*{re.escape(header)}\s*[:\n](.*?)(?=\n\s*#{1,3}\s|\Z)',
                 # Numbered sections (1., 2., etc.) - IMPROVED
                 rf'\n\d+\.\s*{re.escape(header)}\s*[:\n]?(.*?)(?=\n\d+\. |\n##|\Z)',
                 # Without markdown symbols (plain text headers)
                 rf'\n{re.escape(header)}\s*[:\n](.*?)(?=\n[A-Z][a-z]+[^\n]*[:\n]|\n\d+\. |\Z)',
                 # Bold or emphasized headers
-                rf'\*\*\d*\.?\s*{re. escape(header)}\*\*\s*[:\n]?(.*?)(?=\n\*\*|\n##|\Z)',
+                rf'\*\*\d*\.?\s*{re.escape(header)}\*\*\s*[:\n]?(.*?)(?=\n\*\*|\n##|\Z)',
+                # Bullet list headers
+                rf'^\s*[-*+]\s*\d*\.?\s*{re.escape(header)}\s*[:\n](.*?)(?=\n\s*[-*+]\s|\n#+\s|\Z)',
                 # Header with colon on same line
                 rf'{re.escape(header)}:\s*(.*?)(?=\n[A-Z][a-z]+.*? :|\n##|\n\d+\.|\Z)',
             ]
@@ -329,6 +365,11 @@ class SectionParser:
                     continue
 
         # Try generic extraction by section number or keywords
+        fuzzy_result = self._extract_by_fuzzy_title(text, section_key)
+        if fuzzy_result:
+            logger.info(f"Section '{section_key}': Extracted {len(fuzzy_result)} chars via fuzzy title matching")
+            return fuzzy_result
+
         logger.info(f"Section '{section_key}': No header match found, trying keyword extraction")
         keyword_result = self._extract_by_keywords(text, section_key)
 
@@ -338,6 +379,38 @@ class SectionParser:
             logger.warning(f"Section '{section_key}': No content extracted by any method")
 
         return keyword_result
+
+    def _extract_by_fuzzy_title(self, text: str, section_key: str) -> str:
+        """
+        Extract content by splitting on double newlines and matching title fuzzily.
+
+        Args:
+            text: Full text to search
+            section_key: Section key to derive fuzzy title match
+
+        Returns:
+            Extracted content or empty string
+        """
+        if not text:
+            return ""
+
+        blocks = [block for block in text.split("\n\n") if block.strip()]
+        for block in blocks:
+            lines = [line for line in block.splitlines() if line.strip()]
+            if not lines:
+                continue
+            raw_title = lines[0]
+            normalized_title = self._normalize_title(raw_title)
+            if not normalized_title:
+                continue
+            matched_key = self._match_normalized_title(normalized_title)
+            if matched_key != section_key:
+                continue
+            content = "\n".join(lines[1:]).strip()
+            if len(content) >= self.HEADER_EXTRACTION_MIN_LENGTH:
+                return content
+
+        return ""
     
     def _extract_by_keywords(self, text: str, section_key: str) -> str:
         """
