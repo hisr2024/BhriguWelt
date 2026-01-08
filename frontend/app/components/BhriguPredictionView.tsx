@@ -297,11 +297,11 @@ export default function BhriguPredictionView({
 
       if (normalized.status === 'success') {
         setPrediction(normalized.prediction);
-        setFromCache(
-          Boolean(normalized.metadata?.from_cache) ||
+        setFromCache(Boolean(
+          normalized.metadata?.from_cache ||
           normalized.metadata?.source === 'cache' ||
-          normalized.message?.toLowerCase().includes('cache')
-        );
+          normalized.message?.toLowerCase()?.includes('cache')
+        ));
         localStorage.setItem(
           cacheKey,
           JSON.stringify({
