@@ -2,13 +2,14 @@
 Vedic Astrology Calculations Service
 Core astronomical and astrological calculations
 """
-import ephem
 from datetime import datetime
-import pytz
-from typing import Dict, Any, Tuple, List
-from timezonefinder import TimezoneFinder
-from geopy.geocoders import Nominatim
+from importlib import import_module, util as importlib_util
 import math
+from typing import Dict, Any, Tuple, List
+
+from utils.errors import AstrologyDependencyError, ASTROLOGY_DEPENDENCIES
+
+logger = logging.getLogger(__name__)
 
 class AstrologyCalculator:
     """Core Vedic astrology calculation engine"""
@@ -37,8 +38,23 @@ class AstrologyCalculator:
     }
 
     def __init__(self):
-        self.tf = TimezoneFinder()
-        self.geolocator = Nominatim(user_agent="bhriguwelt")
+        missing = [
+            package
+            for module, package in ASTROLOGY_DEPENDENCIES.items()
+            if importlib_util.find_spec(module) is None
+        ]
+        if missing:
+            raise AstrologyDependencyError.for_missing(missing)
+
+        self.ephem = import_module("ephem")
+        self.pytz = import_module("pytz")
+        timezonefinder_module = import_module("timezonefinder")
+        geopy_geocoders = import_module("geopy.geocoders")
+        self.TimezoneFinder = timezonefinder_module.TimezoneFinder
+        self.Nominatim = geopy_geocoders.Nominatim
+
+        self.tf = self.TimezoneFinder()
+        self.geolocator = self.Nominatim(user_agent="bhriguwelt")
 
     def calculate_birth_chart(self, date_of_birth: str, time_of_birth: str,
                               place: str, latitude: float = None,
@@ -59,23 +75,47 @@ class AstrologyCalculator:
         # Get coordinates if not provided
         if latitude is None or longitude is None:
             coords = self._geocode_location(place)
+            if not coords:
+                logger.warning("Geocoding failed for place_of_birth=%s", place)
+                return {
+                    'error': {
+                        'code': 'geocoding_failed',
+                        'message': (
+                            "Unable to geocode place of birth. "
+                            "Provide a valid place_of_birth or latitude/longitude."
+                        )
+                    }
+                }
             latitude = coords['latitude']
             longitude = coords['longitude']
 
         # Get timezone
         timezone_str = self.tf.timezone_at(lat=latitude, lng=longitude)
         if not timezone_str:
-            timezone_str = 'UTC'
+            logger.warning(
+                "Timezone resolution failed for latitude=%s longitude=%s",
+                latitude,
+                longitude
+            )
+            return {
+                'error': {
+                    'code': 'timezone_resolution_failed',
+                    'message': (
+                        "Unable to determine timezone for provided location. "
+                        "Please verify latitude/longitude or place_of_birth."
+                    )
+                }
+            }
 
         # Parse datetime
         dt_str = f"{date_of_birth} {time_of_birth}"
         local_dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
-        timezone = pytz.timezone(timezone_str)
+        timezone = self.pytz.timezone(timezone_str)
         local_dt = timezone.localize(local_dt)
-        utc_dt = local_dt.astimezone(pytz.UTC)
+        utc_dt = local_dt.astimezone(self.pytz.UTC)
 
         # Create observer
-        observer = ephem.Observer()
+        observer = self.ephem.Observer()
         observer.lat = str(latitude)
         observer.lon = str(longitude)
         observer.date = utc_dt
@@ -127,16 +167,15 @@ class AstrologyCalculator:
                     'longitude': location.longitude
                 }
         except Exception:
-            pass
-        # Default to New Delhi if geocoding fails
-        return {'latitude': 28.6139, 'longitude': 77.2090}
+            return None
+        return None
 
-    def _calculate_planetary_positions(self, observer: ephem.Observer) -> Dict[str, Any]:
+    def _calculate_planetary_positions(self, observer: Any) -> Dict[str, Any]:
         """Calculate positions of all planets"""
         planets = {}
 
         # Sun
-        sun = ephem.Sun(observer)
+        sun = self.ephem.Sun(observer)
         planets['Sun'] = {
             'longitude': self._normalize_degrees(math.degrees(sun.ra)),
             'latitude': math.degrees(sun.dec),
@@ -144,7 +183,7 @@ class AstrologyCalculator:
         }
 
         # Moon
-        moon = ephem.Moon(observer)
+        moon = self.ephem.Moon(observer)
         planets['Moon'] = {
             'longitude': self._normalize_degrees(math.degrees(moon.ra)),
             'latitude': math.degrees(moon.dec),
@@ -152,7 +191,7 @@ class AstrologyCalculator:
         }
 
         # Mercury
-        mercury = ephem.Mercury(observer)
+        mercury = self.ephem.Mercury(observer)
         planets['Mercury'] = {
             'longitude': self._normalize_degrees(math.degrees(mercury.ra)),
             'latitude': math.degrees(mercury.dec),
@@ -160,7 +199,7 @@ class AstrologyCalculator:
         }
 
         # Venus
-        venus = ephem.Venus(observer)
+        venus = self.ephem.Venus(observer)
         planets['Venus'] = {
             'longitude': self._normalize_degrees(math.degrees(venus.ra)),
             'latitude': math.degrees(venus.dec),
@@ -168,7 +207,7 @@ class AstrologyCalculator:
         }
 
         # Mars
-        mars = ephem.Mars(observer)
+        mars = self.ephem.Mars(observer)
         planets['Mars'] = {
             'longitude': self._normalize_degrees(math.degrees(mars.ra)),
             'latitude': math.degrees(mars.dec),
@@ -176,7 +215,7 @@ class AstrologyCalculator:
         }
 
         # Jupiter
-        jupiter = ephem.Jupiter(observer)
+        jupiter = self.ephem.Jupiter(observer)
         planets['Jupiter'] = {
             'longitude': self._normalize_degrees(math.degrees(jupiter.ra)),
             'latitude': math.degrees(jupiter.dec),
@@ -184,7 +223,7 @@ class AstrologyCalculator:
         }
 
         # Saturn
-        saturn = ephem.Saturn(observer)
+        saturn = self.ephem.Saturn(observer)
         planets['Saturn'] = {
             'longitude': self._normalize_degrees(math.degrees(saturn.ra)),
             'latitude': math.degrees(saturn.dec),
@@ -232,7 +271,7 @@ class AstrologyCalculator:
             'lord': nakshatra_lords[nakshatra_index]
         }
 
-    def _calculate_ascendant(self, observer: ephem.Observer, utc_dt: datetime) -> str:
+    def _calculate_ascendant(self, observer: Any, utc_dt: datetime) -> str:
         """Calculate ascendant (lagna) - simplified"""
         # Simplified calculation - in production, use Swiss Ephemeris
         sidereal_time = observer.sidereal_time()
@@ -273,8 +312,8 @@ class AstrologyCalculator:
         nakshatra_lord_index = dasha_lords.index(nakshatra['lord'])
 
         # Calculate age
-        now = datetime.now(pytz.UTC)
-        age_years = (now - birth_dt.replace(tzinfo=pytz.UTC)).days / 365.25
+        now = datetime.now(self.pytz.UTC)
+        age_years = (now - birth_dt.replace(tzinfo=self.pytz.UTC)).days / 365.25
 
         # Find current dasha (simplified)
         total_years = 0
@@ -294,5 +333,29 @@ class AstrologyCalculator:
         """Normalize degrees to 0-360 range"""
         return degrees % 360
 
-# Singleton instance
-astrology_calculator = AstrologyCalculator()
+_astrology_calculator = None
+_astrology_dependency_error = None
+
+
+def _initialize_calculator() -> None:
+    global _astrology_calculator, _astrology_dependency_error
+    if _astrology_calculator or _astrology_dependency_error:
+        return
+    try:
+        _astrology_calculator = AstrologyCalculator()
+    except AstrologyDependencyError as exc:
+        _astrology_dependency_error = exc
+
+
+def get_astrology_calculator():
+    _initialize_calculator()
+    return _astrology_calculator
+
+
+def get_astrology_dependency_error():
+    _initialize_calculator()
+    return _astrology_dependency_error
+
+
+# Singleton instance (initialized lazily with dependency tracking)
+astrology_calculator = get_astrology_calculator()
