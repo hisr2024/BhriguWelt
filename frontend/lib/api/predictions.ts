@@ -3,6 +3,12 @@
  * TypeScript client for comprehensive prediction service
  */
 
+import type { AIMode } from '../types';
+import {
+  generateGeneralPredictions,
+  type GeneralPredictionOptions,
+} from '../engines/generalPredictionsEngine';
+
 export type PredictionEngine =
   | 'karmic_journey'
   | 'past_lives'
@@ -64,6 +70,12 @@ export interface PredictionMetadata {
   ai_enhanced: boolean;
   tradition: string;
   calculation_method: string;
+}
+
+export interface GeneralPredictionRequest extends GeneralPredictionOptions {
+  useAI?: boolean;
+  aiMode?: AIMode;
+  language?: string;
 }
 
 export interface DashaTimeline {
@@ -238,6 +250,68 @@ export class PredictionsAPI {
    */
   async getPredictions(birthData: ChartData, useAI: boolean = true): Promise<PredictionResult> {
     return this.generatePrediction('predictions', birthData, useAI);
+  }
+
+  /**
+   * Generate General Predictions using offline engine with optional AI refinement
+   */
+  async generateGeneralPredictions(
+    birthData: ChartData,
+    options: GeneralPredictionRequest = {}
+  ): Promise<PredictionResult> {
+    const baseResult = await generateGeneralPredictions(birthData, {
+      now: options.now,
+      locale: options.locale,
+    });
+
+    if (!options.useAI || !options.aiMode?.consent) {
+      return baseResult;
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/ai/compose`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-AI-Consent': 'granted',
+          'X-AI-Mode': options.aiMode.mode,
+          ...(this.apiKey && { 'X-API-Key': this.apiKey }),
+        },
+        body: JSON.stringify({
+          report_section: 'general_predictions',
+          birth_data: {
+            zodiac_sign: birthData.zodiac_sign,
+            moon_sign: birthData.moon_sign,
+            ascendant: birthData.ascendant,
+            nakshatra: birthData.nakshatra,
+            planetary_positions: birthData.planets,
+            houses: birthData.houses,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI compose failed: ${response.statusText}`);
+      }
+
+      const aiResponse = await response.json();
+      const refined = aiResponse?.data?.refined_section;
+
+      return {
+        ...baseResult,
+        ai_synthesis: refined,
+        metadata: baseResult.metadata
+          ? { ...baseResult.metadata, ai_enhanced: true }
+          : baseResult.metadata,
+        mode: options.aiMode.mode,
+      };
+    } catch (error) {
+      console.warn('AI refinement failed, returning offline result:', error);
+      return {
+        ...baseResult,
+        error: baseResult.error ?? 'AI refinement unavailable; offline result provided.',
+      };
+    }
   }
 
   /**

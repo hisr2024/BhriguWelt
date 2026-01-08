@@ -9,6 +9,7 @@ import {
   PredictionResult,
   ChartData,
   BirthData,
+  GeneralPredictionRequest,
 } from '@/lib/api/predictions';
 
 interface UsePredictionsOptions {
@@ -28,6 +29,10 @@ interface UsePredictionsReturn {
   // Methods
   generatePrediction: (engine: PredictionEngine, birthData: ChartData, useAI?: boolean) => Promise<PredictionResult>;
   generateAllPredictions: (birthData: ChartData, useAI?: boolean) => Promise<Record<PredictionEngine, PredictionResult>>;
+  generateGeneralPredictions: (
+    birthData: ChartData,
+    options?: GeneralPredictionRequest
+  ) => Promise<PredictionResult>;
   calculateChart: (birthData: BirthData) => Promise<ChartData>;
   clearError: () => void;
   reset: () => void;
@@ -131,6 +136,35 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
   }, [api, autoCalculateChart]);
 
   /**
+   * Generate General Predictions using two-phase engine
+   */
+  const generateGeneralPredictions = useCallback(async (
+    birthData: ChartData,
+    options: GeneralPredictionRequest = {}
+  ) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (autoCalculateChart && !birthData.zodiac_sign) {
+        const calculatedChart = await api.calculateChart(birthData);
+        birthData = calculatedChart;
+        setChart(calculatedChart);
+      }
+
+      const result = await api.generateGeneralPredictions(birthData, options);
+      setPrediction(result);
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate general predictions';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [api, autoCalculateChart]);
+
+  /**
    * Clear error
    */
   const clearError = useCallback(() => {
@@ -159,6 +193,7 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
     // Methods
     generatePrediction,
     generateAllPredictions,
+    generateGeneralPredictions,
     calculateChart,
     clearError,
     reset,
@@ -302,18 +337,18 @@ export const useRelationships = (options?: UsePredictionsOptions) => {
  * Hook for General Predictions
  */
 export const useGeneralPredictions = (options?: UsePredictionsOptions) => {
-  const { generatePrediction, ...rest } = usePredictions(options);
+  const { generateGeneralPredictions, ...rest } = usePredictions(options);
 
-  const generateGeneralPredictions = useCallback(
-    (birthData: ChartData, useAI?: boolean) => {
-      return generatePrediction('predictions', birthData, useAI);
+  const generateGeneralPredictionsWithOptions = useCallback(
+    (birthData: ChartData, predictionOptions?: GeneralPredictionRequest) => {
+      return generateGeneralPredictions(birthData, predictionOptions);
     },
-    [generatePrediction]
+    [generateGeneralPredictions]
   );
 
   return {
     ...rest,
-    generateGeneralPredictions,
+    generateGeneralPredictions: generateGeneralPredictionsWithOptions,
   };
 };
 
