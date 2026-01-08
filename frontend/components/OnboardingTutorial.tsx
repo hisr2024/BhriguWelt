@@ -74,6 +74,7 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
           <button
             onClick={skip}
             className="text-white/60 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
+            aria-label="Close tutorial"
           >
             <X className="w-5 h-5" />
           </button>
@@ -128,6 +129,7 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
                     ? 'w-8 bg-gradient-to-r from-genz-electric-blue to-genz-purple-haze'
                     : 'w-2 bg-white/20 hover:bg-white/30'
                 }`}
+                aria-label={`Go to step ${index + 1}: ${steps[index].title}`}
               />
             ))}
           </div>

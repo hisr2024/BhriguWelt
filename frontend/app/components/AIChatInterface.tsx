@@ -222,6 +222,7 @@ export default function AIChatInterface({
                         onClick={() => handleCopyMessage(message.content, message.id)}
                         className="text-white/40 hover:text-genz-electric-blue transition-colors"
                         title="Copy message"
+                        aria-label="Copy message"
                       >
                         {copiedMessageId === message.id ? (
                           <Check className="w-4 h-4" />
@@ -234,6 +235,7 @@ export default function AIChatInterface({
                           onClick={() => handleSpeakMessage(message.content)}
                           className="text-white/40 hover:text-genz-electric-blue transition-colors"
                           title="Read aloud"
+                          aria-label={isSpeaking ? 'Stop reading message' : 'Read message aloud'}
                         >
                           {isSpeaking ? (
                             <VolumeX className="w-4 h-4" />

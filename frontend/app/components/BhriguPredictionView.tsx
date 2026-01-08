@@ -515,14 +515,14 @@ export default function BhriguPredictionView({
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-sm font-semibold text-gray-400 group-hover:text-cyan-300 transition-colors">
-                <span>{showFullAnalysis ? 'Collapse' : 'Expand'}</span>
-                {showFullAnalysis ? (
-                  <ChevronUp className="w-6 h-6" />
-                ) : (
-                  <ChevronDown className="w-6 h-6" />
-                )}
-              </div>
+              {showFullAnalysis ?  (
+                <ChevronUp className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
+              ) : (
+                <ChevronDown className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
+              )}
+              <span className="sr-only">
+                {showFullAnalysis ? 'Hide full analysis' : 'Show full analysis'}
+              </span>
             </button>
 
             <AnimatePresence initial={false}>
@@ -532,7 +532,8 @@ export default function BhriguPredictionView({
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3, ease: 'easeInOut' }}
+                  transition={{ duration:  0.3 }}
+                  id="full-analysis-content"
                   className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
                            border border-gray-700/50 rounded-xl p-6 overflow-visible"
                 >
