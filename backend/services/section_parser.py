@@ -5,7 +5,7 @@ Ensures 100% structured output with AI-powered section generation
 import re
 import logging
 import difflib
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 
 from services.bhrigu_offline_wisdom import get_offline_wisdom_generator
 
@@ -305,52 +305,27 @@ class SectionParser:
         repairs_used = 0
         
         for section_key in required:
-            section_data = self.extract_section_content(raw_text, section_key)
+            section_data, extraction_source = self._extract_section_content_with_status(raw_text, section_key)
             
-            # If section missing or insufficient, generate it specifically
-            if not section_data or len(section_data.strip()) < self.MINIMUM_SECTION_LENGTH:
-                if repairs_used >= max_repairs_per_request:
-                    logger.warning(
-                        "Section '%s' missing or insufficient. Max repairs reached "
-                        "(%s). Using offline wisdom fallback. request_id=%s",
-                        section_key,
-                        max_repairs_per_request,
-                        request_id
-                    )
-                    section_data = self._get_offline_wisdom_fallback(
-                        section_key,
-                        category,
-                        birth_data or {}
-                    )
-                else:
-                    repairs_used += 1
-                    logger.warning(
-                        "Section '%s' missing or insufficient, generating repair "
-                        "(%s/%s). request_id=%s",
-                        section_key,
-                        repairs_used,
-                        max_repairs_per_request,
-                        request_id
-                    )
-                    section_data = self.generate_missing_section(
-                        section_key,
-                        raw_text,
-                        category,
-                        birth_data or {},
-                        request_id=request_id
-                    )
-                    if not section_data or len(section_data.strip()) < self.MINIMUM_SECTION_LENGTH:
-                        logger.error(
-                            "Repair failed for section '%s'. Using offline wisdom fallback. "
-                            "request_id=%s",
-                            section_key,
-                            request_id
-                        )
-                        section_data = self._get_offline_wisdom_fallback(
-                            section_key,
-                            category,
-                            birth_data or {}
-                        )
+            # If parsing fails, inline full analysis for display
+            if extraction_source == "none" and raw_text:
+                logger.warning(
+                    f"Section '{section_key}' missing after all parsers; inlining full analysis"
+                )
+                self._track_fallback_usage(
+                    "inline_full_analysis",
+                    section_key,
+                    category
+                )
+                section_data = raw_text
+            elif not section_data or len(section_data.strip()) < self.MINIMUM_SECTION_LENGTH:
+                logger.warning(f"Section '{section_key}' missing or insufficient, generating...")
+                section_data = self.generate_missing_section(
+                    section_key, 
+                    raw_text, 
+                    category, 
+                    birth_data or {}
+                )
                 
             sections[section_key] = section_data
 
@@ -368,9 +343,16 @@ class SectionParser:
         Returns:
             Extracted section content or empty string
         """
+        content, _ = self._extract_section_content_with_status(text, section_key)
+        return content
+
+    def _extract_section_content_with_status(self, text: str, section_key: str) -> Tuple[str, str]:
+        """
+        Extract section content while returning the source of extraction.
+        """
         if not text:
             logger.debug(f"Section '{section_key}': No text provided for extraction")
-            return ""
+            return "", "none"
 
         headers = self.SECTION_HEADERS.get(section_key, [])
         logger.info(f"Extracting section '{section_key}' with {len(headers)} header patterns")
@@ -413,10 +395,13 @@ class SectionParser:
                     if match:
                         content = match.group(1).strip()
                         if len(content) > self.HEADER_EXTRACTION_MIN_LENGTH:
-                            logger.info(f"Section '{section_key}': Extracted {len(content)} chars using pattern {i+1} with header '{header}'")
-                            return content
-                        else:
-                            logger.debug(f"Section '{section_key}': Match found with header '{header}' but content too short ({len(content)} chars)")
+                            logger.info(
+                                f"Section '{section_key}': Extracted {len(content)} chars using pattern {i+1} with header '{header}'"
+                            )
+                            return content, "header"
+                        logger.debug(
+                            f"Section '{section_key}': Match found with header '{header}' but content too short ({len(content)} chars)"
+                        )
                 except Exception as e:
                     logger.warning(f"Section '{section_key}': Pattern {i+1} failed: {e}")
                     continue
@@ -432,49 +417,19 @@ class SectionParser:
 
         if keyword_result:
             logger.info(f"Section '{section_key}': Extracted {len(keyword_result)} chars via keyword search")
-        else:
-            logger.warning(f"Section '{section_key}': No content extracted by any method")
+            return keyword_result, "keyword"
 
-        return keyword_result
+        logger.info(f"Section '{section_key}': No keyword match, trying title similarity")
+        similarity_result = self._extract_by_title_similarity(text, section_key)
+        if similarity_result:
+            logger.info(
+                f"Section '{section_key}': Extracted {len(similarity_result)} chars via title similarity"
+            )
+            self._track_fallback_usage("title_similarity", section_key)
+            return similarity_result, "title_similarity"
 
-    def _extract_markdown_section(self, text: str, header: str) -> str:
-        """
-        Extract markdown section content, preserving nested headers.
-
-        Args:
-            text: Full text to search
-            header: Header title to match
-
-        Returns:
-            Extracted content or empty string
-        """
-        header_pattern = re.compile(
-            rf'^(?P<hashes>#{2,4})\s*(?P<number>\d+(?:\.\d+)*)?\.?\s*'
-            rf'{re.escape(header)}\s*:?[\t ]*$',
-            re.IGNORECASE | re.MULTILINE
-        )
-        boundary_pattern = re.compile(
-            r'^(#{1,4})\s*(?:\d+(?:\.\d+)*)?\.?\s*\S+',
-            re.MULTILINE
-        )
-
-        for match in header_pattern.finditer(text):
-            level = len(match.group('hashes'))
-            content_start = match.end()
-            if content_start < len(text) and text[content_start] == '\n':
-                content_start += 1
-
-            content_end = len(text)
-            for boundary in boundary_pattern.finditer(text, content_start):
-                if len(boundary.group(1)) <= level:
-                    content_end = boundary.start()
-                    break
-
-            content = text[content_start:content_end].strip()
-            if len(content) > self.HEADER_EXTRACTION_MIN_LENGTH:
-                return content
-
-        return ""
+        logger.warning(f"Section '{section_key}': No content extracted by any method")
+        return "", "none"
     
     def _extract_by_keywords(self, text: str, section_key: str) -> str:
         """
@@ -514,6 +469,43 @@ class SectionParser:
         result = '\n\n'.join(relevant_paras)
         logger.debug(f"Keyword extraction returned {len(result)} characters")
         return result
+
+    def _extract_by_title_similarity(self, text: str, section_key: str) -> str:
+        """
+        Extract content by comparing paragraph starts to section titles.
+        """
+        headers = self.SECTION_HEADERS.get(section_key, [])
+        if not headers:
+            return ""
+
+        normalized_headers = [self._normalize_title(header) for header in headers]
+        paragraphs = [para.strip() for para in text.split('\n\n') if para.strip()]
+        best_match = ("", 0.0)
+
+        for para in paragraphs:
+            first_line = para.splitlines()[0].strip()
+            normalized_start = self._normalize_title(first_line)
+            for header in normalized_headers:
+                similarity = difflib.SequenceMatcher(None, normalized_start, header).ratio()
+                if similarity > best_match[1]:
+                    best_match = (para, similarity)
+
+        if best_match[1] >= 0.65:
+            return self._strip_title_line(best_match[0])
+
+        return ""
+
+    def _normalize_title(self, title: str) -> str:
+        title = re.sub(r'^[#*\s\d\.\-:]+', '', title)
+        title = re.sub(r'[^a-zA-Z\s]', '', title)
+        return re.sub(r'\s+', ' ', title).strip().lower()
+
+    def _strip_title_line(self, paragraph: str) -> str:
+        lines = paragraph.splitlines()
+        if len(lines) <= 1:
+            return paragraph.strip()
+        remaining = "\n".join(lines[1:]).strip()
+        return remaining or paragraph.strip()
     
     def generate_missing_section(
         self, 
@@ -538,13 +530,8 @@ class SectionParser:
         """
         
         if not self.openai_service:
-            logger.warning(
-                "OpenAI service unavailable for section '%s'. Using offline wisdom fallback. "
-                "request_id=%s",
-                section_key,
-                request_id
-            )
-            return self._get_offline_wisdom_fallback(section_key, category, birth_data)
+            self._track_fallback_usage("missing_section_fallback", section_key, category)
+            return self._get_fallback_section(section_key, birth_data)
         
         # Create targeted prompt for missing section
         section_prompt = self._create_section_specific_prompt(
@@ -564,13 +551,9 @@ class SectionParser:
                 return generated, "generated", None
             return generated
         except Exception as e:
-            logger.error(
-                "Error generating section '%s': %s. Using offline wisdom fallback. request_id=%s",
-                section_key,
-                e,
-                request_id
-            )
-            return self._get_offline_wisdom_fallback(section_key, category, birth_data)
+            logger.error(f"Error generating section {section_key}: {e}")
+            self._track_fallback_usage("missing_section_fallback", section_key, category)
+            return self._get_fallback_section(section_key, birth_data)
     
     def _create_section_specific_prompt(
         self, 
@@ -839,6 +822,14 @@ According to classical Vedic principles, individuals with {zodiac} as their zodi
         """
         validation = self.validate_sections(sections, category)
         return [key for key, status in validation.items() if status != "ok"]
+
+    def _track_fallback_usage(self, event: str, section_key: str, category: Optional[str] = None) -> None:
+        logger.info(
+            "Telemetry: section_parser_fallback_used event=%s section=%s category=%s",
+            event,
+            section_key,
+            category or "unknown"
+        )
 
 
 # Module-level singleton
