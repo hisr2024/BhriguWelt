@@ -1,4 +1,8 @@
 import { generatePastLivesPrediction, type PastLivesEngineOptions } from '../engines/pastLivesEngine';
+import {
+  generateLifeEventsPrediction,
+  type LifeEventsMode,
+} from '../engines/lifeEventsEngine';
 
 /**
  * Predictions API Client
@@ -78,6 +82,14 @@ export interface GeneralPredictionRequest extends GeneralPredictionOptions {
   useAI?: boolean;
   aiMode?: AIMode;
   language?: string;
+}
+
+export interface LifeEventsRequest {
+  useAI?: boolean;
+  aiMode?: AIMode;
+  mode?: LifeEventsMode;
+  language?: string;
+  cacheTtlMs?: number;
 }
 
 export interface DashaTimeline {
@@ -276,6 +288,30 @@ export class PredictionsAPI {
    */
   async getLifeEvents(birthData: ChartData, useAI: boolean = true): Promise<PredictionResult> {
     return this.generatePrediction('life_events', birthData, useAI);
+  }
+
+  /**
+   * Generate Life Events using two-phase precision engine
+   */
+  async generateLifeEvents(
+    birthData: ChartData,
+    options: LifeEventsRequest = {}
+  ): Promise<PredictionResult> {
+    try {
+      return await generateLifeEventsPrediction(birthData, {
+        mode: options.mode ?? 'offline',
+        useAI: options.useAI ?? false,
+        language: options.language ?? 'en',
+        aiMode: options.aiMode,
+        cacheTtlMs: options.cacheTtlMs,
+      });
+    } catch (error) {
+      console.error('Life events engine failed, falling back to API:', error);
+      if (options.useAI ?? true) {
+        return this.generatePrediction('life_events', birthData, true, options.language ?? 'en');
+      }
+      throw error;
+    }
   }
 
   /**
