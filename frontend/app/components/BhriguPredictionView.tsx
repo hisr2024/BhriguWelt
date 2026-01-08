@@ -195,7 +195,7 @@ export default function BhriguPredictionView({
       // Try multiple patterns to find section content
       const patterns = [
         // ## Header format (most common)
-        new RegExp(`##\\s*(? :\\d+\\.? \\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
+        new RegExp(`##\\s*(?:\\d+\\.? \\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
         // Numbered format (1.  Header)
         new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
         // Bold format (**Header**)
