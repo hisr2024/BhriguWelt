@@ -255,7 +255,7 @@ export default function BhriguPredictionView({
         className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
                    border ${colorClass.border} ${colorClass.hover} rounded-xl p-6 transition-all`}
       >
-        <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3`}>
+        <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3 relative z-10`}>
           <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
           {sectionTitle}
         </h3>
@@ -323,7 +323,7 @@ export default function BhriguPredictionView({
         {availableSections.length > 0 && (
           <div className="space-y-4">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-3">
+              <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-3 relative z-10">
                 {icon}
                 Detailed Insights
               </h2>
@@ -355,12 +355,12 @@ export default function BhriguPredictionView({
               className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
                        border border-gray-700/50 rounded-xl p-6
                        hover:border-cyan-500/30 transition-all
-                       flex items-center justify-between group"
+                       flex items-center justify-between group relative z-10"
             >
               <div className="flex items-center gap-3">
                 <BookOpen className="w-6 h-6 text-cyan-400" />
                 <div className="text-left">
-                  <h3 className="text-xl font-bold text-white">
+                  <h3 className="text-xl font-bold text-white relative z-10">
                     View Complete Reading
                   </h3>
                   <p className="text-sm text-gray-400 mt-1">
