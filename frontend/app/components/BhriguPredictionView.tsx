@@ -142,6 +142,27 @@ export default function BhriguPredictionView({
   const [question, setQuestion] = useState('');
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const storedState = sessionStorage.getItem(`bhrigu-section-expanded:${category}`);
+    if (storedState) {
+      try {
+        const parsedState = JSON.parse(storedState) as Record<string, boolean>;
+        setExpandedSections(parsedState);
+        return;
+      } catch (error) {
+        console.warn('Failed to parse saved section expansion state:', error);
+      }
+    }
+    setExpandedSections({});
+  }, [category]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    sessionStorage.setItem(`bhrigu-section-expanded:${category}`, JSON.stringify(expandedSections));
+  }, [category, expandedSections]);
 
   useEffect(() => {
     if (profile) {
@@ -247,23 +268,53 @@ export default function BhriguPredictionView({
 
     const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES[DEFAULT_COLOR];
 
+    const isExpanded = expandedSections[sectionKey] ?? false;
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
-                   border ${colorClass.border} ${colorClass.hover} rounded-xl p-6 transition-all`}
+                   border ${colorClass.border} ${colorClass.hover} rounded-xl transition-all`}
       >
-        <h3 className={`text-xl font-bold ${colorClass.text} mb-4 flex items-center gap-3`}>
-          <div className={`w-1. 5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
-          {sectionTitle}
-        </h3>
-        <div className="prose prose-invert prose-cyan max-w-none">
-          <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-            {content}
+        <button
+          type="button"
+          onClick={() =>
+            setExpandedSections((prev) => ({
+              ...prev,
+              [sectionKey]: !(prev[sectionKey] ?? false)
+            }))
+          }
+          className="w-full p-6 flex items-center justify-between gap-4"
+        >
+          <div className="flex items-center gap-3">
+            <div className={`w-1.5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
+            <h3 className={`text-xl font-bold ${colorClass.text}`}>{sectionTitle}</h3>
           </div>
-        </div>
+          {isExpanded ? (
+            <ChevronUp className="w-5 h-5 text-gray-300" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-gray-300" />
+          )}
+        </button>
+        <AnimatePresence initial={false}>
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25 }}
+              className="px-6 pb-6"
+            >
+              <div className="prose prose-invert prose-cyan max-w-none">
+                <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                  {content}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     );
   };
