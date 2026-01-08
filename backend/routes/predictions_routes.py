@@ -9,7 +9,7 @@ from services.section_parser import get_section_parser
 from utils.client_status import parse_client_online
 from datetime import datetime
 import logging
-from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
+from utils.response_formatter import prediction_response, prediction_error_response
 
 logger = logging.getLogger(__name__)
 
@@ -59,22 +59,22 @@ def daily_prediction():
             prediction = openai_service.generate_prediction(prompt, birth_chart)
             mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'metadata': {
-                'mode': mode,
-                'client_online': client_online,
-            },
-            'data': {
+        return prediction_response(
+            {
                 'date': today,
                 'zodiac_sign': birth_chart['zodiac_sign'],
-                'prediction': prediction_result['text'],
-                'partial': prediction_result['partial']
+                'prediction': prediction
+            },
+            metadata={
+                'timeframe': 'daily',
+                'zodiac_sign': birth_chart['zodiac_sign'],
+                'moon_sign': birth_chart['moon_sign'],
+                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate daily prediction: {str(e)}", 500)
 
 @bp.route('/weekly', methods=['POST'])
 def weekly_prediction():
@@ -117,21 +117,20 @@ def weekly_prediction():
             prediction = openai_service.generate_prediction(prompt, birth_chart)
             mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'metadata': {
-                'mode': mode,
-                'client_online': client_online,
-            },
-            'data': {
+        return prediction_response(
+            {
                 'zodiac_sign': birth_chart['zodiac_sign'],
-                'weekly_prediction': prediction_result['text'],
-                'partial': prediction_result['partial']
+                'weekly_prediction': prediction
+            },
+            metadata={
+                'timeframe': 'weekly',
+                'zodiac_sign': birth_chart['zodiac_sign'],
+                'nakshatra': birth_chart['nakshatra']
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate weekly prediction: {str(e)}", 500)
 
 @bp.route('/monthly', methods=['POST'])
 def monthly_prediction():
@@ -176,22 +175,21 @@ def monthly_prediction():
             prediction = openai_service.generate_prediction(prompt, birth_chart)
             mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'metadata': {
-                'mode': mode,
-                'client_online': client_online,
-            },
-            'data': {
+        return prediction_response(
+            {
                 'month': current_month,
                 'zodiac_sign': birth_chart['zodiac_sign'],
-                'monthly_prediction': prediction_result['text'],
-                'partial': prediction_result['partial']
+                'monthly_prediction': prediction
+            },
+            metadata={
+                'timeframe': 'monthly',
+                'zodiac_sign': birth_chart['zodiac_sign'],
+                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate monthly prediction: {str(e)}", 500)
 
 @bp.route('/yearly', methods=['POST'])
 def yearly_prediction():
@@ -237,22 +235,21 @@ def yearly_prediction():
             prediction = openai_service.generate_prediction(prompt, birth_chart)
             mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'metadata': {
-                'mode': mode,
-                'client_online': client_online,
-            },
-            'data': {
+        return prediction_response(
+            {
                 'year': current_year,
                 'zodiac_sign': birth_chart['zodiac_sign'],
-                'yearly_prediction': prediction_result['text'],
-                'partial': prediction_result['partial']
+                'yearly_prediction': prediction
+            },
+            metadata={
+                'timeframe': 'yearly',
+                'zodiac_sign': birth_chart['zodiac_sign'],
+                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate yearly prediction: {str(e)}", 500)
 
 @bp.route('/question', methods=['POST'])
 def specific_question():
@@ -262,7 +259,7 @@ def specific_question():
         question = data.get('question')
 
         if not question:
-            return jsonify({'error': 'Question is required'}), 400
+            return prediction_error_response('Question is required', 400)
 
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
@@ -304,22 +301,23 @@ def specific_question():
             answer = openai_service.generate_prediction(prompt, birth_chart)
             mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'metadata': {
-                'mode': mode,
-                'client_online': client_online,
-            },
-            'data': {
+        return prediction_response(
+            {
                 'question': question,
                 'answer': answer_result['text'],
                 'partial': answer_result['partial'],
                 'zodiac_sign': birth_chart['zodiac_sign']
+            },
+            metadata={
+                'timeframe': 'question',
+                'zodiac_sign': birth_chart['zodiac_sign'],
+                'nakshatra': birth_chart['nakshatra'],
+                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to answer prediction question: {str(e)}", 500)
 
 @bp.route('/test-section-extraction', methods=['POST'])
 def test_section_extraction():

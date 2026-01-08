@@ -5,8 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import type { Profile } from '@/lib/types';
-import { Accordion } from '@/app/components/ui/Accordion';
-import { AccordionItem } from '@/app/components/ui/AccordionItem';
+import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; color: string }>> = {
@@ -222,19 +221,19 @@ export default function BhriguPredictionView({
       const response = await fetchPrediction(profileData);
       const normalized = normalizePredictionResponse(response);
 
-      if (response. status === 'success') {
-        const predictionData = response.data?.prediction ?? response.data;
-        const cacheAge = response.data?.cache_age ?? null;
-        const cacheKeyValue = response.data?.cache_key ?? null;
-        setPrediction(predictionData);
+      const normalized = normalizePredictionResponse(response);
+
+      if (normalized.status === 'success') {
+        setPrediction(normalized.prediction);
         setFromCache(
-          Boolean(response.message?.toLowerCase().includes('cache')) ||
-          cacheAge !== null
+          Boolean(normalized.metadata?.from_cache) ||
+          normalized.metadata?.source === 'cache' ||
+          normalized.message?.toLowerCase().includes('cache')
         );
         setCacheAgeSeconds(cacheAge);
         setCacheKey(cacheKeyValue);
       } else {
-        setError(response.message || 'Failed to generate prediction');
+        setError(normalized.message || 'Failed to generate prediction');
       }
     } catch (err:  any) {
       setError(err. response?.data?.message || err.message || 'An error occurred');

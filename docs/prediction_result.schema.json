@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bhriguwelt.com/schemas/prediction-result.json",
+  "title": "PredictionResult",
+  "description": "Shared prediction response envelope for backend and client normalization.",
+  "type": "object",
+  "required": ["status", "prediction", "metadata"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "description": "Response status for prediction requests.",
+      "enum": ["success", "error"]
+    },
+    "prediction": {
+      "description": "Prediction payload (string or structured object).",
+      "nullable": true
+    },
+    "metadata": {
+      "description": "Optional metadata for the prediction response.",
+      "type": ["object", "null"],
+      "additionalProperties": true
+    },
+    "message": {
+      "type": "string",
+      "description": "Optional message for display purposes."
+    },
+    "timestamp": {
+      "type": "string",
+      "description": "UTC timestamp for when the response was generated."
+    }
+  },
+  "additionalProperties": true
+}

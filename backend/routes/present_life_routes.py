@@ -2,10 +2,10 @@
 Present Life API Routes
 Current life analysis and guidance endpoints
 """
-from flask import Blueprint, request, jsonify
-from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
+from flask import Blueprint, request
+from services.astrology_calculator import astrology_calculator
 from services.openai_service import openai_service
-from utils.client_status import parse_client_online
+from utils.response_formatter import prediction_response, prediction_error_response
 
 bp = Blueprint('present_life', __name__, url_prefix='/api/present-life')
 
@@ -37,20 +37,19 @@ def comprehensive_analysis():
             present_life = openai_service.generate_present_life_analysis(birth_chart)
             mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'metadata': {
-                'mode': mode,
-                'client_online': client_online,
-            },
-            'data': {
+        return prediction_response(
+            {
                 'birth_chart': birth_chart,
                 'present_life_analysis': present_life
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate present life analysis: {str(e)}", 500)
 
 @bp.route('/career-guidance', methods=['POST'])
 def career_guidance():
@@ -85,22 +84,20 @@ def career_guidance():
             career = openai_service.generate_prediction(prompt, birth_chart)
             mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'metadata': {
-                'mode': mode,
-                'client_online': client_online,
-            },
-            'data': {
-                'career_guidance': career_result['text'],
+        return prediction_response(
+            {
+                'career_guidance': career,
                 'career_house': birth_chart['houses'][9],
-                'authority_sign': birth_chart['zodiac_sign'],
-                'partial': career_result['partial']
+                'authority_sign': birth_chart['zodiac_sign']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate career guidance: {str(e)}", 500)
 
 @bp.route('/relationships', methods=['POST'])
 def relationships_analysis():
@@ -135,22 +132,20 @@ def relationships_analysis():
             relationships = openai_service.generate_prediction(prompt, birth_chart)
             mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'metadata': {
-                'mode': mode,
-                'client_online': client_online,
-            },
-            'data': {
-                'relationships_analysis': relationships_result['text'],
+        return prediction_response(
+            {
+                'relationships_analysis': relationships,
                 'partnership_house': birth_chart['houses'][6],
-                'venus_position': birth_chart['planets']['Venus'],
-                'partial': relationships_result['partial']
+                'venus_position': birth_chart['planets']['Venus']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate relationships analysis: {str(e)}", 500)
 
 @bp.route('/health-wellness', methods=['POST'])
 def health_wellness():
@@ -185,22 +180,20 @@ def health_wellness():
             health = openai_service.generate_prediction(prompt, birth_chart)
             mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'metadata': {
-                'mode': mode,
-                'client_online': client_online,
-            },
-            'data': {
-                'health_guidance': health_result['text'],
+        return prediction_response(
+            {
+                'health_guidance': health,
                 'health_house': birth_chart['houses'][5],
-                'vitality_sign': birth_chart['ascendant'],
-                'partial': health_result['partial']
+                'vitality_sign': birth_chart['ascendant']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate health guidance: {str(e)}", 500)
 
 @bp.route('/financial-prospects', methods=['POST'])
 def financial_prospects():
@@ -235,22 +228,20 @@ def financial_prospects():
             financial = openai_service.generate_prediction(prompt, birth_chart)
             mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'metadata': {
-                'mode': mode,
-                'client_online': client_online,
-            },
-            'data': {
-                'financial_prospects': financial_result['text'],
+        return prediction_response(
+            {
+                'financial_prospects': financial,
                 'wealth_house': birth_chart['houses'][1],
-                'prosperity_planet': birth_chart['planets']['Jupiter'],
-                'partial': financial_result['partial']
+                'prosperity_planet': birth_chart['planets']['Jupiter']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate financial prospects: {str(e)}", 500)
 
 @bp.route('/spiritual-growth', methods=['POST'])
 def spiritual_growth():
@@ -285,22 +276,20 @@ def spiritual_growth():
             spiritual = openai_service.generate_prediction(prompt, birth_chart)
             mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'metadata': {
-                'mode': mode,
-                'client_online': client_online,
-            },
-            'data': {
-                'spiritual_guidance': spiritual_result['text'],
+        return prediction_response(
+            {
+                'spiritual_guidance': spiritual,
                 'dharma_house': birth_chart['houses'][8],
-                'wisdom_planet': birth_chart['planets']['Jupiter'],
-                'partial': spiritual_result['partial']
+                'wisdom_planet': birth_chart['planets']['Jupiter']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate spiritual guidance: {str(e)}", 500)
 
 @bp.route('/current-dasha', methods=['POST'])
 def current_dasha():
@@ -335,19 +324,17 @@ def current_dasha():
             dasha = openai_service.generate_prediction(prompt, birth_chart)
             mode = 'online' if openai_service.enabled else 'offline'
 
-        return jsonify({
-            'status': 'success',
-            'metadata': {
-                'mode': mode,
-                'client_online': client_online,
-            },
-            'data': {
-                'dasha_analysis': dasha_result['text'],
+        return prediction_response(
+            {
+                'dasha_analysis': dasha,
                 'current_dasha': birth_chart['dasha_period'],
-                'nakshatra': birth_chart['nakshatra'],
-                'partial': dasha_result['partial']
+                'nakshatra': birth_chart['nakshatra']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate dasha analysis: {str(e)}", 500)

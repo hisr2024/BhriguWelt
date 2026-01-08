@@ -2,24 +2,10 @@
 Karmic Journey API Routes
 Soul journey and karmic analysis endpoints
 """
-from flask import Blueprint, request, jsonify
-from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
+from flask import Blueprint, request
+from services.astrology_calculator import astrology_calculator
 from services.openai_service import openai_service
-from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
-
-
-def _get_birth_chart(data):
-    calculator = get_astrology_calculator()
-    cached_birth_data = get_cached_birth_data(data)
-    if calculator:
-        return calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        ), None
-    if cached_birth_data:
-        return cached_birth_data, None
-    return None, dependency_error_response(get_astrology_dependency_error())
+from utils.response_formatter import prediction_response, prediction_error_response
 
 bp = Blueprint('karmic_journey', __name__, url_prefix='/api/karmic-journey')
 
@@ -46,16 +32,19 @@ def karmic_journey_analysis():
         # Generate karmic journey analysis using OpenAI
         karmic_analysis = openai_service.generate_karmic_journey(birth_chart)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
+        return prediction_response(
+            {
                 'birth_chart': birth_chart,
                 'karmic_journey': karmic_analysis
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate karmic journey analysis: {str(e)}", 500)
 
 @bp.route('/soul-purpose', methods=['POST'])
 def soul_purpose():
@@ -83,17 +72,19 @@ def soul_purpose():
 
         analysis_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
-                'soul_purpose': analysis_result['text'],
-                'dharmic_path': birth_chart['planets']['Rahu']['sign'],
-                'partial': analysis_result['partial']
+        return prediction_response(
+            {
+                'soul_purpose': analysis,
+                'dharmic_path': birth_chart['planets']['Rahu']['sign']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate soul purpose: {str(e)}", 500)
 
 @bp.route('/karmic-lessons', methods=['POST'])
 def karmic_lessons():
@@ -121,18 +112,20 @@ def karmic_lessons():
 
         lessons_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
-                'karmic_lessons': lessons_result['text'],
+        return prediction_response(
+            {
+                'karmic_lessons': lessons,
                 'karmic_number': birth_chart['karmic_number'],
-                'south_node': birth_chart['planets']['Ketu']['sign'],
-                'partial': lessons_result['partial']
+                'south_node': birth_chart['planets']['Ketu']['sign']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate karmic lessons: {str(e)}", 500)
 
 @bp.route('/soul-evolution', methods=['POST'])
 def soul_evolution():
@@ -159,18 +152,20 @@ def soul_evolution():
 
         evolution_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
-                'soul_evolution': evolution_result['text'],
+        return prediction_response(
+            {
+                'soul_evolution': evolution,
                 'spiritual_teacher': birth_chart['planets']['Jupiter']['sign'],
-                'emotional_evolution': birth_chart['planets']['Moon']['sign'],
-                'partial': evolution_result['partial']
+                'emotional_evolution': birth_chart['planets']['Moon']['sign']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate soul evolution: {str(e)}", 500)
 
 @bp.route('/dharmic-path', methods=['POST'])
 def dharmic_path():
@@ -199,15 +194,17 @@ def dharmic_path():
 
         dharma_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
-        return jsonify({
-            'status': 'success',
-            'data': {
-                'dharmic_path': dharma_result['text'],
+        return prediction_response(
+            {
+                'dharmic_path': dharma,
                 'career_house': birth_chart['houses'][9],
-                'dharma_planet': birth_chart['planets']['Jupiter'],
-                'partial': dharma_result['partial']
+                'dharma_planet': birth_chart['planets']['Jupiter']
+            },
+            metadata={
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra')
             }
-        }), 200
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return prediction_error_response(f"Failed to generate dharmic path: {str(e)}", 500)
