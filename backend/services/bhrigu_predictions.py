@@ -327,10 +327,7 @@ Provide specific, actionable guidance rooted in Bhrigu Samhita and Nadi Jyotisa 
             'title': 'Your Karmic Journey & Soul Purpose',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(
-                birth_data,
-                sections.get('section_generation_status')
-            ),
+            'metadata': self._generate_metadata(birth_data, 'karmic_journey'),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -435,10 +432,7 @@ Reference specific Nadi Jyotisa indicators and planetary positions."""
             'title': 'Your Past Lives & Karmic Patterns',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(
-                birth_data,
-                sections.get('section_generation_status')
-            ),
+            'metadata': self._generate_metadata(birth_data, 'past_lives'),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -553,10 +547,7 @@ Ground predictions in Bhrigu Samhita principles of karmic progression."""
             'title': 'Your Future Lives & Soul Evolution',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(
-                birth_data,
-                sections.get('section_generation_status')
-            ),
+            'metadata': self._generate_metadata(birth_data, 'future_lives'),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -693,10 +684,7 @@ Base analysis on classical Bhrigu Samhita delineation methods."""
             'title': 'Your Present Life Comprehensive Analysis',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(
-                birth_data,
-                sections.get('section_generation_status')
-            ),
+            'metadata': self._generate_metadata(birth_data, 'present_life'),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -866,10 +854,7 @@ Provide month-level precision where possible using Nadi Jyotisa methods."""
             'title': 'Your Life Events with Precision Timing',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(
-                birth_data,
-                sections.get('section_generation_status')
-            ),
+            'metadata': self._generate_metadata(birth_data, 'life_events'),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -1087,10 +1072,7 @@ Provide practical, affordable, and effective remedies that can be integrated int
             'title': 'Your Personalized Karmic Remedies',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(
-                birth_data,
-                sections.get('section_generation_status')
-            ),
+            'metadata': self._generate_metadata(birth_data, 'karmic_remedies'),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -1309,10 +1291,7 @@ Provide specific, actionable relationship guidance based on classical astrology.
             'title': 'Your Relationships & Soul Connections',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(
-                birth_data,
-                sections.get('section_generation_status')
-            ),
+            'metadata': self._generate_metadata(birth_data, 'relationships'),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -1398,10 +1377,7 @@ Base on current planetary transits and your natal chart."""
             'title': 'Your General Predictions',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(
-                birth_data,
-                sections.get('section_generation_status')
-            ),
+            'metadata': self._generate_metadata(birth_data, 'predictions'),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -1473,13 +1449,12 @@ Base on current planetary transits and your natal chart."""
         result = '\n'.join(section_lines).strip()
         return result if result else f"See full analysis for {section_header}"
 
-    def _generate_metadata(
-        self,
-        birth_data: Dict[str, Any],
-        section_generation_status: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+    def _generate_metadata(self, birth_data: Dict[str, Any], category: str) -> Dict[str, Any]:
         """Generate metadata for the prediction"""
-        metadata = {
+        category_dash = category.replace('_', '-')
+        return {
+            'category': category,
+            'category_dashed': category_dash,
             'zodiac_sign': birth_data.get('zodiac_sign'),
             'nakshatra': birth_data.get('nakshatra'),
             'moon_sign': birth_data.get('moon_sign'),
