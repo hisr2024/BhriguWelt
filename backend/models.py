@@ -29,6 +29,8 @@ class BhriguPredictionCache(db.Model):
 
     # Full prediction response from AI
     prediction_data = db.Column(db.Text, nullable=False)
+    # Synthesized analysis stored separately to avoid overwriting full_analysis
+    complete_analysis = db.Column(db.Text, nullable=True)
 
     # Metadata
     zodiac_sign = db.Column(db.String(20), index=True)
@@ -56,6 +58,10 @@ class BhriguPredictionCache(db.Model):
         except:
             prediction_dict = {'raw': self.prediction_data}
 
+        cache_age_seconds = None
+        if self.created_at:
+            cache_age_seconds = int((datetime.utcnow() - self.created_at).total_seconds())
+
         return {
             'id': self.id,
             'category': self.category,
@@ -64,26 +70,51 @@ class BhriguPredictionCache(db.Model):
             'zodiac_sign': self.zodiac_sign,
             'nakshatra': self.nakshatra,
             'created_at': self.created_at.isoformat() if self.created_at else None,
+            'cache_age': cache_age_seconds,
+            'cache_key': f"{self.birth_data_hash}:{self.category}:{self.question or ''}",
             'access_count': self.access_count
         }
 
+        if isinstance(prediction_dict, dict) and 'full_analysis' in prediction_dict:
+            response['full_analysis'] = prediction_dict.get('full_analysis')
+
+        return response
+
     @staticmethod
-    def create_hash(birth_data: dict) -> str:
+    def create_hash(birth_data: dict, category: str = None) -> str:
         """Create anonymized hash of birth data"""
         import hashlib
         # Use only astrological data, not PII
-        data_str = f"{birth_data.get('date_of_birth')}_{birth_data.get('time_of_birth')}_{birth_data.get('latitude')}_{birth_data.get('longitude')}"
+        base_parts = [
+            birth_data.get('date_of_birth'),
+            birth_data.get('time_of_birth'),
+            birth_data.get('latitude'),
+            birth_data.get('longitude')
+        ]
+        category_value = category or birth_data.get('category')
+        optional_parts = [
+            category_value,
+            birth_data.get('place_of_birth'),
+            birth_data.get('timezone')
+        ]
+        data_parts = [part for part in base_parts if part not in (None, '')]
+        data_parts.extend(part for part in optional_parts if part not in (None, ''))
+        data_parts.append('v2')
+        data_str = "_".join(str(part) for part in data_parts)
         return hashlib.sha256(data_str.encode()).hexdigest()
 
     @classmethod
     def cache_prediction(cls, birth_data: dict, category: str, prediction: dict,
                         question: str = None, metadata: dict = None):
         """Cache a new prediction"""
+        prediction_payload = dict(prediction)
+        complete_analysis = prediction_payload.pop('complete_analysis', None)
         cache_entry = cls(
-            birth_data_hash=cls.create_hash(birth_data),
+            birth_data_hash=cls.create_hash(birth_data, category),
             category=category,
             question=question,
-            prediction_data=json.dumps(prediction),
+            prediction_data=json.dumps(prediction_payload),
+            complete_analysis=complete_analysis,
             zodiac_sign=metadata.get('zodiac_sign') if metadata else None,
             nakshatra=metadata.get('nakshatra') if metadata else None,
             moon_sign=metadata.get('moon_sign') if metadata else None,
@@ -97,7 +128,7 @@ class BhriguPredictionCache(db.Model):
     @classmethod
     def get_cached_prediction(cls, birth_data: dict, category: str, question: str = None):
         """Retrieve cached prediction if available"""
-        birth_hash = cls.create_hash(birth_data)
+        birth_hash = cls.create_hash(birth_data, category)
         query = cls.query.filter_by(birth_data_hash=birth_hash, category=category)
 
         if question:
