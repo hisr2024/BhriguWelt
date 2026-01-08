@@ -1410,10 +1410,28 @@ Base on current planetary transits and your natal chart."""
 
 # Singleton instance
 _bhrigu_service = None
+_bhrigu_service_init_error = None
 
-def get_bhrigu_service():
+
+def get_bhrigu_service(force_reinit: bool = False):
     """Get or create Bhrigu Predictions Service singleton"""
-    global _bhrigu_service
+    global _bhrigu_service, _bhrigu_service_init_error
+    if force_reinit:
+        _bhrigu_service = None
     if _bhrigu_service is None:
-        _bhrigu_service = BhriguPredictionsService()
+        try:
+            _bhrigu_service = BhriguPredictionsService()
+            _bhrigu_service_init_error = None
+        except Exception as exc:
+            _bhrigu_service_init_error = {
+                'error': str(exc),
+                'type': exc.__class__.__name__,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            raise
     return _bhrigu_service
+
+
+def get_bhrigu_service_init_error() -> Optional[Dict[str, str]]:
+    """Return the last initialization error for the Bhrigu service."""
+    return _bhrigu_service_init_error
