@@ -133,6 +133,7 @@ export default function PasscodeSetup({ onComplete }: PasscodeSetupProps) {
                   type="button"
                   onClick={() => setShowPasscode(!showPasscode)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+                  aria-label={showPasscode ? 'Hide passcode' : 'Show passcode'}
                 >
                   {showPasscode ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>

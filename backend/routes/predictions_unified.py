@@ -3,11 +3,13 @@ Unified Predictions API Routes
 Comprehensive prediction endpoints supporting all categories with online/offline/hybrid modes
 """
 from flask import Blueprint, request, jsonify
+from utils.client_status import parse_client_online
 from services.prediction_orchestrator import get_prediction_orchestrator
-from services.astrology_calculator import astrology_calculator
+from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.bhrigu_core_wisdom import get_bhrigu_core_wisdom
 from datetime import datetime
 import logging
+from utils.response_formatter import prediction_response, prediction_error_response
 
 logger = logging.getLogger(__name__)
 
@@ -96,14 +98,16 @@ def generate_category_prediction(category):
         required_fields = ['date_of_birth', 'time_of_birth', 'place_of_birth']
         for field in required_fields:
             if field not in data:
-                return jsonify({
-                    'status': 'error',
-                    'error': f'Missing required field: {field}'
-                }), 400
+                return prediction_error_response(
+                    f'Missing required field: {field}',
+                    400,
+                    metadata={'category': category}
+                )
         
         # Get mode and language
         mode = data.get('mode', 'hybrid')
         language = data.get('language', 'en')
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
         
         # Calculate birth chart
         try:
@@ -114,38 +118,41 @@ def generate_category_prediction(category):
             )
         except Exception as e:
             logger.error(f"Birth chart calculation failed: {e}")
-            return jsonify({
-                'status': 'error',
-                'error': f'Failed to calculate birth chart: {str(e)}'
-            }), 500
+            return prediction_error_response(
+                f'Failed to calculate birth chart: {str(e)}',
+                500,
+                metadata={'category': category}
+            )
         
         # Generate prediction
         result = orchestrator.generate_prediction(
             category=category,
             chart_data=birth_chart,
             mode=mode,
+            client_online=client_online,
             language=language
         )
         
-        return jsonify({
-            'status': 'success',
-            'category': category,
-            'mode': result.get('mode', mode),
-            'language': language,
-            'prediction': result.get('prediction', ''),
-            'matched_rules': result.get('matched_rules', []),
-            'citations': result.get('citations', []),
-            'source': result.get('source', 'Unknown'),
-            'timestamp': datetime.utcnow().isoformat()
-        }), 200
+        return prediction_response(
+            result.get('prediction', result),
+            metadata={
+                'category': category,
+                'mode': result.get('mode', mode),
+                'language': language,
+                'matched_rules': result.get('matched_rules', []),
+                'citations': result.get('citations', []),
+                'source': result.get('source', 'Unknown'),
+                'timestamp': datetime.utcnow().isoformat()
+            }
+        )
         
     except Exception as e:
         logger.error(f"Prediction generation failed for {category}: {e}")
-        return jsonify({
-            'status': 'error',
-            'error': str(e),
-            'category': category
-        }), 500
+        return prediction_error_response(
+            str(e),
+            500,
+            metadata={'category': category}
+        )
 
 
 @bp.route('/cosmic-blueprint', methods=['POST'])
@@ -179,14 +186,16 @@ def generate_cosmic_blueprint():
         required_fields = ['date_of_birth', 'time_of_birth', 'place_of_birth']
         for field in required_fields:
             if field not in data:
-                return jsonify({
-                    'status': 'error',
-                    'error': f'Missing required field: {field}'
-                }), 400
+                return prediction_error_response(
+                    f'Missing required field: {field}',
+                    400,
+                    metadata={'category': 'cosmic_blueprint'}
+                )
         
         # Get mode and language
         mode = data.get('mode', 'hybrid')
         language = data.get('language', 'en')
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
         
         # Calculate birth chart
         try:
@@ -197,33 +206,40 @@ def generate_cosmic_blueprint():
             )
         except Exception as e:
             logger.error(f"Birth chart calculation failed: {e}")
-            return jsonify({
-                'status': 'error',
-                'error': f'Failed to calculate birth chart: {str(e)}'
-            }), 500
+            return prediction_error_response(
+                f'Failed to calculate birth chart: {str(e)}',
+                500,
+                metadata={'category': 'cosmic_blueprint'}
+            )
         
         # Generate cosmic blueprint
         blueprint = orchestrator.generate_cosmic_blueprint(
             chart_data=birth_chart,
             mode=mode,
+            client_online=client_online,
             language=language
         )
         
-        return jsonify({
-            'status': 'success',
-            'mode': blueprint.get('mode', mode),
-            'language': language,
-            'sections': blueprint.get('sections', {}),
-            'complete_blueprint': blueprint.get('complete_blueprint', ''),
-            'timestamp': datetime.utcnow().isoformat()
-        }), 200
+        return prediction_response(
+            {
+                'sections': blueprint.get('sections', {}),
+                'complete_blueprint': blueprint.get('complete_blueprint', '')
+            },
+            metadata={
+                'category': 'cosmic_blueprint',
+                'mode': blueprint.get('mode', mode),
+                'language': language,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+        )
         
     except Exception as e:
         logger.error(f"Cosmic blueprint generation failed: {e}")
-        return jsonify({
-            'status': 'error',
-            'error': str(e)
-        }), 500
+        return prediction_error_response(
+            str(e),
+            500,
+            metadata={'category': 'cosmic_blueprint'}
+        )
 
 
 @bp.route('/daily', methods=['POST'])

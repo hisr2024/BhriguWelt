@@ -287,6 +287,7 @@ export default function AdvancedSearch({ isOpen, onClose }: AdvancedSearchProps)
           <button
             onClick={onClose}
             className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            aria-label="Close search"
           >
             <X className="w-5 h-5" />
           </button>

@@ -131,6 +131,7 @@ export default function FeedbackWidget() {
         <button
           onClick={() => setIsOpen(false)}
           className="p-1 hover:bg-white/20 rounded transition-colors"
+          aria-label="Close feedback form"
         >
           <X className="w-5 h-5" />
         </button>
@@ -181,6 +182,7 @@ export default function FeedbackWidget() {
                     type="button"
                     onClick={() => setRating(value)}
                     className="transition-transform hover:scale-110"
+                    aria-label={`Rate ${value} out of 5`}
                   >
                     <Star
                       className={`w-8 h-8 ${

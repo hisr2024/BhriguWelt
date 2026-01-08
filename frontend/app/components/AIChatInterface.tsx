@@ -222,6 +222,7 @@ export default function AIChatInterface({
                         onClick={() => handleCopyMessage(message.content, message.id)}
                         className="text-white/40 hover:text-genz-electric-blue transition-colors"
                         title="Copy message"
+                        aria-label="Copy message"
                       >
                         {copiedMessageId === message.id ? (
                           <Check className="w-4 h-4" />
@@ -234,6 +235,7 @@ export default function AIChatInterface({
                           onClick={() => handleSpeakMessage(message.content)}
                           className="text-white/40 hover:text-genz-electric-blue transition-colors"
                           title="Read aloud"
+                          aria-label={isSpeaking ? 'Stop reading message' : 'Read message aloud'}
                         >
                           {isSpeaking ? (
                             <VolumeX className="w-4 h-4" />
@@ -303,7 +305,7 @@ export default function AIChatInterface({
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Ask me anything about your cosmic journey..."
-            className="w-full p-4 pr-12 rounded-2xl bg-white/5 border border-white/10 focus:border-genz-electric-blue/50 text-white placeholder-white/40 resize-none backdrop-blur-xl transition-colors"
+            className="w-full min-h-[64px] p-3 pr-10 sm:min-h-[72px] sm:p-4 sm:pr-12 md:min-h-[80px] md:p-5 md:pr-14 max-[480px]:min-h-[60px] max-[480px]:p-3 max-[480px]:pr-10 rounded-2xl bg-white/5 border border-white/10 focus:border-genz-electric-blue/50 text-white placeholder-white/40 resize-none backdrop-blur-xl transition-colors"
             rows={2}
             disabled={isLoading}
           />
@@ -317,7 +319,7 @@ export default function AIChatInterface({
           size="lg"
           onClick={handleSendMessage}
           disabled={!inputMessage.trim() || isLoading}
-          className="self-end shadow-genz-glow"
+          className="self-end min-w-[52px] min-h-[52px] sm:min-w-[60px] sm:min-h-[60px] md:min-w-[68px] md:min-h-[68px] max-[480px]:min-w-[52px] max-[480px]:min-h-[52px] shadow-genz-glow"
         >
           {isLoading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
