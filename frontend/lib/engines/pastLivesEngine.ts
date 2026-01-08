@@ -197,9 +197,10 @@ const parseYamlDescriptions = (text: string, source: string): PastLivesRule[] =>
 
   let match = quoted.exec(text);
   while (match) {
+    const matchText = match[1];
     rules.push({
-      text: match[1].trim(),
-      tags: RULE_KEYWORDS.filter(keyword => match[1].toLowerCase().includes(keyword)),
+      text: matchText.trim(),
+      tags: RULE_KEYWORDS.filter(keyword => matchText.toLowerCase().includes(keyword)),
       source,
     });
     match = quoted.exec(text);
@@ -207,10 +208,11 @@ const parseYamlDescriptions = (text: string, source: string): PastLivesRule[] =>
 
   match = unquoted.exec(text);
   while (match) {
-    if (!match[1].includes('"')) {
+    const matchText = match[1];
+    if (!matchText.includes('"')) {
       rules.push({
-        text: match[1].trim(),
-        tags: RULE_KEYWORDS.filter(keyword => match[1].toLowerCase().includes(keyword)),
+        text: matchText.trim(),
+        tags: RULE_KEYWORDS.filter(keyword => matchText.toLowerCase().includes(keyword)),
         source,
       });
     }
