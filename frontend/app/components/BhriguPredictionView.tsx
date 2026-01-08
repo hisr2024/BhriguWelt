@@ -169,8 +169,13 @@ export default function BhriguPredictionView({
       const response = await fetchPrediction(profileData);
 
       if (response. status === 'success') {
-        setPrediction(response.data);
-        setFromCache(response.message?. includes('cache') || false);
+        const predictionData = response.data?.prediction ?? response.data;
+        setPrediction(predictionData);
+        setFromCache(
+          response.message?.includes('cache') ||
+          response.message?.toLowerCase().includes('cache') ||
+          Boolean(response.data?.prediction)
+        );
       } else {
         setError(response.message || 'Failed to generate prediction');
       }
