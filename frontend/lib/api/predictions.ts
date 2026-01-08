@@ -1,4 +1,5 @@
 import { generatePastLivesPrediction, type PastLivesEngineOptions } from '../engines/pastLivesEngine';
+import { generateKarmicJourneyPrediction, type KarmicJourneyOptions } from '../engines/karmicJourneyEngine';
 
 /**
  * Predictions API Client
@@ -203,6 +204,27 @@ export class PredictionsAPI {
    */
   async getKarmicJourney(birthData: ChartData, useAI: boolean = true): Promise<PredictionResult> {
     return this.generatePrediction('karmic_journey', birthData, useAI);
+  }
+
+  /**
+   * Generate Karmic Journey prediction using two-phase engine
+   */
+  async generateKarmicJourney(
+    birthData: ChartData,
+    options: KarmicJourneyOptions = {}
+  ): Promise<PredictionResult> {
+    try {
+      return await generateKarmicJourneyPrediction(birthData, {
+        ...options,
+        useAI: options.useAI ?? true,
+      });
+    } catch (error) {
+      console.error('Karmic journey engine failed, falling back to API:', error);
+      if (options.useAI ?? true) {
+        return this.generatePrediction('karmic_journey', birthData, options.useAI ?? true);
+      }
+      throw error;
+    }
   }
 
   /**
