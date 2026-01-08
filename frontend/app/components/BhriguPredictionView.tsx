@@ -410,7 +410,7 @@ export default function BhriguPredictionView({
     worker.postMessage({
       id: workerRequestId.current,
       markdown: prediction.full_analysis,
-      sections: categoryConfig.map(section => ({ key: section.key, title: section.title }))
+      sections: categoryConfig.map(section => ({ key: section.key, title: section.titleKey }))
     });
   }, [prediction?.full_analysis, category]);
 
@@ -460,8 +460,9 @@ export default function BhriguPredictionView({
     if (!prediction) return null;
 
     // Get the sections configuration for this category
+    const categoryValue = prediction?.metadata?.category ?? prediction?.category ?? category;
     const normalizedCategory = normalizeCategoryKey(
-      prediction?.metadata?.category ?? prediction?.category ?? category
+      typeof categoryValue === 'string' ? categoryValue : category
     );
     const sections = CATEGORY_SECTIONS[normalizedCategory] || [];
 
@@ -646,18 +647,22 @@ export default function BhriguPredictionView({
               <div className="mt-4 text-sm text-gray-400">
                 <p className="mb-2">Section Keys Available:</p>
                 <div className="flex flex-wrap gap-2">
-                  {Object.keys(prediction).map(key => (
-                    <span
-                      key={key}
-                      className={`px-2 py-1 rounded ${
-                        prediction[key] && typeof prediction[key] === 'string' && prediction[key].length > 100
-                          ? 'bg-green-500/20 text-green-400'
-                          : 'bg-gray-700/50 text-gray-400'
-                      }`}
-                    >
-                      {key} ({typeof prediction[key] === 'string' ? prediction[key].length : 'N/A'} chars)
-                    </span>
-                  ))}
+                  {Object.keys(prediction).map(key => {
+                    const value = prediction[key as keyof typeof prediction];
+                    const isLongString = value && typeof value === 'string' && value.length > 100;
+                    return (
+                      <span
+                        key={key}
+                        className={`px-2 py-1 rounded ${
+                          isLongString
+                            ? 'bg-green-500/20 text-green-400'
+                            : 'bg-gray-700/50 text-gray-400'
+                        }`}
+                      >
+                        {key} ({typeof value === 'string' ? value.length : 'N/A'} chars)
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
               {/* Show parsed sections if fallback was used */}

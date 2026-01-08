@@ -11,7 +11,7 @@ import {
   BirthData,
   GeneralPredictionRequest,
 } from '@/lib/api/predictions';
-import { useToast } from '@/lib/context/ToastContext';
+import { emitToast } from '@/lib/toast';
 
 interface UsePredictionsOptions {
   baseURL?: string;
@@ -47,7 +47,6 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
 
   // Create API client
   const api = new PredictionsAPI(baseURL, apiKey);
-  const { addToast } = useToast();
   const latestRequestId = useRef(0);
 
   // State
@@ -63,8 +62,11 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
   }, []);
 
   const notifySuperseded = useCallback(() => {
-    addToast('A newer request replaced the previous one.', { variant: 'warning' });
-  }, [addToast]);
+    emitToast({
+      type: 'info',
+      message: 'A newer request replaced the previous one.',
+    });
+  }, []);
 
   /**
    * Calculate birth chart
