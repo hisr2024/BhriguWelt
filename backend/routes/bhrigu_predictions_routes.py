@@ -12,8 +12,10 @@ from utils.validators import validate_birth_data
 from utils.response_formatter import success_response, error_response
 import traceback
 from datetime import datetime
+from typing import Optional
 import uuid
 import json
+import time
 
 bp = Blueprint('bhrigu_predictions', __name__, url_prefix='/api/bhrigu-predictions')
 
@@ -76,9 +78,13 @@ def karmic_journey():
         birth_data = {**data, **chart_data}
 
         # Generate prediction
-        prediction = bhrigu_service.generate_karmic_journey_prediction(
+        prediction = _generate_prediction(
+            "karmic_journey",
             birth_data,
-            data.get('question')
+            lambda: bhrigu_service.generate_karmic_journey_prediction(
+                birth_data,
+                data.get('question')
+            )
         )
 
         # Cache the prediction
@@ -98,12 +104,18 @@ def karmic_journey():
             metadata
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in karmic_journey: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate karmic journey analysis: {str(e)}", 500)
+        retryable = _is_transient_openai_error(e)
+        return error_response(
+            f"Failed to generate karmic journey analysis: {str(e)}",
+            503 if retryable else 500,
+            error_code="OPENAI_RETRYABLE_ERROR" if retryable else "PREDICTION_FAILED",
+            retryable=retryable
+        )
 
 
 @bp.route('/past-lives', methods=['POST'])
@@ -132,14 +144,22 @@ def past_lives():
         if cached and not data.get('force_regenerate'):
             return success_response(cached.to_dict(), message="From cache")
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         # Calculate and generate
         chart_data, error = _get_chart_data(data)
         if error:
             return error
         birth_data = {**data, **chart_data}
 
-        prediction = bhrigu_service.generate_past_lives_prediction(
-            birth_data, data.get('question')
+        prediction = _generate_prediction(
+            "past_lives",
+            birth_data,
+            lambda: bhrigu_service.generate_past_lives_prediction(
+                birth_data, data.get('question')
+            )
         )
 
         # Cache
@@ -149,12 +169,18 @@ def past_lives():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in past_lives: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate past lives analysis: {str(e)}", 500)
+        retryable = _is_transient_openai_error(e)
+        return error_response(
+            f"Failed to generate past lives analysis: {str(e)}",
+            503 if retryable else 500,
+            error_code="OPENAI_RETRYABLE_ERROR" if retryable else "PREDICTION_FAILED",
+            retryable=retryable
+        )
 
 
 @bp.route('/future-lives', methods=['POST'])
@@ -187,8 +213,12 @@ def future_lives():
             return error
         birth_data = {**data, **chart_data}
 
-        prediction = bhrigu_service.generate_future_lives_prediction(
-            birth_data, data.get('question')
+        prediction = _generate_prediction(
+            "future_lives",
+            birth_data,
+            lambda: bhrigu_service.generate_future_lives_prediction(
+                birth_data, data.get('question')
+            )
         )
 
         BhriguPredictionCache.cache_prediction(
@@ -197,12 +227,18 @@ def future_lives():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in future_lives: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate future lives prediction: {str(e)}", 500)
+        retryable = _is_transient_openai_error(e)
+        return error_response(
+            f"Failed to generate future lives prediction: {str(e)}",
+            503 if retryable else 500,
+            error_code="OPENAI_RETRYABLE_ERROR" if retryable else "PREDICTION_FAILED",
+            retryable=retryable
+        )
 
 
 @bp.route('/present-life', methods=['POST'])
@@ -235,8 +271,12 @@ def present_life():
             return error
         birth_data = {**data, **chart_data}
 
-        prediction = bhrigu_service.generate_present_life_prediction(
-            birth_data, data.get('question')
+        prediction = _generate_prediction(
+            "present_life",
+            birth_data,
+            lambda: bhrigu_service.generate_present_life_prediction(
+                birth_data, data.get('question')
+            )
         )
 
         BhriguPredictionCache.cache_prediction(
@@ -245,12 +285,18 @@ def present_life():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in present_life: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate present life analysis: {str(e)}", 500)
+        retryable = _is_transient_openai_error(e)
+        return error_response(
+            f"Failed to generate present life analysis: {str(e)}",
+            503 if retryable else 500,
+            error_code="OPENAI_RETRYABLE_ERROR" if retryable else "PREDICTION_FAILED",
+            retryable=retryable
+        )
 
 
 @bp.route('/life-events', methods=['POST'])
@@ -283,8 +329,12 @@ def life_events():
             return error
         birth_data = {**data, **chart_data}
 
-        prediction = bhrigu_service.generate_life_events_prediction(
-            birth_data, data.get('question')
+        prediction = _generate_prediction(
+            "life_events",
+            birth_data,
+            lambda: bhrigu_service.generate_life_events_prediction(
+                birth_data, data.get('question')
+            )
         )
 
         BhriguPredictionCache.cache_prediction(
@@ -293,12 +343,18 @@ def life_events():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in life_events: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate life events prediction: {str(e)}", 500)
+        retryable = _is_transient_openai_error(e)
+        return error_response(
+            f"Failed to generate life events prediction: {str(e)}",
+            503 if retryable else 500,
+            error_code="OPENAI_RETRYABLE_ERROR" if retryable else "PREDICTION_FAILED",
+            retryable=retryable
+        )
 
 
 @bp.route('/karmic-remedies', methods=['POST'])
@@ -331,8 +387,12 @@ def karmic_remedies():
             return error
         birth_data = {**data, **chart_data}
 
-        prediction = bhrigu_service.generate_karmic_remedies_prediction(
-            birth_data, data.get('question')
+        prediction = _generate_prediction(
+            "karmic_remedies",
+            birth_data,
+            lambda: bhrigu_service.generate_karmic_remedies_prediction(
+                birth_data, data.get('question')
+            )
         )
 
         BhriguPredictionCache.cache_prediction(
@@ -341,12 +401,18 @@ def karmic_remedies():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in karmic_remedies: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate karmic remedies: {str(e)}", 500)
+        retryable = _is_transient_openai_error(e)
+        return error_response(
+            f"Failed to generate karmic remedies: {str(e)}",
+            503 if retryable else 500,
+            error_code="OPENAI_RETRYABLE_ERROR" if retryable else "PREDICTION_FAILED",
+            retryable=retryable
+        )
 
 
 @bp.route('/relationships', methods=['POST'])
@@ -379,8 +445,12 @@ def relationships():
             return error
         birth_data = {**data, **chart_data}
 
-        prediction = bhrigu_service.generate_relationships_prediction(
-            birth_data, data.get('question')
+        prediction = _generate_prediction(
+            "relationships",
+            birth_data,
+            lambda: bhrigu_service.generate_relationships_prediction(
+                birth_data, data.get('question')
+            )
         )
 
         BhriguPredictionCache.cache_prediction(
@@ -389,12 +459,18 @@ def relationships():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in relationships: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate relationships analysis: {str(e)}", 500)
+        retryable = _is_transient_openai_error(e)
+        return error_response(
+            f"Failed to generate relationships analysis: {str(e)}",
+            503 if retryable else 500,
+            error_code="OPENAI_RETRYABLE_ERROR" if retryable else "PREDICTION_FAILED",
+            retryable=retryable
+        )
 
 
 @bp.route('/predictions', methods=['POST'])
@@ -427,8 +503,12 @@ def predictions():
             return error
         birth_data = {**data, **chart_data}
 
-        prediction = bhrigu_service.generate_general_predictions(
-            birth_data, data.get('question')
+        prediction = _generate_prediction(
+            "predictions",
+            birth_data,
+            lambda: bhrigu_service.generate_general_predictions(
+                birth_data, data.get('question')
+            )
         )
 
         BhriguPredictionCache.cache_prediction(
@@ -437,12 +517,18 @@ def predictions():
              'nakshatra': chart_data.get('nakshatra')}
         )
 
-        return success_response(prediction)
+        return success_response({'prediction': prediction})
 
     except Exception as e:
         print(f"Error in predictions: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate predictions: {str(e)}", 500)
+        retryable = _is_transient_openai_error(e)
+        return error_response(
+            f"Failed to generate predictions: {str(e)}",
+            503 if retryable else 500,
+            error_code="OPENAI_RETRYABLE_ERROR" if retryable else "PREDICTION_FAILED",
+            retryable=retryable
+        )
 
 
 @bp.route('/wisdom-search', methods=['POST'])
@@ -580,8 +666,12 @@ def comprehensive_prediction():
                 comprehensive_result[category] = cached.to_dict()
             else:
                 # Generate new prediction
-                prediction = bhrigu_service.generate_comprehensive_prediction(
-                    birth_data, category
+                prediction = _generate_prediction(
+                    category,
+                    birth_data,
+                    lambda: bhrigu_service.generate_comprehensive_prediction(
+                        birth_data, category
+                    )
                 )
 
                 # Cache it
@@ -612,17 +702,33 @@ def comprehensive_prediction():
     except Exception as e:
         print(f"Error in comprehensive_prediction: {str(e)}")
         traceback.print_exc()
-        return error_response(f"Failed to generate comprehensive prediction: {str(e)}", 500)
+        retryable = _is_transient_openai_error(e)
+        return error_response(
+            f"Failed to generate comprehensive prediction: {str(e)}",
+            503 if retryable else 500,
+            error_code="OPENAI_RETRYABLE_ERROR" if retryable else "PREDICTION_FAILED",
+            retryable=retryable
+        )
 
 
 # Error handlers for this blueprint
 @bp.errorhandler(429)
 def ratelimit_handler(e):
-    return error_response("Rate limit exceeded. Please try again later.", 429)
+    return error_response(
+        "Rate limit exceeded. Please try again later.",
+        429,
+        error_code="RATE_LIMIT",
+        retryable=True
+    )
 
 
 @bp.errorhandler(Exception)
 def handle_error(e):
     print(f"Unhandled error in bhrigu_predictions: {str(e)}")
     traceback.print_exc()
-    return error_response("An unexpected error occurred", 500)
+    return error_response(
+        "An unexpected error occurred",
+        500,
+        error_code="UNEXPECTED_ERROR",
+        retryable=False
+    )
