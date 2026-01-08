@@ -83,23 +83,23 @@
 
   /* Button Components */
   .cosmic-button {
-    @apply bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl;
+    @apply bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl;
   }
 
   .genz-button {
-    @apply bg-gradient-to-r from-genz-electric-blue to-genz-purple-haze hover:from-genz-electric-blue/80 hover:to-genz-purple-haze/80 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 shadow-genz-glow hover:scale-105 hover:shadow-neon-cyan active:scale-95;
+    @apply bg-gradient-to-r from-genz-electric-blue to-genz-purple-haze hover:from-genz-electric-blue/80 hover:to-genz-purple-haze/80 text-white font-bold rounded-2xl transition-all duration-300 shadow-genz-glow hover:scale-105 hover:shadow-neon-cyan active:scale-95;
   }
 
   .genz-button-outline {
-    @apply bg-transparent border-2 border-genz-electric-blue text-genz-electric-blue hover:bg-genz-electric-blue hover:text-dark-base font-bold py-4 px-8 rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95;
+    @apply bg-transparent border-2 border-genz-electric-blue text-genz-electric-blue hover:bg-genz-electric-blue hover:text-dark-base font-bold rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95;
   }
 
   .genz-button-pill {
-    @apply bg-gradient-to-r from-genz-hot-pink to-genz-coral-pop text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 hover:scale-110 hover:shadow-neon-pink active:scale-95;
+    @apply bg-gradient-to-r from-genz-hot-pink to-genz-coral-pop text-white font-semibold rounded-full transition-all duration-300 hover:scale-110 hover:shadow-neon-pink active:scale-95;
   }
 
   .genz-button-neon {
-    @apply bg-dark-surface border-2 border-genz-neon-green text-genz-neon-green font-bold py-4 px-8 rounded-2xl transition-all duration-300 hover:bg-genz-neon-green hover:text-dark-base hover:shadow-neon-green hover:scale-105 active:scale-95;
+    @apply bg-dark-surface border-2 border-genz-neon-green text-genz-neon-green font-bold rounded-2xl transition-all duration-300 hover:bg-genz-neon-green hover:text-dark-base hover:shadow-neon-green hover:scale-105 active:scale-95;
   }
 
   /* Input Components */
