@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Profile } from '@/lib/types';
 
@@ -142,6 +142,7 @@ export default function BhriguPredictionView({
   const [question, setQuestion] = useState('');
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (profile) {
@@ -375,15 +376,16 @@ export default function BhriguPredictionView({
               )}
             </button>
 
-            <AnimatePresence>
+            <AnimatePresence initial={false}>
               {showFullAnalysis && (
                 <motion.div
+                  key="full-analysis"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration:  0.3 }}
+                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3, ease: 'easeInOut' }}
                   className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
-                           border border-gray-700/50 rounded-xl p-6"
+                           border border-gray-700/50 rounded-xl p-6 overflow-hidden"
                 >
                   <div className="prose prose-invert prose-cyan max-w-none">
                     <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
