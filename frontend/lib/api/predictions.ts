@@ -219,6 +219,40 @@ export class PredictionsAPI {
   }
 
   /**
+   * Generate Future Lives prediction using two-phase engine
+   */
+  async generateFutureLives(
+    birthData: ChartData,
+    options: { useAI?: boolean; mode?: 'offline' | 'online' | 'hybrid'; language?: string } = {}
+  ): Promise<PredictionResult> {
+    try {
+      const response = await fetch(`${this.baseURL}/predictions/future-lives`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.apiKey && { 'X-API-Key': this.apiKey }),
+        },
+        body: JSON.stringify({
+          birth_data: birthData,
+          use_ai: options.useAI ?? true,
+          mode: options.mode ?? 'offline',
+          language: options.language ?? 'en',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`);
+      }
+
+      const data: PredictionResult = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Future lives generation failed:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Generate Present Life analysis
    */
   async getPresentLife(birthData: ChartData, useAI: boolean = true): Promise<PredictionResult> {
