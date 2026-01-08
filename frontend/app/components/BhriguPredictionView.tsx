@@ -352,9 +352,12 @@ export default function BhriguPredictionView({
           <div className="mt-8 pt-8 border-t border-gray-700/50">
             <button
               onClick={() => setShowFullAnalysis(!showFullAnalysis)}
+              aria-expanded={showFullAnalysis}
+              aria-controls="full-analysis-content"
               className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
                        border border-gray-700/50 rounded-xl p-6
                        hover:border-cyan-500/30 transition-all
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900
                        flex items-center justify-between group"
             >
               <div className="flex items-center gap-3">
@@ -382,6 +385,7 @@ export default function BhriguPredictionView({
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration:  0.3 }}
+                  id="full-analysis-content"
                   className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
                            border border-gray-700/50 rounded-xl p-6"
                 >
