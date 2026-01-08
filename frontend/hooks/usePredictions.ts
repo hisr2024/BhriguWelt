@@ -2,7 +2,7 @@
  * usePredictions Hook
  * React hook for managing prediction state and API calls
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   PredictionsAPI,
   PredictionEngine,
@@ -11,6 +11,7 @@ import {
   BirthData,
   GeneralPredictionRequest,
 } from '@/lib/api/predictions';
+import { useToast } from '@/lib/context/ToastContext';
 
 interface UsePredictionsOptions {
   baseURL?: string;
@@ -46,6 +47,8 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
 
   // Create API client
   const api = new PredictionsAPI(baseURL, apiKey);
+  const { addToast } = useToast();
+  const latestRequestId = useRef(0);
 
   // State
   const [prediction, setPrediction] = useState<PredictionResult | null>(null);
@@ -54,25 +57,45 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const startRequest = useCallback(() => {
+    latestRequestId.current += 1;
+    return latestRequestId.current;
+  }, []);
+
+  const notifySuperseded = useCallback(() => {
+    addToast('A newer request replaced the previous one.', { variant: 'warning' });
+  }, [addToast]);
+
   /**
    * Calculate birth chart
    */
   const calculateChart = useCallback(async (birthData: BirthData) => {
+    const requestId = startRequest();
     setLoading(true);
     setError(null);
 
     try {
       const chartData = await api.calculateChart(birthData);
-      setChart(chartData);
+      if (requestId === latestRequestId.current) {
+        setChart(chartData);
+      } else {
+        notifySuperseded();
+      }
       return chartData;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to calculate chart';
-      setError(errorMessage);
+      if (requestId === latestRequestId.current) {
+        setError(errorMessage);
+      } else {
+        notifySuperseded();
+      }
       throw err;
     } finally {
-      setLoading(false);
+      if (requestId === latestRequestId.current) {
+        setLoading(false);
+      }
     }
-  }, [api]);
+  }, [api, notifySuperseded, startRequest]);
 
   /**
    * Generate prediction for single engine
@@ -82,6 +105,7 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
     birthData: ChartData,
     useAI: boolean = true
   ) => {
+    const requestId = startRequest();
     setLoading(true);
     setError(null);
 
@@ -90,20 +114,32 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
       if (autoCalculateChart && !birthData.zodiac_sign) {
         const calculatedChart = await api.calculateChart(birthData);
         birthData = calculatedChart;
-        setChart(calculatedChart);
+        if (requestId === latestRequestId.current) {
+          setChart(calculatedChart);
+        }
       }
 
       const result = await api.generatePrediction(engine, birthData, useAI);
-      setPrediction(result);
+      if (requestId === latestRequestId.current) {
+        setPrediction(result);
+      } else {
+        notifySuperseded();
+      }
       return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate prediction';
-      setError(errorMessage);
+      if (requestId === latestRequestId.current) {
+        setError(errorMessage);
+      } else {
+        notifySuperseded();
+      }
       throw err;
     } finally {
-      setLoading(false);
+      if (requestId === latestRequestId.current) {
+        setLoading(false);
+      }
     }
-  }, [api, autoCalculateChart]);
+  }, [api, autoCalculateChart, notifySuperseded, startRequest]);
 
   /**
    * Generate all predictions
@@ -112,6 +148,7 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
     birthData: ChartData,
     useAI: boolean = true
   ) => {
+    const requestId = startRequest();
     setLoading(true);
     setError(null);
 
@@ -120,20 +157,32 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
       if (autoCalculateChart && !birthData.zodiac_sign) {
         const calculatedChart = await api.calculateChart(birthData);
         birthData = calculatedChart;
-        setChart(calculatedChart);
+        if (requestId === latestRequestId.current) {
+          setChart(calculatedChart);
+        }
       }
 
       const results = await api.getAllPredictions(birthData, useAI);
-      setAllPredictions(results);
+      if (requestId === latestRequestId.current) {
+        setAllPredictions(results);
+      } else {
+        notifySuperseded();
+      }
       return results;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate predictions';
-      setError(errorMessage);
+      if (requestId === latestRequestId.current) {
+        setError(errorMessage);
+      } else {
+        notifySuperseded();
+      }
       throw err;
     } finally {
-      setLoading(false);
+      if (requestId === latestRequestId.current) {
+        setLoading(false);
+      }
     }
-  }, [api, autoCalculateChart]);
+  }, [api, autoCalculateChart, notifySuperseded, startRequest]);
 
   /**
    * Generate General Predictions using two-phase engine
@@ -142,6 +191,7 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
     birthData: ChartData,
     options: GeneralPredictionRequest = {}
   ) => {
+    const requestId = startRequest();
     setLoading(true);
     setError(null);
 
@@ -149,20 +199,32 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
       if (autoCalculateChart && !birthData.zodiac_sign) {
         const calculatedChart = await api.calculateChart(birthData);
         birthData = calculatedChart;
-        setChart(calculatedChart);
+        if (requestId === latestRequestId.current) {
+          setChart(calculatedChart);
+        }
       }
 
       const result = await api.generateGeneralPredictions(birthData, options);
-      setPrediction(result);
+      if (requestId === latestRequestId.current) {
+        setPrediction(result);
+      } else {
+        notifySuperseded();
+      }
       return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate general predictions';
-      setError(errorMessage);
+      if (requestId === latestRequestId.current) {
+        setError(errorMessage);
+      } else {
+        notifySuperseded();
+      }
       throw err;
     } finally {
-      setLoading(false);
+      if (requestId === latestRequestId.current) {
+        setLoading(false);
+      }
     }
-  }, [api, autoCalculateChart]);
+  }, [api, autoCalculateChart, notifySuperseded, startRequest]);
 
   /**
    * Clear error
