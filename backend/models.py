@@ -72,12 +72,32 @@ class BhriguPredictionCache(db.Model):
             'access_count': self.access_count
         }
 
+        if isinstance(prediction_dict, dict) and 'full_analysis' in prediction_dict:
+            response['full_analysis'] = prediction_dict.get('full_analysis')
+
+        return response
+
     @staticmethod
-    def create_hash(birth_data: dict) -> str:
+    def create_hash(birth_data: dict, category: str = None) -> str:
         """Create anonymized hash of birth data"""
         import hashlib
         # Use only astrological data, not PII
-        data_str = f"{birth_data.get('date_of_birth')}_{birth_data.get('time_of_birth')}_{birth_data.get('latitude')}_{birth_data.get('longitude')}"
+        base_parts = [
+            birth_data.get('date_of_birth'),
+            birth_data.get('time_of_birth'),
+            birth_data.get('latitude'),
+            birth_data.get('longitude')
+        ]
+        category_value = category or birth_data.get('category')
+        optional_parts = [
+            category_value,
+            birth_data.get('place_of_birth'),
+            birth_data.get('timezone')
+        ]
+        data_parts = [part for part in base_parts if part not in (None, '')]
+        data_parts.extend(part for part in optional_parts if part not in (None, ''))
+        data_parts.append('v2')
+        data_str = "_".join(str(part) for part in data_parts)
         return hashlib.sha256(data_str.encode()).hexdigest()
 
     @classmethod
@@ -87,7 +107,7 @@ class BhriguPredictionCache(db.Model):
         prediction_payload = dict(prediction)
         complete_analysis = prediction_payload.pop('complete_analysis', None)
         cache_entry = cls(
-            birth_data_hash=cls.create_hash(birth_data),
+            birth_data_hash=cls.create_hash(birth_data, category),
             category=category,
             question=question,
             prediction_data=json.dumps(prediction_payload),
@@ -105,7 +125,7 @@ class BhriguPredictionCache(db.Model):
     @classmethod
     def get_cached_prediction(cls, birth_data: dict, category: str, question: str = None):
         """Retrieve cached prediction if available"""
-        birth_hash = cls.create_hash(birth_data)
+        birth_hash = cls.create_hash(birth_data, category)
         query = cls.query.filter_by(birth_data_hash=birth_hash, category=category)
 
         if question:
