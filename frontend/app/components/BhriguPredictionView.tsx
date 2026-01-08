@@ -3,13 +3,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
-import type { BirthDetails, Profile } from '@/lib/types';
-import {
-  normalizePredictionResponse,
-  type PredictionAPIResponse,
-  type PredictionMetadata,
-  type PredictionPayload,
-} from '@/lib/api';
+import type { Profile } from '@/lib/types';
+import { validateProfile, type ProfileValidationResult } from '@/lib/validators';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; color: string }>> = {
@@ -151,6 +146,7 @@ export default function BhriguPredictionView({
   const [question, setQuestion] = useState('');
   const [showFullAnalysis, setShowFullAnalysis] = useState(true);
   const [debugMode, setDebugMode] = useState(false);
+  const [profileValidation, setProfileValidation] = useState<ProfileValidationResult | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -161,6 +157,15 @@ export default function BhriguPredictionView({
   const loadPrediction = async (forceRegenerate = false) => {
     if (! profile) return;
 
+    const validationResult = validateProfile(profile);
+    if (! validationResult.isValid) {
+      setPrediction(null);
+      setError('Please complete your profile to generate a prediction.');
+      setProfileValidation(validationResult);
+      return;
+    }
+
+    setProfileValidation(null);
     setLoading(true);
     setError(null);
 
@@ -597,13 +602,32 @@ export default function BhriguPredictionView({
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6">
             <p className="text-red-400">{error}</p>
-            <button
-              onClick={() => loadPrediction(false)}
-              className="mt-4 text-sm text-cyan-400 hover: text-cyan-300 flex items-center gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Try Again
-            </button>
+            {profileValidation && !profileValidation.isValid ? (
+              <div className="mt-4 space-y-3">
+                <p className="text-sm text-gray-300">
+                  Update these details to continue:
+                </p>
+                <ul className="text-sm text-gray-300 list-disc list-inside space-y-1">
+                  {profileValidation.missingFields.map((field) => (
+                    <li key={field}>{field}</li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => window.location.href = '/profile'}
+                  className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
+                >
+                  Complete Profile
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => loadPrediction(false)}
+                className="mt-4 text-sm text-cyan-400 hover: text-cyan-300 flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Try Again
+              </button>
+            )}
           </div>
         )}
 
