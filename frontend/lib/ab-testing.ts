@@ -325,15 +325,18 @@ export async function trackConversion(testId: string, variantId?: string): Promi
   // Ensure variantId is defined
   if (!resolvedVariantId) return;
 
+  // Create a constant to help TypeScript understand the type
+  const definiteVariantId: string = resolvedVariantId;
+
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(METRICS_STORE, 'readwrite');
     const store = transaction.objectStore(METRICS_STORE);
-    const request = store.get([testId, resolvedVariantId]);
+    const request = store.get([testId, definiteVariantId]);
 
     request.onsuccess = () => {
       const metrics: ABTestMetrics = request.result || {
         testId,
-        variantId: resolvedVariantId,
+        variantId: definiteVariantId,
         impressions: 0,
         conversions: 0,
         conversionRate: 0,
