@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Target } from 'lucide-react';
 import BhriguPredictionView from '@/app/components/BhriguPredictionView';
+import PredictionErrorBoundary from '@/app/components/PredictionErrorBoundary';
 import { bhriguPredictionsAPI } from '@/lib/api';
 import { useEncryptedStorage } from '@/lib/hooks/useEncryptedStorage';
 import type { Profile } from '@/lib/types';
@@ -27,13 +28,15 @@ export default function KarmicJourneyPage() {
   };
 
   return (
-    <BhriguPredictionView
-      category="karmic-journey"
-      title="Karmic Journey"
-      description="Discover your soul's purpose and life mission through detailed karmic analysis"
-      icon={<Target className="w-10 h-10 text-cyan-400" />}
-      fetchPrediction={bhriguPredictionsAPI.getKarmicJourney}
-      profile={profile}
-    />
+    <PredictionErrorBoundary>
+      <BhriguPredictionView
+        category="karmic-journey"
+        title="Karmic Journey"
+        description="Discover your soul's purpose and life mission through detailed karmic analysis"
+        icon={<Target className="w-10 h-10 text-cyan-400" />}
+        fetchPrediction={bhriguPredictionsAPI.getKarmicJourney}
+        profile={profile}
+      />
+    </PredictionErrorBoundary>
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Heart } from 'lucide-react';
 import BhriguPredictionView from '@/app/components/BhriguPredictionView';
+import PredictionErrorBoundary from '@/app/components/PredictionErrorBoundary';
 import { bhriguPredictionsAPI } from '@/lib/api';
 import { useEncryptedStorage } from '@/lib/hooks/useEncryptedStorage';
 import type { Profile } from '@/lib/types';
@@ -27,13 +28,15 @@ export default function RelationshipsPage() {
   };
 
   return (
-    <BhriguPredictionView
-      category="relationships"
-      title="Relationships"
-      description="Soul connections and compatibility analysis for deeper bonds"
-      icon={<Heart className="w-10 h-10 text-red-400" />}
-      fetchPrediction={bhriguPredictionsAPI.getRelationships}
-      profile={profile}
-    />
+    <PredictionErrorBoundary>
+      <BhriguPredictionView
+        category="relationships"
+        title="Relationships"
+        description="Soul connections and compatibility analysis for deeper bonds"
+        icon={<Heart className="w-10 h-10 text-red-400" />}
+        fetchPrediction={bhriguPredictionsAPI.getRelationships}
+        profile={profile}
+      />
+    </PredictionErrorBoundary>
   );
 }

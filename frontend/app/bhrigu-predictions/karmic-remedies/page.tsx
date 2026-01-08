@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
 import BhriguPredictionView from '@/app/components/BhriguPredictionView';
+import PredictionErrorBoundary from '@/app/components/PredictionErrorBoundary';
 import { bhriguPredictionsAPI } from '@/lib/api';
 import { useEncryptedStorage } from '@/lib/hooks/useEncryptedStorage';
 import type { Profile } from '@/lib/types';
@@ -27,13 +28,15 @@ export default function KarmicRemediesPage() {
   };
 
   return (
-    <BhriguPredictionView
-      category="karmic-remedies"
-      title="Karmic Remedies"
-      description="Personalized spiritual practices and remedies for balance"
-      icon={<Sparkles className="w-10 h-10 text-pink-400" />}
-      fetchPrediction={bhriguPredictionsAPI.getKarmicRemedies}
-      profile={profile}
-    />
+    <PredictionErrorBoundary>
+      <BhriguPredictionView
+        category="karmic-remedies"
+        title="Karmic Remedies"
+        description="Personalized spiritual practices and remedies for balance"
+        icon={<Sparkles className="w-10 h-10 text-pink-400" />}
+        fetchPrediction={bhriguPredictionsAPI.getKarmicRemedies}
+        profile={profile}
+      />
+    </PredictionErrorBoundary>
   );
 }
