@@ -325,13 +325,14 @@ Provide specific, actionable guidance rooted in Bhrigu Samhita and Nadi Jyotisa 
                     'karmic_journey',
                     birth_data
                 )
+        section_status = self._finalize_section_status(sections, 'karmic_journey')
 
         return {
             'category': 'karmic_journey',
             'title': 'Your Karmic Journey & Soul Purpose',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(birth_data),
+            'metadata': self._generate_metadata(birth_data, section_status),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -434,13 +435,14 @@ Reference specific Nadi Jyotisa indicators and planetary positions."""
                     'past_lives',
                     birth_data
                 )
+        section_status = self._finalize_section_status(sections, 'past_lives')
 
         return {
             'category': 'past_lives',
             'title': 'Your Past Lives & Karmic Patterns',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(birth_data),
+            'metadata': self._generate_metadata(birth_data, section_status),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -553,13 +555,14 @@ Ground predictions in Bhrigu Samhita principles of karmic progression."""
                     'future_lives',
                     birth_data
                 )
+        section_status = self._finalize_section_status(sections, 'future_lives')
 
         return {
             'category': 'future_lives',
             'title': 'Your Future Lives & Soul Evolution',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(birth_data),
+            'metadata': self._generate_metadata(birth_data, section_status),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -694,13 +697,14 @@ Base analysis on classical Bhrigu Samhita delineation methods."""
                     'present_life',
                     birth_data
                 )
+        section_status = self._finalize_section_status(sections, 'present_life')
 
         return {
             'category': 'present_life',
             'title': 'Your Present Life Comprehensive Analysis',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(birth_data),
+            'metadata': self._generate_metadata(birth_data, section_status),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -868,13 +872,14 @@ Provide month-level precision where possible using Nadi Jyotisa methods."""
                     'life_events',
                     birth_data
                 )
+        section_status = self._finalize_section_status(sections, 'life_events')
 
         return {
             'category': 'life_events',
             'title': 'Your Life Events with Precision Timing',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(birth_data),
+            'metadata': self._generate_metadata(birth_data, section_status),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -1090,13 +1095,14 @@ Provide practical, affordable, and effective remedies that can be integrated int
                     'karmic_remedies',
                     birth_data
                 )
+        section_status = self._finalize_section_status(sections, 'karmic_remedies')
 
         return {
             'category': 'karmic_remedies',
             'title': 'Your Personalized Karmic Remedies',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(birth_data),
+            'metadata': self._generate_metadata(birth_data, section_status),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -1313,13 +1319,14 @@ Provide specific, actionable relationship guidance based on classical astrology.
                     'relationships',
                     birth_data
                 )
+        section_status = self._finalize_section_status(sections, 'relationships')
 
         return {
             'category': 'relationships',
             'title': 'Your Relationships & Soul Connections',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(birth_data),
+            'metadata': self._generate_metadata(birth_data, section_status),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -1403,13 +1410,14 @@ Base on current planetary transits and your natal chart."""
                     'predictions',
                     birth_data
                 )
+        section_status = self._finalize_section_status(sections, 'predictions')
 
         return {
             'category': 'predictions',
             'title': 'Your General Predictions',
             'full_analysis': prediction_text,
             **sections,  # Include all extracted/generated sections
-            'metadata': self._generate_metadata(birth_data),
+            'metadata': self._generate_metadata(birth_data, section_status),
             'generated_at': datetime.utcnow().isoformat()
         }
 
@@ -1448,9 +1456,10 @@ Base on current planetary transits and your natal chart."""
         result = '\n'.join(section_lines).strip()
         return result if result else f"See full analysis for {section_header}"
 
-    def _generate_metadata(self, birth_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_metadata(self, birth_data: Dict[str, Any],
+                           section_status: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
         """Generate metadata for the prediction"""
-        return {
+        metadata = {
             'zodiac_sign': birth_data.get('zodiac_sign'),
             'nakshatra': birth_data.get('nakshatra'),
             'moon_sign': birth_data.get('moon_sign'),
@@ -1458,6 +1467,16 @@ Base on current planetary transits and your natal chart."""
             'ai_model': 'gpt-4',
             'tradition': 'Bhrigu Samhita & Nadi Jyotisa'
         }
+        if section_status is not None:
+            metadata['section_status'] = section_status
+        return metadata
+
+    def _finalize_section_status(self, sections: Dict[str, Any], category: str) -> Dict[str, str]:
+        section_status = self.section_parser.validate_sections(sections, category)
+        for section_key, status in section_status.items():
+            if status != "ok":
+                sections[section_key] = f"[section_generation_failed: {status}]"
+        return section_status
 
     def _record_init_error(self, service_name: str, error: Exception) -> None:
         """Store structured initialization errors for service dependencies."""
