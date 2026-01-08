@@ -17,6 +17,7 @@ class BhriguOfflineWisdomGenerator:
         self.bhrigu_corpus = None
         self.nadi_corpus = None
         self.soul_journey_model = None
+        self.initialization_errors: List[str] = []
         self._load_corpus()
 
         # Zodiac sign characteristics for personalization
@@ -77,7 +78,9 @@ class BhriguOfflineWisdomGenerator:
                 with open(bhrigu_path, 'r') as f:
                     self.bhrigu_corpus = json.load(f)
             except Exception as e:
-                print(f"Warning: Could not load Bhrigu corpus: {e}")
+                message = f"Could not load Bhrigu corpus: {e}"
+                self.initialization_errors.append(message)
+                print(f"Warning: {message}")
 
         # Load Nadi Jyotisha principles
         nadi_path = os.path.join(data_dir, 'nadi_jyotisha_principles.yml')
@@ -86,7 +89,9 @@ class BhriguOfflineWisdomGenerator:
                 with open(nadi_path, 'r') as f:
                     self.nadi_corpus = json.load(f)
             except Exception as e:
-                print(f"Warning: Could not load Nadi corpus: {e}")
+                message = f"Could not load Nadi corpus: {e}"
+                self.initialization_errors.append(message)
+                print(f"Warning: {message}")
 
         # Load soul journey model
         journey_path = os.path.join(data_dir, 'bhrigu_karmic_soul_journey_model.json')
@@ -95,7 +100,9 @@ class BhriguOfflineWisdomGenerator:
                 with open(journey_path, 'r') as f:
                     self.soul_journey_model = json.load(f)
             except Exception as e:
-                print(f"Warning: Could not load soul journey model: {e}")
+                message = f"Could not load soul journey model: {e}"
+                self.initialization_errors.append(message)
+                print(f"Warning: {message}")
 
     def _get_zodiac_info(self, zodiac: str) -> Dict[str, str]:
         """Get zodiac characteristics"""
@@ -1400,3 +1407,10 @@ def get_offline_wisdom_generator():
     if _offline_wisdom_generator is None:
         _offline_wisdom_generator = BhriguOfflineWisdomGenerator()
     return _offline_wisdom_generator
+
+
+def get_offline_wisdom_initialization_errors() -> List[str]:
+    """Get initialization errors recorded during offline wisdom setup."""
+    if _offline_wisdom_generator and getattr(_offline_wisdom_generator, "initialization_errors", None):
+        return list(_offline_wisdom_generator.initialization_errors)
+    return []
