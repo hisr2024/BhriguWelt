@@ -3,8 +3,23 @@ Past Lives API Routes
 Past life analysis and regression endpoints
 """
 from flask import Blueprint, request, jsonify
-from services.astrology_calculator import astrology_calculator
+from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.openai_service import openai_service
+from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
+
+
+def _get_birth_chart(data):
+    calculator = get_astrology_calculator()
+    cached_birth_data = get_cached_birth_data(data)
+    if calculator:
+        return calculator.calculate_birth_chart(
+            date_of_birth=data['date_of_birth'],
+            time_of_birth=data['time_of_birth'],
+            place=data['place_of_birth']
+        ), None
+    if cached_birth_data:
+        return cached_birth_data, None
+    return None, dependency_error_response(get_astrology_dependency_error())
 
 bp = Blueprint('past_lives', __name__, url_prefix='/api/past-lives')
 
@@ -23,12 +38,9 @@ def past_lives_analysis():
     try:
         data = request.get_json()
 
-        # Calculate birth chart
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         # Generate past lives analysis
         past_lives = openai_service.generate_past_lives_analysis(birth_chart)
@@ -49,11 +61,9 @@ def karmic_patterns():
     """Identify karmic patterns from past lives"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Identify karmic patterns from past lives based on:
@@ -69,14 +79,15 @@ def karmic_patterns():
         5. Unfinished business from past lives
         """
 
-        patterns = openai_service.generate_prediction(prompt, birth_chart)
+        patterns_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'karmic_patterns': patterns,
+                'karmic_patterns': patterns_result['text'],
                 'ketu_position': birth_chart['planets']['Ketu'],
-                'past_life_house': birth_chart['houses'][11]
+                'past_life_house': birth_chart['houses'][11],
+                'partial': patterns_result['partial']
             }
         }), 200
 
@@ -88,11 +99,9 @@ def past_relationships():
     """Explore past life relationships affecting current life"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Analyze past life relationships for:
@@ -108,14 +117,15 @@ def past_relationships():
         5. Lessons through relationships
         """
 
-        relationships = openai_service.generate_prediction(prompt, birth_chart)
+        relationships_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'past_relationships': relationships,
+                'past_relationships': relationships_result['text'],
                 'venus_position': birth_chart['planets']['Venus'],
-                'partnership_house': birth_chart['houses'][6]
+                'partnership_house': birth_chart['houses'][6],
+                'partial': relationships_result['partial']
             }
         }), 200
 
@@ -147,14 +157,15 @@ def talents_carried_forward():
         5. How to activate these talents
         """
 
-        talents = openai_service.generate_prediction(prompt, birth_chart)
+        talents_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'talents': talents,
+                'talents': talents_result['text'],
                 'mercury_position': birth_chart['planets']['Mercury'],
-                'creativity_house': birth_chart['houses'][4]
+                'creativity_house': birth_chart['houses'][4],
+                'partial': talents_result['partial']
             }
         }), 200
 
@@ -186,14 +197,15 @@ def past_traumas():
         5. Steps toward karmic healing
         """
 
-        traumas = openai_service.generate_prediction(prompt, birth_chart)
+        traumas_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'past_traumas': traumas,
+                'past_traumas': traumas_result['text'],
                 'saturn_position': birth_chart['planets']['Saturn'],
-                'transformation_house': birth_chart['houses'][7]
+                'transformation_house': birth_chart['houses'][7],
+                'partial': traumas_result['partial']
             }
         }), 200
 
