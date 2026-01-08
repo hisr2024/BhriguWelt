@@ -329,7 +329,7 @@ export default function BhriguPredictionView({
           {sectionTitle}
         </h3>
         <div className="prose prose-invert prose-cyan max-w-none">
-          <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+          <div className="text-gray-300 leading-relaxed whitespace-pre-wrap max-h-[60vh] overflow-auto pr-2">
             {content}
           </div>
         </button>
@@ -534,10 +534,10 @@ export default function BhriguPredictionView({
                   exit={{ opacity: 0, height: 0 }}
                   transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3, ease: 'easeInOut' }}
                   className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
-                           border border-gray-700/50 rounded-xl p-6 overflow-hidden"
+                           border border-gray-700/50 rounded-xl p-6 overflow-visible"
                 >
                   <div className="prose prose-invert prose-cyan max-w-none">
-                    <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                    <div className="text-gray-300 leading-relaxed whitespace-pre-wrap max-h-[70vh] overflow-auto pr-2">
                       {prediction.full_analysis}
                     </div>
                   </div>
