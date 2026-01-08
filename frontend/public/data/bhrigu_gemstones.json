@@ -1,0 +1,232 @@
+{
+  "category": "gemstones",
+  "gemstones": [
+    {
+      "id": "ruby",
+      "name": {
+        "en": "Ruby (Manik)",
+        "hi": "माणिक",
+        "sa": "माणिक्यम्"
+      },
+      "planet": "Sun",
+      "purpose": {
+        "en": "Strengthen Sun, enhance vitality, leadership, authority",
+        "hi": "सूर्य को मजबूत करें, जीवन शक्ति बढ़ाएं, नेतृत्व",
+        "sa": "सूर्यं बलीकरोति, प्राणशक्तिं वर्धयति, नेतृत्वम्"
+      },
+      "weight": "Minimum 3 carats, preferably 5-7 carats",
+      "metal": "Gold",
+      "finger": "Ring finger of right hand",
+      "day_to_wear": "Sunday morning during sunrise",
+      "benefits": {
+        "en": "Confidence, vitality, authority, career success, father relationship",
+        "hi": "आत्मविश्वास, जीवन शक्ति, अधिकार, करियर सफलता",
+        "sa": "आत्मविश्वासः, प्राणशक्तिः, अधिकारः, कर्मसफलता"
+      },
+      "precautions": "Check for debilitated or afflicted Sun before wearing"
+    },
+    {
+      "id": "pearl",
+      "name": {
+        "en": "Pearl (Moti)",
+        "hi": "मोती",
+        "sa": "मुक्ता"
+      },
+      "planet": "Moon",
+      "purpose": {
+        "en": "Emotional balance, mental peace, mother relationship",
+        "hi": "भावनात्मक संतुलन, मानसिक शांति, मां का रिश्ता",
+        "sa": "भावनात्मकसाम्यं, मानसिकशान्तिः, मातृसम्बन्धः"
+      },
+      "weight": "Minimum 5 carats, preferably 7-9 carats",
+      "metal": "Silver",
+      "finger": "Little finger of right hand",
+      "day_to_wear": "Monday evening during moonrise",
+      "benefits": {
+        "en": "Emotional stability, mental clarity, intuition, peaceful mind",
+        "hi": "भावनात्मक स्थिरता, मानसिक स्पष्टता, अंतर्ज्ञान",
+        "sa": "भावनात्मकस्थैर्यं, मानसिकस्पष्टता, अन्तर्ज्ञानम्"
+      },
+      "precautions": "Avoid if Moon is well-placed and strong"
+    },
+    {
+      "id": "coral",
+      "name": {
+        "en": "Red Coral (Moonga)",
+        "hi": "मूंगा",
+        "sa": "प्रवालम्"
+      },
+      "planet": "Mars",
+      "purpose": {
+        "en": "Courage, energy, remove Mangal Dosha, brother relationship",
+        "hi": "साहस, ऊर्जा, मंगल दोष को दूर करें",
+        "sa": "साहसं, शक्तिः, मङ्गलदोषनाशः"
+      },
+      "weight": "Minimum 3 carats, preferably 5-7 carats",
+      "metal": "Gold or Copper",
+      "finger": "Ring finger of right hand",
+      "day_to_wear": "Tuesday morning",
+      "benefits": {
+        "en": "Physical strength, courage, property, siblings harmony",
+        "hi": "शारीरिक शक्ति, साहस, संपत्ति",
+        "sa": "शारीरिकशक्तिः, साहसं, सम्पत्तिः"
+      },
+      "precautions": "Avoid during pregnancy or if Mars is exalted"
+    },
+    {
+      "id": "emerald",
+      "name": {
+        "en": "Emerald (Panna)",
+        "hi": "पन्ना",
+        "sa": "मरकतम्"
+      },
+      "planet": "Mercury",
+      "purpose": {
+        "en": "Intelligence, communication, business success",
+        "hi": "बुद्धि, संचार, व्यापार सफलता",
+        "sa": "बुद्धिः, संचारः, व्यापारसफलता"
+      },
+      "weight": "Minimum 3 carats, preferably 5-7 carats",
+      "metal": "Gold or Silver",
+      "finger": "Little finger of right hand",
+      "day_to_wear": "Wednesday morning",
+      "benefits": {
+        "en": "Sharp intellect, eloquence, business acumen, learning",
+        "hi": "तीक्ष्ण बुद्धि, वाक्पटुता, व्यापार कौशल",
+        "sa": "तीक्ष्णबुद्धिः, वाक्पटुता, व्यापारकौशलम्"
+      },
+      "precautions": "Avoid if Mercury is combust or afflicted"
+    },
+    {
+      "id": "yellow_sapphire",
+      "name": {
+        "en": "Yellow Sapphire (Pukhraj)",
+        "hi": "पुखराज",
+        "sa": "पुष्पराग"
+      },
+      "planet": "Jupiter",
+      "purpose": {
+        "en": "Wisdom, prosperity, teacher relationship, children",
+        "hi": "ज्ञान, समृद्धि, शिक्षक संबंध, बच्चे",
+        "sa": "ज्ञानं, समृद्धिः, गुरुसम्बन्धः, सन्तानम्"
+      },
+      "weight": "Minimum 3 carats, preferably 5-7 carats",
+      "metal": "Gold",
+      "finger": "Index finger of right hand",
+      "day_to_wear": "Thursday morning",
+      "benefits": {
+        "en": "Spiritual wisdom, wealth, children, teaching ability",
+        "hi": "आध्यात्मिक ज्ञान, धन, बच्चे, शिक्षण क्षमता",
+        "sa": "आध्यात्मिकज्ञानं, धनं, सन्तानं, शिक्षणक्षमता"
+      },
+      "precautions": "Generally beneficial for most, verify chart placement"
+    },
+    {
+      "id": "diamond",
+      "name": {
+        "en": "Diamond (Heera)",
+        "hi": "हीरा",
+        "sa": "वज्रम्"
+      },
+      "planet": "Venus",
+      "purpose": {
+        "en": "Love, marriage, arts, luxury, spouse relationship",
+        "hi": "प्रेम, विवाह, कला, विलासिता",
+        "sa": "प्रेम, विवाहः, कला, विलासिता"
+      },
+      "weight": "Minimum 1 carat, preferably 1-2 carats",
+      "metal": "Gold, Silver, or Platinum",
+      "finger": "Middle or little finger of right hand",
+      "day_to_wear": "Friday morning",
+      "benefits": {
+        "en": "Harmonious relationships, artistic talent, luxury, beauty",
+        "hi": "सामंजस्यपूर्ण संबंध, कलात्मक प्रतिभा",
+        "sa": "सामञ्जस्यपूर्णाः सम्बन्धाः, कलात्मकप्रतिभा"
+      },
+      "precautions": "Alternative: White Sapphire. Verify Venus position"
+    },
+    {
+      "id": "blue_sapphire",
+      "name": {
+        "en": "Blue Sapphire (Neelam)",
+        "hi": "नीलम",
+        "sa": "नीलमणिः"
+      },
+      "planet": "Saturn",
+      "purpose": {
+        "en": "Remove Saturn afflictions, discipline, patience, karma",
+        "hi": "शनि पीड़ा दूर करें, अनुशासन, धैर्य",
+        "sa": "शनिपीडानाशः, अनुशासनं, धैर्यं"
+      },
+      "weight": "Minimum 3 carats, preferably 5-7 carats",
+      "metal": "Gold, Silver, or Panchdhatu",
+      "finger": "Middle finger of right hand",
+      "day_to_wear": "Saturday evening",
+      "benefits": {
+        "en": "Discipline, patience, karmic resolution, longevity",
+        "hi": "अनुशासन, धैर्य, कर्म समाधान, दीर्घायु",
+        "sa": "अनुशासनं, धैर्यं, कर्मसमाधानं, दीर्घजीवनम्"
+      },
+      "precautions": "MUST test for 3 days before permanent wearing. Powerful effects."
+    },
+    {
+      "id": "hessonite",
+      "name": {
+        "en": "Hessonite Garnet (Gomed)",
+        "hi": "गोमेद",
+        "sa": "गोमेदम्"
+      },
+      "planet": "Rahu",
+      "purpose": {
+        "en": "Remove Rahu afflictions, material success, foreign connections",
+        "hi": "राहु पीड़ा दूर करें, भौतिक सफलता",
+        "sa": "राहुपीडानाशः, भौतिकसफलता"
+      },
+      "weight": "Minimum 5 carats, preferably 7-9 carats",
+      "metal": "Silver or Panchdhatu",
+      "finger": "Middle finger of right hand",
+      "day_to_wear": "Saturday evening",
+      "benefits": {
+        "en": "Material gains, technology, foreign opportunities",
+        "hi": "भौतिक लाभ, प्रौद्योगिकी, विदेशी अवसर",
+        "sa": "भौतिकलाभः, तन्त्रज्ञानं, विदेशावसराः"
+      },
+      "precautions": "Consult astrologer for Rahu dasha periods"
+    },
+    {
+      "id": "cats_eye",
+      "name": {
+        "en": "Cat's Eye (Lehsunia)",
+        "hi": "लहसुनिया",
+        "sa": "वैदूर्यम्"
+      },
+      "planet": "Ketu",
+      "purpose": {
+        "en": "Spiritual liberation, remove Ketu afflictions, moksha",
+        "hi": "आध्यात्मिक मुक्ति, केतु पीड़ा दूर करें",
+        "sa": "आध्यात्मिकमुक्तिः, केतुपीडानाशः"
+      },
+      "weight": "Minimum 5 carats, preferably 7-9 carats",
+      "metal": "Silver or Panchdhatu",
+      "finger": "Middle finger of right hand",
+      "day_to_wear": "Tuesday evening",
+      "benefits": {
+        "en": "Spiritual insight, detachment, mystical knowledge",
+        "hi": "आध्यात्मिक अंतर्दृष्टि, वैराग्य",
+        "sa": "आध्यात्मिकबोधः, वैराग्यं, रहस्यज्ञानम्"
+      },
+      "precautions": "Consult astrologer for Ketu dasha periods"
+    }
+  ],
+  "general_guidelines": {
+    "en": "Always energize gemstones with appropriate mantras before wearing. Consult qualified Vedic astrologer before wearing powerful gemstones like Blue Sapphire, Hessonite, or Cat's Eye. Gemstones should be natural and untreated. Clean regularly with Ganga Jal or pure water.",
+    "hi": "पहनने से पहले हमेशा उचित मंत्रों के साथ रत्नों को ऊर्जावान करें। नीलम, गोमेद या लहसुनिया जैसे शक्तिशाली रत्न पहनने से पहले योग्य वैदिक ज्योतिषी से परामर्श करें।",
+    "sa": "धारणात् पूर्वं सर्वदा उचितमन्त्रैः रत्नानि ऊर्जितानि कुर्यात्। नीलम् गोमेद वैदूर्य इत्येतादृशानि शक्तिशालीनि रत्नानि धारयितुं पूर्वं योग्यवैदिकज्योतिषिणः परामर्शं प्राप्नुयात्।"
+  },
+  "metadata": {
+    "total_gemstones": 9,
+    "tradition": "Vedic Gemology",
+    "last_updated": "2026-01-07",
+    "sources": ["Ratna Shastra", "Classical Gem Texts"]
+  }
+}

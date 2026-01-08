@@ -1,0 +1,572 @@
+{
+  "category": "nakshatras",
+  "tradition": "nadi_jyotisa",
+  "nakshatras": [
+    {
+      "name": "Ashwini",
+      "number": 1,
+      "ruling_planet": "Ketu",
+      "deity": "Ashwini Kumaras",
+      "symbol": "Horse Head",
+      "translations": {
+        "en": {
+          "characteristics": "Pioneering spirit, healing abilities, swift action. Restless energy and need for movement.",
+          "soul_purpose": "To bring healing and initiate new beginnings. Swift service to humanity through medical or emergency fields.",
+          "career": "Medicine, emergency services, transportation, sports, pioneering ventures.",
+          "remedies": {
+            "mantra": "Om Ashwini Kumarabhyam Namah",
+            "gemstone": "Cat's Eye (for Ketu)",
+            "fasting_day": "Tuesday",
+            "color": "Blood red, Golden"
+          }
+        },
+        "hi": {
+          "characteristics": "अग्रणी भावना, उपचार क्षमता, तीव्र कार्रवाई। बेचैन ऊर्जा।",
+          "soul_purpose": "उपचार लाना और नई शुरुआत करना। चिकित्सा क्षेत्र में तीव्र सेवा।",
+          "career": "चिकित्सा, आपातकालीन सेवाएं, परिवहन, खेल।"
+        },
+        "sa": {
+          "characteristics": "अग्रगमनभावना, चिकित्साशक्तिः, त्वरितक्रिया। चञ्चलशक्तिः।",
+          "soul_purpose": "चिकित्सां आनेतुं नवप्रारम्भान् कर्तुं च। वैद्यक्षेत्रे त्वरितसेवा।",
+          "career": "वैद्यं, आपत्सेवाः, यानं, क्रीडा।"
+        }
+      }
+    },
+    {
+      "name": "Bharani",
+      "number": 2,
+      "ruling_planet": "Venus",
+      "deity": "Yama",
+      "symbol": "Yoni (Womb)",
+      "translations": {
+        "en": {
+          "characteristics": "Transformation, responsibility, creative fertility. Intense emotional cycles and nurturing through challenges.",
+          "soul_purpose": "To transform through acceptance of life and death cycles. Care for others during transitions.",
+          "career": "Obstetrics, hospice care, transformation industries, creative arts, agriculture.",
+          "remedies": {
+            "mantra": "Om Yamarajaya Namah",
+            "gemstone": "Diamond (for Venus)",
+            "fasting_day": "Friday",
+            "color": "Red, Maroon"
+          }
+        },
+        "hi": {
+          "characteristics": "परिवर्तन, जिम्मेदारी, रचनात्मक उर्वरता।",
+          "soul_purpose": "जीवन और मृत्यु चक्र की स्वीकृति के माध्यम से परिवर्तन।",
+          "career": "प्रसूति विज्ञान, उपशामक देखभाल, रचनात्मक कला।"
+        },
+        "sa": {
+          "characteristics": "परिवर्तनं, उत्तरदायित्वं, सृजनात्मकोर्वरता।",
+          "soul_purpose": "जीवनमृत्युचक्रस्वीकारेण परिवर्तनं कर्तुम्।",
+          "career": "प्रसूतिविज्ञानं, शान्तिसेवा, सृजनात्मककला।"
+        }
+      }
+    },
+    {
+      "name": "Krittika",
+      "number": 3,
+      "ruling_planet": "Sun",
+      "deity": "Agni",
+      "symbol": "Razor/Flame",
+      "translations": {
+        "en": {
+          "characteristics": "Sharp discernment, purifying tendencies, cutting through obstacles. Leadership and courage.",
+          "soul_purpose": "To purify and transform through fire of discrimination. Cut away impurities and lead others.",
+          "career": "Surgery, law enforcement, military, purification industries, leadership roles.",
+          "remedies": {
+            "mantra": "Om Agnaye Namah",
+            "gemstone": "Ruby (for Sun)",
+            "fasting_day": "Sunday",
+            "color": "White, Red"
+          }
+        }
+      }
+    },
+    {
+      "name": "Rohini",
+      "number": 4,
+      "ruling_planet": "Moon",
+      "deity": "Brahma",
+      "symbol": "Ox Cart/Chariot",
+      "translations": {
+        "en": {
+          "characteristics": "Material comforts, artistic sensibilities, strong attraction to beauty and luxury. Creative and nourishing qualities.",
+          "soul_purpose": "To create beauty and abundance. Nurture growth in all forms - artistic, agricultural, familial.",
+          "career": "Arts, agriculture, dairy, luxury goods, beauty industries, fashion, interior design.",
+          "remedies": {
+            "mantra": "Om Brahmane Namah",
+            "gemstone": "Pearl (for Moon)",
+            "fasting_day": "Monday",
+            "color": "White, Light Blue"
+          }
+        }
+      }
+    },
+    {
+      "name": "Mrigashira",
+      "number": 5,
+      "ruling_planet": "Mars",
+      "deity": "Soma",
+      "symbol": "Deer Head",
+      "translations": {
+        "en": {
+          "characteristics": "Searching nature, curiosity, gentleness. Restless pursuit of knowledge and perfection.",
+          "soul_purpose": "To seek and explore. Find the perfect balance between desire and fulfillment.",
+          "career": "Research, exploration, travel industry, landscaping, perfumery, teaching.",
+          "remedies": {
+            "mantra": "Om Somaya Namah",
+            "gemstone": "Coral (for Mars)",
+            "fasting_day": "Tuesday",
+            "color": "Green, Light Green"
+          }
+        }
+      }
+    },
+    {
+      "name": "Ardra",
+      "number": 6,
+      "ruling_planet": "Rahu",
+      "deity": "Rudra",
+      "symbol": "Teardrop/Diamond",
+      "translations": {
+        "en": {
+          "characteristics": "Destruction and renewal, intense effort, storm energy. Breaking down to rebuild stronger.",
+          "soul_purpose": "To transform through crisis and renewal. Strength through adversity and change.",
+          "career": "Research, technology, chemical industries, crisis management, transformation coaching.",
+          "remedies": {
+            "mantra": "Om Rudraya Namah",
+            "gemstone": "Hessonite (for Rahu)",
+            "fasting_day": "Saturday",
+            "color": "Green, Black"
+          }
+        }
+      }
+    },
+    {
+      "name": "Punarvasu",
+      "number": 7,
+      "ruling_planet": "Jupiter",
+      "deity": "Aditi",
+      "symbol": "Bow and Quiver",
+      "translations": {
+        "en": {
+          "characteristics": "Renewal, return to origins, prosperity. Ability to bounce back and restore.",
+          "soul_purpose": "To restore and renew. Bring back what was lost, heal what was broken.",
+          "career": "Restoration work, counseling, teaching, spiritual guidance, real estate.",
+          "remedies": {
+            "mantra": "Om Adityai Namah",
+            "gemstone": "Yellow Sapphire (for Jupiter)",
+            "fasting_day": "Thursday",
+            "color": "Grey, Lead"
+          }
+        }
+      }
+    },
+    {
+      "name": "Pushya",
+      "number": 8,
+      "ruling_planet": "Saturn",
+      "deity": "Brihaspati",
+      "symbol": "Cow's Udder/Lotus",
+      "translations": {
+        "en": {
+          "characteristics": "Nourishment, spiritual growth, wisdom. One of the most auspicious nakshatras. Protective and supportive energy.",
+          "soul_purpose": "To nourish and support spiritual growth of self and others. Provide wisdom and guidance.",
+          "career": "Teaching, spiritual guidance, counseling, nutrition, childcare, management.",
+          "remedies": {
+            "mantra": "Om Brihaspataye Namah",
+            "gemstone": "Blue Sapphire (for Saturn)",
+            "fasting_day": "Saturday",
+            "color": "Red, Orange, Yellow"
+          }
+        }
+      }
+    },
+    {
+      "name": "Ashlesha",
+      "number": 9,
+      "ruling_planet": "Mercury",
+      "deity": "Nagas (Serpents)",
+      "symbol": "Coiled Serpent",
+      "translations": {
+        "en": {
+          "characteristics": "Mysticism, kundalini energy, transformation. Hypnotic and penetrating wisdom.",
+          "soul_purpose": "To work with subtle energies and hidden knowledge. Transform poison into medicine.",
+          "career": "Psychology, occult sciences, medicine (especially toxicology), research, investigation.",
+          "remedies": {
+            "mantra": "Om Naga Devaya Namah",
+            "gemstone": "Emerald (for Mercury)",
+            "fasting_day": "Wednesday",
+            "color": "Black, Red"
+          }
+        }
+      }
+    },
+    {
+      "name": "Magha",
+      "number": 10,
+      "ruling_planet": "Ketu",
+      "deity": "Pitris (Ancestors)",
+      "symbol": "Royal Throne",
+      "translations": {
+        "en": {
+          "characteristics": "Royalty, ancestors, authority. Connection to lineage and tradition. Natural leadership.",
+          "soul_purpose": "To honor tradition while leading forward. Connect past wisdom with present action.",
+          "career": "Leadership, government, history, genealogy, traditional arts, corporate management.",
+          "remedies": {
+            "mantra": "Om Pitribhyo Namah",
+            "gemstone": "Cat's Eye (for Ketu)",
+            "fasting_day": "Tuesday",
+            "color": "Cream, White"
+          }
+        }
+      }
+    },
+    {
+      "name": "Purva Phalguni",
+      "number": 11,
+      "ruling_planet": "Venus",
+      "deity": "Bhaga",
+      "symbol": "Swinging Hammock/Front Legs of Bed",
+      "translations": {
+        "en": {
+          "characteristics": "Pleasure, creativity, rest and relaxation. Enjoyment of life's comforts and arts.",
+          "soul_purpose": "To create and enjoy beauty. Balance work with play, duty with pleasure.",
+          "career": "Entertainment, arts, hospitality, music, marriage counseling, event planning.",
+          "remedies": {
+            "mantra": "Om Bhagaya Namah",
+            "gemstone": "Diamond (for Venus)",
+            "fasting_day": "Friday",
+            "color": "Light Brown, Pink"
+          }
+        }
+      }
+    },
+    {
+      "name": "Uttara Phalguni",
+      "number": 12,
+      "ruling_planet": "Sun",
+      "deity": "Aryaman",
+      "symbol": "Bed/Back Legs of Cot",
+      "translations": {
+        "en": {
+          "characteristics": "Patronage, contracts, healing. Generous and supportive nature. Steady friendships.",
+          "soul_purpose": "To support others through contracts and commitments. Heal through steady presence.",
+          "career": "Healthcare, contract work, social services, counseling, mediation, partnerships.",
+          "remedies": {
+            "mantra": "Om Aryamnaya Namah",
+            "gemstone": "Ruby (for Sun)",
+            "fasting_day": "Sunday",
+            "color": "Bright Blue"
+          }
+        }
+      }
+    },
+    {
+      "name": "Hasta",
+      "number": 13,
+      "ruling_planet": "Moon",
+      "deity": "Savitar",
+      "symbol": "Hand/Fist",
+      "translations": {
+        "en": {
+          "characteristics": "Skill, dexterity, craftsmanship. Ability to manifest through hands. Clever and humorous.",
+          "soul_purpose": "To create with hands and skills. Manifest ideas into physical reality through craft.",
+          "career": "Crafts, surgery, massage therapy, arts, technology, manual work requiring skill.",
+          "remedies": {
+            "mantra": "Om Savitre Namah",
+            "gemstone": "Pearl (for Moon)",
+            "fasting_day": "Monday",
+            "color": "Light Green"
+          }
+        }
+      }
+    },
+    {
+      "name": "Chitra",
+      "number": 14,
+      "ruling_planet": "Mars",
+      "deity": "Vishvakarma",
+      "symbol": "Bright Jewel/Pearl",
+      "translations": {
+        "en": {
+          "characteristics": "Brilliance, creativity, architecture. Ability to create beautiful and functional structures.",
+          "soul_purpose": "To build and design with divine inspiration. Create beauty that serves purpose.",
+          "career": "Architecture, design, engineering, jewelry making, photography, fashion.",
+          "remedies": {
+            "mantra": "Om Vishvakarmane Namah",
+            "gemstone": "Coral (for Mars)",
+            "fasting_day": "Tuesday",
+            "color": "Black, Variegated"
+          }
+        }
+      }
+    },
+    {
+      "name": "Swati",
+      "number": 15,
+      "ruling_planet": "Rahu",
+      "deity": "Vayu",
+      "symbol": "Young Plant Shoot/Coral",
+      "translations": {
+        "en": {
+          "characteristics": "Independence, movement, flexibility. Like wind - free and adaptable. Trade and business acumen.",
+          "soul_purpose": "To remain independent while connecting all. Facilitate exchange and communication.",
+          "career": "Business, trade, diplomacy, aviation, wind energy, telecommunications.",
+          "remedies": {
+            "mantra": "Om Vayave Namah",
+            "gemstone": "Hessonite (for Rahu)",
+            "fasting_day": "Saturday",
+            "color": "Black"
+          }
+        }
+      }
+    },
+    {
+      "name": "Vishakha",
+      "number": 16,
+      "ruling_planet": "Jupiter",
+      "deity": "Indra-Agni",
+      "symbol": "Triumphal Archway/Potter's Wheel",
+      "translations": {
+        "en": {
+          "characteristics": "Determination, goal orientation, triumph. Focused energy toward achievement.",
+          "soul_purpose": "To achieve goals through determined effort. Transform obstacles into victories.",
+          "career": "Leadership, politics, law, military, competitive fields, goal-oriented professions.",
+          "remedies": {
+            "mantra": "Om Indragnaye Namah",
+            "gemstone": "Yellow Sapphire (for Jupiter)",
+            "fasting_day": "Thursday",
+            "color": "Gold"
+          }
+        }
+      }
+    },
+    {
+      "name": "Anuradha",
+      "number": 17,
+      "ruling_planet": "Saturn",
+      "deity": "Mitra",
+      "symbol": "Lotus Flower",
+      "translations": {
+        "en": {
+          "characteristics": "Friendship, devotion, success in foreign lands. Ability to achieve through cooperation.",
+          "soul_purpose": "To build lasting friendships and partnerships. Success through collaboration and devotion.",
+          "career": "International business, diplomacy, counseling, group activities, organizational work.",
+          "remedies": {
+            "mantra": "Om Mitraya Namah",
+            "gemstone": "Blue Sapphire (for Saturn)",
+            "fasting_day": "Saturday",
+            "color": "Reddish Brown"
+          }
+        }
+      }
+    },
+    {
+      "name": "Jyeshtha",
+      "number": 18,
+      "ruling_planet": "Mercury",
+      "deity": "Indra",
+      "symbol": "Circular Amulet/Earring/Umbrella",
+      "translations": {
+        "en": {
+          "characteristics": "Leadership, protection, seniority. Responsible authority and protective instincts.",
+          "soul_purpose": "To lead and protect. Exercise authority with wisdom and responsibility.",
+          "career": "Management, military, police, protective services, senior positions, occult sciences.",
+          "remedies": {
+            "mantra": "Om Indraya Namah",
+            "gemstone": "Emerald (for Mercury)",
+            "fasting_day": "Wednesday",
+            "color": "Cream, Light Blue"
+          }
+        }
+      }
+    },
+    {
+      "name": "Moola",
+      "number": 19,
+      "ruling_planet": "Ketu",
+      "deity": "Nirriti",
+      "symbol": "Tied Roots/Lion's Tail",
+      "translations": {
+        "en": {
+          "characteristics": "Investigation of roots, foundation, destruction for renewal. Deep inquiry into core truths.",
+          "soul_purpose": "To dig to the roots of matters. Destroy illusions to reveal truth.",
+          "career": "Research, investigation, psychology, archaeology, root cause analysis, herbalism.",
+          "remedies": {
+            "mantra": "Om Nirritiyai Namah",
+            "gemstone": "Cat's Eye (for Ketu)",
+            "fasting_day": "Tuesday",
+            "color": "Brown, Bright Yellow"
+          }
+        }
+      }
+    },
+    {
+      "name": "Purva Ashadha",
+      "number": 20,
+      "ruling_planet": "Venus",
+      "deity": "Apas",
+      "symbol": "Elephant Tusk/Fan",
+      "translations": {
+        "en": {
+          "characteristics": "Invincibility, purification, victory. Confident and proud nature. Philosophical bent.",
+          "soul_purpose": "To achieve invincible position through purification. Inspire others with confidence.",
+          "career": "Motivational speaking, philosophy, counseling, water-related industries, purification work.",
+          "remedies": {
+            "mantra": "Om Adbhyo Namah",
+            "gemstone": "Diamond (for Venus)",
+            "fasting_day": "Friday",
+            "color": "Black"
+          }
+        }
+      }
+    },
+    {
+      "name": "Uttara Ashadha",
+      "number": 21,
+      "ruling_planet": "Sun",
+      "deity": "Vishvadevas",
+      "symbol": "Elephant Tusk/Planks of Bed",
+      "translations": {
+        "en": {
+          "characteristics": "Final victory, righteousness, leadership. Permanent achievement and universal principles.",
+          "soul_purpose": "To establish lasting victories based on dharma. Lead with integrity and universal values.",
+          "career": "Leadership, law, teaching, social reform, permanent positions, government service.",
+          "remedies": {
+            "mantra": "Om Vishvadevebhyo Namah",
+            "gemstone": "Ruby (for Sun)",
+            "fasting_day": "Sunday",
+            "color": "Copper"
+          }
+        }
+      }
+    },
+    {
+      "name": "Shravana",
+      "number": 22,
+      "ruling_planet": "Moon",
+      "deity": "Vishnu",
+      "symbol": "Ear/Three Footprints",
+      "translations": {
+        "en": {
+          "characteristics": "Learning, listening, connection. Ability to hear and transmit knowledge. Organizational skills.",
+          "soul_purpose": "To listen and learn from universal wisdom. Connect and organize knowledge for others.",
+          "career": "Education, media, telecommunications, music, counseling, administration.",
+          "remedies": {
+            "mantra": "Om Vishnave Namah",
+            "gemstone": "Pearl (for Moon)",
+            "fasting_day": "Monday",
+            "color": "Light Blue"
+          }
+        }
+      }
+    },
+    {
+      "name": "Dhanishta",
+      "number": 23,
+      "ruling_planet": "Mars",
+      "deity": "Vasus (Eight Gods of Wealth)",
+      "symbol": "Drum/Flute",
+      "translations": {
+        "en": {
+          "characteristics": "Wealth, music, prosperity. Rhythmic and abundant energy. Fame and recognition.",
+          "soul_purpose": "To create wealth and harmony through rhythm. Bring prosperity through organized effort.",
+          "career": "Music, dance, real estate, business, finance, organizational leadership.",
+          "remedies": {
+            "mantra": "Om Vasubhyo Namah",
+            "gemstone": "Coral (for Mars)",
+            "fasting_day": "Tuesday",
+            "color": "Silver Grey"
+          }
+        }
+      }
+    },
+    {
+      "name": "Shatabhisha",
+      "number": 24,
+      "ruling_planet": "Rahu",
+      "deity": "Varuna",
+      "symbol": "Empty Circle/100 Flowers",
+      "translations": {
+        "en": {
+          "characteristics": "Healing, mystery, solitude. Hundred physicians - deep healing knowledge. Reclusive tendencies.",
+          "soul_purpose": "To heal through alternative and mystical methods. Explore hidden realms of healing.",
+          "career": "Alternative medicine, research, astronomy, aviation, spiritual healing, pharmacy.",
+          "remedies": {
+            "mantra": "Om Varunaya Namah",
+            "gemstone": "Hessonite (for Rahu)",
+            "fasting_day": "Saturday",
+            "color": "Blue Green"
+          }
+        }
+      }
+    },
+    {
+      "name": "Purva Bhadrapada",
+      "number": 25,
+      "ruling_planet": "Jupiter",
+      "deity": "Aja Ekapada",
+      "symbol": "Sword/Two-Faced Man/Funeral Cot",
+      "translations": {
+        "en": {
+          "characteristics": "Purification through fire, penance, transformation. Intense and passionate nature.",
+          "soul_purpose": "To transform through intense spiritual practice. Burn away impurities through penance.",
+          "career": "Spiritual teaching, occult sciences, research, transformation work, astrology.",
+          "remedies": {
+            "mantra": "Om Aja Ekapadaya Namah",
+            "gemstone": "Yellow Sapphire (for Jupiter)",
+            "fasting_day": "Thursday",
+            "color": "Silver Grey"
+          }
+        }
+      }
+    },
+    {
+      "name": "Uttara Bhadrapada",
+      "number": 26,
+      "ruling_planet": "Saturn",
+      "deity": "Ahir Budhnya",
+      "symbol": "Twins/Back Legs of Funeral Cot",
+      "translations": {
+        "en": {
+          "characteristics": "Depth, stability, wisdom of serpent power. Patient and profound understanding.",
+          "soul_purpose": "To bring depth and stability through wisdom. Connect surface with depths.",
+          "career": "Teaching, counseling, charity work, social service, depth psychology, meditation.",
+          "remedies": {
+            "mantra": "Om Ahir Budhnyaya Namah",
+            "gemstone": "Blue Sapphire (for Saturn)",
+            "fasting_day": "Saturday",
+            "color": "Purple"
+          }
+        }
+      }
+    },
+    {
+      "name": "Revati",
+      "number": 27,
+      "ruling_planet": "Mercury",
+      "deity": "Pushan",
+      "symbol": "Fish/Drum",
+      "translations": {
+        "en": {
+          "characteristics": "Nourishment, protection, completion. Gentle guidance and safe passage. End of cycle.",
+          "soul_purpose": "To guide safely to destination. Provide nourishment and protection for journeys.",
+          "career": "Travel industry, animal care, navigation, guidance counseling, completion work.",
+          "remedies": {
+            "mantra": "Om Pushne Namah",
+            "gemstone": "Emerald (for Mercury)",
+            "fasting_day": "Wednesday",
+            "color": "Brown"
+          }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "total_nakshatras": 27,
+    "tradition": "Nadi Jyotisha",
+    "last_updated": "2026-01-07",
+    "sources": ["Nadi Jyotisha Palm Leaves", "Classical Nakshatra Texts"]
+  }
+}
