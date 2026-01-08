@@ -14,7 +14,7 @@ import GenZButton from './components/GenZButton';
 import GenZCard, { GenZCardGradient } from './components/GenZCard';
 import GenZBadge, { StatusBadge } from './components/GenZBadge';
 import BottomNav from './components/BottomNav';
-import OnboardingTutorial from './components/OnboardingTutorial';
+import OnboardingTutorial from '../components/OnboardingTutorial';
 
 export default function HomePage() {
   const [activeFeature, setActiveFeature] = useState(0);
