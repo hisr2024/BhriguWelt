@@ -1,3 +1,5 @@
+import { generatePastLivesPrediction, type PastLivesEngineOptions } from '../engines/pastLivesEngine';
+
 /**
  * Predictions API Client
  * TypeScript client for comprehensive prediction service
@@ -196,6 +198,17 @@ export class PredictionsAPI {
    */
   async getPastLives(birthData: ChartData, useAI: boolean = true): Promise<PredictionResult> {
     return this.generatePrediction('past_lives', birthData, useAI);
+  }
+
+  /**
+   * Generate Past Lives analysis using two-phase engine
+   */
+  async generatePastLives(
+    birthData: ChartData,
+    useAI: boolean = true,
+    options: PastLivesEngineOptions = {}
+  ): Promise<PredictionResult> {
+    return generatePastLivesPrediction(birthData, { ...options, aiEnabled: useAI });
   }
 
   /**
