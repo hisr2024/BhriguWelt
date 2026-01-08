@@ -34,6 +34,17 @@ attaches a persistent disk so `/manuscript` updates survive restarts.
 Add any secrets in the Render dashboard after the first deploy; the blueprint
 only pins defaults and secure generated values.
 
+## Astrology calculator dependencies
+
+Birth chart and compatibility endpoints require the following Python packages
+to be installed in the backend environment (they are listed in
+`backend/requirements.txt` for Render builds):
+
+- `ephem`
+- `pytz`
+- `timezonefinder`
+- `geopy`
+
 ## Smoke tests after deploy
 
 1. Verify health:
