@@ -58,8 +58,9 @@ class BhriguPredictionCache(db.Model):
         except:
             prediction_dict = {'raw': self.prediction_data}
 
-        if self.complete_analysis and 'complete_analysis' not in prediction_dict:
-            prediction_dict['complete_analysis'] = self.complete_analysis
+        cache_age_seconds = None
+        if self.created_at:
+            cache_age_seconds = int((datetime.utcnow() - self.created_at).total_seconds())
 
         return {
             'id': self.id,
@@ -69,6 +70,8 @@ class BhriguPredictionCache(db.Model):
             'zodiac_sign': self.zodiac_sign,
             'nakshatra': self.nakshatra,
             'created_at': self.created_at.isoformat() if self.created_at else None,
+            'cache_age': cache_age_seconds,
+            'cache_key': f"{self.birth_data_hash}:{self.category}:{self.question or ''}",
             'access_count': self.access_count
         }
 
