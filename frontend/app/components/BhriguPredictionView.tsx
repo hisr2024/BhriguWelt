@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
-import type { Profile } from '@/lib/types';
+import type { BhriguPrediction, Profile } from '@/lib/types';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; color: string }>> = {
@@ -238,7 +238,9 @@ interface BhriguPredictionViewProps {
   title: string;
   description: string;
   icon: React.ReactNode;
-  fetchPrediction: (profileData: any) => Promise<any>;
+  fetchPrediction: (
+    profileData: BirthDetails & { question?: string; force_regenerate?: boolean }
+  ) => Promise<PredictionResult>;
   profile: Profile | null;
 }
 
@@ -250,13 +252,14 @@ export default function BhriguPredictionView({
   fetchPrediction,
   profile
 }: BhriguPredictionViewProps) {
-  const [prediction, setPrediction] = useState<any>(null);
+  const [prediction, setPrediction] = useState<BhriguPrediction | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [question, setQuestion] = useState('');
-  const [showFullAnalysis, setShowFullAnalysis] = useState(false);
+  const [showFullAnalysis, setShowFullAnalysis] = useState(true);
   const [debugMode, setDebugMode] = useState(false);
+  const [profileValidation, setProfileValidation] = useState<ProfileValidationResult | null>(null);
 
   const parsedFromFullAnalysis = useMemo(() => {
     if (!prediction?.full_analysis) return {};
@@ -269,9 +272,28 @@ export default function BhriguPredictionView({
     }
   }, [profile]);
 
+  const isCachedPrediction = (
+    data: PredictionResult['data']
+  ): data is CachedPrediction => {
+    return typeof (data as CachedPrediction).prediction !== 'undefined';
+  };
+
+  const getPredictionPayload = (data: PredictionResult['data']): PredictionPayload => {
+    return isCachedPrediction(data) ? data.prediction : data;
+  };
+
   const loadPrediction = async (forceRegenerate = false) => {
     if (! profile) return;
 
+    const validationResult = validateProfile(profile);
+    if (! validationResult.isValid) {
+      setPrediction(null);
+      setError('Please complete your profile to generate a prediction.');
+      setProfileValidation(validationResult);
+      return;
+    }
+
+    setProfileValidation(null);
     setLoading(true);
     setError(null);
 
@@ -287,14 +309,15 @@ export default function BhriguPredictionView({
       };
 
       const response = await fetchPrediction(profileData);
+      const normalized = normalizePredictionResponse(response);
 
       if (response. status === 'success') {
-        const predictionData = response.data?.prediction ?? response.data;
+        const predictionData = getPredictionPayload(response.data);
         setPrediction(predictionData);
         setFromCache(
+          isCachedPrediction(response.data) ||
           response.message?.includes('cache') ||
-          response.message?.toLowerCase().includes('cache') ||
-          Boolean(response.data?.prediction)
+          response.message?.toLowerCase().includes('cache')
         );
       } else {
         setError(response.message || 'Failed to generate prediction');
@@ -394,20 +417,37 @@ export default function BhriguPredictionView({
         return content && content.trim().length > 50;
       });
     }
+    const parsedFromFullAnalysisActive = Object.keys(parsedFromFullAnalysis).length > 0;
 
     // Helper function to get section content from either source
     const getSectionContent = (key: string): string => {
-      return prediction[key] || parsedFromFullAnalysis[key] || '';
+      const directContent = prediction[key];
+      if (typeof directContent === 'string') {
+        return directContent;
+      }
+      return parsedFromFullAnalysis[key] || '';
     };
 
     return (
       <div className="space-y-6">
+        {/* Banner for client-side parsed sections */}
+        {parsedFromFullAnalysisActive && (
+          <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
+            <p className="text-cyan-300 text-sm font-semibold uppercase tracking-wide">
+              Parsed from full analysis
+            </p>
+            <p className="text-gray-300 text-sm mt-1">
+              These insights were extracted from the full reading for easier scanning.
+            </p>
+          </div>
+        )}
+
         {/* Show message if no sections were extracted successfully */}
-        {availableSections. length === 0 && prediction.full_analysis && (
+        {availableSections. length === 0 && fullAnalysis && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
             <p className="text-amber-400 text-sm">
-              Note: Individual sections could not be extracted from the analysis. 
-              View the complete reading below for your comprehensive prediction.
+              Note: Individual sections could not be extracted from the analysis.
+              The complete reading is shown below.
             </p>
           </div>
         )}
@@ -449,26 +489,38 @@ export default function BhriguPredictionView({
           />
         )}
 
+        {/* Default Full Analysis Panel (when no sections are available) */}
+        {prediction.full_analysis && availableSections.length === 0 && (
+          <div className="space-y-4">
+            {renderSection(
+              'full_analysis',
+              'Full Analysis',
+              prediction.full_analysis,
+              DEFAULT_COLOR
+            )}
+          </div>
+        )}
+
         {/* Metadata */}
-        {prediction.metadata && (
+        {metadata && (
           <div className="mt-8 pt-6 border-t border-gray-700/50">
             <div className="flex flex-wrap gap-4 text-sm text-gray-400">
-              {prediction.metadata.zodiac_sign && (
+              {metadata.zodiac_sign && (
                 <div className="flex items-center gap-2">
                   <span className="text-cyan-400">Zodiac:</span>
-                  <span>{prediction.metadata.zodiac_sign}</span>
+                  <span>{metadata.zodiac_sign}</span>
                 </div>
               )}
-              {prediction.metadata.nakshatra && (
+              {metadata.nakshatra && (
                 <div className="flex items-center gap-2">
                   <span className="text-purple-400">Nakshatra:</span>
-                  <span>{prediction.metadata. nakshatra}</span>
+                  <span>{metadata.nakshatra}</span>
                 </div>
               )}
-              {prediction.metadata.tradition && (
+              {metadata.tradition && (
                 <div className="flex items-center gap-2">
                   <span className="text-pink-400">Tradition:</span>
-                  <span>{prediction.metadata.tradition}</span>
+                  <span>{metadata.tradition}</span>
                 </div>
               )}
             </div>
@@ -615,13 +667,32 @@ export default function BhriguPredictionView({
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6">
             <p className="text-red-400">{error}</p>
-            <button
-              onClick={() => loadPrediction(false)}
-              className="mt-4 text-sm text-cyan-400 hover: text-cyan-300 flex items-center gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Try Again
-            </button>
+            {profileValidation && !profileValidation.isValid ? (
+              <div className="mt-4 space-y-3">
+                <p className="text-sm text-gray-300">
+                  Update these details to continue:
+                </p>
+                <ul className="text-sm text-gray-300 list-disc list-inside space-y-1">
+                  {profileValidation.missingFields.map((field) => (
+                    <li key={field}>{field}</li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => window.location.href = '/profile'}
+                  className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
+                >
+                  Complete Profile
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => loadPrediction(false)}
+                className="mt-4 text-sm text-cyan-400 hover: text-cyan-300 flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Try Again
+              </button>
+            )}
           </div>
         )}
 
