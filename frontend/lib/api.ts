@@ -11,6 +11,7 @@ import type {
   AIChatRequest,
   AISummarizeRequest,
 } from './types';
+import { buildIssueReportUrl, emitToast } from './toast';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -37,6 +38,10 @@ api.interceptors.request.use(
 // Response interceptor with retry logic
 // Use WeakMap to track retry state without modifying config object
 const retryState = new WeakMap<any, { count: number; inProgress: boolean }>();
+const MAX_RETRIES = 3;
+const BASE_RETRY_DELAY_MS = 1000;
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 api.interceptors.response.use(
   (response) => response,
@@ -44,19 +49,23 @@ api.interceptors.response.use(
     const config = error.config;
     
     // Initialize retry state for this config if not exists
-    if (!retryState. has(config)) {
+    if (config && !retryState.has(config)) {
       retryState.set(config, { count: 0, inProgress: false });
     }
     
-    const state = retryState. get(config)!;
+    const state = config ? retryState.get(config)! : undefined;
+    const status = error.response?.status;
+    const responseData = error.response?.data ?? {};
+    const retryable = Boolean(responseData?.retryable);
     
-    // Retry logic for 5xx errors
-    if (error.response?. status >= 500 && ! state.inProgress && state.count < 3) {
+    // Retry logic for retryable responses or transient 5xx errors
+    if (state && (retryable || (status >= 500 && status < 600)) && !state.inProgress && state.count < MAX_RETRIES) {
       state.count++;
       state.inProgress = true;
       
       // Exponential backoff
-      await new Promise(resolve => setTimeout(resolve, 1000 * state.count));
+      const delayMs = BASE_RETRY_DELAY_MS * Math.pow(2, state.count - 1);
+      await delay(delayMs);
       
       state.inProgress = false;
       return api(config);
@@ -66,7 +75,27 @@ api.interceptors.response.use(
     if (typeof navigator !== 'undefined' && ! navigator.onLine) {
       return Promise.reject(new Error('You are offline.  Please check your connection. '));
     }
-    
+
+    const message = responseData?.message || error.message || 'Request failed';
+    const errorCode = responseData?.error_code;
+    const reportIssueUrl = buildIssueReportUrl({
+      message,
+      errorCode,
+      details: responseData?.details,
+      status,
+      method: config?.method?.toUpperCase(),
+      url: config?.url,
+    });
+
+    emitToast({
+      type: 'error',
+      title: 'Request failed',
+      message,
+      errorCode,
+      details: responseData?.details,
+      reportIssueUrl,
+    });
+
     return Promise.reject(error);
   }
 );
