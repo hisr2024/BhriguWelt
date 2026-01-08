@@ -200,6 +200,7 @@ Each prediction now returns:
 - **Individual Sections**: Extensive standalone predictions (detailed)
 - **Complete Analysis**: Synthesized summary (integrated view)
 - **Full Analysis**: Raw AI-generated text with all sections
+- **Storage/Parsing**: `complete_analysis` is stored separately and should not be used for section extraction; only `full_analysis` is parsed into sections.
 
 ## Corpus Data Statistics
 
