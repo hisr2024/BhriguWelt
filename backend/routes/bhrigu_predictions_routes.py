@@ -20,6 +20,41 @@ bhrigu_service = get_bhrigu_service()
 astrology_calc = AstrologyCalculator()
 
 
+def validate_chart_inputs(data):
+    if not data:
+        return "Request body is required"
+
+    if not data.get('date_of_birth'):
+        return "date_of_birth is required to calculate the birth chart"
+
+    if not data.get('time_of_birth'):
+        return "time_of_birth is required to calculate the birth chart"
+
+    place = data.get('place_of_birth', '')
+    has_place = bool(place.strip()) if isinstance(place, str) else False
+    latitude = data.get('latitude')
+    longitude = data.get('longitude')
+
+    if not has_place and (latitude is None or longitude is None):
+        return "Provide place_of_birth or both latitude and longitude to calculate the birth chart"
+
+    if (latitude is None) ^ (longitude is None):
+        return "Provide both latitude and longitude when using coordinates"
+
+    return None
+
+
+def chart_error_response(chart_data):
+    error = chart_data.get('error')
+    if not error:
+        return None
+    return error_response(
+        error.get('message', "Unable to calculate birth chart"),
+        422,
+        error_code=error.get('code')
+    )
+
+
 @bp.route('/karmic-journey', methods=['POST'])
 @limiter.limit("10 per minute")
 def karmic_journey():
@@ -46,6 +81,10 @@ def karmic_journey():
                 message="Retrieved from Bhrigu wisdom cache"
             )
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         # Calculate birth chart
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
@@ -54,6 +93,9 @@ def karmic_journey():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
 
         # Merge chart data with input
         birth_data = {**data, **chart_data}
@@ -109,6 +151,10 @@ def past_lives():
         if cached and not data.get('force_regenerate'):
             return success_response(cached.to_dict(), message="From cache")
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         # Calculate and generate
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
@@ -117,6 +163,9 @@ def past_lives():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
         birth_data = {**data, **chart_data}
 
         prediction = bhrigu_service.generate_past_lives_prediction(
@@ -157,6 +206,10 @@ def future_lives():
         if cached and not data.get('force_regenerate'):
             return success_response(cached.to_dict(), message="From cache")
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
@@ -164,6 +217,9 @@ def future_lives():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
         birth_data = {**data, **chart_data}
 
         prediction = bhrigu_service.generate_future_lives_prediction(
@@ -203,6 +259,10 @@ def present_life():
         if cached and not data.get('force_regenerate'):
             return success_response(cached.to_dict(), message="From cache")
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
@@ -210,6 +270,9 @@ def present_life():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
         birth_data = {**data, **chart_data}
 
         prediction = bhrigu_service.generate_present_life_prediction(
@@ -249,6 +312,10 @@ def life_events():
         if cached and not data.get('force_regenerate'):
             return success_response(cached.to_dict(), message="From cache")
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
@@ -256,6 +323,9 @@ def life_events():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
         birth_data = {**data, **chart_data}
 
         prediction = bhrigu_service.generate_life_events_prediction(
@@ -295,6 +365,10 @@ def karmic_remedies():
         if cached and not data.get('force_regenerate'):
             return success_response(cached.to_dict(), message="From cache")
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
@@ -302,6 +376,9 @@ def karmic_remedies():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
         birth_data = {**data, **chart_data}
 
         prediction = bhrigu_service.generate_karmic_remedies_prediction(
@@ -341,6 +418,10 @@ def relationships():
         if cached and not data.get('force_regenerate'):
             return success_response(cached.to_dict(), message="From cache")
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
@@ -348,6 +429,9 @@ def relationships():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
         birth_data = {**data, **chart_data}
 
         prediction = bhrigu_service.generate_relationships_prediction(
@@ -387,6 +471,10 @@ def predictions():
         if cached and not data.get('force_regenerate'):
             return success_response(cached.to_dict(), message="From cache")
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
@@ -394,6 +482,9 @@ def predictions():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
         birth_data = {**data, **chart_data}
 
         prediction = bhrigu_service.generate_general_predictions(
@@ -519,6 +610,10 @@ def comprehensive_prediction():
         if validation_error:
             return error_response(validation_error, 400)
 
+        chart_validation_error = validate_chart_inputs(data)
+        if chart_validation_error:
+            return error_response(chart_validation_error, 400)
+
         # Calculate birth chart once
         chart_data = astrology_calc.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
@@ -527,6 +622,9 @@ def comprehensive_prediction():
             latitude=data.get('latitude'),
             longitude=data.get('longitude')
         )
+        chart_error = chart_error_response(chart_data)
+        if chart_error:
+            return chart_error
         birth_data = {**data, **chart_data}
 
         # Generate all 8 categories
