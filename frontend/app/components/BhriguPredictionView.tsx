@@ -293,7 +293,7 @@ export default function BhriguPredictionView({
       };
 
       const response = await fetchPrediction(profileData);
-      const normalized = normalizePredictionResponse(response);
+      const normalized = normalizePredictionResponse<BhriguPrediction>(response);
 
       if (normalized.status === 'success') {
         setPrediction(normalized.prediction);
