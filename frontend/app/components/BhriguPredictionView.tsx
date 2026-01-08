@@ -117,6 +117,8 @@ const COLOR_CLASSES:  Record<string, { border: string; hover: string; accent: st
 
 // Default color for sections without a specific color mapping
 const DEFAULT_COLOR = 'cyan';
+const PROFILE_HASH_PREFIX = 'profile_hash_';
+const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_';
 
 interface BhriguPredictionViewProps {
   category: string;
@@ -126,6 +128,42 @@ interface BhriguPredictionViewProps {
   fetchPrediction: (profileData: any) => Promise<any>;
   profile: Profile | null;
 }
+
+const getProfileHashKey = (profile: Profile) => `${PROFILE_HASH_PREFIX}${profile.id ?? 'current'}`;
+
+const getPredictionCacheKey = (profile: Profile, category: string, question: string) => {
+  const questionKey = question.trim() === '' ? 'default' : encodeURIComponent(question.trim());
+  return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${questionKey}`;
+};
+
+const clearCachedPredictions = (profile: Profile) => {
+  if (typeof window === 'undefined') return;
+  const prefix = `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_`;
+  for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(prefix)) {
+      localStorage.removeItem(key);
+    }
+  }
+};
+
+const getProfileHash = async (profile: Profile) => {
+  const profilePayload = JSON.stringify({
+    id: profile.id ?? null,
+    name: profile.name ?? '',
+    dateOfBirth: profile.dateOfBirth ?? '',
+    timeOfBirth: profile.timeOfBirth ?? '',
+    placeOfBirth: profile.placeOfBirth ?? '',
+    latitude: profile.latitude ?? null,
+    longitude: profile.longitude ?? null,
+  });
+  const encoder = new TextEncoder();
+  const data = encoder.encode(profilePayload);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+};
 
 export default function BhriguPredictionView({
   category,
@@ -142,20 +180,59 @@ export default function BhriguPredictionView({
   const [question, setQuestion] = useState('');
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+  const [profileUpdated, setProfileUpdated] = useState(false);
 
   useEffect(() => {
     if (profile) {
-      loadPrediction();
+      const checkProfile = async () => {
+        const currentHash = await getProfileHash(profile);
+        const hashKey = getProfileHashKey(profile);
+        const storedHash = localStorage.getItem(hashKey);
+        const hasChanged = Boolean(storedHash && storedHash !== currentHash);
+
+        if (hasChanged) {
+          clearCachedPredictions(profile);
+        }
+
+        localStorage.setItem(hashKey, currentHash);
+        setProfileUpdated(hasChanged);
+        await loadPrediction(hasChanged, currentHash);
+      };
+      checkProfile();
     }
   }, [profile]);
 
-  const loadPrediction = async (forceRegenerate = false) => {
+  const loadPrediction = async (forceRegenerate = false, profileHash?: string) => {
     if (! profile) return;
 
     setLoading(true);
     setError(null);
+    setFromCache(false);
 
     try {
+      const resolvedHash = profileHash ?? await getProfileHash(profile);
+      const cacheKey = getPredictionCacheKey(profile, category, question);
+      const cached = localStorage.getItem(cacheKey);
+
+      if (!forceRegenerate && cached) {
+        try {
+          const parsed = JSON.parse(cached) as { profileHash: string; prediction: any };
+          if (parsed.profileHash === resolvedHash) {
+            setPrediction(parsed.prediction);
+            setFromCache(true);
+            setLoading(false);
+            return;
+          }
+          localStorage.removeItem(cacheKey);
+        } catch (parseError) {
+          localStorage.removeItem(cacheKey);
+        }
+      }
+
+      if (forceRegenerate) {
+        localStorage.removeItem(cacheKey);
+      }
+
       const profileData = {
         date_of_birth: profile.dateOfBirth,
         time_of_birth:  profile.timeOfBirth,
@@ -175,6 +252,13 @@ export default function BhriguPredictionView({
           response.message?.includes('cache') ||
           response.message?.toLowerCase().includes('cache') ||
           Boolean(response.data?.prediction)
+        );
+        localStorage.setItem(
+          cacheKey,
+          JSON.stringify({
+            profileHash: resolvedHash,
+            prediction: predictionData,
+          })
         );
       } else {
         setError(response.message || 'Failed to generate prediction');
@@ -535,6 +619,12 @@ export default function BhriguPredictionView({
               )}
             </button>
           </div>
+
+          {profileUpdated && (
+            <div className="mt-4 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-200">
+              Profile updated. Cached predictions cleared and a fresh reading is being generated.
+            </div>
+          )}
 
           {fromCache && (
             <div className="mt-3 text-sm text-cyan-400 flex items-center gap-2">
