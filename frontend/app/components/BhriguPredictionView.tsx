@@ -572,22 +572,14 @@ export default function BhriguPredictionView({
         {prediction.full_analysis && (
           <div className="mt-8 pt-8 border-t border-gray-700/50">
             <button
-              onClick={(event) => {
-                if (event.detail > 0) {
-                  setShowFullAnalysis(!showFullAnalysis);
-                }
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  setShowFullAnalysis((prev) => !prev);
-                }
-              }}
+              onClick={() => setShowFullAnalysis(!showFullAnalysis)}
+              aria-expanded={showFullAnalysis}
+              aria-controls="full-analysis-content"
               className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
                        border border-gray-700/50 rounded-xl p-6
                        hover:border-cyan-500/30 transition-all
-                       flex items-center justify-between group
-                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900
+                       flex items-center justify-between group"
             >
               <div className="flex items-center gap-3">
                 <BookOpen className="w-6 h-6 text-cyan-400" />
@@ -610,15 +602,25 @@ export default function BhriguPredictionView({
               </div>
             </button>
 
-        {/* Default Full Analysis Panel (when no sections are available) */}
-        {prediction.full_analysis && availableSections.length === 0 && (
-          <div className="space-y-4">
-            {renderSection(
-              'full_analysis',
-              'Full Analysis',
-              prediction.full_analysis,
-              DEFAULT_COLOR
-            )}
+            <AnimatePresence>
+              {showFullAnalysis && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration:  0.3 }}
+                  id="full-analysis-content"
+                  className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
+                           border border-gray-700/50 rounded-xl p-6"
+                >
+                  <div className="prose prose-invert prose-cyan max-w-none">
+                    <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                      {prediction.full_analysis}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
 
