@@ -83,14 +83,15 @@ def mantra_recommendations():
         6. Benefits and timing for chanting
         """
 
-        mantras = openai_service.generate_prediction(prompt, birth_chart)
+        mantras_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'mantras': mantras,
+                'mantras': mantras_result['text'],
                 'nakshatra': birth_chart['nakshatra'],
-                'current_dasha': birth_chart['dasha_period']['maha_dasha']
+                'current_dasha': birth_chart['dasha_period']['maha_dasha'],
+                'partial': mantras_result['partial']
             }
         }), 200
 
@@ -122,14 +123,15 @@ def gemstone_therapy():
         6. Mantra for energizing gemstone
         """
 
-        gemstones = openai_service.generate_prediction(prompt, birth_chart)
+        gemstones_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'gemstone_therapy': gemstones,
+                'gemstone_therapy': gemstones_result['text'],
                 'ascendant': birth_chart['ascendant'],
-                'moon_sign': birth_chart['moon_sign']
+                'moon_sign': birth_chart['moon_sign'],
+                'partial': gemstones_result['partial']
             }
         }), 200
 
@@ -160,14 +162,15 @@ def ritual_recommendations():
         6. Pilgrimage sites
         """
 
-        rituals = openai_service.generate_prediction(prompt, birth_chart)
+        rituals_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'ritual_recommendations': rituals,
+                'ritual_recommendations': rituals_result['text'],
                 'nakshatra_lord': birth_chart['nakshatra_lord'],
-                'dasha_lord': birth_chart['dasha_period']['maha_dasha']
+                'dasha_lord': birth_chart['dasha_period']['maha_dasha'],
+                'partial': rituals_result['partial']
             }
         }), 200
 
@@ -197,14 +200,15 @@ def charitable_acts():
         5. Karmic debt clearing through service
         """
 
-        charity = openai_service.generate_prediction(prompt, birth_chart)
+        charity_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'charitable_recommendations': charity,
+                'charitable_recommendations': charity_result['text'],
                 'saturn_position': birth_chart['planets']['Saturn'],
-                'jupiter_position': birth_chart['planets']['Jupiter']
+                'jupiter_position': birth_chart['planets']['Jupiter'],
+                'partial': charity_result['partial']
             }
         }), 200
 
@@ -235,14 +239,15 @@ def lifestyle_modifications():
         6. Direction and spatial guidance
         """
 
-        lifestyle = openai_service.generate_prediction(prompt, birth_chart)
+        lifestyle_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'lifestyle_recommendations': lifestyle,
+                'lifestyle_recommendations': lifestyle_result['text'],
                 'element': birth_chart['element'],
-                'ascendant': birth_chart['ascendant']
+                'ascendant': birth_chart['ascendant'],
+                'partial': lifestyle_result['partial']
             }
         }), 200
 
@@ -273,14 +278,15 @@ def meditation_practices():
         6. Duration and frequency
         """
 
-        meditation = openai_service.generate_prediction(prompt, birth_chart)
+        meditation_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'meditation_practices': meditation,
+                'meditation_practices': meditation_result['text'],
                 'nakshatra': birth_chart['nakshatra'],
-                'moon_sign': birth_chart['moon_sign']
+                'moon_sign': birth_chart['moon_sign'],
+                'partial': meditation_result['partial']
             }
         }), 200
 
@@ -312,13 +318,14 @@ def yantra_recommendations():
         5. Materials and specifications
         """
 
-        yantras = openai_service.generate_prediction(prompt, birth_chart)
+        yantras_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'yantra_recommendations': yantras,
-                'current_dasha': birth_chart['dasha_period']['maha_dasha']
+                'yantra_recommendations': yantras_result['text'],
+                'current_dasha': birth_chart['dasha_period']['maha_dasha'],
+                'partial': yantras_result['partial']
             }
         }), 200
 

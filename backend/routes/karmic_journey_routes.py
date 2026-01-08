@@ -81,13 +81,14 @@ def soul_purpose():
         5. Service to humanity
         """
 
-        analysis = openai_service.generate_prediction(prompt, birth_chart)
+        analysis_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'soul_purpose': analysis,
-                'dharmic_path': birth_chart['planets']['Rahu']['sign']
+                'soul_purpose': analysis_result['text'],
+                'dharmic_path': birth_chart['planets']['Rahu']['sign'],
+                'partial': analysis_result['partial']
             }
         }), 200
 
@@ -118,14 +119,15 @@ def karmic_lessons():
         5. Karmic rewards upon completion
         """
 
-        lessons = openai_service.generate_prediction(prompt, birth_chart)
+        lessons_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'karmic_lessons': lessons,
+                'karmic_lessons': lessons_result['text'],
                 'karmic_number': birth_chart['karmic_number'],
-                'south_node': birth_chart['planets']['Ketu']['sign']
+                'south_node': birth_chart['planets']['Ketu']['sign'],
+                'partial': lessons_result['partial']
             }
         }), 200
 
@@ -155,14 +157,15 @@ def soul_evolution():
         5. Timeline to higher consciousness
         """
 
-        evolution = openai_service.generate_prediction(prompt, birth_chart)
+        evolution_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'soul_evolution': evolution,
+                'soul_evolution': evolution_result['text'],
                 'spiritual_teacher': birth_chart['planets']['Jupiter']['sign'],
-                'emotional_evolution': birth_chart['planets']['Moon']['sign']
+                'emotional_evolution': birth_chart['planets']['Moon']['sign'],
+                'partial': evolution_result['partial']
             }
         }), 200
 
@@ -194,14 +197,15 @@ def dharmic_path():
         5. Success through dharma
         """
 
-        dharma = openai_service.generate_prediction(prompt, birth_chart)
+        dharma_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return jsonify({
             'status': 'success',
             'data': {
-                'dharmic_path': dharma,
+                'dharmic_path': dharma_result['text'],
                 'career_house': birth_chart['houses'][9],
-                'dharma_planet': birth_chart['planets']['Jupiter']
+                'dharma_planet': birth_chart['planets']['Jupiter'],
+                'partial': dharma_result['partial']
             }
         }), 200
 
