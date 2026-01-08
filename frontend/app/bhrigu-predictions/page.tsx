@@ -59,7 +59,7 @@ const CategoryCard = ({ icon, title, description, badge, category, onClick }: Ca
         <h3 className="text-lg font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">
           {title}
         </h3>
-        <p className="text-sm text-gray-400 leading-relaxed">
+        <p className="text-sm text-muted leading-relaxed">
           {description}
         </p>
         <div className="mt-3 flex items-center text-cyan-400 text-sm font-medium">
@@ -209,7 +209,7 @@ export default function BhriguPredictionsPage() {
               Explore Your Cosmic Blueprint
             </h1>
 
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-muted max-w-3xl mx-auto leading-relaxed">
               Comprehensive astrological insights powered by{' '}
               <span className="text-cyan-400 font-semibold">OpenAI</span>{' '}
               and ancient Vedic knowledge
@@ -227,7 +227,7 @@ export default function BhriguPredictionsPage() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="bg-gray-800/50 backdrop-blur-sm border border-cyan-500/20 rounded-xl p-4"
           >
-            <label className="block text-sm font-medium text-gray-400 mb-2">
+            <label className="block text-sm font-medium text-muted mb-2">
               Select Profile
             </label>
             <select
@@ -280,13 +280,13 @@ export default function BhriguPredictionsPage() {
           transition={{ duration: 0.6, delay: 0.8 }}
           className="mt-12 text-center"
         >
-          <div className="inline-flex items-center gap-2 text-sm text-gray-400">
+          <div className="inline-flex items-center gap-2 text-sm text-muted">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
             <span>
               Powered by Bhrigu Samhita & Nadi Jyotisa ancient wisdom
             </span>
           </div>
-          <p className="mt-2 text-xs text-gray-500">
+          <p className="mt-2 text-xs text-muted-secondary">
             All predictions are cached locally for offline access and to expand our knowledge base
           </p>
         </motion.div>

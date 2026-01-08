@@ -2,12 +2,13 @@
 
 import { ReactNode } from 'react';
 import { EncryptionProvider } from '@/lib/context/EncryptionContext';
-import { ToastProvider } from '@/lib/context/ToastContext';
+import ContrastModeProvider from './components/ContrastModeProvider';
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <EncryptionProvider autoLockTimeoutMinutes={15}>
-      <ToastProvider>{children}</ToastProvider>
+      <ContrastModeProvider />
+      {children}
     </EncryptionProvider>
   );
 }
