@@ -4,7 +4,7 @@ type PastLivesMode = 'offline' | 'online' | 'auto';
 
 type PastLivesLogger = Pick<Console, 'debug' | 'info' | 'warn' | 'error'>;
 
-interface PastLivesEngineOptions {
+export interface PastLivesEngineOptions {
   mode?: PastLivesMode;
   aiEnabled?: boolean;
   cacheTTLms?: number;
