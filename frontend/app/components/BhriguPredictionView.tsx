@@ -124,7 +124,9 @@ interface BhriguPredictionViewProps {
   title: string;
   description: string;
   icon: React.ReactNode;
-  fetchPrediction: (profileData: any) => Promise<any>;
+  fetchPrediction: (
+    profileData: BirthDetails & { question?: string; force_regenerate?: boolean }
+  ) => Promise<PredictionAPIResponse>;
   profile: Profile | null;
 }
 
@@ -136,12 +138,13 @@ export default function BhriguPredictionView({
   fetchPrediction,
   profile
 }: BhriguPredictionViewProps) {
-  const [prediction, setPrediction] = useState<any>(null);
+  const [prediction, setPrediction] = useState<PredictionPayload | null>(null);
+  const [metadata, setMetadata] = useState<PredictionMetadata | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [question, setQuestion] = useState('');
-  const [showFullAnalysis, setShowFullAnalysis] = useState(false);
+  const [showFullAnalysis, setShowFullAnalysis] = useState(true);
   const [debugMode, setDebugMode] = useState(false);
   const [profileValidation, setProfileValidation] = useState<ProfileValidationResult | null>(null);
 
@@ -178,14 +181,15 @@ export default function BhriguPredictionView({
       };
 
       const response = await fetchPrediction(profileData);
+      const normalized = normalizePredictionResponse(response);
 
-      if (response. status === 'success') {
-        const predictionData = response.data?.prediction ?? response.data;
-        setPrediction(predictionData);
+      if (normalized.status === 'success') {
+        setPrediction(normalized.prediction);
+        setMetadata(normalized.metadata);
         setFromCache(
           response.message?.includes('cache') ||
           response.message?.toLowerCase().includes('cache') ||
-          Boolean(response.data?.prediction)
+          (response.data && typeof response.data === 'object' && 'prediction' in response.data)
         );
       } else {
         setError(response.message || 'Failed to generate prediction');
@@ -302,7 +306,7 @@ export default function BhriguPredictionView({
     });
 
     // FALLBACK: If no sections found but full_analysis exists, parse it client-side
-    let parsedFromFullAnalysis:  Record<string, string> = {};
+    let parsedFromFullAnalysis: Record<string, string> = {};
     if (availableSections.length === 0 && prediction.full_analysis) {
       parsedFromFullAnalysis = parseFullAnalysisIntoSections(prediction.full_analysis, category);
       
@@ -312,6 +316,7 @@ export default function BhriguPredictionView({
         return content && content.trim().length > 50;
       });
     }
+    const parsedFromFullAnalysisActive = Object.keys(parsedFromFullAnalysis).length > 0;
 
     // Helper function to get section content from either source
     const getSectionContent = (key: string): string => {
@@ -320,12 +325,24 @@ export default function BhriguPredictionView({
 
     return (
       <div className="space-y-6">
+        {/* Banner for client-side parsed sections */}
+        {parsedFromFullAnalysisActive && (
+          <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
+            <p className="text-cyan-300 text-sm font-semibold uppercase tracking-wide">
+              Parsed from full analysis
+            </p>
+            <p className="text-gray-300 text-sm mt-1">
+              These insights were extracted from the full reading for easier scanning.
+            </p>
+          </div>
+        )}
+
         {/* Show message if no sections were extracted successfully */}
-        {availableSections. length === 0 && prediction.full_analysis && (
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
+        {availableSections.length === 0 && prediction.full_analysis && (
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6">
             <p className="text-amber-400 text-sm">
-              Note: Individual sections could not be extracted from the analysis. 
-              View the complete reading below for your comprehensive prediction.
+              Note: Individual sections could not be extracted from the analysis.
+              The complete reading is shown below.
             </p>
           </div>
         )}
@@ -359,7 +376,7 @@ export default function BhriguPredictionView({
         )}
 
         {/* Full Analysis - Collapsible at the bottom */}
-        {prediction.full_analysis && (
+        {prediction.full_analysis && availableSections.length > 0 && (
           <div className="mt-8 pt-8 border-t border-gray-700/50">
             <button
               onClick={() => setShowFullAnalysis(!showFullAnalysis)}
@@ -407,26 +424,38 @@ export default function BhriguPredictionView({
           </div>
         )}
 
+        {/* Default Full Analysis Panel (when no sections are available) */}
+        {prediction.full_analysis && availableSections.length === 0 && (
+          <div className="space-y-4">
+            {renderSection(
+              'full_analysis',
+              'Full Analysis',
+              prediction.full_analysis,
+              DEFAULT_COLOR
+            )}
+          </div>
+        )}
+
         {/* Metadata */}
-        {prediction.metadata && (
+        {metadata && (
           <div className="mt-8 pt-6 border-t border-gray-700/50">
             <div className="flex flex-wrap gap-4 text-sm text-gray-400">
-              {prediction.metadata.zodiac_sign && (
+              {metadata.zodiac_sign && (
                 <div className="flex items-center gap-2">
                   <span className="text-cyan-400">Zodiac:</span>
-                  <span>{prediction.metadata.zodiac_sign}</span>
+                  <span>{metadata.zodiac_sign}</span>
                 </div>
               )}
-              {prediction.metadata.nakshatra && (
+              {metadata.nakshatra && (
                 <div className="flex items-center gap-2">
                   <span className="text-purple-400">Nakshatra:</span>
-                  <span>{prediction.metadata. nakshatra}</span>
+                  <span>{metadata.nakshatra}</span>
                 </div>
               )}
-              {prediction.metadata.tradition && (
+              {metadata.tradition && (
                 <div className="flex items-center gap-2">
                   <span className="text-pink-400">Tradition:</span>
-                  <span>{prediction.metadata.tradition}</span>
+                  <span>{metadata.tradition}</span>
                 </div>
               )}
             </div>

@@ -655,6 +655,7 @@ class ComprehensivePredictionService:
             'ascendant': chart_data.get('ascendant', 'Unknown'),
             'nakshatra': chart_data.get('nakshatra', 'Unknown'),
             'ai_enhanced': use_ai and self.ai_service and self.ai_service.enabled,
+            'corpus_available': bool(self.ai_service and self.ai_service.corpus_available),
             'tradition': 'Bhrigu Samhita & Nadi Jyotisha',
             'calculation_method': 'Vedic astrology with Swiss Ephemeris'
         }
