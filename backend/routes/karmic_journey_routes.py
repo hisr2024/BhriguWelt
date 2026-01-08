@@ -25,11 +25,9 @@ def karmic_journey_analysis():
         data = request.get_json()
 
         # Calculate birth chart first
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         # Generate karmic journey analysis using OpenAI
         karmic_analysis = openai_service.generate_karmic_journey(birth_chart)
@@ -53,11 +51,9 @@ def soul_purpose():
     """Discover soul's purpose in this lifetime"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Based on Vedic astrology, determine the soul purpose for:
@@ -74,7 +70,7 @@ def soul_purpose():
         5. Service to humanity
         """
 
-        analysis = openai_service.generate_prediction(prompt, birth_chart)
+        analysis_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return prediction_response(
             {
@@ -95,11 +91,9 @@ def karmic_lessons():
     """Get karmic lessons for this lifetime"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Identify karmic lessons based on:
@@ -116,7 +110,7 @@ def karmic_lessons():
         5. Karmic rewards upon completion
         """
 
-        lessons = openai_service.generate_prediction(prompt, birth_chart)
+        lessons_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return prediction_response(
             {
@@ -138,11 +132,9 @@ def soul_evolution():
     """Track soul evolution and spiritual development"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Analyze soul evolution stage for:
@@ -158,7 +150,7 @@ def soul_evolution():
         5. Timeline to higher consciousness
         """
 
-        evolution = openai_service.generate_prediction(prompt, birth_chart)
+        evolution_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return prediction_response(
             {
@@ -200,7 +192,7 @@ def dharmic_path():
         5. Success through dharma
         """
 
-        dharma = openai_service.generate_prediction(prompt, birth_chart)
+        dharma_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return prediction_response(
             {

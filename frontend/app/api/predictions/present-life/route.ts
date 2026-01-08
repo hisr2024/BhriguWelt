@@ -13,6 +13,8 @@ export async function POST(request: Request) {
       mode?: 'offline' | 'online' | 'hybrid';
       language?: string;
     };
+    const clientOnline = request.headers.get('x-client-online');
+    const isOffline = clientOnline?.toLowerCase() === 'false' || clientOnline === '0';
 
     if (!body?.birth_data) {
       return NextResponse.json(
@@ -22,8 +24,8 @@ export async function POST(request: Request) {
     }
 
     const result = await generatePresentLifePrediction(body.birth_data, {
-      useAI: body.use_ai ?? true,
-      mode: body.mode ?? 'offline',
+      useAI: isOffline ? false : body.use_ai ?? true,
+      mode: isOffline ? 'offline' : body.mode ?? 'offline',
       language: body.language ?? 'en',
     });
 

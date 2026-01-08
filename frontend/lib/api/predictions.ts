@@ -181,6 +181,11 @@ export interface LifestylePractice {
   timing: string;
 }
 
+const getClientOnlineHeader = () =>
+  typeof navigator !== 'undefined'
+    ? { 'X-Client-Online': navigator.onLine ? 'true' : 'false' }
+    : {};
+
 export class PredictionsAPI {
   private baseURL: string;
   private apiKey?: string;
@@ -204,6 +209,7 @@ export class PredictionsAPI {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getClientOnlineHeader(),
           ...(this.apiKey && { 'X-API-Key': this.apiKey }),
         },
         body: JSON.stringify({
@@ -291,6 +297,7 @@ export class PredictionsAPI {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getClientOnlineHeader(),
           ...(this.apiKey && { 'X-API-Key': this.apiKey }),
         },
         body: JSON.stringify({
@@ -332,6 +339,7 @@ export class PredictionsAPI {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getClientOnlineHeader(),
           ...(this.apiKey && { 'X-API-Key': this.apiKey }),
         },
         body: JSON.stringify({
@@ -462,6 +470,7 @@ export class PredictionsAPI {
           'Content-Type': 'application/json',
           'X-AI-Consent': 'granted',
           'X-AI-Mode': options.aiMode.mode,
+          ...getClientOnlineHeader(),
           ...(this.apiKey && { 'X-API-Key': this.apiKey }),
         },
         body: JSON.stringify({
@@ -546,6 +555,7 @@ export class PredictionsAPI {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getClientOnlineHeader(),
           ...(this.apiKey && { 'X-API-Key': this.apiKey }),
         },
         body: JSON.stringify(birthData),

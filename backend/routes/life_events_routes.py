@@ -27,11 +27,9 @@ def life_events_prediction():
         years_ahead = data.get('years_ahead', 10)
 
         # Calculate birth chart
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         # Generate life events prediction
         events = openai_service.generate_life_events_prediction(birth_chart, years_ahead)
@@ -56,11 +54,9 @@ def career_milestones():
     """Predict career milestones and transitions"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Predict career milestones:
@@ -77,7 +73,7 @@ def career_milestones():
         6. Leadership positions
         """
 
-        milestones = openai_service.generate_prediction(prompt, birth_chart)
+        milestones_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return prediction_response(
             {
@@ -98,11 +94,9 @@ def relationship_events():
     """Predict relationship and marriage events"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Predict relationship events:
@@ -119,7 +113,7 @@ def relationship_events():
         6. Reconciliation or separation
         """
 
-        events = openai_service.generate_prediction(prompt, birth_chart)
+        events_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return prediction_response(
             {
@@ -141,11 +135,9 @@ def financial_events():
     """Predict major financial events"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Predict financial events:
@@ -162,7 +154,7 @@ def financial_events():
         6. Business expansion
         """
 
-        events = openai_service.generate_prediction(prompt, birth_chart)
+        events_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return prediction_response(
             {
@@ -184,11 +176,9 @@ def health_alerts():
     """Get health alerts and wellness periods"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Predict health periods:
@@ -205,7 +195,7 @@ def health_alerts():
         6. Energy management cycles
         """
 
-        alerts = openai_service.generate_prediction(prompt, birth_chart)
+        alerts_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return prediction_response(
             {
@@ -227,11 +217,9 @@ def spiritual_breakthroughs():
     """Predict spiritual breakthroughs and initiations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Predict spiritual events:
@@ -248,7 +236,7 @@ def spiritual_breakthroughs():
         6. Consciousness expansion
         """
 
-        breakthroughs = openai_service.generate_prediction(prompt, birth_chart)
+        breakthroughs_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return prediction_response(
             {
@@ -291,7 +279,7 @@ def auspicious_timings():
         6. Major investments
         """
 
-        timings = openai_service.generate_prediction(prompt, birth_chart)
+        timings_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return prediction_response(
             {

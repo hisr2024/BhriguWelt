@@ -3,8 +3,9 @@ Unified Predictions API Routes
 Comprehensive prediction endpoints supporting all categories with online/offline/hybrid modes
 """
 from flask import Blueprint, request, jsonify
+from utils.client_status import parse_client_online
 from services.prediction_orchestrator import get_prediction_orchestrator
-from services.astrology_calculator import astrology_calculator
+from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.bhrigu_core_wisdom import get_bhrigu_core_wisdom
 from datetime import datetime
 import logging
@@ -106,6 +107,7 @@ def generate_category_prediction(category):
         # Get mode and language
         mode = data.get('mode', 'hybrid')
         language = data.get('language', 'en')
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
         
         # Calculate birth chart
         try:
@@ -127,6 +129,7 @@ def generate_category_prediction(category):
             category=category,
             chart_data=birth_chart,
             mode=mode,
+            client_online=client_online,
             language=language
         )
         
@@ -192,6 +195,7 @@ def generate_cosmic_blueprint():
         # Get mode and language
         mode = data.get('mode', 'hybrid')
         language = data.get('language', 'en')
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
         
         # Calculate birth chart
         try:
@@ -212,6 +216,7 @@ def generate_cosmic_blueprint():
         blueprint = orchestrator.generate_cosmic_blueprint(
             chart_data=birth_chart,
             mode=mode,
+            client_online=client_online,
             language=language
         )
         

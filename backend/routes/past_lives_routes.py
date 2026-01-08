@@ -24,12 +24,9 @@ def past_lives_analysis():
     try:
         data = request.get_json()
 
-        # Calculate birth chart
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         # Generate past lives analysis
         past_lives = openai_service.generate_past_lives_analysis(birth_chart)
@@ -53,11 +50,9 @@ def karmic_patterns():
     """Identify karmic patterns from past lives"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Identify karmic patterns from past lives based on:
@@ -73,7 +68,7 @@ def karmic_patterns():
         5. Unfinished business from past lives
         """
 
-        patterns = openai_service.generate_prediction(prompt, birth_chart)
+        patterns_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return prediction_response(
             {
@@ -95,11 +90,9 @@ def past_relationships():
     """Explore past life relationships affecting current life"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Analyze past life relationships for:
@@ -115,7 +108,7 @@ def past_relationships():
         5. Lessons through relationships
         """
 
-        relationships = openai_service.generate_prediction(prompt, birth_chart)
+        relationships_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return prediction_response(
             {
@@ -157,7 +150,7 @@ def talents_carried_forward():
         5. How to activate these talents
         """
 
-        talents = openai_service.generate_prediction(prompt, birth_chart)
+        talents_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return prediction_response(
             {
@@ -199,7 +192,7 @@ def past_traumas():
         5. Steps toward karmic healing
         """
 
-        traumas = openai_service.generate_prediction(prompt, birth_chart)
+        traumas_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
 
         return prediction_response(
             {

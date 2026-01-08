@@ -25,14 +25,17 @@ def future_lives_prediction():
         data = request.get_json()
 
         # Calculate birth chart
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
-        # Generate future lives prediction
-        future_prediction = openai_service.generate_future_lives_prediction(birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            future_prediction = openai_service.offline_wisdom.generate_future_lives(birth_chart)
+            mode = 'offline'
+        else:
+            future_prediction = openai_service.generate_future_lives_prediction(birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return prediction_response(
             {
@@ -53,11 +56,9 @@ def evolution_path():
     """Map soul evolution path across future incarnations"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Map soul evolution path for future lives:
@@ -73,7 +74,13 @@ def evolution_path():
         5. Timeline to higher dimensional existence
         """
 
-        evolution = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            evolution = openai_service.offline_wisdom.generate_future_lives(birth_chart)
+            mode = 'offline'
+        else:
+            evolution = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return prediction_response(
             {
@@ -95,11 +102,9 @@ def moksha_timeline():
     """Calculate timeline to liberation (moksha)"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Calculate path to moksha (liberation):
@@ -115,7 +120,13 @@ def moksha_timeline():
         5. Signs of approaching enlightenment
         """
 
-        moksha = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            moksha = openai_service.offline_wisdom.generate_future_lives(birth_chart)
+            mode = 'offline'
+        else:
+            moksha = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return prediction_response(
             {
@@ -137,11 +148,9 @@ def future_missions():
     """Identify future life missions and purposes"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Predict future life missions:
@@ -157,7 +166,13 @@ def future_missions():
         5. Role in collective evolution
         """
 
-        missions = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            missions = openai_service.offline_wisdom.generate_future_lives(birth_chart)
+            mode = 'offline'
+        else:
+            missions = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return prediction_response(
             {
@@ -199,7 +214,13 @@ def soul_advancement():
         5. Ascension pathway and timeline
         """
 
-        advancement = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            advancement = openai_service.offline_wisdom.generate_future_lives(birth_chart)
+            mode = 'offline'
+        else:
+            advancement = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return prediction_response(
             {
