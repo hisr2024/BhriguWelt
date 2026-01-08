@@ -1449,12 +1449,9 @@ Base on current planetary transits and your natal chart."""
         result = '\n'.join(section_lines).strip()
         return result if result else f"See full analysis for {section_header}"
 
-    def _generate_metadata(self, birth_data: Dict[str, Any], category: str) -> Dict[str, Any]:
+    def _generate_metadata(self, birth_data: Dict[str, Any], category: Optional[str] = None) -> Dict[str, Any]:
         """Generate metadata for the prediction"""
-        category_dash = category.replace('_', '-')
-        return {
-            'category': category,
-            'category_dashed': category_dash,
+        metadata = {
             'zodiac_sign': birth_data.get('zodiac_sign'),
             'nakshatra': birth_data.get('nakshatra'),
             'moon_sign': birth_data.get('moon_sign'),
@@ -1463,6 +1460,11 @@ Base on current planetary transits and your natal chart."""
             'corpus_available': self.openai_service.corpus_available,
             'tradition': 'Bhrigu Samhita & Nadi Jyotisa'
         }
+        if category:
+            section_keys = self.section_parser.REQUIRED_SECTIONS.get(category, [])
+            if section_keys:
+                metadata['section_keys'] = section_keys
+        return metadata
 
     def _calculate_age(self, date_of_birth: str) -> int:
         """Calculate age from date of birth"""
