@@ -56,14 +56,15 @@ def error_response(
     Returns:
         JSON response tuple (response, status_code)
     """
-    response = {
-        'status': 'error',
-        'message': message,
-        'timestamp': datetime.utcnow().isoformat()
-    }
+    computed_retryable = retryable
+    if computed_retryable is None:
+        computed_retryable = status_code >= 500 or status_code == 429
 
-    if error_code:
-        response['error_code'] = error_code
+    response = {
+        'error_code': error_code or 'UNKNOWN_ERROR',
+        'message': message,
+        'retryable': computed_retryable
+    }
 
     if retryable is not None:
         response['retryable'] = retryable
