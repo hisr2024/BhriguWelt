@@ -92,17 +92,19 @@ export interface PredictionMetadata {
   calculation_method: string;
 }
 
+export type PredictionLanguage = 'en' | 'hi' | 'sa';
+
 export interface GeneralPredictionRequest extends GeneralPredictionOptions {
   useAI?: boolean;
   aiMode?: AIMode;
-  language?: string;
+  language?: PredictionLanguage;
 }
 
 export interface LifeEventsRequest {
   useAI?: boolean;
   aiMode?: AIMode;
   mode?: LifeEventsMode;
-  language?: string;
+  language?: PredictionLanguage;
   cacheTtlMs?: number;
 }
 
@@ -195,7 +197,7 @@ export class PredictionsAPI {
     engine: PredictionEngine,
     birthData: ChartData,
     useAI: boolean = true,
-    language: string = 'en'
+    language: PredictionLanguage = 'en'
   ): Promise<PredictionResult> {
     try {
       const response = await fetch(`${this.baseURL}/predictions/generate`, {
@@ -282,7 +284,7 @@ export class PredictionsAPI {
    */
   async generateFutureLives(
     birthData: ChartData,
-    options: { useAI?: boolean; mode?: 'offline' | 'online' | 'hybrid'; language?: string } = {}
+    options: { useAI?: boolean; mode?: 'offline' | 'online' | 'hybrid'; language?: PredictionLanguage } = {}
   ): Promise<PredictionResult> {
     try {
       const response = await fetch(`${this.baseURL}/predictions/future-lives`, {
@@ -323,7 +325,7 @@ export class PredictionsAPI {
    */
   async generatePresentLife(
     birthData: ChartData,
-    options: { useAI?: boolean; mode?: 'offline' | 'online' | 'hybrid'; language?: string } = {}
+    options: { useAI?: boolean; mode?: 'offline' | 'online' | 'hybrid'; language?: PredictionLanguage } = {}
   ): Promise<PredictionResult> {
     try {
       const response = await fetch(`${this.baseURL}/predictions/present-life`, {
