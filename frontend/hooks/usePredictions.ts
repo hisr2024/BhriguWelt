@@ -26,9 +26,9 @@ interface UsePredictionsReturn {
   error: string | null;
 
   // Methods
-  generatePrediction: (engine: PredictionEngine, birthData: ChartData, useAI?: boolean) => Promise<void>;
-  generateAllPredictions: (birthData: ChartData, useAI?: boolean) => Promise<void>;
-  calculateChart: (birthData: BirthData) => Promise<void>;
+  generatePrediction: (engine: PredictionEngine, birthData: ChartData, useAI?: boolean) => Promise<PredictionResult>;
+  generateAllPredictions: (birthData: ChartData, useAI?: boolean) => Promise<Record<PredictionEngine, PredictionResult>>;
+  calculateChart: (birthData: BirthData) => Promise<ChartData>;
   clearError: () => void;
   reset: () => void;
 }
