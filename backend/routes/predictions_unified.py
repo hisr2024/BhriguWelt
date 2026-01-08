@@ -3,11 +3,13 @@ Unified Predictions API Routes
 Comprehensive prediction endpoints supporting all categories with online/offline/hybrid modes
 """
 from flask import Blueprint, request, jsonify
+from utils.client_status import parse_client_online
 from services.prediction_orchestrator import get_prediction_orchestrator
-from services.astrology_calculator import astrology_calculator
+from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.bhrigu_core_wisdom import get_bhrigu_core_wisdom
 from datetime import datetime
 import logging
+from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
 
 logger = logging.getLogger(__name__)
 
@@ -92,38 +94,50 @@ def generate_category_prediction(category):
     try:
         data = request.get_json()
         
-        # Validate required fields
-        required_fields = ['date_of_birth', 'time_of_birth', 'place_of_birth']
-        for field in required_fields:
-            if field not in data:
-                return jsonify({
-                    'status': 'error',
-                    'error': f'Missing required field: {field}'
-                }), 400
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            # Validate required fields
+            required_fields = ['date_of_birth', 'time_of_birth', 'place_of_birth']
+            for field in required_fields:
+                if field not in data:
+                    return jsonify({
+                        'status': 'error',
+                        'error': f'Missing required field: {field}'
+                    }), 400
         
         # Get mode and language
         mode = data.get('mode', 'hybrid')
         language = data.get('language', 'en')
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
         
         # Calculate birth chart
-        try:
-            birth_chart = astrology_calculator.calculate_birth_chart(
-                date_of_birth=data['date_of_birth'],
-                time_of_birth=data['time_of_birth'],
-                place=data['place_of_birth']
-            )
-        except Exception as e:
-            logger.error(f"Birth chart calculation failed: {e}")
-            return jsonify({
-                'status': 'error',
-                'error': f'Failed to calculate birth chart: {str(e)}'
-            }), 500
+        if calculator:
+            try:
+                birth_chart = calculator.calculate_birth_chart(
+                    date_of_birth=data['date_of_birth'],
+                    time_of_birth=data['time_of_birth'],
+                    place=data['place_of_birth']
+                )
+            except Exception as e:
+                logger.error(f"Birth chart calculation failed: {e}")
+                return jsonify({
+                    'status': 'error',
+                    'error': f'Failed to calculate birth chart: {str(e)}'
+                }), 500
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
         
         # Generate prediction
         result = orchestrator.generate_prediction(
             category=category,
             chart_data=birth_chart,
             mode=mode,
+            client_online=client_online,
             language=language
         )
         
@@ -132,6 +146,10 @@ def generate_category_prediction(category):
             'category': category,
             'mode': result.get('mode', mode),
             'language': language,
+            'metadata': {
+                'mode': result.get('mode', mode),
+                'client_online': client_online,
+            },
             'prediction': result.get('prediction', ''),
             'matched_rules': result.get('matched_rules', []),
             'citations': result.get('citations', []),
@@ -175,37 +193,49 @@ def generate_cosmic_blueprint():
     try:
         data = request.get_json()
         
-        # Validate required fields
-        required_fields = ['date_of_birth', 'time_of_birth', 'place_of_birth']
-        for field in required_fields:
-            if field not in data:
-                return jsonify({
-                    'status': 'error',
-                    'error': f'Missing required field: {field}'
-                }), 400
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            # Validate required fields
+            required_fields = ['date_of_birth', 'time_of_birth', 'place_of_birth']
+            for field in required_fields:
+                if field not in data:
+                    return jsonify({
+                        'status': 'error',
+                        'error': f'Missing required field: {field}'
+                    }), 400
         
         # Get mode and language
         mode = data.get('mode', 'hybrid')
         language = data.get('language', 'en')
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
         
         # Calculate birth chart
-        try:
-            birth_chart = astrology_calculator.calculate_birth_chart(
-                date_of_birth=data['date_of_birth'],
-                time_of_birth=data['time_of_birth'],
-                place=data['place_of_birth']
-            )
-        except Exception as e:
-            logger.error(f"Birth chart calculation failed: {e}")
-            return jsonify({
-                'status': 'error',
-                'error': f'Failed to calculate birth chart: {str(e)}'
-            }), 500
+        if calculator:
+            try:
+                birth_chart = calculator.calculate_birth_chart(
+                    date_of_birth=data['date_of_birth'],
+                    time_of_birth=data['time_of_birth'],
+                    place=data['place_of_birth']
+                )
+            except Exception as e:
+                logger.error(f"Birth chart calculation failed: {e}")
+                return jsonify({
+                    'status': 'error',
+                    'error': f'Failed to calculate birth chart: {str(e)}'
+                }), 500
+        else:
+            logger.warning("Astrology calculator unavailable; using cached birth data.")
+            birth_chart = cached_birth_data
         
         # Generate cosmic blueprint
         blueprint = orchestrator.generate_cosmic_blueprint(
             chart_data=birth_chart,
             mode=mode,
+            client_online=client_online,
             language=language
         )
         
@@ -213,6 +243,10 @@ def generate_cosmic_blueprint():
             'status': 'success',
             'mode': blueprint.get('mode', mode),
             'language': language,
+            'metadata': {
+                'mode': blueprint.get('mode', mode),
+                'client_online': client_online,
+            },
             'sections': blueprint.get('sections', {}),
             'complete_blueprint': blueprint.get('complete_blueprint', ''),
             'timestamp': datetime.utcnow().isoformat()
