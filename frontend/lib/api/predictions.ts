@@ -1,3 +1,5 @@
+import { generatePastLivesPrediction, type PastLivesEngineOptions } from '../engines/pastLivesEngine';
+
 /**
  * Predictions API Client
  * TypeScript client for comprehensive prediction service
@@ -211,10 +213,55 @@ export class PredictionsAPI {
   }
 
   /**
+   * Generate Past Lives analysis using two-phase engine
+   */
+  async generatePastLives(
+    birthData: ChartData,
+    useAI: boolean = true,
+    options: PastLivesEngineOptions = {}
+  ): Promise<PredictionResult> {
+    return generatePastLivesPrediction(birthData, { ...options, aiEnabled: useAI });
+  }
+
+  /**
    * Generate Future Lives prediction
    */
   async getFutureLives(birthData: ChartData, useAI: boolean = true): Promise<PredictionResult> {
     return this.generatePrediction('future_lives', birthData, useAI);
+  }
+
+  /**
+   * Generate Future Lives prediction using two-phase engine
+   */
+  async generateFutureLives(
+    birthData: ChartData,
+    options: { useAI?: boolean; mode?: 'offline' | 'online' | 'hybrid'; language?: string } = {}
+  ): Promise<PredictionResult> {
+    try {
+      const response = await fetch(`${this.baseURL}/predictions/future-lives`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.apiKey && { 'X-API-Key': this.apiKey }),
+        },
+        body: JSON.stringify({
+          birth_data: birthData,
+          use_ai: options.useAI ?? true,
+          mode: options.mode ?? 'offline',
+          language: options.language ?? 'en',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`);
+      }
+
+      const data: PredictionResult = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Future lives generation failed:', error);
+      throw error;
+    }
   }
 
   /**
@@ -235,7 +282,22 @@ export class PredictionsAPI {
    * Generate Karmic Remedies
    */
   async getKarmicRemedies(birthData: ChartData, useAI: boolean = true): Promise<PredictionResult> {
-    return this.generatePrediction('karmic_remedies', birthData, useAI);
+    return this.generateRemedies(birthData, useAI);
+  }
+
+  /**
+   * Generate Karmic Remedies with two-phase validation
+   */
+  async generateRemedies(birthData: ChartData, useAI: boolean = true): Promise<PredictionResult> {
+    try {
+      return await generateRemediesPrediction(birthData, { useAI });
+    } catch (error) {
+      console.error('Remedies engine failed, falling back to API:', error);
+      if (useAI) {
+        return this.generatePrediction('karmic_remedies', birthData, useAI);
+      }
+      throw error;
+    }
   }
 
   /**
