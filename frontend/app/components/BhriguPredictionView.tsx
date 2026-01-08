@@ -4,97 +4,99 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Profile } from '@/lib/types';
+import { getCurrentLanguage, type Language } from '@/lib/copy';
+import { tLocale } from '@/lib/locales';
 
 // Category-specific section configurations (moved outside component for performance)
-const CATEGORY_SECTIONS:  Record<string, Array<{ key: string; title:  string; color: string }>> = {
+const CATEGORY_SECTIONS: Record<string, Array<{ key: string; titleKey: string; color: string }>> = {
   'karmic-journey': [
-    { key: 'soul_purpose', title: "Soul's Primary Purpose", color: 'cyan' },
-    { key: 'karmic_blueprint', title: 'Karmic Blueprint', color: 'purple' },
-    { key: 'evolution_stage', title: 'Soul Evolution Stage', color: 'blue' },
-    { key: 'life_mission', title: 'Life Mission & Dharma', color: 'indigo' },
-    { key: 'karmic_lessons', title: 'Karmic Lessons', color: 'violet' },
-    { key: 'soul_connections', title: 'Soul Group Connections', color:  'pink' },
-    { key: 'timing', title: 'Timing of Karmic Events', color: 'rose' },
-    { key: 'spiritual_gifts', title: 'Spiritual Gifts & Abilities', color:  'amber' }
+    { key: 'soul_purpose', titleKey: "bhriguPrediction.sections.karmic-journey.soul_purpose", color: 'cyan' },
+    { key: 'karmic_blueprint', titleKey: 'bhriguPrediction.sections.karmic-journey.karmic_blueprint', color: 'purple' },
+    { key: 'evolution_stage', titleKey: 'bhriguPrediction.sections.karmic-journey.evolution_stage', color: 'blue' },
+    { key: 'life_mission', titleKey: 'bhriguPrediction.sections.karmic-journey.life_mission', color: 'indigo' },
+    { key: 'karmic_lessons', titleKey: 'bhriguPrediction.sections.karmic-journey.karmic_lessons', color: 'violet' },
+    { key: 'soul_connections', titleKey: 'bhriguPrediction.sections.karmic-journey.soul_connections', color: 'pink' },
+    { key: 'timing', titleKey: 'bhriguPrediction.sections.karmic-journey.timing', color: 'rose' },
+    { key: 'spiritual_gifts', titleKey: 'bhriguPrediction.sections.karmic-journey.spiritual_gifts', color: 'amber' }
   ],
   'past-lives': [
-    { key: 'recent_life', title:  'Most Recent Past Life', color: 'cyan' },
-    { key: 'significant_lives', title: 'Significant Past Lives', color: 'purple' },
-    { key: 'karmic_patterns', title: 'Recurring Karmic Patterns', color: 'blue' },
-    { key: 'past_skills', title: 'Past Life Skills & Talents', color: 'indigo' },
-    { key: 'traumas_healing', title: 'Past Life Traumas Needing Healing', color: 'violet' },
-    { key: 'past_relationships', title:  'Past Life Relationships', color:  'pink' },
-    { key:  'karmic_debts', title: 'Karmic Debts from Past Lives', color:  'rose' },
-    { key: 'spiritual_progress', title: 'Past Life Spiritual Progress', color: 'amber' }
+    { key: 'recent_life', titleKey: 'bhriguPrediction.sections.past-lives.recent_life', color: 'cyan' },
+    { key: 'significant_lives', titleKey: 'bhriguPrediction.sections.past-lives.significant_lives', color: 'purple' },
+    { key: 'karmic_patterns', titleKey: 'bhriguPrediction.sections.past-lives.karmic_patterns', color: 'blue' },
+    { key: 'past_skills', titleKey: 'bhriguPrediction.sections.past-lives.past_skills', color: 'indigo' },
+    { key: 'traumas_healing', titleKey: 'bhriguPrediction.sections.past-lives.traumas_healing', color: 'violet' },
+    { key: 'past_relationships', titleKey: 'bhriguPrediction.sections.past-lives.past_relationships', color: 'pink' },
+    { key: 'karmic_debts', titleKey: 'bhriguPrediction.sections.past-lives.karmic_debts', color: 'rose' },
+    { key: 'spiritual_progress', titleKey: 'bhriguPrediction.sections.past-lives.spiritual_progress', color: 'amber' }
   ],
   'future-lives': [
-    { key: 'next_incarnation', title: 'Next Incarnation', color: 'cyan' },
-    { key: 'evolution_trajectory', title: 'Soul Evolution Trajectory', color: 'purple' },
-    { key: 'final_birth_conditions', title: 'Final Birth Conditions', color: 'blue' },
-    { key: 'future_scenarios', title: 'Future Life Scenarios', color: 'indigo' },
-    { key: 'moksha_timeline', title: 'Moksha Timeline', color: 'violet' },
-    { key: 'higher_realms', title: 'Higher Realms Access', color: 'pink' },
-    { key: 'bodhisattva_path', title: 'Bodhisattva Path', color:  'rose' },
-    { key:  'ultimate_destiny', title: 'Ultimate Destiny', color: 'amber' }
+    { key: 'next_incarnation', titleKey: 'bhriguPrediction.sections.future-lives.next_incarnation', color: 'cyan' },
+    { key: 'evolution_trajectory', titleKey: 'bhriguPrediction.sections.future-lives.evolution_trajectory', color: 'purple' },
+    { key: 'final_birth_conditions', titleKey: 'bhriguPrediction.sections.future-lives.final_birth_conditions', color: 'blue' },
+    { key: 'future_scenarios', titleKey: 'bhriguPrediction.sections.future-lives.future_scenarios', color: 'indigo' },
+    { key: 'moksha_timeline', titleKey: 'bhriguPrediction.sections.future-lives.moksha_timeline', color: 'violet' },
+    { key: 'higher_realms', titleKey: 'bhriguPrediction.sections.future-lives.higher_realms', color: 'pink' },
+    { key: 'bodhisattva_path', titleKey: 'bhriguPrediction.sections.future-lives.bodhisattva_path', color: 'rose' },
+    { key: 'ultimate_destiny', titleKey: 'bhriguPrediction.sections.future-lives.ultimate_destiny', color: 'amber' }
   ],
   'present-life': [
-    { key: 'current_phase', title: 'Current Life Phase', color: 'cyan' },
-    { key: 'career', title: 'Career & Professional Life', color: 'purple' },
-    { key: 'relationships', title: 'Relationships & Love', color: 'blue' },
-    { key: 'health', title: 'Health & Wellness', color: 'indigo' },
-    { key: 'finances', title: 'Financial Prospects', color: 'violet' },
-    { key: 'spiritual_growth', title: 'Spiritual Growth', color: 'pink' },
-    { key: 'education', title: 'Education & Learning', color: 'rose' },
-    { key: 'life_purpose', title:  'Life Purpose', color: 'amber' },
-    { key:  'challenges', title: 'Current Challenges', color:  'orange' },
-    { key:  'timing', title: 'Timing & Transitions', color: 'teal' }
+    { key: 'current_phase', titleKey: 'bhriguPrediction.sections.present-life.current_phase', color: 'cyan' },
+    { key: 'career', titleKey: 'bhriguPrediction.sections.present-life.career', color: 'purple' },
+    { key: 'relationships', titleKey: 'bhriguPrediction.sections.present-life.relationships', color: 'blue' },
+    { key: 'health', titleKey: 'bhriguPrediction.sections.present-life.health', color: 'indigo' },
+    { key: 'finances', titleKey: 'bhriguPrediction.sections.present-life.finances', color: 'violet' },
+    { key: 'spiritual_growth', titleKey: 'bhriguPrediction.sections.present-life.spiritual_growth', color: 'pink' },
+    { key: 'education', titleKey: 'bhriguPrediction.sections.present-life.education', color: 'rose' },
+    { key: 'life_purpose', titleKey: 'bhriguPrediction.sections.present-life.life_purpose', color: 'amber' },
+    { key: 'challenges', titleKey: 'bhriguPrediction.sections.present-life.challenges', color: 'orange' },
+    { key: 'timing', titleKey: 'bhriguPrediction.sections.present-life.timing', color: 'teal' }
   ],
   'life-events': [
-    { key: 'yearly_forecast', title: 'Yearly Forecast', color: 'cyan' },
-    { key: 'marriage_timing', title: 'Marriage Timing', color: 'purple' },
-    { key: 'career_milestones', title:  'Career Milestones', color:  'blue' },
-    { key:  'children_family', title: 'Children & Family', color: 'indigo' },
-    { key: 'financial_events', title: 'Financial Events', color:  'violet' },
-    { key:  'health_alerts', title: 'Health Alerts', color: 'pink' },
-    { key: 'spiritual_milestones', title:  'Spiritual Milestones', color: 'rose' },
-    { key: 'relocations', title: 'Relocations & Travel', color: 'amber' },
-    { key: 'education', title: 'Educational Achievements', color: 'orange' },
-    { key:  'favorable_periods', title: 'Favorable Periods', color: 'teal' },
-    { key:  'challenging_periods', title: 'Challenging Periods', color: 'red' },
-    { key:  'transits', title: 'Key Planetary Transits', color: 'lime' },
-    { key:  'age_milestones', title:  'Age Milestones', color:  'emerald' }
+    { key: 'yearly_forecast', titleKey: 'bhriguPrediction.sections.life-events.yearly_forecast', color: 'cyan' },
+    { key: 'marriage_timing', titleKey: 'bhriguPrediction.sections.life-events.marriage_timing', color: 'purple' },
+    { key: 'career_milestones', titleKey: 'bhriguPrediction.sections.life-events.career_milestones', color: 'blue' },
+    { key: 'children_family', titleKey: 'bhriguPrediction.sections.life-events.children_family', color: 'indigo' },
+    { key: 'financial_events', titleKey: 'bhriguPrediction.sections.life-events.financial_events', color: 'violet' },
+    { key: 'health_alerts', titleKey: 'bhriguPrediction.sections.life-events.health_alerts', color: 'pink' },
+    { key: 'spiritual_milestones', titleKey: 'bhriguPrediction.sections.life-events.spiritual_milestones', color: 'rose' },
+    { key: 'relocations', titleKey: 'bhriguPrediction.sections.life-events.relocations', color: 'amber' },
+    { key: 'education', titleKey: 'bhriguPrediction.sections.life-events.education', color: 'orange' },
+    { key: 'favorable_periods', titleKey: 'bhriguPrediction.sections.life-events.favorable_periods', color: 'teal' },
+    { key: 'challenging_periods', titleKey: 'bhriguPrediction.sections.life-events.challenging_periods', color: 'red' },
+    { key: 'transits', titleKey: 'bhriguPrediction.sections.life-events.transits', color: 'lime' },
+    { key: 'age_milestones', titleKey: 'bhriguPrediction.sections.life-events.age_milestones', color: 'emerald' }
   ],
   'karmic-remedies': [
-    { key: 'mantras', title: 'Mantras & Chanting', color: 'cyan' },
-    { key: 'gemstones', title:  'Gemstones & Crystals', color: 'purple' },
-    { key: 'yantras', title:  'Yantras & Sacred Geometry', color:  'blue' },
-    { key:  'charitable_activities', title: 'Charitable Activities', color: 'indigo' },
-    { key: 'fasting', title: 'Fasting & Dietary Practices', color: 'violet' },
-    { key: 'deity_worship', title:  'Deity Worship', color: 'pink' },
-    { key: 'pilgrimage', title:  'Pilgrimage & Sacred Sites', color: 'rose' },
-    { key: 'lifestyle', title: 'Lifestyle Modifications', color: 'amber' },
-    { key: 'planetary_rituals', title: 'Planetary Rituals', color: 'orange' },
-    { key: 'karmic_cleansing', title:  'Karmic Cleansing Practices', color: 'teal' },
-    { key:  'service', title: 'Service & Seva', color: 'lime' },
-    { key:  'meditation', title: 'Meditation & Yoga', color: 'emerald' }
+    { key: 'mantras', titleKey: 'bhriguPrediction.sections.karmic-remedies.mantras', color: 'cyan' },
+    { key: 'gemstones', titleKey: 'bhriguPrediction.sections.karmic-remedies.gemstones', color: 'purple' },
+    { key: 'yantras', titleKey: 'bhriguPrediction.sections.karmic-remedies.yantras', color: 'blue' },
+    { key: 'charitable_activities', titleKey: 'bhriguPrediction.sections.karmic-remedies.charitable_activities', color: 'indigo' },
+    { key: 'fasting', titleKey: 'bhriguPrediction.sections.karmic-remedies.fasting', color: 'violet' },
+    { key: 'deity_worship', titleKey: 'bhriguPrediction.sections.karmic-remedies.deity_worship', color: 'pink' },
+    { key: 'pilgrimage', titleKey: 'bhriguPrediction.sections.karmic-remedies.pilgrimage', color: 'rose' },
+    { key: 'lifestyle', titleKey: 'bhriguPrediction.sections.karmic-remedies.lifestyle', color: 'amber' },
+    { key: 'planetary_rituals', titleKey: 'bhriguPrediction.sections.karmic-remedies.planetary_rituals', color: 'orange' },
+    { key: 'karmic_cleansing', titleKey: 'bhriguPrediction.sections.karmic-remedies.karmic_cleansing', color: 'teal' },
+    { key: 'service', titleKey: 'bhriguPrediction.sections.karmic-remedies.service', color: 'lime' },
+    { key: 'meditation', titleKey: 'bhriguPrediction.sections.karmic-remedies.meditation', color: 'emerald' }
   ],
   'relationships': [
-    { key: 'romantic_marriage', title: 'Romantic & Marriage Prospects', color: 'cyan' },
-    { key: 'family', title: 'Family Relationships', color: 'purple' },
-    { key: 'soul_connections', title: 'Soul Connections & Soulmates', color:  'blue' },
-    { key:  'friendships', title: 'Friendships & Social Circle', color: 'indigo' },
-    { key: 'professional', title: 'Professional Relationships', color:  'violet' },
-    { key:  'karmic_patterns', title: 'Karmic Relationship Patterns', color:  'pink' },
-    { key: 'communication', title: 'Communication Dynamics', color: 'rose' },
-    { key: 'timing', title: 'Relationship Timing', color:  'amber' },
-    { key:  'healing', title: 'Relationship Healing', color:  'orange' },
-    { key: 'healthy_practices', title: 'Healthy Relationship Practices', color:  'teal' }
+    { key: 'romantic_marriage', titleKey: 'bhriguPrediction.sections.relationships.romantic_marriage', color: 'cyan' },
+    { key: 'family', titleKey: 'bhriguPrediction.sections.relationships.family', color: 'purple' },
+    { key: 'soul_connections', titleKey: 'bhriguPrediction.sections.relationships.soul_connections', color: 'blue' },
+    { key: 'friendships', titleKey: 'bhriguPrediction.sections.relationships.friendships', color: 'indigo' },
+    { key: 'professional', titleKey: 'bhriguPrediction.sections.relationships.professional', color: 'violet' },
+    { key: 'karmic_patterns', titleKey: 'bhriguPrediction.sections.relationships.karmic_patterns', color: 'pink' },
+    { key: 'communication', titleKey: 'bhriguPrediction.sections.relationships.communication', color: 'rose' },
+    { key: 'timing', titleKey: 'bhriguPrediction.sections.relationships.timing', color: 'amber' },
+    { key: 'healing', titleKey: 'bhriguPrediction.sections.relationships.healing', color: 'orange' },
+    { key: 'healthy_practices', titleKey: 'bhriguPrediction.sections.relationships.healthy_practices', color: 'teal' }
   ],
   'predictions': [
-    { key: 'daily', title: 'Daily Predictions', color:  'cyan' },
-    { key:  'weekly', title: 'Weekly Forecast', color: 'purple' },
-    { key: 'monthly', title: 'Monthly Outlook', color: 'blue' },
-    { key: 'yearly', title: 'Yearly Overview', color: 'indigo' }
+    { key: 'daily', titleKey: 'bhriguPrediction.sections.predictions.daily', color: 'cyan' },
+    { key: 'weekly', titleKey: 'bhriguPrediction.sections.predictions.weekly', color: 'purple' },
+    { key: 'monthly', titleKey: 'bhriguPrediction.sections.predictions.monthly', color: 'blue' },
+    { key: 'yearly', titleKey: 'bhriguPrediction.sections.predictions.yearly', color: 'indigo' }
   ]
 };
 
@@ -142,12 +144,17 @@ export default function BhriguPredictionView({
   const [question, setQuestion] = useState('');
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+  const [language, setLanguage] = useState<Language>('en');
 
   useEffect(() => {
     if (profile) {
       loadPrediction();
     }
   }, [profile]);
+
+  useEffect(() => {
+    setLanguage(getCurrentLanguage());
+  }, []);
 
   const loadPrediction = async (forceRegenerate = false) => {
     if (! profile) return;
@@ -194,8 +201,9 @@ export default function BhriguPredictionView({
     if (! fullAnalysis) return parsedSections;
     
     for (const section of categoryConfig) {
+      const sectionTitle = tLocale(section.titleKey, 'en');
       // Escape special regex characters in title
-      const escapedTitle = section.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedTitle = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       
       // Try multiple patterns to find section content
       const patterns = [
@@ -337,7 +345,7 @@ export default function BhriguPredictionView({
                 <div key={section.key}>
                   {renderSection(
                     section.key,
-                    section.title,
+                    tLocale(section.titleKey, language),
                     getSectionContent(section.key),
                     section.color
                   )}

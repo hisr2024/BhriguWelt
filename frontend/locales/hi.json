@@ -1,0 +1,95 @@
+{
+  "bhriguPrediction": {
+    "sections": {
+      "karmic-journey": {
+        "soul_purpose": "आत्मा का मुख्य उद्देश्य",
+        "karmic_blueprint": "कर्मिक खाका",
+        "evolution_stage": "आत्मा विकास चरण",
+        "life_mission": "जीवन मिशन और धर्म",
+        "karmic_lessons": "कर्मिक पाठ",
+        "soul_connections": "आत्मा समूह संबंध",
+        "timing": "कर्मिक घटनाओं का समय",
+        "spiritual_gifts": "आध्यात्मिक उपहार और क्षमताएं"
+      },
+      "past-lives": {
+        "recent_life": "सबसे हाल का पूर्व जन्म",
+        "significant_lives": "महत्वपूर्ण पूर्व जन्म",
+        "karmic_patterns": "दोहराए जाने वाले कर्मिक पैटर्न",
+        "past_skills": "पूर्व जन्म कौशल और प्रतिभाएं",
+        "traumas_healing": "चिकित्सा की जरूरत वाले पूर्व जन्म आघात",
+        "past_relationships": "पूर्व जन्म संबंध",
+        "karmic_debts": "पूर्व जन्मों के कर्म ऋण",
+        "spiritual_progress": "पूर्व जन्म आध्यात्मिक प्रगति"
+      },
+      "future-lives": {
+        "next_incarnation": "अगला अवतार",
+        "evolution_trajectory": "आत्मा विकास की दिशा",
+        "final_birth_conditions": "अंतिम जन्म की परिस्थितियां",
+        "future_scenarios": "भविष्य जीवन परिदृश्य",
+        "moksha_timeline": "मोक्ष समयरेखा",
+        "higher_realms": "उच्च लोकों तक पहुंच",
+        "bodhisattva_path": "बोधिसत्व मार्ग",
+        "ultimate_destiny": "अंतिम नियति"
+      },
+      "present-life": {
+        "current_phase": "वर्तमान जीवन चरण",
+        "career": "करियर और पेशेवर जीवन",
+        "relationships": "रिश्ते और प्रेम",
+        "health": "स्वास्थ्य और कल्याण",
+        "finances": "वित्तीय संभावनाएं",
+        "spiritual_growth": "आध्यात्मिक विकास",
+        "education": "शिक्षा और सीख",
+        "life_purpose": "जीवन उद्देश्य",
+        "challenges": "वर्तमान चुनौतियां",
+        "timing": "समय और संक्रमण"
+      },
+      "life-events": {
+        "yearly_forecast": "वार्षिक पूर्वानुमान",
+        "marriage_timing": "विवाह का समय",
+        "career_milestones": "करियर मील के पत्थर",
+        "children_family": "बच्चे और परिवार",
+        "financial_events": "वित्तीय घटनाएं",
+        "health_alerts": "स्वास्थ्य चेतावनियां",
+        "spiritual_milestones": "आध्यात्मिक मील के पत्थर",
+        "relocations": "स्थानांतरण और यात्रा",
+        "education": "शैक्षिक उपलब्धियां",
+        "favorable_periods": "अनुकूल अवधि",
+        "challenging_periods": "चुनौतीपूर्ण अवधि",
+        "transits": "मुख्य ग्रह गोचर",
+        "age_milestones": "आयु मील के पत्थर"
+      },
+      "karmic-remedies": {
+        "mantras": "मंत्र और जप",
+        "gemstones": "रत्न और क्रिस्टल",
+        "yantras": "यंत्र और पवित्र ज्यामिति",
+        "charitable_activities": "दान गतिविधियां",
+        "fasting": "उपवास और आहार अभ्यास",
+        "deity_worship": "देव उपासना",
+        "pilgrimage": "तीर्थयात्रा और पवित्र स्थल",
+        "lifestyle": "जीवनशैली संशोधन",
+        "planetary_rituals": "ग्रह अनुष्ठान",
+        "karmic_cleansing": "कर्म शुद्धि अभ्यास",
+        "service": "सेवा और सेवा",
+        "meditation": "ध्यान और योग"
+      },
+      "relationships": {
+        "romantic_marriage": "प्रेम और विवाह संभावनाएं",
+        "family": "पारिवारिक संबंध",
+        "soul_connections": "आत्मा संबंध और सोलमेट",
+        "friendships": "मित्रता और सामाजिक दायरा",
+        "professional": "पेशेवर संबंध",
+        "karmic_patterns": "कर्मिक संबंध पैटर्न",
+        "communication": "संचार गतिशीलता",
+        "timing": "रिश्तों का समय",
+        "healing": "रिश्तों का उपचार",
+        "healthy_practices": "स्वस्थ संबंध अभ्यास"
+      },
+      "predictions": {
+        "daily": "दैनिक भविष्यवाणियां",
+        "weekly": "साप्ताहिक पूर्वानुमान",
+        "monthly": "मासिक दृष्टिकोण",
+        "yearly": "वार्षिक अवलोकन"
+      }
+    }
+  }
+}
