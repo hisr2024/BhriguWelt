@@ -4,11 +4,14 @@ Core astronomical and astrological calculations
 """
 import ephem
 from datetime import datetime
+import logging
 import pytz
 from typing import Dict, Any, Tuple, List
 from timezonefinder import TimezoneFinder
 from geopy.geocoders import Nominatim
 import math
+
+logger = logging.getLogger(__name__)
 
 class AstrologyCalculator:
     """Core Vedic astrology calculation engine"""
@@ -59,13 +62,37 @@ class AstrologyCalculator:
         # Get coordinates if not provided
         if latitude is None or longitude is None:
             coords = self._geocode_location(place)
+            if not coords:
+                logger.warning("Geocoding failed for place_of_birth=%s", place)
+                return {
+                    'error': {
+                        'code': 'geocoding_failed',
+                        'message': (
+                            "Unable to geocode place of birth. "
+                            "Provide a valid place_of_birth or latitude/longitude."
+                        )
+                    }
+                }
             latitude = coords['latitude']
             longitude = coords['longitude']
 
         # Get timezone
         timezone_str = self.tf.timezone_at(lat=latitude, lng=longitude)
         if not timezone_str:
-            timezone_str = 'UTC'
+            logger.warning(
+                "Timezone resolution failed for latitude=%s longitude=%s",
+                latitude,
+                longitude
+            )
+            return {
+                'error': {
+                    'code': 'timezone_resolution_failed',
+                    'message': (
+                        "Unable to determine timezone for provided location. "
+                        "Please verify latitude/longitude or place_of_birth."
+                    )
+                }
+            }
 
         # Parse datetime
         dt_str = f"{date_of_birth} {time_of_birth}"
@@ -127,9 +154,8 @@ class AstrologyCalculator:
                     'longitude': location.longitude
                 }
         except Exception:
-            pass
-        # Default to New Delhi if geocoding fails
-        return {'latitude': 28.6139, 'longitude': 77.2090}
+            return None
+        return None
 
     def _calculate_planetary_positions(self, observer: ephem.Observer) -> Dict[str, Any]:
         """Calculate positions of all planets"""
