@@ -144,6 +144,12 @@ export default function BhriguPredictionView({
   const [prediction, setPrediction] = useState<BhriguPrediction | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<{
+    code?: string;
+    action: string;
+    isNetwork: boolean;
+    message: string;
+  } | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [question, setQuestion] = useState('');
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
@@ -178,8 +184,7 @@ export default function BhriguPredictionView({
 
     setLoading(true);
     setError(null);
-    setCacheAgeSeconds(null);
-    setCacheKey(null);
+    setErrorDetails(null);
 
     try {
       const profileData = {
@@ -210,7 +215,24 @@ export default function BhriguPredictionView({
         setError(normalized.message || 'Failed to generate prediction');
       }
     } catch (err:  any) {
-      setError(err. response?.data?.message || err.message || 'An error occurred');
+      const status = err?.response?.status;
+      const apiMessage = err?.response?.data?.message || err?.response?.data?.error;
+      const message = apiMessage || err?.message || 'An error occurred';
+      const isNetwork = !err?.response;
+      const code = status ? `HTTP ${status}` : err?.code || err?.name;
+      const action = isNetwork
+        ? 'Check your connection, then retry or use cached data.'
+        : status && status >= 500
+          ? 'Server hiccup detected. Retry soon or use cached data if available.'
+          : 'Review your inputs and retry, or use cached data if available.';
+
+      setError(message);
+      setErrorDetails({
+        code,
+        action,
+        isNetwork,
+        message
+      });
     } finally {
       setLoading(false);
     }
@@ -724,6 +746,54 @@ export default function BhriguPredictionView({
               </button>
             </div>
           )}
+
+          <AnimatePresence>
+            {errorDetails && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className={`mt-6 rounded-xl border px-4 py-3 text-sm ${
+                  errorDetails.isNetwork
+                    ? 'border-amber-500/40 bg-amber-500/10 text-amber-200'
+                    : 'border-red-500/40 bg-red-500/10 text-red-200'
+                }`}
+              >
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-semibold">
+                      {errorDetails.isNetwork ? 'Network issue detected' : 'API request failed'}
+                    </p>
+                    <p className="text-xs text-gray-200/80">
+                      {errorDetails.message}
+                      {errorDetails.code && (
+                        <span className="ml-2 inline-flex items-center rounded-full border border-white/20 px-2 py-0.5 text-[10px] uppercase">
+                          {errorDetails.code}
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-200/80 mt-1">
+                      Suggested action: {errorDetails.action}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => loadPrediction(false)}
+                      className="rounded-lg border border-white/20 px-3 py-1 text-xs text-white hover:border-white/40"
+                    >
+                      Retry with cached data
+                    </button>
+                    <button
+                      onClick={() => loadPrediction(true)}
+                      className="rounded-lg bg-white/10 px-3 py-1 text-xs text-white hover:bg-white/20"
+                    >
+                      Retry request
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -743,33 +813,31 @@ export default function BhriguPredictionView({
 
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6">
-            <p className="text-red-400">{error}</p>
-            {profileValidation && !profileValidation.isValid ? (
-              <div className="mt-4 space-y-3">
-                <p className="text-sm text-gray-300">
-                  Update these details to continue:
-                </p>
-                <ul className="text-sm text-gray-300 list-disc list-inside space-y-1">
-                  {profileValidation.missingFields.map((field) => (
-                    <li key={field}>{field}</li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => window.location.href = '/profile'}
-                  className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
-                >
-                  Complete Profile
-                </button>
-              </div>
-            ) : (
+            <div className="space-y-2">
+              <p className="text-red-400">{error}</p>
+              {errorDetails?.code && (
+                <p className="text-xs text-red-200/80">Error code: {errorDetails.code}</p>
+              )}
+              {errorDetails?.action && (
+                <p className="text-xs text-red-200/80">Suggested action: {errorDetails.action}</p>
+              )}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-3">
               <button
-                onClick={() => loadPrediction(false)}
-                className="mt-4 text-sm text-cyan-400 hover: text-cyan-300 flex items-center gap-2"
+                onClick={() => loadPrediction(true)}
+                className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
-                Try Again
+                Retry request
               </button>
-            )}
+              <button
+                onClick={() => loadPrediction(false)}
+                className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Retry with cached data
+              </button>
+            </div>
           </div>
         )}
 
