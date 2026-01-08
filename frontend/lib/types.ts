@@ -74,6 +74,38 @@ export interface AISummarizeRequest {
   summary_type?: 'overview' | 'key_insights' | 'action_items' | 'detailed';
 }
 
+export interface PredictionMetadata {
+  zodiac_sign?: string;
+  nakshatra?: string;
+  tradition?: string;
+  [key: string]: string | number | boolean | undefined;
+}
+
+export interface PredictionPayload {
+  full_analysis?: string;
+  metadata?: PredictionMetadata;
+  [key: string]: unknown;
+}
+
+export interface CachedPrediction {
+  id: number;
+  category: string;
+  question?: string | null;
+  prediction: PredictionPayload;
+  zodiac_sign?: string | null;
+  nakshatra?: string | null;
+  created_at?: string | null;
+  access_count?: number;
+}
+
+export interface PredictionResult {
+  status: 'success' | 'error';
+  message: string;
+  data: PredictionPayload | CachedPrediction;
+  timestamp: string;
+  meta?: Record<string, unknown>;
+}
+
 // Profile types
 export interface Profile {
   id?: number;
@@ -121,6 +153,24 @@ export interface Report {
   aiMode?: 'offline' | 'hybrid' | 'chatbot';
   createdAt: string;
   updatedAt: string;
+}
+
+// Bhrigu Predictions
+export interface BhriguPrediction {
+  category: string;
+  title: string;
+  full_analysis: string;
+  complete_analysis?: string;
+  metadata?: {
+    zodiac_sign?: string;
+    nakshatra?: string;
+    moon_sign?: string;
+    ascendant?: string;
+    tradition?: string;
+    [key: string]: unknown;
+  };
+  generated_at?: string;
+  [key: string]: unknown;
 }
 
 // Birth chart data

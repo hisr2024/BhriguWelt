@@ -3,8 +3,9 @@ Present Life API Routes
 Current life analysis and guidance endpoints
 """
 from flask import Blueprint, request, jsonify
-from services.astrology_calculator import astrology_calculator
+from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.openai_service import openai_service
+from utils.client_status import parse_client_online
 
 bp = Blueprint('present_life', __name__, url_prefix='/api/present-life')
 
@@ -24,17 +25,24 @@ def comprehensive_analysis():
         data = request.get_json()
 
         # Calculate birth chart
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
-        # Generate present life analysis
-        present_life = openai_service.generate_present_life_analysis(birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            present_life = openai_service.offline_wisdom.generate_present_life(birth_chart)
+            mode = 'offline'
+        else:
+            present_life = openai_service.generate_present_life_analysis(birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
                 'birth_chart': birth_chart,
                 'present_life_analysis': present_life
@@ -49,11 +57,9 @@ def career_guidance():
     """Get detailed career and professional guidance"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Provide comprehensive career guidance:
@@ -71,14 +77,25 @@ def career_guidance():
         6. Financial prosperity timeline
         """
 
-        career = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            career = openai_service.offline_wisdom.generate_present_life(birth_chart)
+            mode = 'offline'
+        else:
+            career = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
-                'career_guidance': career,
+                'career_guidance': career_result['text'],
                 'career_house': birth_chart['houses'][9],
-                'authority_sign': birth_chart['zodiac_sign']
+                'authority_sign': birth_chart['zodiac_sign'],
+                'partial': career_result['partial']
             }
         }), 200
 
@@ -90,11 +107,9 @@ def relationships_analysis():
     """Analyze current relationship patterns and guidance"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Analyze relationship dynamics:
@@ -112,14 +127,25 @@ def relationships_analysis():
         6. Family and friendship dynamics
         """
 
-        relationships = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            relationships = openai_service.offline_wisdom.generate_relationships(birth_chart)
+            mode = 'offline'
+        else:
+            relationships = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
-                'relationships_analysis': relationships,
+                'relationships_analysis': relationships_result['text'],
                 'partnership_house': birth_chart['houses'][6],
-                'venus_position': birth_chart['planets']['Venus']
+                'venus_position': birth_chart['planets']['Venus'],
+                'partial': relationships_result['partial']
             }
         }), 200
 
@@ -131,11 +157,9 @@ def health_wellness():
     """Get health and wellness guidance"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Provide health and wellness guidance:
@@ -153,14 +177,25 @@ def health_wellness():
         6. Energy management and vitality
         """
 
-        health = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            health = openai_service.offline_wisdom.generate_present_life(birth_chart)
+            mode = 'offline'
+        else:
+            health = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
-                'health_guidance': health,
+                'health_guidance': health_result['text'],
                 'health_house': birth_chart['houses'][5],
-                'vitality_sign': birth_chart['ascendant']
+                'vitality_sign': birth_chart['ascendant'],
+                'partial': health_result['partial']
             }
         }), 200
 
@@ -172,11 +207,9 @@ def financial_prospects():
     """Analyze financial prospects and wealth potential"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Analyze financial prospects:
@@ -194,14 +227,25 @@ def financial_prospects():
         6. Financial planning recommendations
         """
 
-        financial = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            financial = openai_service.offline_wisdom.generate_present_life(birth_chart)
+            mode = 'offline'
+        else:
+            financial = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
-                'financial_prospects': financial,
+                'financial_prospects': financial_result['text'],
                 'wealth_house': birth_chart['houses'][1],
-                'prosperity_planet': birth_chart['planets']['Jupiter']
+                'prosperity_planet': birth_chart['planets']['Jupiter'],
+                'partial': financial_result['partial']
             }
         }), 200
 
@@ -213,11 +257,9 @@ def spiritual_growth():
     """Guide spiritual growth and development"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Guide spiritual growth:
@@ -235,14 +277,25 @@ def spiritual_growth():
         6. Spiritual breakthroughs timeline
         """
 
-        spiritual = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            spiritual = openai_service.offline_wisdom.generate_present_life(birth_chart)
+            mode = 'offline'
+        else:
+            spiritual = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
-                'spiritual_guidance': spiritual,
+                'spiritual_guidance': spiritual_result['text'],
                 'dharma_house': birth_chart['houses'][8],
-                'wisdom_planet': birth_chart['planets']['Jupiter']
+                'wisdom_planet': birth_chart['planets']['Jupiter'],
+                'partial': spiritual_result['partial']
             }
         }), 200
 
@@ -274,14 +327,25 @@ def current_dasha():
         5. Making the most of current period
         """
 
-        dasha = openai_service.generate_prediction(prompt, birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        if client_online is False and openai_service.offline_wisdom:
+            dasha = openai_service.offline_wisdom.generate_present_life(birth_chart)
+            mode = 'offline'
+        else:
+            dasha = openai_service.generate_prediction(prompt, birth_chart)
+            mode = 'online' if openai_service.enabled else 'offline'
 
         return jsonify({
             'status': 'success',
+            'metadata': {
+                'mode': mode,
+                'client_online': client_online,
+            },
             'data': {
-                'dasha_analysis': dasha,
+                'dasha_analysis': dasha_result['text'],
                 'current_dasha': birth_chart['dasha_period'],
-                'nakshatra': birth_chart['nakshatra']
+                'nakshatra': birth_chart['nakshatra'],
+                'partial': dasha_result['partial']
             }
         }), 200
 
