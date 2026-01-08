@@ -3,29 +3,27 @@ OpenAI Integration Service
 Handles all AI-powered predictions and insights with authentic Bhrigu/Nadi corpus integration
 """
 import os
+import logging
 import requests
 from typing import Dict, Any, List, Optional
 import json
+import importlib.util
 
 # Import corpus loader for RAG-style context injection
-CORPUS_IMPORT_ERROR = None
-try:
+CORPUS_AVAILABLE = importlib.util.find_spec("services.corpus_loader") is not None
+if CORPUS_AVAILABLE:
     from services.corpus_loader import get_corpus_loader
-    CORPUS_AVAILABLE = True
-except ImportError as e:
-    CORPUS_AVAILABLE = False
-    CORPUS_IMPORT_ERROR = str(e)
-    print("Warning: Corpus loader not available. Predictions will use OpenAI general knowledge only.")
+else:
+    get_corpus_loader = None
 
 # Import offline wisdom generator for category-specific fallbacks
-OFFLINE_WISDOM_IMPORT_ERROR = None
-try:
+OFFLINE_WISDOM_AVAILABLE = importlib.util.find_spec("services.bhrigu_offline_wisdom") is not None
+if OFFLINE_WISDOM_AVAILABLE:
     from services.bhrigu_offline_wisdom import get_offline_wisdom_generator
-    OFFLINE_WISDOM_AVAILABLE = True
-except ImportError as e:
-    OFFLINE_WISDOM_AVAILABLE = False
-    OFFLINE_WISDOM_IMPORT_ERROR = str(e)
-    print("Warning: Offline wisdom generator not available. Fallbacks will be generic.")
+else:
+    get_offline_wisdom_generator = None
+
+logger = logging.getLogger(__name__)
 
 class OpenAIService:
     """Service for interacting with OpenAI API"""
@@ -34,40 +32,67 @@ class OpenAIService:
         self.api_key = os.getenv('OPENAI_API_KEY')
         self.base_url = os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
         self.enabled = bool(self.api_key)
-        self.initialization_errors: List[str] = []
+        self.last_error: Optional[Dict[str, Any]] = None
         
         # Initialize corpus loader for authentic source integration
         self.corpus_loader = None
         if CORPUS_AVAILABLE:
             try:
                 self.corpus_loader = get_corpus_loader()
-                print("✓ Corpus loader initialized - predictions will reference authentic Bhrigu/Nadi sources")
+                logger.info(
+                    "Corpus loader initialized - predictions will reference authentic Bhrigu/Nadi sources",
+                    extra={"error_code": "OPENAI_CORPUS_LOADER_READY"},
+                )
             except Exception as e:
-                message = f"Could not initialize corpus loader: {e}"
-                self.initialization_errors.append(message)
-                print(f"Warning: {message}")
-        elif CORPUS_IMPORT_ERROR:
-            message = f"Corpus loader import error: {CORPUS_IMPORT_ERROR}"
-            self.initialization_errors.append(message)
+                self._set_last_error(
+                    "OPENAI_CORPUS_LOADER_INIT_FAILED",
+                    "Could not initialize corpus loader.",
+                    {"error": str(e)},
+                )
+                logger.warning(
+                    "Could not initialize corpus loader",
+                    extra={"error_code": "OPENAI_CORPUS_LOADER_INIT_FAILED", "error": str(e)},
+                )
+        else:
+            logger.warning(
+                "Corpus loader not available. Predictions will use OpenAI general knowledge only.",
+                extra={"error_code": "OPENAI_CORPUS_LOADER_MISSING"},
+            )
 
         # Initialize offline wisdom generator for category-specific fallbacks
         self.offline_wisdom = None
         if OFFLINE_WISDOM_AVAILABLE:
             try:
                 self.offline_wisdom = get_offline_wisdom_generator()
-                print("✓ Offline wisdom generator initialized - category-specific fallbacks available")
+                logger.info(
+                    "Offline wisdom generator initialized - category-specific fallbacks available",
+                    extra={"error_code": "OPENAI_OFFLINE_WISDOM_READY"},
+                )
             except Exception as e:
-                message = f"Could not initialize offline wisdom generator: {e}"
-                self.initialization_errors.append(message)
-                print(f"Warning: {message}")
-        elif OFFLINE_WISDOM_IMPORT_ERROR:
-            message = f"Offline wisdom import error: {OFFLINE_WISDOM_IMPORT_ERROR}"
-            self.initialization_errors.append(message)
+                self._set_last_error(
+                    "OPENAI_OFFLINE_WISDOM_INIT_FAILED",
+                    "Could not initialize offline wisdom generator.",
+                    {"error": str(e)},
+                )
+                logger.warning(
+                    "Could not initialize offline wisdom generator",
+                    extra={"error_code": "OPENAI_OFFLINE_WISDOM_INIT_FAILED", "error": str(e)},
+                )
+        else:
+            logger.warning(
+                "Offline wisdom generator not available. Fallbacks will be generic.",
+                extra={"error_code": "OPENAI_OFFLINE_WISDOM_MISSING"},
+            )
 
         if not self.enabled:
-            message = "OPENAI_API_KEY not set. AI features will use fallback responses."
-            self.initialization_errors.append(message)
-            print(f"WARNING: {message}")
+            self._set_last_error(
+                "OPENAI_API_KEY_MISSING",
+                "OPENAI_API_KEY not set. AI features will use fallback responses.",
+            )
+            logger.warning(
+                "OPENAI_API_KEY not set. AI features will use fallback responses.",
+                extra={"error_code": "OPENAI_API_KEY_MISSING"},
+            )
 
         self.headers = {
             'Authorization': f'Bearer {self.api_key}',
@@ -87,6 +112,10 @@ class OpenAIService:
         """
         # Use fallback if AI is not enabled
         if not self.enabled:
+            self._set_last_error(
+                "OPENAI_DISABLED",
+                "OpenAI API is disabled. Using fallback predictions.",
+            )
             return self._fallback_prediction(prompt, context)
 
         try:
@@ -158,14 +187,23 @@ Always provide detailed, specific predictions with timing when possible.''' + co
 
             response.raise_for_status()
             result = response.json()
-
+            self._clear_last_error()
             return result['choices'][0]['message']['content']
 
         except requests.exceptions.RequestException as e:
             # Log the error for debugging
-            print(f"ERROR: OpenAI API call failed: {str(e)}")
+            self._set_last_error(
+                "OPENAI_API_REQUEST_FAILED",
+                "OpenAI API call failed.",
+                {"error": str(e)},
+            )
+            logger.error(
+                "OpenAI API call failed",
+                extra={"error_code": "OPENAI_API_REQUEST_FAILED", "error": str(e)},
+            )
             # Fallback to traditional analysis if API fails
             return self._fallback_prediction(prompt, context)
+
     def generate_karmic_journey(self, birth_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate comprehensive karmic journey analysis"""
         prompt = f"""
@@ -389,26 +427,66 @@ Always provide detailed, specific predictions with timing when possible.''' + co
         if self.offline_wisdom and context:
             try:
                 if category == 'karmic_journey':
-                    return self.offline_wisdom.generate_karmic_journey(context)
+                    return self._ensure_fallback_headers(
+                        self.offline_wisdom.generate_karmic_journey(context)
+                    )
                 elif category == 'past_lives':
-                    return self.offline_wisdom.generate_past_lives(context)
+                    return self._ensure_fallback_headers(
+                        self.offline_wisdom.generate_past_lives(context)
+                    )
                 elif category == 'future_lives':
-                    return self.offline_wisdom.generate_future_lives(context)
+                    return self._ensure_fallback_headers(
+                        self.offline_wisdom.generate_future_lives(context)
+                    )
                 elif category == 'present_life':
-                    return self.offline_wisdom.generate_present_life(context)
+                    return self._ensure_fallback_headers(
+                        self.offline_wisdom.generate_present_life(context)
+                    )
                 elif category == 'life_events':
-                    return self.offline_wisdom.generate_life_events(context)
+                    return self._ensure_fallback_headers(
+                        self.offline_wisdom.generate_life_events(context)
+                    )
                 elif category == 'karmic_remedies':
-                    return self.offline_wisdom.generate_karmic_remedies(context)
+                    return self._ensure_fallback_headers(
+                        self.offline_wisdom.generate_karmic_remedies(context)
+                    )
                 elif category == 'relationships':
-                    return self.offline_wisdom.generate_relationships(context)
+                    return self._ensure_fallback_headers(
+                        self.offline_wisdom.generate_relationships(context)
+                    )
                 elif category == 'predictions':
-                    return self.offline_wisdom.generate_general_predictions(context)
+                    return self._ensure_fallback_headers(
+                        self.offline_wisdom.generate_general_predictions(context)
+                    )
             except Exception as e:
-                print(f"Warning: Offline wisdom generation failed: {e}")
+                self._set_last_error(
+                    "OPENAI_OFFLINE_WISDOM_FAILED",
+                    "Offline wisdom generation failed.",
+                    {"error": str(e)},
+                )
+                logger.warning(
+                    "Offline wisdom generation failed",
+                    extra={"error_code": "OPENAI_OFFLINE_WISDOM_FAILED", "error": str(e)},
+                )
 
         # Generic fallback if offline wisdom not available or failed
-        return self._generic_fallback(context)
+        return self._ensure_fallback_headers(self._generic_fallback(context))
+
+    def _set_last_error(self, code: str, message: str, details: Optional[Dict[str, Any]] = None) -> None:
+        error_payload: Dict[str, Any] = {"code": code, "message": message}
+        if details:
+            error_payload["details"] = details
+        self.last_error = error_payload
+
+    def _clear_last_error(self) -> None:
+        self.last_error = None
+
+    def _ensure_fallback_headers(self, text: str) -> str:
+        if not text:
+            return text
+        if any(line.strip().startswith("##") for line in text.splitlines()):
+            return text
+        return f"## Summary\n\n{text}"
 
     def _detect_category_from_prompt(self, prompt: str) -> str:
         """Detect prediction category from the prompt content"""
