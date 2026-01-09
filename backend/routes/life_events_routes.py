@@ -4,12 +4,13 @@ Important life events prediction endpoints
 """
 from flask import Blueprint, request
 from services.astrology_calculator import astrology_calculator
-from services.openai_service import openai_service
+from services.prediction_orchestrator import get_prediction_orchestrator
+from utils.client_status import parse_client_online
 from utils.response_formatter import prediction_response, prediction_error_response
 from utils.validators import sanitize_input
 
 bp = Blueprint('life_events', __name__, url_prefix='/api/life-events')
-logger = setup_logger(__name__)
+orchestrator = get_prediction_orchestrator()
 
 @bp.route('/prediction', methods=['POST'])
 def life_events_prediction():
@@ -33,8 +34,16 @@ def life_events_prediction():
         if error:
             return error
 
-        # Generate life events prediction
-        events = openai_service.generate_life_events_prediction(birth_chart, years_ahead)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        result = orchestrator.generate_prediction(
+            category='life_events',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            years_ahead=years_ahead
+        )
+        events = result.get('prediction', result)
 
         return prediction_response(
             {
@@ -44,7 +53,8 @@ def life_events_prediction():
             metadata={
                 'years_ahead': years_ahead,
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': result.get('mode', mode)
             }
         )
 
@@ -79,16 +89,25 @@ def career_milestones():
         6. Leadership positions
         """
 
-        milestones_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        milestones_result = orchestrator.generate_prediction(
+            category='life_events',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         return prediction_response(
             {
-                'career_milestones': milestones,
+                'career_milestones': milestones_result.get('prediction', milestones_result),
                 'career_house': birth_chart['houses'][9]
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': milestones_result.get('mode', mode)
             }
         )
 
@@ -123,17 +142,26 @@ def relationship_events():
         6. Reconciliation or separation
         """
 
-        events_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        events_result = orchestrator.generate_prediction(
+            category='life_events',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         return prediction_response(
             {
-                'relationship_events': events,
+                'relationship_events': events_result.get('prediction', events_result),
                 'partnership_house': birth_chart['houses'][6],
                 'venus_position': birth_chart['planets']['Venus']
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': events_result.get('mode', mode)
             }
         )
 
@@ -168,17 +196,26 @@ def financial_events():
         6. Business expansion
         """
 
-        events_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        events_result = orchestrator.generate_prediction(
+            category='life_events',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         return prediction_response(
             {
-                'financial_events': events,
+                'financial_events': events_result.get('prediction', events_result),
                 'wealth_house': birth_chart['houses'][1],
                 'gains_house': birth_chart['houses'][10]
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': events_result.get('mode', mode)
             }
         )
 
@@ -213,17 +250,26 @@ def health_alerts():
         6. Energy management cycles
         """
 
-        alerts_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        alerts_result = orchestrator.generate_prediction(
+            category='life_events',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         return prediction_response(
             {
-                'health_alerts': alerts,
+                'health_alerts': alerts_result.get('prediction', alerts_result),
                 'health_house': birth_chart['houses'][5],
                 'saturn_position': birth_chart['planets']['Saturn']
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': alerts_result.get('mode', mode)
             }
         )
 
@@ -258,17 +304,26 @@ def spiritual_breakthroughs():
         6. Consciousness expansion
         """
 
-        breakthroughs_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        breakthroughs_result = orchestrator.generate_prediction(
+            category='life_events',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         return prediction_response(
             {
-                'spiritual_breakthroughs': breakthroughs,
+                'spiritual_breakthroughs': breakthroughs_result.get('prediction', breakthroughs_result),
                 'dharma_house': birth_chart['houses'][8],
                 'liberation_house': birth_chart['houses'][11]
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': breakthroughs_result.get('mode', mode)
             }
         )
 
@@ -307,17 +362,26 @@ def auspicious_timings():
         6. Major investments
         """
 
-        timings_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        timings_result = orchestrator.generate_prediction(
+            category='life_events',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         return prediction_response(
             {
-                'auspicious_timings': timings,
+                'auspicious_timings': timings_result.get('prediction', timings_result),
                 'jupiter_position': birth_chart['planets']['Jupiter'],
                 'current_dasha': birth_chart['dasha_period']
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': timings_result.get('mode', mode)
             }
         )
 

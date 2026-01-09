@@ -4,7 +4,7 @@ General prediction endpoints
 """
 from flask import Blueprint, request, jsonify
 from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
-from services.openai_service import openai_service
+from services.prediction_orchestrator import get_prediction_orchestrator
 from services.section_parser import get_section_parser
 from utils.client_status import parse_client_online
 from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
@@ -17,6 +17,7 @@ from utils.validators import sanitize_input
 logger = setup_logger(__name__)
 
 bp = Blueprint('predictions', __name__, url_prefix='/api/predictions')
+orchestrator = get_prediction_orchestrator()
 
 @bp.route('/daily', methods=['POST'])
 def daily_prediction():
@@ -57,12 +58,15 @@ def daily_prediction():
         """
 
         client_online = parse_client_online(request.headers.get('X-Client-Online'))
-        if client_online is False and openai_service.offline_wisdom:
-            prediction = openai_service.offline_wisdom.generate_general_predictions(birth_chart)
-            mode = 'offline'
-        else:
-            prediction = openai_service.generate_prediction(prompt, birth_chart)
-            mode = 'online' if openai_service.enabled else 'offline'
+        mode = data.get('mode', 'hybrid')
+        result = orchestrator.generate_prediction(
+            category='predictions',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
+        prediction = result.get('prediction', result)
 
         return prediction_response(
             {
@@ -74,7 +78,8 @@ def daily_prediction():
                 'timeframe': 'daily',
                 'zodiac_sign': birth_chart['zodiac_sign'],
                 'moon_sign': birth_chart['moon_sign'],
-                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha')
+                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha'),
+                'mode': result.get('mode', mode)
             }
         )
 
@@ -121,12 +126,15 @@ def weekly_prediction():
         """
 
         client_online = parse_client_online(request.headers.get('X-Client-Online'))
-        if client_online is False and openai_service.offline_wisdom:
-            prediction = openai_service.offline_wisdom.generate_general_predictions(birth_chart)
-            mode = 'offline'
-        else:
-            prediction = openai_service.generate_prediction(prompt, birth_chart)
-            mode = 'online' if openai_service.enabled else 'offline'
+        mode = data.get('mode', 'hybrid')
+        result = orchestrator.generate_prediction(
+            category='predictions',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
+        prediction = result.get('prediction', result)
 
         return prediction_response(
             {
@@ -136,7 +144,8 @@ def weekly_prediction():
             metadata={
                 'timeframe': 'weekly',
                 'zodiac_sign': birth_chart['zodiac_sign'],
-                'nakshatra': birth_chart['nakshatra']
+                'nakshatra': birth_chart['nakshatra'],
+                'mode': result.get('mode', mode)
             }
         )
 
@@ -185,12 +194,15 @@ def monthly_prediction():
         """
 
         client_online = parse_client_online(request.headers.get('X-Client-Online'))
-        if client_online is False and openai_service.offline_wisdom:
-            prediction = openai_service.offline_wisdom.generate_general_predictions(birth_chart)
-            mode = 'offline'
-        else:
-            prediction = openai_service.generate_prediction(prompt, birth_chart)
-            mode = 'online' if openai_service.enabled else 'offline'
+        mode = data.get('mode', 'hybrid')
+        result = orchestrator.generate_prediction(
+            category='predictions',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
+        prediction = result.get('prediction', result)
 
         return prediction_response(
             {
@@ -201,7 +213,8 @@ def monthly_prediction():
             metadata={
                 'timeframe': 'monthly',
                 'zodiac_sign': birth_chart['zodiac_sign'],
-                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha')
+                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha'),
+                'mode': result.get('mode', mode)
             }
         )
 
@@ -251,12 +264,15 @@ def yearly_prediction():
         """
 
         client_online = parse_client_online(request.headers.get('X-Client-Online'))
-        if client_online is False and openai_service.offline_wisdom:
-            prediction = openai_service.offline_wisdom.generate_general_predictions(birth_chart)
-            mode = 'offline'
-        else:
-            prediction = openai_service.generate_prediction(prompt, birth_chart)
-            mode = 'online' if openai_service.enabled else 'offline'
+        mode = data.get('mode', 'hybrid')
+        result = orchestrator.generate_prediction(
+            category='predictions',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
+        prediction = result.get('prediction', result)
 
         return prediction_response(
             {
@@ -267,7 +283,8 @@ def yearly_prediction():
             metadata={
                 'timeframe': 'yearly',
                 'zodiac_sign': birth_chart['zodiac_sign'],
-                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha')
+                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha'),
+                'mode': result.get('mode', mode)
             }
         )
 
@@ -325,25 +342,29 @@ def specific_question():
         """
 
         client_online = parse_client_online(request.headers.get('X-Client-Online'))
-        if client_online is False and openai_service.offline_wisdom:
-            answer = openai_service.offline_wisdom.generate_general_predictions(birth_chart)
-            mode = 'offline'
-        else:
-            answer = openai_service.generate_prediction(prompt, birth_chart)
-            mode = 'online' if openai_service.enabled else 'offline'
+        mode = data.get('mode', 'hybrid')
+        answer_result = orchestrator.generate_prediction(
+            category='predictions',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
+        answer = answer_result.get('prediction', answer_result)
 
         return prediction_response(
             {
                 'question': question,
-                'answer': answer_result['text'],
-                'partial': answer_result['partial'],
+                'answer': answer,
+                'partial': answer_result.get('partial', False),
                 'zodiac_sign': birth_chart['zodiac_sign']
             },
             metadata={
                 'timeframe': 'question',
                 'zodiac_sign': birth_chart['zodiac_sign'],
                 'nakshatra': birth_chart['nakshatra'],
-                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha')
+                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha'),
+                'mode': answer_result.get('mode', mode)
             }
         )
 
