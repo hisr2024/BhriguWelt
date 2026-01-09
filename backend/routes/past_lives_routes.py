@@ -6,8 +6,10 @@ from flask import Blueprint, request
 from services.astrology_calculator import astrology_calculator
 from services.openai_service import openai_service
 from utils.response_formatter import prediction_response, prediction_error_response
+from utils.logger import setup_logger, log_exception
 
 bp = Blueprint('past_lives', __name__, url_prefix='/api/past-lives')
+logger = setup_logger(__name__)
 
 @bp.route('/analysis', methods=['POST'])
 def past_lives_analysis():
@@ -43,7 +45,11 @@ def past_lives_analysis():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate past lives analysis: {str(e)}", 500)
+        log_exception(logger, e, context="past_lives.analysis")
+        return prediction_error_response(
+            "Failed to generate past lives analysis. Please try again later.",
+            500
+        )
 
 @bp.route('/karmic-patterns', methods=['POST'])
 def karmic_patterns():
@@ -83,7 +89,11 @@ def karmic_patterns():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate karmic patterns: {str(e)}", 500)
+        log_exception(logger, e, context="past_lives.karmic_patterns")
+        return prediction_error_response(
+            "Failed to generate karmic patterns. Please try again later.",
+            500
+        )
 
 @bp.route('/past-relationships', methods=['POST'])
 def past_relationships():
@@ -123,7 +133,11 @@ def past_relationships():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate past relationships: {str(e)}", 500)
+        log_exception(logger, e, context="past_lives.past_relationships")
+        return prediction_error_response(
+            "Failed to generate past relationships. Please try again later.",
+            500
+        )
 
 @bp.route('/talents-carried-forward', methods=['POST'])
 def talents_carried_forward():
@@ -165,7 +179,11 @@ def talents_carried_forward():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate talents carried forward: {str(e)}", 500)
+        log_exception(logger, e, context="past_lives.talents_carried_forward")
+        return prediction_error_response(
+            "Failed to generate talents carried forward. Please try again later.",
+            500
+        )
 
 @bp.route('/past-traumas', methods=['POST'])
 def past_traumas():
@@ -207,4 +225,8 @@ def past_traumas():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate past traumas: {str(e)}", 500)
+        log_exception(logger, e, context="past_lives.past_traumas")
+        return prediction_error_response(
+            "Failed to generate past traumas. Please try again later.",
+            500
+        )
