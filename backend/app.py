@@ -7,46 +7,78 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 import os
-import sys
 import json
 import uuid
 from datetime import datetime
+from pathlib import Path
 from utils.logger import setup_logger, log_exception
 
-print("=" * 60)
-print("BhriguWelt Backend Initialization")
-print("=" * 60)
+logger = setup_logger(__name__)
+logger.info("=" * 60)
+logger.info("BhriguWelt Backend Initialization")
+logger.info("=" * 60)
 
 # Load environment variables
 load_dotenv()
 
-# Security: Ensure critical environment variables are set in production
+# Security: Ensure critical environment variables are set
 FLASK_ENV = os.getenv('FLASK_ENV', 'development')
 IS_PRODUCTION = FLASK_ENV == 'production'
 
-print(f"Environment: {FLASK_ENV}")
-print(f"Production Mode: {IS_PRODUCTION}")
+logger.info("Environment: %s", FLASK_ENV)
+logger.info("Production Mode: %s", IS_PRODUCTION)
 
-if IS_PRODUCTION:
-    # Enforce strict security in production
-    # Note: FRONTEND_URL is optional - we have hardcoded production URLs as fallback
-    required_vars = ['SECRET_KEY', 'JWT_SECRET_KEY']
+def _exit_startup(error_lines):
+    print("ERROR: Backend startup checks failed:", file=sys.stderr)
+    for line in error_lines:
+        print(f" - {line}", file=sys.stderr)
+    sys.exit(1)
+
+def _check_required_env_vars():
+    required_vars = ['OPENAI_API_KEY', 'SECRET_KEY', 'JWT_SECRET_KEY', 'FRONTEND_URL']
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     if missing_vars:
-        error_msg = f"Production mode requires environment variables: {', '.join(missing_vars)}"
-        print(f"ERROR: {error_msg}", file=sys.stderr)
-        raise RuntimeError(error_msg)
+        _exit_startup([f"Missing required environment variables: {', '.join(missing_vars)}"])
     print("✓ All required environment variables are set")
 
+def _check_corpus_files():
+    required_files = [
+        "bhrigu_samhita_principles.yml",
+        "nadi_jyotisha_principles.yml",
+    ]
+    repo_root = Path(__file__).parent.parent
+    search_paths = [
+        Path(__file__).parent / "data",
+        repo_root / "archive" / "legacy_backend" / "data",
+    ]
+    missing_by_path = {}
+    for base_path in search_paths:
+        missing = [name for name in required_files if not (base_path / name).exists()]
+        if not missing:
+            print(f"✓ Corpus files found in: {base_path}")
+            return
+        missing_by_path[str(base_path)] = missing
+
+    error_lines = [
+        "Required corpus files are missing.",
+        f"Expected files: {', '.join(required_files)}",
+        "Searched paths:",
+    ]
+    for base_path, missing in missing_by_path.items():
+        error_lines.append(f"{base_path} (missing: {', '.join(missing)})")
+    _exit_startup(error_lines)
+
+_check_required_env_vars()
+_check_corpus_files()
+
 # Initialize Flask app
-print("Initializing Flask application...")
+logger.info("Initializing Flask application...")
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///bhriguwelt.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-logger = setup_logger(__name__)
-print("✓ Flask app initialized")
+logger.info("✓ Flask app initialized")
 
 # Initialize CORS with strict origin checking
 # Production URLs are hardcoded, FRONTEND_URL is optional for additional origins
@@ -74,7 +106,7 @@ else:
         'http://127.0.0.1:3000',
     ] + PRODUCTION_FRONTEND_URLS
 
-print("Configuring CORS...")
+logger.info("Configuring CORS...")
 # Configure CORS with explicit resource patterns and preflight handling
 # IMPORTANT: Flask-CORS uses REGEX patterns, not glob patterns!
 # r"/api/*" only matches /api/ + zero or more "/" chars - WRONG!
@@ -100,7 +132,7 @@ CORS(app,
      expose_headers=['Content-Type', 'Authorization'],
      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
      max_age=86400)  # Cache preflight for 24 hours
-print(f"✓ CORS configured with origins: {allowed_origins}")
+logger.info("✓ CORS configured with origins: %s", allowed_origins)
 
 # Helper function for origin validation
 def is_origin_allowed(origin: str) -> bool:
@@ -180,23 +212,23 @@ def add_cors_headers(response):
 
     return response
 
-print("Initializing JWT Manager...")
+logger.info("Initializing JWT Manager...")
 jwt = JWTManager(app)
-print("✓ JWT Manager initialized")
+logger.info("✓ JWT Manager initialized")
 
 # Initialize security middleware
-print("Initializing security middleware...")
+logger.info("Initializing security middleware...")
 try:
     from middleware.security import SecurityMiddleware
     from middleware.rate_limiter import setup_rate_limiter
     security_middleware = SecurityMiddleware(app)
     limiter = setup_rate_limiter(app)
-    print("✓ Security middleware initialized")
+    logger.info("✓ Security middleware initialized")
 except Exception as e:
-    print(f"WARNING: Failed to initialize security middleware: {e}", file=sys.stderr)
+    log_exception(logger, e, context="Failed to initialize security middleware")
 
 # Initialize Database
-print("Initializing database...")
+logger.info("Initializing database...")
 try:
     from models import db, init_db, seed_initial_wisdom
     init_db(app)
@@ -205,54 +237,40 @@ try:
     try:
         seed_initial_wisdom()
     except Exception as e:
-        print(f"Note: Wisdom seeding skipped (may already exist): {e}")
+        log_exception(logger, e, context="Wisdom seeding skipped (may already exist)")
 
-    print("✓ Database initialized successfully")
+    logger.info("✓ Database initialized successfully")
 except Exception as e:
-    print(f"WARNING: Database initialization failed: {e}", file=sys.stderr)
+    log_exception(logger, e, context="Database initialization failed")
     # Continue without database - API will still work with reduced functionality
 
 # Import routes
-print("Importing route modules...")
+logger.info("Importing route modules...")
 try:
     from routes import (
         astrology_routes,
-        karmic_journey_routes,
-        past_lives_routes,
-        future_lives_routes,
-        present_life_routes,
-        life_events_routes,
-        karmic_remedies_routes,
-        predictions_routes,
         user_routes,
         ai_routes,
         bhrigu_predictions_routes,
         matchmaking_routes
     )
-    print("✓ Legacy route modules imported successfully")
+    print("✓ Core route modules imported successfully")
     
     # Import new unified predictions routes
     try:
         from routes import predictions_unified
-        print("✓ Unified predictions routes imported successfully")
+        logger.info("✓ Unified predictions routes imported successfully")
     except Exception as e:
-        print(f"WARNING: Failed to import unified predictions routes: {e}", file=sys.stderr)
+        log_exception(logger, e, context="Failed to import unified predictions routes")
         predictions_unified = None
         
 except Exception as e:
-    print(f"ERROR: Failed to import routes: {e}", file=sys.stderr)
+    log_exception(logger, e, context="Failed to import routes")
     raise
 
 # Register blueprints
-print("Registering blueprints...")
+logger.info("Registering blueprints...")
 app.register_blueprint(astrology_routes.bp)
-app.register_blueprint(karmic_journey_routes.bp)
-app.register_blueprint(past_lives_routes.bp)
-app.register_blueprint(future_lives_routes.bp)
-app.register_blueprint(present_life_routes.bp)
-app.register_blueprint(life_events_routes.bp)
-app.register_blueprint(karmic_remedies_routes.bp)
-app.register_blueprint(predictions_routes.bp)
 app.register_blueprint(user_routes.bp)
 app.register_blueprint(ai_routes.bp)
 app.register_blueprint(bhrigu_predictions_routes.bp)
@@ -261,9 +279,9 @@ app.register_blueprint(matchmaking_routes.bp)
 # Register new unified predictions blueprint
 if predictions_unified:
     app.register_blueprint(predictions_unified.bp)
-    print("✓ Unified predictions blueprint registered")
+    logger.info("✓ Unified predictions blueprint registered")
 
-print("✓ All blueprints registered")
+logger.info("✓ All blueprints registered")
 
 @app.route('/')
 def index():
@@ -275,12 +293,6 @@ def index():
         'timestamp': datetime.utcnow().isoformat(),
         'endpoints': {
             'astrology': '/api/astrology',
-            'karmic_journey': '/api/karmic-journey',
-            'past_lives': '/api/past-lives',
-            'future_lives': '/api/future-lives',
-            'present_life': '/api/present-life',
-            'life_events': '/api/life-events',
-            'karmic_remedies': '/api/karmic-remedies',
             'predictions': '/api/predictions',
             'predictions_unified': '/api/predictions/<category>',
             'cosmic_blueprint': '/api/predictions/cosmic-blueprint',
@@ -363,7 +375,7 @@ def internal_error(error):
     """Handle 500 errors with CORS headers"""
     origin = request.headers.get('Origin', '')
     log_exception(logger, error, context="Internal server error")
-    response = jsonify({'error': 'Internal server error', 'message': str(error)})
+    response = jsonify({'error': 'Internal server error', 'message': 'An unexpected error occurred.'})
     response.status_code = 500
     
     if is_origin_allowed(origin):
@@ -381,18 +393,9 @@ def handle_exception(e):
     # Log the full error for debugging
     log_exception(logger, e, context="Unhandled exception")
     
-    # Only expose safe error messages
-    error_message = 'An unexpected error occurred'
-    if not IS_PRODUCTION:
-        # In development, provide more details but sanitize sensitive info
-        error_str = str(e)
-        # Avoid exposing file paths, credentials, or stack traces
-        if not any(sensitive in error_str.lower() for sensitive in ['password', 'key', 'secret', 'token', '/home/', '/usr/']):
-            error_message = error_str
-    
     response = jsonify({
         'error': 'Internal server error',
-        'message': error_message
+        'message': 'An unexpected error occurred.'
     })
     response.status_code = 500
     
@@ -403,11 +406,11 @@ def handle_exception(e):
     
     return response
 
-print("=" * 60)
-print("✓ BhriguWelt Backend Initialization Complete")
-print("=" * 60)
+logger.info("=" * 60)
+logger.info("✓ BhriguWelt Backend Initialization Complete")
+logger.info("=" * 60)
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 8000))
-    print(f"Starting development server on port {port}...")
+    logger.info("Starting development server on port %s...", port)
     app.run(host='0.0.0.0', port=port, debug=os.getenv('FLASK_ENV') == 'development')

@@ -2,13 +2,38 @@
 Advanced Section Parser for Bhrigu Predictions
 Ensures 100% structured output with AI-powered section generation
 """
-import re
+import difflib
 import logging
+import re
 import unicodedata
-from typing import Dict, List, Any, Optional
+import uuid
+from typing import Any, Dict, List, Optional, Tuple
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+
+def _read_int_env(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
+def _read_ratio_env(name: str, default: float) -> float:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        ratio = float(value)
+    except ValueError:
+        return default
+    if ratio <= 0 or ratio > 1:
+        return default
+    return ratio
 
 
 class SectionParser:
@@ -18,8 +43,9 @@ class SectionParser:
     """
     
     # Content validation thresholds
-    MINIMUM_SECTION_LENGTH = 100  # Minimum characters for a valid section
-    HEADER_EXTRACTION_MIN_LENGTH = 50  # Minimum for header-based extraction
+    MINIMUM_SECTION_LENGTH = _read_int_env("SECTION_PARSER_MIN_LENGTH", 100)
+    HEADER_EXTRACTION_MIN_LENGTH = _read_int_env("SECTION_PARSER_HEADER_MIN_LENGTH", 50)
+    KEYWORD_MATCH_RATIO = _read_ratio_env("SECTION_PARSER_KEYWORD_MATCH_RATIO", 0.5)
     
     # Required sections for each category
     REQUIRED_SECTIONS = {
@@ -115,157 +141,7 @@ class SectionParser:
     }
     
     # Section header patterns for extraction
-    SECTION_HEADERS = {
-        'soul_purpose': [
-            'Soul\'s Primary Purpose',
-            'Primary Purpose',
-            'Soul Purpose',
-            'Soul\'s Purpose',
-            'Propósito del Alma'
-        ],
-        'karmic_blueprint': [
-            'Karmic Blueprint',
-            'Karmic Patterns',
-            'Plano Kármico'
-        ],
-        'evolution_stage': [
-            'Soul Evolution Stage',
-            'Evolution Stage',
-            'Spiritual Evolution',
-            'Etapa de Evolución'
-        ],
-        'life_mission': [
-            'Life Mission & Dharma',
-            'Life Mission',
-            'Dharma',
-            'Misión de Vida'
-        ],
-        'karmic_lessons': [
-            'Karmic Lessons',
-            'Lessons',
-            'Lecciones Kármicas'
-        ],
-        'soul_connections': [
-            'Soul Group Connections',
-            'Soul Connections',
-            'Soulmates',
-            'Conexiones del Alma'
-        ],
-        'timing': [
-            'Timing of Karmic Events',
-            'Timing',
-            'Key Timing',
-            'Favorable & Challenging Periods',
-            'Cronología Kármica'
-        ],
-        'spiritual_gifts': [
-            'Spiritual Gifts',
-            'Spiritual Gifts & Abilities',
-            'Gifts',
-            'Dones Espirituales'
-        ],
-        'yearly_forecast': [
-            'Year-by-Year Forecast',
-            'Yearly Forecast',
-            'Annual Forecast',
-            'Pronóstico Anual'
-        ],
-        'marriage_timing': [
-            'Marriage & Partnerships',
-            'Marriage Timing',
-            'Marriage',
-            'Momento del Matrimonio'
-        ],
-        'career_milestones': [
-            'Career Milestones',
-            'Career',
-            'Hitos de Carrera'
-        ],
-        'children_family': [
-            'Children & Family',
-            'Family Events',
-            'Children',
-            'Niños y Familia'
-        ],
-        'financial_events': [
-            'Financial Breakthroughs',
-            'Financial Events',
-            'Finances',
-            'Eventos Financieros'
-        ],
-        'health_alerts': [
-            'Health Alerts',
-            'Health',
-            'Wellness',
-            'Alertas de Salud'
-        ],
-        'spiritual_milestones': [
-            'Spiritual Milestones',
-            'Spiritual Growth',
-            'Hitos Espirituales'
-        ],
-        'relocations': [
-            'Relocations & Travel',
-            'Relocations',
-            'Travel',
-            'Reubicaciones y Viajes'
-        ],
-        'education': [
-            'Education',
-            'Education & Skill Development',
-            'Learning',
-            'Educación'
-        ],
-        'favorable_periods': [
-            'Favorable Dasha Periods',
-            'Favorable Periods',
-            'Auspicious Times',
-            'Períodos Favorables'
-        ],
-        'challenging_periods': [
-            'Challenging Dasha Periods',
-            'Challenging Periods',
-            'Difficult Times',
-            'Períodos Desafiantes'
-        ],
-        'transits': [
-            'Critical Transit Events',
-            'Transits',
-            'Planetary Transits',
-            'Tránsitos Planetarios'
-        ],
-        'age_milestones': [
-            'Specific Age Milestones',
-            'Age Milestones',
-            'Key Ages',
-            'Hitos de Edad'
-        ],
-        'daily': [
-            'Daily Forecast',
-            'Daily',
-            'Today',
-            'Pronóstico Diario'
-        ],
-        'weekly': [
-            'Weekly Forecast',
-            'Weekly',
-            'This Week',
-            'Pronóstico Semanal'
-        ],
-        'monthly': [
-            'Monthly Forecast',
-            'Monthly',
-            'This Month',
-            'Pronóstico Mensual'
-        ],
-        'yearly': [
-            'Yearly Forecast',
-            'Yearly',
-            'Annual',
-            'This Year',
-            'Pronóstico Anual'
-        ]
-    }
+    SECTION_HEADERS = _load_section_headers()
     
     def __init__(self, openai_service=None):
         """Initialize section parser with optional OpenAI service for generation"""
@@ -281,13 +157,6 @@ class SectionParser:
                 if normalized:
                     normalized_map.setdefault(normalized, section_key)
         return normalized_map
-
-    def _normalize_title(self, title: str) -> str:
-        if not title:
-            return ""
-        cleaned = re.sub(r"^[#>*\-\+\d\.\)\s]+", "", title.strip())
-        cleaned = re.sub(r"[^\w\s]", "", cleaned.lower())
-        return re.sub(r"\s+", " ", cleaned).strip()
 
     def _match_normalized_title(self, normalized: str) -> str:
         if normalized in self.normalized_title_map:
@@ -389,7 +258,7 @@ class SectionParser:
                     len(markdown_section),
                     header
                 )
-                return markdown_section
+                return markdown_section, "markdown"
 
             # Try multiple pattern variations for maximum flexibility
             patterns = [
@@ -401,14 +270,20 @@ class SectionParser:
                 rf'^\s*#{1,3}\s*\d*\.?\s*{re.escape(header)}\s*[:\n](.*?)(?=\n\s*#{1,3}\s|\Z)',
                 # Numbered sections (1., 2., etc.) - IMPROVED
                 rf'\n\d+(?:\.\d+)*\.?\s*{re.escape(header)}\s*[:\n]?(.*?)(?=\n\d+(?:\.\d+)*\.?\s|\n##|\Z)',
+                # Numbered sections with parentheses or separators
+                rf'\n\(?\d+(?:\.\d+)*\)?[\).\-\:]\s*{re.escape(header)}\s*[:\n]?(.*?)(?=\n\(?\d+(?:\.\d+)*\)?[\).\-\:]|\n##|\Z)',
+                # Roman numeral numbering (I., II., etc.)
+                rf'\n[IVXLCDM]+[\).\-\:]\s*{re.escape(header)}\s*[:\n]?(.*?)(?=\n[IVXLCDM]+[\).\-\:]|\n##|\Z)',
                 # Without markdown symbols (plain text headers)
                 rf'\n{re.escape(header)}\s*[:\n](.*?)(?=\n[A-Z][a-z]+[^\n]*[:\n]|\n\d+\. |\Z)',
                 # Bold or emphasized headers
-                rf'\*\*\d*\.?\s*{re.escape(header)}\*\*\s*[:\n]?(.*?)(?=\n\*\*|\n##|\Z)',
+                rf'\*\*\s*(?:\(?\d+(?:\.\d+)*\)?|[IVXLCDM]+)?\s*[\).\-\:]?\s*{re.escape(header)}\*\*\s*[:\n]?(.*?)(?=\n\*\*|\n##|\Z)',
                 # Bullet list headers
                 rf'^\s*[-*+]\s*\d*\.?\s*{re.escape(header)}\s*[:\n](.*?)(?=\n\s*[-*+]\s|\n#+\s|\Z)',
                 # Header with colon on same line
                 rf'{re.escape(header)}:\s*(.*?)(?=\n[A-Z][a-z]+.*? :|\n##|\n\d+\.|\Z)',
+                # "Section 1: Header" style
+                rf'\nSection\s+\d+(?:\.\d+)*\s*[:\-\)]\s*{re.escape(header)}\s*[:\n]?(.*?)(?=\nSection\s+\d+(?:\.\d+)*\s*[:\-\)]|\n##|\Z)',
             ]
 
             for i, pattern in enumerate(patterns):
@@ -432,13 +307,13 @@ class SectionParser:
         normalized_result = self._extract_by_normalized_headers(text, section_key)
         if normalized_result:
             logger.info(f"Section '{section_key}': Extracted {len(normalized_result)} chars via normalized header match")
-            return normalized_result
+            return normalized_result, "normalized"
 
         # Try generic extraction by section number or keywords
         fuzzy_result = self._extract_by_fuzzy_title(text, section_key)
         if fuzzy_result:
             logger.info(f"Section '{section_key}': Extracted {len(fuzzy_result)} chars via fuzzy title matching")
-            return fuzzy_result
+            return fuzzy_result, "fuzzy"
 
         logger.info(f"Section '{section_key}': No header match found, trying keyword extraction")
         keyword_result = self._extract_by_keywords(text, section_key)
@@ -447,7 +322,46 @@ class SectionParser:
             logger.info(f"Section '{section_key}': Extracted {len(keyword_result)} chars via keyword search")
             return keyword_result, "keyword"
 
-        return keyword_result
+        return "", "none"
+
+    def _extract_markdown_section(self, text: str, header: str) -> str:
+        """
+        Extract a markdown section by header, preserving nested subheaders.
+        """
+        if not text or not header:
+            return ""
+        target = self._normalize_title(header)
+        if not target:
+            return ""
+
+        lines = text.splitlines()
+        for index, line in enumerate(lines):
+            match = re.match(r"^(#{1,6})\s*(.+)$", line.strip())
+            if not match:
+                continue
+            level = len(match.group(1))
+            candidate = self._strip_header_markers(match.group(2))
+            if self._normalize_title(candidate) != target:
+                continue
+
+            content_lines = []
+            for following in range(index + 1, len(lines)):
+                next_line = lines[following]
+                next_match = re.match(r"^(#{1,6})\s+.+$", next_line.strip())
+                if next_match and len(next_match.group(1)) <= level:
+                    break
+                content_lines.append(next_line)
+            content = "\n".join(content_lines).strip()
+            if content:
+                return content
+
+        return ""
+
+    def _extract_by_fuzzy_title(self, text: str, section_key: str) -> str:
+        """
+        Extract content using fuzzy title similarity against paragraph headings.
+        """
+        return self._extract_by_title_similarity(text, section_key)
 
     def _normalize_header_text(self, text: str) -> str:
         """
@@ -473,7 +387,15 @@ class SectionParser:
             return ""
         cleaned = line.strip()
         cleaned = re.sub(r"^\s*#{1,6}\s*", "", cleaned)
-        cleaned = re.sub(r"^\s*\d+\.\s*", "", cleaned)
+        cleaned = re.sub(r"^\s*[-*+]\s*", "", cleaned)
+        cleaned = re.sub(
+            r"^\s*section\s+\d+(?:\.\d+)*\s*[:\-\)]\s*",
+            "",
+            cleaned,
+            flags=re.IGNORECASE
+        )
+        cleaned = re.sub(r"^\s*\(?\d+(?:\.\d+)*\)?\s*[\).\-\:]?\s*", "", cleaned)
+        cleaned = re.sub(r"^\s*[IVXLCDM]+\s*[\).\-\:]?\s*", "", cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r"^\s*\*\*\s*", "", cleaned)
         cleaned = re.sub(r"\s*\*\*\s*$", "", cleaned)
         cleaned = cleaned.rstrip(":").strip()
@@ -487,6 +409,12 @@ class SectionParser:
         if stripped.startswith("#"):
             return True
         if re.match(r"^\d+\.\s+\S", stripped):
+            return True
+        if re.match(r"^\(?\d+(?:\.\d+)*\)?[\).\-\:]\s+\S", stripped):
+            return True
+        if re.match(r"^[IVXLCDM]+[\).\-\:]\s+\S", stripped, re.IGNORECASE):
+            return True
+        if re.match(r"^section\s+\d+(?:\.\d+)*\s*[:\-\)]\s+\S", stripped, re.IGNORECASE):
             return True
         if re.match(r"^\*\*.+\*\*$", stripped):
             return True
@@ -560,8 +488,13 @@ class SectionParser:
 
         # If no exact matches, try partial matching (at least 50% of keywords)
         if not relevant_paras and len(keywords) > 1:
-            threshold = max(1, len(keywords) // 2)
-            logger.debug(f"No exact matches, trying partial match with threshold {threshold}/{len(keywords)}")
+            threshold = max(1, math.ceil(len(keywords) * self.KEYWORD_MATCH_RATIO))
+            logger.debug(
+                "No exact matches, trying partial match with threshold %s/%s (ratio %.2f)",
+                threshold,
+                len(keywords),
+                self.KEYWORD_MATCH_RATIO
+            )
 
             for para in paragraphs:
                 matches = sum(1 for kw in keywords if kw.lower() in para.lower())
@@ -599,9 +532,11 @@ class SectionParser:
         return ""
 
     def _normalize_title(self, title: str) -> str:
-        title = re.sub(r'^[#*\s\d\.\-:]+', '', title)
-        title = re.sub(r'[^a-zA-Z\s]', '', title)
-        return re.sub(r'\s+', ' ', title).strip().lower()
+        if not title:
+            return ""
+        cleaned = self._strip_header_markers(title)
+        cleaned = re.sub(r"[^\w\s]", "", cleaned.lower())
+        return re.sub(r"\s+", " ", cleaned).strip()
 
     def _strip_title_line(self, paragraph: str) -> str:
         lines = paragraph.splitlines()

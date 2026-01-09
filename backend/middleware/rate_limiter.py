@@ -6,6 +6,9 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask import request
 import os
+from utils.logger import setup_logger, log_exception
+
+logger = setup_logger(__name__)
 
 
 def get_rate_limit_key():
@@ -65,12 +68,12 @@ def setup_rate_limiter(app):
                 headers_enabled=True,
                 swallow_errors=True  # Don't fail if Redis is unavailable
             )
-            print(f"Rate limiter using Redis storage")
+            logger.info("Rate limiter using Redis storage")
         except Exception as e:
             # Fallback to in-memory storage
-            print(f"Warning: Redis not available, using in-memory rate limiting: {e}")
+            log_exception(logger, e, context="Redis not available, using in-memory rate limiting")
     else:
-        print("Rate limiter using in-memory storage (no REDIS_URL configured)")
+        logger.info("Rate limiter using in-memory storage (no REDIS_URL configured)")
 
     # Initialize limiter with Flask app
     limiter.init_app(app)

@@ -75,6 +75,9 @@ See `DEPLOYMENT_GUIDE.md` for complete instructions.
 | `JWT_SECRET_KEY` | Yes | JWT signing key |
 | `FRONTEND_URL` | Yes | Frontend URL for CORS |
 | `FLASK_ENV` | No | Environment (development/production) |
+| `SECTION_PARSER_MIN_LENGTH` | No | Minimum characters required for a parsed section (default: `100`) |
+| `SECTION_PARSER_HEADER_MIN_LENGTH` | No | Minimum characters required for header-based extraction (default: `50`) |
+| `SECTION_PARSER_KEYWORD_MATCH_RATIO` | No | Keyword match ratio for partial matches (default: `0.5`) |
 
 ## Testing
 
