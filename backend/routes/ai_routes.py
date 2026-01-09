@@ -6,12 +6,13 @@ from flask import Blueprint, request, jsonify
 from functools import wraps
 import os
 
-from middleware.sanitizer import RequestSanitizer, sanitize_ai_request
+from middleware.sanitizer import RequestSanitizer
 from middleware.ai_constants import PII_FIELDS
-from services.openai_service import openai_service
 from services.ai_service import AIService
+from utils.logger import setup_logger, log_exception
 
 bp = Blueprint('ai', __name__, url_prefix='/api/ai')
+logger = setup_logger(__name__)
 
 # Initialize AI service
 ai_service = AIService()
@@ -121,11 +122,13 @@ def compose_report():
         }), 200
         
     except ValueError as e:
+        log_exception(logger, e, context="ai.compose_report.validation")
         return jsonify({
             'error': 'Validation error',
-            'message': str(e)
+            'message': 'Invalid request data.'
         }), 400
     except Exception as e:
+        log_exception(logger, e, context="ai.compose_report")
         return jsonify({
             'error': 'Server error',
             'message': 'Failed to generate AI response',
@@ -179,11 +182,13 @@ def chat_about_report():
         }), 200
         
     except ValueError as e:
+        log_exception(logger, e, context="ai.chat.validation")
         return jsonify({
             'error': 'Validation error',
-            'message': str(e)
+            'message': 'Invalid request data.'
         }), 400
     except Exception as e:
+        log_exception(logger, e, context="ai.chat")
         return jsonify({
             'error': 'Server error',
             'message': 'Failed to generate AI response'
@@ -234,11 +239,13 @@ def summarize_report():
         }), 200
         
     except ValueError as e:
+        log_exception(logger, e, context="ai.summarize.validation")
         return jsonify({
             'error': 'Validation error',
-            'message': str(e)
+            'message': 'Invalid request data.'
         }), 400
     except Exception as e:
+        log_exception(logger, e, context="ai.summarize")
         return jsonify({
             'error': 'Server error',
             'message': 'Failed to generate summary'

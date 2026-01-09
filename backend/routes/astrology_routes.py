@@ -90,7 +90,7 @@ def calculate_birth_chart():
 
     except ValueError as e:
         log_error(logger, e, "Birth chart calculation - ValueError")
-        return validation_error_response(str(e))
+        return validation_error_response("Invalid request data.")
     except Exception as e:
         log_error(logger, e, "Birth chart calculation")
         return server_error_response("Failed to calculate birth chart. Please try again.")
@@ -159,7 +159,7 @@ def zodiac_analysis():
 
     except ValueError as e:
         log_error(logger, e, "Zodiac analysis - ValueError")
-        return validation_error_response(str(e))
+        return validation_error_response("Invalid request data.")
     except Exception as e:
         log_error(logger, e, "Zodiac analysis")
         return server_error_response("Failed to generate zodiac analysis. Please try again.")
@@ -208,7 +208,7 @@ def planetary_positions():
 
     except ValueError as e:
         log_error(logger, e, "Planetary positions - ValueError")
-        return validation_error_response(str(e))
+        return validation_error_response("Invalid request data.")
     except Exception as e:
         log_error(logger, e, "Planetary positions")
         return server_error_response("Failed to calculate planetary positions. Please try again.")
@@ -313,7 +313,7 @@ def compatibility_analysis():
 
     except ValueError as e:
         log_error(logger, e, "Compatibility analysis - ValueError")
-        return validation_error_response(str(e))
+        return validation_error_response("Invalid request data.")
     except Exception as e:
         log_error(logger, e, "Compatibility analysis")
         return server_error_response("Failed to generate compatibility analysis. Please try again.")
