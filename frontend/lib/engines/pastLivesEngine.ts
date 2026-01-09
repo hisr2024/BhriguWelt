@@ -1,3 +1,5 @@
+import 'server-only';
+
 import type { ChartData, PredictionMetadata, PredictionResult, Subcategory } from '../api/predictions';
 
 export type PastLivesMode = 'offline' | 'online' | 'auto';
