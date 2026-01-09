@@ -8,6 +8,7 @@ from flask import request, make_response
 from functools import wraps
 import html
 from middleware.ai_constants import ALLOWED_ASTROLOGICAL_FIELDS, PII_FIELDS
+from utils.validators import validate_date
 
 
 class RequestSanitizer:
@@ -72,10 +73,9 @@ class RequestSanitizer:
             if field not in data:
                 return False, f'Missing required field: {field}'
         
-        # Validate date format (YYYY-MM-DD)
-        date_pattern = r'^\d{4}-\d{2}-\d{2}$'
-        if not re.match(date_pattern, str(data['date_of_birth'])):
-            return False, 'Invalid date format. Use YYYY-MM-DD'
+        is_valid, error = validate_date(str(data['date_of_birth']), 'Date of birth')
+        if not is_valid:
+            return False, error
         
         # Validate time format (HH:MM)
         time_pattern = r'^\d{2}:\d{2}(:\d{2})?$'

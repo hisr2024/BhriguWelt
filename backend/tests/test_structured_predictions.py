@@ -212,6 +212,22 @@ class TestStructuredPredictions:
         assert 'nakshatra' in metadata
         assert metadata['zodiac_sign'] == sample_birth_data['zodiac_sign']
         assert metadata['nakshatra'] == sample_birth_data['nakshatra']
+
+    def test_metadata_defaults_unknown_for_missing_fields(self, service):
+        """Test metadata handles missing fields with Unknown defaults"""
+        metadata = service._generate_metadata({}, 'predictions')
+
+        assert metadata['zodiac_sign'] == 'Unknown'
+        assert metadata['nakshatra'] == 'Unknown'
+        assert metadata['moon_sign'] == 'Unknown'
+        assert metadata['ascendant'] == 'Unknown'
+
+    def test_safe_get_cleans_missing_values(self, service):
+        """Test safe_get normalizes missing or blank values"""
+        assert service._safe_get(None, 'zodiac_sign') == 'Unknown'
+        assert service._safe_get({}, 'zodiac_sign') == 'Unknown'
+        assert service._safe_get({'zodiac_sign': '  '}, 'zodiac_sign') == 'Unknown'
+        assert service._safe_get({'zodiac_sign': None}, 'zodiac_sign') == 'Unknown'
     
     def test_no_unstructured_only_results(self, service, sample_birth_data):
         """Test that results always have structured sections, not just full_analysis"""

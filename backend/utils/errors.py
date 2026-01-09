@@ -28,3 +28,20 @@ class AstrologyDependencyError(ImportError):
             f"Example: pip install {install_hint}"
         )
         return cls(message, missing=missing)
+
+
+class OptionalDependencyError(ImportError):
+    """Raised when an optional integration dependency cannot be imported."""
+
+    def __init__(self, message: str, dependency: Optional[str] = None):
+        super().__init__(message)
+        self.dependency = dependency
+
+    @classmethod
+    def for_missing(cls, feature: str, dependency: str) -> "OptionalDependencyError":
+        message = (
+            f"{feature} dependency is missing. "
+            f"Unable to import {dependency}. "
+            f"Install the optional requirement to enable this feature."
+        )
+        return cls(message, dependency=dependency)
