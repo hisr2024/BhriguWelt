@@ -10,6 +10,7 @@ import type {
   Gemstone,
 } from '@/lib/api/predictions';
 import { getAIMode } from '@/lib/ai-preferences';
+import { isSectionContentValid } from '@/lib/sectionParserConfig';
 
 export type RemediesMode = 'offline' | 'online';
 
@@ -520,7 +521,8 @@ async function fetchAISuggestions(chartData: ChartData): Promise<string | null> 
     }
 
     const payload = await response.json();
-    return payload?.data?.refined_section ?? null;
+    const refined = payload?.data?.refined_section ?? null;
+    return isSectionContentValid(refined) ? refined : null;
   } catch (error) {
     console.error('[RemediesEngine] AI suggestion failed:', error);
     return null;

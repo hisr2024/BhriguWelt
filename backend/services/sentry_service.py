@@ -6,6 +6,9 @@ import os
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
+from utils.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 def init_sentry(app=None):
@@ -18,7 +21,7 @@ def init_sentry(app=None):
     sentry_dsn = os.getenv('SENTRY_DSN')
 
     if not sentry_dsn:
-        print('Sentry DSN not configured - error tracking disabled')
+        logger.info('Sentry DSN not configured - error tracking disabled')
         return
 
     # Get environment
@@ -56,7 +59,7 @@ def init_sentry(app=None):
         ],
     )
 
-    print(f'Sentry initialized for environment: {environment}')
+    logger.info('Sentry initialized for environment: %s', environment)
 
 
 def before_send_filter(event, hint):

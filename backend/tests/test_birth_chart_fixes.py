@@ -69,7 +69,7 @@ class TestValidateBirthData:
     def test_invalid_date_format(self):
         """Test validation fails with invalid date format"""
         data = {
-            'date_of_birth': '15-01-1990',  # Wrong format
+            'date_of_birth': '1990-02-30',  # Invalid date
             'time_of_birth': '14:30',
             'place_of_birth': 'New Delhi'
         }
