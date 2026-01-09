@@ -226,6 +226,87 @@ export default function BhriguPredictionView({
   const language = getCurrentLanguage();
   const debugAllowed = searchParams?.get('debug') === 'true';
 
+  const buildPredictionExport = (predictionData: BhriguPrediction) => {
+    const sections = CATEGORY_SECTIONS[category] ?? [];
+    const sectionBlocks = sections
+      .map((section) => {
+        const value = predictionData[section.key];
+        if (typeof value === 'string' && value.trim().length > 0) {
+          return `## ${tLocale(section.titleKey, language)}\n${value.trim()}`;
+        }
+        return null;
+      })
+      .filter((block): block is string => Boolean(block));
+
+    const analysisBlock =
+      typeof predictionData.full_analysis === 'string' && predictionData.full_analysis.trim().length > 0
+        ? predictionData.full_analysis.trim()
+        : typeof predictionData.complete_analysis === 'string'
+          ? predictionData.complete_analysis?.trim()
+          : '';
+
+    const metadataEntries = predictionData.metadata
+      ? Object.entries(predictionData.metadata)
+          .filter(([, value]) => typeof value === 'string' && value.trim().length > 0)
+          .map(([key, value]) => `- ${key.replace(/_/g, ' ')}: ${value}`)
+      : [];
+
+    const headerLines = [
+      'BhriguWelt Prediction',
+      `Category: ${title}`,
+      profile?.name ? `Profile: ${profile.name}` : null,
+      question ? `Question: ${question}` : null,
+      `Generated: ${predictionData.generated_at ?? new Date().toISOString()}`
+    ].filter((line): line is string => Boolean(line));
+
+    const bodyLines = [
+      ...sectionBlocks,
+      analysisBlock ? `## Complete Analysis\n${analysisBlock}` : null,
+      metadataEntries.length > 0 ? `## Metadata\n${metadataEntries.join('\n')}` : null
+    ].filter((block): block is string => Boolean(block));
+
+    return `${headerLines.join('\n')}\n\n${bodyLines.join('\n\n')}`;
+  };
+
+  const handleDownload = () => {
+    if (!prediction) return;
+
+    const exportText = buildPredictionExport(prediction);
+    const blob = new Blob([exportText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStamp = new Date().toISOString().split('T')[0];
+    link.href = url;
+    link.download = `bhriguwelt-${category}-${dateStamp}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleShare = async () => {
+    if (!prediction) return;
+
+    const shareText = buildPredictionExport(prediction);
+    const shareTitle = `${title} Prediction`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: shareTitle, text: shareText });
+        return;
+      }
+
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareText);
+        return;
+      }
+
+      console.warn('Sharing is not supported in this browser.');
+    } catch (error) {
+      console.error('Failed to share prediction:', error);
+    }
+  };
+
   useEffect(() => {
     if (profile) {
       const checkProfile = async () => {
@@ -889,6 +970,7 @@ export default function BhriguPredictionView({
               Regenerate
             </button>
             <button
+              onClick={handleDownload}
               className="px-6 py-3 bg-gray-700/50 border border-gray-600
                        text-white rounded-lg hover:bg-gray-700 transition-all
                        flex items-center gap-2"
@@ -897,6 +979,7 @@ export default function BhriguPredictionView({
               Download
             </button>
             <button
+              onClick={handleShare}
               className="px-6 py-3 bg-gray-700/50 border border-gray-600
                        text-white rounded-lg hover:bg-gray-700 transition-all
                        flex items-center gap-2"
