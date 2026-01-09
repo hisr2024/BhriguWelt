@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
+import { VariableSizeList } from 'react-window';
 import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
 import { getCurrentLanguage, type Language } from '@/lib/copy';
 import { tLocale } from '@/lib/locales';
 import { Accordion } from '@/app/components/ui/Accordion';
 import { AccordionItem } from '@/app/components/ui/AccordionItem';
 import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
+import { useSectionExpansionStore } from '@/app/stores/sectionExpansionStore';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS: Record<string, Array<{ key: string; titleKey: string; color: string }>> = {
@@ -126,6 +128,8 @@ const DEFAULT_COLOR = 'cyan';
 const PROFILE_HASH_PREFIX = 'profile_hash_';
 const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_';
 const SKELETON_LINES = 5;
+const ESTIMATED_SECTION_HEIGHT = 220;
+const MAX_SECTION_LIST_HEIGHT = 700;
 
 // Helper function to check if profile has required fields
 const hasRequiredProfileFields = (profile: Profile): boolean => {
@@ -210,21 +214,20 @@ export default function BhriguPredictionView({
   const [fromCache, setFromCache] = useState(false);
   const [question, setQuestion] = useState('');
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [debugMode, setDebugMode] = useState(false);
   const [profileUpdated, setProfileUpdated] = useState(false);
   const [parsedFromFullAnalysis, setParsedFromFullAnalysis] = useState<Record<string, string>>({});
   const [isParsing, setIsParsing] = useState(false);
-  const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
-  const [expandingSections, setExpandingSections] = useState<Record<string, boolean>>({});
 
   const workerRef = useRef<Worker | null>(null);
   const workerRequestId = useRef(0);
-  const expandingTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
+  const listRef = useRef<VariableSizeList | null>(null);
+  const itemSizeMap = useRef<Record<number, number>>({});
 
   const searchParams = useSearchParams();
   const language = getCurrentLanguage();
   const debugAllowed = searchParams?.get('debug') === 'true';
+  const { expandedSections, setExpandedSection } = useSectionExpansionStore();
 
   useEffect(() => {
     if (profile) {
@@ -414,7 +417,14 @@ export default function BhriguPredictionView({
     });
   }, [prediction?.full_analysis, category]);
 
-  const renderSection = (sectionKey: string, sectionTitle: string, content: string, color: string) => {
+  const renderSection = (
+    sectionKey: string,
+    sectionTitle: string,
+    content: string,
+    color: string,
+    isOpen: boolean,
+    onToggle: (next: boolean) => void
+  ) => {
     // More lenient filtering - only exclude truly empty or placeholder content
     if (!content || content.trim() === '') {
       return null;
@@ -438,6 +448,8 @@ export default function BhriguPredictionView({
     return (
       <AccordionItem
         id={`section-${sectionKey}`}
+        isOpen={isOpen}
+        onToggle={onToggle}
         title={(
           <span className={`text-lg font-semibold ${colorClass.text} flex items-center gap-3`}>
             <span className={`w-1.5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
@@ -500,6 +512,49 @@ export default function BhriguPredictionView({
       return parsedFromFullAnalysis[key] || '';
     };
 
+    const sectionListHeight = Math.min(
+      availableSections.length * ESTIMATED_SECTION_HEIGHT,
+      MAX_SECTION_LIST_HEIGHT
+    );
+
+    const getItemSize = (index: number) => itemSizeMap.current[index] ?? ESTIMATED_SECTION_HEIGHT;
+
+    const setItemSize = (index: number, size: number) => {
+      if (itemSizeMap.current[index] !== size) {
+        itemSizeMap.current[index] = size;
+        listRef.current?.resetAfterIndex(index);
+      }
+    };
+
+    const SectionRow = ({ index, style }: { index: number; style: React.CSSProperties }) => {
+      const section = availableSections[index];
+      const sectionId = `${normalizedCategory}:${section.key}`;
+      const isOpen = Boolean(expandedSections[sectionId]);
+      const content = getSectionContent(section.key);
+      const rowRef = useRef<HTMLDivElement | null>(null);
+
+      useLayoutEffect(() => {
+        if (!rowRef.current) return;
+        const height = rowRef.current.getBoundingClientRect().height;
+        setItemSize(index, height + 16);
+      }, [index, content, isOpen]);
+
+      return (
+        <div style={style}>
+          <div ref={rowRef} className="pb-4">
+            {renderSection(
+              section.key,
+              tLocale(section.titleKey, language),
+              content,
+              section.color,
+              isOpen,
+              (next) => setExpandedSection(sectionId, next)
+            )}
+          </div>
+        </div>
+      );
+    };
+
     return (
       <div className="space-y-6">
         {/* Banner for client-side parsed sections */}
@@ -538,16 +593,17 @@ export default function BhriguPredictionView({
             </div>
             
             <Accordion className="grid grid-cols-1 gap-4">
-              {availableSections.map((section) => (
-                <div key={section.key}>
-                  {renderSection(
-                    section.key,
-                    tLocale(section.titleKey, language),
-                    getSectionContent(section.key),
-                    section.color
-                  )}
-                </div>
-              ))}
+              <VariableSizeList
+                ref={listRef}
+                height={sectionListHeight}
+                itemCount={availableSections.length}
+                itemSize={getItemSize}
+                width="100%"
+                overscanCount={2}
+                className="pr-2"
+              >
+                {SectionRow}
+              </VariableSizeList>
             </Accordion>
           </div>
         )}
