@@ -2,6 +2,8 @@
 OpenAI Integration Service
 Handles all AI-powered predictions and insights with authentic Bhrigu/Nadi corpus integration
 """
+import importlib
+import logging
 import os
 import json
 import random
@@ -38,7 +40,8 @@ class OpenAIService:
         )
         self.enabled = bool(self.api_key)
         self.last_error: Optional[Dict[str, Any]] = None
-        
+        self.last_model_used: Optional[str] = None
+
         # Initialize corpus loader for authentic source integration
         self.corpus_loader = None
         self.corpus_available = False
@@ -140,7 +143,12 @@ class OpenAIService:
             summary_lines.append(f"- {key.replace('_', ' ').title()}: {value}")
         return "\n".join(summary_lines)
 
-    def generate_prediction(self, prompt: str, context: Dict[str, Any] = None) -> str:
+    def generate_prediction(
+        self,
+        prompt: str,
+        context: Dict[str, Any] = None,
+        return_metadata: bool = False
+    ) -> Union[str, Dict[str, Any]]:
         """
         Generate AI-powered predictions using OpenAI with authentic corpus integration
 
@@ -157,7 +165,105 @@ class OpenAIService:
             if return_metadata:
                 return {
                     'text': fallback,
-                    'partial': False
+                    'partial': False,
+                    'metadata': {'ai_model': self.get_selected_model()}
+                }
+            return fallback
+
+        self._clear_last_error()
+        try:
+            # Inject authentic corpus data into the context
+            corpus_context = ""
+            if self.corpus_loader and context and self.corpus_available:
+                # Get relevant principles from corpus
+                bhrigu_principles = self.corpus_loader.get_relevant_bhrigu_principles(context, limit=5)
+                nadi_principles = self.corpus_loader.get_relevant_nadi_principles(context, limit=5)
+
+                if bhrigu_principles or nadi_principles:
+                    corpus_context = "\n\n**AUTHENTIC SOURCE MATERIAL (Reference in predictions):**\n"
+
+                    if bhrigu_principles:
+                        corpus_context += "\n" + self.corpus_loader.format_principles_for_context(bhrigu_principles)
+
+                    if nadi_principles:
+                        corpus_context += "\n" + self.corpus_loader.format_principles_for_context(nadi_principles)
+
+                    corpus_context += (
+                        "\n\n**IMPORTANT**: Reference these authentic sutras and folios in your predictions with "
+                        "proper citations.\n"
+                    )
+
+            # Prepare the request payload with enhanced settings for comprehensive predictions
+            system_content = '''You are a master Vedic astrologer deeply versed in the ancient texts of Bhrigu Samhita and Nadi Jyotisha.
+
+Your expertise includes:
+- Bhrigu Samhita: The sacred treatise by Maharishi Bhrigu containing life predictions based on planetary positions
+- Nadi Jyotisha: Ancient palm leaf manuscripts with precise life predictions from Tamil Nadu traditions
+- Brihat Parasara Hora Shastra: The foundational text of Vedic astrology by Sage Parasara
+- Jaimini Sutras: Advanced predictive techniques using Karakas and Rashi Dashas
+- Vimshottari Dasha: The 120-year planetary period system for timing events
+
+Your predictions must:
+1. Be deeply rooted in classical Vedic principles and authentic scriptural references
+2. **Reference specific sutras, folios, and manuscript citations from the corpus provided**
+3. Identify doshas (Kuja Dosha, Kala Sarpa Dosha, Pitru Dosha, etc.) and their remedies
+4. Analyze planetary combinations with precise interpretations
+5. Provide practical, actionable guidance for the modern seeker
+6. Maintain compassion, wisdom, and spiritual depth in all readings
+7. Explain karmic reasons behind life patterns using Vedic philosophy
+8. Offer authentic remedies (mantras, gemstones, rituals) from Vedic traditions
+9. **Include confidence scores and source references where applicable**
+
+Always provide detailed, specific predictions with timing when possible.''' + corpus_context
+
+            if context:
+                structured_summary = self._format_context_summary(context)
+                base_prompt = f"{system_content}\n\nUser Prompt:\n{prompt}"
+                normalized_summary = self.normalize_prompt(
+                    base_prompt,
+                    structured_summary,
+                    self.prompt_token_limit
+                )
+                if normalized_summary:
+                    system_content += f"\n\nBirth Chart Summary:\n{normalized_summary}"
+                else:
+                    raw_context = json.dumps(context, ensure_ascii=False)
+                    normalized_raw_context = self.normalize_prompt(
+                        base_prompt,
+                        raw_context,
+                        self.prompt_token_limit
+                    )
+                    if normalized_raw_context:
+                        system_content += f"\n\nBirth Chart Context (raw JSON): {normalized_raw_context}"
+
+            prediction, partial = self._generate_with_chunking(prompt, system_content)
+
+            if return_metadata:
+                return {
+                    'text': prediction,
+                    'partial': partial,
+                    'metadata': {'ai_model': self.get_selected_model()}
+                }
+            return prediction
+
+        except requests.exceptions.RequestException as e:
+            # Log the error for debugging
+            self._set_last_error(
+                "OPENAI_API_REQUEST_FAILED",
+                "OpenAI API call failed.",
+                {"error": str(e)},
+            )
+            logger.error(
+                "OpenAI API call failed",
+                extra={"error_code": "OPENAI_API_REQUEST_FAILED", "error": str(e)},
+            )
+            # Fallback to traditional analysis if API fails
+            fallback = self._fallback_prediction(prompt, context)
+            if return_metadata:
+                return {
+                    'text': fallback,
+                    'partial': False,
+                    'metadata': {'ai_model': self.get_selected_model()}
                 }
             return fallback
 
@@ -208,6 +314,58 @@ class OpenAIService:
             return f"{preamble}\n\n" + "\n\n".join(sections)
         return "\n\n".join(sections)
 
+    def _get_model_candidates(self) -> List[str]:
+        primary_model = os.getenv('OPENAI_MODEL', 'gpt-4')
+        fallback_env = os.getenv('OPENAI_MODEL_FALLBACKS', '')
+        fallback_models = [model.strip() for model in fallback_env.split(',') if model.strip()]
+        return [primary_model] + [model for model in fallback_models if model != primary_model]
+
+    def _is_model_error(self, response: requests.Response) -> bool:
+        if response.status_code not in (400, 404):
+            return False
+        try:
+            payload = response.json()
+        except ValueError:
+            return False
+        error = payload.get('error', {})
+        code = str(error.get('code', '')).lower()
+        message = str(error.get('message', '')).lower()
+        return code in {"model_not_found", "invalid_model"} or (
+            'model' in message
+            and any(token in message for token in ('not found', 'does not exist', 'invalid', 'not supported'))
+        )
+
+    def _post_with_model_fallbacks(self, payload: Dict[str, Any]) -> requests.Response:
+        candidates = self._get_model_candidates()
+        last_error: Optional[Exception] = None
+        for model in candidates:
+            payload['model'] = model
+            try:
+                response = self._post_with_retry(payload)
+                self.last_model_used = model
+                return response
+            except requests.exceptions.HTTPError as exc:
+                response = exc.response
+                if response is None or not self._is_model_error(response):
+                    raise
+                last_error = exc
+                self._set_last_error(
+                    "OPENAI_MODEL_UNAVAILABLE",
+                    "OpenAI model unavailable. Trying fallback model.",
+                    {"model": model},
+                )
+                logger.warning(
+                    "OpenAI model unavailable. Trying fallback model.",
+                    extra={"error_code": "OPENAI_MODEL_UNAVAILABLE", "model": model},
+                )
+                continue
+        if last_error:
+            raise last_error
+        raise requests.exceptions.RequestException("OpenAI API retries exhausted.")
+
+    def get_selected_model(self) -> str:
+        return self.last_model_used or os.getenv('OPENAI_MODEL', 'gpt-4')
+
     def _request_completion(self, prompt: str, system_content: str) -> Tuple[str, bool]:
         payload = {
             'model': os.getenv('OPENAI_MODEL', 'gpt-4'),
@@ -225,7 +383,7 @@ class OpenAIService:
             'max_tokens': int(os.getenv('OPENAI_MAX_TOKENS', '4000'))  # Increased for comprehensive predictions
         }
 
-        response = self._post_with_retry(payload)
+        response = self._post_with_model_fallbacks(payload)
         result = response.json()
         choice = result['choices'][0]
         content = choice['message']['content']
