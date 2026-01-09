@@ -4,10 +4,12 @@ Future incarnation predictions and soul evolution
 """
 from flask import Blueprint, request
 from services.astrology_calculator import astrology_calculator
-from services.openai_service import openai_service
+from services.prediction_orchestrator import get_prediction_orchestrator
+from utils.client_status import parse_client_online
 from utils.response_formatter import prediction_response, prediction_error_response
 
 bp = Blueprint('future_lives', __name__, url_prefix='/api/future-lives')
+orchestrator = get_prediction_orchestrator()
 
 @bp.route('/prediction', methods=['POST'])
 def future_lives_prediction():
@@ -30,12 +32,14 @@ def future_lives_prediction():
             return error
 
         client_online = parse_client_online(request.headers.get('X-Client-Online'))
-        if client_online is False and openai_service.offline_wisdom:
-            future_prediction = openai_service.offline_wisdom.generate_future_lives(birth_chart)
-            mode = 'offline'
-        else:
-            future_prediction = openai_service.generate_future_lives_prediction(birth_chart)
-            mode = 'online' if openai_service.enabled else 'offline'
+        mode = data.get('mode', 'hybrid')
+        result = orchestrator.generate_prediction(
+            category='future_lives',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online
+        )
+        future_prediction = result.get('prediction', result)
 
         return prediction_response(
             {
@@ -44,7 +48,8 @@ def future_lives_prediction():
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': result.get('mode', mode)
             }
         )
 
@@ -75,12 +80,15 @@ def evolution_path():
         """
 
         client_online = parse_client_online(request.headers.get('X-Client-Online'))
-        if client_online is False and openai_service.offline_wisdom:
-            evolution = openai_service.offline_wisdom.generate_future_lives(birth_chart)
-            mode = 'offline'
-        else:
-            evolution = openai_service.generate_prediction(prompt, birth_chart)
-            mode = 'online' if openai_service.enabled else 'offline'
+        mode = data.get('mode', 'hybrid')
+        result = orchestrator.generate_prediction(
+            category='future_lives',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
+        evolution = result.get('prediction', result)
 
         return prediction_response(
             {
@@ -90,7 +98,8 @@ def evolution_path():
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': result.get('mode', mode)
             }
         )
 
@@ -121,12 +130,15 @@ def moksha_timeline():
         """
 
         client_online = parse_client_online(request.headers.get('X-Client-Online'))
-        if client_online is False and openai_service.offline_wisdom:
-            moksha = openai_service.offline_wisdom.generate_future_lives(birth_chart)
-            mode = 'offline'
-        else:
-            moksha = openai_service.generate_prediction(prompt, birth_chart)
-            mode = 'online' if openai_service.enabled else 'offline'
+        mode = data.get('mode', 'hybrid')
+        result = orchestrator.generate_prediction(
+            category='future_lives',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
+        moksha = result.get('prediction', result)
 
         return prediction_response(
             {
@@ -136,7 +148,8 @@ def moksha_timeline():
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': result.get('mode', mode)
             }
         )
 
@@ -167,12 +180,15 @@ def future_missions():
         """
 
         client_online = parse_client_online(request.headers.get('X-Client-Online'))
-        if client_online is False and openai_service.offline_wisdom:
-            missions = openai_service.offline_wisdom.generate_future_lives(birth_chart)
-            mode = 'offline'
-        else:
-            missions = openai_service.generate_prediction(prompt, birth_chart)
-            mode = 'online' if openai_service.enabled else 'offline'
+        mode = data.get('mode', 'hybrid')
+        result = orchestrator.generate_prediction(
+            category='future_lives',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
+        missions = result.get('prediction', result)
 
         return prediction_response(
             {
@@ -182,7 +198,8 @@ def future_missions():
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': result.get('mode', mode)
             }
         )
 
@@ -215,12 +232,15 @@ def soul_advancement():
         """
 
         client_online = parse_client_online(request.headers.get('X-Client-Online'))
-        if client_online is False and openai_service.offline_wisdom:
-            advancement = openai_service.offline_wisdom.generate_future_lives(birth_chart)
-            mode = 'offline'
-        else:
-            advancement = openai_service.generate_prediction(prompt, birth_chart)
-            mode = 'online' if openai_service.enabled else 'offline'
+        mode = data.get('mode', 'hybrid')
+        result = orchestrator.generate_prediction(
+            category='future_lives',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
+        advancement = result.get('prediction', result)
 
         return prediction_response(
             {
@@ -230,7 +250,8 @@ def soul_advancement():
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': result.get('mode', mode)
             }
         )
 

@@ -4,7 +4,8 @@ Core astrology calculation endpoints with enhanced validation and error handling
 """
 from flask import Blueprint, request, jsonify
 from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
-from services.openai_service import openai_service
+from services.prediction_orchestrator import get_prediction_orchestrator
+from utils.client_status import parse_client_online
 from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
 from utils.logger import setup_logger, log_request, log_response, log_error
 from utils.validators import validate_birth_details, validate_coordinates, sanitize_input
@@ -14,6 +15,7 @@ from utils.response_formatter import (
 
 bp = Blueprint('astrology', __name__, url_prefix='/api/astrology')
 logger = setup_logger(__name__)
+orchestrator = get_prediction_orchestrator()
 
 @bp.route('/birth-chart', methods=['POST'])
 def calculate_birth_chart():
@@ -145,14 +147,23 @@ def zodiac_analysis():
         5. Career and professional path
         """
 
-        analysis_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        analysis_result = orchestrator.generate_prediction(
+            category='predictions',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         logger.info("Zodiac analysis completed successfully")
         return success_response(
             data={
                 'chart': birth_chart,
-                'analysis': analysis_result['text'],
-                'partial': analysis_result['partial']
+                'analysis': analysis_result.get('prediction', analysis_result),
+                'partial': analysis_result.get('partial', False),
+                'mode': analysis_result.get('mode', mode)
             },
             message="Zodiac analysis completed successfully"
         )
@@ -284,18 +295,27 @@ def compatibility_analysis():
         8. Strengths of the relationship
         """
 
-        compatibility_result = openai_service.generate_prediction(prompt, {
-            'person1': chart1,
-            'person2': chart2
-        }, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        compatibility_result = orchestrator.generate_prediction(
+            category='relationships',
+            chart_data={
+                'person1': chart1,
+                'person2': chart2
+            },
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         logger.info("Compatibility analysis completed successfully")
         return success_response(
             data={
                 'person1_chart': chart1,
                 'person2_chart': chart2,
-                'compatibility_analysis': compatibility_result['text'],
-                'partial': compatibility_result['partial'],
+                'compatibility_analysis': compatibility_result.get('prediction', compatibility_result),
+                'partial': compatibility_result.get('partial', False),
+                'mode': compatibility_result.get('mode', mode),
                 'compatibility_factors': {
                     'sun_sign_compatibility': calculate_element_compatibility(
                         chart1.get('zodiac_sign'), chart2.get('zodiac_sign')

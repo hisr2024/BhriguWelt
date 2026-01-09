@@ -4,10 +4,12 @@ Soul journey and karmic analysis endpoints
 """
 from flask import Blueprint, request
 from services.astrology_calculator import astrology_calculator
-from services.openai_service import openai_service
+from services.prediction_orchestrator import get_prediction_orchestrator
+from utils.client_status import parse_client_online
 from utils.response_formatter import prediction_response, prediction_error_response
 
 bp = Blueprint('karmic_journey', __name__, url_prefix='/api/karmic-journey')
+orchestrator = get_prediction_orchestrator()
 
 @bp.route('/analysis', methods=['POST'])
 def karmic_journey_analysis():
@@ -29,8 +31,15 @@ def karmic_journey_analysis():
         if error:
             return error
 
-        # Generate karmic journey analysis using OpenAI
-        karmic_analysis = openai_service.generate_karmic_journey(birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        result = orchestrator.generate_prediction(
+            category='karmic_journey',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online
+        )
+        karmic_analysis = result.get('prediction', result)
 
         return prediction_response(
             {
@@ -39,7 +48,8 @@ def karmic_journey_analysis():
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': result.get('mode', mode)
             }
         )
 
@@ -70,16 +80,25 @@ def soul_purpose():
         5. Service to humanity
         """
 
-        analysis_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        analysis_result = orchestrator.generate_prediction(
+            category='karmic_journey',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         return prediction_response(
             {
-                'soul_purpose': analysis,
+                'soul_purpose': analysis_result.get('prediction', analysis_result),
                 'dharmic_path': birth_chart['planets']['Rahu']['sign']
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': analysis_result.get('mode', mode)
             }
         )
 
@@ -110,17 +129,26 @@ def karmic_lessons():
         5. Karmic rewards upon completion
         """
 
-        lessons_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        lessons_result = orchestrator.generate_prediction(
+            category='karmic_journey',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         return prediction_response(
             {
-                'karmic_lessons': lessons,
+                'karmic_lessons': lessons_result.get('prediction', lessons_result),
                 'karmic_number': birth_chart['karmic_number'],
                 'south_node': birth_chart['planets']['Ketu']['sign']
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': lessons_result.get('mode', mode)
             }
         )
 
@@ -150,17 +178,26 @@ def soul_evolution():
         5. Timeline to higher consciousness
         """
 
-        evolution_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        evolution_result = orchestrator.generate_prediction(
+            category='karmic_journey',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         return prediction_response(
             {
-                'soul_evolution': evolution,
+                'soul_evolution': evolution_result.get('prediction', evolution_result),
                 'spiritual_teacher': birth_chart['planets']['Jupiter']['sign'],
                 'emotional_evolution': birth_chart['planets']['Moon']['sign']
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': evolution_result.get('mode', mode)
             }
         )
 
@@ -192,17 +229,26 @@ def dharmic_path():
         5. Success through dharma
         """
 
-        dharma_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        dharma_result = orchestrator.generate_prediction(
+            category='karmic_journey',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         return prediction_response(
             {
-                'dharmic_path': dharma,
+                'dharmic_path': dharma_result.get('prediction', dharma_result),
                 'career_house': birth_chart['houses'][9],
                 'dharma_planet': birth_chart['planets']['Jupiter']
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': dharma_result.get('mode', mode)
             }
         )
 

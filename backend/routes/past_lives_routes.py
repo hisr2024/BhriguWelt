@@ -4,10 +4,12 @@ Past life analysis and regression endpoints
 """
 from flask import Blueprint, request
 from services.astrology_calculator import astrology_calculator
-from services.openai_service import openai_service
+from services.prediction_orchestrator import get_prediction_orchestrator
+from utils.client_status import parse_client_online
 from utils.response_formatter import prediction_response, prediction_error_response
 
 bp = Blueprint('past_lives', __name__, url_prefix='/api/past-lives')
+orchestrator = get_prediction_orchestrator()
 
 @bp.route('/analysis', methods=['POST'])
 def past_lives_analysis():
@@ -28,8 +30,15 @@ def past_lives_analysis():
         if error:
             return error
 
-        # Generate past lives analysis
-        past_lives = openai_service.generate_past_lives_analysis(birth_chart)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        result = orchestrator.generate_prediction(
+            category='past_lives',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online
+        )
+        past_lives = result.get('prediction', result)
 
         return prediction_response(
             {
@@ -38,7 +47,8 @@ def past_lives_analysis():
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': result.get('mode', mode)
             }
         )
 
@@ -68,17 +78,26 @@ def karmic_patterns():
         5. Unfinished business from past lives
         """
 
-        patterns_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        patterns_result = orchestrator.generate_prediction(
+            category='past_lives',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         return prediction_response(
             {
-                'karmic_patterns': patterns,
+                'karmic_patterns': patterns_result.get('prediction', patterns_result),
                 'ketu_position': birth_chart['planets']['Ketu'],
                 'past_life_house': birth_chart['houses'][11]
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': patterns_result.get('mode', mode)
             }
         )
 
@@ -108,17 +127,26 @@ def past_relationships():
         5. Lessons through relationships
         """
 
-        relationships_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        relationships_result = orchestrator.generate_prediction(
+            category='past_lives',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         return prediction_response(
             {
-                'past_relationships': relationships,
+                'past_relationships': relationships_result.get('prediction', relationships_result),
                 'venus_position': birth_chart['planets']['Venus'],
                 'partnership_house': birth_chart['houses'][6]
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': relationships_result.get('mode', mode)
             }
         )
 
@@ -150,17 +178,26 @@ def talents_carried_forward():
         5. How to activate these talents
         """
 
-        talents_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        talents_result = orchestrator.generate_prediction(
+            category='past_lives',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         return prediction_response(
             {
-                'talents': talents,
+                'talents': talents_result.get('prediction', talents_result),
                 'mercury_position': birth_chart['planets']['Mercury'],
                 'creativity_house': birth_chart['houses'][4]
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': talents_result.get('mode', mode)
             }
         )
 
@@ -192,17 +229,26 @@ def past_traumas():
         5. Steps toward karmic healing
         """
 
-        traumas_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        traumas_result = orchestrator.generate_prediction(
+            category='past_lives',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         return prediction_response(
             {
-                'past_traumas': traumas,
+                'past_traumas': traumas_result.get('prediction', traumas_result),
                 'saturn_position': birth_chart['planets']['Saturn'],
                 'transformation_house': birth_chart['houses'][7]
             },
             metadata={
                 'zodiac_sign': birth_chart.get('zodiac_sign'),
-                'nakshatra': birth_chart.get('nakshatra')
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': traumas_result.get('mode', mode)
             }
         )
 
