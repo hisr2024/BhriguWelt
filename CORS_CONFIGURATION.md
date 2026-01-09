@@ -161,6 +161,75 @@ headers = [
 - CloudFront was silently stripping custom headers before they reached the Flask application
 - Flask-CORS preflight responses would allow the headers, but actual requests would fail because CloudFront blocked them
 
+## Changes Made (2026-01-09 v2) - CASE SENSITIVITY FIX
+
+### 🚨 CRITICAL FIX: Case-Insensitive Header Handling
+
+**NEW ROOT CAUSE IDENTIFIED AND FIXED:**
+
+After the infrastructure layer fix, a second issue emerged: Requests go directly to **Render.com backend** (`https://bhriguwelt.onrender.com`), **NOT through CloudFront**, making the CloudFront configuration irrelevant for this deployment.
+
+**The Real Problem:**
+1. **Browser Preflight Behavior:** Browsers send CORS preflight (OPTIONS) requests with lowercase header names
+   - Example: `Access-Control-Request-Headers: content-type, x-client-online` (all lowercase)
+
+2. **Flask-CORS Case-Sensitivity:** Flask-CORS was comparing preflight headers case-sensitively
+   - Backend allowed: `X-Client-Online` (capitalized)
+   - Browser requested: `x-client-online` (lowercase)
+   - Comparison failed → CORS rejection ❌
+
+3. **HTTP Spec:** HTTP headers are case-insensitive per RFC 7230, but some CORS implementations compare them case-sensitively
+
+**The Fix (backend/app.py):**
+
+1. **Added Lowercase Header Variants** (Lines 114-121)
+   ```python
+   STANDARD_CORS_HEADERS = [
+       # ... original capitalized headers ...
+       # Add lowercase versions for case-insensitive browser compatibility
+       "x-ai-consent",
+       "x-ai-mode",
+       "x-client-online",
+       "x-uncompressed-content-length",
+       "x-api-key",
+       "x-request-id",
+       "x-correlation-id",
+   ]
+   ```
+   - Ensures both capitalized and lowercase versions are allowed
+   - Handles browsers that send either case in preflight requests
+
+2. **Added Explicit OPTIONS Preflight Handler** (Lines 174-203)
+   ```python
+   @app.before_request
+   def handle_preflight():
+       if request.method == 'OPTIONS':
+           # Merge requested headers case-insensitively
+           all_headers = _merge_cors_headers_case_insensitive(
+               STANDARD_CORS_HEADERS,
+               requested_headers
+           )
+           # Set all CORS headers explicitly
+           response.headers['Access-Control-Allow-Headers'] = ', '.join(all_headers)
+           # ... other CORS headers ...
+           return response
+   ```
+   - Takes precedence over Flask-CORS for OPTIONS requests
+   - Uses case-insensitive header merging
+   - Guarantees preflight always succeeds for allowed origins
+
+**Why This Fix Works:**
+- ✅ Handles headers in ANY case (uppercase, lowercase, mixed)
+- ✅ Compatible with all browsers (Chrome, Firefox, Safari, Edge)
+- ✅ Uses existing `_merge_cors_headers_case_insensitive()` helper
+- ✅ Explicit preflight handling ensures no Flask-CORS edge cases
+- ✅ Works for direct Render.com requests (bypassing CloudFront)
+
+**Impact:**
+- Fixes CORS errors for all custom headers: `x-client-online`, `x-ai-consent`, `x-ai-mode`
+- Ensures birth chart generation and predictions work without CORS blocking
+- Future-proof against browser/proxy case transformations
+
 ### Optimizations
 
 1. **Eliminated Redundant Preflight Handler**

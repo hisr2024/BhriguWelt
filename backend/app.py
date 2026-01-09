@@ -111,6 +111,14 @@ STANDARD_CORS_HEADERS = [
     "X-API-Key",
     "X-Request-ID",
     "X-Correlation-ID",
+    # Add lowercase versions for case-insensitive browser compatibility
+    "x-ai-consent",
+    "x-ai-mode",
+    "x-client-online",
+    "x-uncompressed-content-length",
+    "x-api-key",
+    "x-request-id",
+    "x-correlation-id",
 ]
 
 def _get_allowed_origins():
@@ -162,6 +170,37 @@ def _assign_correlation_id():
 @app.before_request
 def ensure_correlation_id():
     _assign_correlation_id()
+
+@app.before_request
+def handle_preflight():
+    """
+    Explicitly handle OPTIONS (preflight) requests to ensure CORS headers
+    are properly set even if Flask-CORS doesn't catch them.
+    """
+    if request.method == 'OPTIONS':
+        # Flask-CORS will handle this, but ensure all headers are present
+        response = app.make_default_options_response()
+        origin = request.headers.get('Origin')
+
+        if origin and origin in ALLOWED_ORIGINS:
+            # Merge requested headers with standard headers (case-insensitive)
+            request_headers_str = request.headers.get('Access-Control-Request-Headers', '')
+            requested_headers = [h.strip() for h in request_headers_str.split(',') if h.strip()]
+
+            # Combine and deduplicate headers (case-insensitive)
+            all_headers = _merge_cors_headers_case_insensitive(
+                STANDARD_CORS_HEADERS,
+                requested_headers
+            )
+
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+            response.headers['Access-Control-Allow-Headers'] = ', '.join(all_headers)
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Max-Age'] = '86400'
+            response.headers['Vary'] = 'Origin'
+
+        return response
 
 @app.before_request
 def decompress_gzip_payload():
