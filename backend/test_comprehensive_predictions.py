@@ -14,6 +14,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from services.bhrigu_predictions import get_bhrigu_service
 from services.astrology_calculator import AstrologyCalculator
+from utils.logger import setup_logger, log_exception
+
+logger = setup_logger(__name__)
 
 # ANSI color codes for terminal output
 class Colors:
@@ -178,8 +181,7 @@ def test_category(service, category_name, birth_data, test_question=None):
 
     except Exception as e:
         print_error(f"Test failed with error: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        log_exception(logger, e, f"Test failed for category {category_name}")
         return False
 
 

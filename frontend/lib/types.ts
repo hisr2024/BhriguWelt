@@ -274,7 +274,7 @@ export interface AppSettings {
 
 // Metadata types
 export interface EncryptionMetadata {
-  key: 'encryptionSalt' | 'encryptionTest';
+  key: 'encryptionSalt' | 'encryptionTest' | 'encryptionUserId' | 'encryptionRotationPending';
   value: string;
   createdAt: string;
 }

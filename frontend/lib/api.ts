@@ -132,18 +132,6 @@ export async function processOfflineQueue(): Promise<void> {
   }
 }
 
-// Listen for online/offline events
-if (typeof window !== 'undefined') {
-  window. addEventListener('online', () => {
-    console.log('Connection restored.  Processing offline queue.. .');
-    processOfflineQueue();
-  });
-
-  window.addEventListener('offline', () => {
-    console.warn('Connection lost.  Requests will be queued.');
-  });
-}
-
 // Re-export types for convenience
 export type {
   BirthDetails,
