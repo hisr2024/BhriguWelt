@@ -16,16 +16,7 @@ import { normalizePredictionResponse } from './api/predictionResponse';
 import { emitToast, buildIssueReportUrl } from './toast';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const MAX_REQUEST_BYTES = Number(process.env.NEXT_PUBLIC_MAX_REQUEST_BYTES ?? 1024 * 1024);
-const COMPRESSION_THRESHOLD_BYTES = 64 * 1024;
-
-const toBytes = (input: string): Uint8Array => new TextEncoder().encode(input);
-
-const gzipCompress = async (payload: Uint8Array): Promise<Uint8Array> => {
-  const stream = new Blob([payload]).stream().pipeThrough(new CompressionStream('gzip'));
-  const buffer = await new Response(stream).arrayBuffer();
-  return new Uint8Array(buffer);
-};
+const AUTH_REFRESH_ENDPOINT = '/api/auth/refresh';
 
 export const api = axios.create({
   baseURL:  API_URL,
@@ -34,6 +25,15 @@ export const api = axios.create({
   },
   timeout: API_TIMEOUT_MS,  // 120 seconds - increased for AI-powered predictions
   withCredentials: true,  // Enable CORS credentials for cross-origin requests
+});
+
+const refreshClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 120000,
+  withCredentials: true,
 });
 
 // Request interceptor for logging
@@ -94,10 +94,20 @@ api.interceptors.request.use(
 // Response interceptor with retry logic
 // Use WeakMap to track retry state without modifying config object
 const retryState = new WeakMap<any, { count: number; inProgress: boolean }>();
+const unauthorizedState = new WeakMap<any, { attempted: boolean }>();
 const MAX_RETRIES = 3;
 const BASE_RETRY_DELAY_MS = 1000;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const redirectToUnlock = () => {
+  if (typeof window !== 'undefined') {
+    window.location.assign('/unlock');
+  }
+};
+
+const tryRefreshSession = async () => {
+  await refreshClient.post(AUTH_REFRESH_ENDPOINT);
+};
 
 api.interceptors.response.use(
   (response) => response,
@@ -110,10 +120,40 @@ api.interceptors.response.use(
     }
     
     const state = config ? retryState.get(config)! : undefined;
+    const unauthorized = config ? unauthorizedState.get(config) : undefined;
     const status = error.response?.status;
     const responseData = error.response?.data ?? {};
     const retryable = Boolean(responseData?.retryable);
     
+    // Handle unauthorized responses with refresh/redirect flow
+    if (status === 401 && config && config.url !== AUTH_REFRESH_ENDPOINT) {
+      if (!unauthorized) {
+        unauthorizedState.set(config, { attempted: true });
+        try {
+          await tryRefreshSession();
+          return api(config);
+        } catch (refreshError) {
+          emitToast({
+            type: 'error',
+            title: 'Session expired',
+            message: 'Your session has expired. Please unlock again to continue.',
+            errorCode: 'UNAUTHORIZED',
+          });
+          redirectToUnlock();
+          return Promise.reject(refreshError);
+        }
+      }
+
+      emitToast({
+        type: 'error',
+        title: 'Session expired',
+        message: 'Your session has expired. Please unlock again to continue.',
+        errorCode: 'UNAUTHORIZED',
+      });
+      redirectToUnlock();
+      return Promise.reject(error);
+    }
+
     // Retry logic for retryable responses or transient 5xx errors
     if (state && (retryable || (status >= 500 && status < 600)) && !state.inProgress && state.count < MAX_RETRIES) {
       state.count++;
