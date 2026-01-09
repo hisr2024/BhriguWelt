@@ -48,6 +48,12 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
   // Create API client
   const api = new PredictionsAPI(baseURL, apiKey);
   const latestRequestId = useRef(0);
+  class StaleResponseError extends Error {
+    constructor() {
+      super('Stale response ignored');
+      this.name = 'StaleResponseError';
+    }
+  }
 
   // State
   const [prediction, setPrediction] = useState<PredictionResult | null>(null);
@@ -68,6 +74,17 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
     });
   }, []);
 
+  const isLatestRequest = useCallback((requestId: number) => {
+    return requestId === latestRequestId.current;
+  }, []);
+
+  const handleStaleResponse = useCallback((requestId: number) => {
+    if (!isLatestRequest(requestId)) {
+      notifySuperseded();
+      throw new StaleResponseError();
+    }
+  }, [isLatestRequest, notifySuperseded]);
+
   /**
    * Calculate birth chart
    */
@@ -78,26 +95,26 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
 
     try {
       const chartData = await api.calculateChart(birthData);
-      if (requestId === latestRequestId.current) {
-        setChart(chartData);
-      } else {
-        notifySuperseded();
-      }
+      handleStaleResponse(requestId);
+      setChart(chartData);
       return chartData;
     } catch (err) {
+      if (err instanceof StaleResponseError) {
+        throw err;
+      }
       const errorMessage = err instanceof Error ? err.message : 'Failed to calculate chart';
-      if (requestId === latestRequestId.current) {
+      if (isLatestRequest(requestId)) {
         setError(errorMessage);
       } else {
         notifySuperseded();
       }
       throw err;
     } finally {
-      if (requestId === latestRequestId.current) {
+      if (isLatestRequest(requestId)) {
         setLoading(false);
       }
     }
-  }, [api, notifySuperseded, startRequest]);
+  }, [api, handleStaleResponse, isLatestRequest, notifySuperseded, startRequest]);
 
   /**
    * Generate prediction for single engine
@@ -116,32 +133,31 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
       if (autoCalculateChart && !birthData.zodiac_sign) {
         const calculatedChart = await api.calculateChart(birthData);
         birthData = calculatedChart;
-        if (requestId === latestRequestId.current) {
-          setChart(calculatedChart);
-        }
+        handleStaleResponse(requestId);
+        setChart(calculatedChart);
       }
 
       const result = await api.generatePrediction(engine, birthData, useAI);
-      if (requestId === latestRequestId.current) {
-        setPrediction(result);
-      } else {
-        notifySuperseded();
-      }
+      handleStaleResponse(requestId);
+      setPrediction(result);
       return result;
     } catch (err) {
+      if (err instanceof StaleResponseError) {
+        throw err;
+      }
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate prediction';
-      if (requestId === latestRequestId.current) {
+      if (isLatestRequest(requestId)) {
         setError(errorMessage);
       } else {
         notifySuperseded();
       }
       throw err;
     } finally {
-      if (requestId === latestRequestId.current) {
+      if (isLatestRequest(requestId)) {
         setLoading(false);
       }
     }
-  }, [api, autoCalculateChart, notifySuperseded, startRequest]);
+  }, [api, autoCalculateChart, handleStaleResponse, isLatestRequest, notifySuperseded, startRequest]);
 
   /**
    * Generate all predictions
@@ -159,32 +175,31 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
       if (autoCalculateChart && !birthData.zodiac_sign) {
         const calculatedChart = await api.calculateChart(birthData);
         birthData = calculatedChart;
-        if (requestId === latestRequestId.current) {
-          setChart(calculatedChart);
-        }
+        handleStaleResponse(requestId);
+        setChart(calculatedChart);
       }
 
       const results = await api.getAllPredictions(birthData, useAI);
-      if (requestId === latestRequestId.current) {
-        setAllPredictions(results);
-      } else {
-        notifySuperseded();
-      }
+      handleStaleResponse(requestId);
+      setAllPredictions(results);
       return results;
     } catch (err) {
+      if (err instanceof StaleResponseError) {
+        throw err;
+      }
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate predictions';
-      if (requestId === latestRequestId.current) {
+      if (isLatestRequest(requestId)) {
         setError(errorMessage);
       } else {
         notifySuperseded();
       }
       throw err;
     } finally {
-      if (requestId === latestRequestId.current) {
+      if (isLatestRequest(requestId)) {
         setLoading(false);
       }
     }
-  }, [api, autoCalculateChart, notifySuperseded, startRequest]);
+  }, [api, autoCalculateChart, handleStaleResponse, isLatestRequest, notifySuperseded, startRequest]);
 
   /**
    * Generate General Predictions using two-phase engine
@@ -201,32 +216,31 @@ export const usePredictions = (options: UsePredictionsOptions = {}): UsePredicti
       if (autoCalculateChart && !birthData.zodiac_sign) {
         const calculatedChart = await api.calculateChart(birthData);
         birthData = calculatedChart;
-        if (requestId === latestRequestId.current) {
-          setChart(calculatedChart);
-        }
+        handleStaleResponse(requestId);
+        setChart(calculatedChart);
       }
 
       const result = await api.generateGeneralPredictions(birthData, options);
-      if (requestId === latestRequestId.current) {
-        setPrediction(result);
-      } else {
-        notifySuperseded();
-      }
+      handleStaleResponse(requestId);
+      setPrediction(result);
       return result;
     } catch (err) {
+      if (err instanceof StaleResponseError) {
+        throw err;
+      }
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate general predictions';
-      if (requestId === latestRequestId.current) {
+      if (isLatestRequest(requestId)) {
         setError(errorMessage);
       } else {
         notifySuperseded();
       }
       throw err;
     } finally {
-      if (requestId === latestRequestId.current) {
+      if (isLatestRequest(requestId)) {
         setLoading(false);
       }
     }
-  }, [api, autoCalculateChart, notifySuperseded, startRequest]);
+  }, [api, autoCalculateChart, handleStaleResponse, isLatestRequest, notifySuperseded, startRequest]);
 
   /**
    * Clear error
