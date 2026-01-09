@@ -115,31 +115,37 @@ else:
         'http://127.0.0.1:3000',
     ] + PRODUCTION_FRONTEND_URLS
 
+# Standard headers that must always be allowed (case-sensitive canonical forms)
+STANDARD_CORS_HEADERS = [
+    'Content-Type',
+    'Authorization',
+    'Accept',
+    'Origin',
+    'X-Requested-With',
+    'X-AI-Consent',
+    'X-AI-Mode',
+    'X-Client-Online',
+    'X-Uncompressed-Content-Length',
+    'Content-Encoding',
+]
+
 logger.info("Configuring CORS...")
 # Configure CORS with explicit resource patterns and preflight handling
 # IMPORTANT: Flask-CORS uses REGEX patterns, not glob patterns!
 # r"/api/*" only matches /api/ + zero or more "/" chars - WRONG!
 # r"/api/.*" matches /api/ + any characters - CORRECT!
+#
+# Note: Flask-CORS will handle preflight (OPTIONS) requests automatically
+# The after_request handler below ensures headers are present on actual requests
 CORS(app,
      resources={
          r"/api/.*": {
              "origins": allowed_origins,
              "methods": ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-             "allow_headers": [
-                 'Content-Type',
-                 'Authorization',
-                 'Accept',
-                 'Origin',
-                 'X-Requested-With',
-                 'X-AI-Consent',
-                 'X-AI-Mode',
-                 'X-Client-Online',
-                 'X-Uncompressed-Content-Length',
-                 'Content-Encoding',
-             ],
-             "expose_headers": ['Content-Type', 'Authorization'],
+             "allow_headers": STANDARD_CORS_HEADERS,
+             "expose_headers": ['Content-Type', 'Authorization', 'X-Correlation-ID'],
              "supports_credentials": True,
-             "max_age": 86400
+             "max_age": 86400  # Cache preflight for 24 hours
          },
          r"/.*": {
              "origins": allowed_origins,
@@ -148,22 +154,12 @@ CORS(app,
          }
      },
      supports_credentials=True,
-     allow_headers=[
-         'Content-Type',
-         'Authorization',
-         'Accept',
-         'Origin',
-         'X-Requested-With',
-         'X-AI-Consent',
-         'X-AI-Mode',
-         'X-Client-Online',
-         'X-Uncompressed-Content-Length',
-         'Content-Encoding',
-     ],
-     expose_headers=['Content-Type', 'Authorization'],
+     allow_headers=STANDARD_CORS_HEADERS,
+     expose_headers=['Content-Type', 'Authorization', 'X-Correlation-ID'],
      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
      max_age=86400)  # Cache preflight for 24 hours
 logger.info("✓ CORS configured with origins: %s", allowed_origins)
+logger.info("✓ CORS allowed headers: %s", ', '.join(STANDARD_CORS_HEADERS))
 
 # Helper function for origin validation
 def is_origin_allowed(origin: str) -> bool:
@@ -184,7 +180,32 @@ def is_origin_allowed(origin: str) -> bool:
             origin.startswith('http://127.0.0.1:')
         )
 
-# Explicit preflight handler for all routes - MUST return proper headers
+# Helper function to merge CORS headers case-insensitively
+def _merge_cors_headers_case_insensitive(requested_headers_str: str) -> str:
+    """
+    Merge requested headers with standard headers, handling case-insensitively.
+    HTTP headers are case-insensitive, so we normalize for comparison.
+    """
+    requested_header_list = [
+        header.strip()
+        for header in requested_headers_str.split(',')
+        if header.strip()
+    ]
+
+    # Create lowercase map for case-insensitive comparison
+    base_headers_lower = {h.lower(): h for h in STANDARD_CORS_HEADERS}
+    merged_headers = STANDARD_CORS_HEADERS.copy()
+
+    for header in requested_header_list:
+        header_lower = header.lower()
+        # Only add if not already present (case-insensitive check)
+        if header_lower not in base_headers_lower:
+            merged_headers.append(header)
+            base_headers_lower[header_lower] = header
+
+    return ', '.join(merged_headers)
+
+# Request preprocessing middleware
 def _assign_correlation_id():
     """Set a per-request correlation ID for response tracking."""
     request_id = request.headers.get('X-Request-ID') or request.headers.get('X-Correlation-ID')
@@ -225,114 +246,52 @@ def handle_request_entity_too_large(error):
         },
     }), 413
 
-@app.before_request
-def handle_preflight():
-    """Handle CORS preflight requests explicitly for all routes"""
-    _assign_correlation_id()
-    if request.method == 'OPTIONS':
-        # Get the origin from the request
-        origin = request.headers.get('Origin', '')
-        requested_headers = request.headers.get('Access-Control-Request-Headers', '')
-        base_headers = [
-            'Content-Type',
-            'Authorization',
-            'Accept',
-            'Origin',
-            'X-Requested-With',
-            'X-AI-Consent',
-            'X-AI-Mode',
-            'X-Client-Online',
-            'X-Uncompressed-Content-Length',
-            'Content-Encoding',
-        ]
-        requested_header_list = [
-            header.strip()
-            for header in requested_headers.split(',')
-            if header.strip()
-        ]
-        # Case-insensitive header merging - HTTP headers are case-insensitive
-        # Create a lowercase map of base headers for comparison
-        base_headers_lower = {h.lower(): h for h in base_headers}
-        merged_headers = base_headers.copy()
-
-        for header in requested_header_list:
-            header_lower = header.lower()
-            # Only add if not already present (case-insensitive check)
-            if header_lower not in base_headers_lower:
-                merged_headers.append(header)
-                base_headers_lower[header_lower] = header
-
-        allow_headers_value = ', '.join(merged_headers)
-
-        # Create response for preflight
-        response = app.make_default_options_response()
-
-        # Check if origin is allowed using helper function
-        if is_origin_allowed(origin):
-            # CORS spec requires exact origin match when credentials are enabled
-            response.headers['Access-Control-Allow-Origin'] = origin
-            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-            response.headers['Access-Control-Allow-Headers'] = allow_headers_value
-            response.headers['Access-Control-Allow-Credentials'] = 'true'
-            response.headers['Access-Control-Max-Age'] = '86400'
-            response.headers['Vary'] = 'Origin'
-
-        return response
-
-# Add CORS headers to ALL responses - critical for actual requests after preflight
+# Add CORS headers to ALL responses - ensures Flask-CORS headers are present
+# This handler supplements Flask-CORS with case-insensitive header handling
 @app.after_request
 def add_cors_headers(response):
-    """Add CORS headers to all responses - ensures headers are present"""
+    """
+    Ensure CORS headers are present on all responses.
+    Supplements Flask-CORS with:
+    1. Case-insensitive header merging (HTTP spec compliance)
+    2. Correlation ID tracking
+    3. Fallback CORS headers if Flask-CORS didn't apply them
+    """
     origin = request.headers.get('Origin', '')
     correlation_id = getattr(g, 'correlation_id', None)
-    requested_headers = request.headers.get('Access-Control-Request-Headers', '')
-    base_headers = [
-        'Content-Type',
-        'Authorization',
-        'Accept',
-        'Origin',
-        'X-Requested-With',
-        'X-AI-Consent',
-        'X-AI-Mode',
-        'X-Client-Online',
-        'X-Uncompressed-Content-Length',
-        'Content-Encoding',
-    ]
-    requested_header_list = [
-        header.strip()
-        for header in requested_headers.split(',')
-        if header.strip()
-    ]
-    # Case-insensitive header merging - HTTP headers are case-insensitive
-    # Create a lowercase map of base headers for comparison
-    base_headers_lower = {h.lower(): h for h in base_headers}
-    merged_headers = base_headers.copy()
 
-    for header in requested_header_list:
-        header_lower = header.lower()
-        # Only add if not already present (case-insensitive check)
-        if header_lower not in base_headers_lower:
-            merged_headers.append(header)
-            base_headers_lower[header_lower] = header
+    # Only add CORS headers if origin is allowed
+    if origin and is_origin_allowed(origin):
+        # Ensure CORS headers are present (Flask-CORS should have added them, but this ensures it)
+        if not response.headers.get('Access-Control-Allow-Origin'):
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
 
-    allow_headers_value = ', '.join(merged_headers)
+            # Use case-insensitive header merging for robustness
+            requested_headers = request.headers.get('Access-Control-Request-Headers', '')
+            if requested_headers:
+                allow_headers_value = _merge_cors_headers_case_insensitive(requested_headers)
+            else:
+                allow_headers_value = ', '.join(STANDARD_CORS_HEADERS)
 
-    # Check if origin is allowed using helper function
-    if is_origin_allowed(origin):
-        # CORS spec requires exact origin match when credentials are enabled
-        response.headers['Access-Control-Allow-Origin'] = origin
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-        response.headers['Access-Control-Allow-Headers'] = allow_headers_value
-        response.headers['Vary'] = 'Origin'
+            response.headers['Access-Control-Allow-Headers'] = allow_headers_value
+            response.headers['Vary'] = 'Origin'
 
+        # Always ensure Vary header is present for caching
+        if 'Vary' not in response.headers:
+            response.headers['Vary'] = 'Origin'
+
+    # Add correlation ID to response headers and JSON body
     if correlation_id:
         response.headers['X-Correlation-ID'] = correlation_id
-        response_data = response.get_json(silent=True)
-        if isinstance(response_data, dict) and 'correlation_id' not in response_data:
-            response_data['correlation_id'] = correlation_id
-            response.set_data(json.dumps(response_data))
-            response.headers['Content-Type'] = 'application/json'
+
+        # Add to JSON response body if applicable
+        if response.content_type and 'application/json' in response.content_type:
+            response_data = response.get_json(silent=True)
+            if isinstance(response_data, dict) and 'correlation_id' not in response_data:
+                response_data['correlation_id'] = correlation_id
+                response.set_data(json.dumps(response_data))
 
     return response
 
