@@ -26,7 +26,20 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.11.9"
+
+      - name: Verify Python version
+        run: |
+          python - <<'PY'
+          import pathlib
+          import sys
+
+          expected = pathlib.Path("runtime.txt").read_text().strip().removeprefix("python-")
+          actual = sys.version.split()[0]
+          if actual != expected:
+              raise SystemExit(f"Expected Python {expected}, got {actual}")
+          print(f"Python version OK: {actual}")
+          PY
 
       - name: Install dependencies
         working-directory: backend
@@ -53,7 +66,20 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.11.9"
+
+      - name: Verify Python version
+        run: |
+          python - <<'PY'
+          import pathlib
+          import sys
+
+          expected = pathlib.Path("runtime.txt").read_text().strip().removeprefix("python-")
+          actual = sys.version.split()[0]
+          if actual != expected:
+              raise SystemExit(f"Expected Python {expected}, got {actual}")
+          print(f"Python version OK: {actual}")
+          PY
 
       - name: Install security tooling
         working-directory: backend

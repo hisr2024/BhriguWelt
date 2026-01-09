@@ -1,3 +1,5 @@
+import 'server-only';
+
 import type { ChartData, PredictionMetadata, PredictionResult, Subcategory } from '@/lib/api/predictions';
 import { getAIMode } from '@/lib/ai-preferences';
 

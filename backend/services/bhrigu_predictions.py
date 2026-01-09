@@ -3,7 +3,6 @@ Bhrigu Samhita and Nadi Jyotisa Predictions Service
 Comprehensive predictions based on ancient Vedic wisdom
 """
 import os
-import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import json
@@ -12,9 +11,9 @@ from services.openai_service import get_openai_service
 from services.astrology_calculator import AstrologyCalculator
 from services.section_parser import get_section_parser
 from services.bhrigu_corpus_db import get_corpus_database
+from utils.logger import setup_logger, log_exception
 
-# Configure logging
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 
 class BhriguPredictionsService:
@@ -159,7 +158,7 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
                     )
                     birth_data.update(chart_data)
                 except Exception as e:
-                    print(f"Error calculating chart: {e}")
+                    log_exception(logger, e, context="bhrigu_predictions.calculate_birth_chart")
             else:
                 logger.warning("Astrology calculator unavailable; proceeding without chart enrichment.")
 
