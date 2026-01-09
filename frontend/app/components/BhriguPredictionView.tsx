@@ -126,6 +126,91 @@ const DEFAULT_COLOR = 'cyan';
 const PROFILE_HASH_PREFIX = 'profile_hash_';
 const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_';
 const SKELETON_LINES = 5;
+const LEGACY_UA_TOKENS = ['MSIE', 'Trident/', 'Edge/'];
+
+const isLegacyBrowser = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  if (!('Worker' in window)) return true;
+  const ua = navigator.userAgent || '';
+  return LEGACY_UA_TOKENS.some(token => ua.includes(token));
+};
+
+const isAlphaNumeric = (char: string): boolean => {
+  const code = char.charCodeAt(0);
+  return (
+    (code >= 48 && code <= 57) ||
+    (code >= 97 && code <= 122) ||
+    (code >= 65 && code <= 90)
+  );
+};
+
+const normalizeHeading = (value: string): string => {
+  let output = '';
+  let lastWasSpace = false;
+
+  for (const char of value) {
+    if (isAlphaNumeric(char)) {
+      output += char.toLowerCase();
+      lastWasSpace = false;
+    } else if (!lastWasSpace) {
+      output += ' ';
+      lastWasSpace = true;
+    }
+  }
+
+  return output.trim();
+};
+
+const isNumberedHeader = (line: string): boolean => {
+  let index = 0;
+  while (index < line.length && line[index] >= '0' && line[index] <= '9') {
+    index += 1;
+  }
+  if (index === 0) return false;
+  const nextChar = line[index];
+  return nextChar === '.' || nextChar === ')';
+};
+
+const stripHeaderMarkers = (line: string): string => {
+  let cleaned = line.trim();
+
+  while (cleaned.startsWith('#')) {
+    cleaned = cleaned.slice(1).trim();
+  }
+
+  if (cleaned.startsWith('**') && cleaned.endsWith('**') && cleaned.length > 4) {
+    cleaned = cleaned.slice(2, cleaned.length - 2).trim();
+  }
+
+  if (isNumberedHeader(cleaned)) {
+    let index = 0;
+    while (index < cleaned.length && cleaned[index] >= '0' && cleaned[index] <= '9') {
+      index += 1;
+    }
+    if (cleaned[index] === '.' || cleaned[index] === ')') {
+      cleaned = cleaned.slice(index + 1).trim();
+    }
+  }
+
+  if (cleaned.endsWith(':')) {
+    cleaned = cleaned.slice(0, -1).trim();
+  }
+
+  return cleaned;
+};
+
+const isHeaderLine = (line: string): boolean => {
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+  if (trimmed.startsWith('#')) return true;
+  if (trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length > 4) return true;
+  if (isNumberedHeader(trimmed)) return true;
+  if (trimmed.endsWith(':')) {
+    const words = trimmed.split(' ').filter(Boolean).length;
+    return words <= 6;
+  }
+  return false;
+};
 
 // Helper function to check if profile has required fields
 const hasRequiredProfileFields = (profile: Profile): boolean => {
@@ -353,38 +438,58 @@ export default function BhriguPredictionView({
     const categoryConfig = CATEGORY_SECTIONS[cat] || [];
 
     if (!fullAnalysis) return parsedSections;
-    
+
+    const normalizedTitles = new Map<string, string>();
     for (const section of categoryConfig) {
       const sectionTitle = tLocale(section.titleKey, 'en');
-      // Escape special regex characters in title
-      const escapedTitle = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      
-      // Try multiple patterns to find section content
-      const patterns = [
-        // ## Header format (most common)
-        new RegExp(`##\\s*(?:\\d+\\.? \\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
-        // Numbered format (1.  Header)
-        new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
-        // Bold format (**Header**)
-        new RegExp(`\\*\\*${escapedTitle}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n##|$)`, 'i'),
-        // Plain header with colon
-        new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i'),
-      ];
+      normalizedTitles.set(normalizeHeading(sectionTitle), section.key);
+    }
 
-      for (const pattern of patterns) {
-        try {
-          const match = fullAnalysis.match(pattern);
-          if (match && match[1]?.trim().length > 50) {
-            parsedSections[section.key] = match[1].trim();
-            break;
-          }
-        } catch (e) {
-          // Pattern failed, try next
-          continue;
+    const findMatchingKey = (headingText: string): string | undefined => {
+      const normalizedHeading = normalizeHeading(headingText);
+      if (normalizedTitles.has(normalizedHeading)) {
+        return normalizedTitles.get(normalizedHeading);
+      }
+
+      for (const [normalizedTitle, key] of normalizedTitles.entries()) {
+        if (normalizedHeading.includes(normalizedTitle) || normalizedTitle.includes(normalizedHeading)) {
+          return key;
         }
+      }
+
+      return undefined;
+    };
+
+    const lines = fullAnalysis.split('\n');
+    let currentKey: string | undefined;
+    let currentLines: string[] = [];
+
+    const flushSection = () => {
+      if (!currentKey) {
+        currentLines = [];
+        return;
+      }
+      const content = currentLines.join('\n').trim();
+      if (content.length > 50) {
+        parsedSections[currentKey] = content;
+      }
+      currentLines = [];
+    };
+
+    for (const line of lines) {
+      if (isHeaderLine(line)) {
+        flushSection();
+        const headerText = stripHeaderMarkers(line);
+        currentKey = headerText ? findMatchingKey(headerText) : undefined;
+        continue;
+      }
+
+      if (currentKey) {
+        currentLines.push(line);
       }
     }
 
+    flushSection();
     return parsedSections;
   };
 
@@ -401,7 +506,7 @@ export default function BhriguPredictionView({
     }
 
     const worker = workerRef.current;
-    if (!worker) {
+    if (!worker || isLegacyBrowser()) {
       setParsedFromFullAnalysis(parseFullAnalysisIntoSections(prediction.full_analysis, category));
       return;
     }
