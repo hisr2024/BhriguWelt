@@ -168,7 +168,7 @@ class AstrologyCalculator:
         ascendant = self._calculate_ascendant(observer, utc_dt)
 
         # Calculate houses
-        houses = self._calculate_houses(ascendant)
+        houses = self._calculate_houses(ascendant['sign'])
 
         return {
             'birth_details': {
@@ -242,74 +242,102 @@ class AstrologyCalculator:
         """Calculate positions of all planets"""
         planets = {}
 
+        # Calculate Lahiri ayanamsa for Vedic astrology
+        # Convert ephem date to Julian Date
+        jd = self.ephem.julian_date(observer.date)
+        ayanamsa = self._calculate_ayanamsa(jd)
+
         # Sun
         sun = self.ephem.Sun(observer)
+        sun_ecliptic = self.ephem.Ecliptic(sun)
+        sun_longitude = self._normalize_degrees(math.degrees(sun_ecliptic.lon) - ayanamsa)
         planets['Sun'] = {
-            'longitude': self._normalize_degrees(math.degrees(sun.ra)),
-            'latitude': math.degrees(sun.dec),
-            'sign': self._calculate_zodiac_sign(self._normalize_degrees(math.degrees(sun.ra)))
+            'longitude': sun_longitude,
+            'latitude': math.degrees(sun_ecliptic.lat),
+            'sign': self._calculate_zodiac_sign(sun_longitude)
         }
 
         # Moon
         moon = self.ephem.Moon(observer)
+        moon_ecliptic = self.ephem.Ecliptic(moon)
+        moon_longitude = self._normalize_degrees(math.degrees(moon_ecliptic.lon) - ayanamsa)
         planets['Moon'] = {
-            'longitude': self._normalize_degrees(math.degrees(moon.ra)),
-            'latitude': math.degrees(moon.dec),
-            'sign': self._calculate_zodiac_sign(self._normalize_degrees(math.degrees(moon.ra)))
+            'longitude': moon_longitude,
+            'latitude': math.degrees(moon_ecliptic.lat),
+            'sign': self._calculate_zodiac_sign(moon_longitude)
         }
 
         # Mercury
         mercury = self.ephem.Mercury(observer)
+        mercury_ecliptic = self.ephem.Ecliptic(mercury)
+        mercury_longitude = self._normalize_degrees(math.degrees(mercury_ecliptic.lon) - ayanamsa)
         planets['Mercury'] = {
-            'longitude': self._normalize_degrees(math.degrees(mercury.ra)),
-            'latitude': math.degrees(mercury.dec),
-            'sign': self._calculate_zodiac_sign(self._normalize_degrees(math.degrees(mercury.ra)))
+            'longitude': mercury_longitude,
+            'latitude': math.degrees(mercury_ecliptic.lat),
+            'sign': self._calculate_zodiac_sign(mercury_longitude)
         }
 
         # Venus
         venus = self.ephem.Venus(observer)
+        venus_ecliptic = self.ephem.Ecliptic(venus)
+        venus_longitude = self._normalize_degrees(math.degrees(venus_ecliptic.lon) - ayanamsa)
         planets['Venus'] = {
-            'longitude': self._normalize_degrees(math.degrees(venus.ra)),
-            'latitude': math.degrees(venus.dec),
-            'sign': self._calculate_zodiac_sign(self._normalize_degrees(math.degrees(venus.ra)))
+            'longitude': venus_longitude,
+            'latitude': math.degrees(venus_ecliptic.lat),
+            'sign': self._calculate_zodiac_sign(venus_longitude)
         }
 
         # Mars
         mars = self.ephem.Mars(observer)
+        mars_ecliptic = self.ephem.Ecliptic(mars)
+        mars_longitude = self._normalize_degrees(math.degrees(mars_ecliptic.lon) - ayanamsa)
         planets['Mars'] = {
-            'longitude': self._normalize_degrees(math.degrees(mars.ra)),
-            'latitude': math.degrees(mars.dec),
-            'sign': self._calculate_zodiac_sign(self._normalize_degrees(math.degrees(mars.ra)))
+            'longitude': mars_longitude,
+            'latitude': math.degrees(mars_ecliptic.lat),
+            'sign': self._calculate_zodiac_sign(mars_longitude)
         }
 
         # Jupiter
         jupiter = self.ephem.Jupiter(observer)
+        jupiter_ecliptic = self.ephem.Ecliptic(jupiter)
+        jupiter_longitude = self._normalize_degrees(math.degrees(jupiter_ecliptic.lon) - ayanamsa)
         planets['Jupiter'] = {
-            'longitude': self._normalize_degrees(math.degrees(jupiter.ra)),
-            'latitude': math.degrees(jupiter.dec),
-            'sign': self._calculate_zodiac_sign(self._normalize_degrees(math.degrees(jupiter.ra)))
+            'longitude': jupiter_longitude,
+            'latitude': math.degrees(jupiter_ecliptic.lat),
+            'sign': self._calculate_zodiac_sign(jupiter_longitude)
         }
 
         # Saturn
         saturn = self.ephem.Saturn(observer)
+        saturn_ecliptic = self.ephem.Ecliptic(saturn)
+        saturn_longitude = self._normalize_degrees(math.degrees(saturn_ecliptic.lon) - ayanamsa)
         planets['Saturn'] = {
-            'longitude': self._normalize_degrees(math.degrees(saturn.ra)),
-            'latitude': math.degrees(saturn.dec),
-            'sign': self._calculate_zodiac_sign(self._normalize_degrees(math.degrees(saturn.ra)))
+            'longitude': saturn_longitude,
+            'latitude': math.degrees(saturn_ecliptic.lat),
+            'sign': self._calculate_zodiac_sign(saturn_longitude)
         }
 
-        # Rahu (North Node) - simplified calculation
+        # Rahu (North Node) - Mean Node
+        # For Vedic astrology, we use the Moon's north node
+        rahu_longitude = self._normalize_degrees(math.degrees(observer.date + 2415020) * 0 - ayanamsa)
+        # Simplified: Using a more accurate calculation for Rahu
+        # The mean node precesses backwards at about 19.3 degrees per year
+        # For a more accurate calculation, we calculate it from the Moon's orbit
+        days_since_epoch = float(observer.date - 2444238.5)  # Jan 1, 1980
+        rahu_mean_longitude = (125.04 - 0.0529539 * days_since_epoch) % 360
+        rahu_longitude = self._normalize_degrees(rahu_mean_longitude - ayanamsa)
         planets['Rahu'] = {
-            'longitude': (planets['Moon']['longitude'] + 180) % 360,
+            'longitude': rahu_longitude,
             'latitude': 0,
-            'sign': self._calculate_zodiac_sign((planets['Moon']['longitude'] + 180) % 360)
+            'sign': self._calculate_zodiac_sign(rahu_longitude)
         }
 
-        # Ketu (South Node)
+        # Ketu (South Node) - 180 degrees opposite to Rahu
+        ketu_longitude = (rahu_longitude + 180) % 360
         planets['Ketu'] = {
-            'longitude': planets['Moon']['longitude'],
+            'longitude': ketu_longitude,
             'latitude': 0,
-            'sign': self._calculate_zodiac_sign(planets['Moon']['longitude'])
+            'sign': self._calculate_zodiac_sign(ketu_longitude)
         }
 
         return planets
@@ -339,12 +367,37 @@ class AstrologyCalculator:
             'lord': nakshatra_lords[nakshatra_index]
         }
 
-    def _calculate_ascendant(self, observer: Any, utc_dt: datetime) -> str:
-        """Calculate ascendant (lagna) - simplified"""
-        # Simplified calculation - in production, use Swiss Ephemeris
+    def _calculate_ascendant(self, observer: Any, utc_dt: datetime) -> Dict[str, Any]:
+        """Calculate ascendant (lagna) with Vedic correction"""
+        # Get sidereal time at birth location
         sidereal_time = observer.sidereal_time()
-        ascendant_degrees = (math.degrees(sidereal_time) * 15) % 360
-        return self._calculate_zodiac_sign(ascendant_degrees)
+
+        # Convert sidereal time to degrees (1 hour = 15 degrees)
+        lst_degrees = math.degrees(sidereal_time) * 15
+
+        # Get latitude
+        lat = math.radians(float(observer.lat))
+
+        # Calculate RAMC (Right Ascension of Medium Coeli)
+        ramc = lst_degrees
+
+        # Simple ascendant approximation using latitude
+        # More accurate: would use full house calculation
+        # For now, using a simplified formula
+        ascendant_tropical = (ramc + 90 + math.degrees(lat) * 0.5) % 360
+
+        # Apply Lahiri ayanamsa for Vedic astrology
+        jd = self.ephem.julian_date(observer.date)
+        ayanamsa = self._calculate_ayanamsa(jd)
+        ascendant_sidereal = self._normalize_degrees(ascendant_tropical - ayanamsa)
+
+        ascendant_sign = self._calculate_zodiac_sign(ascendant_sidereal)
+
+        return {
+            'sign': ascendant_sign,
+            'degree': ascendant_sidereal,
+            'degree_in_sign': ascendant_sidereal % 30
+        }
 
     def _calculate_houses(self, ascendant: str) -> List[str]:
         """Calculate house cusps"""
@@ -396,6 +449,23 @@ class AstrologyCalculator:
             total_years += years
 
         return {'maha_dasha': 'Unknown', 'years_remaining': 0}
+
+    def _calculate_ayanamsa(self, julian_date: float) -> float:
+        """
+        Calculate Lahiri ayanamsa for a given Julian date
+        Lahiri ayanamsa formula: ayanamsa = 23.85 + (julian_date - 2451545.0) / 36525 * 50.27
+
+        Args:
+            julian_date: Julian date
+
+        Returns:
+            Ayanamsa in degrees
+        """
+        # Simplified Lahiri ayanamsa calculation
+        # Reference: Jan 1, 2000, 12:00 TT = JD 2451545.0, ayanamsa ≈ 23.85°
+        t = (julian_date - 2451545.0) / 36525.0  # Julian centuries from J2000.0
+        ayanamsa = 23.85 + t * 50.27  # Approximate formula
+        return ayanamsa
 
     def _normalize_degrees(self, degrees: float) -> float:
         """Normalize degrees to 0-360 range"""
