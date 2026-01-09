@@ -16,13 +16,15 @@ import { unwrapPredictionPayload } from './api/predictionResponse';
 import { emitToast, buildIssueReportUrl } from './toast';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_TIMEOUT_ENV = Number.parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT ?? '', 10);
+const API_TIMEOUT_MS = Number.isFinite(API_TIMEOUT_ENV) && API_TIMEOUT_ENV > 0 ? API_TIMEOUT_ENV : 120000;
 
 export const api = axios.create({
   baseURL:  API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 120000,  // 120 seconds - increased for AI-powered predictions
+  timeout: API_TIMEOUT_MS,  // 120 seconds - increased for AI-powered predictions
   withCredentials: true,  // Enable CORS credentials for cross-origin requests
 });
 
