@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
@@ -161,6 +161,42 @@ const getPredictionCacheKey = (profile: Profile, category: string, question: str
   return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${questionKey}`;
 };
 
+const isPredictionResult = (value: unknown): value is PredictionResult => {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    'status' in value &&
+    'data' in value &&
+    'timestamp' in value
+  );
+};
+
+const normalizeCachedPrediction = (value: unknown): PredictionResult | null => {
+  if (isPredictionResult(value)) {
+    return value;
+  }
+
+  if (value && typeof value === 'object') {
+    return {
+      status: 'success',
+      message: '',
+      data: value as BhriguPrediction,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  return null;
+};
+
+const getPredictionPayload = (result: PredictionResult | null): BhriguPrediction | null => {
+  if (!result) return null;
+  const data = result.data;
+  if (data && typeof data === 'object' && 'prediction' in data) {
+    return (data as { prediction: BhriguPrediction }).prediction ?? null;
+  }
+  return data as BhriguPrediction;
+};
+
 const clearCachedPredictions = (profile: Profile) => {
   if (typeof window === 'undefined') return;
   const prefix = `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_`;
@@ -198,7 +234,7 @@ export default function BhriguPredictionView({
   fetchPrediction,
   profile
 }: BhriguPredictionViewProps) {
-  const [prediction, setPrediction] = useState<BhriguPrediction | null>(null);
+  const [prediction, setPrediction] = useState<PredictionResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<{
@@ -221,6 +257,7 @@ export default function BhriguPredictionView({
   const workerRef = useRef<Worker | null>(null);
   const workerRequestId = useRef(0);
   const expandingTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
+  const predictionData = useMemo(() => getPredictionPayload(prediction), [prediction]);
 
   const searchParams = useSearchParams();
   const language = getCurrentLanguage();
@@ -265,9 +302,15 @@ export default function BhriguPredictionView({
 
       if (!forceRegenerate && cached) {
         try {
-          const parsed = JSON.parse(cached) as { profileHash: string; prediction: any };
+          const parsed = JSON.parse(cached) as { profileHash: string; prediction: unknown };
           if (parsed.profileHash === resolvedHash) {
-            setPrediction(parsed.prediction);
+            const normalizedCache = normalizeCachedPrediction(parsed.prediction);
+            if (normalizedCache) {
+              setPrediction(normalizedCache);
+              setFromCache(true);
+              setLoading(false);
+              return;
+            }
             setFromCache(true);
             setLoading(false);
             return;
@@ -294,23 +337,34 @@ export default function BhriguPredictionView({
 
       const response = await fetchPrediction(profileData);
       const normalized = normalizePredictionResponse<BhriguPrediction>(response);
+      const normalizedResult: PredictionResult = {
+        status: normalized.status,
+        message: normalized.message ?? response?.message ?? '',
+        data: normalized.prediction ?? response?.data ?? response,
+        timestamp: response?.timestamp ?? new Date().toISOString(),
+        meta: normalized.metadata ?? response?.meta,
+      };
+      const resolvedPredictionData = getPredictionPayload(normalizedResult);
+      const cacheMetadata =
+        normalizedResult.meta ??
+        (resolvedPredictionData?.metadata as Record<string, unknown> | undefined);
 
-      if (normalized.status === 'success') {
-        setPrediction(normalized.prediction);
+      if (normalizedResult.status === 'success') {
+        setPrediction(normalizedResult);
         setFromCache(Boolean(
-          normalized.metadata?.from_cache ||
-          normalized.metadata?.source === 'cache' ||
-          normalized.message?.toLowerCase()?.includes('cache')
+          cacheMetadata?.from_cache ||
+          cacheMetadata?.source === 'cache' ||
+          normalizedResult.message?.toLowerCase()?.includes('cache')
         ));
         localStorage.setItem(
           cacheKey,
           JSON.stringify({
             profileHash: resolvedHash,
-            prediction: normalized.prediction,
+            prediction: normalizedResult,
           })
         );
       } else {
-        setError(normalized.message || 'Failed to generate prediction');
+        setError(normalizedResult.message || 'Failed to generate prediction');
       }
     } catch (err: any) {
       const status = err?.response?.status;
@@ -389,7 +443,7 @@ export default function BhriguPredictionView({
   };
 
   useEffect(() => {
-    if (!prediction?.full_analysis) {
+    if (!predictionData?.full_analysis) {
       setParsedFromFullAnalysis({});
       return;
     }
@@ -402,17 +456,17 @@ export default function BhriguPredictionView({
 
     const worker = workerRef.current;
     if (!worker) {
-      setParsedFromFullAnalysis(parseFullAnalysisIntoSections(prediction.full_analysis, category));
+      setParsedFromFullAnalysis(parseFullAnalysisIntoSections(predictionData.full_analysis, category));
       return;
     }
 
     workerRequestId.current += 1;
     worker.postMessage({
       id: workerRequestId.current,
-      markdown: prediction.full_analysis,
+      markdown: predictionData.full_analysis,
       sections: categoryConfig.map(section => ({ key: section.key, title: section.titleKey }))
     });
-  }, [prediction?.full_analysis, category]);
+  }, [predictionData?.full_analysis, category, predictionData]);
 
   const renderSection = (sectionKey: string, sectionTitle: string, content: string, color: string) => {
     // More lenient filtering - only exclude truly empty or placeholder content
@@ -457,10 +511,10 @@ export default function BhriguPredictionView({
   };
 
   const renderPredictionContent = () => {
-    if (!prediction) return null;
+    if (!predictionData) return null;
 
     // Get the sections configuration for this category
-    const categoryValue = prediction?.metadata?.category ?? prediction?.category ?? category;
+    const categoryValue = predictionData?.metadata?.category ?? predictionData?.category ?? category;
     const normalizedCategory = normalizeCategoryKey(
       typeof categoryValue === 'string' ? categoryValue : category
     );
@@ -468,7 +522,7 @@ export default function BhriguPredictionView({
 
     // First, try to get sections from the API response
     let availableSections = sections.filter(section => {
-      const content = prediction[section.key];
+      const content = predictionData[section.key];
       if (!content || typeof content !== 'string' || content.trim() === '') {
         return false;
       }
@@ -483,7 +537,7 @@ export default function BhriguPredictionView({
     });
 
     // FALLBACK: If no sections found but full_analysis exists, use worker/regex results
-    if (availableSections.length === 0 && prediction.full_analysis) {
+    if (availableSections.length === 0 && predictionData.full_analysis) {
       availableSections = sections.filter(section => {
         const content = parsedFromFullAnalysis[section.key];
         return content && content.trim().length > 50;
@@ -493,7 +547,7 @@ export default function BhriguPredictionView({
 
     // Helper function to get section content from either source
     const getSectionContent = (key: string): string => {
-      const directContent = prediction[key];
+      const directContent = predictionData[key];
       if (typeof directContent === 'string') {
         return directContent;
       }
@@ -515,7 +569,7 @@ export default function BhriguPredictionView({
         )}
 
         {/* Show message if no sections were extracted successfully */}
-        {availableSections.length === 0 && prediction.full_analysis && !isParsing && (
+        {availableSections.length === 0 && predictionData.full_analysis && !isParsing && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
             <p className="text-amber-400 text-sm">
               Note: Individual sections could not be extracted from the analysis.
@@ -553,7 +607,7 @@ export default function BhriguPredictionView({
         )}
 
         {/* Full Analysis - Collapsible at the bottom */}
-        {prediction.full_analysis && (
+        {predictionData.full_analysis && (
           <div className="mt-8 pt-8 border-t border-gray-700/50">
             <button
               onClick={() => setShowFullAnalysis(!showFullAnalysis)}
@@ -599,7 +653,7 @@ export default function BhriguPredictionView({
                 >
                   <div className="prose prose-invert prose-cyan max-w-none">
                     <div className="text-gray-300 leading-relaxed whitespace-pre-wrap max-h-[70vh] overflow-auto pr-2">
-                      {prediction.full_analysis}
+                      {predictionData.full_analysis}
                     </div>
                   </div>
                 </motion.div>
@@ -609,25 +663,25 @@ export default function BhriguPredictionView({
         )}
 
         {/* Metadata */}
-        {prediction.metadata && (
+        {predictionData.metadata && (
           <div className="mt-8 pt-6 border-t border-gray-700/50">
             <div className="flex flex-wrap gap-4 text-sm text-gray-400">
-              {prediction.metadata.zodiac_sign && (
+              {predictionData.metadata.zodiac_sign && (
                 <div className="flex items-center gap-2">
                   <span className="text-cyan-400">Zodiac:</span>
-                  <span>{prediction.metadata.zodiac_sign}</span>
+                  <span>{predictionData.metadata.zodiac_sign}</span>
                 </div>
               )}
-              {prediction.metadata.nakshatra && (
+              {predictionData.metadata.nakshatra && (
                 <div className="flex items-center gap-2">
                   <span className="text-purple-400">Nakshatra:</span>
-                  <span>{prediction.metadata.nakshatra}</span>
+                  <span>{predictionData.metadata.nakshatra}</span>
                 </div>
               )}
-              {prediction.metadata.tradition && (
+              {predictionData.metadata.tradition && (
                 <div className="flex items-center gap-2">
                   <span className="text-pink-400">Tradition:</span>
-                  <span>{prediction.metadata.tradition}</span>
+                  <span>{predictionData.metadata.tradition}</span>
                 </div>
               )}
             </div>
@@ -647,8 +701,8 @@ export default function BhriguPredictionView({
               <div className="mt-4 text-sm text-gray-400">
                 <p className="mb-2">Section Keys Available:</p>
                 <div className="flex flex-wrap gap-2">
-                  {Object.keys(prediction).map(key => {
-                    const value = prediction[key as keyof typeof prediction];
+                  {Object.keys(predictionData || {}).map(key => {
+                    const value = predictionData?.[key as keyof typeof predictionData];
                     const isLongString = value && typeof value === 'string' && value.length > 100;
                     return (
                       <span
@@ -831,7 +885,7 @@ export default function BhriguPredictionView({
 
       {/* Content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {loading && !prediction && (
+        {loading && !predictionData && (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="w-12 h-12 text-cyan-400 animate-spin mb-4" />
             <p className="text-lg text-gray-400">
@@ -873,10 +927,10 @@ export default function BhriguPredictionView({
           </div>
         )}
 
-        {prediction && !loading && renderPredictionContent()}
+        {predictionData && !loading && renderPredictionContent()}
 
         {/* Actions */}
-        {prediction && (
+        {predictionData && (
           <div className="mt-12 flex gap-4 justify-center flex-wrap">
             <button
               onClick={() => loadPrediction(true)}
