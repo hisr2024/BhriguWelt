@@ -93,10 +93,16 @@ print("✓ Flask app initialized")
 logger.info("Configuring CORS...")
 
 CORS(app,
-     origins=["https://bhrigu-welt.vercel.app"],  # Your Vercel origin
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Include OPTIONS for preflight
-     allow_headers=["Content-Type", "Authorization", "X-Client-Online", "X-API-Key"],  # Explicitly allow your header
-     supports_credentials=True  # If using auth/cookies
+     resources={
+         r"/api/*": {
+             "origins": ["https://bhrigu-welt.vercel.app"],
+             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+             "allow_headers": ["Content-Type", "Authorization", "X-Client-Online", "X-API-Key"],
+             "supports_credentials": True,
+             "expose_headers": ["X-Correlation-ID"],
+             "max_age": 86400
+         }
+     }
 )
 
 logger.info("✓ CORS configured with origin: https://bhrigu-welt.vercel.app")
