@@ -7,12 +7,11 @@ import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { VariableSizeList } from 'react-window';
 import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
-import { getCurrentLanguage, type Language } from '@/lib/copy';
 import { tLocale } from '@/lib/locales';
 import { Accordion } from '@/app/components/ui/Accordion';
 import { AccordionItem } from '@/app/components/ui/AccordionItem';
 import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
-import useFeatureFlags from '@/hooks/useFeatureFlags';
+import { useI18n } from '@/lib/context/I18nContext';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS: Record<string, Array<{ key: string; titleKey: string; color: string }>> = {
@@ -246,7 +245,7 @@ interface BhriguPredictionViewProps {
   description: string;
   icon: React.ReactNode;
   fetchPrediction: (
-    profileData: BirthDetails & { question?: string; force_regenerate?: boolean }
+    profileData: BirthDetails & { question?: string; force_regenerate?: boolean; language?: string }
   ) => Promise<PredictionResult>;
   profile: Profile | null;
 }
@@ -266,9 +265,14 @@ interface DebugPredictionPayload {
 
 const getProfileHashKey = (profile: Profile) => `${PROFILE_HASH_PREFIX}${profile.id ?? 'current'}`;
 
-const getPredictionCacheKey = (profile: Profile, category: string, question: string) => {
+const getPredictionCacheKey = (
+  profile: Profile,
+  category: string,
+  question: string,
+  language: string
+) => {
   const questionKey = question.trim() === '' ? 'default' : encodeURIComponent(question.trim());
-  return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${questionKey}`;
+  return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${questionKey}_${language}`;
 };
 
 const getPartialPredictionCacheKey = (profile: Profile, category: string, question: string) => {
@@ -376,8 +380,8 @@ export default function BhriguPredictionView({
   fetchPrediction,
   profile
 }: BhriguPredictionViewProps) {
-  const [prediction, setPrediction] = useState<NormalizedPrediction | null>(null);
-  const [rawPrediction, setRawPrediction] = useState<DebugPredictionPayload | null>(null);
+  const { t, language, aiLanguage } = useI18n();
+  const [prediction, setPrediction] = useState<BhriguPrediction | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<{
@@ -404,8 +408,7 @@ export default function BhriguPredictionView({
 
   const { debugUI } = useFeatureFlags();
   const searchParams = useSearchParams();
-  const language = getCurrentLanguage();
-  const debugAllowed = debugUI && searchParams?.get('debug') === 'true';
+  const debugAllowed = searchParams?.get('debug') === 'true';
 
   useEffect(() => {
     if (profile) {
@@ -428,36 +431,16 @@ export default function BhriguPredictionView({
   }, [profile]);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof Worker === 'undefined') {
-      return;
+    if (profile) {
+      loadPrediction(false);
     }
-
-    const worker = new Worker(new URL('../workers/fullAnalysisParserWorker.ts', import.meta.url));
-    workerRef.current = worker;
-
-    worker.onmessage = (event: MessageEvent<AnalysisWorkerResponse>) => {
-      if (!event.data || event.data.id !== workerRequestId.current) {
-        return;
-      }
-      setParsedFromFullAnalysis(event.data.sections ?? {});
-      setIsParsing(false);
-    };
-
-    worker.onerror = () => {
-      setIsParsing(false);
-    };
-
-    return () => {
-      worker.terminate();
-      workerRef.current = null;
-    };
-  }, []);
+  }, [aiLanguage]);
 
   const loadPrediction = async (forceRegenerate = false, profileHash?: string) => {
     if (!profile) return;
 
     if (!hasRequiredProfileFields(profile)) {
-      setError('Please complete your birth details in your profile to generate predictions.');
+      setError(t('bhriguPredictionView.errors.missingBirthDetails'));
       return;
     }
 
@@ -468,8 +451,7 @@ export default function BhriguPredictionView({
 
     try {
       const resolvedHash = profileHash ?? await getProfileHash(profile);
-      const cacheKey = getPredictionCacheKey(profile, category, question);
-      const partialCacheKey = getPartialPredictionCacheKey(profile, category, question);
+      const cacheKey = getPredictionCacheKey(profile, category, question, aiLanguage);
       const cached = localStorage.getItem(cacheKey);
       const cachedPartial = localStorage.getItem(partialCacheKey);
 
@@ -519,7 +501,8 @@ export default function BhriguPredictionView({
         latitude: profile.latitude,
         longitude: profile.longitude,
         question: question || undefined,
-        force_regenerate: forceRegenerate
+        force_regenerate: forceRegenerate,
+        language: aiLanguage
       };
 
       const response = await fetchPrediction(profileData);
@@ -568,19 +551,19 @@ export default function BhriguPredictionView({
           })
         );
       } else {
-        setError(normalized.message || 'Failed to generate prediction');
+        setError(normalized.message || t('bhriguPredictionView.errors.failedToGenerate'));
       }
     } catch (err: any) {
       const status = err?.response?.status;
       const apiMessage = err?.response?.data?.message || err?.response?.data?.error;
-      const message = apiMessage || err?.message || 'An error occurred';
+      const message = apiMessage || err?.message || t('bhriguPredictionView.errors.generic');
       const isNetwork = !err?.response;
       const code = status ? `HTTP ${status}` : err?.code || err?.name;
       const action = isNetwork
-        ? 'Check your connection, then retry or use cached data.'
+        ? t('bhriguPredictionView.errors.networkAction')
         : status && status >= 500
-          ? 'Server hiccup detected. Retry soon or use cached data if available.'
-          : 'Review your inputs and retry, or use cached data if available.';
+          ? t('bhriguPredictionView.errors.serverAction')
+          : t('bhriguPredictionView.errors.clientAction');
 
       setError(message);
       setErrorDetails({
@@ -886,10 +869,10 @@ export default function BhriguPredictionView({
         {parsedFromFullAnalysisActive && (
           <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
             <p className="text-cyan-300 text-sm font-semibold uppercase tracking-wide">
-              Parsed from full analysis
+              {t('bhriguPredictionView.parsedFromFullAnalysis.title')}
             </p>
             <p className="text-gray-300 text-sm mt-1">
-              These insights were extracted from the full reading for easier scanning.
+              {t('bhriguPredictionView.parsedFromFullAnalysis.description')}
             </p>
           </div>
         )}
@@ -898,8 +881,7 @@ export default function BhriguPredictionView({
         {availableSections.length === 0 && prediction.fullAnalysis && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
             <p className="text-amber-400 text-sm">
-              Note: Individual sections could not be extracted from the analysis.
-              The complete reading is shown below.
+              {t('bhriguPredictionView.sectionFallbackNote')}
             </p>
           </div>
         )}
@@ -910,10 +892,10 @@ export default function BhriguPredictionView({
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-3 relative z-10">
                 {icon}
-                Detailed Insights
+                {t('bhriguPredictionView.detailedInsights')}
               </h2>
               <p className="text-gray-400 text-sm">
-                Explore each aspect of your {title.toLowerCase()} in detail
+                {t('bhriguPredictionView.detailSubtitle', { title })}
               </p>
             </div>
             
@@ -935,7 +917,62 @@ export default function BhriguPredictionView({
 
         {/* Full Analysis - Collapsible at the bottom */}
         {prediction.full_analysis && (
-          <FullAnalysisPanel fullAnalysis={prediction.full_analysis} />
+          <div className="mt-8 pt-8 border-t border-gray-700/50">
+            <button
+              onClick={() => setShowFullAnalysis(!showFullAnalysis)}
+              aria-expanded={showFullAnalysis}
+              aria-controls="full-analysis-content"
+              className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
+                       border border-gray-700/50 rounded-xl p-6
+                       hover:border-cyan-500/30 transition-all
+                       flex items-center justify-between group relative z-10"
+            >
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-6 h-6 text-cyan-400" />
+                <div className="text-left">
+                  <h3 className="text-xl font-bold text-white relative z-10">
+                    {t('bhriguPredictionView.fullReading.title')}
+                  </h3>
+                  <p className="text-sm text-gray-400 mt-1">
+                    {showFullAnalysis
+                      ? t('bhriguPredictionView.fullReading.hideDescription')
+                      : t('bhriguPredictionView.fullReading.showDescription')}
+                  </p>
+                </div>
+              </div>
+              {showFullAnalysis ? (
+                <ChevronUp className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
+              ) : (
+                <ChevronDown className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
+              )}
+              <span className="sr-only">
+                {showFullAnalysis
+                  ? t('bhriguPredictionView.fullReading.hideAria')
+                  : t('bhriguPredictionView.fullReading.showAria')}
+              </span>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {showFullAnalysis && (
+                <motion.div
+                  key="full-analysis"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  id="full-analysis-content"
+                  className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
+                           border border-gray-700/50 rounded-xl p-6 overflow-visible"
+                >
+                  <div className="prose prose-invert prose-cyan max-w-none">
+                    <div className="text-gray-300 leading-relaxed whitespace-pre-wrap max-h-[70vh] overflow-auto pr-2">
+                      {prediction.full_analysis}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         )}
 
         {/* Metadata */}
@@ -944,19 +981,19 @@ export default function BhriguPredictionView({
             <div className="flex flex-wrap gap-4 text-sm text-gray-400">
               {prediction.metadata.zodiac_sign && (
                 <div className="flex items-center gap-2">
-                  <span className="text-cyan-400">Zodiac:</span>
+                  <span className="text-cyan-400">{t('bhriguPredictionView.metadata.zodiac')}</span>
                   <span>{prediction.metadata.zodiac_sign}</span>
                 </div>
               )}
               {prediction.metadata.nakshatra && (
                 <div className="flex items-center gap-2">
-                  <span className="text-purple-400">Nakshatra:</span>
+                  <span className="text-purple-400">{t('bhriguPredictionView.metadata.nakshatra')}</span>
                   <span>{prediction.metadata.nakshatra}</span>
                 </div>
               )}
               {prediction.metadata.tradition && (
                 <div className="flex items-center gap-2">
-                  <span className="text-pink-400">Tradition:</span>
+                  <span className="text-pink-400">{t('bhriguPredictionView.metadata.tradition')}</span>
                   <span>{prediction.metadata.tradition}</span>
                 </div>
               )}
@@ -966,10 +1003,54 @@ export default function BhriguPredictionView({
 
         {/* Debug Mode - Raw API Response */}
         {debugAllowed && debugMode && (
-          <DebugPanel
-            prediction={prediction}
-            parsedFromFullAnalysis={parsedFromFullAnalysis}
-          />
+          <div className="mt-8 pt-6 border-t border-red-500/30">
+            <div className="bg-gray-900/50 border border-red-500/30 rounded-xl p-6">
+              <h3 className="text-xl font-bold text-red-400 mb-4">
+                {t('bhriguPredictionView.debug.title')}
+              </h3>
+              <div className="bg-black/50 rounded-lg p-4 overflow-auto max-h-96">
+                <pre className="text-xs text-gray-300 whitespace-pre-wrap font-mono">
+                  {JSON.stringify(prediction, null, 2)}
+                </pre>
+              </div>
+              <div className="mt-4 text-sm text-gray-400">
+                <p className="mb-2">{t('bhriguPredictionView.debug.sectionKeys')}</p>
+                <div className="flex flex-wrap gap-2">
+                  {Object.keys(prediction).map(key => {
+                    const value = prediction[key as keyof typeof prediction];
+                    const isLongString = value && typeof value === 'string' && value.length > 100;
+                    return (
+                      <span
+                        key={key}
+                        className={`px-2 py-1 rounded ${
+                          isLongString
+                            ? 'bg-green-500/20 text-green-400'
+                            : 'bg-gray-700/50 text-gray-400'
+                        }`}
+                      >
+                        {key} ({typeof value === 'string' ? value.length : 'N/A'} chars)
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* Show parsed sections if fallback was used */}
+              {Object.keys(parsedFromFullAnalysis).length > 0 && (
+                <div className="mt-4 text-sm">
+                  <p className="text-yellow-400 mb-2">
+                    {t('bhriguPredictionView.debug.parsedSections')}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.keys(parsedFromFullAnalysis).map(key => (
+                      <span key={key} className="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">
+                        {key} ({parsedFromFullAnalysis[key]?.length || 0} chars)
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
     );
@@ -979,14 +1060,16 @@ export default function BhriguPredictionView({
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-xl text-gray-400 mb-4">Please create a profile to access predictions</p>
+          <p className="text-xl text-gray-400 mb-4">
+            {t('bhriguPredictionView.profileMissing.title')}
+          </p>
           <button
             onClick={handleGoToProfile}
             className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500
                      text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600
                      transition-all"
           >
-            Create Profile
+            {t('bhriguPredictionView.profileMissing.action')}
           </button>
         </div>
       </div>
@@ -1013,7 +1096,7 @@ export default function BhriguPredictionView({
           <div className="mt-6 flex gap-3">
             <input
               type="text"
-              placeholder="Ask a specific question (optional)..."
+              placeholder={t('bhriguPredictionView.question.placeholder')}
               value={question}
               onChange={handleQuestionChange}
               className="flex-1 bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-3
@@ -1031,12 +1114,12 @@ export default function BhriguPredictionView({
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Generating...
+                  {t('bhriguPredictionView.question.generating')}
                 </>
               ) : (
                 <>
                   <BookOpen className="w-5 h-5" />
-                  Generate
+                  {t('bhriguPredictionView.question.generate')}
                 </>
               )}
             </button>
@@ -1044,7 +1127,7 @@ export default function BhriguPredictionView({
 
           {profileUpdated && (
             <div className="mt-4 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-200">
-              Profile updated. Cached predictions cleared and a fresh reading is being generated.
+              {t('bhriguPredictionView.profileUpdated')}
             </div>
           )}
 
@@ -1052,10 +1135,10 @@ export default function BhriguPredictionView({
             <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-cyan-400">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-cyan-400 rounded-full" />
-                <span>Loaded from Bhrigu wisdom cache</span>
+                <span>{t('bhriguPredictionView.cache.loadedFromWisdom')}</span>
               </div>
               <span className="text-xs text-gray-400">
-                Loaded from cache
+                {t('bhriguPredictionView.cache.loadedFromCache')}
               </span>
               <button
                 onClick={handleRegeneratePrediction}
@@ -1064,7 +1147,7 @@ export default function BhriguPredictionView({
                          transition hover:border-cyan-400 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <RefreshCw className="w-3 h-3" />
-                Refresh
+                {t('bhriguPredictionView.cache.refresh')}
               </button>
             </div>
           )}
@@ -1084,7 +1167,9 @@ export default function BhriguPredictionView({
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="font-semibold">
-                      {errorDetails.isNetwork ? 'Network issue detected' : 'API request failed'}
+                      {errorDetails.isNetwork
+                        ? t('bhriguPredictionView.errors.networkIssue')
+                        : t('bhriguPredictionView.errors.apiFailed')}
                     </p>
                     <p className="text-xs text-gray-200/80">
                       {errorDetails.message}
@@ -1095,7 +1180,7 @@ export default function BhriguPredictionView({
                       )}
                     </p>
                     <p className="text-xs text-gray-200/80 mt-1">
-                      Suggested action: {errorDetails.action}
+                      {t('bhriguPredictionView.errors.suggestedAction')}: {errorDetails.action}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1103,13 +1188,13 @@ export default function BhriguPredictionView({
                       onClick={handleLoadFromCache}
                       className="rounded-lg border border-white/20 px-3 py-1 text-xs text-white hover:border-white/40"
                     >
-                      Retry with cached data
+                      {t('bhriguPredictionView.actions.retryCached')}
                     </button>
                     <button
                       onClick={handleRegeneratePrediction}
                       className="rounded-lg bg-white/10 px-3 py-1 text-xs text-white hover:bg-white/20"
                     >
-                      Retry request
+                      {t('bhriguPredictionView.actions.retryRequest')}
                     </button>
                   </div>
                 </div>
@@ -1125,10 +1210,10 @@ export default function BhriguPredictionView({
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="w-12 h-12 text-cyan-400 animate-spin mb-4" />
             <p className="text-lg text-gray-400">
-              Consulting ancient Bhrigu Samhita wisdom...
+              {t('bhriguPredictionView.loading.title')}
             </p>
             <p className="text-sm text-gray-500 mt-2">
-              This may take a moment as we generate your personalized prediction
+              {t('bhriguPredictionView.loading.subtitle')}
             </p>
           </div>
         )}
@@ -1138,10 +1223,14 @@ export default function BhriguPredictionView({
             <div className="space-y-2">
               <p className="text-red-400">{error}</p>
               {errorDetails?.code && (
-                <p className="text-xs text-red-200/80">Error code: {errorDetails.code}</p>
+                <p className="text-xs text-red-200/80">
+                  {t('bhriguPredictionView.errors.errorCode')}: {errorDetails.code}
+                </p>
               )}
               {errorDetails?.action && (
-                <p className="text-xs text-red-200/80">Suggested action: {errorDetails.action}</p>
+                <p className="text-xs text-red-200/80">
+                  {t('bhriguPredictionView.errors.suggestedAction')}: {errorDetails.action}
+                </p>
               )}
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
@@ -1150,14 +1239,14 @@ export default function BhriguPredictionView({
                 className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
-                Retry request
+                {t('bhriguPredictionView.actions.retryRequest')}
               </button>
               <button
                 onClick={handleLoadFromCache}
                 className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
-                Retry with cached data
+                {t('bhriguPredictionView.actions.retryCached')}
               </button>
             </div>
           </div>
@@ -1176,7 +1265,7 @@ export default function BhriguPredictionView({
                        flex items-center gap-2 disabled:opacity-50"
             >
               <RefreshCw className="w-5 h-5" />
-              Regenerate
+              {t('bhriguPredictionView.actions.regenerate')}
             </button>
             <button
               className="px-6 py-3 bg-gray-700/50 border border-gray-600
@@ -1184,7 +1273,7 @@ export default function BhriguPredictionView({
                        flex items-center gap-2"
             >
               <Download className="w-5 h-5" />
-              Download
+              {t('bhriguPredictionView.actions.download')}
             </button>
             <button
               className="px-6 py-3 bg-gray-700/50 border border-gray-600
@@ -1192,7 +1281,7 @@ export default function BhriguPredictionView({
                        flex items-center gap-2"
             >
               <Share2 className="w-5 h-5" />
-              Share
+              {t('bhriguPredictionView.actions.share')}
             </button>
             {debugAllowed && (
               <button
@@ -1205,7 +1294,9 @@ export default function BhriguPredictionView({
                          }`}
               >
                 <BookOpen className="w-5 h-5" />
-                {debugMode ? 'Hide Debug' : 'Debug Mode'}
+                {debugMode
+                  ? t('bhriguPredictionView.debug.hide')
+                  : t('bhriguPredictionView.debug.show')}
               </button>
             )}
           </div>
