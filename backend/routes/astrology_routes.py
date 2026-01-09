@@ -25,6 +25,7 @@ def calculate_birth_chart():
         "date_of_birth": "1990-01-15",
         "time_of_birth": "14:30",
         "place_of_birth": "New Delhi, India",
+        "timezone": "Asia/Kolkata",
         "latitude": 28.6139,  // optional
         "longitude": 77.2090  // optional
     }
@@ -56,6 +57,8 @@ def calculate_birth_chart():
                 'time_of_birth': data['time_of_birth'],
                 'place_of_birth': sanitize_input(data['place_of_birth'], max_length=200)
             }
+            if data.get('timezone'):
+                sanitized_data['timezone'] = sanitize_input(data['timezone'], max_length=64)
 
             # Validate coordinates if provided
             if 'latitude' in data and 'longitude' in data:
@@ -73,7 +76,8 @@ def calculate_birth_chart():
                 time_of_birth=sanitized_data['time_of_birth'],
                 place=sanitized_data['place_of_birth'],
                 latitude=sanitized_data.get('latitude'),
-                longitude=sanitized_data.get('longitude')
+                longitude=sanitized_data.get('longitude'),
+                timezone_override=sanitized_data.get('timezone')
             )
 
             logger.info("Birth chart calculated successfully")
@@ -122,7 +126,9 @@ def zodiac_analysis():
             birth_chart = calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=sanitize_input(data['place_of_birth'], max_length=200)
+                place=sanitize_input(data['place_of_birth'], max_length=200),
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
@@ -190,7 +196,9 @@ def planetary_positions():
             chart = calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=sanitize_input(data['place_of_birth'], max_length=200)
+                place=sanitize_input(data['place_of_birth'], max_length=200),
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
@@ -253,13 +261,17 @@ def compatibility_analysis():
             chart1 = calculator.calculate_birth_chart(
                 date_of_birth=data['person1']['date_of_birth'],
                 time_of_birth=data['person1']['time_of_birth'],
-                place=sanitize_input(data['person1']['place_of_birth'], max_length=200)
+                place=sanitize_input(data['person1']['place_of_birth'], max_length=200),
+                timezone_override=sanitize_input(data['person1']['timezone'], max_length=64)
+                if data['person1'].get('timezone') else None
             )
 
             chart2 = calculator.calculate_birth_chart(
                 date_of_birth=data['person2']['date_of_birth'],
                 time_of_birth=data['person2']['time_of_birth'],
-                place=sanitize_input(data['person2']['place_of_birth'], max_length=200)
+                place=sanitize_input(data['person2']['place_of_birth'], max_length=200),
+                timezone_override=sanitize_input(data['person2']['timezone'], max_length=64)
+                if data['person2'].get('timezone') else None
             )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")

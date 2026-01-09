@@ -7,6 +7,7 @@ from services.matchmaking_service import get_matchmaking_service
 import logging
 from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
+from utils.validators import sanitize_input
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +193,9 @@ def check_doshas():
             chart = calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=data['place_of_birth']
+                place=data['place_of_birth'],
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         else:
             chart = cached_birth_data

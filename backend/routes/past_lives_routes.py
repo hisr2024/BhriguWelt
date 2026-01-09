@@ -6,6 +6,7 @@ from flask import Blueprint, request
 from services.astrology_calculator import astrology_calculator
 from services.openai_service import openai_service
 from utils.response_formatter import prediction_response, prediction_error_response
+from utils.validators import sanitize_input
 
 bp = Blueprint('past_lives', __name__, url_prefix='/api/past-lives')
 
@@ -133,7 +134,9 @@ def talents_carried_forward():
         birth_chart = astrology_calculator.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
+            place=data['place_of_birth'],
+            timezone_override=sanitize_input(data['timezone'], max_length=64)
+            if data.get('timezone') else None
         )
 
         prompt = f"""
@@ -175,7 +178,9 @@ def past_traumas():
         birth_chart = astrology_calculator.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
+            place=data['place_of_birth'],
+            timezone_override=sanitize_input(data['timezone'], max_length=64)
+            if data.get('timezone') else None
         )
 
         prompt = f"""

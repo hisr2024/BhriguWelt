@@ -10,6 +10,7 @@ from services.bhrigu_core_wisdom import get_bhrigu_core_wisdom
 from datetime import datetime
 import logging
 from utils.response_formatter import prediction_response, prediction_error_response
+from utils.validators import sanitize_input
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +115,9 @@ def generate_category_prediction(category):
             birth_chart = astrology_calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=data['place_of_birth']
+                place=data['place_of_birth'],
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         except Exception as e:
             logger.error(f"Birth chart calculation failed: {e}")
@@ -202,7 +205,9 @@ def generate_cosmic_blueprint():
             birth_chart = astrology_calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=data['place_of_birth']
+                place=data['place_of_birth'],
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         except Exception as e:
             logger.error(f"Birth chart calculation failed: {e}")
