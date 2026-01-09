@@ -1331,12 +1331,15 @@ Return only the section body (no header). Use at least 200 words with concrete a
 
     def _generate_metadata(self, birth_data: Dict[str, Any], category: Optional[str] = None) -> Dict[str, Any]:
         """Generate metadata for the prediction"""
+        selected_model = os.getenv('OPENAI_MODEL', 'gpt-4')
+        if self.openai_service:
+            selected_model = self.openai_service.get_selected_model()
         metadata = {
-            'zodiac_sign': self._safe_get(birth_data, 'zodiac_sign'),
-            'nakshatra': self._safe_get(birth_data, 'nakshatra'),
-            'moon_sign': self._safe_get(birth_data, 'moon_sign'),
-            'ascendant': self._safe_get(birth_data, 'ascendant'),
-            'ai_model': 'gpt-4',
+            'zodiac_sign': birth_data.get('zodiac_sign'),
+            'nakshatra': birth_data.get('nakshatra'),
+            'moon_sign': birth_data.get('moon_sign'),
+            'ascendant': birth_data.get('ascendant'),
+            'ai_model': selected_model,
             'corpus_available': self.openai_service.corpus_available,
             'tradition': 'Bhrigu Samhita & Nadi Jyotisa'
         }
@@ -1345,6 +1348,11 @@ Return only the section body (no header). Use at least 200 words with concrete a
             if section_keys:
                 metadata['section_keys'] = section_keys
         return metadata
+
+    def get_selected_model(self) -> str:
+        if self.openai_service:
+            return self.openai_service.get_selected_model()
+        return os.getenv('OPENAI_MODEL', 'gpt-4')
 
     def _calculate_age(self, date_of_birth: str) -> int:
         """Calculate age from date of birth"""
