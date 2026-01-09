@@ -8,8 +8,7 @@ from services.astrology_calculator import get_astrology_calculator, get_astrolog
 from models import db, BhriguPredictionCache, BhriguWisdomEntry, BhriguSessionLog
 from middleware.rate_limiter import limiter
 from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
-from utils.validators import validate_birth_data
-from utils.logger import setup_logger, log_error, sanitize_error
+from utils.validators import validate_birth_data, sanitizeQuestion
 from utils.response_formatter import (
     success_response,
     error_response,
@@ -21,12 +20,13 @@ from typing import Optional
 import uuid
 import json
 import time
+import logging
 
 bp = Blueprint('bhrigu_predictions', __name__, url_prefix='/api/bhrigu-predictions')
 logger = setup_logger(__name__)
 
 bhrigu_service = get_bhrigu_service()
-logger = setup_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def _get_chart_data(data):
@@ -74,6 +74,21 @@ def _build_chart_metadata(chart_data, category=None, extra=None):
     return metadata
 
 
+def _sanitize_question_field(data):
+    raw_question = data.get('question')
+    if raw_question is None:
+        return None
+
+    sanitized_question = sanitizeQuestion(raw_question, max_length=500)
+    if sanitized_question:
+        logger.info("Received sanitized question: %s", sanitized_question)
+    else:
+        sanitized_question = None
+
+    data['question'] = sanitized_question
+    return sanitized_question
+
+
 @bp.route('/karmic-journey', methods=['POST'])
 @limiter.limit("10 per minute")
 def karmic_journey():
@@ -83,6 +98,7 @@ def karmic_journey():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
 
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
@@ -165,6 +181,7 @@ def past_lives():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
         if not calculator and not cached_birth_data:
@@ -235,6 +252,7 @@ def future_lives():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
         if not calculator and not cached_birth_data:
@@ -298,6 +316,7 @@ def present_life():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
         if not calculator and not cached_birth_data:
@@ -361,6 +380,7 @@ def life_events():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
         if not calculator and not cached_birth_data:
@@ -424,6 +444,7 @@ def karmic_remedies():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
         if not calculator and not cached_birth_data:
@@ -487,6 +508,7 @@ def relationships():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
         if not calculator and not cached_birth_data:
@@ -550,6 +572,7 @@ def predictions():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
         if not calculator and not cached_birth_data:
@@ -613,6 +636,7 @@ def wisdom_search():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
 
         category = data.get('category')
         zodiac_sign = data.get('zodiac_sign')

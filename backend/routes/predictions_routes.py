@@ -9,8 +9,9 @@ from services.section_parser import get_section_parser
 from utils.client_status import parse_client_online
 from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
 from datetime import datetime
-from utils.logger import setup_logger, log_exception
-from utils.response_formatter import prediction_response, prediction_error_response, error_response
+import logging
+from utils.validators import sanitizeQuestion
+from utils.response_formatter import prediction_response, prediction_error_response
 
 logger = setup_logger(__name__)
 
@@ -273,10 +274,12 @@ def specific_question():
     """Get prediction for specific question"""
     try:
         data = request.get_json()
-        question = data.get('question')
+        raw_question = data.get('question')
+        question = sanitizeQuestion(raw_question, max_length=500) if raw_question else ''
 
         if not question:
             return prediction_error_response('Question is required', 400)
+        logger.info("Received sanitized question: %s", question)
 
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)

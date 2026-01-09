@@ -3,6 +3,7 @@ Input validation utilities for BhriguWelt API
 """
 from datetime import datetime
 from typing import Dict, Any, Optional, Tuple
+import html
 import re
 
 class ValidationError(Exception):
@@ -153,6 +154,40 @@ def sanitize_input(value: str, max_length: int = 500) -> str:
     sanitized = value.strip()
 
     # Limit length
+    if len(sanitized) > max_length:
+        sanitized = sanitized[:max_length]
+
+    return sanitized
+
+
+def sanitizeQuestion(value: str, max_length: int = 500) -> str:
+    """
+    Sanitize user questions by stripping HTML/JS and limiting length.
+
+    Args:
+        value: Input question
+        max_length: Maximum allowed length
+
+    Returns:
+        Sanitized question string
+    """
+    if not isinstance(value, str):
+        value = str(value)
+
+    sanitized = value.strip()
+
+    # Remove script tags and inline event handlers
+    sanitized = re.sub(r'<script[^>]*>.*?</script>', '', sanitized, flags=re.DOTALL | re.IGNORECASE)
+    sanitized = re.sub(r'\son\w+\s*=\s*["\'][^"\']*["\']', '', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'javascript:', '', sanitized, flags=re.IGNORECASE)
+
+    # Strip remaining HTML tags
+    sanitized = re.sub(r'<[^>]+>', '', sanitized)
+    sanitized = html.unescape(sanitized)
+
+    # Remove control characters
+    sanitized = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', sanitized)
+
     if len(sanitized) > max_length:
         sanitized = sanitized[:max_length]
 
