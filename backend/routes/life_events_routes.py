@@ -6,8 +6,10 @@ from flask import Blueprint, request
 from services.astrology_calculator import astrology_calculator
 from services.openai_service import openai_service
 from utils.response_formatter import prediction_response, prediction_error_response
+from utils.logger import setup_logger, log_exception
 
 bp = Blueprint('life_events', __name__, url_prefix='/api/life-events')
+logger = setup_logger(__name__)
 
 @bp.route('/prediction', methods=['POST'])
 def life_events_prediction():
@@ -47,7 +49,11 @@ def life_events_prediction():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate life events prediction: {str(e)}", 500)
+        log_exception(logger, e, context="life_events.prediction")
+        return prediction_error_response(
+            "Failed to generate life events prediction. Please try again later.",
+            500
+        )
 
 @bp.route('/career-milestones', methods=['POST'])
 def career_milestones():
@@ -87,7 +93,11 @@ def career_milestones():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate career milestones: {str(e)}", 500)
+        log_exception(logger, e, context="life_events.career_milestones")
+        return prediction_error_response(
+            "Failed to generate career milestones. Please try again later.",
+            500
+        )
 
 @bp.route('/relationship-events', methods=['POST'])
 def relationship_events():
@@ -128,7 +138,11 @@ def relationship_events():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate relationship events: {str(e)}", 500)
+        log_exception(logger, e, context="life_events.relationship_events")
+        return prediction_error_response(
+            "Failed to generate relationship events. Please try again later.",
+            500
+        )
 
 @bp.route('/financial-events', methods=['POST'])
 def financial_events():
@@ -169,7 +183,11 @@ def financial_events():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate financial events: {str(e)}", 500)
+        log_exception(logger, e, context="life_events.financial_events")
+        return prediction_error_response(
+            "Failed to generate financial events. Please try again later.",
+            500
+        )
 
 @bp.route('/health-alerts', methods=['POST'])
 def health_alerts():
@@ -210,7 +228,11 @@ def health_alerts():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate health alerts: {str(e)}", 500)
+        log_exception(logger, e, context="life_events.health_alerts")
+        return prediction_error_response(
+            "Failed to generate health alerts. Please try again later.",
+            500
+        )
 
 @bp.route('/spiritual-breakthroughs', methods=['POST'])
 def spiritual_breakthroughs():
@@ -251,7 +273,11 @@ def spiritual_breakthroughs():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate spiritual breakthroughs: {str(e)}", 500)
+        log_exception(logger, e, context="life_events.spiritual_breakthroughs")
+        return prediction_error_response(
+            "Failed to generate spiritual breakthroughs. Please try again later.",
+            500
+        )
 
 @bp.route('/auspicious-timings', methods=['POST'])
 def auspicious_timings():
@@ -294,4 +320,8 @@ def auspicious_timings():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate auspicious timings: {str(e)}", 500)
+        log_exception(logger, e, context="life_events.auspicious_timings")
+        return prediction_error_response(
+            "Failed to generate auspicious timings. Please try again later.",
+            500
+        )
