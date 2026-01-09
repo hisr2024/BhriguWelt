@@ -11,6 +11,7 @@ import sys
 import json
 import uuid
 from datetime import datetime
+from pathlib import Path
 from utils.logger import setup_logger, log_exception
 
 print("=" * 60)
@@ -20,23 +21,55 @@ print("=" * 60)
 # Load environment variables
 load_dotenv()
 
-# Security: Ensure critical environment variables are set in production
+# Security: Ensure critical environment variables are set
 FLASK_ENV = os.getenv('FLASK_ENV', 'development')
 IS_PRODUCTION = FLASK_ENV == 'production'
 
 print(f"Environment: {FLASK_ENV}")
 print(f"Production Mode: {IS_PRODUCTION}")
 
-if IS_PRODUCTION:
-    # Enforce strict security in production
-    # Note: FRONTEND_URL is optional - we have hardcoded production URLs as fallback
-    required_vars = ['SECRET_KEY', 'JWT_SECRET_KEY']
+def _exit_startup(error_lines):
+    print("ERROR: Backend startup checks failed:", file=sys.stderr)
+    for line in error_lines:
+        print(f" - {line}", file=sys.stderr)
+    sys.exit(1)
+
+def _check_required_env_vars():
+    required_vars = ['OPENAI_API_KEY', 'SECRET_KEY', 'JWT_SECRET_KEY', 'FRONTEND_URL']
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     if missing_vars:
-        error_msg = f"Production mode requires environment variables: {', '.join(missing_vars)}"
-        print(f"ERROR: {error_msg}", file=sys.stderr)
-        raise RuntimeError(error_msg)
+        _exit_startup([f"Missing required environment variables: {', '.join(missing_vars)}"])
     print("✓ All required environment variables are set")
+
+def _check_corpus_files():
+    required_files = [
+        "bhrigu_samhita_principles.yml",
+        "nadi_jyotisha_principles.yml",
+    ]
+    repo_root = Path(__file__).parent.parent
+    search_paths = [
+        Path(__file__).parent / "data",
+        repo_root / "archive" / "legacy_backend" / "data",
+    ]
+    missing_by_path = {}
+    for base_path in search_paths:
+        missing = [name for name in required_files if not (base_path / name).exists()]
+        if not missing:
+            print(f"✓ Corpus files found in: {base_path}")
+            return
+        missing_by_path[str(base_path)] = missing
+
+    error_lines = [
+        "Required corpus files are missing.",
+        f"Expected files: {', '.join(required_files)}",
+        "Searched paths:",
+    ]
+    for base_path, missing in missing_by_path.items():
+        error_lines.append(f"{base_path} (missing: {', '.join(missing)})")
+    _exit_startup(error_lines)
+
+_check_required_env_vars()
+_check_corpus_files()
 
 # Initialize Flask app
 print("Initializing Flask application...")
