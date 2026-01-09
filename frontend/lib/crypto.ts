@@ -8,7 +8,7 @@ const ALGORITHM = 'AES-GCM';
 const KEY_LENGTH = 256;
 const IV_LENGTH = 12; // 96 bits for GCM
 const SALT_LENGTH = 16;
-const ITERATIONS = 100000; // PBKDF2 iterations
+const ITERATIONS = 310000; // PBKDF2 iterations
 const HASH = 'SHA-256';
 
 /**
