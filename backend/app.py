@@ -95,7 +95,7 @@ logger.info("Configuring CORS...")
 CORS(app,
      origins=["https://bhrigu-welt.vercel.app"],  # Your Vercel origin
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Include OPTIONS for preflight
-     allowed_headers=["Content-Type", "Authorization", "x-client-online", "X-API-Key"],  # Explicitly allow your header
+     allow_headers=["Content-Type", "Authorization", "X-Client-Online", "X-API-Key"],  # Explicitly allow your header
      supports_credentials=True  # If using auth/cookies
 )
 
