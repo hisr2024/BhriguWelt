@@ -11,7 +11,8 @@ import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
-import { pastLivesAPI, BirthDetails } from '@/lib/api';
+import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
+import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import Link from 'next/link';
 
 export default function PastLivesPage() {
@@ -84,8 +85,14 @@ export default function PastLivesPage() {
       };
 
       try {
-        const analysis = await pastLivesAPI.getAnalysis(birthDetails);
-        setData(analysis);
+        const response = await bhriguPredictionsAPI.getPastLives(birthDetails);
+        const prediction = normalizePredictionResponse<any>(response).prediction;
+        setData({
+          ...prediction,
+          past_life_analysis: prediction?.recent_life ?? prediction?.significant_lives ?? prediction?.full_analysis,
+          past_relationships: prediction?.past_relationships,
+          talents_carried_forward: prediction?.past_skills ?? prediction?.spiritual_progress
+        });
       } catch (apiError) {
         console.error('API error, using offline mode:', apiError);
         setData({

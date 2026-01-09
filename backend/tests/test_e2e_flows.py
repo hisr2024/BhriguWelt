@@ -75,30 +75,13 @@ class TestKarmicJourneyFlow:
         """Test complete karmic journey workflow"""
         # Get comprehensive karmic analysis
         response = client.post(
-            '/api/karmic-journey/analysis',
+            '/api/bhrigu-predictions/karmic-journey',
             data=json.dumps(sample_birth_data),
             content_type='application/json'
         )
         
         # Endpoint should be accessible
         assert response.status_code != 404
-        
-        if response.status_code == 200:
-            # Get soul purpose
-            response = client.post(
-                '/api/karmic-journey/soul-purpose',
-                data=json.dumps(sample_birth_data),
-                content_type='application/json'
-            )
-            assert response.status_code in [200, 500]
-            
-            # Get karmic lessons
-            response = client.post(
-                '/api/karmic-journey/karmic-lessons',
-                data=json.dumps(sample_birth_data),
-                content_type='application/json'
-            )
-            assert response.status_code in [200, 500]
 
 
 class TestMatchmakingFlow:
@@ -146,17 +129,14 @@ class TestPredictionFlow:
     
     def test_multi_timeframe_predictions(self, client, sample_birth_data):
         """Test getting predictions for multiple timeframes"""
-        timeframes = ['daily', 'weekly', 'monthly', 'yearly']
+        response = client.post(
+            '/api/bhrigu-predictions/predictions',
+            data=json.dumps(sample_birth_data),
+            content_type='application/json'
+        )
         
-        for timeframe in timeframes:
-            response = client.post(
-                f'/api/predictions/{timeframe}',
-                data=json.dumps(sample_birth_data),
-                content_type='application/json'
-            )
-            
-            # All timeframe endpoints should exist
-            assert response.status_code != 404
+        # Endpoint should exist
+        assert response.status_code != 404
 
 
 class TestBhriguComprehensiveFlow:

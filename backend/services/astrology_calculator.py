@@ -2,8 +2,12 @@
 Vedic Astrology Calculations Service
 Core astronomical and astrological calculations
 """
+import logging
+import os
 from datetime import datetime
+from collections import OrderedDict
 from importlib import import_module, util as importlib_util
+import logging
 import math
 from typing import Dict, Any, Tuple, List
 
@@ -55,10 +59,20 @@ class AstrologyCalculator:
 
         self.tf = self.TimezoneFinder()
         self.geolocator = self.Nominatim(user_agent="bhriguwelt")
+        self.MapBox = getattr(geopy_geocoders, "MapBox", None)
+        self.mapbox_token = os.getenv("MAPBOX_ACCESS_TOKEN") or os.getenv("MAPBOX_TOKEN")
+        self.mapbox_geolocator = (
+            self.MapBox(api_key=self.mapbox_token)
+            if self.MapBox and self.mapbox_token
+            else None
+        )
+        self._geocode_cache = OrderedDict()
+        self._geocode_cache_max_size = 256
 
     def calculate_birth_chart(self, date_of_birth: str, time_of_birth: str,
                               place: str, latitude: float = None,
-                              longitude: float = None) -> Dict[str, Any]:
+                              longitude: float = None,
+                              timezone_override: str = None) -> Dict[str, Any]:
         """
         Calculate complete Vedic birth chart
 
@@ -68,14 +82,16 @@ class AstrologyCalculator:
             place: Place of birth (for geocoding)
             latitude: Optional latitude (if not provided, will geocode)
             longitude: Optional longitude (if not provided, will geocode)
+            timezone_override: Optional IANA timezone string to override lookup
 
         Returns:
             Complete birth chart data
         """
         # Get coordinates if not provided
+        geocoded_coords = None
         if latitude is None or longitude is None:
-            coords = self._geocode_location(place)
-            if not coords:
+            geocoded_coords = self._geocode_location(place)
+            if not geocoded_coords:
                 logger.warning("Geocoding failed for place_of_birth=%s", place)
                 return {
                     'error': {
@@ -86,26 +102,46 @@ class AstrologyCalculator:
                         )
                     }
                 }
-            latitude = coords['latitude']
-            longitude = coords['longitude']
+            latitude = geocoded_coords['latitude']
+            longitude = geocoded_coords['longitude']
 
         # Get timezone
-        timezone_str = self.tf.timezone_at(lat=latitude, lng=longitude)
+        timezone_str = None
+        if timezone_override:
+            try:
+                self.pytz.timezone(timezone_override)
+                timezone_str = timezone_override
+            except self.pytz.UnknownTimeZoneError:
+                logger.warning("Invalid timezone override received: %s", timezone_override)
+                return {
+                    'error': {
+                        'code': 'invalid_timezone_override',
+                        'message': "Provided timezone override is invalid."
+                    }
+                }
+
+        if not timezone_str:
+            timezone_str = self.tf.timezone_at(lat=latitude, lng=longitude)
+
+        if not timezone_str and place:
+            geocoded_coords = geocoded_coords or self._geocode_location(place)
+            if geocoded_coords:
+                timezone_str = self.tf.timezone_at(
+                    lat=geocoded_coords['latitude'],
+                    lng=geocoded_coords['longitude']
+                )
+                if timezone_str:
+                    latitude = geocoded_coords['latitude']
+                    longitude = geocoded_coords['longitude']
+
         if not timezone_str:
             logger.warning(
-                "Timezone resolution failed for latitude=%s longitude=%s",
+                "Timezone resolution failed; falling back to UTC for latitude=%s longitude=%s place=%s",
                 latitude,
-                longitude
+                longitude,
+                place
             )
-            return {
-                'error': {
-                    'code': 'timezone_resolution_failed',
-                    'message': (
-                        "Unable to determine timezone for provided location. "
-                        "Please verify latitude/longitude or place_of_birth."
-                    )
-                }
-            }
+            timezone_str = "UTC"
 
         # Parse datetime
         dt_str = f"{date_of_birth} {time_of_birth}"
@@ -159,16 +195,48 @@ class AstrologyCalculator:
 
     def _geocode_location(self, place: str) -> Dict[str, float]:
         """Geocode location to get latitude/longitude"""
+        place_key = place.strip().lower()
+        if not place_key:
+            return None
+        cached = self._get_cached_geocode(place_key)
+        if cached:
+            return cached
         try:
             location = self.geolocator.geocode(place)
             if location:
-                return {
+                coords = {
                     'latitude': location.latitude,
                     'longitude': location.longitude
                 }
-        except Exception:
-            return None
+                self._set_cached_geocode(place_key, coords)
+                return coords
+        except Exception as exc:
+            logger.warning("Nominatim geocode error for place=%s: %s", place, exc)
+        if self.mapbox_geolocator:
+            try:
+                location = self.mapbox_geolocator.geocode(place)
+                if location:
+                    coords = {
+                        'latitude': location.latitude,
+                        'longitude': location.longitude
+                    }
+                    self._set_cached_geocode(place_key, coords)
+                    return coords
+            except Exception as exc:
+                logger.warning("Mapbox geocode error for place=%s: %s", place, exc)
         return None
+
+    def _get_cached_geocode(self, place_key: str) -> Dict[str, float]:
+        if place_key in self._geocode_cache:
+            self._geocode_cache.move_to_end(place_key)
+            return self._geocode_cache[place_key]
+        return None
+
+    def _set_cached_geocode(self, place_key: str, coords: Dict[str, float]) -> None:
+        self._geocode_cache[place_key] = coords
+        self._geocode_cache.move_to_end(place_key)
+        if len(self._geocode_cache) > self._geocode_cache_max_size:
+            self._geocode_cache.popitem(last=False)
 
     def _calculate_planetary_positions(self, observer: Any) -> Dict[str, Any]:
         """Calculate positions of all planets"""

@@ -8,6 +8,10 @@ import os
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+from utils.logger import setup_logger, log_exception
+
+logger = setup_logger(__name__)
+
 def test_service_initialization():
     """Test that all services initialize properly"""
     print("\n" + "="*60)
@@ -39,8 +43,7 @@ def test_service_initialization():
         return True
     except Exception as e:
         print(f"✗ Service initialization failed: {e}")
-        import traceback
-        traceback.print_exc()
+        log_exception(logger, e, "Service initialization failed")
         return False
 
 
@@ -75,8 +78,7 @@ def test_categories():
         return True
     except Exception as e:
         print(f"✗ Category test failed: {e}")
-        import traceback
-        traceback.print_exc()
+        log_exception(logger, e, "Category test failed")
         return False
 
 
@@ -125,8 +127,7 @@ def test_offline_prediction():
             
     except Exception as e:
         print(f"✗ Offline prediction test failed: {e}")
-        import traceback
-        traceback.print_exc()
+        log_exception(logger, e, "Offline prediction test failed")
         return False
 
 
@@ -171,8 +172,7 @@ def test_rule_engine():
         return True
     except Exception as e:
         print(f"✗ Rule engine test failed: {e}")
-        import traceback
-        traceback.print_exc()
+        log_exception(logger, e, "Rule engine test failed")
         return False
 
 
@@ -224,8 +224,7 @@ def test_core_wisdom_files():
         return True
     except Exception as e:
         print(f"✗ Core wisdom files test failed: {e}")
-        import traceback
-        traceback.print_exc()
+        log_exception(logger, e, "Core wisdom files test failed")
         return False
 
 
