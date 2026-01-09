@@ -3,7 +3,6 @@ Bhrigu Samhita and Nadi Jyotisa Predictions Service
 Comprehensive predictions based on ancient Vedic wisdom
 """
 import os
-import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import json
@@ -12,9 +11,9 @@ from services.openai_service import get_openai_service
 from services.astrology_calculator import AstrologyCalculator
 from services.section_parser import get_section_parser
 from services.bhrigu_corpus_db import get_corpus_database
+from utils.logger import setup_logger, log_exception
 
-# Configure logging
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 
 class BhriguPredictionsService:
@@ -129,6 +128,20 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
 - Saravali: Detailed planetary interpretations
 - Uttara Kalamrita: Remedial measures"""
 
+    @staticmethod
+    def _clean_value(value: Any) -> Any:
+        if value is None:
+            return "Unknown"
+        if isinstance(value, str):
+            cleaned = value.strip()
+            return cleaned if cleaned else "Unknown"
+        return value
+
+    def _safe_get(self, data: Optional[Dict[str, Any]], key: str) -> Any:
+        if not data:
+            return "Unknown"
+        return self._clean_value(data.get(key))
+
     def generate_comprehensive_prediction(self, birth_data: Dict[str, Any],
                                          category: str,
                                          question: Optional[str] = None) -> Dict[str, Any]:
@@ -159,7 +172,7 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
                     )
                     birth_data.update(chart_data)
                 except Exception as e:
-                    print(f"Error calculating chart: {e}")
+                    log_exception(logger, e, context="bhrigu_predictions.calculate_birth_chart")
             else:
                 logger.warning("Astrology calculator unavailable; proceeding without chart enrichment.")
 
@@ -235,17 +248,17 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
 Generate a comprehensive Karmic Journey analysis for a person with the following birth details:
 
 **Birth Details:**
-- Date of Birth: {birth_data.get('date_of_birth')}
-- Time of Birth: {birth_data.get('time_of_birth')}
-- Place of Birth: {birth_data.get('place_of_birth')}
+- Date of Birth: {self._safe_get(birth_data, 'date_of_birth')}
+- Time of Birth: {self._safe_get(birth_data, 'time_of_birth')}
+- Place of Birth: {self._safe_get(birth_data, 'place_of_birth')}
 
 **Astrological Configuration:**
-- Zodiac Sign (Rashi): {birth_data.get('zodiac_sign')}
-- Moon Sign: {birth_data.get('moon_sign')}
-- Ascendant (Lagna): {birth_data.get('ascendant')}
-- Nakshatra: {birth_data.get('nakshatra')}
-- North Node (Rahu): {birth_data.get('rahu_position', 'Calculate from chart')}
-- South Node (Ketu): {birth_data.get('ketu_position', 'Calculate from chart')}
+- Zodiac Sign (Rashi): {self._safe_get(birth_data, 'zodiac_sign')}
+- Moon Sign: {self._safe_get(birth_data, 'moon_sign')}
+- Ascendant (Lagna): {self._safe_get(birth_data, 'ascendant')}
+- Nakshatra: {self._safe_get(birth_data, 'nakshatra')}
+- North Node (Rahu): {self._safe_get(birth_data, 'rahu_position')}
+- South Node (Ketu): {self._safe_get(birth_data, 'ketu_position')}
 
 {f'**Specific Question:** {question}' if question else ''}
 
@@ -345,12 +358,12 @@ Provide specific, actionable guidance rooted in Bhrigu Samhita and Nadi Jyotisa 
 Generate a detailed Past Lives analysis based on Nadi Jyotisa principles:
 
 **Current Birth Details:**
-- Zodiac Sign: {birth_data.get('zodiac_sign')}
-- Nakshatra: {birth_data.get('nakshatra')}
-- Moon Sign: {birth_data.get('moon_sign')}
-- Ketu Position (South Node): {birth_data.get('ketu_position')}
-- Saturn Position: {birth_data.get('saturn_position')}
-- 12th House Lord: {birth_data.get('twelfth_house_lord')}
+- Zodiac Sign: {self._safe_get(birth_data, 'zodiac_sign')}
+- Nakshatra: {self._safe_get(birth_data, 'nakshatra')}
+- Moon Sign: {self._safe_get(birth_data, 'moon_sign')}
+- Ketu Position (South Node): {self._safe_get(birth_data, 'ketu_position')}
+- Saturn Position: {self._safe_get(birth_data, 'saturn_position')}
+- 12th House Lord: {self._safe_get(birth_data, 'twelfth_house_lord')}
 
 {f'**Specific Question:** {question}' if question else ''}
 
@@ -450,11 +463,11 @@ Reference specific Nadi Jyotisa indicators and planetary positions."""
 Generate Future Lives predictions based on current karmic trajectory:
 
 **Current Life Indicators:**
-- Zodiac Sign: {birth_data.get('zodiac_sign')}
-- Nakshatra: {birth_data.get('nakshatra')}
-- Rahu Position (North Node): {birth_data.get('rahu_position')}
-- Jupiter Position: {birth_data.get('jupiter_position')}
-- 9th House Configuration: {birth_data.get('ninth_house')}
+- Zodiac Sign: {self._safe_get(birth_data, 'zodiac_sign')}
+- Nakshatra: {self._safe_get(birth_data, 'nakshatra')}
+- Rahu Position (North Node): {self._safe_get(birth_data, 'rahu_position')}
+- Jupiter Position: {self._safe_get(birth_data, 'jupiter_position')}
+- 9th House Configuration: {self._safe_get(birth_data, 'ninth_house')}
 
 {f'**Specific Question:** {question}' if question else ''}
 
@@ -560,18 +573,22 @@ Ground predictions in Bhrigu Samhita principles of karmic progression."""
         if fallback:
             return fallback
 
+        calculated_age = self._calculate_age(birth_data.get('date_of_birth'))
+        current_age = birth_data.get('age') if birth_data.get('age') is not None else calculated_age
+        current_age = self._clean_value(current_age) if current_age else "Unknown"
+
         prompt = f"""{self.bhrigu_system_prompt}
 
 Generate comprehensive Present Life analysis:
 
 **Birth and Current Details:**
-- Date of Birth: {birth_data.get('date_of_birth')}
-- Current Age: {birth_data.get('age', self._calculate_age(birth_data.get('date_of_birth')))}
-- Zodiac Sign: {birth_data.get('zodiac_sign')}
-- Nakshatra: {birth_data.get('nakshatra')}
-- Ascendant: {birth_data.get('ascendant')}
-- Current Mahadasha: {birth_data.get('current_dasha', 'To be determined')}
-- Moon Sign: {birth_data.get('moon_sign')}
+- Date of Birth: {self._safe_get(birth_data, 'date_of_birth')}
+- Current Age: {current_age}
+- Zodiac Sign: {self._safe_get(birth_data, 'zodiac_sign')}
+- Nakshatra: {self._safe_get(birth_data, 'nakshatra')}
+- Ascendant: {self._safe_get(birth_data, 'ascendant')}
+- Current Mahadasha: {self._safe_get(birth_data, 'current_dasha')}
+- Moon Sign: {self._safe_get(birth_data, 'moon_sign')}
 
 {f'**Specific Question:** {question}' if question else ''}
 
@@ -697,19 +714,27 @@ Base analysis on classical Bhrigu Samhita delineation methods."""
         if fallback:
             return fallback
 
-        current_age = birth_data.get('age', self._calculate_age(birth_data.get('date_of_birth')))
+        current_age_value = birth_data.get('age')
+        if current_age_value is None:
+            current_age_value = self._calculate_age(birth_data.get('date_of_birth'))
+        if isinstance(current_age_value, (int, float)) and current_age_value > 0:
+            current_age_display = current_age_value
+            age_next = current_age_value + 1
+        else:
+            current_age_display = "Unknown"
+            age_next = "Unknown"
 
         prompt = f"""{self.bhrigu_system_prompt}
 
 Generate precise Life Events predictions using Nadi Jyotisa timing methods:
 
 **Birth Details:**
-- Date of Birth: {birth_data.get('date_of_birth')}
-- Current Age: {current_age} years
-- Zodiac Sign: {birth_data.get('zodiac_sign')}
-- Nakshatra: {birth_data.get('nakshatra')}
-- Current Dasha: {birth_data.get('current_dasha')}
-- Dasha Balance: {birth_data.get('dasha_balance')}
+- Date of Birth: {self._safe_get(birth_data, 'date_of_birth')}
+- Current Age: {current_age_display} years
+- Zodiac Sign: {self._safe_get(birth_data, 'zodiac_sign')}
+- Nakshatra: {self._safe_get(birth_data, 'nakshatra')}
+- Current Dasha: {self._safe_get(birth_data, 'current_dasha')}
+- Dasha Balance: {self._safe_get(birth_data, 'dasha_balance')}
 
 {f'**Specific Question:** {question}' if question else ''}
 
@@ -722,7 +747,7 @@ Provide year-by-year predictions for the next 10 years with precision timing:
 
 For EACH year, provide:
 
-### Year 1 (Age {current_age + 1})
+### Year 1 (Age {age_next})
 **Dasha Period:** [Specify Mahadasha/Antardasha]
 **Overall Theme:** [Major themes and energies]
 
@@ -872,12 +897,12 @@ Provide month-level precision where possible using Nadi Jyotisa methods."""
 Generate comprehensive Karmic Remedies based on Bhrigu Samhita tradition:
 
 **Chart Details:**
-- Zodiac Sign: {birth_data.get('zodiac_sign')}
-- Nakshatra: {birth_data.get('nakshatra')}
-- Ascendant: {birth_data.get('ascendant')}
-- Planetary Afflictions: {birth_data.get('afflictions', 'To be determined from chart')}
-- Weak Planets: {birth_data.get('weak_planets', 'To be determined')}
-- Doshas: {birth_data.get('doshas', 'To be determined')}
+- Zodiac Sign: {self._safe_get(birth_data, 'zodiac_sign')}
+- Nakshatra: {self._safe_get(birth_data, 'nakshatra')}
+- Ascendant: {self._safe_get(birth_data, 'ascendant')}
+- Planetary Afflictions: {self._safe_get(birth_data, 'afflictions')}
+- Weak Planets: {self._safe_get(birth_data, 'weak_planets')}
+- Doshas: {self._safe_get(birth_data, 'doshas')}
 
 {f'**Specific Challenges:** {question}' if question else ''}
 
@@ -1090,12 +1115,12 @@ Provide practical, affordable, and effective remedies that can be integrated int
 Generate comprehensive Relationships analysis:
 
 **Your Chart:**
-- Zodiac Sign: {birth_data.get('zodiac_sign')}
-- Nakshatra: {birth_data.get('nakshatra')}
-- Moon Sign: {birth_data.get('moon_sign')}
-- Venus Position: {birth_data.get('venus_position')}
-- 7th House: {birth_data.get('seventh_house')}
-- Mars Position: {birth_data.get('mars_position')}
+- Zodiac Sign: {self._safe_get(birth_data, 'zodiac_sign')}
+- Nakshatra: {self._safe_get(birth_data, 'nakshatra')}
+- Moon Sign: {self._safe_get(birth_data, 'moon_sign')}
+- Venus Position: {self._safe_get(birth_data, 'venus_position')}
+- 7th House: {self._safe_get(birth_data, 'seventh_house')}
+- Mars Position: {self._safe_get(birth_data, 'mars_position')}
 
 {f'**Specific Question:** {question}' if question else ''}
 
@@ -1309,9 +1334,9 @@ Provide specific, actionable relationship guidance based on classical astrology.
 Generate general astrological predictions:
 
 **Birth Details:**
-- Zodiac Sign: {birth_data.get('zodiac_sign')}
-- Nakshatra: {birth_data.get('nakshatra')}
-- Moon Sign: {birth_data.get('moon_sign')}
+- Zodiac Sign: {self._safe_get(birth_data, 'zodiac_sign')}
+- Nakshatra: {self._safe_get(birth_data, 'nakshatra')}
+- Moon Sign: {self._safe_get(birth_data, 'moon_sign')}
 
 {f'**Specific Question:** {question}' if question else ''}
 
@@ -1452,10 +1477,10 @@ Base on current planetary transits and your natal chart."""
     def _generate_metadata(self, birth_data: Dict[str, Any], category: Optional[str] = None) -> Dict[str, Any]:
         """Generate metadata for the prediction"""
         metadata = {
-            'zodiac_sign': birth_data.get('zodiac_sign'),
-            'nakshatra': birth_data.get('nakshatra'),
-            'moon_sign': birth_data.get('moon_sign'),
-            'ascendant': birth_data.get('ascendant'),
+            'zodiac_sign': self._safe_get(birth_data, 'zodiac_sign'),
+            'nakshatra': self._safe_get(birth_data, 'nakshatra'),
+            'moon_sign': self._safe_get(birth_data, 'moon_sign'),
+            'ascendant': self._safe_get(birth_data, 'ascendant'),
             'ai_model': 'gpt-4',
             'corpus_available': self.openai_service.corpus_available,
             'tradition': 'Bhrigu Samhita & Nadi Jyotisa'

@@ -8,23 +8,25 @@ from services.astrology_calculator import get_astrology_calculator, get_astrolog
 from models import db, BhriguPredictionCache, BhriguWisdomEntry, BhriguSessionLog
 from middleware.rate_limiter import limiter
 from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
-from utils.validators import validate_birth_data
+from utils.validators import validate_birth_data, sanitize_input
 from utils.response_formatter import (
     success_response,
     error_response,
     prediction_response,
     prediction_error_response
 )
-import traceback
 from datetime import datetime
 from typing import Optional
 import uuid
 import json
 import time
+import logging
 
 bp = Blueprint('bhrigu_predictions', __name__, url_prefix='/api/bhrigu-predictions')
+logger = setup_logger(__name__)
 
 bhrigu_service = get_bhrigu_service()
+logger = logging.getLogger(__name__)
 
 
 def _get_chart_data(data):
@@ -36,7 +38,9 @@ def _get_chart_data(data):
             time_of_birth=data['time_of_birth'],
             place=data.get('place_of_birth', ''),
             latitude=data.get('latitude'),
-            longitude=data.get('longitude')
+            longitude=data.get('longitude'),
+            timezone_override=sanitize_input(data['timezone'], max_length=64)
+            if data.get('timezone') else None
         ), None
     if cached_birth_data:
         return cached_birth_data, None
@@ -72,6 +76,21 @@ def _build_chart_metadata(chart_data, category=None, extra=None):
     return metadata
 
 
+def _sanitize_question_field(data):
+    raw_question = data.get('question')
+    if raw_question is None:
+        return None
+
+    sanitized_question = sanitizeQuestion(raw_question, max_length=500)
+    if sanitized_question:
+        logger.info("Received sanitized question: %s", sanitized_question)
+    else:
+        sanitized_question = None
+
+    data['question'] = sanitized_question
+    return sanitized_question
+
+
 @bp.route('/karmic-journey', methods=['POST'])
 @limiter.limit("10 per minute")
 def karmic_journey():
@@ -81,6 +100,7 @@ def karmic_journey():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
 
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
@@ -146,10 +166,9 @@ def karmic_journey():
         )
 
     except Exception as e:
-        print(f"Error in karmic_journey: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in karmic_journey")
         return prediction_error_response(
-            f"Failed to generate karmic journey analysis: {str(e)}",
+            f"Failed to generate karmic journey analysis: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'karmic_journey'}
         )
@@ -164,6 +183,7 @@ def past_lives():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
         if not calculator and not cached_birth_data:
@@ -217,10 +237,9 @@ def past_lives():
         )
 
     except Exception as e:
-        print(f"Error in past_lives: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in past_lives")
         return prediction_error_response(
-            f"Failed to generate past lives analysis: {str(e)}",
+            f"Failed to generate past lives analysis: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'past_lives'}
         )
@@ -235,6 +254,7 @@ def future_lives():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
         if not calculator and not cached_birth_data:
@@ -281,10 +301,9 @@ def future_lives():
         )
 
     except Exception as e:
-        print(f"Error in future_lives: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in future_lives")
         return prediction_error_response(
-            f"Failed to generate future lives prediction: {str(e)}",
+            f"Failed to generate future lives prediction: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'future_lives'}
         )
@@ -299,6 +318,7 @@ def present_life():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
         if not calculator and not cached_birth_data:
@@ -345,10 +365,9 @@ def present_life():
         )
 
     except Exception as e:
-        print(f"Error in present_life: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in present_life")
         return prediction_error_response(
-            f"Failed to generate present life analysis: {str(e)}",
+            f"Failed to generate present life analysis: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'present_life'}
         )
@@ -363,6 +382,7 @@ def life_events():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
         if not calculator and not cached_birth_data:
@@ -409,10 +429,9 @@ def life_events():
         )
 
     except Exception as e:
-        print(f"Error in life_events: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in life_events")
         return prediction_error_response(
-            f"Failed to generate life events prediction: {str(e)}",
+            f"Failed to generate life events prediction: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'life_events'}
         )
@@ -427,6 +446,7 @@ def karmic_remedies():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
         if not calculator and not cached_birth_data:
@@ -473,10 +493,9 @@ def karmic_remedies():
         )
 
     except Exception as e:
-        print(f"Error in karmic_remedies: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in karmic_remedies")
         return prediction_error_response(
-            f"Failed to generate karmic remedies: {str(e)}",
+            f"Failed to generate karmic remedies: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'karmic_remedies'}
         )
@@ -491,6 +510,7 @@ def relationships():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
         if not calculator and not cached_birth_data:
@@ -537,10 +557,9 @@ def relationships():
         )
 
     except Exception as e:
-        print(f"Error in relationships: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in relationships")
         return prediction_error_response(
-            f"Failed to generate relationships analysis: {str(e)}",
+            f"Failed to generate relationships analysis: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'relationships'}
         )
@@ -555,6 +574,7 @@ def predictions():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
         if not calculator and not cached_birth_data:
@@ -601,10 +621,9 @@ def predictions():
         )
 
     except Exception as e:
-        print(f"Error in predictions: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in predictions")
         return prediction_error_response(
-            f"Failed to generate predictions: {str(e)}",
+            f"Failed to generate predictions: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'predictions'}
         )
@@ -619,6 +638,7 @@ def wisdom_search():
     """
     try:
         data = request.get_json()
+        _sanitize_question_field(data)
 
         category = data.get('category')
         zodiac_sign = data.get('zodiac_sign')
@@ -640,8 +660,8 @@ def wisdom_search():
         })
 
     except Exception as e:
-        print(f"Error in wisdom_search: {str(e)}")
-        return error_response(f"Failed to search wisdom: {str(e)}", 500)
+        log_error(logger, e, "Error in wisdom_search")
+        return error_response(f"Failed to search wisdom: {sanitize_error(str(e))}", 500)
 
 
 @bp.route('/cache-stats', methods=['GET'])
@@ -668,8 +688,8 @@ def cache_stats():
         })
 
     except Exception as e:
-        print(f"Error in cache_stats: {str(e)}")
-        return error_response(f"Failed to get cache stats: {str(e)}", 500)
+        log_error(logger, e, "Error in cache_stats")
+        return error_response(f"Failed to get cache stats: {sanitize_error(str(e))}", 500)
 
 
 @bp.route('/session/start', methods=['POST'])
@@ -698,8 +718,8 @@ def start_session():
         })
 
     except Exception as e:
-        print(f"Error starting session: {str(e)}")
-        return error_response(f"Failed to start session: {str(e)}", 500)
+        log_error(logger, e, "Error starting session")
+        return error_response(f"Failed to start session: {sanitize_error(str(e))}", 500)
 
 
 @bp.route('/comprehensive', methods=['POST'])
@@ -782,10 +802,9 @@ def comprehensive_prediction():
         )
 
     except Exception as e:
-        print(f"Error in comprehensive_prediction: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in comprehensive_prediction")
         return prediction_error_response(
-            f"Failed to generate comprehensive prediction: {str(e)}",
+            f"Failed to generate comprehensive prediction: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'comprehensive'}
         )
@@ -799,6 +818,5 @@ def ratelimit_handler(e):
 
 @bp.errorhandler(Exception)
 def handle_error(e):
-    print(f"Unhandled error in bhrigu_predictions: {str(e)}")
-    traceback.print_exc()
+    log_error(logger, e, "Unhandled error in bhrigu_predictions")
     return prediction_error_response("An unexpected error occurred", 500)
