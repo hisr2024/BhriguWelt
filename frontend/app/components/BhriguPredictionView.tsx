@@ -1,15 +1,18 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, RefreshCw, Download, Share2, BookOpen } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
+import { VariableSizeList } from 'react-window';
 import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
 import { getCurrentLanguage, type Language } from '@/lib/copy';
 import { tLocale } from '@/lib/locales';
 import { Accordion } from '@/app/components/ui/Accordion';
 import { AccordionItem } from '@/app/components/ui/AccordionItem';
 import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
+import { useSectionExpansionStore } from '@/app/stores/sectionExpansionStore';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS: Record<string, Array<{ key: string; titleKey: string; color: string }>> = {
@@ -126,6 +129,8 @@ const DEFAULT_COLOR = 'cyan';
 const PROFILE_HASH_PREFIX = 'profile_hash_';
 const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_';
 const SKELETON_LINES = 5;
+const ESTIMATED_SECTION_HEIGHT = 220;
+const MAX_SECTION_LIST_HEIGHT = 700;
 
 // Helper function to check if profile has required fields
 const hasRequiredProfileFields = (profile: Profile): boolean => {
@@ -143,6 +148,13 @@ const normalizeCategoryKey = (category: string): string => {
   return category?.toLowerCase().replace(/[^a-z0-9-]/g, '-') || '';
 };
 
+type AnalysisWorkerResponse = {
+  id: number;
+  sections: Record<string, string>;
+  error?: string;
+  fromCache?: boolean;
+};
+
 interface BhriguPredictionViewProps {
   category: string;
   title: string;
@@ -152,6 +164,19 @@ interface BhriguPredictionViewProps {
     profileData: BirthDetails & { question?: string; force_regenerate?: boolean }
   ) => Promise<PredictionResult>;
   profile: Profile | null;
+}
+
+interface NormalizedPrediction {
+  sections: Record<string, string>;
+  fullAnalysis: string;
+  metadata?: BhriguPrediction['metadata'] & { category?: string };
+}
+
+interface DebugPredictionPayload {
+  metadata?: BhriguPrediction['metadata'] & { category?: string };
+  fullAnalysisLength: number;
+  sectionKeys: string[];
+  sectionLengths: Record<string, number>;
 }
 
 const getProfileHashKey = (profile: Profile) => `${PROFILE_HASH_PREFIX}${profile.id ?? 'current'}`;
@@ -190,6 +215,48 @@ const getProfileHash = async (profile: Profile) => {
     .join('');
 };
 
+const normalizePrediction = (
+  prediction: BhriguPrediction,
+  fallbackCategory: string
+): NormalizedPrediction => {
+  const metadata = prediction.metadata ?? {};
+  const categoryValue = metadata?.category ?? prediction.category ?? fallbackCategory;
+  const normalizedCategory = normalizeCategoryKey(
+    typeof categoryValue === 'string' ? categoryValue : fallbackCategory
+  );
+  const sectionsConfig = CATEGORY_SECTIONS[normalizedCategory] || [];
+  const sections: Record<string, string> = {};
+
+  sectionsConfig.forEach((section) => {
+    const value = prediction[section.key as keyof BhriguPrediction];
+    if (typeof value === 'string' && value.trim().length > 0) {
+      sections[section.key] = value.trim();
+    }
+  });
+
+  return {
+    sections,
+    fullAnalysis: prediction.full_analysis ?? prediction.complete_analysis ?? '',
+    metadata: {
+      ...metadata,
+      category: normalizedCategory,
+    },
+  };
+};
+
+const buildDebugPayload = (prediction: NormalizedPrediction): DebugPredictionPayload => {
+  const sectionLengths = Object.fromEntries(
+    Object.entries(prediction.sections).map(([key, value]) => [key, value.length])
+  );
+
+  return {
+    metadata: prediction.metadata,
+    fullAnalysisLength: prediction.fullAnalysis?.length ?? 0,
+    sectionKeys: Object.keys(prediction.sections ?? {}),
+    sectionLengths,
+  };
+};
+
 export default function BhriguPredictionView({
   category,
   title,
@@ -198,7 +265,8 @@ export default function BhriguPredictionView({
   fetchPrediction,
   profile
 }: BhriguPredictionViewProps) {
-  const [prediction, setPrediction] = useState<BhriguPrediction | null>(null);
+  const [prediction, setPrediction] = useState<NormalizedPrediction | null>(null);
+  const [rawPrediction, setRawPrediction] = useState<DebugPredictionPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<{
@@ -210,21 +278,20 @@ export default function BhriguPredictionView({
   const [fromCache, setFromCache] = useState(false);
   const [question, setQuestion] = useState('');
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [debugMode, setDebugMode] = useState(false);
   const [profileUpdated, setProfileUpdated] = useState(false);
   const [parsedFromFullAnalysis, setParsedFromFullAnalysis] = useState<Record<string, string>>({});
   const [isParsing, setIsParsing] = useState(false);
-  const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
-  const [expandingSections, setExpandingSections] = useState<Record<string, boolean>>({});
 
   const workerRef = useRef<Worker | null>(null);
   const workerRequestId = useRef(0);
-  const expandingTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
+  const listRef = useRef<VariableSizeList | null>(null);
+  const itemSizeMap = useRef<Record<number, number>>({});
 
   const searchParams = useSearchParams();
   const language = getCurrentLanguage();
   const debugAllowed = searchParams?.get('debug') === 'true';
+  const { expandedSections, setExpandedSection } = useSectionExpansionStore();
 
   useEffect(() => {
     if (profile) {
@@ -245,6 +312,32 @@ export default function BhriguPredictionView({
       checkProfile();
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof Worker === 'undefined') {
+      return;
+    }
+
+    const worker = new Worker(new URL('../workers/fullAnalysisParserWorker.ts', import.meta.url));
+    workerRef.current = worker;
+
+    worker.onmessage = (event: MessageEvent<AnalysisWorkerResponse>) => {
+      if (!event.data || event.data.id !== workerRequestId.current) {
+        return;
+      }
+      setParsedFromFullAnalysis(event.data.sections ?? {});
+      setIsParsing(false);
+    };
+
+    worker.onerror = () => {
+      setIsParsing(false);
+    };
+
+    return () => {
+      worker.terminate();
+      workerRef.current = null;
+    };
+  }, []);
 
   const loadPrediction = async (forceRegenerate = false, profileHash?: string) => {
     if (!profile) return;
@@ -267,7 +360,12 @@ export default function BhriguPredictionView({
         try {
           const parsed = JSON.parse(cached) as { profileHash: string; prediction: any };
           if (parsed.profileHash === resolvedHash) {
-            setPrediction(parsed.prediction);
+            const cachedPrediction = parsed.prediction;
+            if (cachedPrediction?.sections && cachedPrediction?.fullAnalysis !== undefined) {
+              setPrediction(cachedPrediction as NormalizedPrediction);
+            } else if (cachedPrediction) {
+              setPrediction(normalizePrediction(cachedPrediction, category));
+            }
             setFromCache(true);
             setLoading(false);
             return;
@@ -296,7 +394,8 @@ export default function BhriguPredictionView({
       const normalized = normalizePredictionResponse<BhriguPrediction>(response);
 
       if (normalized.status === 'success') {
-        setPrediction(normalized.prediction);
+        const compactPrediction = normalizePrediction(normalized.prediction, category);
+        setPrediction(compactPrediction);
         setFromCache(Boolean(
           normalized.metadata?.from_cache ||
           normalized.metadata?.source === 'cache' ||
@@ -306,7 +405,7 @@ export default function BhriguPredictionView({
           cacheKey,
           JSON.stringify({
             profileHash: resolvedHash,
-            prediction: normalized.prediction,
+            prediction: compactPrediction,
           })
         );
       } else {
@@ -334,7 +433,15 @@ export default function BhriguPredictionView({
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile, category, question, fetchPrediction]);
+
+  useEffect(() => {
+    if (debugAllowed && debugMode && prediction) {
+      setRawPrediction(buildDebugPayload(prediction));
+    } else {
+      setRawPrediction(null);
+    }
+  }, [debugAllowed, debugMode, prediction]);
 
   const formatCacheAge = (ageSeconds: number | null) => {
     if (ageSeconds === null) return 'Unknown';
@@ -347,17 +454,48 @@ export default function BhriguPredictionView({
     return `${days}d ${hours % 24}h`;
   };
 
+  const normalizedCategory = useMemo(() => {
+    const categoryValue = prediction?.metadata?.category ?? prediction?.category ?? category;
+    return normalizeCategoryKey(typeof categoryValue === 'string' ? categoryValue : category);
+  }, [category, prediction?.category, prediction?.metadata?.category]);
+
+  const sections = useMemo(
+    () => CATEGORY_SECTIONS[normalizedCategory] || [],
+    [normalizedCategory]
+  );
+
+  const directAvailableSections = useMemo(() => {
+    if (!prediction) return [];
+    return sections.filter(section => {
+      const content = prediction[section.key];
+      if (!content || typeof content !== 'string' || content.trim() === '') {
+        return false;
+      }
+      const trimmedContent = content.trim();
+      const isRedirectOnly = (
+        trimmedContent.length < 50 &&
+        (trimmedContent.toLowerCase().includes('see full analysis') ||
+         trimmedContent.toLowerCase().includes('see complete') ||
+         trimmedContent.toLowerCase().includes('refer to'))
+      );
+      return !isRedirectOnly;
+    });
+  }, [prediction, sections]);
+
+  const shouldParseFallback = Boolean(
+    prediction?.full_analysis && sections.length > 0 && directAvailableSections.length === 0
+  );
+
   // Client-side fallback to parse full_analysis into sections
   const parseFullAnalysisIntoSections = (fullAnalysis: string, cat: string): Record<string, string> => {
     const parsedSections: Record<string, string> = {};
-    const categoryConfig = CATEGORY_SECTIONS[cat] || [];
+    const categoryConfig = getEnglishSectionTitles(cat);
 
     if (!fullAnalysis) return parsedSections;
     
     for (const section of categoryConfig) {
-      const sectionTitle = tLocale(section.titleKey, 'en');
       // Escape special regex characters in title
-      const escapedTitle = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedTitle = section.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       
       // Try multiple patterns to find section content
       const patterns = [
@@ -391,30 +529,45 @@ export default function BhriguPredictionView({
   useEffect(() => {
     if (!prediction?.full_analysis) {
       setParsedFromFullAnalysis({});
+      setIsParsing(false);
       return;
     }
 
-    const categoryConfig = CATEGORY_SECTIONS[category] || [];
+    const categoryValue = prediction?.metadata?.category ?? prediction?.category ?? category;
+    const normalizedCategory = normalizeCategoryKey(
+      typeof categoryValue === 'string' ? categoryValue : category
+    );
+    const categoryConfig = getCategorySections(normalizedCategory);
     if (categoryConfig.length === 0) {
       setParsedFromFullAnalysis({});
+      setIsParsing(false);
       return;
     }
 
     const worker = workerRef.current;
     if (!worker) {
-      setParsedFromFullAnalysis(parseFullAnalysisIntoSections(prediction.full_analysis, category));
+      setParsedFromFullAnalysis(parseFullAnalysisIntoSections(prediction.full_analysis, normalizedCategory));
+      setIsParsing(false);
       return;
     }
 
+    setIsParsing(true);
     workerRequestId.current += 1;
     worker.postMessage({
       id: workerRequestId.current,
-      markdown: prediction.full_analysis,
-      sections: categoryConfig.map(section => ({ key: section.key, title: section.titleKey }))
+      fullAnalysis: prediction.full_analysis,
+      category: normalizedCategory
     });
   }, [prediction?.full_analysis, category]);
 
-  const renderSection = (sectionKey: string, sectionTitle: string, content: string, color: string) => {
+  const renderSection = (
+    sectionKey: string,
+    sectionTitle: string,
+    content: string,
+    color: string,
+    isOpen: boolean,
+    onToggle: (next: boolean) => void
+  ) => {
     // More lenient filtering - only exclude truly empty or placeholder content
     if (!content || content.trim() === '') {
       return null;
@@ -438,6 +591,8 @@ export default function BhriguPredictionView({
     return (
       <AccordionItem
         id={`section-${sectionKey}`}
+        isOpen={isOpen}
+        onToggle={onToggle}
         title={(
           <span className={`text-lg font-semibold ${colorClass.text} flex items-center gap-3`}>
             <span className={`w-1.5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
@@ -446,6 +601,7 @@ export default function BhriguPredictionView({
         )}
         className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
                    border ${colorClass.border} ${colorClass.hover} rounded-xl transition-all p-6`}
+        lazyRender
       >
         <div className="prose prose-invert prose-cyan max-w-none">
           <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
@@ -464,25 +620,12 @@ export default function BhriguPredictionView({
     const normalizedCategory = normalizeCategoryKey(
       typeof categoryValue === 'string' ? categoryValue : category
     );
-    const sections = CATEGORY_SECTIONS[normalizedCategory] || [];
+    const sections = getCategorySections(normalizedCategory);
 
     // First, try to get sections from the API response
-    let availableSections = sections.filter(section => {
-      const content = prediction[section.key];
-      if (!content || typeof content !== 'string' || content.trim() === '') {
-        return false;
-      }
-      const trimmedContent = content.trim();
-      const isRedirectOnly = (
-        trimmedContent.length < 50 &&
-        (trimmedContent.toLowerCase().includes('see full analysis') ||
-         trimmedContent.toLowerCase().includes('see complete') ||
-         trimmedContent.toLowerCase().includes('refer to'))
-      );
-      return !isRedirectOnly;
-    });
+    let availableSections = directAvailableSections;
 
-    // FALLBACK: If no sections found but full_analysis exists, use worker/regex results
+    // FALLBACK: If no sections found but full_analysis exists, use regex results
     if (availableSections.length === 0 && prediction.full_analysis) {
       availableSections = sections.filter(section => {
         const content = parsedFromFullAnalysis[section.key];
@@ -493,11 +636,50 @@ export default function BhriguPredictionView({
 
     // Helper function to get section content from either source
     const getSectionContent = (key: string): string => {
-      const directContent = prediction[key];
-      if (typeof directContent === 'string') {
-        return directContent;
+      return prediction.sections[key] || parsedFromFullAnalysis[key] || '';
+    };
+
+    const sectionListHeight = Math.min(
+      availableSections.length * ESTIMATED_SECTION_HEIGHT,
+      MAX_SECTION_LIST_HEIGHT
+    );
+
+    const getItemSize = (index: number) => itemSizeMap.current[index] ?? ESTIMATED_SECTION_HEIGHT;
+
+    const setItemSize = (index: number, size: number) => {
+      if (itemSizeMap.current[index] !== size) {
+        itemSizeMap.current[index] = size;
+        listRef.current?.resetAfterIndex(index);
       }
-      return parsedFromFullAnalysis[key] || '';
+    };
+
+    const SectionRow = ({ index, style }: { index: number; style: React.CSSProperties }) => {
+      const section = availableSections[index];
+      const sectionId = `${normalizedCategory}:${section.key}`;
+      const isOpen = Boolean(expandedSections[sectionId]);
+      const content = getSectionContent(section.key);
+      const rowRef = useRef<HTMLDivElement | null>(null);
+
+      useLayoutEffect(() => {
+        if (!rowRef.current) return;
+        const height = rowRef.current.getBoundingClientRect().height;
+        setItemSize(index, height + 16);
+      }, [index, content, isOpen]);
+
+      return (
+        <div style={style}>
+          <div ref={rowRef} className="pb-4">
+            {renderSection(
+              section.key,
+              tLocale(section.titleKey, language),
+              content,
+              section.color,
+              isOpen,
+              (next) => setExpandedSection(sectionId, next)
+            )}
+          </div>
+        </div>
+      );
     };
 
     return (
@@ -515,7 +697,7 @@ export default function BhriguPredictionView({
         )}
 
         {/* Show message if no sections were extracted successfully */}
-        {availableSections.length === 0 && prediction.full_analysis && !isParsing && (
+        {availableSections.length === 0 && prediction.fullAnalysis && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
             <p className="text-amber-400 text-sm">
               Note: Individual sections could not be extracted from the analysis.
@@ -538,74 +720,24 @@ export default function BhriguPredictionView({
             </div>
             
             <Accordion className="grid grid-cols-1 gap-4">
-              {availableSections.map((section) => (
-                <div key={section.key}>
-                  {renderSection(
-                    section.key,
-                    tLocale(section.titleKey, language),
-                    getSectionContent(section.key),
-                    section.color
-                  )}
-                </div>
-              ))}
+              <VariableSizeList
+                ref={listRef}
+                height={sectionListHeight}
+                itemCount={availableSections.length}
+                itemSize={getItemSize}
+                width="100%"
+                overscanCount={2}
+                className="pr-2"
+              >
+                {SectionRow}
+              </VariableSizeList>
             </Accordion>
           </div>
         )}
 
         {/* Full Analysis - Collapsible at the bottom */}
         {prediction.full_analysis && (
-          <div className="mt-8 pt-8 border-t border-gray-700/50">
-            <button
-              onClick={() => setShowFullAnalysis(!showFullAnalysis)}
-              aria-expanded={showFullAnalysis}
-              aria-controls="full-analysis-content"
-              className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
-                       border border-gray-700/50 rounded-xl p-6
-                       hover:border-cyan-500/30 transition-all
-                       flex items-center justify-between group relative z-10"
-            >
-              <div className="flex items-center gap-3">
-                <BookOpen className="w-6 h-6 text-cyan-400" />
-                <div className="text-left">
-                  <h3 className="text-xl font-bold text-white relative z-10">
-                    View Complete Reading
-                  </h3>
-                  <p className="text-sm text-gray-400 mt-1">
-                    {showFullAnalysis ? 'Hide' : 'Show'} the full unstructured analysis
-                  </p>
-                </div>
-              </div>
-              {showFullAnalysis ? (
-                <ChevronUp className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
-              ) : (
-                <ChevronDown className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
-              )}
-              <span className="sr-only">
-                {showFullAnalysis ? 'Hide full analysis' : 'Show full analysis'}
-              </span>
-            </button>
-
-            <AnimatePresence initial={false}>
-              {showFullAnalysis && (
-                <motion.div
-                  key="full-analysis"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3 }}
-                  id="full-analysis-content"
-                  className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
-                           border border-gray-700/50 rounded-xl p-6 overflow-visible"
-                >
-                  <div className="prose prose-invert prose-cyan max-w-none">
-                    <div className="text-gray-300 leading-relaxed whitespace-pre-wrap max-h-[70vh] overflow-auto pr-2">
-                      {prediction.full_analysis}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <FullAnalysisPanel fullAnalysis={prediction.full_analysis} />
         )}
 
         {/* Metadata */}
@@ -636,50 +768,10 @@ export default function BhriguPredictionView({
 
         {/* Debug Mode - Raw API Response */}
         {debugAllowed && debugMode && (
-          <div className="mt-8 pt-6 border-t border-red-500/30">
-            <div className="bg-gray-900/50 border border-red-500/30 rounded-xl p-6">
-              <h3 className="text-xl font-bold text-red-400 mb-4">🔧 Debug Mode - Raw API Response</h3>
-              <div className="bg-black/50 rounded-lg p-4 overflow-auto max-h-96">
-                <pre className="text-xs text-gray-300 whitespace-pre-wrap font-mono">
-                  {JSON.stringify(prediction, null, 2)}
-                </pre>
-              </div>
-              <div className="mt-4 text-sm text-gray-400">
-                <p className="mb-2">Section Keys Available:</p>
-                <div className="flex flex-wrap gap-2">
-                  {Object.keys(prediction).map(key => {
-                    const value = prediction[key as keyof typeof prediction];
-                    const isLongString = value && typeof value === 'string' && value.length > 100;
-                    return (
-                      <span
-                        key={key}
-                        className={`px-2 py-1 rounded ${
-                          isLongString
-                            ? 'bg-green-500/20 text-green-400'
-                            : 'bg-gray-700/50 text-gray-400'
-                        }`}
-                      >
-                        {key} ({typeof value === 'string' ? value.length : 'N/A'} chars)
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-              {/* Show parsed sections if fallback was used */}
-              {Object.keys(parsedFromFullAnalysis).length > 0 && (
-                <div className="mt-4 text-sm">
-                  <p className="text-yellow-400 mb-2">Client-side Parsed Sections:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.keys(parsedFromFullAnalysis).map(key => (
-                      <span key={key} className="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">
-                        {key} ({parsedFromFullAnalysis[key]?.length || 0} chars)
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <DebugPanel
+            prediction={prediction}
+            parsedFromFullAnalysis={parsedFromFullAnalysis}
+          />
         )}
       </div>
     );
@@ -691,7 +783,7 @@ export default function BhriguPredictionView({
         <div className="text-center">
           <p className="text-xl text-gray-400 mb-4">Please create a profile to access predictions</p>
           <button
-            onClick={() => window.location.href = '/profile'}
+            onClick={handleGoToProfile}
             className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500
                      text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600
                      transition-all"
@@ -725,13 +817,13 @@ export default function BhriguPredictionView({
               type="text"
               placeholder="Ask a specific question (optional)..."
               value={question}
-              onChange={(e) => setQuestion(e.target.value)}
+              onChange={handleQuestionChange}
               className="flex-1 bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-3
                        text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400
                        transition-colors"
             />
             <button
-              onClick={() => loadPrediction(false)}
+              onClick={handleLoadFromCache}
               disabled={loading}
               className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500
                        text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600
@@ -768,7 +860,7 @@ export default function BhriguPredictionView({
                 Loaded from cache
               </span>
               <button
-                onClick={() => loadPrediction(true)}
+                onClick={handleRegeneratePrediction}
                 disabled={loading}
                 className="inline-flex items-center gap-1 rounded-full border border-cyan-500/40 px-3 py-1 text-xs text-cyan-300
                          transition hover:border-cyan-400 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
@@ -810,13 +902,13 @@ export default function BhriguPredictionView({
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button
-                      onClick={() => loadPrediction(false)}
+                      onClick={handleLoadFromCache}
                       className="rounded-lg border border-white/20 px-3 py-1 text-xs text-white hover:border-white/40"
                     >
                       Retry with cached data
                     </button>
                     <button
-                      onClick={() => loadPrediction(true)}
+                      onClick={handleRegeneratePrediction}
                       className="rounded-lg bg-white/10 px-3 py-1 text-xs text-white hover:bg-white/20"
                     >
                       Retry request
@@ -856,14 +948,14 @@ export default function BhriguPredictionView({
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
               <button
-                onClick={() => loadPrediction(true)}
+                onClick={handleRegeneratePrediction}
                 className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
                 Retry request
               </button>
               <button
-                onClick={() => loadPrediction(false)}
+                onClick={handleLoadFromCache}
                 className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -879,7 +971,7 @@ export default function BhriguPredictionView({
         {prediction && (
           <div className="mt-12 flex gap-4 justify-center flex-wrap">
             <button
-              onClick={() => loadPrediction(true)}
+              onClick={handleRegeneratePrediction}
               disabled={loading}
               className="px-6 py-3 bg-gray-700/50 border border-gray-600
                        text-white rounded-lg hover:bg-gray-700 transition-all
@@ -906,7 +998,7 @@ export default function BhriguPredictionView({
             </button>
             {debugAllowed && (
               <button
-                onClick={() => setDebugMode(!debugMode)}
+                onClick={handleToggleDebugMode}
                 className={`px-6 py-3 border rounded-lg transition-all
                          flex items-center gap-2 ${
                            debugMode

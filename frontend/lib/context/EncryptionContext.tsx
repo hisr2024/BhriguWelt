@@ -7,6 +7,10 @@ import {
   isEncryptionSetup,
   setupEncryption,
   setItem,
+  markKeyRotationRequired,
+  isKeyRotationRequired,
+  rotateEncryptionKey,
+  clearKeyRotationRequired,
   STORES,
 } from '../storage';
 import { hashPasscode } from '../crypto';
@@ -92,7 +96,12 @@ export function EncryptionProvider({
   const unlockWithPasscode = async (passcode: string): Promise<boolean> => {
     try {
       const key = await getEncryptionKey(passcode);
-      setEncryptionKey(key);
+      let activeKey = key;
+      if (await isKeyRotationRequired()) {
+        activeKey = await rotateEncryptionKey(passcode, key);
+        await clearKeyRotationRequired();
+      }
+      setEncryptionKey(activeKey);
       setLastActivity(Date.now());
       return true;
     } catch (error) {
@@ -127,6 +136,9 @@ export function EncryptionProvider({
   };
 
   const lock = useCallback(() => {
+    markKeyRotationRequired().catch((error) => {
+      console.error('Error marking key rotation:', error);
+    });
     setEncryptionKey(null);
   }, []);
 

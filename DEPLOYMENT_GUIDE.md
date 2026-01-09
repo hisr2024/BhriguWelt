@@ -154,6 +154,12 @@ Expected response:
 
 4. Note your frontend URL: `https://bhriguwelt.vercel.app`
 
+### Storage Policy (Vercel)
+
+- Vercel only serves the Next.js frontend; it does not persist user data.
+- All sensitive data remains on-device in encrypted IndexedDB storage.
+- Avoid adding server-side persistence or logging of user data in Vercel deployments.
+
 ### Step 3: Update Backend CORS
 
 Update the backend's `FRONTEND_URL` environment variable in Render:

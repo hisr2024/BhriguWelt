@@ -7,6 +7,9 @@ import json
 import yaml
 from typing import Dict, List, Any, Optional
 from pathlib import Path
+from utils.logger import setup_logger, log_exception
+
+logger = setup_logger(__name__)
 
 
 class CorpusLoader:
@@ -43,16 +46,16 @@ class CorpusLoader:
                         self.nadi_data = json.load(f)
                     self.corpus_loaded = True
                     self.corpus_base_path = str(base_path)
-                    print(f"✓ Loaded Bhrigu and Nadi corpus from: {base_path}")
+                    logger.info("✓ Loaded Bhrigu and Nadi corpus from: %s", base_path)
                     return
                 except Exception as e:
                     message = f"Error loading corpus from {base_path}: {e}"
                     self.initialization_errors.append(message)
-                    print(f"Warning: {message}")
+                    log_exception(logger, e, context=message)
         
         message = "Could not load Bhrigu/Nadi corpus files. Predictions will rely on OpenAI general knowledge."
         self.initialization_errors.append(message)
-        print(f"Warning: {message}")
+        logger.warning(message)
         self.bhrigu_data = {"principles": [], "remedies": [], "past_life_engines": [], "future_engines": []}
         self.nadi_data = {"principles": [], "remedies": [], "observances": []}
         self.corpus_loaded = False

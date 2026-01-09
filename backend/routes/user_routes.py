@@ -3,8 +3,11 @@ User API Routes
 User management and profile endpoints
 """
 from flask import Blueprint, request, jsonify
+from utils.logger import setup_logger, log_exception
+from utils.response_formatter import error_response
 
 bp = Blueprint('users', __name__, url_prefix='/api/users')
+logger = setup_logger(__name__)
 
 @bp.route('/profiles', methods=['POST'])
 def create_profile():
@@ -38,7 +41,8 @@ def create_profile():
         }), 201
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        log_exception(logger, e, context="users.create_profile")
+        return error_response("Failed to create profile. Please try again later.", 500)
 
 @bp.route('/profiles/<profile_id>', methods=['GET'])
 def get_profile(profile_id):
@@ -59,7 +63,8 @@ def get_profile(profile_id):
         }), 200
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        log_exception(logger, e, context="users.get_profile")
+        return error_response("Failed to fetch profile. Please try again later.", 500)
 
 @bp.route('/profiles/<profile_id>', methods=['PUT'])
 def update_profile(profile_id):
@@ -83,4 +88,5 @@ def update_profile(profile_id):
         }), 200
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        log_exception(logger, e, context="users.update_profile")
+        return error_response("Failed to update profile. Please try again later.", 500)
