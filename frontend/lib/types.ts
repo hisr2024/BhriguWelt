@@ -102,7 +102,7 @@ export interface CachedPrediction {
 export interface PredictionResult {
   status: 'success' | 'error';
   message: string;
-  data: PredictionPayload | CachedPrediction;
+  data: PredictionPayload | CachedPrediction | BhriguPrediction;
   timestamp: string;
   meta?: Record<string, unknown>;
 }
