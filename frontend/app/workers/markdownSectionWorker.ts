@@ -1,6 +1,6 @@
 type SectionConfig = {
   key: string;
-  title: string;
+  titles: string[];
 };
 
 type WorkerRequest = {
@@ -69,7 +69,9 @@ const extractSectionsFromAst = (
   const normalizedTitles = new Map<string, string>();
 
   for (const section of sections) {
-    normalizedTitles.set(normalizeHeading(section.title), section.key);
+    for (const title of section.titles) {
+      normalizedTitles.set(normalizeHeading(title), section.key);
+    }
   }
 
   const findMatchingKey = (headingText: string): string | undefined => {
@@ -118,18 +120,24 @@ const extractSectionsWithRegex = (
   const parsedSections: Record<string, string> = {};
 
   for (const section of sections) {
-    const escapedTitle = section.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const patterns = [
-      new RegExp(`##\\s*(?:\\d+\\.?\\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
-      new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
-      new RegExp(`\\*\\*${escapedTitle}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n##|$)`, 'i'),
-      new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i')
-    ];
+    for (const title of section.titles) {
+      const escapedTitle = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const patterns = [
+        new RegExp(`##\\s*(?:\\d+\\.?\\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
+        new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
+        new RegExp(`\\*\\*${escapedTitle}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n##|$)`, 'i'),
+        new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i')
+      ];
 
-    for (const pattern of patterns) {
-      const match = markdown.match(pattern);
-      if (match && match[1]?.trim().length > 50) {
-        parsedSections[section.key] = match[1].trim();
+      for (const pattern of patterns) {
+        const match = markdown.match(pattern);
+        if (match && match[1]?.trim().length > 50) {
+          parsedSections[section.key] = match[1].trim();
+          break;
+        }
+      }
+
+      if (parsedSections[section.key]) {
         break;
       }
     }
