@@ -9,6 +9,7 @@ export interface BirthDetails {
   place_of_birth: string;
   latitude?: number;
   longitude?: number;
+  language?: string;
 }
 
 export interface BirthChartAPI {

@@ -23,6 +23,7 @@ import GenZButton from '../components/GenZButton';
 import BottomNav from '../components/BottomNav';
 import { applyHighContrast } from '@/lib/accessibility';
 import { useEncryption } from '@/lib/context/EncryptionContext';
+import { useI18n } from '@/lib/context/I18nContext';
 
 // Type definitions for settings items
 type ToggleSettingItem = {
@@ -68,11 +69,13 @@ type SettingSection = {
 export default function SettingsPage() {
   const router = useRouter();
   const { lock } = useEncryption();
+  const { t, language, setLanguage, aiLanguage, setAiLanguage } = useI18n();
   const [settings, setSettings] = useState({
     notifications: true,
     dailyReminders: true,
     darkMode: true,
-    language: 'en',
+    language,
+    aiLanguage,
     showPasscode: false,
     aiEnabled: true,
     offlineMode: false,
@@ -91,11 +94,25 @@ export default function SettingsPage() {
           ...prev,
           ...parsedSettings,
         }));
+        if (parsedSettings.language === 'en' || parsedSettings.language === 'hi') {
+          setLanguage(parsedSettings.language);
+        }
+        if (parsedSettings.aiLanguage === 'en' || parsedSettings.aiLanguage === 'hi' || parsedSettings.aiLanguage === 'sa') {
+          setAiLanguage(parsedSettings.aiLanguage);
+        }
       } catch (error) {
         console.error('Error loading settings:', error);
       }
     }
   }, []);
+
+  useEffect(() => {
+    setSettings((prev) => ({
+      ...prev,
+      language,
+      aiLanguage,
+    }));
+  }, [language, aiLanguage]);
 
   useEffect(() => {
     applyHighContrast(settings.highContrast);
@@ -139,95 +156,121 @@ export default function SettingsPage() {
     router.push('/setup-passcode');
   };
 
+  const handleSelectChange = (key: string, value: string) => {
+    setSettings((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+
+    if (key === 'language' && (value === 'en' || value === 'hi')) {
+      setLanguage(value);
+    }
+
+    if (key === 'aiLanguage' && (value === 'en' || value === 'hi' || value === 'sa')) {
+      setAiLanguage(value);
+    }
+  };
+
   const settingSections: SettingSection[] = [
     {
-      title: 'General',
+      title: t('settings.sections.general'),
       items: [
         {
           icon: <Bell className="w-5 h-5" />,
-          label: 'Notifications',
-          description: 'Receive app notifications',
+          label: t('settings.items.notifications.label'),
+          description: t('settings.items.notifications.description'),
           type: 'toggle',
           key: 'notifications',
         },
         {
           icon: <Bell className="w-5 h-5" />,
-          label: 'Daily Reminders',
-          description: 'Get daily cosmic insights',
+          label: t('settings.items.dailyReminders.label'),
+          description: t('settings.items.dailyReminders.description'),
           type: 'toggle',
           key: 'dailyReminders',
         },
         {
           icon: <Globe className="w-5 h-5" />,
-          label: 'Language',
-          description: 'App language',
+          label: t('settings.items.language.label'),
+          description: t('settings.items.language.description'),
           type: 'select',
           key: 'language',
           options: [
-            { value: 'en', label: 'English' },
-            { value: 'hi', label: 'हिंदी (Hindi)' },
-            { value: 'es', label: 'Español' },
+            { value: 'en', label: t('settings.languageOptions.en') },
+            { value: 'hi', label: t('settings.languageOptions.hi') },
           ],
         },
       ],
     },
     {
-      title: 'Privacy & Security',
+      title: t('settings.sections.privacySecurity'),
       items: [
         {
           icon: <Lock className="w-5 h-5" />,
-          label: 'Change Passcode',
-          description: 'Update your security passcode',
+          label: t('settings.items.changePasscode.label'),
+          description: t('settings.items.changePasscode.description'),
           type: 'button',
           action: handleChangePasscode,
         },
         {
           icon: <Eye className="w-5 h-5" />,
-          label: 'Show Passcode',
-          description: 'Display passcode on unlock screen',
+          label: t('settings.items.showPasscode.label'),
+          description: t('settings.items.showPasscode.description'),
           type: 'toggle',
           key: 'showPasscode',
         },
         {
           icon: <Shield className="w-5 h-5" />,
-          label: 'Offline Mode',
-          description: 'Use app without internet',
+          label: t('settings.items.offlineMode.label'),
+          description: t('settings.items.offlineMode.description'),
           type: 'toggle',
           key: 'offlineMode',
         },
       ],
     },
     {
-      title: 'Accessibility',
+      title: t('settings.sections.accessibility'),
       items: [
         {
           icon: <Eye className="w-5 h-5" />,
-          label: 'High Contrast',
-          description: 'Boost text contrast for easier reading',
+          label: t('settings.items.highContrast.label'),
+          description: t('settings.items.highContrast.description'),
           type: 'toggle',
           key: 'highContrast',
         },
       ],
     },
     {
-      title: 'AI Features',
+      title: t('settings.sections.aiFeatures'),
       items: [
         {
           icon: <SettingsIcon className="w-5 h-5" />,
-          label: 'AI Insights',
-          description: 'Enable OpenAI predictions',
+          label: t('settings.items.aiInsights.label'),
+          description: t('settings.items.aiInsights.description'),
           type: 'toggle',
           key: 'aiEnabled',
+        },
+        {
+          icon: <Globe className="w-5 h-5" />,
+          label: t('settings.items.aiLanguage.label'),
+          description: t('settings.items.aiLanguage.description'),
+          type: 'select',
+          key: 'aiLanguage',
+          options: [
+            { value: 'en', label: t('settings.aiLanguageOptions.en') },
+            { value: 'hi', label: t('settings.aiLanguageOptions.hi') },
+            { value: 'sa', label: t('settings.aiLanguageOptions.sa') },
+          ],
         },
       ],
     },
     {
-      title: 'Data Management',
+      title: t('settings.sections.dataManagement'),
       items: [
         {
           icon: <Trash2 className="w-5 h-5" />,
-          label: 'Clear All Data',
-          description: 'Delete all profiles and predictions',
+          label: t('settings.items.clearAllData.label'),
+          description: t('settings.items.clearAllData.description'),
           type: 'danger',
           action: handleClearAllData,
         },
@@ -246,7 +289,7 @@ export default function SettingsPage() {
           <GenZButton variant="ghost" size="sm">
             <Link href="/profile" className="flex items-center gap-2">
               <ArrowLeft className="w-5 h-5" />
-              Back
+              {t('settings.back')}
             </Link>
           </GenZButton>
 
@@ -258,12 +301,12 @@ export default function SettingsPage() {
             {saved ? (
               <>
                 <Save className="w-4 h-4 mr-2" />
-                Saved!
+                {t('settings.saved')}
               </>
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
-                Save
+                {t('settings.save')}
               </>
             )}
           </GenZButton>
@@ -275,10 +318,10 @@ export default function SettingsPage() {
           className="mb-12 text-center"
         >
           <GenZBadge variant="neon" className="mb-4">
-            ⚙️ Settings
+            {t('settings.badge')}
           </GenZBadge>
-          <h1 className="genz-title mb-4">Settings & Preferences</h1>
-          <p className="text-xl text-white/80">Customize your cosmic experience</p>
+          <h1 className="genz-title mb-4">{t('settings.title')}</h1>
+          <p className="text-xl text-white/80">{t('settings.subtitle')}</p>
         </motion.div>
 
         {/* Settings Sections */}
@@ -335,12 +378,7 @@ export default function SettingsPage() {
                       {item.type === 'select' && item.key && 'options' in item && item.options && (
                         <select
                           value={settings[item.key as keyof typeof settings] as string}
-                          onChange={(e) =>
-                            setSettings((prev) => ({
-                              ...prev,
-                              [item.key!]: e.target.value,
-                            }))
-                          }
+                          onChange={(e) => handleSelectChange(item.key!, e.target.value)}
                           className="bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-genz-electric-blue"
                         >
                           {item.options.map((option) => (
@@ -354,7 +392,7 @@ export default function SettingsPage() {
                       {/* Button */}
                       {item.type === 'button' && (
                         <GenZButton variant="outline" size="sm" onClick={item.action}>
-                          Change
+                          {t('settings.buttons.change')}
                           <ChevronRight className="w-4 h-4 ml-1" />
                         </GenZButton>
                       )}
@@ -367,7 +405,9 @@ export default function SettingsPage() {
                           onClick={item.action}
                           className="border-red-500/50 text-red-400 hover:bg-red-500/10"
                         >
-                          {showClearDataConfirm ? 'Confirm?' : 'Clear'}
+                          {showClearDataConfirm
+                            ? t('settings.buttons.confirm')
+                            : t('settings.buttons.clear')}
                         </GenZButton>
                       )}
                     </div>
@@ -378,16 +418,16 @@ export default function SettingsPage() {
           ))}
 
           {/* App Info */}
-          <GenZCard variant="neon" className="text-center">
-            <div className="text-6xl mb-4">✨</div>
-            <h3 className="text-xl font-display font-bold text-white mb-2">
-              BhriguWelt
-            </h3>
-            <p className="text-white/60 mb-2">Version 1.0.0</p>
-            <GenZBadge variant="neon" size="sm">
-              Powered by OpenAI
-            </GenZBadge>
-          </GenZCard>
+        <GenZCard variant="neon" className="text-center">
+          <div className="text-6xl mb-4">✨</div>
+          <h3 className="text-xl font-display font-bold text-white mb-2">
+            {t('settings.appInfo.appName')}
+          </h3>
+          <p className="text-white/60 mb-2">{t('settings.appInfo.version')}</p>
+          <GenZBadge variant="neon" size="sm">
+            {t('settings.appInfo.poweredBy')}
+          </GenZBadge>
+        </GenZCard>
         </div>
       </div>
 
