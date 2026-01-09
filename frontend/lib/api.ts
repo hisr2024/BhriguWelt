@@ -16,8 +16,16 @@ import { normalizePredictionResponse } from './api/predictionResponse';
 import { emitToast, buildIssueReportUrl } from './toast';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const API_TIMEOUT_ENV = Number.parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT ?? '', 10);
-const API_TIMEOUT_MS = Number.isFinite(API_TIMEOUT_ENV) && API_TIMEOUT_ENV > 0 ? API_TIMEOUT_ENV : 120000;
+const MAX_REQUEST_BYTES = Number(process.env.NEXT_PUBLIC_MAX_REQUEST_BYTES ?? 1024 * 1024);
+const COMPRESSION_THRESHOLD_BYTES = 64 * 1024;
+
+const toBytes = (input: string): Uint8Array => new TextEncoder().encode(input);
+
+const gzipCompress = async (payload: Uint8Array): Promise<Uint8Array> => {
+  const stream = new Blob([payload]).stream().pipeThrough(new CompressionStream('gzip'));
+  const buffer = await new Response(stream).arrayBuffer();
+  return new Uint8Array(buffer);
+};
 
 export const api = axios.create({
   baseURL:  API_URL,
@@ -30,7 +38,7 @@ export const api = axios.create({
 
 // Request interceptor for logging
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     if (process.env.NODE_ENV === 'development') {
       console.debug(`[API] ${config.method?. toUpperCase()} ${config.url}`);
     }
@@ -38,6 +46,46 @@ api.interceptors.request.use(
       config.headers = config.headers ?? {};
       config.headers['X-Client-Online'] = navigator.onLine ? 'true' : 'false';
     }
+
+    if (config.data) {
+      const isSerializableObject =
+        typeof config.data === 'object' &&
+        !ArrayBuffer.isView(config.data) &&
+        !(config.data instanceof ArrayBuffer) &&
+        !(config.data instanceof Blob) &&
+        !(config.data instanceof FormData);
+
+      const payloadString = typeof config.data === 'string'
+        ? config.data
+        : isSerializableObject
+        ? JSON.stringify(config.data)
+        : null;
+
+      if (payloadString !== null) {
+        const payloadBytes = toBytes(payloadString);
+        if (payloadBytes.byteLength > MAX_REQUEST_BYTES) {
+          const message = `Request payload exceeds ${MAX_REQUEST_BYTES} bytes. Please reduce the request size.`;
+          emitToast({
+            type: 'error',
+            title: 'Request too large',
+            message,
+            errorCode: 'PAYLOAD_TOO_LARGE',
+            details: { maxBytes: MAX_REQUEST_BYTES },
+          });
+          return Promise.reject(new Error(message));
+        }
+
+        if (payloadBytes.byteLength >= COMPRESSION_THRESHOLD_BYTES && typeof CompressionStream !== 'undefined') {
+          const compressed = await gzipCompress(payloadBytes);
+          config.data = new Blob([compressed], { type: 'application/json' });
+          config.headers = config.headers ?? {};
+          config.headers['Content-Encoding'] = 'gzip';
+          config.headers['Content-Type'] = 'application/json';
+          config.headers['X-Uncompressed-Content-Length'] = payloadBytes.byteLength.toString();
+        }
+      }
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
