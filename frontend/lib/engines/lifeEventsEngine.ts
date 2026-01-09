@@ -8,6 +8,7 @@ import type {
   Subcategory,
 } from '../api/predictions';
 import { getAIMode } from '@/lib/ai-preferences';
+import { isSectionContentValid } from '../sectionParserConfig';
 
 type LifeEventsMode = 'offline' | 'online' | 'hybrid';
 
@@ -766,7 +767,8 @@ const composeAISection = async (
     }
 
     const aiResponse = await response.json();
-    return aiResponse?.data?.refined_section as string | undefined;
+    const refined = aiResponse?.data?.refined_section as string | undefined;
+    return isSectionContentValid(refined) ? refined : undefined;
   } catch (error) {
     logger.warn('AI synthesis failed', error);
     return undefined;

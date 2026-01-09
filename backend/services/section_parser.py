@@ -4,7 +4,8 @@ Ensures 100% structured output with AI-powered section generation
 """
 import json
 import logging
-import re
+import math
+import os
 import unicodedata
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -13,16 +14,27 @@ from typing import Dict, List, Any, Optional
 logger = logging.getLogger(__name__)
 
 
-def _load_section_headers() -> Dict[str, List[str]]:
-    section_headers_path = Path(__file__).resolve().parents[2] / "shared" / "section_headers.json"
+def _read_int_env(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None:
+        return default
     try:
-        with section_headers_path.open("r", encoding="utf-8") as file:
-            data = json.load(file)
-        if isinstance(data, dict):
-            return {key: list(value) for key, value in data.items() if isinstance(value, list)}
-    except Exception as error:
-        logger.error("Failed to load section headers from %s: %s", section_headers_path, error)
-    return {}
+        return int(value)
+    except ValueError:
+        return default
+
+
+def _read_ratio_env(name: str, default: float) -> float:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        ratio = float(value)
+    except ValueError:
+        return default
+    if ratio <= 0 or ratio > 1:
+        return default
+    return ratio
 
 
 class SectionParser:
@@ -32,8 +44,9 @@ class SectionParser:
     """
     
     # Content validation thresholds
-    MINIMUM_SECTION_LENGTH = 100  # Minimum characters for a valid section
-    HEADER_EXTRACTION_MIN_LENGTH = 50  # Minimum for header-based extraction
+    MINIMUM_SECTION_LENGTH = _read_int_env("SECTION_PARSER_MIN_LENGTH", 100)
+    HEADER_EXTRACTION_MIN_LENGTH = _read_int_env("SECTION_PARSER_HEADER_MIN_LENGTH", 50)
+    KEYWORD_MATCH_RATIO = _read_ratio_env("SECTION_PARSER_KEYWORD_MATCH_RATIO", 0.5)
     
     # Required sections for each category
     REQUIRED_SECTIONS = {
@@ -424,8 +437,13 @@ class SectionParser:
 
         # If no exact matches, try partial matching (at least 50% of keywords)
         if not relevant_paras and len(keywords) > 1:
-            threshold = max(1, len(keywords) // 2)
-            logger.debug(f"No exact matches, trying partial match with threshold {threshold}/{len(keywords)}")
+            threshold = max(1, math.ceil(len(keywords) * self.KEYWORD_MATCH_RATIO))
+            logger.debug(
+                "No exact matches, trying partial match with threshold %s/%s (ratio %.2f)",
+                threshold,
+                len(keywords),
+                self.KEYWORD_MATCH_RATIO
+            )
 
             for para in paragraphs:
                 matches = sum(1 for kw in keywords if kw.lower() in para.lower())

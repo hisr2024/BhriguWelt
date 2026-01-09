@@ -2,6 +2,7 @@ import 'server-only';
 
 import type { ChartData, PredictionMetadata, PredictionResult, Subcategory } from '@/lib/api/predictions';
 import { getAIMode } from '@/lib/ai-preferences';
+import { isSectionContentValid } from '@/lib/sectionParserConfig';
 
 type RelationshipsMode = 'offline' | 'online' | 'hybrid';
 
@@ -564,7 +565,8 @@ const composeAIInsights = async (
     }
 
     const aiResponse = await response.json();
-    return aiResponse?.data?.refined_section ?? null;
+    const refined = aiResponse?.data?.refined_section ?? null;
+    return isSectionContentValid(refined) ? refined : null;
   } catch (error) {
     logger.warn('AI relationship insight failed:', error);
     return null;
