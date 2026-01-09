@@ -92,20 +92,66 @@ print("✓ Flask app initialized")
 # Initialize CORS configuration
 logger.info("Configuring CORS...")
 
-CORS(app,
-     resources={
-         r"/api/*": {
-             "origins": ["https://bhrigu-welt.vercel.app"],
-             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-             "allow_headers": ["Content-Type", "Authorization", "X-Client-Online", "X-API-Key"],
-             "supports_credentials": True,
-             "expose_headers": ["X-Correlation-ID"],
-             "max_age": 86400
-         }
-     }
+PRODUCTION_FRONTEND_URLS = [
+    "https://bhrigu-welt.vercel.app",
+    "https://bhriguwelt.vercel.app",
+]
+
+STANDARD_CORS_HEADERS = [
+    "Content-Type",
+    "Authorization",
+    "Accept",
+    "Origin",
+    "X-Requested-With",
+    "X-AI-Consent",
+    "X-AI-Mode",
+    "X-Client-Online",
+    "X-Uncompressed-Content-Length",
+    "Content-Encoding",
+    "X-API-Key",
+    "X-Request-ID",
+    "X-Correlation-ID",
+]
+
+def _get_allowed_origins():
+    allowed_origins = list(PRODUCTION_FRONTEND_URLS)
+    frontend_url = os.getenv("FRONTEND_URL")
+    if frontend_url:
+        allowed_origins.append(frontend_url)
+    if not IS_PRODUCTION:
+        allowed_origins.extend([
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "http://localhost:5173",
+            "http://127.0.0.1:3000",
+        ])
+    return sorted(set(allowed_origins))
+
+ALLOWED_ORIGINS = _get_allowed_origins()
+
+def _merge_cors_headers_case_insensitive(existing_headers, requested_headers):
+    merged = {header.lower(): header for header in existing_headers}
+    for header in requested_headers:
+        normalized = header.lower()
+        if normalized not in merged:
+            merged[normalized] = header
+    return list(merged.values())
+
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": ALLOWED_ORIGINS,
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+            "allow_headers": STANDARD_CORS_HEADERS,
+            "supports_credentials": True,
+            "expose_headers": ["X-Correlation-ID"],
+            "max_age": 86400,
+        }
+    },
 )
 
-logger.info("✓ CORS configured with origin: https://bhrigu-welt.vercel.app")
+logger.info("✓ CORS configured with allowed origins: %s", ", ".join(ALLOWED_ORIGINS))
 
 # Request preprocessing middleware
 def _assign_correlation_id():
@@ -167,6 +213,23 @@ def add_response_headers(response):
             if isinstance(response_data, dict) and 'correlation_id' not in response_data:
                 response_data['correlation_id'] = correlation_id
                 response.set_data(json.dumps(response_data))
+
+    origin = request.headers.get("Origin")
+    if origin:
+        request_headers = request.headers.get("Access-Control-Request-Headers", "")
+        requested_headers = [header.strip() for header in request_headers.split(",") if header.strip()]
+        existing_allow_headers = response.headers.get("Access-Control-Allow-Headers", "")
+        existing_headers = [header.strip() for header in existing_allow_headers.split(",") if header.strip()]
+        merged_headers = _merge_cors_headers_case_insensitive(
+            existing_headers + STANDARD_CORS_HEADERS,
+            requested_headers,
+        )
+        if merged_headers:
+            response.headers["Access-Control-Allow-Headers"] = ", ".join(merged_headers)
+        if "Access-Control-Allow-Origin" not in response.headers and origin in ALLOWED_ORIGINS:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers.setdefault("Access-Control-Allow-Credentials", "true")
+            response.headers["Vary"] = "Origin"
 
     return response
 
