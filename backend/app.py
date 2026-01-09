@@ -89,121 +89,54 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_REQUEST_BYTES
 logger = setup_logger(__name__)
 print("✓ Flask app initialized")
 
-# Initialize CORS with strict origin checking
-# Production URLs are hardcoded, FRONTEND_URL is optional for additional origins
-FRONTEND_URL = os.getenv('FRONTEND_URL')
+# Initialize CORS configuration
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://bhrigu-welt.vercel.app')
 
-# Production frontend URLs - always allowed in production
-# These are hardcoded to ensure backend works even without FRONTEND_URL env var
-PRODUCTION_FRONTEND_URLS = [
-    'https://bhrigu-welt.vercel.app',
-    'https://bhriguwelt.vercel.app',
-]
-
+# Configure allowed origins based on environment
 if IS_PRODUCTION:
-    # Start with production URLs (guaranteed to have at least 2 URLs)
-    allowed_origins = PRODUCTION_FRONTEND_URLS.copy()
-    # Add FRONTEND_URL if set and not already in list
-    if FRONTEND_URL and FRONTEND_URL not in allowed_origins:
-        allowed_origins.insert(0, FRONTEND_URL)
+    allowed_origins = [
+        'https://bhrigu-welt.vercel.app',
+        'https://bhriguwelt.vercel.app'
+    ]
 else:
-    # Development: Allow localhost with common ports (guaranteed to have at least 4 URLs)
+    # Development: Allow localhost and production URLs for testing
     allowed_origins = [
         'http://localhost:3000',
         'http://localhost:3001',
         'http://localhost:5173',
         'http://127.0.0.1:3000',
-    ] + PRODUCTION_FRONTEND_URLS
-
-# Standard headers that must always be allowed (case-sensitive canonical forms)
-STANDARD_CORS_HEADERS = [
-    'Content-Type',
-    'Authorization',
-    'Accept',
-    'Origin',
-    'X-Requested-With',
-    'X-AI-Consent',
-    'X-AI-Mode',
-    'X-Client-Online',
-    'X-Uncompressed-Content-Length',
-    'Content-Encoding',
-]
+        'https://bhrigu-welt.vercel.app',
+        'https://bhriguwelt.vercel.app'
+    ]
 
 logger.info("Configuring CORS...")
-# Configure CORS with explicit resource patterns and preflight handling
-# IMPORTANT: Flask-CORS uses REGEX patterns, not glob patterns!
-# r"/api/*" only matches /api/ + zero or more "/" chars - WRONG!
-# r"/api/.*" matches /api/ + any characters - CORRECT!
-#
-# Note: Flask-CORS will handle preflight (OPTIONS) requests automatically
-# The after_request handler below ensures headers are present on actual requests
+# Configure CORS with proper headers including x-client-online
 CORS(app,
-     resources={
-         r"/api/.*": {
-             "origins": allowed_origins,
-             "methods": ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-             "allow_headers": STANDARD_CORS_HEADERS,
-             "expose_headers": ['Content-Type', 'Authorization', 'X-Correlation-ID'],
-             "supports_credentials": True,
-             "max_age": 86400  # Cache preflight for 24 hours
-         },
-         r"/.*": {
-             "origins": allowed_origins,
-             "methods": ['GET', 'OPTIONS'],
-             "supports_credentials": True
-         }
-     },
+     origins=allowed_origins,
+     allow_headers=[
+         "x-client-online",
+         "Content-Type",
+         "Authorization",
+         "X-API-Key",
+         "X-AI-Consent",
+         "X-AI-Mode",
+         "X-Correlation-ID",
+         "X-Request-ID"
+     ],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
      supports_credentials=True,
-     allow_headers=STANDARD_CORS_HEADERS,
-     expose_headers=['Content-Type', 'Authorization', 'X-Correlation-ID'],
-     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-     max_age=86400)  # Cache preflight for 24 hours
+     max_age=86400  # Cache preflight for 24 hours
+)
 logger.info("✓ CORS configured with origins: %s", allowed_origins)
-logger.info("✓ CORS allowed headers: %s", ', '.join(STANDARD_CORS_HEADERS))
 
 # Helper function for origin validation
 def is_origin_allowed(origin: str) -> bool:
     """
     Check if an origin is allowed for CORS requests.
-    Production: Strict whitelist only
-    Development: Localhost patterns + whitelist
     """
     if not origin:
         return False
-    
-    if IS_PRODUCTION:
-        return origin in allowed_origins
-    else:
-        # Development: Allow localhost/127.0.0.1 origins or whitelisted origins
-        return origin in allowed_origins or (
-            origin.startswith('http://localhost:') or 
-            origin.startswith('http://127.0.0.1:')
-        )
-
-# Helper function to merge CORS headers case-insensitively
-def _merge_cors_headers_case_insensitive(requested_headers_str: str) -> str:
-    """
-    Merge requested headers with standard headers, handling case-insensitively.
-    HTTP headers are case-insensitive, so we normalize for comparison.
-    """
-    requested_header_list = [
-        header.strip()
-        for header in requested_headers_str.split(',')
-        if header.strip()
-    ]
-
-    # Create lowercase map for case-insensitive comparison
-    base_headers_lower = {h.lower(): h for h in STANDARD_CORS_HEADERS}
-    merged_headers = STANDARD_CORS_HEADERS.copy()
-
-    for header in requested_header_list:
-        header_lower = header.lower()
-        # Only add if not already present (case-insensitive check)
-        if header_lower not in base_headers_lower:
-            merged_headers.append(header)
-            base_headers_lower[header_lower] = header
-
-    return ', '.join(merged_headers)
+    return origin in allowed_origins
 
 # Request preprocessing middleware
 def _assign_correlation_id():
@@ -246,41 +179,14 @@ def handle_request_entity_too_large(error):
         },
     }), 413
 
-# Add CORS headers to ALL responses - ensures Flask-CORS headers are present
-# This handler supplements Flask-CORS with case-insensitive header handling
+# Add correlation ID to responses
 @app.after_request
-def add_cors_headers(response):
+def add_response_headers(response):
     """
-    Ensure CORS headers are present on all responses.
-    Supplements Flask-CORS with:
-    1. Case-insensitive header merging (HTTP spec compliance)
-    2. Correlation ID tracking
-    3. Fallback CORS headers if Flask-CORS didn't apply them
+    Add correlation ID to all responses for request tracking.
+    Flask-CORS handles all CORS headers automatically.
     """
-    origin = request.headers.get('Origin', '')
     correlation_id = getattr(g, 'correlation_id', None)
-
-    # Only add CORS headers if origin is allowed
-    if origin and is_origin_allowed(origin):
-        # Ensure CORS headers are present (Flask-CORS should have added them, but this ensures it)
-        if not response.headers.get('Access-Control-Allow-Origin'):
-            response.headers['Access-Control-Allow-Origin'] = origin
-            response.headers['Access-Control-Allow-Credentials'] = 'true'
-            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-
-            # Use case-insensitive header merging for robustness
-            requested_headers = request.headers.get('Access-Control-Request-Headers', '')
-            if requested_headers:
-                allow_headers_value = _merge_cors_headers_case_insensitive(requested_headers)
-            else:
-                allow_headers_value = ', '.join(STANDARD_CORS_HEADERS)
-
-            response.headers['Access-Control-Allow-Headers'] = allow_headers_value
-            response.headers['Vary'] = 'Origin'
-
-        # Always ensure Vary header is present for caching
-        if 'Vary' not in response.headers:
-            response.headers['Vary'] = 'Origin'
 
     # Add correlation ID to response headers and JSON body
     if correlation_id:
@@ -441,53 +347,29 @@ def health():
 
 @app.errorhandler(404)
 def not_found(error):
-    """Handle 404 errors with CORS headers"""
-    origin = request.headers.get('Origin', '')
-    response = jsonify({'error': 'Not found', 'message': str(error)})
-    response.status_code = 404
-    
-    if is_origin_allowed(origin):
-        response.headers['Access-Control-Allow-Origin'] = origin
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-        response.headers['Vary'] = 'Origin'
-    
-    return response
+    """Handle 404 errors"""
+    return jsonify({
+        'error': 'Not found',
+        'message': str(error)
+    }), 404
 
 @app.errorhandler(500)
 def internal_error(error):
-    """Handle 500 errors with CORS headers"""
-    origin = request.headers.get('Origin', '')
+    """Handle 500 errors"""
     log_exception(logger, error, context="Internal server error")
-    response = jsonify({'error': 'Internal server error', 'message': 'An unexpected error occurred.'})
-    response.status_code = 500
-    
-    if is_origin_allowed(origin):
-        response.headers['Access-Control-Allow-Origin'] = origin
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-        response.headers['Vary'] = 'Origin'
-    
-    return response
+    return jsonify({
+        'error': 'Internal server error',
+        'message': 'An unexpected error occurred.'
+    }), 500
 
 @app.errorhandler(Exception)
 def handle_exception(e):
-    """Handle all unhandled exceptions with CORS headers"""
-    origin = request.headers.get('Origin', '')
-    
-    # Log the full error for debugging
+    """Handle all unhandled exceptions"""
     log_exception(logger, e, context="Unhandled exception")
-    
-    response = jsonify({
+    return jsonify({
         'error': 'Internal server error',
         'message': 'An unexpected error occurred.'
-    })
-    response.status_code = 500
-    
-    if is_origin_allowed(origin):
-        response.headers['Access-Control-Allow-Origin'] = origin
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-        response.headers['Vary'] = 'Origin'
-    
-    return response
+    }), 500
 
 logger.info("=" * 60)
 logger.info("✓ BhriguWelt Backend Initialization Complete")
