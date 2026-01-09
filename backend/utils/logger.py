@@ -3,6 +3,7 @@ Centralized logging configuration for BhriguWelt backend
 """
 import json
 import logging
+import os
 import re
 import sys
 from datetime import datetime
@@ -34,7 +35,32 @@ class ColoredFormatter(logging.Formatter):
         return super().format(record)
 
 
-def setup_logger(name: str, level: str = 'INFO') -> logging.Logger:
+def _is_debug_enabled() -> bool:
+    """Return True when verbose logging is enabled via env."""
+    return os.getenv('BHRIGU_DEBUG', '').strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def _resolve_log_level(explicit_level: str = None) -> str:
+    """Resolve the log level using environment defaults unless explicitly provided."""
+    if explicit_level:
+        return explicit_level
+
+    flask_env = os.getenv('FLASK_ENV', 'development').strip().lower()
+    if _is_debug_enabled():
+        return 'DEBUG'
+    if flask_env == 'production':
+        return 'WARNING'
+    return 'INFO'
+
+
+def _configure_handler_levels(logger: logging.Logger, level: int):
+    for handler in logger.handlers:
+        if isinstance(handler, logging.FileHandler) and handler.level == logging.ERROR:
+            continue
+        handler.setLevel(level)
+
+
+def setup_logger(name: str, level: str = None) -> logging.Logger:
     """
     Set up a logger with both file and console handlers
 
@@ -45,23 +71,26 @@ def setup_logger(name: str, level: str = 'INFO') -> logging.Logger:
     Returns:
         Configured logger instance
     """
+    resolved_level = _resolve_log_level(level)
+    logger_level = getattr(logging, resolved_level.upper(), logging.INFO)
     logger = logging.getLogger(name)
-    logger.setLevel(getattr(logging, level.upper()))
+    logger.setLevel(logger_level)
 
     # Avoid adding duplicate handlers
     if logger.handlers:
+        _configure_handler_levels(logger, logger_level)
         return logger
 
     # Console handler with colors
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.DEBUG)
+    console_handler.setLevel(logger_level)
     console_handler.setFormatter(ColoredFormatter(LOG_FORMAT, DATE_FORMAT))
 
     # File handler for all logs
     file_handler = logging.FileHandler(
         LOGS_DIR / f'bhriguwelt_{datetime.now().strftime("%Y%m%d")}.log'
     )
-    file_handler.setLevel(logging.DEBUG)
+    file_handler.setLevel(logger_level)
     file_handler.setFormatter(logging.Formatter(LOG_FORMAT, DATE_FORMAT))
 
     # Error file handler for errors only
