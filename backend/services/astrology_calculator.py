@@ -4,6 +4,7 @@ Core astronomical and astrological calculations
 """
 from datetime import datetime
 from importlib import import_module, util as importlib_util
+import logging
 import math
 from typing import Dict, Any, Tuple, List
 
@@ -58,7 +59,8 @@ class AstrologyCalculator:
 
     def calculate_birth_chart(self, date_of_birth: str, time_of_birth: str,
                               place: str, latitude: float = None,
-                              longitude: float = None) -> Dict[str, Any]:
+                              longitude: float = None,
+                              timezone_override: str = None) -> Dict[str, Any]:
         """
         Calculate complete Vedic birth chart
 
@@ -68,14 +70,16 @@ class AstrologyCalculator:
             place: Place of birth (for geocoding)
             latitude: Optional latitude (if not provided, will geocode)
             longitude: Optional longitude (if not provided, will geocode)
+            timezone_override: Optional IANA timezone string to override lookup
 
         Returns:
             Complete birth chart data
         """
         # Get coordinates if not provided
+        geocoded_coords = None
         if latitude is None or longitude is None:
-            coords = self._geocode_location(place)
-            if not coords:
+            geocoded_coords = self._geocode_location(place)
+            if not geocoded_coords:
                 logger.warning("Geocoding failed for place_of_birth=%s", place)
                 return {
                     'error': {
@@ -86,26 +90,46 @@ class AstrologyCalculator:
                         )
                     }
                 }
-            latitude = coords['latitude']
-            longitude = coords['longitude']
+            latitude = geocoded_coords['latitude']
+            longitude = geocoded_coords['longitude']
 
         # Get timezone
-        timezone_str = self.tf.timezone_at(lat=latitude, lng=longitude)
+        timezone_str = None
+        if timezone_override:
+            try:
+                self.pytz.timezone(timezone_override)
+                timezone_str = timezone_override
+            except self.pytz.UnknownTimeZoneError:
+                logger.warning("Invalid timezone override received: %s", timezone_override)
+                return {
+                    'error': {
+                        'code': 'invalid_timezone_override',
+                        'message': "Provided timezone override is invalid."
+                    }
+                }
+
+        if not timezone_str:
+            timezone_str = self.tf.timezone_at(lat=latitude, lng=longitude)
+
+        if not timezone_str and place:
+            geocoded_coords = geocoded_coords or self._geocode_location(place)
+            if geocoded_coords:
+                timezone_str = self.tf.timezone_at(
+                    lat=geocoded_coords['latitude'],
+                    lng=geocoded_coords['longitude']
+                )
+                if timezone_str:
+                    latitude = geocoded_coords['latitude']
+                    longitude = geocoded_coords['longitude']
+
         if not timezone_str:
             logger.warning(
-                "Timezone resolution failed for latitude=%s longitude=%s",
+                "Timezone resolution failed; falling back to UTC for latitude=%s longitude=%s place=%s",
                 latitude,
-                longitude
+                longitude,
+                place
             )
-            return {
-                'error': {
-                    'code': 'timezone_resolution_failed',
-                    'message': (
-                        "Unable to determine timezone for provided location. "
-                        "Please verify latitude/longitude or place_of_birth."
-                    )
-                }
-            }
+            timezone_str = "UTC"
 
         # Parse datetime
         dt_str = f"{date_of_birth} {time_of_birth}"

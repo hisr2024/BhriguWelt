@@ -67,6 +67,8 @@ Before deploying, ensure you have:
    JWT_SECRET_KEY=<generate-random-jwt-key>
    OPENAI_API_KEY=<your-openai-api-key>
    OPENAI_BASE_URL=https://api.openai.com/v1
+   OPENAI_MODEL=gpt-4
+   OPENAI_MAX_TOKENS=4000
    FRONTEND_URL=https://your-app.vercel.app
    ```
 
@@ -112,6 +114,7 @@ Expected response:
    NEXT_PUBLIC_API_URL=https://bhriguwelt-api.onrender.com
    NEXT_PUBLIC_APP_NAME=BhriguWelt
    NEXT_PUBLIC_APP_DESCRIPTION=Discover Your Soul's Journey Through Vedic Astrology
+   NEXT_PUBLIC_API_TIMEOUT=120000
    ```
 
 ### Step 2: Deploy to Vercel
@@ -140,6 +143,7 @@ Expected response:
       NEXT_PUBLIC_API_URL=https://bhriguwelt-api.onrender.com
       NEXT_PUBLIC_APP_NAME=BhriguWelt
       NEXT_PUBLIC_APP_DESCRIPTION=Discover Your Soul's Journey
+      NEXT_PUBLIC_API_TIMEOUT=120000
       ```
 
    f. Click **Deploy**
@@ -153,6 +157,12 @@ Expected response:
    ```
 
 4. Note your frontend URL: `https://bhriguwelt.vercel.app`
+
+### Storage Policy (Vercel)
+
+- Vercel only serves the Next.js frontend; it does not persist user data.
+- All sensitive data remains on-device in encrypted IndexedDB storage.
+- Avoid adding server-side persistence or logging of user data in Vercel deployments.
 
 ### Step 3: Update Backend CORS
 
@@ -230,6 +240,8 @@ Redeploy backend service.
 | `JWT_SECRET_KEY` | JWT signing key | Random 32+ chars |
 | `OPENAI_API_KEY` | OpenAI API key | Your API key |
 | `OPENAI_BASE_URL` | OpenAI endpoint | `https://api.openai.com/v1` |
+| `OPENAI_MODEL` | OpenAI model | `gpt-4` |
+| `OPENAI_MAX_TOKENS` | OpenAI max tokens | `4000` |
 | `FRONTEND_URL` | Frontend URL for CORS | `https://your-app.vercel.app` |
 
 ### Frontend Environment Variables
@@ -239,6 +251,7 @@ Redeploy backend service.
 | `NEXT_PUBLIC_API_URL` | Backend API URL | `https://api.onrender.com` |
 | `NEXT_PUBLIC_APP_NAME` | App name | `BhriguWelt` |
 | `NEXT_PUBLIC_APP_DESCRIPTION` | App description | Your description |
+| `NEXT_PUBLIC_API_TIMEOUT` | API request timeout (ms) | `120000` |
 
 ---
 
