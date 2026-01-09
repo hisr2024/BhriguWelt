@@ -1,6 +1,6 @@
 # Core Framework
 flask==3.1.2
-flask-cors==6.0.2
+flask-cors==4.0.0
 gunicorn==21.2.0
 
 # Database & Auth

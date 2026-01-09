@@ -90,53 +90,16 @@ logger = setup_logger(__name__)
 print("✓ Flask app initialized")
 
 # Initialize CORS configuration
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://bhrigu-welt.vercel.app')
-
-# Configure allowed origins based on environment
-if IS_PRODUCTION:
-    allowed_origins = [
-        'https://bhrigu-welt.vercel.app',
-        'https://bhriguwelt.vercel.app'
-    ]
-else:
-    # Development: Allow localhost and production URLs for testing
-    allowed_origins = [
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://localhost:5173',
-        'http://127.0.0.1:3000',
-        'https://bhrigu-welt.vercel.app',
-        'https://bhriguwelt.vercel.app'
-    ]
-
 logger.info("Configuring CORS...")
-# Configure CORS with proper headers including x-client-online
-CORS(app,
-     origins=allowed_origins,
-     allow_headers=[
-         "x-client-online",
-         "Content-Type",
-         "Authorization",
-         "X-API-Key",
-         "X-AI-Consent",
-         "X-AI-Mode",
-         "X-Correlation-ID",
-         "X-Request-ID"
-     ],
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-     supports_credentials=True,
-     max_age=86400  # Cache preflight for 24 hours
-)
-logger.info("✓ CORS configured with origins: %s", allowed_origins)
 
-# Helper function for origin validation
-def is_origin_allowed(origin: str) -> bool:
-    """
-    Check if an origin is allowed for CORS requests.
-    """
-    if not origin:
-        return False
-    return origin in allowed_origins
+CORS(app,
+     origins=["https://bhrigu-welt.vercel.app"],  # Your Vercel origin
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Include OPTIONS for preflight
+     allowed_headers=["Content-Type", "Authorization", "x-client-online", "X-API-Key"],  # Explicitly allow your header
+     supports_credentials=True  # If using auth/cookies
+)
+
+logger.info("✓ CORS configured with origin: https://bhrigu-welt.vercel.app")
 
 # Request preprocessing middleware
 def _assign_correlation_id():
