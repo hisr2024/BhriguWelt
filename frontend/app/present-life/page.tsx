@@ -12,15 +12,17 @@ import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
 import { presentLifeAPI, BirthDetails } from '@/lib/api';
+import { useOfflineWisdomCards } from '@/lib/wisdom';
 import Link from 'next/link';
 
 export default function PresentLifePage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [wisdomCards, setWisdomCards] = useState<any[]>([]);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
+
+  const { cards: wisdomCards } = useOfflineWisdomCards({ limit: 6 });
 
   useEffect(() => {
     if (!encryptionLoading && !isSetup) {
@@ -33,15 +35,6 @@ export default function PresentLifePage() {
       router.push('/unlock');
     }
   }, [encryptionLoading, isSetup, isUnlocked, router]);
-
-  useEffect(() => {
-    fetch('/data/wisdom_cards.json')
-      .then(res => res.json())
-      .then(data => {
-        setWisdomCards(data.slice(0, 6));
-      })
-      .catch(err => console.error('Error loading wisdom cards:', err));
-  }, []);
 
   useEffect(() => {
     if (encryptionKey) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Shield, Music, Gem, Flame, Sparkles, BookOpen, ArrowLeft, Loader2 } from 'lucide-react';
@@ -12,15 +12,30 @@ import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
 import { karmicRemediesAPI, BirthDetails } from '@/lib/api';
+import { useOfflineWisdomCards } from '@/lib/wisdom';
+import type { WisdomCard } from '@/lib/types';
 import Link from 'next/link';
 
 export default function KarmicRemediesPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [wisdomCards, setWisdomCards] = useState<any[]>([]);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
+
+  const filterWisdomCards = useCallback(
+    (card: WisdomCard) =>
+      card.category === 'remedies' ||
+      card.category === 'mantras' ||
+      (card.tags ?? []).some((tag) =>
+        tag.toLowerCase().includes('remedy') ||
+        tag.toLowerCase().includes('gemstone') ||
+        tag.toLowerCase().includes('mantra')
+      ),
+    []
+  );
+
+  const { cards: wisdomCards } = useOfflineWisdomCards({ filter: filterWisdomCards });
 
   useEffect(() => {
     if (!encryptionLoading && !isSetup) {
@@ -33,24 +48,6 @@ export default function KarmicRemediesPage() {
       router.push('/unlock');
     }
   }, [encryptionLoading, isSetup, isUnlocked, router]);
-
-  useEffect(() => {
-    fetch('/data/wisdom_cards.json')
-      .then(res => res.json())
-      .then(data => {
-        const filtered = data.filter((card: any) => 
-          card.category === 'remedies' ||
-          card.category === 'mantras' ||
-          card.tags.some((tag: string) => 
-            tag.toLowerCase().includes('remedy') || 
-            tag.toLowerCase().includes('gemstone') ||
-            tag.toLowerCase().includes('mantra')
-          )
-        );
-        setWisdomCards(filtered);
-      })
-      .catch(err => console.error('Error loading wisdom cards:', err));
-  }, []);
 
   useEffect(() => {
     if (encryptionKey) {

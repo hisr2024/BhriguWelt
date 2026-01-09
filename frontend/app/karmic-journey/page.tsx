@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Sparkles, TrendingUp, Heart, Compass, ArrowLeft, Loader2 } from 'lucide-react';
@@ -12,15 +12,28 @@ import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
 import { karmicJourneyAPI, BirthDetails } from '@/lib/api';
+import { useOfflineWisdomCards } from '@/lib/wisdom';
+import type { WisdomCard } from '@/lib/types';
 import Link from 'next/link';
 
 export default function KarmicJourneyPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [wisdomCards, setWisdomCards] = useState<any[]>([]);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
+
+  const filterWisdomCards = useCallback(
+    (card: WisdomCard) =>
+      card.category === 'philosophy' ||
+      (card.tags ?? []).some((tag) =>
+        tag.toLowerCase().includes('karma') ||
+        tag.toLowerCase().includes('soul')
+      ),
+    []
+  );
+
+  const { cards: wisdomCards } = useOfflineWisdomCards({ filter: filterWisdomCards });
 
   // Redirect to passcode setup if encryption not configured
   useEffect(() => {
@@ -35,24 +48,6 @@ export default function KarmicJourneyPage() {
       router.push('/unlock');
     }
   }, [encryptionLoading, isSetup, isUnlocked, router]);
-
-  // Load wisdom cards for offline mode
-  useEffect(() => {
-    fetch('/data/wisdom_cards.json')
-      .then(res => res.json())
-      .then(data => {
-        // Filter by karmic-related tags and philosophy category
-        const filtered = data.filter((card: any) => 
-          card.category === 'philosophy' ||
-          card.tags.some((tag: string) => 
-            tag.toLowerCase().includes('karma') || 
-            tag.toLowerCase().includes('soul')
-          )
-        );
-        setWisdomCards(filtered);
-      })
-      .catch(err => console.error('Error loading wisdom cards:', err));
-  }, []);
 
   // Load data
   useEffect(() => {
