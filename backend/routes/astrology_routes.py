@@ -82,6 +82,15 @@ def calculate_birth_chart():
                 timezone_override=sanitized_data.get('timezone')
             )
 
+            # Check if calculation returned an error
+            if 'error' in chart:
+                error_info = chart['error']
+                logger.error(f"Birth chart calculation failed: {error_info.get('message')}")
+                return error_response(
+                    error_info.get('message', 'Failed to calculate birth chart'),
+                    400 if error_info.get('code') == 'geocoding_failed' else 500
+                )
+
             logger.info("Birth chart calculated successfully")
             return success_response(
                 data=chart,
@@ -132,6 +141,15 @@ def zodiac_analysis():
                 timezone_override=sanitize_input(data['timezone'], max_length=64)
                 if data.get('timezone') else None
             )
+
+            # Check if calculation returned an error
+            if 'error' in birth_chart:
+                error_info = birth_chart['error']
+                logger.error(f"Birth chart calculation failed: {error_info.get('message')}")
+                return error_response(
+                    error_info.get('message', 'Failed to calculate birth chart'),
+                    400 if error_info.get('code') == 'geocoding_failed' else 500
+                )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
             birth_chart = cached_birth_data
@@ -211,6 +229,15 @@ def planetary_positions():
                 timezone_override=sanitize_input(data['timezone'], max_length=64)
                 if data.get('timezone') else None
             )
+
+            # Check if calculation returned an error
+            if 'error' in chart:
+                error_info = chart['error']
+                logger.error(f"Birth chart calculation failed: {error_info.get('message')}")
+                return error_response(
+                    error_info.get('message', 'Failed to calculate birth chart'),
+                    400 if error_info.get('code') == 'geocoding_failed' else 500
+                )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
             chart = cached_birth_data
@@ -277,6 +304,15 @@ def compatibility_analysis():
                 if data['person1'].get('timezone') else None
             )
 
+            # Check if person1 chart calculation returned an error
+            if 'error' in chart1:
+                error_info = chart1['error']
+                logger.error(f"Person1 birth chart calculation failed: {error_info.get('message')}")
+                return error_response(
+                    f"Person1: {error_info.get('message', 'Failed to calculate birth chart')}",
+                    400 if error_info.get('code') == 'geocoding_failed' else 500
+                )
+
             chart2 = calculator.calculate_birth_chart(
                 date_of_birth=data['person2']['date_of_birth'],
                 time_of_birth=data['person2']['time_of_birth'],
@@ -284,6 +320,15 @@ def compatibility_analysis():
                 timezone_override=sanitize_input(data['person2']['timezone'], max_length=64)
                 if data['person2'].get('timezone') else None
             )
+
+            # Check if person2 chart calculation returned an error
+            if 'error' in chart2:
+                error_info = chart2['error']
+                logger.error(f"Person2 birth chart calculation failed: {error_info.get('message')}")
+                return error_response(
+                    f"Person2: {error_info.get('message', 'Failed to calculate birth chart')}",
+                    400 if error_info.get('code') == 'geocoding_failed' else 500
+                )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
             chart1 = cached_chart1

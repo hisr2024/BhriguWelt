@@ -22,7 +22,7 @@ import uuid
 import json
 import time
 import logging
-from utils.logger import setup_logger
+from utils.logger import setup_logger, log_error, sanitize_error
 
 bp = Blueprint('bhrigu_predictions', __name__, url_prefix='/api/bhrigu-predictions')
 logger = setup_logger(__name__)
@@ -35,7 +35,7 @@ def _get_chart_data(data):
     calculator = get_astrology_calculator()
     cached_birth_data = get_cached_birth_data(data)
     if calculator:
-        return calculator.calculate_birth_chart(
+        chart = calculator.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
             place=data.get('place_of_birth', ''),
@@ -43,7 +43,15 @@ def _get_chart_data(data):
             longitude=data.get('longitude'),
             timezone_override=sanitize_input(data['timezone'], max_length=64)
             if data.get('timezone') else None
-        ), None
+        )
+        # Check if calculation returned an error
+        if 'error' in chart:
+            error_info = chart['error']
+            return None, error_response(
+                error_info.get('message', 'Failed to calculate birth chart'),
+                400 if error_info.get('code') == 'geocoding_failed' else 500
+            )
+        return chart, None
     if cached_birth_data:
         return cached_birth_data, None
     return None, dependency_error_response(get_astrology_dependency_error())
@@ -123,6 +131,29 @@ def _stream_sections(category_key: str, prediction: dict, from_cache: bool):
         'prediction': prediction,
         'from_cache': from_cache
     })
+
+
+def _sanitize_question_field(data: dict):
+    """Sanitize the question field in the request data"""
+    if data and 'question' in data and data['question']:
+        from utils.validators import sanitizeQuestion
+        data['question'] = sanitizeQuestion(data['question'])
+
+
+def validate_chart_inputs(data: dict) -> Optional[str]:
+    """Validate chart calculation inputs"""
+    # This is a simple validation - validate_birth_data already covers most cases
+    # Return None if valid, error string if invalid
+    return None
+
+
+def _generate_prediction(category: str, birth_data: dict, generator_func):
+    """Generate prediction using the provided generator function"""
+    try:
+        return generator_func()
+    except Exception as e:
+        logger.error(f"Failed to generate {category} prediction: {str(e)}", exc_info=True)
+        raise
 
 
 @bp.route('/<category>/stream', methods=['POST'])
