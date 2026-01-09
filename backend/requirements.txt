@@ -25,6 +25,7 @@ requests==2.31.0
 # Data Processing
 pandas==2.2.0
 numpy==1.26.4
+PyYAML==6.0.1
 
 # Validation & Serialization
 marshmallow==3.21.0
