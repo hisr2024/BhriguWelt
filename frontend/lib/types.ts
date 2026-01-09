@@ -9,6 +9,7 @@ export interface BirthDetails {
   place_of_birth: string;
   latitude?: number;
   longitude?: number;
+  language?: string;
 }
 
 export interface BirthChartAPI {
@@ -101,7 +102,7 @@ export interface CachedPrediction {
 export interface PredictionResult {
   status: 'success' | 'error';
   message: string;
-  data: PredictionPayload | CachedPrediction;
+  data: PredictionPayload | CachedPrediction | BhriguPrediction;
   timestamp: string;
   meta?: Record<string, unknown>;
 }
@@ -274,7 +275,7 @@ export interface AppSettings {
 
 // Metadata types
 export interface EncryptionMetadata {
-  key: 'encryptionSalt' | 'encryptionTest';
+  key: 'encryptionSalt' | 'encryptionTest' | 'encryptionUserId' | 'encryptionRotationPending';
   value: string;
   createdAt: string;
 }

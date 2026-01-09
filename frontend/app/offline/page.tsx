@@ -1,25 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { WifiOff, RefreshCw } from 'lucide-react';
+import { useOnlineStatus } from '@/lib/hooks/useOnlineStatus';
 
 export default function OfflinePage() {
-  const [isOnline, setIsOnline] = useState(false);
-
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    setIsOnline(navigator.onLine);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const isOnline = useOnlineStatus();
 
   const handleRetry = () => {
     if (navigator.onLine) {

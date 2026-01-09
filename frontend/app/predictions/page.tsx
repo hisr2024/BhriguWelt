@@ -9,12 +9,14 @@ import GenZCard from '../components/GenZCard';
 import GenZButton from '../components/GenZButton';
 import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
+import CardSkeleton from '../components/CardSkeleton';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, setItem, STORES } from '@/lib/storage';
 import { predictionsAPI, BirthDetails } from '@/lib/api';
 import { useOfflineWisdomCards } from '@/lib/wisdom';
 import type { WisdomCard } from '@/lib/types';
 import Link from 'next/link';
+import { useOnlineStatus } from '@/lib/hooks/useOnlineStatus';
 
 export default function PredictionsPage() {
   const [data, setData] = useState<any>(null);
@@ -27,6 +29,7 @@ export default function PredictionsPage() {
   const [usingCache, setUsingCache] = useState(false);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
+  const isOnline = useOnlineStatus();
 
   const filterWisdomCards = useCallback(
     (card: WisdomCard) =>
@@ -85,7 +88,7 @@ export default function PredictionsPage() {
       };
 
       const cacheKey = `predictions_cache_${activeTab}`;
-      const offlineMode = !navigator.onLine;
+      const offlineMode = !isOnline;
       setIsOffline(offlineMode);
 
       if (offlineMode) {
@@ -113,29 +116,17 @@ export default function PredictionsPage() {
       }
 
       try {
-        let prediction;
-        switch (activeTab) {
-          case 'daily':
-            prediction = await predictionsAPI.getDaily(birthDetails);
-            break;
-          case 'weekly':
-            prediction = await predictionsAPI.getWeekly(birthDetails);
-            break;
-          case 'monthly':
-            prediction = await predictionsAPI.getMonthly(birthDetails);
-            break;
-          case 'yearly':
-            prediction = await predictionsAPI.getYearly(birthDetails);
-            break;
-        }
-        setData(prediction);
+        const response = await bhriguPredictionsAPI.getPredictions(birthDetails);
+        const prediction = normalizePredictionResponse<any>(response).prediction;
+        const viewData = buildPredictionView(prediction, activeTab);
+        setData(viewData);
         setCacheTimestamp(null);
         setUsingCache(false);
         setIsOffline(false);
         await setItem(
           STORES.SETTINGS,
           cacheKey,
-          { data: prediction, fetchedAt: new Date().toISOString() },
+          { data: viewData, fetchedAt: new Date().toISOString() },
           encryptionKey
         );
       } catch (apiError) {
@@ -168,7 +159,7 @@ export default function PredictionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, encryptionKey]);
+  }, [activeTab, encryptionKey, isOnline]);
 
   useEffect(() => {
     if (encryptionKey) {
@@ -177,24 +168,11 @@ export default function PredictionsPage() {
   }, [encryptionKey, activeTab, loadData]);
 
   useEffect(() => {
-    const handleOnline = () => {
-      setIsOffline(false);
-      if (syncWhenOnline && encryptionKey) {
-        loadData();
-      }
-    };
-    const handleOffline = () => {
-      setIsOffline(true);
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [loadData, syncWhenOnline, encryptionKey]);
+    setIsOffline(!isOnline);
+    if (isOnline && syncWhenOnline && encryptionKey) {
+      loadData();
+    }
+  }, [isOnline, syncWhenOnline, encryptionKey, loadData]);
 
   const getOfflinePrediction = (period: string) => {
     const predictions: Record<string, string> = {
@@ -249,6 +227,59 @@ export default function PredictionsPage() {
   const getLuckyColor = () => {
     const colors = ['Blue', 'Green', 'Yellow', 'Red', 'Purple', 'White', 'Orange'];
     return colors[Math.floor(Math.random() * colors.length)];
+  };
+
+  const extractSection = (text: string, keywords: string[]): string | null => {
+    if (!text) return null;
+    const lines = text.split('\n');
+    for (const keyword of keywords) {
+      for (let i = 0; i < lines.length; i += 1) {
+        if (lines[i].toLowerCase().includes(keyword)) {
+          const section = lines.slice(i, Math.min(i + 3, lines.length)).join(' ');
+          if (section.length > 20) {
+            return section.substring(0, 200);
+          }
+        }
+      }
+    }
+    return null;
+  };
+
+  const extractLuckyColor = (text: string): string | null => {
+    const match = text.match(/lucky color[:\s-]*([a-z\s]+)/i);
+    return match?.[1]?.trim() ?? null;
+  };
+
+  const extractLuckyNumber = (text: string): number | null => {
+    const match = text.match(/lucky number[:\s-]*([0-9]+)/i);
+    return match ? Number(match[1]) : null;
+  };
+
+  const extractAdvice = (text: string): string[] | null => {
+    const lines = text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+    const adviceLines = lines.filter((line) =>
+      ['advice', 'guidance', 'avoid', 'focus'].some((keyword) =>
+        line.toLowerCase().includes(keyword)
+      )
+    );
+    return adviceLines.length > 0 ? adviceLines.slice(0, 3) : null;
+  };
+
+  const buildPredictionView = (prediction: any, period: string) => {
+    const text = prediction?.[period] ?? '';
+    return {
+      overall: text || getOfflinePrediction(period),
+      career: extractSection(text, ['career', 'professional', 'work']) || getOfflineCareerPrediction(period),
+      love: extractSection(text, ['love', 'relationship']) || getOfflineLovePrediction(period),
+      health: extractSection(text, ['health', 'wellness', 'energy']) || getOfflineHealthPrediction(period),
+      finance: extractSection(text, ['finance', 'money', 'financial']) || getOfflineFinancePrediction(period),
+      lucky_color: extractLuckyColor(text) || getLuckyColor(),
+      lucky_number: extractLuckyNumber(text) || Math.floor(Math.random() * 9) + 1,
+      advice: extractAdvice(text) || getOfflineAdvice(period)
+    };
   };
 
   const getOfflineAdvice = (period: string) => {
@@ -497,7 +528,7 @@ export default function PredictionsPage() {
         )}
 
         {/* Wisdom Cards */}
-        {data?.offline && wisdomCards.length > 0 && (
+        {data?.offline && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -507,15 +538,19 @@ export default function PredictionsPage() {
               Astrological Wisdom
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {wisdomCards.slice(0, 4).map((card, index) => (
-                <GenZCard key={index} variant="glass">
-                  <GenZBadge variant="default" size="sm" className="mb-3">
-                    {card.tradition}
-                  </GenZBadge>
-                  <h4 className="text-xl font-bold mb-2 text-white">{card.title}</h4>
-                  <p className="text-white/70 text-sm">{card.content}</p>
-                </GenZCard>
-              ))}
+              {wisdomLoading
+                ? Array.from({ length: 4 }).map((_, index) => (
+                    <CardSkeleton key={index} />
+                  ))
+                : wisdomCards.slice(0, 4).map((card, index) => (
+                    <GenZCard key={index} variant="glass">
+                      <GenZBadge variant="default" size="sm" className="mb-3">
+                        {card.tradition}
+                      </GenZBadge>
+                      <h4 className="text-xl font-bold mb-2 text-white">{card.title}</h4>
+                      <p className="text-white/70 text-sm">{card.content}</p>
+                    </GenZCard>
+                  ))}
             </div>
           </motion.div>
         )}

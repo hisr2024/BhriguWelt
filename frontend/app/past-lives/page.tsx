@@ -9,6 +9,7 @@ import GenZCard from '../components/GenZCard';
 import GenZButton from '../components/GenZButton';
 import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
+import CardSkeleton from '../components/CardSkeleton';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
 import { pastLivesAPI, BirthDetails } from '@/lib/api';
@@ -79,8 +80,14 @@ export default function PastLivesPage() {
       };
 
       try {
-        const analysis = await pastLivesAPI.getAnalysis(birthDetails);
-        setData(analysis);
+        const response = await bhriguPredictionsAPI.getPastLives(birthDetails);
+        const prediction = normalizePredictionResponse<any>(response).prediction;
+        setData({
+          ...prediction,
+          past_life_analysis: prediction?.recent_life ?? prediction?.significant_lives ?? prediction?.full_analysis,
+          past_relationships: prediction?.past_relationships,
+          talents_carried_forward: prediction?.past_skills ?? prediction?.spiritual_progress
+        });
       } catch (apiError) {
         console.error('API error, using offline mode:', apiError);
         setData({
@@ -227,7 +234,7 @@ export default function PastLivesPage() {
           ))}
         </div>
 
-        {data?.offline && wisdomCards.length > 0 && (
+        {data?.offline && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -237,15 +244,19 @@ export default function PastLivesPage() {
               Bhrigu Samhita Wisdom
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {wisdomCards.slice(0, 4).map((card, index) => (
-                <GenZCard key={index} variant="glass">
-                  <GenZBadge variant="default" size="sm" className="mb-3">
-                    {card.tradition}
-                  </GenZBadge>
-                  <h4 className="text-xl font-bold mb-2 text-white">{card.title}</h4>
-                  <p className="text-white/70 text-sm">{card.content}</p>
-                </GenZCard>
-              ))}
+              {wisdomLoading
+                ? Array.from({ length: 4 }).map((_, index) => (
+                    <CardSkeleton key={index} />
+                  ))
+                : wisdomCards.slice(0, 4).map((card, index) => (
+                    <GenZCard key={index} variant="glass">
+                      <GenZBadge variant="default" size="sm" className="mb-3">
+                        {card.tradition}
+                      </GenZBadge>
+                      <h4 className="text-xl font-bold mb-2 text-white">{card.title}</h4>
+                      <p className="text-white/70 text-sm">{card.content}</p>
+                    </GenZCard>
+                  ))}
             </div>
           </motion.div>
         )}
