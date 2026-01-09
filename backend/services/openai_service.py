@@ -2,13 +2,19 @@
 OpenAI Integration Service
 Handles all AI-powered predictions and insights with authentic Bhrigu/Nadi corpus integration
 """
-import os
 import json
+import logging
+import os
 import random
 import re
+import socket
 import time
-from typing import Dict, Any, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import importlib
 import requests
+
+from services.sentry_service import capture_message
 
 # Import corpus loader for RAG-style context injection
 CORPUS_AVAILABLE = importlib.util.find_spec("services.corpus_loader") is not None
@@ -31,7 +37,8 @@ class OpenAIService:
 
     def __init__(self):
         self.api_key = os.getenv('OPENAI_API_KEY')
-        self.base_url = os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
+        self.base_urls = self._load_base_urls()
+        self.base_url = self.base_urls[0]
         self.prompt_token_limit = int(os.getenv('PROMPT_TOKEN_LIMIT', '6000'))
         self.response_token_limit = int(
             os.getenv('RESPONSE_TOKEN_LIMIT', os.getenv('OPENAI_MAX_TOKENS', '4000'))
@@ -99,6 +106,36 @@ class OpenAIService:
             'Authorization': f'Bearer {self.api_key}',
             'Content-Type': 'application/json'
         } if self.enabled else {}
+
+    def _load_base_urls(self) -> List[str]:
+        urls: List[str] = []
+        base_urls_env = os.getenv('OPENAI_BASE_URLS', '')
+        if base_urls_env:
+            urls = [url.strip() for url in base_urls_env.split(',') if url.strip()]
+        if not urls:
+            urls = [os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1').strip()]
+        unique_urls: List[str] = []
+        for url in urls:
+            if url not in unique_urls:
+                unique_urls.append(url)
+        return unique_urls
+
+    def _next_base_url(self) -> str:
+        if len(self.base_urls) <= 1:
+            return self.base_url
+        current_index = self.base_urls.index(self.base_url)
+        next_index = (current_index + 1) % len(self.base_urls)
+        self.base_url = self.base_urls[next_index]
+        return self.base_url
+
+    def _is_dns_error(self, error: Exception) -> bool:
+        current: Optional[BaseException] = error
+        while current:
+            if isinstance(current, socket.gaierror):
+                return True
+            current = getattr(current, "__cause__", None) or getattr(current, "__context__", None)
+        message = str(error).lower()
+        return "name or service not known" in message or "temporary failure in name resolution" in message
 
     def _approx_token_count(self, text: str) -> int:
         if not text:
@@ -238,12 +275,41 @@ class OpenAIService:
         timeout = int(os.getenv('OPENAI_TIMEOUT', '90'))
 
         for attempt in range(max_retries + 1):
-            response = requests.post(
-                f'{self.base_url}/chat/completions',
-                headers=self.headers,
-                json=payload,
-                timeout=timeout
-            )
+            try:
+                response = requests.post(
+                    f'{self.base_url}/chat/completions',
+                    headers=self.headers,
+                    json=payload,
+                    timeout=timeout
+                )
+            except requests.exceptions.RequestException as error:
+                if self._is_dns_error(error):
+                    failed_base_url = self.base_url
+                    next_base_url = self._next_base_url()
+                    logger.warning(
+                        "DNS failure contacting OpenAI base URL; switching to alternate.",
+                        extra={
+                            "error_code": "OPENAI_DNS_FAILURE",
+                            "base_url": failed_base_url,
+                            "next_base_url": next_base_url,
+                            "attempt": attempt + 1,
+                        },
+                    )
+                    capture_message(
+                        "OpenAI DNS failure detected",
+                        level="error",
+                        context={
+                            "base_url": failed_base_url,
+                            "next_base_url": next_base_url,
+                            "attempt": attempt + 1,
+                        },
+                    )
+                    if attempt >= max_retries:
+                        raise
+                    delay = backoff_base * (2 ** attempt)
+                    time.sleep(delay + random.uniform(0, 0.25))
+                    continue
+                raise
             if response.status_code == 429 or response.status_code >= 500:
                 if attempt >= max_retries:
                     response.raise_for_status()
