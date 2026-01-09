@@ -22,12 +22,14 @@ class CorpusLoader:
         self.corpus_base_path = None
         self.search_paths = []
         self.missing_files = []
+        self.initialization_errors = []
         self._load_corpus()
     
     def _load_corpus(self):
         """Load corpus data from YAML files"""
         # Try different possible paths
         possible_paths = [
+            Path(__file__).parent.parent / "data",  # PRIMARY: backend/data/
             Path(__file__).parent.parent.parent / "archive" / "legacy_backend" / "data",
             Path(__file__).parent.parent / "archive" / "legacy_backend" / "data",
             Path("/home/runner/work/BhriguWelt/BhriguWelt/archive/legacy_backend/data"),
@@ -41,9 +43,9 @@ class CorpusLoader:
             if bhrigu_path.exists() and nadi_path.exists():
                 try:
                     with open(bhrigu_path, 'r', encoding='utf-8') as f:
-                        self.bhrigu_data = json.load(f)  # Files are JSON format
+                        self.bhrigu_data = yaml.safe_load(f)  # Files are YAML format
                     with open(nadi_path, 'r', encoding='utf-8') as f:
-                        self.nadi_data = json.load(f)
+                        self.nadi_data = yaml.safe_load(f)
                     self.corpus_loaded = True
                     self.corpus_base_path = str(base_path)
                     logger.info("✓ Loaded Bhrigu and Nadi corpus from: %s", base_path)

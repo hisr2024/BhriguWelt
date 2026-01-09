@@ -7,6 +7,7 @@ from services.matchmaking_service import get_matchmaking_service
 from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
 from utils.validators import sanitize_input
+from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 

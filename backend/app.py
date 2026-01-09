@@ -7,11 +7,13 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 import os
+import sys
 import json
 import uuid
 import gzip
 import io
 from datetime import datetime
+from pathlib import Path
 from werkzeug.exceptions import RequestEntityTooLarge
 from utils.logger import setup_logger, log_exception
 
@@ -37,11 +39,13 @@ def _exit_startup(error_lines):
     sys.exit(1)
 
 def _check_required_env_vars():
-    required_vars = ['OPENAI_API_KEY', 'SECRET_KEY', 'JWT_SECRET_KEY', 'FRONTEND_URL']
-    missing_vars = [var for var in required_vars if not os.getenv(var)]
-    if missing_vars:
-        _exit_startup([f"Missing required environment variables: {', '.join(missing_vars)}"])
-    print("✓ All required environment variables are set")
+    # Only require critical vars; allow defaults for development
+    if IS_PRODUCTION:
+        required_vars = ['OPENAI_API_KEY', 'SECRET_KEY', 'JWT_SECRET_KEY', 'FRONTEND_URL']
+        missing_vars = [var for var in required_vars if not os.getenv(var)]
+        if missing_vars:
+            _exit_startup([f"Missing required environment variables: {', '.join(missing_vars)}"])
+    print("✓ All required environment variables are set (or using defaults for development)")
 
 def _check_corpus_files():
     required_files = [

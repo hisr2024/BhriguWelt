@@ -10,6 +10,7 @@ from services.bhrigu_core_wisdom import get_bhrigu_core_wisdom
 from datetime import datetime
 from utils.response_formatter import prediction_response, prediction_error_response
 from utils.validators import sanitize_input
+from utils.logger import setup_logger, log_exception
 
 logger = setup_logger(__name__)
 
@@ -18,6 +19,7 @@ bp = Blueprint('predictions_unified', __name__, url_prefix='/api/predictions')
 # Initialize services
 orchestrator = get_prediction_orchestrator()
 core_wisdom = get_bhrigu_core_wisdom()
+astrology_calculator = get_astrology_calculator()
 
 
 @bp.route('/health', methods=['GET'])

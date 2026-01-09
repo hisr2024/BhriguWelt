@@ -184,14 +184,14 @@ def _is_sensitive_key(key: str) -> bool:
 def _get_request_id() -> str:
     try:
         from flask import g, request
-    except Exception:
+        return (
+            getattr(g, 'correlation_id', None)
+            or request.headers.get('X-Request-ID')
+            or request.headers.get('X-Correlation-ID')
+        )
+    except (RuntimeError, Exception):
+        # Outside of application/request context
         return None
-
-    return (
-        getattr(g, 'correlation_id', None)
-        or request.headers.get('X-Request-ID')
-        or request.headers.get('X-Correlation-ID')
-    )
 
 
 def sanitize_error(message: str) -> str:

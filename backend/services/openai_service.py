@@ -46,62 +46,38 @@ class OpenAIService:
         self.corpus_available = False
         self.corpus_error = None
         try:
-            get_corpus_loader = self._load_optional_factory(
-                "services.corpus_loader",
-                "get_corpus_loader",
-                "Corpus loader",
-            )
-            corpus_result = get_corpus_loader()
-            self.corpus_loader = corpus_result.get("loader")
-            self.corpus_error = corpus_result.get("error")
-            if self.corpus_error:
-                print(f"Warning: Corpus files missing: {self.corpus_error.get('message')}")
-            else:
-                self.corpus_available = True
-                print("✓ Corpus loader initialized - predictions will reference authentic Bhrigu/Nadi sources")
-        except OptionalDependencyError as exc:
-            self.corpus_error = {"code": "corpus_loader_missing", "message": str(exc)}
-            logger.warning(
-                "Corpus loader dependency missing",
-                extra={"error_code": "CORPUS_LOADER_MISSING", "error": str(exc)},
-            )
+            if CORPUS_AVAILABLE:
+                corpus_result = get_corpus_loader()
+                self.corpus_loader = corpus_result.get("loader")
+                self.corpus_error = corpus_result.get("error")
+                if self.corpus_error:
+                    logger.warning(f"Corpus files missing: {self.corpus_error.get('message')}")
+                else:
+                    self.corpus_available = True
+                    logger.info("✓ Corpus loader initialized - predictions will reference authentic Bhrigu/Nadi sources")
         except Exception as e:
             self.corpus_error = {
                 "code": "corpus_loader_error",
                 "message": str(e),
             }
-            print(f"Warning: Could not initialize corpus loader: {e}")
+            logger.warning(f"Could not initialize corpus loader: {e}")
 
         # Initialize offline wisdom generator for category-specific fallbacks
         self.offline_wisdom = None
         self.offline_wisdom_error = None
         try:
-            get_offline_wisdom_generator = self._load_optional_factory(
-                "services.bhrigu_offline_wisdom",
-                "get_offline_wisdom_generator",
-                "Offline wisdom generator",
-            )
+            from services.bhrigu_offline_wisdom import get_offline_wisdom_generator
             self.offline_wisdom = get_offline_wisdom_generator()
-            logger.info(
-                "Offline wisdom generator initialized - category-specific fallbacks available",
-                extra={"error_code": "OPENAI_OFFLINE_WISDOM_READY"},
-            )
-        except OptionalDependencyError as exc:
+            logger.info("✓ Offline wisdom generator initialized - category-specific fallbacks available")
+        except ImportError as exc:
             self.offline_wisdom_error = {"code": "offline_wisdom_missing", "message": str(exc)}
-            logger.warning(
-                "Offline wisdom generator not available. Fallbacks will be generic.",
-                extra={"error_code": "OPENAI_OFFLINE_WISDOM_MISSING", "error": str(exc)},
-            )
+            logger.warning(f"Offline wisdom generator not available: {exc}")
         except Exception as e:
-            self._set_last_error(
-                "OPENAI_OFFLINE_WISDOM_INIT_FAILED",
-                "Could not initialize offline wisdom generator.",
-                {"error": str(e)},
-            )
-            logger.warning(
-                "Could not initialize offline wisdom generator",
-                extra={"error_code": "OPENAI_OFFLINE_WISDOM_INIT_FAILED", "error": str(e)},
-            )
+            self.offline_wisdom_error = {
+                "code": "offline_wisdom_error",
+                "message": str(e),
+            }
+            logger.warning(f"Could not initialize offline wisdom generator: {e}")
 
         if not self.enabled:
             self._set_last_error(
@@ -1230,12 +1206,13 @@ def get_openai_service():
 def get_openai_initialization_errors() -> List[str]:
     """Get initialization errors recorded during OpenAI service setup."""
     errors: List[str] = []
-    if CORPUS_IMPORT_ERROR:
-        errors.append(f"Corpus loader import error: {CORPUS_IMPORT_ERROR}")
-    if OFFLINE_WISDOM_IMPORT_ERROR:
-        errors.append(f"Offline wisdom import error: {OFFLINE_WISDOM_IMPORT_ERROR}")
-    if _openai_service_instance and getattr(_openai_service_instance, "initialization_errors", None):
-        errors.extend(_openai_service_instance.initialization_errors)
+    if _openai_service_instance:
+        if _openai_service_instance.corpus_error:
+            errors.append(f"Corpus loader error: {_openai_service_instance.corpus_error.get('message')}")
+        if _openai_service_instance.offline_wisdom_error:
+            errors.append(f"Offline wisdom error: {_openai_service_instance.offline_wisdom_error.get('message')}")
+        if getattr(_openai_service_instance, "initialization_errors", None):
+            errors.extend(_openai_service_instance.initialization_errors)
     return errors
 
 # Backwards compatibility - creates instance on first access

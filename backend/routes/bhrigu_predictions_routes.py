@@ -22,6 +22,7 @@ import uuid
 import json
 import time
 import logging
+from utils.logger import setup_logger
 
 bp = Blueprint('bhrigu_predictions', __name__, url_prefix='/api/bhrigu-predictions')
 logger = setup_logger(__name__)

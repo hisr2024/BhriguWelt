@@ -4,6 +4,7 @@ Ensures 100% structured output with AI-powered section generation
 """
 import difflib
 import logging
+import os
 import re
 import unicodedata
 import uuid
@@ -34,6 +35,23 @@ def _read_ratio_env(name: str, default: float) -> float:
     if ratio <= 0 or ratio > 1:
         return default
     return ratio
+
+
+def _get_default_section_headers() -> Dict[str, List[str]]:
+    """Return default section header patterns for various prediction categories"""
+    return {
+        'karmic_journey': ['karmic journey', 'soul purpose', 'life mission'],
+        'past_lives': ['past lives', 'previous incarnations', 'karmic patterns'],
+        'future_lives': ['future lives', 'next incarnation', 'evolution trajectory'],
+        'present_life': ['present life', 'current phase', 'life now'],
+        'life_events': ['life events', 'major events', 'milestones'],
+        'predictions': ['predictions', 'forecast', 'outlook'],
+        'karmic_remedies': ['remedies', 'karmic remedies', 'solutions'],
+        'relationships': ['relationships', 'connections', 'partnerships'],
+        'career': ['career', 'profession', 'work'],
+        'health': ['health', 'well-being', 'vitality'],
+        'finances': ['finances', 'wealth', 'prosperity'],
+    }
 
 
 class SectionParser:
@@ -139,9 +157,9 @@ class SectionParser:
             'healthy_practices'
         ]
     }
-    
+
     # Section header patterns for extraction
-    SECTION_HEADERS = _load_section_headers()
+    SECTION_HEADERS = _get_default_section_headers()
     
     def __init__(self, openai_service=None):
         """Initialize section parser with optional OpenAI service for generation"""
