@@ -51,6 +51,9 @@ class BhriguPredictionCache(db.Model):
     confidence_score = db.Column(db.Float, default=0.0)
     user_rating = db.Column(db.Integer)  # 1-5 stars if user rates
 
+    HASH_VERSION_CURRENT = 'v3'
+    HASH_VERSION_FALLBACKS = ('v2',)
+
     def __repr__(self):
         return f'<BhriguPredictionCache {self.id}: {self.category} - {self.zodiac_sign}>'
 
@@ -83,11 +86,13 @@ class BhriguPredictionCache(db.Model):
 
         return response
 
-    @staticmethod
-    def create_hash(birth_data: dict, category: str = None) -> str:
+    @classmethod
+    def create_hash(cls, birth_data: dict, category: str = None, question: str = None,
+                    version: str = None) -> str:
         """Create anonymized hash of birth data"""
         import hashlib
         # Use only astrological data, not PII
+        version = version or cls.HASH_VERSION_CURRENT
         base_parts = [
             birth_data.get('date_of_birth'),
             birth_data.get('time_of_birth'),
@@ -100,9 +105,11 @@ class BhriguPredictionCache(db.Model):
             birth_data.get('place_of_birth'),
             birth_data.get('timezone')
         ]
+        if version == cls.HASH_VERSION_CURRENT:
+            optional_parts.insert(1, question)
         data_parts = [part for part in base_parts if part not in (None, '')]
         data_parts.extend(part for part in optional_parts if part not in (None, ''))
-        data_parts.append('v2')
+        data_parts.append(version)
         data_str = "_".join(str(part) for part in data_parts)
         return hashlib.sha256(data_str.encode()).hexdigest()
 
@@ -113,7 +120,7 @@ class BhriguPredictionCache(db.Model):
         prediction_payload = dict(prediction)
         complete_analysis = prediction_payload.pop('complete_analysis', None)
         cache_entry = cls(
-            birth_data_hash=cls.create_hash(birth_data, category),
+            birth_data_hash=cls.create_hash(birth_data, category, question),
             category=category,
             question=question,
             prediction_data=json.dumps(prediction_payload),
@@ -131,13 +138,18 @@ class BhriguPredictionCache(db.Model):
     @classmethod
     def get_cached_prediction(cls, birth_data: dict, category: str, question: str = None):
         """Retrieve cached prediction if available"""
-        birth_hash = cls.create_hash(birth_data, category)
-        query = cls.query.filter_by(birth_data_hash=birth_hash, category=category)
+        cached = None
+        versions = (cls.HASH_VERSION_CURRENT, *cls.HASH_VERSION_FALLBACKS)
+        for version in versions:
+            birth_hash = cls.create_hash(birth_data, category, question, version=version)
+            query = cls.query.filter_by(birth_data_hash=birth_hash, category=category)
 
-        if question:
-            query = query.filter_by(question=question)
+            if question:
+                query = query.filter_by(question=question)
 
-        cached = query.order_by(cls.created_at.desc()).first()
+            cached = query.order_by(cls.created_at.desc()).first()
+            if cached:
+                break
 
         if cached:
             # Update access metadata
