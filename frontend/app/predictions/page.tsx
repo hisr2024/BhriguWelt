@@ -9,6 +9,7 @@ import GenZCard from '../components/GenZCard';
 import GenZButton from '../components/GenZButton';
 import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
+import CardSkeleton from '../components/CardSkeleton';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, setItem, STORES } from '@/lib/storage';
 import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
@@ -22,6 +23,7 @@ export default function PredictionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
   const [wisdomCards, setWisdomCards] = useState<any[]>([]);
+  const [wisdomLoading, setWisdomLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
   const [syncWhenOnline, setSyncWhenOnline] = useState(true);
   const [cacheTimestamp, setCacheTimestamp] = useState<string | null>(null);
@@ -43,9 +45,11 @@ export default function PredictionsPage() {
   }, [encryptionLoading, isSetup, isUnlocked, router]);
 
   useEffect(() => {
-    fetch('/data/wisdom_cards.json')
-      .then(res => res.json())
-      .then(data => {
+    const loadWisdomCards = async () => {
+      try {
+        setWisdomLoading(true);
+        const res = await fetch('/data/wisdom_cards.json');
+        const data = await res.json();
         const filtered = data.filter((card: any) => 
           card.category === 'astrology' ||
           card.tags.some((tag: string) => 
@@ -53,8 +57,14 @@ export default function PredictionsPage() {
           )
         );
         setWisdomCards(filtered);
-      })
-      .catch(err => console.error('Error loading wisdom cards:', err));
+      } catch (err) {
+        console.error('Error loading wisdom cards:', err);
+      } finally {
+        setWisdomLoading(false);
+      }
+    };
+
+    loadWisdomCards();
   }, []);
 
   useEffect(() => {
@@ -531,7 +541,7 @@ export default function PredictionsPage() {
         )}
 
         {/* Wisdom Cards */}
-        {data?.offline && wisdomCards.length > 0 && (
+        {data?.offline && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -541,15 +551,19 @@ export default function PredictionsPage() {
               Astrological Wisdom
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {wisdomCards.slice(0, 4).map((card, index) => (
-                <GenZCard key={index} variant="glass">
-                  <GenZBadge variant="default" size="sm" className="mb-3">
-                    {card.tradition}
-                  </GenZBadge>
-                  <h4 className="text-xl font-bold mb-2 text-white">{card.title}</h4>
-                  <p className="text-white/70 text-sm">{card.content}</p>
-                </GenZCard>
-              ))}
+              {wisdomLoading
+                ? Array.from({ length: 4 }).map((_, index) => (
+                    <CardSkeleton key={index} />
+                  ))
+                : wisdomCards.slice(0, 4).map((card, index) => (
+                    <GenZCard key={index} variant="glass">
+                      <GenZBadge variant="default" size="sm" className="mb-3">
+                        {card.tradition}
+                      </GenZBadge>
+                      <h4 className="text-xl font-bold mb-2 text-white">{card.title}</h4>
+                      <p className="text-white/70 text-sm">{card.content}</p>
+                    </GenZCard>
+                  ))}
             </div>
           </motion.div>
         )}

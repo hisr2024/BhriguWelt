@@ -9,6 +9,7 @@ import GenZCard from '../components/GenZCard';
 import GenZButton from '../components/GenZButton';
 import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
+import CardSkeleton from '../components/CardSkeleton';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
 import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
@@ -20,6 +21,7 @@ export default function PastLivesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [wisdomCards, setWisdomCards] = useState<any[]>([]);
+  const [wisdomLoading, setWisdomLoading] = useState(true);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
 
@@ -39,9 +41,11 @@ export default function PastLivesPage() {
 
   // Load wisdom cards for offline mode
   useEffect(() => {
-    fetch('/data/wisdom_cards.json')
-      .then(res => res.json())
-      .then(data => {
+    const loadWisdomCards = async () => {
+      try {
+        setWisdomLoading(true);
+        const res = await fetch('/data/wisdom_cards.json');
+        const data = await res.json();
         // Filter by past life and Bhrigu Samhita wisdom
         const filtered = data.filter((card: any) => 
           card.tradition === 'Bhrigu Samhita' ||
@@ -51,8 +55,14 @@ export default function PastLivesPage() {
           )
         );
         setWisdomCards(filtered);
-      })
-      .catch(err => console.error('Error loading wisdom cards:', err));
+      } catch (err) {
+        console.error('Error loading wisdom cards:', err);
+      } finally {
+        setWisdomLoading(false);
+      }
+    };
+
+    loadWisdomCards();
   }, []);
 
   // Load data
@@ -239,7 +249,7 @@ export default function PastLivesPage() {
           ))}
         </div>
 
-        {data?.offline && wisdomCards.length > 0 && (
+        {data?.offline && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -249,15 +259,19 @@ export default function PastLivesPage() {
               Bhrigu Samhita Wisdom
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {wisdomCards.slice(0, 4).map((card, index) => (
-                <GenZCard key={index} variant="glass">
-                  <GenZBadge variant="default" size="sm" className="mb-3">
-                    {card.tradition}
-                  </GenZBadge>
-                  <h4 className="text-xl font-bold mb-2 text-white">{card.title}</h4>
-                  <p className="text-white/70 text-sm">{card.content}</p>
-                </GenZCard>
-              ))}
+              {wisdomLoading
+                ? Array.from({ length: 4 }).map((_, index) => (
+                    <CardSkeleton key={index} />
+                  ))
+                : wisdomCards.slice(0, 4).map((card, index) => (
+                    <GenZCard key={index} variant="glass">
+                      <GenZBadge variant="default" size="sm" className="mb-3">
+                        {card.tradition}
+                      </GenZBadge>
+                      <h4 className="text-xl font-bold mb-2 text-white">{card.title}</h4>
+                      <p className="text-white/70 text-sm">{card.content}</p>
+                    </GenZCard>
+                  ))}
             </div>
           </motion.div>
         )}
