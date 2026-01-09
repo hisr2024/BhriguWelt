@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
@@ -127,6 +127,60 @@ const PROFILE_HASH_PREFIX = 'profile_hash_';
 const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_';
 const SKELETON_LINES = 5;
 
+interface PredictionSectionProps {
+  sectionKey: string;
+  sectionTitle: string;
+  content: string;
+  color: string;
+}
+
+const PredictionSection = memo(function PredictionSection({
+  sectionKey,
+  sectionTitle,
+  content,
+  color
+}: PredictionSectionProps) {
+  // More lenient filtering - only exclude truly empty or placeholder content
+  if (!content || content.trim() === '') {
+    return null;
+  }
+
+  // Check if content is just a redirect to full analysis (but allow partial content)
+  const trimmedContent = content.trim();
+  const isRedirectOnly = (
+    trimmedContent.length < 50 &&
+    (trimmedContent.toLowerCase().includes('see full analysis') ||
+     trimmedContent.toLowerCase().includes('see complete') ||
+     trimmedContent.toLowerCase().includes('refer to'))
+  );
+
+  if (isRedirectOnly) {
+    return null;
+  }
+
+  const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES[DEFAULT_COLOR];
+
+  return (
+    <AccordionItem
+      id={`section-${sectionKey}`}
+      title={(
+        <span className={`text-lg font-semibold ${colorClass.text} flex items-center gap-3`}>
+          <span className={`w-1.5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
+          {sectionTitle}
+        </span>
+      )}
+      className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
+                   border ${colorClass.border} ${colorClass.hover} rounded-xl transition-all p-6`}
+    >
+      <div className="prose prose-invert prose-cyan max-w-none">
+        <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+          {content}
+        </div>
+      </div>
+    </AccordionItem>
+  );
+});
+
 // Helper function to check if profile has required fields
 const hasRequiredProfileFields = (profile: Profile): boolean => {
   return !!(
@@ -246,7 +300,7 @@ export default function BhriguPredictionView({
     }
   }, [profile]);
 
-  const loadPrediction = async (forceRegenerate = false, profileHash?: string) => {
+  const loadPrediction = useCallback(async (forceRegenerate = false, profileHash?: string) => {
     if (!profile) return;
 
     if (!hasRequiredProfileFields(profile)) {
@@ -334,7 +388,7 @@ export default function BhriguPredictionView({
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile, category, question, fetchPrediction]);
 
   const formatCacheAge = (ageSeconds: number | null) => {
     if (ageSeconds === null) return 'Unknown';
@@ -346,6 +400,87 @@ export default function BhriguPredictionView({
     const days = Math.floor(hours / 24);
     return `${days}d ${hours % 24}h`;
   };
+
+  const categoryValue = useMemo(
+    () => prediction?.metadata?.category ?? prediction?.category ?? category,
+    [prediction?.metadata?.category, prediction?.category, category]
+  );
+  const normalizedCategory = useMemo(
+    () => normalizeCategoryKey(typeof categoryValue === 'string' ? categoryValue : category),
+    [categoryValue, category]
+  );
+  const sections = useMemo(
+    () => CATEGORY_SECTIONS[normalizedCategory] || [],
+    [normalizedCategory]
+  );
+  const parsedFromFullAnalysisActive = useMemo(
+    () => Object.keys(parsedFromFullAnalysis).length > 0,
+    [parsedFromFullAnalysis]
+  );
+  const availableSections = useMemo(() => {
+    if (!prediction) {
+      return [];
+    }
+
+    let sectionsWithContent = sections.filter(section => {
+      const content = prediction[section.key];
+      if (!content || typeof content !== 'string' || content.trim() === '') {
+        return false;
+      }
+      const trimmedContent = content.trim();
+      const isRedirectOnly = (
+        trimmedContent.length < 50 &&
+        (trimmedContent.toLowerCase().includes('see full analysis') ||
+         trimmedContent.toLowerCase().includes('see complete') ||
+         trimmedContent.toLowerCase().includes('refer to'))
+      );
+      return !isRedirectOnly;
+    });
+
+    if (sectionsWithContent.length === 0 && prediction.full_analysis) {
+      sectionsWithContent = sections.filter(section => {
+        const content = parsedFromFullAnalysis[section.key];
+        return content && content.trim().length > 50;
+      });
+    }
+
+    return sectionsWithContent;
+  }, [prediction, sections, parsedFromFullAnalysis]);
+
+  const getSectionContent = useCallback((key: string): string => {
+    if (!prediction) {
+      return parsedFromFullAnalysis[key] || '';
+    }
+    const directContent = prediction[key];
+    if (typeof directContent === 'string') {
+      return directContent;
+    }
+    return parsedFromFullAnalysis[key] || '';
+  }, [prediction, parsedFromFullAnalysis]);
+
+  const handleToggleFullAnalysis = useCallback(() => {
+    setShowFullAnalysis((prev) => !prev);
+  }, []);
+
+  const handleGoToProfile = useCallback(() => {
+    window.location.href = '/profile';
+  }, []);
+
+  const handleQuestionChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setQuestion(event.target.value);
+  }, []);
+
+  const handleLoadFromCache = useCallback(() => {
+    void loadPrediction(false);
+  }, [loadPrediction]);
+
+  const handleRegeneratePrediction = useCallback(() => {
+    void loadPrediction(true);
+  }, [loadPrediction]);
+
+  const handleToggleDebugMode = useCallback(() => {
+    setDebugMode((prev) => !prev);
+  }, []);
 
   // Client-side fallback to parse full_analysis into sections
   const parseFullAnalysisIntoSections = (fullAnalysis: string, cat: string): Record<string, string> => {
@@ -414,91 +549,8 @@ export default function BhriguPredictionView({
     });
   }, [prediction?.full_analysis, category]);
 
-  const renderSection = (sectionKey: string, sectionTitle: string, content: string, color: string) => {
-    // More lenient filtering - only exclude truly empty or placeholder content
-    if (!content || content.trim() === '') {
-      return null;
-    }
-
-    // Check if content is just a redirect to full analysis (but allow partial content)
-    const trimmedContent = content.trim();
-    const isRedirectOnly = (
-      trimmedContent.length < 50 &&
-      (trimmedContent.toLowerCase().includes('see full analysis') ||
-       trimmedContent.toLowerCase().includes('see complete') ||
-       trimmedContent.toLowerCase().includes('refer to'))
-    );
-
-    if (isRedirectOnly) {
-      return null;
-    }
-
-    const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES[DEFAULT_COLOR];
-
-    return (
-      <AccordionItem
-        id={`section-${sectionKey}`}
-        title={(
-          <span className={`text-lg font-semibold ${colorClass.text} flex items-center gap-3`}>
-            <span className={`w-1.5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} />
-            {sectionTitle}
-          </span>
-        )}
-        className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
-                   border ${colorClass.border} ${colorClass.hover} rounded-xl transition-all p-6`}
-      >
-        <div className="prose prose-invert prose-cyan max-w-none">
-          <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-            {content}
-          </div>
-        </div>
-      </AccordionItem>
-    );
-  };
-
   const renderPredictionContent = () => {
     if (!prediction) return null;
-
-    // Get the sections configuration for this category
-    const categoryValue = prediction?.metadata?.category ?? prediction?.category ?? category;
-    const normalizedCategory = normalizeCategoryKey(
-      typeof categoryValue === 'string' ? categoryValue : category
-    );
-    const sections = CATEGORY_SECTIONS[normalizedCategory] || [];
-
-    // First, try to get sections from the API response
-    let availableSections = sections.filter(section => {
-      const content = prediction[section.key];
-      if (!content || typeof content !== 'string' || content.trim() === '') {
-        return false;
-      }
-      const trimmedContent = content.trim();
-      const isRedirectOnly = (
-        trimmedContent.length < 50 &&
-        (trimmedContent.toLowerCase().includes('see full analysis') ||
-         trimmedContent.toLowerCase().includes('see complete') ||
-         trimmedContent.toLowerCase().includes('refer to'))
-      );
-      return !isRedirectOnly;
-    });
-
-    // FALLBACK: If no sections found but full_analysis exists, use worker/regex results
-    if (availableSections.length === 0 && prediction.full_analysis) {
-      availableSections = sections.filter(section => {
-        const content = parsedFromFullAnalysis[section.key];
-        return content && content.trim().length > 50;
-      });
-    }
-    const parsedFromFullAnalysisActive = Object.keys(parsedFromFullAnalysis).length > 0;
-
-    // Helper function to get section content from either source
-    const getSectionContent = (key: string): string => {
-      const directContent = prediction[key];
-      if (typeof directContent === 'string') {
-        return directContent;
-      }
-      return parsedFromFullAnalysis[key] || '';
-    };
 
     return (
       <div className="space-y-6">
@@ -540,12 +592,12 @@ export default function BhriguPredictionView({
             <Accordion className="grid grid-cols-1 gap-4">
               {availableSections.map((section) => (
                 <div key={section.key}>
-                  {renderSection(
-                    section.key,
-                    tLocale(section.titleKey, language),
-                    getSectionContent(section.key),
-                    section.color
-                  )}
+                  <PredictionSection
+                    sectionKey={section.key}
+                    sectionTitle={tLocale(section.titleKey, language)}
+                    content={getSectionContent(section.key)}
+                    color={section.color}
+                  />
                 </div>
               ))}
             </Accordion>
@@ -556,7 +608,7 @@ export default function BhriguPredictionView({
         {prediction.full_analysis && (
           <div className="mt-8 pt-8 border-t border-gray-700/50">
             <button
-              onClick={() => setShowFullAnalysis(!showFullAnalysis)}
+              onClick={handleToggleFullAnalysis}
               aria-expanded={showFullAnalysis}
               aria-controls="full-analysis-content"
               className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
@@ -691,7 +743,7 @@ export default function BhriguPredictionView({
         <div className="text-center">
           <p className="text-xl text-gray-400 mb-4">Please create a profile to access predictions</p>
           <button
-            onClick={() => window.location.href = '/profile'}
+            onClick={handleGoToProfile}
             className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500
                      text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600
                      transition-all"
@@ -725,13 +777,13 @@ export default function BhriguPredictionView({
               type="text"
               placeholder="Ask a specific question (optional)..."
               value={question}
-              onChange={(e) => setQuestion(e.target.value)}
+              onChange={handleQuestionChange}
               className="flex-1 bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-3
                        text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400
                        transition-colors"
             />
             <button
-              onClick={() => loadPrediction(false)}
+              onClick={handleLoadFromCache}
               disabled={loading}
               className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500
                        text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600
@@ -768,7 +820,7 @@ export default function BhriguPredictionView({
                 Loaded from cache
               </span>
               <button
-                onClick={() => loadPrediction(true)}
+                onClick={handleRegeneratePrediction}
                 disabled={loading}
                 className="inline-flex items-center gap-1 rounded-full border border-cyan-500/40 px-3 py-1 text-xs text-cyan-300
                          transition hover:border-cyan-400 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
@@ -810,13 +862,13 @@ export default function BhriguPredictionView({
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button
-                      onClick={() => loadPrediction(false)}
+                      onClick={handleLoadFromCache}
                       className="rounded-lg border border-white/20 px-3 py-1 text-xs text-white hover:border-white/40"
                     >
                       Retry with cached data
                     </button>
                     <button
-                      onClick={() => loadPrediction(true)}
+                      onClick={handleRegeneratePrediction}
                       className="rounded-lg bg-white/10 px-3 py-1 text-xs text-white hover:bg-white/20"
                     >
                       Retry request
@@ -856,14 +908,14 @@ export default function BhriguPredictionView({
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
               <button
-                onClick={() => loadPrediction(true)}
+                onClick={handleRegeneratePrediction}
                 className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
                 Retry request
               </button>
               <button
-                onClick={() => loadPrediction(false)}
+                onClick={handleLoadFromCache}
                 className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -879,7 +931,7 @@ export default function BhriguPredictionView({
         {prediction && (
           <div className="mt-12 flex gap-4 justify-center flex-wrap">
             <button
-              onClick={() => loadPrediction(true)}
+              onClick={handleRegeneratePrediction}
               disabled={loading}
               className="px-6 py-3 bg-gray-700/50 border border-gray-600
                        text-white rounded-lg hover:bg-gray-700 transition-all
@@ -906,7 +958,7 @@ export default function BhriguPredictionView({
             </button>
             {debugAllowed && (
               <button
-                onClick={() => setDebugMode(!debugMode)}
+                onClick={handleToggleDebugMode}
                 className={`px-6 py-3 border rounded-lg transition-all
                          flex items-center gap-2 ${
                            debugMode
