@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
 import { getCurrentLanguage, type Language } from '@/lib/copy';
@@ -154,6 +154,20 @@ interface BhriguPredictionViewProps {
   profile: Profile | null;
 }
 
+type PredictionRequestOptions = {
+  forceRegenerate?: boolean;
+  profileHash?: string;
+  questionOverride?: string;
+  skipQueue?: boolean;
+};
+
+type QueuedPredictionRequest = {
+  id: number;
+  question: string;
+  forceRegenerate: boolean;
+  enqueuedAt: number;
+};
+
 const getProfileHashKey = (profile: Profile) => `${PROFILE_HASH_PREFIX}${profile.id ?? 'current'}`;
 
 const getPredictionCacheKey = (profile: Profile, category: string, question: string) => {
@@ -217,10 +231,14 @@ export default function BhriguPredictionView({
   const [isParsing, setIsParsing] = useState(false);
   const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
   const [expandingSections, setExpandingSections] = useState<Record<string, boolean>>({});
+  const [queuedRequests, setQueuedRequests] = useState<QueuedPredictionRequest[]>([]);
 
   const workerRef = useRef<Worker | null>(null);
   const workerRequestId = useRef(0);
   const expandingTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
+  const queuedRequestsRef = useRef<QueuedPredictionRequest[]>([]);
+  const requestIdRef = useRef(0);
+  const requestInFlightRef = useRef(false);
 
   const searchParams = useSearchParams();
   const language = getCurrentLanguage();
@@ -240,13 +258,32 @@ export default function BhriguPredictionView({
 
         localStorage.setItem(hashKey, currentHash);
         setProfileUpdated(hasChanged);
-        await loadPrediction(hasChanged, currentHash);
+        await loadPrediction({ forceRegenerate: hasChanged, profileHash: currentHash });
       };
       checkProfile();
     }
   }, [profile]);
 
-  const loadPrediction = async (forceRegenerate = false, profileHash?: string) => {
+  const enqueueRequest = (request: Omit<QueuedPredictionRequest, 'id' | 'enqueuedAt'>) => {
+    requestIdRef.current += 1;
+    const queued: QueuedPredictionRequest = {
+      id: requestIdRef.current,
+      question: request.question,
+      forceRegenerate: request.forceRegenerate,
+      enqueuedAt: Date.now(),
+    };
+    queuedRequestsRef.current = [...queuedRequestsRef.current, queued];
+    setQueuedRequests([...queuedRequestsRef.current]);
+  };
+
+  const dequeueRequest = () => {
+    const [next, ...remaining] = queuedRequestsRef.current;
+    queuedRequestsRef.current = remaining;
+    setQueuedRequests([...remaining]);
+    return next;
+  };
+
+  const loadPrediction = async (options: PredictionRequestOptions = {}) => {
     if (!profile) return;
 
     if (!hasRequiredProfileFields(profile)) {
@@ -254,16 +291,27 @@ export default function BhriguPredictionView({
       return;
     }
 
+    if (requestInFlightRef.current && !options.skipQueue) {
+      const queuedQuestion = options.questionOverride ?? question;
+      enqueueRequest({
+        question: queuedQuestion,
+        forceRegenerate: options.forceRegenerate ?? false,
+      });
+      return;
+    }
+
+    requestInFlightRef.current = true;
     setLoading(true);
     setError(null);
     setFromCache(false);
 
     try {
-      const resolvedHash = profileHash ?? await getProfileHash(profile);
-      const cacheKey = getPredictionCacheKey(profile, category, question);
+      const resolvedHash = options.profileHash ?? await getProfileHash(profile);
+      const questionToUse = options.questionOverride ?? question;
+      const cacheKey = getPredictionCacheKey(profile, category, questionToUse);
       const cached = localStorage.getItem(cacheKey);
 
-      if (!forceRegenerate && cached) {
+      if (!options.forceRegenerate && cached) {
         try {
           const parsed = JSON.parse(cached) as { profileHash: string; prediction: any };
           if (parsed.profileHash === resolvedHash) {
@@ -278,7 +326,7 @@ export default function BhriguPredictionView({
         }
       }
 
-      if (forceRegenerate) {
+      if (options.forceRegenerate) {
         localStorage.removeItem(cacheKey);
       }
 
@@ -288,8 +336,8 @@ export default function BhriguPredictionView({
         place_of_birth:  profile.placeOfBirth,
         latitude: profile.latitude,
         longitude: profile.longitude,
-        question: question || undefined,
-        force_regenerate: forceRegenerate
+        question: questionToUse || undefined,
+        force_regenerate: options.forceRegenerate
       };
 
       const response = await fetchPrediction(profileData);
@@ -332,6 +380,16 @@ export default function BhriguPredictionView({
         message
       });
     } finally {
+      const nextRequest = dequeueRequest();
+      if (nextRequest) {
+        void loadPrediction({
+          forceRegenerate: nextRequest.forceRegenerate,
+          questionOverride: nextRequest.question,
+          skipQueue: true,
+        });
+        return;
+      }
+      requestInFlightRef.current = false;
       setLoading(false);
     }
   };
@@ -345,6 +403,13 @@ export default function BhriguPredictionView({
     if (hours < 24) return `${hours}h ${minutes % 60}m`;
     const days = Math.floor(hours / 24);
     return `${days}d ${hours % 24}h`;
+  };
+
+  const formatQueuedQuestion = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return 'General request';
+    if (trimmed.length > 80) return `Question: "${trimmed.slice(0, 80)}…"`;
+    return `Question: "${trimmed}"`;
   };
 
   // Client-side fallback to parse full_analysis into sections
@@ -731,8 +796,7 @@ export default function BhriguPredictionView({
                        transition-colors"
             />
             <button
-              onClick={() => loadPrediction(false)}
-              disabled={loading}
+              onClick={() => loadPrediction()}
               className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500
                        text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600
                        disabled:opacity-50 disabled:cursor-not-allowed transition-all
@@ -741,7 +805,7 @@ export default function BhriguPredictionView({
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Generating...
+                  Queue Request
                 </>
               ) : (
                 <>
@@ -768,14 +832,32 @@ export default function BhriguPredictionView({
                 Loaded from cache
               </span>
               <button
-                onClick={() => loadPrediction(true)}
-                disabled={loading}
+                onClick={() => loadPrediction({ forceRegenerate: true })}
                 className="inline-flex items-center gap-1 rounded-full border border-cyan-500/40 px-3 py-1 text-xs text-cyan-300
                          transition hover:border-cyan-400 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <RefreshCw className="w-3 h-3" />
                 Refresh
               </button>
+            </div>
+          )}
+
+          {queuedRequests.length > 0 && (
+            <div className="mt-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
+              <div className="flex items-center gap-2 text-cyan-200">
+                <Clock className="h-4 w-4" />
+                <span className="font-semibold">Queued requests ({queuedRequests.length})</span>
+              </div>
+              <ul className="mt-2 space-y-1 text-xs text-cyan-100">
+                {queuedRequests.map((request) => (
+                  <li key={request.id} className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-cyan-200">
+                      {request.forceRegenerate ? 'Regenerate' : 'Generate'}
+                    </span>
+                    <span>{formatQueuedQuestion(request.question)}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
@@ -810,13 +892,13 @@ export default function BhriguPredictionView({
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button
-                      onClick={() => loadPrediction(false)}
+                      onClick={() => loadPrediction()}
                       className="rounded-lg border border-white/20 px-3 py-1 text-xs text-white hover:border-white/40"
                     >
                       Retry with cached data
                     </button>
                     <button
-                      onClick={() => loadPrediction(true)}
+                      onClick={() => loadPrediction({ forceRegenerate: true })}
                       className="rounded-lg bg-white/10 px-3 py-1 text-xs text-white hover:bg-white/20"
                     >
                       Retry request
@@ -856,14 +938,14 @@ export default function BhriguPredictionView({
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
               <button
-                onClick={() => loadPrediction(true)}
+                onClick={() => loadPrediction({ forceRegenerate: true })}
                 className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
                 Retry request
               </button>
               <button
-                onClick={() => loadPrediction(false)}
+                onClick={() => loadPrediction()}
                 className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -879,8 +961,7 @@ export default function BhriguPredictionView({
         {prediction && (
           <div className="mt-12 flex gap-4 justify-center flex-wrap">
             <button
-              onClick={() => loadPrediction(true)}
-              disabled={loading}
+              onClick={() => loadPrediction({ forceRegenerate: true })}
               className="px-6 py-3 bg-gray-700/50 border border-gray-600
                        text-white rounded-lg hover:bg-gray-700 transition-all
                        flex items-center gap-2 disabled:opacity-50"
