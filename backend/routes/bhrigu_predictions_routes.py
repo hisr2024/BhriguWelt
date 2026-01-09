@@ -23,6 +23,7 @@ import json
 import time
 
 bp = Blueprint('bhrigu_predictions', __name__, url_prefix='/api/bhrigu-predictions')
+logger = setup_logger(__name__)
 
 bhrigu_service = get_bhrigu_service()
 logger = setup_logger(__name__)

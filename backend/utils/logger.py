@@ -1,6 +1,7 @@
 """
 Centralized logging configuration for BhriguWelt backend
 """
+import json
 import logging
 import re
 import sys

@@ -1,10 +1,20 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useCallback } from 'react';
 import { EncryptionProvider } from '@/lib/context/EncryptionContext';
 import ContrastModeProvider from './components/ContrastModeProvider';
+import { useOnlineStatus } from '@/lib/hooks/useOnlineStatus';
+import { processOfflineQueue } from '@/lib/api';
 
 export function Providers({ children }: { children: ReactNode }) {
+  const handleOnlineChange = useCallback((isOnline: boolean) => {
+    if (isOnline) {
+      processOfflineQueue();
+    }
+  }, []);
+
+  useOnlineStatus(handleOnlineChange);
+
   return (
     <EncryptionProvider autoLockTimeoutMinutes={15}>
       <ContrastModeProvider />

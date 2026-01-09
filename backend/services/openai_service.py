@@ -7,8 +7,10 @@ import json
 import random
 import re
 import time
+import importlib
 from typing import Dict, Any, List, Optional, Tuple, Union
 import requests
+from utils.logger import setup_logger, log_exception
 
 # Import corpus loader for RAG-style context injection
 CORPUS_AVAILABLE = importlib.util.find_spec("services.corpus_loader") is not None
@@ -24,7 +26,7 @@ if OFFLINE_WISDOM_AVAILABLE:
 else:
     get_offline_wisdom_generator = None
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 class OpenAIService:
     """Service for interacting with OpenAI API"""
@@ -49,16 +51,21 @@ class OpenAIService:
                 self.corpus_loader = corpus_result.get("loader")
                 self.corpus_error = corpus_result.get("error")
                 if self.corpus_error:
-                    print(f"Warning: Corpus files missing: {self.corpus_error.get('message')}")
+                    logger.warning(
+                        "Corpus files missing: %s",
+                        self.corpus_error.get("message"),
+                    )
                 else:
                     self.corpus_available = True
-                    print("✓ Corpus loader initialized - predictions will reference authentic Bhrigu/Nadi sources")
+                    logger.info(
+                        "✓ Corpus loader initialized - predictions will reference authentic Bhrigu/Nadi sources"
+                    )
             except Exception as e:
                 self.corpus_error = {
                     "code": "corpus_loader_error",
                     "message": str(e),
                 }
-                print(f"Warning: Could not initialize corpus loader: {e}")
+                log_exception(logger, e, context="openai.corpus_loader_init_failed")
 
         # Initialize offline wisdom generator for category-specific fallbacks
         self.offline_wisdom = None
