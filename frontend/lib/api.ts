@@ -18,6 +18,25 @@ import { emitToast, buildIssueReportUrl } from './toast';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const AUTH_REFRESH_ENDPOINT = '/api/auth/refresh';
 const API_TIMEOUT_MS = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '120000', 10);
+const MAX_REQUEST_BYTES = parseInt(process.env.NEXT_PUBLIC_MAX_REQUEST_BYTES || '1048576', 10);
+const COMPRESSION_THRESHOLD_BYTES = parseInt(
+  process.env.NEXT_PUBLIC_COMPRESSION_THRESHOLD_BYTES || '65536',
+  10
+);
+const textEncoder = new TextEncoder();
+
+const toBytes = (input: string): Uint8Array => {
+  return textEncoder.encode(input);
+};
+
+const gzipCompress = async (data: Uint8Array): Promise<Uint8Array> => {
+  const compressionStream = new CompressionStream('gzip');
+  const writer = compressionStream.writable.getWriter();
+  writer.write(data);
+  writer.close();
+  const compressed = await new Response(compressionStream.readable).arrayBuffer();
+  return new Uint8Array(compressed);
+};
 
 export const api = axios.create({
   baseURL:  API_URL,
