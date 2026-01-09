@@ -175,23 +175,27 @@ def ensure_correlation_id():
 def handle_preflight():
     """
     Explicitly handle OPTIONS (preflight) requests to ensure CORS headers
-    are properly set even if Flask-CORS doesn't catch them.
+    are properly set. This fixes the x-client-online header issue by
+    explicitly returning all requested headers in the preflight response.
     """
     if request.method == 'OPTIONS':
-        # Flask-CORS will handle this, but ensure all headers are present
         response = app.make_default_options_response()
         origin = request.headers.get('Origin')
 
         if origin and origin in ALLOWED_ORIGINS:
-            # Merge requested headers with standard headers (case-insensitive)
+            # Get all headers requested by the browser
             request_headers_str = request.headers.get('Access-Control-Request-Headers', '')
             requested_headers = [h.strip() for h in request_headers_str.split(',') if h.strip()]
 
-            # Combine and deduplicate headers (case-insensitive)
-            all_headers = _merge_cors_headers_case_insensitive(
-                STANDARD_CORS_HEADERS,
-                requested_headers
-            )
+            # Build a set of all allowed headers (case-insensitive)
+            allowed_headers_lower = {h.lower() for h in STANDARD_CORS_HEADERS}
+
+            # Add all requested headers to the allowed list
+            all_headers = list(STANDARD_CORS_HEADERS)
+            for header in requested_headers:
+                if header.lower() not in allowed_headers_lower:
+                    all_headers.append(header)
+                    allowed_headers_lower.add(header.lower())
 
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
@@ -253,22 +257,18 @@ def add_response_headers(response):
                 response_data['correlation_id'] = correlation_id
                 response.set_data(json.dumps(response_data))
 
+    # Ensure CORS headers are present on all responses
     origin = request.headers.get("Origin")
-    if origin:
-        request_headers = request.headers.get("Access-Control-Request-Headers", "")
-        requested_headers = [header.strip() for header in request_headers.split(",") if header.strip()]
-        existing_allow_headers = response.headers.get("Access-Control-Allow-Headers", "")
-        existing_headers = [header.strip() for header in existing_allow_headers.split(",") if header.strip()]
-        merged_headers = _merge_cors_headers_case_insensitive(
-            existing_headers + STANDARD_CORS_HEADERS,
-            requested_headers,
-        )
-        if merged_headers:
-            response.headers["Access-Control-Allow-Headers"] = ", ".join(merged_headers)
-        if "Access-Control-Allow-Origin" not in response.headers and origin in ALLOWED_ORIGINS:
+    if origin and origin in ALLOWED_ORIGINS:
+        # Only set headers if not already set by Flask-CORS
+        if "Access-Control-Allow-Origin" not in response.headers:
             response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers.setdefault("Access-Control-Allow-Credentials", "true")
+            response.headers["Access-Control-Allow-Credentials"] = "true"
             response.headers["Vary"] = "Origin"
+
+        # Ensure all standard headers are allowed
+        if "Access-Control-Allow-Headers" not in response.headers:
+            response.headers["Access-Control-Allow-Headers"] = ", ".join(STANDARD_CORS_HEADERS)
 
     return response
 
