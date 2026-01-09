@@ -10,6 +10,7 @@ import { tLocale } from '@/lib/locales';
 import { Accordion } from '@/app/components/ui/Accordion';
 import { AccordionItem } from '@/app/components/ui/AccordionItem';
 import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
+import sectionHeaders from '../../../shared/section_headers.json';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS: Record<string, Array<{ key: string; titleKey: string; color: string }>> = {
@@ -123,6 +124,7 @@ const COLOR_CLASSES: Record<string, { border: string; hover: string; accent: str
 
 // Default color for sections without a specific color mapping
 const DEFAULT_COLOR = 'cyan';
+const SECTION_HEADERS = sectionHeaders as Record<string, string[]>;
 const PROFILE_HASH_PREFIX = 'profile_hash_';
 const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_';
 const SKELETON_LINES = 5;
@@ -355,32 +357,30 @@ export default function BhriguPredictionView({
     if (!fullAnalysis) return parsedSections;
     
     for (const section of categoryConfig) {
-      const sectionTitle = tLocale(section.titleKey, 'en');
-      // Escape special regex characters in title
-      const escapedTitle = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      
-      // Try multiple patterns to find section content
-      const patterns = [
-        // ## Header format (most common)
-        new RegExp(`##\\s*(?:\\d+\\.? \\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
-        // Numbered format (1.  Header)
-        new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
-        // Bold format (**Header**)
-        new RegExp(`\\*\\*${escapedTitle}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n##|$)`, 'i'),
-        // Plain header with colon
-        new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i'),
-      ];
+      const headers = SECTION_HEADERS[section.key] || [];
+      for (const header of headers) {
+        const escapedTitle = header.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const patterns = [
+          new RegExp(`##\\s*(?:\\d+\\.? \\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
+          new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
+          new RegExp(`\\*\\*${escapedTitle}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n##|$)`, 'i'),
+          new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i'),
+        ];
 
-      for (const pattern of patterns) {
-        try {
-          const match = fullAnalysis.match(pattern);
-          if (match && match[1]?.trim().length > 50) {
-            parsedSections[section.key] = match[1].trim();
-            break;
+        for (const pattern of patterns) {
+          try {
+            const match = fullAnalysis.match(pattern);
+            if (match && match[1]?.trim().length > 50) {
+              parsedSections[section.key] = match[1].trim();
+              break;
+            }
+          } catch (e) {
+            continue;
           }
-        } catch (e) {
-          // Pattern failed, try next
-          continue;
+        }
+
+        if (parsedSections[section.key]) {
+          break;
         }
       }
     }
@@ -400,6 +400,16 @@ export default function BhriguPredictionView({
       return;
     }
 
+    const hasStructuredSections = categoryConfig.some(section => {
+      const content = prediction[section.key];
+      return typeof content === 'string' && content.trim().length > 0;
+    });
+
+    if (hasStructuredSections) {
+      setParsedFromFullAnalysis({});
+      return;
+    }
+
     const worker = workerRef.current;
     if (!worker) {
       setParsedFromFullAnalysis(parseFullAnalysisIntoSections(prediction.full_analysis, category));
@@ -410,7 +420,10 @@ export default function BhriguPredictionView({
     worker.postMessage({
       id: workerRequestId.current,
       markdown: prediction.full_analysis,
-      sections: categoryConfig.map(section => ({ key: section.key, title: section.titleKey }))
+      sections: categoryConfig.map(section => ({
+        key: section.key,
+        titles: SECTION_HEADERS[section.key] || []
+      }))
     });
   }, [prediction?.full_analysis, category]);
 
