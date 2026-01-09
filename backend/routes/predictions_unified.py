@@ -8,11 +8,10 @@ from services.prediction_orchestrator import get_prediction_orchestrator
 from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.bhrigu_core_wisdom import get_bhrigu_core_wisdom
 from datetime import datetime
-import logging
 from utils.response_formatter import prediction_response, prediction_error_response
 from utils.validators import sanitize_input
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 bp = Blueprint('predictions_unified', __name__, url_prefix='/api/predictions')
 
@@ -37,10 +36,10 @@ def health_check():
             }
         }), 200
     except Exception as e:
-        logger.error(f"Health check failed: {e}")
+        log_exception(logger, e, context="predictions_unified.health_check")
         return jsonify({
             'status': 'degraded',
-            'error': str(e)
+            'error': 'Health check failed'
         }), 500
 
 
@@ -55,10 +54,10 @@ def get_categories():
             'total': len(categories)
         }), 200
     except Exception as e:
-        logger.error(f"Failed to get categories: {e}")
+        log_exception(logger, e, context="predictions_unified.get_categories")
         return jsonify({
             'status': 'error',
-            'error': str(e)
+            'error': 'Failed to get categories'
         }), 500
 
 
@@ -120,9 +119,9 @@ def generate_category_prediction(category):
                 if data.get('timezone') else None
             )
         except Exception as e:
-            logger.error(f"Birth chart calculation failed: {e}")
+            log_exception(logger, e, context="predictions_unified.birth_chart")
             return prediction_error_response(
-                f'Failed to calculate birth chart: {str(e)}',
+                'Failed to calculate birth chart.',
                 500,
                 metadata={'category': category}
             )
@@ -150,9 +149,9 @@ def generate_category_prediction(category):
         )
         
     except Exception as e:
-        logger.error(f"Prediction generation failed for {category}: {e}")
+        log_exception(logger, e, context=f"predictions_unified.generate_prediction.{category}")
         return prediction_error_response(
-            str(e),
+            'Failed to generate prediction. Please try again later.',
             500,
             metadata={'category': category}
         )
@@ -210,9 +209,9 @@ def generate_cosmic_blueprint():
                 if data.get('timezone') else None
             )
         except Exception as e:
-            logger.error(f"Birth chart calculation failed: {e}")
+            log_exception(logger, e, context="predictions_unified.cosmic_blueprint.birth_chart")
             return prediction_error_response(
-                f'Failed to calculate birth chart: {str(e)}',
+                'Failed to calculate birth chart.',
                 500,
                 metadata={'category': 'cosmic_blueprint'}
             )
@@ -239,9 +238,9 @@ def generate_cosmic_blueprint():
         )
         
     except Exception as e:
-        logger.error(f"Cosmic blueprint generation failed: {e}")
+        log_exception(logger, e, context="predictions_unified.cosmic_blueprint")
         return prediction_error_response(
-            str(e),
+            'Failed to generate cosmic blueprint. Please try again later.',
             500,
             metadata={'category': 'cosmic_blueprint'}
         )

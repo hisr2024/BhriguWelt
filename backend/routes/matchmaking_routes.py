@@ -4,12 +4,11 @@ Kundali matching and compatibility analysis endpoints
 """
 from flask import Blueprint, request, jsonify
 from services.matchmaking_service import get_matchmaking_service
-import logging
 from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
 from utils.validators import sanitize_input
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 bp = Blueprint('matchmaking', __name__, url_prefix='/api/matchmaking')
 
@@ -78,11 +77,12 @@ def calculate_compatibility():
         return jsonify(result), 200
         
     except KeyError as e:
-        logger.error(f"Missing required field: {e}")
-        return jsonify({'error': f'Missing required field: {str(e)}'}), 400
+        field = e.args[0] if e.args else "unknown"
+        logger.warning("Missing required field: %s", field)
+        return error_response(f"Missing required field: {field}", 400)
     except Exception as e:
-        logger.error(f"Compatibility calculation failed: {e}")
-        return jsonify({'error': str(e)}), 500
+        log_exception(logger, e, context="matchmaking.compatibility")
+        return error_response("Compatibility calculation failed. Please try again later.", 500)
 
 
 @bp.route('/quick-match', methods=['POST'])
@@ -165,8 +165,8 @@ def quick_match():
         }), 200
         
     except Exception as e:
-        logger.error(f"Quick match failed: {e}")
-        return jsonify({'error': str(e)}), 500
+        log_exception(logger, e, context="matchmaking.quick_match")
+        return error_response("Quick match failed. Please try again later.", 500)
 
 
 @bp.route('/doshas', methods=['POST'])
@@ -234,8 +234,8 @@ def check_doshas():
         }), 200
         
     except Exception as e:
-        logger.error(f"Dosha check failed: {e}")
-        return jsonify({'error': str(e)}), 500
+        log_exception(logger, e, context="matchmaking.doshas")
+        return error_response("Dosha check failed. Please try again later.", 500)
 
 
 @bp.route('/remedies', methods=['POST'])
@@ -345,5 +345,5 @@ def get_remedies():
         }), 200
         
     except Exception as e:
-        logger.error(f"Remedies generation failed: {e}")
-        return jsonify({'error': str(e)}), 500
+        log_exception(logger, e, context="matchmaking.remedies")
+        return error_response("Remedies generation failed. Please try again later.", 500)

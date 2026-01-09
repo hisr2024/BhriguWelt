@@ -1,6 +1,6 @@
 type SectionConfig = {
   key: string;
-  title: string;
+  titles: string[];
 };
 
 type WorkerRequest = {
@@ -19,8 +19,7 @@ type HeadingNode = {
   type: 'heading';
   depth: number;
   text: string;
-  start: number;
-  end: number;
+  lineIndex: number;
 };
 
 const normalizeHeading = (value: string): string => {
@@ -34,22 +33,37 @@ const normalizeHeading = (value: string): string => {
 const parseMarkdownAst = (markdown: string): HeadingNode[] => {
   const lines = markdown.split('\n');
   const headings: HeadingNode[] = [];
-  let offset = 0;
 
-  for (const line of lines) {
-    const match = line.match(/^(#{1,6})\s+(.*)$/);
-    if (match) {
-      const depth = match[1].length;
-      const text = match[2].trim();
-      headings.push({
-        type: 'heading',
-        depth,
-        text,
-        start: offset,
-        end: offset + line.length
-      });
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (!line) {
+      continue;
     }
-    offset += line.length + 1;
+
+    let hashCount = 0;
+    while (hashCount < line.length && line[hashCount] === '#') {
+      hashCount += 1;
+    }
+
+    if (hashCount === 0 || hashCount > 6) {
+      continue;
+    }
+
+    if (line[hashCount] !== ' ') {
+      continue;
+    }
+
+    const text = line.slice(hashCount).trim();
+    if (!text) {
+      continue;
+    }
+
+    headings.push({
+      type: 'heading',
+      depth: hashCount,
+      text,
+      lineIndex: index
+    });
   }
 
   return headings;
@@ -69,7 +83,10 @@ const extractSectionsFromAst = (
   const normalizedTitles = new Map<string, string>();
 
   for (const section of sections) {
-    normalizedTitles.set(normalizeHeading(section.title), section.key);
+    for (const title of section.titles) {
+      if (!title) continue;
+      normalizedTitles.set(normalizeHeading(title), section.key);
+    }
   }
 
   const findMatchingKey = (headingText: string): string | undefined => {
@@ -86,6 +103,8 @@ const extractSectionsFromAst = (
     return undefined;
   };
 
+  const lines = markdown.split('\n');
+
   for (let i = 0; i < headings.length; i += 1) {
     const node = headings[i];
     const matchedKey = findMatchingKey(node.text);
@@ -93,16 +112,16 @@ const extractSectionsFromAst = (
       continue;
     }
 
-    let endOffset = markdown.length;
+    let endLine = lines.length;
     for (let j = i + 1; j < headings.length; j += 1) {
       const nextNode = headings[j];
       if (nextNode.depth <= node.depth) {
-        endOffset = nextNode.start;
+        endLine = nextNode.lineIndex;
         break;
       }
     }
 
-    const content = markdown.slice(node.end, endOffset).trim();
+    const content = lines.slice(node.lineIndex + 1, endLine).join('\n').trim();
     if (content) {
       result[matchedKey] = content;
     }
@@ -111,30 +130,123 @@ const extractSectionsFromAst = (
   return result;
 };
 
-const extractSectionsWithRegex = (
+const isNumberedHeader = (line: string): boolean => {
+  let index = 0;
+  while (index < line.length && line[index] >= '0' && line[index] <= '9') {
+    index += 1;
+  }
+  if (index === 0) {
+    return false;
+  }
+  const nextChar = line[index];
+  return nextChar === '.' || nextChar === ')';
+};
+
+const stripHeaderMarkers = (line: string): string => {
+  let cleaned = line.trim();
+
+  while (cleaned.startsWith('#')) {
+    cleaned = cleaned.slice(1).trim();
+  }
+
+  if (cleaned.startsWith('**') && cleaned.endsWith('**') && cleaned.length > 4) {
+    cleaned = cleaned.slice(2, cleaned.length - 2).trim();
+  }
+
+  if (isNumberedHeader(cleaned)) {
+    let index = 0;
+    while (index < cleaned.length && cleaned[index] >= '0' && cleaned[index] <= '9') {
+      index += 1;
+    }
+    if (cleaned[index] === '.' || cleaned[index] === ')') {
+      cleaned = cleaned.slice(index + 1).trim();
+    }
+  }
+
+  if (cleaned.endsWith(':')) {
+    cleaned = cleaned.slice(0, -1).trim();
+  }
+
+  return cleaned;
+};
+
+const isHeaderLine = (line: string): boolean => {
+  const trimmed = line.trim();
+  if (!trimmed) {
+    return false;
+  }
+  if (trimmed.startsWith('#')) {
+    return true;
+  }
+  if (trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length > 4) {
+    return true;
+  }
+  if (isNumberedHeader(trimmed)) {
+    return true;
+  }
+  if (trimmed.endsWith(':')) {
+    const wordCount = trimmed.split(' ').filter(Boolean).length;
+    return wordCount <= 6;
+  }
+  return false;
+};
+
+const extractSectionsLineBased = (
   markdown: string,
   sections: SectionConfig[]
 ): Record<string, string> => {
   const parsedSections: Record<string, string> = {};
+  const normalizedTitles = new Map<string, string>();
 
   for (const section of sections) {
-    const escapedTitle = section.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const patterns = [
-      new RegExp(`##\\s*(?:\\d+\\.?\\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
-      new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
-      new RegExp(`\\*\\*${escapedTitle}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n##|$)`, 'i'),
-      new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i')
-    ];
+    normalizedTitles.set(normalizeHeading(section.title), section.key);
+  }
 
-    for (const pattern of patterns) {
-      const match = markdown.match(pattern);
-      if (match && match[1]?.trim().length > 50) {
-        parsedSections[section.key] = match[1].trim();
-        break;
+  const findMatchingKey = (headingText: string): string | undefined => {
+    const normalizedHeading = normalizeHeading(headingText);
+    if (normalizedTitles.has(normalizedHeading)) {
+      return normalizedTitles.get(normalizedHeading);
+    }
+
+    for (const [normalizedTitle, key] of normalizedTitles.entries()) {
+      if (normalizedHeading.includes(normalizedTitle) || normalizedTitle.includes(normalizedHeading)) {
+        return key;
       }
+    }
+
+    return undefined;
+  };
+
+  const lines = markdown.split('\n');
+  let currentKey: string | undefined;
+  let currentLines: string[] = [];
+
+  const flushSection = () => {
+    if (!currentKey) {
+      currentLines = [];
+      return;
+    }
+    const content = currentLines.join('\n').trim();
+    if (content.length > 50) {
+      parsedSections[currentKey] = content;
+    }
+    currentLines = [];
+  };
+
+  for (const line of lines) {
+    if (isHeaderLine(line)) {
+      flushSection();
+      const headerText = stripHeaderMarkers(line);
+      currentKey = headerText ? findMatchingKey(headerText) : undefined;
+      continue;
+    }
+
+    if (currentKey) {
+      currentLines.push(line);
     }
   }
 
+  flushSection();
   return parsedSections;
 };
 
@@ -166,7 +278,7 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
   } catch (error) {
     const response: WorkerResponse = {
       id,
-      sections: extractSectionsWithRegex(markdown, sections),
+      sections: extractSectionsLineBased(markdown, sections),
       error: error instanceof Error ? error.message : 'Markdown parsing failed'
     };
 

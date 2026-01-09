@@ -9,6 +9,7 @@ from utils.response_formatter import prediction_response, prediction_error_respo
 from utils.validators import sanitize_input
 
 bp = Blueprint('karmic_remedies', __name__, url_prefix='/api/karmic-remedies')
+logger = setup_logger(__name__)
 
 @bp.route('/comprehensive', methods=['POST'])
 def comprehensive_remedies():
@@ -48,7 +49,11 @@ def comprehensive_remedies():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate comprehensive remedies: {str(e)}", 500)
+        log_exception(logger, e, context="karmic_remedies.comprehensive")
+        return prediction_error_response(
+            "Failed to generate comprehensive remedies. Please try again later.",
+            500
+        )
 
 @bp.route('/mantras', methods=['POST'])
 def mantra_recommendations():
@@ -89,7 +94,11 @@ def mantra_recommendations():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate mantra recommendations: {str(e)}", 500)
+        log_exception(logger, e, context="karmic_remedies.mantras")
+        return prediction_error_response(
+            "Failed to generate mantra recommendations. Please try again later.",
+            500
+        )
 
 @bp.route('/gemstones', methods=['POST'])
 def gemstone_therapy():
@@ -131,7 +140,11 @@ def gemstone_therapy():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate gemstone recommendations: {str(e)}", 500)
+        log_exception(logger, e, context="karmic_remedies.gemstones")
+        return prediction_error_response(
+            "Failed to generate gemstone recommendations. Please try again later.",
+            500
+        )
 
 @bp.route('/rituals', methods=['POST'])
 def ritual_recommendations():
@@ -172,7 +185,11 @@ def ritual_recommendations():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate ritual recommendations: {str(e)}", 500)
+        log_exception(logger, e, context="karmic_remedies.rituals")
+        return prediction_error_response(
+            "Failed to generate ritual recommendations. Please try again later.",
+            500
+        )
 
 @bp.route('/charitable-acts', methods=['POST'])
 def charitable_acts():
@@ -212,7 +229,11 @@ def charitable_acts():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate charitable recommendations: {str(e)}", 500)
+        log_exception(logger, e, context="karmic_remedies.charitable")
+        return prediction_error_response(
+            "Failed to generate charitable recommendations. Please try again later.",
+            500
+        )
 
 @bp.route('/lifestyle-modifications', methods=['POST'])
 def lifestyle_modifications():
@@ -253,7 +274,11 @@ def lifestyle_modifications():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate lifestyle recommendations: {str(e)}", 500)
+        log_exception(logger, e, context="karmic_remedies.lifestyle")
+        return prediction_error_response(
+            "Failed to generate lifestyle recommendations. Please try again later.",
+            500
+        )
 
 @bp.route('/meditation-practices', methods=['POST'])
 def meditation_practices():
@@ -294,7 +319,11 @@ def meditation_practices():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate meditation practices: {str(e)}", 500)
+        log_exception(logger, e, context="karmic_remedies.meditation")
+        return prediction_error_response(
+            "Failed to generate meditation practices. Please try again later.",
+            500
+        )
 
 @bp.route('/yantra-recommendations', methods=['POST'])
 def yantra_recommendations():
@@ -337,4 +366,8 @@ def yantra_recommendations():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate yantra recommendations: {str(e)}", 500)
+        log_exception(logger, e, context="karmic_remedies.yantra")
+        return prediction_error_response(
+            "Failed to generate yantra recommendations. Please try again later.",
+            500
+        )
