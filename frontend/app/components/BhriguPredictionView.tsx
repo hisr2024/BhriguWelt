@@ -4,12 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
-import { getCurrentLanguage, type Language } from '@/lib/copy';
+import type { Profile, BirthDetails, PredictionResult } from '@/lib/types';
+import { getCurrentLanguage } from '@/lib/copy';
 import { tLocale } from '@/lib/locales';
 import { Accordion } from '@/app/components/ui/Accordion';
 import { AccordionItem } from '@/app/components/ui/AccordionItem';
-import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
+import { useBhriguPrediction } from '@/lib/hooks/useBhriguPrediction';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS: Record<string, Array<{ key: string; titleKey: string; color: string }>> = {
@@ -123,20 +123,7 @@ const COLOR_CLASSES: Record<string, { border: string; hover: string; accent: str
 
 // Default color for sections without a specific color mapping
 const DEFAULT_COLOR = 'cyan';
-const PROFILE_HASH_PREFIX = 'profile_hash_';
-const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_';
 const SKELETON_LINES = 5;
-
-// Helper function to check if profile has required fields
-const hasRequiredProfileFields = (profile: Profile): boolean => {
-  return !!(
-    profile.dateOfBirth &&
-    profile.timeOfBirth &&
-    profile.placeOfBirth &&
-    profile.latitude != null &&
-    profile.longitude != null
-  );
-};
 
 // Helper function to normalize category keys
 const normalizeCategoryKey = (category: string): string => {
@@ -154,42 +141,6 @@ interface BhriguPredictionViewProps {
   profile: Profile | null;
 }
 
-const getProfileHashKey = (profile: Profile) => `${PROFILE_HASH_PREFIX}${profile.id ?? 'current'}`;
-
-const getPredictionCacheKey = (profile: Profile, category: string, question: string) => {
-  const questionKey = question.trim() === '' ? 'default' : encodeURIComponent(question.trim());
-  return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${questionKey}`;
-};
-
-const clearCachedPredictions = (profile: Profile) => {
-  if (typeof window === 'undefined') return;
-  const prefix = `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_`;
-  for (let i = localStorage.length - 1; i >= 0; i -= 1) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith(prefix)) {
-      localStorage.removeItem(key);
-    }
-  }
-};
-
-const getProfileHash = async (profile: Profile) => {
-  const profilePayload = JSON.stringify({
-    id: profile.id ?? null,
-    name: profile.name ?? '',
-    dateOfBirth: profile.dateOfBirth ?? '',
-    timeOfBirth: profile.timeOfBirth ?? '',
-    placeOfBirth: profile.placeOfBirth ?? '',
-    latitude: profile.latitude ?? null,
-    longitude: profile.longitude ?? null,
-  });
-  const encoder = new TextEncoder();
-  const data = encoder.encode(profilePayload);
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-};
-
 export default function BhriguPredictionView({
   category,
   title,
@@ -198,21 +149,20 @@ export default function BhriguPredictionView({
   fetchPrediction,
   profile
 }: BhriguPredictionViewProps) {
-  const [prediction, setPrediction] = useState<BhriguPrediction | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [errorDetails, setErrorDetails] = useState<{
-    code?: string;
-    action: string;
-    isNetwork: boolean;
-    message: string;
-  } | null>(null);
-  const [fromCache, setFromCache] = useState(false);
-  const [question, setQuestion] = useState('');
+  const {
+    prediction,
+    loading,
+    error,
+    errorDetails,
+    fromCache,
+    question,
+    setQuestion,
+    profileUpdated,
+    loadPrediction,
+  } = useBhriguPrediction({ category, fetchPrediction, profile });
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [debugMode, setDebugMode] = useState(false);
-  const [profileUpdated, setProfileUpdated] = useState(false);
   const [parsedFromFullAnalysis, setParsedFromFullAnalysis] = useState<Record<string, string>>({});
   const [isParsing, setIsParsing] = useState(false);
   const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
@@ -225,127 +175,6 @@ export default function BhriguPredictionView({
   const searchParams = useSearchParams();
   const language = getCurrentLanguage();
   const debugAllowed = searchParams?.get('debug') === 'true';
-
-  useEffect(() => {
-    if (profile) {
-      const checkProfile = async () => {
-        const currentHash = await getProfileHash(profile);
-        const hashKey = getProfileHashKey(profile);
-        const storedHash = localStorage.getItem(hashKey);
-        const hasChanged = Boolean(storedHash && storedHash !== currentHash);
-
-        if (hasChanged) {
-          clearCachedPredictions(profile);
-        }
-
-        localStorage.setItem(hashKey, currentHash);
-        setProfileUpdated(hasChanged);
-        await loadPrediction(hasChanged, currentHash);
-      };
-      checkProfile();
-    }
-  }, [profile]);
-
-  const loadPrediction = async (forceRegenerate = false, profileHash?: string) => {
-    if (!profile) return;
-
-    if (!hasRequiredProfileFields(profile)) {
-      setError('Please complete your birth details in your profile to generate predictions.');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setFromCache(false);
-
-    try {
-      const resolvedHash = profileHash ?? await getProfileHash(profile);
-      const cacheKey = getPredictionCacheKey(profile, category, question);
-      const cached = localStorage.getItem(cacheKey);
-
-      if (!forceRegenerate && cached) {
-        try {
-          const parsed = JSON.parse(cached) as { profileHash: string; prediction: any };
-          if (parsed.profileHash === resolvedHash) {
-            setPrediction(parsed.prediction);
-            setFromCache(true);
-            setLoading(false);
-            return;
-          }
-          localStorage.removeItem(cacheKey);
-        } catch (parseError) {
-          localStorage.removeItem(cacheKey);
-        }
-      }
-
-      if (forceRegenerate) {
-        localStorage.removeItem(cacheKey);
-      }
-
-      const profileData = {
-        date_of_birth: profile.dateOfBirth,
-        time_of_birth:  profile.timeOfBirth,
-        place_of_birth:  profile.placeOfBirth,
-        latitude: profile.latitude,
-        longitude: profile.longitude,
-        question: question || undefined,
-        force_regenerate: forceRegenerate
-      };
-
-      const response = await fetchPrediction(profileData);
-      const normalized = normalizePredictionResponse<BhriguPrediction>(response);
-
-      if (normalized.status === 'success') {
-        setPrediction(normalized.prediction);
-        setFromCache(Boolean(
-          normalized.metadata?.from_cache ||
-          normalized.metadata?.source === 'cache' ||
-          normalized.message?.toLowerCase()?.includes('cache')
-        ));
-        localStorage.setItem(
-          cacheKey,
-          JSON.stringify({
-            profileHash: resolvedHash,
-            prediction: normalized.prediction,
-          })
-        );
-      } else {
-        setError(normalized.message || 'Failed to generate prediction');
-      }
-    } catch (err: any) {
-      const status = err?.response?.status;
-      const apiMessage = err?.response?.data?.message || err?.response?.data?.error;
-      const message = apiMessage || err?.message || 'An error occurred';
-      const isNetwork = !err?.response;
-      const code = status ? `HTTP ${status}` : err?.code || err?.name;
-      const action = isNetwork
-        ? 'Check your connection, then retry or use cached data.'
-        : status && status >= 500
-          ? 'Server hiccup detected. Retry soon or use cached data if available.'
-          : 'Review your inputs and retry, or use cached data if available.';
-
-      setError(message);
-      setErrorDetails({
-        code,
-        action,
-        isNetwork,
-        message
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatCacheAge = (ageSeconds: number | null) => {
-    if (ageSeconds === null) return 'Unknown';
-    if (ageSeconds < 60) return `${ageSeconds}s`;
-    const minutes = Math.floor(ageSeconds / 60);
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ${minutes % 60}m`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ${hours % 24}h`;
-  };
 
   // Client-side fallback to parse full_analysis into sections
   const parseFullAnalysisIntoSections = (fullAnalysis: string, cat: string): Record<string, string> => {
