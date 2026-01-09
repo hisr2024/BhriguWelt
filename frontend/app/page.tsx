@@ -1,3 +1,5 @@
+'use client';
+
 import dynamic from 'next/dynamic';
 
 import { useState, useEffect } from 'react';
@@ -508,11 +510,6 @@ export default function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             className="text-center mb-16"
           >
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              className="text-center mb-16"
-            >
               <motion.div
                 className="inline-block mb-4"
                 initial={{ scale: 0 }}
@@ -555,8 +552,7 @@ export default function HomePage() {
               ))}
             </div>
           </div>
-        </section>
-      )}
+      </section>
 
       {/* How It Works */}
       <section id="how-it-works" className="genz-section px-4 landscape:px-6">

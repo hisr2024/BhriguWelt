@@ -17,6 +17,7 @@ import { emitToast, buildIssueReportUrl } from './toast';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const AUTH_REFRESH_ENDPOINT = '/api/auth/refresh';
+const API_TIMEOUT_MS = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '120000', 10);
 
 export const api = axios.create({
   baseURL:  API_URL,
