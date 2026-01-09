@@ -125,7 +125,7 @@ CORS(app,
          r"/api/.*": {
              "origins": allowed_origins,
              "methods": ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-             "allow_headers": ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'X-AI-Consent', 'X-AI-Mode'],
+             "allow_headers": ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'X-AI-Consent', 'X-AI-Mode', 'X-Client-Online'],
              "expose_headers": ['Content-Type', 'Authorization'],
              "supports_credentials": True,
              "max_age": 86400
@@ -137,7 +137,7 @@ CORS(app,
          }
      },
      supports_credentials=True,
-     allow_headers=['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'X-AI-Consent', 'X-AI-Mode'],
+     allow_headers=['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'X-AI-Consent', 'X-AI-Mode', 'X-Client-Online'],
      expose_headers=['Content-Type', 'Authorization'],
      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
      max_age=86400)  # Cache preflight for 24 hours
@@ -219,7 +219,7 @@ def handle_preflight():
             # CORS spec requires exact origin match when credentials are enabled
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode, X-Client-Online'
             response.headers['Access-Control-Allow-Credentials'] = 'true'
             response.headers['Access-Control-Max-Age'] = '86400'
             response.headers['Vary'] = 'Origin'
@@ -239,7 +239,7 @@ def add_cors_headers(response):
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode, X-Client-Online'
         response.headers['Vary'] = 'Origin'
 
     if correlation_id:
