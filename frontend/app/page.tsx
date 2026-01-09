@@ -1,4 +1,4 @@
-'use client';
+import dynamic from 'next/dynamic';
 
 import { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
