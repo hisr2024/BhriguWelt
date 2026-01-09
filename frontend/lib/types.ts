@@ -9,6 +9,7 @@ export interface BirthDetails {
   place_of_birth: string;
   latitude?: number;
   longitude?: number;
+  language?: string;
 }
 
 export interface BirthChartAPI {
@@ -274,7 +275,7 @@ export interface AppSettings {
 
 // Metadata types
 export interface EncryptionMetadata {
-  key: 'encryptionSalt' | 'encryptionTest';
+  key: 'encryptionSalt' | 'encryptionTest' | 'encryptionUserId' | 'encryptionRotationPending';
   value: string;
   createdAt: string;
 }

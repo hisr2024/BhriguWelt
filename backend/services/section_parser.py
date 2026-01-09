@@ -2,13 +2,39 @@
 Advanced Section Parser for Bhrigu Predictions
 Ensures 100% structured output with AI-powered section generation
 """
-import re
+import json
 import logging
+import math
+import os
 import unicodedata
+from pathlib import Path
 from typing import Dict, List, Any, Optional
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+
+def _read_int_env(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
+def _read_ratio_env(name: str, default: float) -> float:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        ratio = float(value)
+    except ValueError:
+        return default
+    if ratio <= 0 or ratio > 1:
+        return default
+    return ratio
 
 
 class SectionParser:
@@ -18,8 +44,9 @@ class SectionParser:
     """
     
     # Content validation thresholds
-    MINIMUM_SECTION_LENGTH = 100  # Minimum characters for a valid section
-    HEADER_EXTRACTION_MIN_LENGTH = 50  # Minimum for header-based extraction
+    MINIMUM_SECTION_LENGTH = _read_int_env("SECTION_PARSER_MIN_LENGTH", 100)
+    HEADER_EXTRACTION_MIN_LENGTH = _read_int_env("SECTION_PARSER_HEADER_MIN_LENGTH", 50)
+    KEYWORD_MATCH_RATIO = _read_ratio_env("SECTION_PARSER_KEYWORD_MATCH_RATIO", 0.5)
     
     # Required sections for each category
     REQUIRED_SECTIONS = {
@@ -115,157 +142,7 @@ class SectionParser:
     }
     
     # Section header patterns for extraction
-    SECTION_HEADERS = {
-        'soul_purpose': [
-            'Soul\'s Primary Purpose',
-            'Primary Purpose',
-            'Soul Purpose',
-            'Soul\'s Purpose',
-            'Propósito del Alma'
-        ],
-        'karmic_blueprint': [
-            'Karmic Blueprint',
-            'Karmic Patterns',
-            'Plano Kármico'
-        ],
-        'evolution_stage': [
-            'Soul Evolution Stage',
-            'Evolution Stage',
-            'Spiritual Evolution',
-            'Etapa de Evolución'
-        ],
-        'life_mission': [
-            'Life Mission & Dharma',
-            'Life Mission',
-            'Dharma',
-            'Misión de Vida'
-        ],
-        'karmic_lessons': [
-            'Karmic Lessons',
-            'Lessons',
-            'Lecciones Kármicas'
-        ],
-        'soul_connections': [
-            'Soul Group Connections',
-            'Soul Connections',
-            'Soulmates',
-            'Conexiones del Alma'
-        ],
-        'timing': [
-            'Timing of Karmic Events',
-            'Timing',
-            'Key Timing',
-            'Favorable & Challenging Periods',
-            'Cronología Kármica'
-        ],
-        'spiritual_gifts': [
-            'Spiritual Gifts',
-            'Spiritual Gifts & Abilities',
-            'Gifts',
-            'Dones Espirituales'
-        ],
-        'yearly_forecast': [
-            'Year-by-Year Forecast',
-            'Yearly Forecast',
-            'Annual Forecast',
-            'Pronóstico Anual'
-        ],
-        'marriage_timing': [
-            'Marriage & Partnerships',
-            'Marriage Timing',
-            'Marriage',
-            'Momento del Matrimonio'
-        ],
-        'career_milestones': [
-            'Career Milestones',
-            'Career',
-            'Hitos de Carrera'
-        ],
-        'children_family': [
-            'Children & Family',
-            'Family Events',
-            'Children',
-            'Niños y Familia'
-        ],
-        'financial_events': [
-            'Financial Breakthroughs',
-            'Financial Events',
-            'Finances',
-            'Eventos Financieros'
-        ],
-        'health_alerts': [
-            'Health Alerts',
-            'Health',
-            'Wellness',
-            'Alertas de Salud'
-        ],
-        'spiritual_milestones': [
-            'Spiritual Milestones',
-            'Spiritual Growth',
-            'Hitos Espirituales'
-        ],
-        'relocations': [
-            'Relocations & Travel',
-            'Relocations',
-            'Travel',
-            'Reubicaciones y Viajes'
-        ],
-        'education': [
-            'Education',
-            'Education & Skill Development',
-            'Learning',
-            'Educación'
-        ],
-        'favorable_periods': [
-            'Favorable Dasha Periods',
-            'Favorable Periods',
-            'Auspicious Times',
-            'Períodos Favorables'
-        ],
-        'challenging_periods': [
-            'Challenging Dasha Periods',
-            'Challenging Periods',
-            'Difficult Times',
-            'Períodos Desafiantes'
-        ],
-        'transits': [
-            'Critical Transit Events',
-            'Transits',
-            'Planetary Transits',
-            'Tránsitos Planetarios'
-        ],
-        'age_milestones': [
-            'Specific Age Milestones',
-            'Age Milestones',
-            'Key Ages',
-            'Hitos de Edad'
-        ],
-        'daily': [
-            'Daily Forecast',
-            'Daily',
-            'Today',
-            'Pronóstico Diario'
-        ],
-        'weekly': [
-            'Weekly Forecast',
-            'Weekly',
-            'This Week',
-            'Pronóstico Semanal'
-        ],
-        'monthly': [
-            'Monthly Forecast',
-            'Monthly',
-            'This Month',
-            'Pronóstico Mensual'
-        ],
-        'yearly': [
-            'Yearly Forecast',
-            'Yearly',
-            'Annual',
-            'This Year',
-            'Pronóstico Anual'
-        ]
-    }
+    SECTION_HEADERS = _load_section_headers()
     
     def __init__(self, openai_service=None):
         """Initialize section parser with optional OpenAI service for generation"""
@@ -560,8 +437,13 @@ class SectionParser:
 
         # If no exact matches, try partial matching (at least 50% of keywords)
         if not relevant_paras and len(keywords) > 1:
-            threshold = max(1, len(keywords) // 2)
-            logger.debug(f"No exact matches, trying partial match with threshold {threshold}/{len(keywords)}")
+            threshold = max(1, math.ceil(len(keywords) * self.KEYWORD_MATCH_RATIO))
+            logger.debug(
+                "No exact matches, trying partial match with threshold %s/%s (ratio %.2f)",
+                threshold,
+                len(keywords),
+                self.KEYWORD_MATCH_RATIO
+            )
 
             for para in paragraphs:
                 matches = sum(1 for kw in keywords if kw.lower() in para.lower())

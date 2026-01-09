@@ -11,10 +11,11 @@ import importlib
 import logging
 from typing import Dict, Any, List, Optional, Tuple, Union
 import requests
+from utils.logger import setup_logger, log_exception
 
 from utils.errors import OptionalDependencyError
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 class OpenAIService:
     """Service for interacting with OpenAI API"""
