@@ -9,13 +9,13 @@ from models import db, BhriguPredictionCache, BhriguWisdomEntry, BhriguSessionLo
 from middleware.rate_limiter import limiter
 from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
 from utils.validators import validate_birth_data
+from utils.logger import setup_logger, log_error, sanitize_error
 from utils.response_formatter import (
     success_response,
     error_response,
     prediction_response,
     prediction_error_response
 )
-from utils.logger import setup_logger, log_exception
 from datetime import datetime
 from typing import Optional
 import uuid
@@ -26,6 +26,7 @@ bp = Blueprint('bhrigu_predictions', __name__, url_prefix='/api/bhrigu-predictio
 logger = setup_logger(__name__)
 
 bhrigu_service = get_bhrigu_service()
+logger = setup_logger(__name__)
 
 
 def _get_chart_data(data):
@@ -147,9 +148,9 @@ def karmic_journey():
         )
 
     except Exception as e:
-        log_exception(logger, e, context="bhrigu_predictions.karmic_journey")
+        log_error(logger, e, "Error in karmic_journey")
         return prediction_error_response(
-            "Failed to generate karmic journey analysis. Please try again later.",
+            f"Failed to generate karmic journey analysis: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'karmic_journey'}
         )
@@ -217,9 +218,9 @@ def past_lives():
         )
 
     except Exception as e:
-        log_exception(logger, e, context="bhrigu_predictions.past_lives")
+        log_error(logger, e, "Error in past_lives")
         return prediction_error_response(
-            "Failed to generate past lives analysis. Please try again later.",
+            f"Failed to generate past lives analysis: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'past_lives'}
         )
@@ -280,9 +281,9 @@ def future_lives():
         )
 
     except Exception as e:
-        log_exception(logger, e, context="bhrigu_predictions.future_lives")
+        log_error(logger, e, "Error in future_lives")
         return prediction_error_response(
-            "Failed to generate future lives prediction. Please try again later.",
+            f"Failed to generate future lives prediction: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'future_lives'}
         )
@@ -343,9 +344,9 @@ def present_life():
         )
 
     except Exception as e:
-        log_exception(logger, e, context="bhrigu_predictions.present_life")
+        log_error(logger, e, "Error in present_life")
         return prediction_error_response(
-            "Failed to generate present life analysis. Please try again later.",
+            f"Failed to generate present life analysis: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'present_life'}
         )
@@ -406,9 +407,9 @@ def life_events():
         )
 
     except Exception as e:
-        log_exception(logger, e, context="bhrigu_predictions.life_events")
+        log_error(logger, e, "Error in life_events")
         return prediction_error_response(
-            "Failed to generate life events prediction. Please try again later.",
+            f"Failed to generate life events prediction: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'life_events'}
         )
@@ -469,9 +470,9 @@ def karmic_remedies():
         )
 
     except Exception as e:
-        log_exception(logger, e, context="bhrigu_predictions.karmic_remedies")
+        log_error(logger, e, "Error in karmic_remedies")
         return prediction_error_response(
-            "Failed to generate karmic remedies. Please try again later.",
+            f"Failed to generate karmic remedies: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'karmic_remedies'}
         )
@@ -532,9 +533,9 @@ def relationships():
         )
 
     except Exception as e:
-        log_exception(logger, e, context="bhrigu_predictions.relationships")
+        log_error(logger, e, "Error in relationships")
         return prediction_error_response(
-            "Failed to generate relationships analysis. Please try again later.",
+            f"Failed to generate relationships analysis: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'relationships'}
         )
@@ -595,9 +596,9 @@ def predictions():
         )
 
     except Exception as e:
-        log_exception(logger, e, context="bhrigu_predictions.predictions")
+        log_error(logger, e, "Error in predictions")
         return prediction_error_response(
-            "Failed to generate predictions. Please try again later.",
+            f"Failed to generate predictions: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'predictions'}
         )
@@ -633,8 +634,8 @@ def wisdom_search():
         })
 
     except Exception as e:
-        log_exception(logger, e, context="bhrigu_predictions.wisdom_search")
-        return error_response("Failed to search wisdom. Please try again later.", 500)
+        log_error(logger, e, "Error in wisdom_search")
+        return error_response(f"Failed to search wisdom: {sanitize_error(str(e))}", 500)
 
 
 @bp.route('/cache-stats', methods=['GET'])
@@ -661,8 +662,8 @@ def cache_stats():
         })
 
     except Exception as e:
-        log_exception(logger, e, context="bhrigu_predictions.cache_stats")
-        return error_response("Failed to get cache stats. Please try again later.", 500)
+        log_error(logger, e, "Error in cache_stats")
+        return error_response(f"Failed to get cache stats: {sanitize_error(str(e))}", 500)
 
 
 @bp.route('/session/start', methods=['POST'])
@@ -691,8 +692,8 @@ def start_session():
         })
 
     except Exception as e:
-        log_exception(logger, e, context="bhrigu_predictions.start_session")
-        return error_response("Failed to start session. Please try again later.", 500)
+        log_error(logger, e, "Error starting session")
+        return error_response(f"Failed to start session: {sanitize_error(str(e))}", 500)
 
 
 @bp.route('/comprehensive', methods=['POST'])
@@ -775,9 +776,9 @@ def comprehensive_prediction():
         )
 
     except Exception as e:
-        log_exception(logger, e, context="bhrigu_predictions.comprehensive_prediction")
+        log_error(logger, e, "Error in comprehensive_prediction")
         return prediction_error_response(
-            "Failed to generate comprehensive prediction. Please try again later.",
+            f"Failed to generate comprehensive prediction: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'comprehensive'}
         )
@@ -791,5 +792,5 @@ def ratelimit_handler(e):
 
 @bp.errorhandler(Exception)
 def handle_error(e):
-    log_exception(logger, e, context="bhrigu_predictions.unhandled_error")
+    log_error(logger, e, "Unhandled error in bhrigu_predictions")
     return prediction_error_response("An unexpected error occurred", 500)

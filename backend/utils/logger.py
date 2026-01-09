@@ -80,27 +80,14 @@ def setup_logger(name: str, level: str = 'INFO') -> logging.Logger:
 
 def log_request(logger: logging.Logger, request_data: dict, endpoint: str):
     """Log incoming API request"""
-    request_id = _get_request_id()
-    payload = {
-        "event": "api_request",
-        "endpoint": endpoint,
-        "request_id": request_id,
-        "request": _redact_data(request_data),
-    }
-    logger.info(json.dumps(payload, default=str))
+    sanitized_request = _redact_sensitive_data(request_data)
+    logger.info(f"API Request to {endpoint}: {sanitized_request}")
 
 
 def log_response(logger: logging.Logger, response_data: dict, endpoint: str, status_code: int):
     """Log API response"""
-    request_id = _get_request_id()
-    payload = {
-        "event": "api_response",
-        "endpoint": endpoint,
-        "status_code": status_code,
-        "request_id": request_id,
-        "response": _redact_data(response_data),
-    }
-    logger.info(json.dumps(payload, default=str))
+    sanitized_response = _redact_sensitive_data(response_data)
+    logger.info(f"API Response from {endpoint} (status {status_code}): {sanitized_response}")
 
 
 def log_error(logger: logging.Logger, error: Exception, context: str = None):
@@ -126,17 +113,43 @@ def _redact_pii(value: str) -> str:
     return redacted
 
 
-def _redact_data(data):
-    """Recursively redact PII from structured data."""
-    if isinstance(data, dict):
-        return {key: _redact_data(value) for key, value in data.items()}
-    if isinstance(data, list):
-        return [_redact_data(item) for item in data]
-    if isinstance(data, tuple):
-        return tuple(_redact_data(item) for item in data)
-    if isinstance(data, str):
-        return _redact_pii(data)
-    return data
+def _redact_sensitive_data(value):
+    """Recursively redact sensitive fields and PII from data structures."""
+    if isinstance(value, dict):
+        redacted = {}
+        for key, item in value.items():
+            if _is_sensitive_key(str(key)):
+                redacted[key] = "[REDACTED]"
+            else:
+                redacted[key] = _redact_sensitive_data(item)
+        return redacted
+    if isinstance(value, list):
+        return [_redact_sensitive_data(item) for item in value]
+    if isinstance(value, str):
+        sanitized = _redact_pii(value)
+        sanitized = re.sub(r'(?i)\bbearer\s+[^\s]+', 'Bearer [REDACTED]', sanitized)
+        return sanitized
+    return value
+
+
+def _is_sensitive_key(key: str) -> bool:
+    sensitive_keys = {
+        'api_key',
+        'apikey',
+        'authorization',
+        'token',
+        'access_token',
+        'refresh_token',
+        'secret',
+        'client_secret',
+        'password',
+        'openai_api_key',
+        'x-api-key',
+        'x_api_key',
+        'x-auth-token',
+    }
+    normalized_key = key.strip().lower()
+    return normalized_key in sensitive_keys or normalized_key.endswith('_token')
 
 
 def _get_request_id() -> str:
@@ -152,11 +165,30 @@ def _get_request_id() -> str:
     )
 
 
+def sanitize_error(message: str) -> str:
+    """Strip headers and PII from error messages."""
+    if not message:
+        return message
+
+    sanitized = _redact_pii(message)
+    sanitized = re.sub(
+        r'(?i)(headers?\s*[:=]\s*)(\{[^}]*\}|\[[^\]]*\])',
+        r'\1[REDACTED_HEADERS]',
+        sanitized,
+    )
+    sanitized = re.sub(
+        r'(?i)(authorization|x-api-key|api_key|apikey|token)\s*[:=]\s*[^\s,;]+',
+        r'\1=[REDACTED]',
+        sanitized,
+    )
+    return sanitized
+
+
 def log_exception(logger: logging.Logger, error: Exception, context: str = None, request_id: str = None):
     """Log exception with PII redaction and request ID."""
     resolved_request_id = request_id or _get_request_id()
-    redacted_error = _redact_pii(str(error))
-    redacted_context = _redact_pii(context) if context else None
+    redacted_error = sanitize_error(str(error))
+    redacted_context = sanitize_error(context) if context else None
 
     request_prefix = f"Request ID {resolved_request_id} - " if resolved_request_id else ""
     if redacted_context:
