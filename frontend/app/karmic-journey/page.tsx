@@ -11,7 +11,8 @@ import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
-import { karmicJourneyAPI, BirthDetails } from '@/lib/api';
+import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
+import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import Link from 'next/link';
 
 export default function KarmicJourneyPage() {
@@ -86,8 +87,13 @@ export default function KarmicJourneyPage() {
 
       // Try to load from API
       try {
-        const analysis = await karmicJourneyAPI.getAnalysis(birthDetails);
-        setData(analysis);
+        const response = await bhriguPredictionsAPI.getKarmicJourney(birthDetails);
+        const prediction = normalizePredictionResponse<any>(response).prediction;
+        setData({
+          ...prediction,
+          soul_evolution: prediction?.evolution_stage ?? prediction?.spiritual_gifts ?? prediction?.karmic_blueprint,
+          dharmic_path: prediction?.life_mission ?? prediction?.timing
+        });
       } catch (apiError) {
         console.error('API error, using offline mode:', apiError);
         // Use offline wisdom cards

@@ -1,4 +1,4 @@
-'use client';
+import dynamic from 'next/dynamic';
 
 import { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
@@ -15,12 +15,14 @@ import GenZCard, { GenZCardGradient } from './components/GenZCard';
 import GenZBadge, { StatusBadge } from './components/GenZBadge';
 import BottomNav from './components/BottomNav';
 import OnboardingTutorial from '../components/OnboardingTutorial';
+import useFeatureFlags from '../hooks/useFeatureFlags';
 
 export default function HomePage() {
   const [activeFeature, setActiveFeature] = useState(0);
   const [email, setEmail] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const { advancedControls } = useFeatureFlags();
   const { scrollYProgress } = useScroll();
   const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
   const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.8]);
@@ -507,48 +509,54 @@ export default function HomePage() {
             className="text-center mb-16"
           >
             <motion.div
-              className="inline-block mb-4"
-              initial={{ scale: 0 }}
-              whileInView={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 200 }}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              className="text-center mb-16"
             >
-              <GenZBadge variant="default" size="lg">
-                🚀 Technology
-              </GenZBadge>
-            </motion.div>
-            <h2 className="genz-heading mb-6">
-              Powered by Advanced Technology
-            </h2>
-            <p className="text-xl md:text-2xl text-white/80 max-w-3xl mx-auto leading-relaxed">
-              Experience the perfect fusion of{' '}
-              <span className="text-genz-lavender-dream font-bold">ancient wisdom</span> and{' '}
-              <span className="text-genz-electric-blue font-bold">modern AI</span>
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {advancedFeatures.map((feature, index) => (
-              <GenZCard
-                key={index}
-                variant="glass"
-                className="text-center group"
+              <motion.div
+                className="inline-block mb-4"
+                initial={{ scale: 0 }}
+                whileInView={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 200 }}
               >
-                <motion.div
-                  className="w-16 h-16 rounded-2xl bg-gradient-to-br from-genz-purple-haze to-genz-hot-pink flex items-center justify-center mx-auto mb-6 shadow-genz-glow group-hover:scale-110 transition-transform"
-                  whileHover={{ rotate: 360 }}
-                  transition={{ duration: 0.6 }}
+                <GenZBadge variant="default" size="lg">
+                  🚀 Technology
+                </GenZBadge>
+              </motion.div>
+              <h2 className="genz-heading mb-6">
+                Powered by Advanced Technology
+              </h2>
+              <p className="text-xl md:text-2xl text-white/80 max-w-3xl mx-auto leading-relaxed">
+                Experience the perfect fusion of{' '}
+                <span className="text-genz-lavender-dream font-bold">ancient wisdom</span> and{' '}
+                <span className="text-genz-electric-blue font-bold">modern AI</span>
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {advancedFeatures.map((feature, index) => (
+                <GenZCard
+                  key={index}
+                  variant="glass"
+                  className="text-center group"
                 >
-                  {feature.icon}
-                </motion.div>
-                <h3 className="text-lg font-display font-bold mb-3 text-white group-hover:text-genz-electric-blue transition-colors">
-                  {feature.title}
-                </h3>
-                <p className="text-white/70 text-sm leading-relaxed">{feature.description}</p>
-              </GenZCard>
-            ))}
+                  <motion.div
+                    className="w-16 h-16 rounded-2xl bg-gradient-to-br from-genz-purple-haze to-genz-hot-pink flex items-center justify-center mx-auto mb-6 shadow-genz-glow group-hover:scale-110 transition-transform"
+                    whileHover={{ rotate: 360 }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    {feature.icon}
+                  </motion.div>
+                  <h3 className="text-lg font-display font-bold mb-3 text-white group-hover:text-genz-electric-blue transition-colors">
+                    {feature.title}
+                  </h3>
+                  <p className="text-white/70 text-sm leading-relaxed">{feature.description}</p>
+                </GenZCard>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* How It Works */}
       <section id="how-it-works" className="genz-section px-4 landscape:px-6">
