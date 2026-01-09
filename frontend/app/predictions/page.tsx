@@ -14,6 +14,7 @@ import { getItem, setItem, STORES } from '@/lib/storage';
 import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
 import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import Link from 'next/link';
+import { useOnlineStatus } from '@/lib/hooks/useOnlineStatus';
 
 export default function PredictionsPage() {
   const [data, setData] = useState<any>(null);
@@ -27,6 +28,7 @@ export default function PredictionsPage() {
   const [usingCache, setUsingCache] = useState(false);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
+  const isOnline = useOnlineStatus();
 
   useEffect(() => {
     if (!encryptionLoading && !isSetup) {
@@ -89,7 +91,7 @@ export default function PredictionsPage() {
       };
 
       const cacheKey = `predictions_cache_${activeTab}`;
-      const offlineMode = !navigator.onLine;
+      const offlineMode = !isOnline;
       setIsOffline(offlineMode);
 
       if (offlineMode) {
@@ -160,7 +162,7 @@ export default function PredictionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, encryptionKey]);
+  }, [activeTab, encryptionKey, isOnline]);
 
   useEffect(() => {
     if (encryptionKey) {
@@ -169,24 +171,11 @@ export default function PredictionsPage() {
   }, [encryptionKey, activeTab, loadData]);
 
   useEffect(() => {
-    const handleOnline = () => {
-      setIsOffline(false);
-      if (syncWhenOnline && encryptionKey) {
-        loadData();
-      }
-    };
-    const handleOffline = () => {
-      setIsOffline(true);
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [loadData, syncWhenOnline, encryptionKey]);
+    setIsOffline(!isOnline);
+    if (isOnline && syncWhenOnline && encryptionKey) {
+      loadData();
+    }
+  }, [isOnline, syncWhenOnline, encryptionKey, loadData]);
 
   const getOfflinePrediction = (period: string) => {
     const predictions: Record<string, string> = {

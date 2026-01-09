@@ -6,7 +6,16 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { setupEncryption, getEncryptionKey, verifyEncryptionKey, isEncryptionSetup } from '../storage';
+import {
+  setupEncryption,
+  getEncryptionKey,
+  verifyEncryptionKey,
+  isEncryptionSetup,
+  markKeyRotationRequired,
+  isKeyRotationRequired,
+  rotateEncryptionKey,
+  clearKeyRotationRequired,
+} from '../storage';
 import { useAutoLock, useLockOnBackground } from './useAutoLock';
 
 interface SessionContextType {
@@ -109,8 +118,13 @@ export function SessionProvider({ children, defaultTimeout = 300 }: SessionProvi
       
       // Get encryption key
       const key = await getEncryptionKey(passcode);
+      let activeKey = key;
+      if (await isKeyRotationRequired()) {
+        activeKey = await rotateEncryptionKey(passcode, key);
+        await clearKeyRotationRequired();
+      }
       
-      setEncryptionKey(key);
+      setEncryptionKey(activeKey);
       setIsUnlocked(true);
       setFailedAttempts(0);
       
@@ -126,6 +140,9 @@ export function SessionProvider({ children, defaultTimeout = 300 }: SessionProvi
   
   // Lock the app
   const lock = useCallback(() => {
+    markKeyRotationRequired().catch((error) => {
+      console.error('Error marking key rotation:', error);
+    });
     setEncryptionKey(null);
     setIsUnlocked(false);
     
