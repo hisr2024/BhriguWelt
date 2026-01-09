@@ -2,9 +2,10 @@
 Bhrigu Predictions Routes
 Handles all Bhrigu Samhita and Nadi Jyotisa prediction requests
 """
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response, stream_with_context
 from services.bhrigu_predictions import get_bhrigu_service
 from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
+from services.section_parser import get_section_parser
 from models import db, BhriguPredictionCache, BhriguWisdomEntry, BhriguSessionLog
 from middleware.rate_limiter import limiter
 from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
@@ -26,7 +27,7 @@ bp = Blueprint('bhrigu_predictions', __name__, url_prefix='/api/bhrigu-predictio
 logger = setup_logger(__name__)
 
 bhrigu_service = get_bhrigu_service()
-logger = logging.getLogger(__name__)
+section_parser = get_section_parser()
 
 
 def _get_chart_data(data):
@@ -76,19 +77,132 @@ def _build_chart_metadata(chart_data, category=None, extra=None):
     return metadata
 
 
-def _sanitize_question_field(data):
-    raw_question = data.get('question')
-    if raw_question is None:
-        return None
+def _normalize_category_key(category: str) -> str:
+    return category.replace('-', '_').strip().lower()
 
-    sanitized_question = sanitizeQuestion(raw_question, max_length=500)
-    if sanitized_question:
-        logger.info("Received sanitized question: %s", sanitized_question)
-    else:
-        sanitized_question = None
 
-    data['question'] = sanitized_question
-    return sanitized_question
+def _get_prediction_generator(category_key: str):
+    generators = {
+        'karmic_journey': bhrigu_service.generate_karmic_journey_prediction,
+        'past_lives': bhrigu_service.generate_past_lives_prediction,
+        'future_lives': bhrigu_service.generate_future_lives_prediction,
+        'present_life': bhrigu_service.generate_present_life_prediction,
+        'life_events': bhrigu_service.generate_life_events_prediction,
+        'karmic_remedies': bhrigu_service.generate_karmic_remedies_prediction,
+        'relationships': bhrigu_service.generate_relationships_prediction,
+        'predictions': bhrigu_service.generate_general_predictions,
+    }
+    return generators.get(category_key)
+
+
+def _format_sse_event(event: str, data: dict) -> str:
+    payload = json.dumps(data, ensure_ascii=False)
+    lines = payload.splitlines() or [""]
+    return f"event: {event}\n" + "\n".join([f"data: {line}" for line in lines]) + "\n\n"
+
+
+def _stream_sections(category_key: str, prediction: dict, from_cache: bool):
+    meta = {
+        'category': category_key,
+        'title': prediction.get('title'),
+        'metadata': prediction.get('metadata'),
+        'from_cache': from_cache
+    }
+    yield _format_sse_event('meta', meta)
+
+    for section_key in section_parser.REQUIRED_SECTIONS.get(category_key, []):
+        content = prediction.get(section_key)
+        if content:
+            yield _format_sse_event('section', {
+                'key': section_key,
+                'content': content
+            })
+
+    yield _format_sse_event('complete', {
+        'prediction': prediction,
+        'from_cache': from_cache
+    })
+
+
+@bp.route('/<category>/stream', methods=['POST'])
+@limiter.limit("10 per minute")
+def stream_prediction_sections(category: str):
+    """
+    Stream prediction sections using Server-Sent Events (SSE).
+    """
+    category_key = _normalize_category_key(category)
+    generator = _get_prediction_generator(category_key)
+    if not generator:
+        return prediction_error_response(
+            f"Unsupported category: {category}",
+            404,
+            metadata={'category': category}
+        )
+
+    data = request.get_json()
+    if not data:
+        return error_response("Invalid request payload", 400)
+    calculator = get_astrology_calculator()
+    cached_birth_data = get_cached_birth_data(data)
+    if not calculator and not cached_birth_data:
+        return dependency_error_response(get_astrology_dependency_error())
+
+    if calculator:
+        validation_error = validate_birth_data(data)
+        if validation_error:
+            return error_response(validation_error, 400)
+
+    cached = BhriguPredictionCache.get_cached_prediction(
+        data, category_key, data.get('question')
+    )
+    if cached and not data.get('force_regenerate'):
+        cached_prediction = cached.to_dict().get('prediction')
+        return Response(
+            stream_with_context(_stream_sections(category_key, cached_prediction, True)),
+            mimetype='text/event-stream',
+            headers={
+                'Cache-Control': 'no-cache',
+                'X-Accel-Buffering': 'no'
+            }
+        )
+
+    chart_data, error = _get_chart_data(data)
+    if error:
+        return error
+    birth_data = {**data, **chart_data}
+
+    try:
+        prediction = generator(birth_data, data.get('question'))
+        metadata = {
+            'zodiac_sign': chart_data.get('zodiac_sign'),
+            'nakshatra': chart_data.get('nakshatra'),
+            'moon_sign': chart_data.get('moon_sign'),
+            'ascendant': chart_data.get('ascendant'),
+        }
+        BhriguPredictionCache.cache_prediction(
+            birth_data,
+            category_key,
+            prediction,
+            data.get('question'),
+            metadata
+        )
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error("Streaming prediction failed", exc_info=True)
+        return prediction_error_response(
+            f"Failed to generate streaming prediction: {str(e)}",
+            500,
+            metadata={'category': category_key}
+        )
+
+    return Response(
+        stream_with_context(_stream_sections(category_key, prediction, False)),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no'
+        }
+    )
 
 
 @bp.route('/karmic-journey', methods=['POST'])
