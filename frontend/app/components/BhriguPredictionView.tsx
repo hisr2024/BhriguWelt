@@ -4,8 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import type { Profile, BirthDetails, PredictionResult } from '@/lib/types';
-import { getCurrentLanguage } from '@/lib/copy';
+import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
+import { getCurrentLanguage, setLanguage as setLanguagePreference, type Language } from '@/lib/copy';
 import { tLocale } from '@/lib/locales';
 import { Accordion } from '@/app/components/ui/Accordion';
 import { AccordionItem } from '@/app/components/ui/AccordionItem';
@@ -13,96 +13,110 @@ import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { deleteItem, getAllItems, getItem, setItem, STORES } from '@/lib/storage';
 
+const SECTION_LANGUAGES: Language[] = ['en', 'hi'];
+
+type CategorySectionConfig = {
+  key: string;
+  titleKey: string;
+  titleVariants: string[];
+  color: string;
+};
+
+const getSectionTitleVariants = (titleKey: string): string[] => {
+  const titles = SECTION_LANGUAGES.map((lang) => tLocale(titleKey, lang));
+  return Array.from(new Set(titles));
+};
+
 // Category-specific section configurations (moved outside component for performance)
-const CATEGORY_SECTIONS: Record<string, Array<{ key: string; titleKey: string; color: string }>> = {
+const CATEGORY_SECTIONS: Record<string, CategorySectionConfig[]> = {
   'karmic-journey': [
-    { key: 'soul_purpose', titleKey: "bhriguPrediction.sections.karmic-journey.soul_purpose", color: 'cyan' },
-    { key: 'karmic_blueprint', titleKey: 'bhriguPrediction.sections.karmic-journey.karmic_blueprint', color: 'purple' },
-    { key: 'evolution_stage', titleKey: 'bhriguPrediction.sections.karmic-journey.evolution_stage', color: 'blue' },
-    { key: 'life_mission', titleKey: 'bhriguPrediction.sections.karmic-journey.life_mission', color: 'indigo' },
-    { key: 'karmic_lessons', titleKey: 'bhriguPrediction.sections.karmic-journey.karmic_lessons', color: 'violet' },
-    { key: 'soul_connections', titleKey: 'bhriguPrediction.sections.karmic-journey.soul_connections', color: 'pink' },
-    { key: 'timing', titleKey: 'bhriguPrediction.sections.karmic-journey.timing', color: 'rose' },
-    { key: 'spiritual_gifts', titleKey: 'bhriguPrediction.sections.karmic-journey.spiritual_gifts', color: 'amber' }
+    { key: 'soul_purpose', titleKey: "bhriguPrediction.sections.karmic-journey.soul_purpose", titleVariants: getSectionTitleVariants("bhriguPrediction.sections.karmic-journey.soul_purpose"), color: 'cyan' },
+    { key: 'karmic_blueprint', titleKey: 'bhriguPrediction.sections.karmic-journey.karmic_blueprint', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-journey.karmic_blueprint'), color: 'purple' },
+    { key: 'evolution_stage', titleKey: 'bhriguPrediction.sections.karmic-journey.evolution_stage', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-journey.evolution_stage'), color: 'blue' },
+    { key: 'life_mission', titleKey: 'bhriguPrediction.sections.karmic-journey.life_mission', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-journey.life_mission'), color: 'indigo' },
+    { key: 'karmic_lessons', titleKey: 'bhriguPrediction.sections.karmic-journey.karmic_lessons', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-journey.karmic_lessons'), color: 'violet' },
+    { key: 'soul_connections', titleKey: 'bhriguPrediction.sections.karmic-journey.soul_connections', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-journey.soul_connections'), color: 'pink' },
+    { key: 'timing', titleKey: 'bhriguPrediction.sections.karmic-journey.timing', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-journey.timing'), color: 'rose' },
+    { key: 'spiritual_gifts', titleKey: 'bhriguPrediction.sections.karmic-journey.spiritual_gifts', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-journey.spiritual_gifts'), color: 'amber' }
   ],
   'past-lives': [
-    { key: 'recent_life', titleKey: 'bhriguPrediction.sections.past-lives.recent_life', color: 'cyan' },
-    { key: 'significant_lives', titleKey: 'bhriguPrediction.sections.past-lives.significant_lives', color: 'purple' },
-    { key: 'karmic_patterns', titleKey: 'bhriguPrediction.sections.past-lives.karmic_patterns', color: 'blue' },
-    { key: 'past_skills', titleKey: 'bhriguPrediction.sections.past-lives.past_skills', color: 'indigo' },
-    { key: 'traumas_healing', titleKey: 'bhriguPrediction.sections.past-lives.traumas_healing', color: 'violet' },
-    { key: 'past_relationships', titleKey: 'bhriguPrediction.sections.past-lives.past_relationships', color: 'pink' },
-    { key: 'karmic_debts', titleKey: 'bhriguPrediction.sections.past-lives.karmic_debts', color: 'rose' },
-    { key: 'spiritual_progress', titleKey: 'bhriguPrediction.sections.past-lives.spiritual_progress', color: 'amber' }
+    { key: 'recent_life', titleKey: 'bhriguPrediction.sections.past-lives.recent_life', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.past-lives.recent_life'), color: 'cyan' },
+    { key: 'significant_lives', titleKey: 'bhriguPrediction.sections.past-lives.significant_lives', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.past-lives.significant_lives'), color: 'purple' },
+    { key: 'karmic_patterns', titleKey: 'bhriguPrediction.sections.past-lives.karmic_patterns', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.past-lives.karmic_patterns'), color: 'blue' },
+    { key: 'past_skills', titleKey: 'bhriguPrediction.sections.past-lives.past_skills', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.past-lives.past_skills'), color: 'indigo' },
+    { key: 'traumas_healing', titleKey: 'bhriguPrediction.sections.past-lives.traumas_healing', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.past-lives.traumas_healing'), color: 'violet' },
+    { key: 'past_relationships', titleKey: 'bhriguPrediction.sections.past-lives.past_relationships', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.past-lives.past_relationships'), color: 'pink' },
+    { key: 'karmic_debts', titleKey: 'bhriguPrediction.sections.past-lives.karmic_debts', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.past-lives.karmic_debts'), color: 'rose' },
+    { key: 'spiritual_progress', titleKey: 'bhriguPrediction.sections.past-lives.spiritual_progress', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.past-lives.spiritual_progress'), color: 'amber' }
   ],
   'future-lives': [
-    { key: 'next_incarnation', titleKey: 'bhriguPrediction.sections.future-lives.next_incarnation', color: 'cyan' },
-    { key: 'evolution_trajectory', titleKey: 'bhriguPrediction.sections.future-lives.evolution_trajectory', color: 'purple' },
-    { key: 'final_birth_conditions', titleKey: 'bhriguPrediction.sections.future-lives.final_birth_conditions', color: 'blue' },
-    { key: 'future_scenarios', titleKey: 'bhriguPrediction.sections.future-lives.future_scenarios', color: 'indigo' },
-    { key: 'moksha_timeline', titleKey: 'bhriguPrediction.sections.future-lives.moksha_timeline', color: 'violet' },
-    { key: 'higher_realms', titleKey: 'bhriguPrediction.sections.future-lives.higher_realms', color: 'pink' },
-    { key: 'bodhisattva_path', titleKey: 'bhriguPrediction.sections.future-lives.bodhisattva_path', color: 'rose' },
-    { key: 'ultimate_destiny', titleKey: 'bhriguPrediction.sections.future-lives.ultimate_destiny', color: 'amber' }
+    { key: 'next_incarnation', titleKey: 'bhriguPrediction.sections.future-lives.next_incarnation', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.future-lives.next_incarnation'), color: 'cyan' },
+    { key: 'evolution_trajectory', titleKey: 'bhriguPrediction.sections.future-lives.evolution_trajectory', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.future-lives.evolution_trajectory'), color: 'purple' },
+    { key: 'final_birth_conditions', titleKey: 'bhriguPrediction.sections.future-lives.final_birth_conditions', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.future-lives.final_birth_conditions'), color: 'blue' },
+    { key: 'future_scenarios', titleKey: 'bhriguPrediction.sections.future-lives.future_scenarios', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.future-lives.future_scenarios'), color: 'indigo' },
+    { key: 'moksha_timeline', titleKey: 'bhriguPrediction.sections.future-lives.moksha_timeline', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.future-lives.moksha_timeline'), color: 'violet' },
+    { key: 'higher_realms', titleKey: 'bhriguPrediction.sections.future-lives.higher_realms', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.future-lives.higher_realms'), color: 'pink' },
+    { key: 'bodhisattva_path', titleKey: 'bhriguPrediction.sections.future-lives.bodhisattva_path', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.future-lives.bodhisattva_path'), color: 'rose' },
+    { key: 'ultimate_destiny', titleKey: 'bhriguPrediction.sections.future-lives.ultimate_destiny', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.future-lives.ultimate_destiny'), color: 'amber' }
   ],
   'present-life': [
-    { key: 'current_phase', titleKey: 'bhriguPrediction.sections.present-life.current_phase', color: 'cyan' },
-    { key: 'career', titleKey: 'bhriguPrediction.sections.present-life.career', color: 'purple' },
-    { key: 'relationships', titleKey: 'bhriguPrediction.sections.present-life.relationships', color: 'blue' },
-    { key: 'health', titleKey: 'bhriguPrediction.sections.present-life.health', color: 'indigo' },
-    { key: 'finances', titleKey: 'bhriguPrediction.sections.present-life.finances', color: 'violet' },
-    { key: 'spiritual_growth', titleKey: 'bhriguPrediction.sections.present-life.spiritual_growth', color: 'pink' },
-    { key: 'education', titleKey: 'bhriguPrediction.sections.present-life.education', color: 'rose' },
-    { key: 'life_purpose', titleKey: 'bhriguPrediction.sections.present-life.life_purpose', color: 'amber' },
-    { key: 'challenges', titleKey: 'bhriguPrediction.sections.present-life.challenges', color: 'orange' },
-    { key: 'timing', titleKey: 'bhriguPrediction.sections.present-life.timing', color: 'teal' }
+    { key: 'current_phase', titleKey: 'bhriguPrediction.sections.present-life.current_phase', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.present-life.current_phase'), color: 'cyan' },
+    { key: 'career', titleKey: 'bhriguPrediction.sections.present-life.career', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.present-life.career'), color: 'purple' },
+    { key: 'relationships', titleKey: 'bhriguPrediction.sections.present-life.relationships', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.present-life.relationships'), color: 'blue' },
+    { key: 'health', titleKey: 'bhriguPrediction.sections.present-life.health', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.present-life.health'), color: 'indigo' },
+    { key: 'finances', titleKey: 'bhriguPrediction.sections.present-life.finances', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.present-life.finances'), color: 'violet' },
+    { key: 'spiritual_growth', titleKey: 'bhriguPrediction.sections.present-life.spiritual_growth', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.present-life.spiritual_growth'), color: 'pink' },
+    { key: 'education', titleKey: 'bhriguPrediction.sections.present-life.education', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.present-life.education'), color: 'rose' },
+    { key: 'life_purpose', titleKey: 'bhriguPrediction.sections.present-life.life_purpose', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.present-life.life_purpose'), color: 'amber' },
+    { key: 'challenges', titleKey: 'bhriguPrediction.sections.present-life.challenges', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.present-life.challenges'), color: 'orange' },
+    { key: 'timing', titleKey: 'bhriguPrediction.sections.present-life.timing', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.present-life.timing'), color: 'teal' }
   ],
   'life-events': [
-    { key: 'yearly_forecast', titleKey: 'bhriguPrediction.sections.life-events.yearly_forecast', color: 'cyan' },
-    { key: 'marriage_timing', titleKey: 'bhriguPrediction.sections.life-events.marriage_timing', color: 'purple' },
-    { key: 'career_milestones', titleKey: 'bhriguPrediction.sections.life-events.career_milestones', color: 'blue' },
-    { key: 'children_family', titleKey: 'bhriguPrediction.sections.life-events.children_family', color: 'indigo' },
-    { key: 'financial_events', titleKey: 'bhriguPrediction.sections.life-events.financial_events', color: 'violet' },
-    { key: 'health_alerts', titleKey: 'bhriguPrediction.sections.life-events.health_alerts', color: 'pink' },
-    { key: 'spiritual_milestones', titleKey: 'bhriguPrediction.sections.life-events.spiritual_milestones', color: 'rose' },
-    { key: 'relocations', titleKey: 'bhriguPrediction.sections.life-events.relocations', color: 'amber' },
-    { key: 'education', titleKey: 'bhriguPrediction.sections.life-events.education', color: 'orange' },
-    { key: 'favorable_periods', titleKey: 'bhriguPrediction.sections.life-events.favorable_periods', color: 'teal' },
-    { key: 'challenging_periods', titleKey: 'bhriguPrediction.sections.life-events.challenging_periods', color: 'red' },
-    { key: 'transits', titleKey: 'bhriguPrediction.sections.life-events.transits', color: 'lime' },
-    { key: 'age_milestones', titleKey: 'bhriguPrediction.sections.life-events.age_milestones', color: 'emerald' }
+    { key: 'yearly_forecast', titleKey: 'bhriguPrediction.sections.life-events.yearly_forecast', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.life-events.yearly_forecast'), color: 'cyan' },
+    { key: 'marriage_timing', titleKey: 'bhriguPrediction.sections.life-events.marriage_timing', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.life-events.marriage_timing'), color: 'purple' },
+    { key: 'career_milestones', titleKey: 'bhriguPrediction.sections.life-events.career_milestones', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.life-events.career_milestones'), color: 'blue' },
+    { key: 'children_family', titleKey: 'bhriguPrediction.sections.life-events.children_family', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.life-events.children_family'), color: 'indigo' },
+    { key: 'financial_events', titleKey: 'bhriguPrediction.sections.life-events.financial_events', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.life-events.financial_events'), color: 'violet' },
+    { key: 'health_alerts', titleKey: 'bhriguPrediction.sections.life-events.health_alerts', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.life-events.health_alerts'), color: 'pink' },
+    { key: 'spiritual_milestones', titleKey: 'bhriguPrediction.sections.life-events.spiritual_milestones', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.life-events.spiritual_milestones'), color: 'rose' },
+    { key: 'relocations', titleKey: 'bhriguPrediction.sections.life-events.relocations', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.life-events.relocations'), color: 'amber' },
+    { key: 'education', titleKey: 'bhriguPrediction.sections.life-events.education', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.life-events.education'), color: 'orange' },
+    { key: 'favorable_periods', titleKey: 'bhriguPrediction.sections.life-events.favorable_periods', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.life-events.favorable_periods'), color: 'teal' },
+    { key: 'challenging_periods', titleKey: 'bhriguPrediction.sections.life-events.challenging_periods', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.life-events.challenging_periods'), color: 'red' },
+    { key: 'transits', titleKey: 'bhriguPrediction.sections.life-events.transits', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.life-events.transits'), color: 'lime' },
+    { key: 'age_milestones', titleKey: 'bhriguPrediction.sections.life-events.age_milestones', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.life-events.age_milestones'), color: 'emerald' }
   ],
   'karmic-remedies': [
-    { key: 'mantras', titleKey: 'bhriguPrediction.sections.karmic-remedies.mantras', color: 'cyan' },
-    { key: 'gemstones', titleKey: 'bhriguPrediction.sections.karmic-remedies.gemstones', color: 'purple' },
-    { key: 'yantras', titleKey: 'bhriguPrediction.sections.karmic-remedies.yantras', color: 'blue' },
-    { key: 'charitable_activities', titleKey: 'bhriguPrediction.sections.karmic-remedies.charitable_activities', color: 'indigo' },
-    { key: 'fasting', titleKey: 'bhriguPrediction.sections.karmic-remedies.fasting', color: 'violet' },
-    { key: 'deity_worship', titleKey: 'bhriguPrediction.sections.karmic-remedies.deity_worship', color: 'pink' },
-    { key: 'pilgrimage', titleKey: 'bhriguPrediction.sections.karmic-remedies.pilgrimage', color: 'rose' },
-    { key: 'lifestyle', titleKey: 'bhriguPrediction.sections.karmic-remedies.lifestyle', color: 'amber' },
-    { key: 'planetary_rituals', titleKey: 'bhriguPrediction.sections.karmic-remedies.planetary_rituals', color: 'orange' },
-    { key: 'karmic_cleansing', titleKey: 'bhriguPrediction.sections.karmic-remedies.karmic_cleansing', color: 'teal' },
-    { key: 'service', titleKey: 'bhriguPrediction.sections.karmic-remedies.service', color: 'lime' },
-    { key: 'meditation', titleKey: 'bhriguPrediction.sections.karmic-remedies.meditation', color: 'emerald' }
+    { key: 'mantras', titleKey: 'bhriguPrediction.sections.karmic-remedies.mantras', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-remedies.mantras'), color: 'cyan' },
+    { key: 'gemstones', titleKey: 'bhriguPrediction.sections.karmic-remedies.gemstones', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-remedies.gemstones'), color: 'purple' },
+    { key: 'yantras', titleKey: 'bhriguPrediction.sections.karmic-remedies.yantras', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-remedies.yantras'), color: 'blue' },
+    { key: 'charitable_activities', titleKey: 'bhriguPrediction.sections.karmic-remedies.charitable_activities', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-remedies.charitable_activities'), color: 'indigo' },
+    { key: 'fasting', titleKey: 'bhriguPrediction.sections.karmic-remedies.fasting', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-remedies.fasting'), color: 'violet' },
+    { key: 'deity_worship', titleKey: 'bhriguPrediction.sections.karmic-remedies.deity_worship', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-remedies.deity_worship'), color: 'pink' },
+    { key: 'pilgrimage', titleKey: 'bhriguPrediction.sections.karmic-remedies.pilgrimage', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-remedies.pilgrimage'), color: 'rose' },
+    { key: 'lifestyle', titleKey: 'bhriguPrediction.sections.karmic-remedies.lifestyle', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-remedies.lifestyle'), color: 'amber' },
+    { key: 'planetary_rituals', titleKey: 'bhriguPrediction.sections.karmic-remedies.planetary_rituals', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-remedies.planetary_rituals'), color: 'orange' },
+    { key: 'karmic_cleansing', titleKey: 'bhriguPrediction.sections.karmic-remedies.karmic_cleansing', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-remedies.karmic_cleansing'), color: 'teal' },
+    { key: 'service', titleKey: 'bhriguPrediction.sections.karmic-remedies.service', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-remedies.service'), color: 'lime' },
+    { key: 'meditation', titleKey: 'bhriguPrediction.sections.karmic-remedies.meditation', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.karmic-remedies.meditation'), color: 'emerald' }
   ],
   'relationships': [
-    { key: 'romantic_marriage', titleKey: 'bhriguPrediction.sections.relationships.romantic_marriage', color: 'cyan' },
-    { key: 'family', titleKey: 'bhriguPrediction.sections.relationships.family', color: 'purple' },
-    { key: 'soul_connections', titleKey: 'bhriguPrediction.sections.relationships.soul_connections', color: 'blue' },
-    { key: 'friendships', titleKey: 'bhriguPrediction.sections.relationships.friendships', color: 'indigo' },
-    { key: 'professional', titleKey: 'bhriguPrediction.sections.relationships.professional', color: 'violet' },
-    { key: 'karmic_patterns', titleKey: 'bhriguPrediction.sections.relationships.karmic_patterns', color: 'pink' },
-    { key: 'communication', titleKey: 'bhriguPrediction.sections.relationships.communication', color: 'rose' },
-    { key: 'timing', titleKey: 'bhriguPrediction.sections.relationships.timing', color: 'amber' },
-    { key: 'healing', titleKey: 'bhriguPrediction.sections.relationships.healing', color: 'orange' },
-    { key: 'healthy_practices', titleKey: 'bhriguPrediction.sections.relationships.healthy_practices', color: 'teal' }
+    { key: 'romantic_marriage', titleKey: 'bhriguPrediction.sections.relationships.romantic_marriage', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.relationships.romantic_marriage'), color: 'cyan' },
+    { key: 'family', titleKey: 'bhriguPrediction.sections.relationships.family', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.relationships.family'), color: 'purple' },
+    { key: 'soul_connections', titleKey: 'bhriguPrediction.sections.relationships.soul_connections', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.relationships.soul_connections'), color: 'blue' },
+    { key: 'friendships', titleKey: 'bhriguPrediction.sections.relationships.friendships', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.relationships.friendships'), color: 'indigo' },
+    { key: 'professional', titleKey: 'bhriguPrediction.sections.relationships.professional', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.relationships.professional'), color: 'violet' },
+    { key: 'karmic_patterns', titleKey: 'bhriguPrediction.sections.relationships.karmic_patterns', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.relationships.karmic_patterns'), color: 'pink' },
+    { key: 'communication', titleKey: 'bhriguPrediction.sections.relationships.communication', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.relationships.communication'), color: 'rose' },
+    { key: 'timing', titleKey: 'bhriguPrediction.sections.relationships.timing', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.relationships.timing'), color: 'amber' },
+    { key: 'healing', titleKey: 'bhriguPrediction.sections.relationships.healing', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.relationships.healing'), color: 'orange' },
+    { key: 'healthy_practices', titleKey: 'bhriguPrediction.sections.relationships.healthy_practices', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.relationships.healthy_practices'), color: 'teal' }
   ],
   'predictions': [
-    { key: 'daily', titleKey: 'bhriguPrediction.sections.predictions.daily', color: 'cyan' },
-    { key: 'weekly', titleKey: 'bhriguPrediction.sections.predictions.weekly', color: 'purple' },
-    { key: 'monthly', titleKey: 'bhriguPrediction.sections.predictions.monthly', color: 'blue' },
-    { key: 'yearly', titleKey: 'bhriguPrediction.sections.predictions.yearly', color: 'indigo' }
+    { key: 'daily', titleKey: 'bhriguPrediction.sections.predictions.daily', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.predictions.daily'), color: 'cyan' },
+    { key: 'weekly', titleKey: 'bhriguPrediction.sections.predictions.weekly', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.predictions.weekly'), color: 'purple' },
+    { key: 'monthly', titleKey: 'bhriguPrediction.sections.predictions.monthly', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.predictions.monthly'), color: 'blue' },
+    { key: 'yearly', titleKey: 'bhriguPrediction.sections.predictions.yearly', titleVariants: getSectionTitleVariants('bhriguPrediction.sections.predictions.yearly'), color: 'indigo' }
   ]
 };
 
@@ -251,8 +265,9 @@ type QueuedPredictionRequest = {
 
 const getProfileHashKey = (profile: Profile) => `${PROFILE_HASH_PREFIX}${profile.id ?? 'current'}`;
 
-const getPredictionCacheKey = (profile: Profile, category: string) => {
-  return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}`;
+const getPredictionCacheKey = (profile: Profile, category: string, question: string, language: Language) => {
+  const questionKey = question.trim() === '' ? 'default' : encodeURIComponent(question.trim());
+  return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${language}_${questionKey}`;
 };
 
 const clearCachedPredictions = async (profile: Profile, encryptionKey: CryptoKey) => {
@@ -321,6 +336,7 @@ export default function BhriguPredictionView({
 
   const { debugUI } = useFeatureFlags();
   const searchParams = useSearchParams();
+  const [language, setLanguage] = useState<Language>(getCurrentLanguage());
   const debugAllowed = searchParams?.get('debug') === 'true';
   const predictionMode = (process.env.NEXT_PUBLIC_PREDICTION_MODE || 'full').toLowerCase();
   const allowComplexParsing = predictionMode !== 'simple';
@@ -424,38 +440,12 @@ export default function BhriguPredictionView({
       setIsOffline(true);
     };
 
-    if (typeof window !== 'undefined') {
-      setIsOffline(!navigator.onLine);
-      window.addEventListener('online', handleOnline);
-      window.addEventListener('offline', handleOffline);
-    }
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  const enqueueRequest = (request: Omit<QueuedPredictionRequest, 'id' | 'enqueuedAt'>) => {
-    requestIdRef.current += 1;
-    const queued: QueuedPredictionRequest = {
-      id: requestIdRef.current,
-      question: request.question,
-      forceRegenerate: request.forceRegenerate,
-      enqueuedAt: Date.now(),
-    };
-    queuedRequestsRef.current = [...queuedRequestsRef.current, queued];
-    setQueuedRequests([...queuedRequestsRef.current]);
+  const handleLanguageChange = (value: Language) => {
+    setLanguage(value);
+    setLanguagePreference(value);
   };
 
-  const dequeueRequest = () => {
-    const [next, ...remaining] = queuedRequestsRef.current;
-    queuedRequestsRef.current = remaining;
-    setQueuedRequests([...remaining]);
-    return next;
-  };
-
-  const loadPrediction = async (options: PredictionRequestOptions = {}) => {
+  const loadPrediction = async (forceRegenerate = false, profileHash?: string) => {
     if (!profile) return;
     if (!encryptionKey) return;
 
@@ -482,19 +472,21 @@ export default function BhriguPredictionView({
 
     try {
       const resolvedHash = profileHash ?? await getProfileHash(profile);
-      const normalizedCategory = normalizeCategoryKey(category);
-      const cacheKey = getPredictionCacheKey(profile, normalizedCategory);
-      const offlineMode = typeof navigator !== 'undefined' && !navigator.onLine;
-      setIsOffline(offlineMode);
+      const cacheKey = getPredictionCacheKey(profile, category, question, language);
+      const cached = localStorage.getItem(cacheKey);
 
-      const cached = await getItem(STORES.SETTINGS, cacheKey, encryptionKey);
-      if (!forceRegenerate && cached?.prediction) {
-        if (cached.profileHash === resolvedHash) {
-          setPrediction(cached.prediction);
-          setFromCache(true);
-          setCacheTimestamp(cached.cachedAt ?? null);
-          setLoading(false);
-          return;
+      if (!forceRegenerate && cached) {
+        try {
+          const parsed = JSON.parse(cached) as { profileHash: string; prediction: any };
+          if (parsed.profileHash === resolvedHash) {
+            setPrediction(parsed.prediction);
+            setFromCache(true);
+            setLoading(false);
+            return;
+          }
+          localStorage.removeItem(cacheKey);
+        } catch (parseError) {
+          localStorage.removeItem(cacheKey);
         }
         await deleteItem(STORES.SETTINGS, cacheKey);
       }
@@ -527,8 +519,9 @@ export default function BhriguPredictionView({
         place_of_birth:  profile.placeOfBirth,
         latitude: profile.latitude,
         longitude: profile.longitude,
-        question: questionToUse || undefined,
-        force_regenerate: options.forceRegenerate
+        question: question || undefined,
+        language,
+        force_regenerate: forceRegenerate
       };
 
       const streamSucceeded = await streamPrediction(profileData, resolvedHash, cacheKey);
@@ -616,16 +609,34 @@ export default function BhriguPredictionView({
     const parsedSections: Record<string, string> = {};
     const categoryConfig = CATEGORY_SECTIONS[cat] || [];
 
-    for (const line of lines) {
-      if (isHeaderLine(line)) {
-        flushSection();
-        const headerText = stripHeaderMarkers(line);
-        currentKey = headerText ? findMatchingKey(headerText) : undefined;
-        continue;
-      }
+    if (!fullAnalysis) return parsedSections;
+    
+    for (const section of categoryConfig) {
+      for (const title of section.titleVariants) {
+        const escapedTitle = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        
+        const patterns = [
+          new RegExp(`##\\s*(?:\\d+\\.? \\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
+          new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
+          new RegExp(`\\*\\*${escapedTitle}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n##|$)`, 'i'),
+          new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i'),
+        ];
 
-      if (currentKey) {
-        currentLines.push(line);
+        for (const pattern of patterns) {
+          try {
+            const match = fullAnalysis.match(pattern);
+            if (match && match[1]?.trim().length > 50) {
+              parsedSections[section.key] = match[1].trim();
+              break;
+            }
+          } catch (e) {
+            continue;
+          }
+        }
+
+        if (parsedSections[section.key]) {
+          break;
+        }
       }
     }
 
@@ -685,8 +696,8 @@ export default function BhriguPredictionView({
     workerRequestId.current += 1;
     worker.postMessage({
       id: workerRequestId.current,
-      markdown: predictionData.full_analysis,
-      sections: categoryConfig.map(section => ({ key: section.key, title: section.titleKey }))
+      markdown: prediction.full_analysis,
+      sections: categoryConfig.map(section => ({ key: section.key, titles: section.titleVariants }))
     });
   }, [prediction?.full_analysis, category, simplifiedRendering, reportMetric]);
 
@@ -1104,7 +1115,7 @@ export default function BhriguPredictionView({
           </div>
 
           {/* Question Input */}
-          <div className="mt-6 flex gap-3">
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-stretch">
             <input
               type="text"
               placeholder={t('bhriguPredictionView.question.placeholder')}
@@ -1114,6 +1125,21 @@ export default function BhriguPredictionView({
                        text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400
                        transition-colors"
             />
+            <div className="flex items-center gap-2">
+              <label htmlFor="prediction-language" className="text-sm text-gray-400">
+                Language
+              </label>
+              <select
+                id="prediction-language"
+                value={language}
+                onChange={(e) => handleLanguageChange(e.target.value as Language)}
+                className="bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-3 text-white
+                         focus:outline-none focus:border-cyan-400 transition-colors"
+              >
+                <option value="en">English</option>
+                <option value="hi">हिंदी</option>
+              </select>
+            </div>
             <button
               onClick={() => loadPrediction()}
               className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500
