@@ -52,6 +52,9 @@ See `DEPLOYMENT_GUIDE.md` in root directory.
 |----------|-------------|---------|
 | `NEXT_PUBLIC_API_URL` | Backend API URL | `https://api.onrender.com` |
 | `NEXT_PUBLIC_APP_NAME` | Application name | `BhriguWelt` |
+| `NEXT_PUBLIC_SECTION_PARSER_MIN_LENGTH` | Minimum characters required for AI section acceptance (default: `100`) | `120` |
+| `NEXT_PUBLIC_SECTION_PARSER_HEADER_MIN_LENGTH` | Minimum characters for header parsing alignment (default: `50`) | `60` |
+| `NEXT_PUBLIC_SECTION_PARSER_KEYWORD_MATCH_RATIO` | Keyword match ratio for partial matches (default: `0.5`) | `0.6` |
 
 ## Pages
 
