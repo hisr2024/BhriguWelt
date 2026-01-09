@@ -10,6 +10,8 @@ import { tLocale } from '@/lib/locales';
 import { Accordion } from '@/app/components/ui/Accordion';
 import { AccordionItem } from '@/app/components/ui/AccordionItem';
 import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
+import { useEncryption } from '@/lib/context/EncryptionContext';
+import { deleteItem, getAllItems, getItem, setItem, STORES } from '@/lib/storage';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS: Record<string, Array<{ key: string; titleKey: string; color: string }>> = {
@@ -156,20 +158,18 @@ interface BhriguPredictionViewProps {
 
 const getProfileHashKey = (profile: Profile) => `${PROFILE_HASH_PREFIX}${profile.id ?? 'current'}`;
 
-const getPredictionCacheKey = (profile: Profile, category: string, question: string) => {
-  const questionKey = question.trim() === '' ? 'default' : encodeURIComponent(question.trim());
-  return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${questionKey}`;
+const getPredictionCacheKey = (profile: Profile, category: string) => {
+  return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}`;
 };
 
-const clearCachedPredictions = (profile: Profile) => {
-  if (typeof window === 'undefined') return;
+const clearCachedPredictions = async (profile: Profile, encryptionKey: CryptoKey) => {
   const prefix = `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_`;
-  for (let i = localStorage.length - 1; i >= 0; i -= 1) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith(prefix)) {
-      localStorage.removeItem(key);
-    }
-  }
+  const items = await getAllItems(STORES.SETTINGS, encryptionKey);
+  await Promise.all(
+    items
+      .filter((item) => typeof item?.id === 'string' && item.id.startsWith(prefix))
+      .map((item) => deleteItem(STORES.SETTINGS, item.id))
+  );
 };
 
 const getProfileHash = async (profile: Profile) => {
@@ -217,6 +217,9 @@ export default function BhriguPredictionView({
   const [isParsing, setIsParsing] = useState(false);
   const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
   const [expandingSections, setExpandingSections] = useState<Record<string, boolean>>({});
+  const [cacheTimestamp, setCacheTimestamp] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
+  const { encryptionKey } = useEncryption();
 
   const workerRef = useRef<Worker | null>(null);
   const workerRequestId = useRef(0);
@@ -227,27 +230,48 @@ export default function BhriguPredictionView({
   const debugAllowed = searchParams?.get('debug') === 'true';
 
   useEffect(() => {
-    if (profile) {
+    if (profile && encryptionKey) {
       const checkProfile = async () => {
         const currentHash = await getProfileHash(profile);
         const hashKey = getProfileHashKey(profile);
-        const storedHash = localStorage.getItem(hashKey);
+        const storedHash = await getItem(STORES.SETTINGS, hashKey, encryptionKey);
         const hasChanged = Boolean(storedHash && storedHash !== currentHash);
 
         if (hasChanged) {
-          clearCachedPredictions(profile);
+          await clearCachedPredictions(profile, encryptionKey);
         }
 
-        localStorage.setItem(hashKey, currentHash);
+        await setItem(STORES.SETTINGS, hashKey, currentHash, encryptionKey);
         setProfileUpdated(hasChanged);
         await loadPrediction(hasChanged, currentHash);
       };
       checkProfile();
     }
-  }, [profile]);
+  }, [profile, encryptionKey]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+    };
+    const handleOffline = () => {
+      setIsOffline(true);
+    };
+
+    if (typeof window !== 'undefined') {
+      setIsOffline(!navigator.onLine);
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const loadPrediction = async (forceRegenerate = false, profileHash?: string) => {
     if (!profile) return;
+    if (!encryptionKey) return;
 
     if (!hasRequiredProfileFields(profile)) {
       setError('Please complete your birth details in your profile to generate predictions.');
@@ -257,29 +281,47 @@ export default function BhriguPredictionView({
     setLoading(true);
     setError(null);
     setFromCache(false);
+    setCacheTimestamp(null);
 
     try {
       const resolvedHash = profileHash ?? await getProfileHash(profile);
-      const cacheKey = getPredictionCacheKey(profile, category, question);
-      const cached = localStorage.getItem(cacheKey);
+      const normalizedCategory = normalizeCategoryKey(category);
+      const cacheKey = getPredictionCacheKey(profile, normalizedCategory);
+      const offlineMode = typeof navigator !== 'undefined' && !navigator.onLine;
+      setIsOffline(offlineMode);
 
-      if (!forceRegenerate && cached) {
-        try {
-          const parsed = JSON.parse(cached) as { profileHash: string; prediction: any };
-          if (parsed.profileHash === resolvedHash) {
-            setPrediction(parsed.prediction);
-            setFromCache(true);
-            setLoading(false);
-            return;
-          }
-          localStorage.removeItem(cacheKey);
-        } catch (parseError) {
-          localStorage.removeItem(cacheKey);
+      const cached = await getItem(STORES.SETTINGS, cacheKey, encryptionKey);
+      if (!forceRegenerate && cached?.prediction) {
+        if (cached.profileHash === resolvedHash) {
+          setPrediction(cached.prediction);
+          setFromCache(true);
+          setCacheTimestamp(cached.cachedAt ?? null);
+          setLoading(false);
+          return;
         }
+        await deleteItem(STORES.SETTINGS, cacheKey);
+      }
+
+      if (offlineMode) {
+        if (cached?.prediction) {
+          setPrediction(cached.prediction);
+          setFromCache(true);
+          setCacheTimestamp(cached.cachedAt ?? null);
+          setLoading(false);
+          return;
+        }
+        setError('You are offline and no cached prediction is available.');
+        setErrorDetails({
+          code: 'OFFLINE',
+          action: 'Reconnect to fetch a new prediction or try again later.',
+          isNetwork: true,
+          message: 'No cached prediction is available while offline.',
+        });
+        return;
       }
 
       if (forceRegenerate) {
-        localStorage.removeItem(cacheKey);
+        await deleteItem(STORES.SETTINGS, cacheKey);
       }
 
       const profileData = {
@@ -302,12 +344,16 @@ export default function BhriguPredictionView({
           normalized.metadata?.source === 'cache' ||
           normalized.message?.toLowerCase()?.includes('cache')
         ));
-        localStorage.setItem(
+        await setItem(
+          STORES.SETTINGS,
           cacheKey,
-          JSON.stringify({
+          {
             profileHash: resolvedHash,
             prediction: normalized.prediction,
-          })
+            cachedAt: new Date().toISOString(),
+            question: question.trim() || null,
+          },
+          encryptionKey
         );
       } else {
         setError(normalized.message || 'Failed to generate prediction');
@@ -331,6 +377,9 @@ export default function BhriguPredictionView({
         isNetwork,
         message
       });
+      if (typeof navigator !== 'undefined') {
+        setIsOffline(!navigator.onLine);
+      }
     } finally {
       setLoading(false);
     }
@@ -758,6 +807,30 @@ export default function BhriguPredictionView({
             </div>
           )}
 
+          {isOffline && (
+            <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-semibold">Offline mode</p>
+                  <p className="text-xs text-amber-100/80">
+                    {cacheTimestamp
+                      ? `Showing your last saved prediction from ${new Date(cacheTimestamp).toLocaleString()}.`
+                      : 'No cached prediction available yet.'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => loadPrediction(true)}
+                  disabled={loading || isOffline}
+                  className="inline-flex items-center gap-1 rounded-full border border-amber-400/50 px-3 py-1 text-xs text-amber-100
+                           transition hover:border-amber-300 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Retry when online
+                </button>
+              </div>
+            </div>
+          )}
+
           {fromCache && (
             <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-cyan-400">
               <div className="flex items-center gap-2">
@@ -769,7 +842,7 @@ export default function BhriguPredictionView({
               </span>
               <button
                 onClick={() => loadPrediction(true)}
-                disabled={loading}
+                disabled={loading || isOffline}
                 className="inline-flex items-center gap-1 rounded-full border border-cyan-500/40 px-3 py-1 text-xs text-cyan-300
                          transition hover:border-cyan-400 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -817,7 +890,8 @@ export default function BhriguPredictionView({
                     </button>
                     <button
                       onClick={() => loadPrediction(true)}
-                      className="rounded-lg bg-white/10 px-3 py-1 text-xs text-white hover:bg-white/20"
+                      disabled={isOffline}
+                      className="rounded-lg bg-white/10 px-3 py-1 text-xs text-white hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Retry request
                     </button>
@@ -857,7 +931,8 @@ export default function BhriguPredictionView({
             <div className="mt-4 flex flex-wrap gap-3">
               <button
                 onClick={() => loadPrediction(true)}
-                className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
+                disabled={isOffline}
+                className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <RefreshCw className="w-4 h-4" />
                 Retry request
