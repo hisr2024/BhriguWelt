@@ -217,19 +217,12 @@ print("Importing route modules...")
 try:
     from routes import (
         astrology_routes,
-        karmic_journey_routes,
-        past_lives_routes,
-        future_lives_routes,
-        present_life_routes,
-        life_events_routes,
-        karmic_remedies_routes,
-        predictions_routes,
         user_routes,
         ai_routes,
         bhrigu_predictions_routes,
         matchmaking_routes
     )
-    print("✓ Legacy route modules imported successfully")
+    print("✓ Core route modules imported successfully")
     
     # Import new unified predictions routes
     try:
@@ -246,13 +239,6 @@ except Exception as e:
 # Register blueprints
 print("Registering blueprints...")
 app.register_blueprint(astrology_routes.bp)
-app.register_blueprint(karmic_journey_routes.bp)
-app.register_blueprint(past_lives_routes.bp)
-app.register_blueprint(future_lives_routes.bp)
-app.register_blueprint(present_life_routes.bp)
-app.register_blueprint(life_events_routes.bp)
-app.register_blueprint(karmic_remedies_routes.bp)
-app.register_blueprint(predictions_routes.bp)
 app.register_blueprint(user_routes.bp)
 app.register_blueprint(ai_routes.bp)
 app.register_blueprint(bhrigu_predictions_routes.bp)
@@ -275,12 +261,6 @@ def index():
         'timestamp': datetime.utcnow().isoformat(),
         'endpoints': {
             'astrology': '/api/astrology',
-            'karmic_journey': '/api/karmic-journey',
-            'past_lives': '/api/past-lives',
-            'future_lives': '/api/future-lives',
-            'present_life': '/api/present-life',
-            'life_events': '/api/life-events',
-            'karmic_remedies': '/api/karmic-remedies',
             'predictions': '/api/predictions',
             'predictions_unified': '/api/predictions/<category>',
             'cosmic_blueprint': '/api/predictions/cosmic-blueprint',

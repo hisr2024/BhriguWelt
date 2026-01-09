@@ -242,30 +242,6 @@ def generate_cosmic_blueprint():
         )
 
 
-@bp.route('/daily', methods=['POST'])
-def daily_prediction():
-    """Get daily horoscope prediction - legacy endpoint for compatibility"""
-    return generate_category_prediction('predictions')
-
-
-@bp.route('/weekly', methods=['POST'])
-def weekly_prediction():
-    """Get weekly horoscope prediction - legacy endpoint for compatibility"""
-    return generate_category_prediction('predictions')
-
-
-@bp.route('/monthly', methods=['POST'])
-def monthly_prediction():
-    """Get monthly horoscope prediction - legacy endpoint for compatibility"""
-    return generate_category_prediction('predictions')
-
-
-@bp.route('/yearly', methods=['POST'])
-def yearly_prediction():
-    """Get yearly horoscope prediction - legacy endpoint for compatibility"""
-    return generate_category_prediction('predictions')
-
-
 # Specific category shortcuts for convenience
 @bp.route('/karmic-journey', methods=['POST'])
 def karmic_journey():
@@ -349,10 +325,6 @@ def test_route():
             '/api/predictions/health',
             '/api/predictions/categories',
             '/api/predictions/<category>',
-            '/api/predictions/cosmic-blueprint',
-            '/api/predictions/daily',
-            '/api/predictions/weekly',
-            '/api/predictions/monthly',
-            '/api/predictions/yearly'
+            '/api/predictions/cosmic-blueprint'
         ]
     }), 200
