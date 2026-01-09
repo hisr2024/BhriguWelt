@@ -124,13 +124,17 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
               <button
                 key={index}
                 onClick={() => setStep(index)}
-                className={`h-2 rounded-full transition-all ${
-                  index === step
-                    ? 'w-8 bg-gradient-to-r from-genz-electric-blue to-genz-purple-haze'
-                    : 'w-2 bg-white/20 hover:bg-white/30'
-                }`}
+                className="group flex items-center justify-center min-w-[44px] rounded-full transition-all"
                 aria-label={`Go to step ${index + 1}: ${steps[index].title}`}
-              />
+              >
+                <span
+                  className={`h-2 rounded-full transition-all ${
+                    index === step
+                      ? 'w-8 bg-gradient-to-r from-genz-electric-blue to-genz-purple-haze'
+                      : 'w-2 bg-white/20 group-hover:bg-white/30'
+                  }`}
+                />
+              </button>
             ))}
           </div>
 

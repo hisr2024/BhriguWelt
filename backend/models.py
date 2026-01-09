@@ -5,6 +5,9 @@ Handles caching and storage of predictions and user data
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import json
+from utils.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 db = SQLAlchemy()
 
@@ -279,7 +282,7 @@ def init_db(app):
     db.init_app(app)
     with app.app_context():
         db.create_all()
-        print("✓ Database tables created successfully")
+        logger.info("✓ Database tables created successfully")
 
 
 def seed_initial_wisdom():
@@ -334,4 +337,4 @@ def seed_initial_wisdom():
             db.session.add(wisdom)
 
     db.session.commit()
-    print(f"✓ Seeded {len(initial_wisdom)} initial wisdom entries")
+    logger.info("✓ Seeded %s initial wisdom entries", len(initial_wisdom))

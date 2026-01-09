@@ -2,11 +2,12 @@
 Advanced Section Parser for Bhrigu Predictions
 Ensures 100% structured output with AI-powered section generation
 """
-import re
+import json
 import logging
 import math
 import os
 import unicodedata
+from pathlib import Path
 from typing import Dict, List, Any, Optional
 
 # Configure logging
@@ -141,157 +142,7 @@ class SectionParser:
     }
     
     # Section header patterns for extraction
-    SECTION_HEADERS = {
-        'soul_purpose': [
-            'Soul\'s Primary Purpose',
-            'Primary Purpose',
-            'Soul Purpose',
-            'Soul\'s Purpose',
-            'Propósito del Alma'
-        ],
-        'karmic_blueprint': [
-            'Karmic Blueprint',
-            'Karmic Patterns',
-            'Plano Kármico'
-        ],
-        'evolution_stage': [
-            'Soul Evolution Stage',
-            'Evolution Stage',
-            'Spiritual Evolution',
-            'Etapa de Evolución'
-        ],
-        'life_mission': [
-            'Life Mission & Dharma',
-            'Life Mission',
-            'Dharma',
-            'Misión de Vida'
-        ],
-        'karmic_lessons': [
-            'Karmic Lessons',
-            'Lessons',
-            'Lecciones Kármicas'
-        ],
-        'soul_connections': [
-            'Soul Group Connections',
-            'Soul Connections',
-            'Soulmates',
-            'Conexiones del Alma'
-        ],
-        'timing': [
-            'Timing of Karmic Events',
-            'Timing',
-            'Key Timing',
-            'Favorable & Challenging Periods',
-            'Cronología Kármica'
-        ],
-        'spiritual_gifts': [
-            'Spiritual Gifts',
-            'Spiritual Gifts & Abilities',
-            'Gifts',
-            'Dones Espirituales'
-        ],
-        'yearly_forecast': [
-            'Year-by-Year Forecast',
-            'Yearly Forecast',
-            'Annual Forecast',
-            'Pronóstico Anual'
-        ],
-        'marriage_timing': [
-            'Marriage & Partnerships',
-            'Marriage Timing',
-            'Marriage',
-            'Momento del Matrimonio'
-        ],
-        'career_milestones': [
-            'Career Milestones',
-            'Career',
-            'Hitos de Carrera'
-        ],
-        'children_family': [
-            'Children & Family',
-            'Family Events',
-            'Children',
-            'Niños y Familia'
-        ],
-        'financial_events': [
-            'Financial Breakthroughs',
-            'Financial Events',
-            'Finances',
-            'Eventos Financieros'
-        ],
-        'health_alerts': [
-            'Health Alerts',
-            'Health',
-            'Wellness',
-            'Alertas de Salud'
-        ],
-        'spiritual_milestones': [
-            'Spiritual Milestones',
-            'Spiritual Growth',
-            'Hitos Espirituales'
-        ],
-        'relocations': [
-            'Relocations & Travel',
-            'Relocations',
-            'Travel',
-            'Reubicaciones y Viajes'
-        ],
-        'education': [
-            'Education',
-            'Education & Skill Development',
-            'Learning',
-            'Educación'
-        ],
-        'favorable_periods': [
-            'Favorable Dasha Periods',
-            'Favorable Periods',
-            'Auspicious Times',
-            'Períodos Favorables'
-        ],
-        'challenging_periods': [
-            'Challenging Dasha Periods',
-            'Challenging Periods',
-            'Difficult Times',
-            'Períodos Desafiantes'
-        ],
-        'transits': [
-            'Critical Transit Events',
-            'Transits',
-            'Planetary Transits',
-            'Tránsitos Planetarios'
-        ],
-        'age_milestones': [
-            'Specific Age Milestones',
-            'Age Milestones',
-            'Key Ages',
-            'Hitos de Edad'
-        ],
-        'daily': [
-            'Daily Forecast',
-            'Daily',
-            'Today',
-            'Pronóstico Diario'
-        ],
-        'weekly': [
-            'Weekly Forecast',
-            'Weekly',
-            'This Week',
-            'Pronóstico Semanal'
-        ],
-        'monthly': [
-            'Monthly Forecast',
-            'Monthly',
-            'This Month',
-            'Pronóstico Mensual'
-        ],
-        'yearly': [
-            'Yearly Forecast',
-            'Yearly',
-            'Annual',
-            'This Year',
-            'Pronóstico Anual'
-        ]
-    }
+    SECTION_HEADERS = _load_section_headers()
     
     def __init__(self, openai_service=None):
         """Initialize section parser with optional OpenAI service for generation"""

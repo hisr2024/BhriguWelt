@@ -3,6 +3,8 @@
  * Two-phase engine: generation + precision check using Bhrigu Samhita & Nadi Jyotisa rules.
  */
 
+import 'server-only';
+
 import type { ChartData, PredictionResult, Subcategory } from '../api/predictions';
 import { getAIMode } from '../ai-preferences';
 import { isSectionContentValid } from '../sectionParserConfig';

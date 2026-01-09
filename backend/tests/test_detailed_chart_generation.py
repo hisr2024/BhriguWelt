@@ -7,6 +7,7 @@ for verification and documentation.
 """
 
 import json
+import logging
 import os
 import sys
 from datetime import datetime
@@ -19,6 +20,9 @@ sys.path.insert(0, str(backend_path))
 from bhriguwelt.horoscope import HoroscopeRequest, build_prediction
 from bhriguwelt.api import _serialize_horoscope_report, _enhance_with_ai
 from bhriguwelt.ai_client import ai_provider_metadata
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def setup_output_dir():
@@ -152,8 +156,7 @@ def generate_chart_for_profile(profile_data, output_dir, profile_name):
                 print(f"  ⚠️  WARNING: No detailed_chart in enhanced response")
         except Exception as e:
             print(f"  ✗ AI enhancement failed: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            logger.exception("AI enhancement failed")
             enhanced_response = response
 
     # Step 5: Save output
@@ -236,8 +239,7 @@ def main():
             results.append(result)
         except Exception as e:
             print(f"\n✗ Test failed for {profile['name']}: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            logger.exception("Detailed chart test failed for profile %s", profile["name"])
             results.append({
                 "profile_name": profile["name"],
                 "description": profile["description"],
