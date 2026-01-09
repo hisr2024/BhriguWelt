@@ -16,6 +16,9 @@ from utils.logger import setup_logger, log_exception
 logger = setup_logger(__name__)
 
 
+_DEFAULT_DEPENDENCY = object()
+
+
 class BhriguPredictionsService:
     """
     Comprehensive Bhrigu Samhita and Nadi Jyotisa predictions service
@@ -23,32 +26,50 @@ class BhriguPredictionsService:
     Enhanced with structured section extraction and corpus integration
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        openai_service: Any = _DEFAULT_DEPENDENCY,
+        astrology_calculator: Any = _DEFAULT_DEPENDENCY,
+        section_parser: Any = _DEFAULT_DEPENDENCY,
+        corpus_db: Any = _DEFAULT_DEPENDENCY,
+    ):
         self.init_errors: List[Dict[str, Any]] = []
 
-        try:
-            self.openai_service = get_openai_service()
-        except Exception as exc:
-            self.openai_service = None
-            self._record_init_error('openai_service', exc)
+        if openai_service is _DEFAULT_DEPENDENCY:
+            try:
+                self.openai_service = get_openai_service()
+            except Exception as exc:
+                self.openai_service = None
+                self._record_init_error('openai_service', exc)
+        else:
+            self.openai_service = openai_service
 
-        try:
-            self.astrology_calculator = AstrologyCalculator()
-        except Exception as exc:
-            self.astrology_calculator = None
-            self._record_init_error('astrology_calculator', exc)
+        if astrology_calculator is _DEFAULT_DEPENDENCY:
+            try:
+                self.astrology_calculator = AstrologyCalculator()
+            except Exception as exc:
+                self.astrology_calculator = None
+                self._record_init_error('astrology_calculator', exc)
+        else:
+            self.astrology_calculator = astrology_calculator
 
-        try:
-            self.section_parser = get_section_parser(self.openai_service)
-        except Exception as exc:
-            self.section_parser = None
-            self._record_init_error('section_parser', exc)
+        if section_parser is _DEFAULT_DEPENDENCY:
+            try:
+                self.section_parser = get_section_parser(self.openai_service)
+            except Exception as exc:
+                self.section_parser = None
+                self._record_init_error('section_parser', exc)
+        else:
+            self.section_parser = section_parser
 
-        try:
-            self.corpus_db = get_corpus_database()
-        except Exception as exc:
-            self.corpus_db = None
-            self._record_init_error('corpus_db', exc)
+        if corpus_db is _DEFAULT_DEPENDENCY:
+            try:
+                self.corpus_db = get_corpus_database()
+            except Exception as exc:
+                self.corpus_db = None
+                self._record_init_error('corpus_db', exc)
+        else:
+            self.corpus_db = corpus_db
 
         # Bhrigu Samhita system prompts for enhanced accuracy and precision
         self.bhrigu_system_prompt = """You are a master Vedic astrologer deeply versed in the ancient texts of Bhrigu Samhita and Nadi Jyotisha. 
@@ -1344,14 +1365,25 @@ _bhrigu_service = None
 _bhrigu_service_init_error = None
 
 
-def get_bhrigu_service(force_reinit: bool = False):
+def get_bhrigu_service(
+    force_reinit: bool = False,
+    openai_service: Any = _DEFAULT_DEPENDENCY,
+    astrology_calculator: Any = _DEFAULT_DEPENDENCY,
+    section_parser: Any = _DEFAULT_DEPENDENCY,
+    corpus_db: Any = _DEFAULT_DEPENDENCY,
+):
     """Get or create Bhrigu Predictions Service singleton"""
     global _bhrigu_service, _bhrigu_service_init_error
     if force_reinit:
         _bhrigu_service = None
     if _bhrigu_service is None:
         try:
-            _bhrigu_service = BhriguPredictionsService()
+            _bhrigu_service = BhriguPredictionsService(
+                openai_service=openai_service,
+                astrology_calculator=astrology_calculator,
+                section_parser=section_parser,
+                corpus_db=corpus_db,
+            )
             _bhrigu_service_init_error = None
         except Exception as exc:
             _bhrigu_service_init_error = {
