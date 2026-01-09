@@ -126,6 +126,7 @@ const DEFAULT_COLOR = 'cyan';
 const PROFILE_HASH_PREFIX = 'profile_hash_';
 const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_';
 const SKELETON_LINES = 5;
+const STREAM_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Helper function to check if profile has required fields
 const hasRequiredProfileFields = (profile: Profile): boolean => {
@@ -217,10 +218,12 @@ export default function BhriguPredictionView({
   const [isParsing, setIsParsing] = useState(false);
   const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
   const [expandingSections, setExpandingSections] = useState<Record<string, boolean>>({});
+  const [streaming, setStreaming] = useState(false);
 
   const workerRef = useRef<Worker | null>(null);
   const workerRequestId = useRef(0);
   const expandingTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
+  const streamController = useRef<AbortController | null>(null);
 
   const searchParams = useSearchParams();
   const language = getCurrentLanguage();
@@ -246,6 +249,141 @@ export default function BhriguPredictionView({
     }
   }, [profile]);
 
+  useEffect(() => {
+    return () => {
+      streamController.current?.abort();
+    };
+  }, []);
+
+  const streamPrediction = async (
+    profileData: BirthDetails & { question?: string; force_regenerate?: boolean },
+    resolvedHash: string,
+    cacheKey: string
+  ) => {
+    const endpoint = `${STREAM_BASE_URL}/api/bhrigu-predictions/${category}/stream`;
+    const controller = new AbortController();
+    streamController.current?.abort();
+    streamController.current = controller;
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+          ...(typeof navigator !== 'undefined'
+            ? { 'X-Client-Online': navigator.onLine ? 'true' : 'false' }
+            : {})
+        },
+        body: JSON.stringify(profileData),
+        signal: controller.signal
+      });
+
+      if (!response.ok || !response.body) {
+        return false;
+      }
+
+      setStreaming(true);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      let completed = false;
+      let streamFromCache = false;
+
+      const handleEvent = (event: string, payload: any) => {
+        if (event === 'meta') {
+          if (payload?.from_cache) {
+            streamFromCache = true;
+            setFromCache(true);
+          }
+          setPrediction((prev) => ({
+            ...(prev ?? {
+              category: payload?.category ?? normalizeCategoryKey(category),
+              title: payload?.title ?? title,
+              full_analysis: ''
+            }),
+            category: payload?.category ?? prev?.category ?? normalizeCategoryKey(category),
+            title: payload?.title ?? prev?.title ?? title,
+            metadata: payload?.metadata ?? prev?.metadata
+          }));
+          return;
+        }
+
+        if (event === 'section') {
+          if (!payload?.key || !payload?.content) {
+            return;
+          }
+          setPrediction((prev) => ({
+            ...(prev ?? {
+              category: normalizeCategoryKey(category),
+              title,
+              full_analysis: ''
+            }),
+            [payload.key]: payload.content
+          }));
+          return;
+        }
+
+        if (event === 'complete') {
+          const finalPrediction = payload?.prediction as BhriguPrediction;
+          if (finalPrediction) {
+            setPrediction(finalPrediction);
+            const cachedFlag = Boolean(payload?.from_cache || finalPrediction?.metadata?.from_cache);
+            setFromCache(cachedFlag || streamFromCache);
+            localStorage.setItem(
+              cacheKey,
+              JSON.stringify({
+                profileHash: resolvedHash,
+                prediction: finalPrediction
+              })
+            );
+          }
+          completed = true;
+          return;
+        }
+
+        if (event === 'error') {
+          throw new Error(payload?.message || 'Streaming failed');
+        }
+      };
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const blocks = buffer.split('\n\n');
+        buffer = blocks.pop() ?? '';
+        for (const block of blocks) {
+          const lines = block.split('\n');
+          let eventName = 'message';
+          const dataLines: string[] = [];
+          for (const line of lines) {
+            if (line.startsWith('event:')) {
+              eventName = line.replace('event:', '').trim();
+            } else if (line.startsWith('data:')) {
+              dataLines.push(line.replace('data:', '').trim());
+            }
+          }
+          const dataText = dataLines.join('\n').trim();
+          if (!dataText) continue;
+          handleEvent(eventName, JSON.parse(dataText));
+        }
+      }
+
+      if (!completed) {
+        return false;
+      }
+
+      setLoading(false);
+      return true;
+    } catch (streamError) {
+      return false;
+    } finally {
+      setStreaming(false);
+    }
+  };
+
   const loadPrediction = async (forceRegenerate = false, profileHash?: string) => {
     if (!profile) return;
 
@@ -257,6 +395,7 @@ export default function BhriguPredictionView({
     setLoading(true);
     setError(null);
     setFromCache(false);
+    setErrorDetails(null);
 
     try {
       const resolvedHash = profileHash ?? await getProfileHash(profile);
@@ -291,6 +430,13 @@ export default function BhriguPredictionView({
         question: question || undefined,
         force_regenerate: forceRegenerate
       };
+
+      const streamSucceeded = await streamPrediction(profileData, resolvedHash, cacheKey);
+      if (streamSucceeded) {
+        return;
+      }
+
+      setPrediction(null);
 
       const response = await fetchPrediction(profileData);
       const normalized = normalizePredictionResponse<BhriguPrediction>(response);
@@ -873,7 +1019,7 @@ export default function BhriguPredictionView({
           </div>
         )}
 
-        {prediction && !loading && renderPredictionContent()}
+        {prediction && (!loading || streaming) && renderPredictionContent()}
 
         {/* Actions */}
         {prediction && (
