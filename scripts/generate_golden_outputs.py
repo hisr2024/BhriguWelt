@@ -4,6 +4,7 @@ Generate golden test outputs for all test fixtures.
 This script runs all fixtures through all engines and saves outputs.
 """
 import json
+import logging
 import sys
 from pathlib import Path
 from datetime import date
@@ -20,6 +21,8 @@ from app.services.daily_insights import DailyInsightsService
 
 FIXTURES_DIR = Path(__file__).parent.parent / "tests" / "fixtures"
 GOLDEN_DIR = Path(__file__).parent.parent / "tests" / "golden" / "generated"
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def load_birth_info(filename: str) -> BirthInfo:
@@ -223,8 +226,7 @@ def main():
 
     except Exception as e:
         print(f"\n❌ ERROR: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.exception("Golden output generation failed")
         sys.exit(1)
 
 

@@ -11,7 +11,8 @@ import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
-import { lifeEventsAPI, BirthDetails } from '@/lib/api';
+import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
+import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import Link from 'next/link';
 
 export default function LifeEventsPage() {
@@ -76,7 +77,8 @@ export default function LifeEventsPage() {
       };
 
       try {
-        const prediction = await lifeEventsAPI.getPrediction(birthDetails);
+        const response = await bhriguPredictionsAPI.getLifeEvents(birthDetails);
+        const prediction = normalizePredictionResponse<any>(response).prediction;
         
         // Parse the API response correctly
         const parsedData = {
@@ -144,15 +146,42 @@ export default function LifeEventsPage() {
     const data = prediction?.data || prediction;
     
     // Check for direct section data
-    if (data[`${section}_milestones`] && Array.isArray(data[`${section}_milestones`])) {
-      return data[`${section}_milestones`];
+    const milestones = normalizeList(data[`${section}_milestones`]);
+    if (milestones) {
+      return milestones;
     }
-    if (data[`${section}_events`] && Array.isArray(data[`${section}_events`])) {
-      return data[`${section}_events`];
+    const events = normalizeList(data[`${section}_events`]);
+    if (events) {
+      return events;
+    }
+    if (section === 'relationship') {
+      const relationshipDetails = data?.marriage_timing ?? data?.children_family;
+      const normalizedRelationship = normalizeList(relationshipDetails);
+      if (normalizedRelationship) {
+        return normalizedRelationship;
+      }
+    }
+    if (section === 'career') {
+      const normalizedCareer = normalizeList(data?.career_milestones);
+      if (normalizedCareer) {
+        return normalizedCareer;
+      }
+    }
+    if (section === 'financial') {
+      const normalizedFinance = normalizeList(data?.financial_events);
+      if (normalizedFinance) {
+        return normalizedFinance;
+      }
+    }
+    if (section === 'health') {
+      const normalizedHealth = normalizeList(data?.health_alerts);
+      if (normalizedHealth) {
+        return normalizedHealth;
+      }
     }
     
     // Try to parse from life_events text
-    const lifeEventsText = data?.life_events || '';
+    const lifeEventsText = data?.life_events || data?.full_analysis || '';
     if (typeof lifeEventsText === 'string') {
       return parseTextSection(lifeEventsText, section);
     }
@@ -185,6 +214,23 @@ export default function LifeEventsPage() {
     }
     
     return matchedLines.length > 0 ? matchedLines : [];
+  };
+
+  const normalizeList = (value: unknown): string[] | null => {
+    if (Array.isArray(value)) {
+      return value.filter((item) => typeof item === 'string' && item.trim().length > 0);
+    }
+    if (typeof value === 'string') {
+      const lines = value
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+      if (lines.length > 1) {
+        return lines;
+      }
+      return [value];
+    }
+    return null;
   };
 
   if (encryptionLoading || loading) {

@@ -4,7 +4,8 @@ Core astrology calculation endpoints with enhanced validation and error handling
 """
 from flask import Blueprint, request, jsonify
 from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
-from services.openai_service import openai_service
+from services.prediction_orchestrator import get_prediction_orchestrator
+from utils.client_status import parse_client_online
 from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
 from utils.logger import setup_logger, log_request, log_response, log_error
 from utils.validators import validate_birth_details, validate_coordinates, sanitize_input
@@ -14,6 +15,7 @@ from utils.response_formatter import (
 
 bp = Blueprint('astrology', __name__, url_prefix='/api/astrology')
 logger = setup_logger(__name__)
+orchestrator = get_prediction_orchestrator()
 
 @bp.route('/birth-chart', methods=['POST'])
 def calculate_birth_chart():
@@ -25,6 +27,7 @@ def calculate_birth_chart():
         "date_of_birth": "1990-01-15",
         "time_of_birth": "14:30",
         "place_of_birth": "New Delhi, India",
+        "timezone": "Asia/Kolkata",
         "latitude": 28.6139,  // optional
         "longitude": 77.2090  // optional
     }
@@ -56,6 +59,8 @@ def calculate_birth_chart():
                 'time_of_birth': data['time_of_birth'],
                 'place_of_birth': sanitize_input(data['place_of_birth'], max_length=200)
             }
+            if data.get('timezone'):
+                sanitized_data['timezone'] = sanitize_input(data['timezone'], max_length=64)
 
             # Validate coordinates if provided
             if 'latitude' in data and 'longitude' in data:
@@ -73,7 +78,8 @@ def calculate_birth_chart():
                 time_of_birth=sanitized_data['time_of_birth'],
                 place=sanitized_data['place_of_birth'],
                 latitude=sanitized_data.get('latitude'),
-                longitude=sanitized_data.get('longitude')
+                longitude=sanitized_data.get('longitude'),
+                timezone_override=sanitized_data.get('timezone')
             )
 
             logger.info("Birth chart calculated successfully")
@@ -90,7 +96,7 @@ def calculate_birth_chart():
 
     except ValueError as e:
         log_error(logger, e, "Birth chart calculation - ValueError")
-        return validation_error_response(str(e))
+        return validation_error_response("Invalid request data.")
     except Exception as e:
         log_error(logger, e, "Birth chart calculation")
         return server_error_response("Failed to calculate birth chart. Please try again.")
@@ -122,7 +128,9 @@ def zodiac_analysis():
             birth_chart = calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=sanitize_input(data['place_of_birth'], max_length=200)
+                place=sanitize_input(data['place_of_birth'], max_length=200),
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
@@ -145,21 +153,30 @@ def zodiac_analysis():
         5. Career and professional path
         """
 
-        analysis_result = openai_service.generate_prediction(prompt, birth_chart, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        analysis_result = orchestrator.generate_prediction(
+            category='predictions',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         logger.info("Zodiac analysis completed successfully")
         return success_response(
             data={
                 'chart': birth_chart,
-                'analysis': analysis_result['text'],
-                'partial': analysis_result['partial']
+                'analysis': analysis_result.get('prediction', analysis_result),
+                'partial': analysis_result.get('partial', False),
+                'mode': analysis_result.get('mode', mode)
             },
             message="Zodiac analysis completed successfully"
         )
 
     except ValueError as e:
         log_error(logger, e, "Zodiac analysis - ValueError")
-        return validation_error_response(str(e))
+        return validation_error_response("Invalid request data.")
     except Exception as e:
         log_error(logger, e, "Zodiac analysis")
         return server_error_response("Failed to generate zodiac analysis. Please try again.")
@@ -190,7 +207,9 @@ def planetary_positions():
             chart = calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=sanitize_input(data['place_of_birth'], max_length=200)
+                place=sanitize_input(data['place_of_birth'], max_length=200),
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
@@ -208,7 +227,7 @@ def planetary_positions():
 
     except ValueError as e:
         log_error(logger, e, "Planetary positions - ValueError")
-        return validation_error_response(str(e))
+        return validation_error_response("Invalid request data.")
     except Exception as e:
         log_error(logger, e, "Planetary positions")
         return server_error_response("Failed to calculate planetary positions. Please try again.")
@@ -253,13 +272,17 @@ def compatibility_analysis():
             chart1 = calculator.calculate_birth_chart(
                 date_of_birth=data['person1']['date_of_birth'],
                 time_of_birth=data['person1']['time_of_birth'],
-                place=sanitize_input(data['person1']['place_of_birth'], max_length=200)
+                place=sanitize_input(data['person1']['place_of_birth'], max_length=200),
+                timezone_override=sanitize_input(data['person1']['timezone'], max_length=64)
+                if data['person1'].get('timezone') else None
             )
 
             chart2 = calculator.calculate_birth_chart(
                 date_of_birth=data['person2']['date_of_birth'],
                 time_of_birth=data['person2']['time_of_birth'],
-                place=sanitize_input(data['person2']['place_of_birth'], max_length=200)
+                place=sanitize_input(data['person2']['place_of_birth'], max_length=200),
+                timezone_override=sanitize_input(data['person2']['timezone'], max_length=64)
+                if data['person2'].get('timezone') else None
             )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
@@ -284,18 +307,27 @@ def compatibility_analysis():
         8. Strengths of the relationship
         """
 
-        compatibility_result = openai_service.generate_prediction(prompt, {
-            'person1': chart1,
-            'person2': chart2
-        }, return_metadata=True)
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        compatibility_result = orchestrator.generate_prediction(
+            category='relationships',
+            chart_data={
+                'person1': chart1,
+                'person2': chart2
+            },
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
 
         logger.info("Compatibility analysis completed successfully")
         return success_response(
             data={
                 'person1_chart': chart1,
                 'person2_chart': chart2,
-                'compatibility_analysis': compatibility_result['text'],
-                'partial': compatibility_result['partial'],
+                'compatibility_analysis': compatibility_result.get('prediction', compatibility_result),
+                'partial': compatibility_result.get('partial', False),
+                'mode': compatibility_result.get('mode', mode),
                 'compatibility_factors': {
                     'sun_sign_compatibility': calculate_element_compatibility(
                         chart1.get('zodiac_sign'), chart2.get('zodiac_sign')
@@ -313,7 +345,7 @@ def compatibility_analysis():
 
     except ValueError as e:
         log_error(logger, e, "Compatibility analysis - ValueError")
-        return validation_error_response(str(e))
+        return validation_error_response("Invalid request data.")
     except Exception as e:
         log_error(logger, e, "Compatibility analysis")
         return server_error_response("Failed to generate compatibility analysis. Please try again.")
