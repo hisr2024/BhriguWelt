@@ -42,13 +42,31 @@ class CorpusLoader:
             
             if bhrigu_path.exists() and nadi_path.exists():
                 try:
-                    with open(bhrigu_path, 'r', encoding='utf-8') as f:
-                        self.bhrigu_data = yaml.safe_load(f)  # Files are YAML format
-                    with open(nadi_path, 'r', encoding='utf-8') as f:
-                        self.nadi_data = yaml.safe_load(f)
+                    # Try loading as JSON first (files are JSON despite .yml extension)
+                    try:
+                        with open(bhrigu_path, 'r', encoding='utf-8') as f:
+                            self.bhrigu_data = json.load(f)
+                        logger.info("✓ Loaded Bhrigu corpus as JSON from: %s", bhrigu_path)
+                    except json.JSONDecodeError:
+                        # Fallback to YAML if JSON fails
+                        with open(bhrigu_path, 'r', encoding='utf-8') as f:
+                            self.bhrigu_data = yaml.safe_load(f)
+                        logger.info("✓ Loaded Bhrigu corpus as YAML from: %s", bhrigu_path)
+
+                    # Try loading Nadi as JSON first
+                    try:
+                        with open(nadi_path, 'r', encoding='utf-8') as f:
+                            self.nadi_data = json.load(f)
+                        logger.info("✓ Loaded Nadi corpus as JSON from: %s", nadi_path)
+                    except json.JSONDecodeError:
+                        # Fallback to YAML if JSON fails
+                        with open(nadi_path, 'r', encoding='utf-8') as f:
+                            self.nadi_data = yaml.safe_load(f)
+                        logger.info("✓ Loaded Nadi corpus as YAML from: %s", nadi_path)
+
                     self.corpus_loaded = True
                     self.corpus_base_path = str(base_path)
-                    logger.info("✓ Loaded Bhrigu and Nadi corpus from: %s", base_path)
+                    logger.info("✓ Successfully loaded Bhrigu and Nadi corpus from: %s", base_path)
                     return
                 except Exception as e:
                     message = f"Error loading corpus from {base_path}: {e}"
