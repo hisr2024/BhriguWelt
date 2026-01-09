@@ -210,6 +210,27 @@ def handle_preflight():
     if request.method == 'OPTIONS':
         # Get the origin from the request
         origin = request.headers.get('Origin', '')
+        requested_headers = request.headers.get('Access-Control-Request-Headers', '')
+        base_headers = [
+            'Content-Type',
+            'Authorization',
+            'Accept',
+            'Origin',
+            'X-Requested-With',
+            'X-AI-Consent',
+            'X-AI-Mode',
+            'X-Client-Online',
+        ]
+        requested_header_list = [
+            header.strip()
+            for header in requested_headers.split(',')
+            if header.strip()
+        ]
+        merged_headers = base_headers.copy()
+        for header in requested_header_list:
+            if header not in merged_headers:
+                merged_headers.append(header)
+        allow_headers_value = ', '.join(merged_headers)
 
         # Create response for preflight
         response = app.make_default_options_response()
@@ -219,7 +240,7 @@ def handle_preflight():
             # CORS spec requires exact origin match when credentials are enabled
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode, X-Client-Online'
+            response.headers['Access-Control-Allow-Headers'] = allow_headers_value
             response.headers['Access-Control-Allow-Credentials'] = 'true'
             response.headers['Access-Control-Max-Age'] = '86400'
             response.headers['Vary'] = 'Origin'
@@ -232,6 +253,27 @@ def add_cors_headers(response):
     """Add CORS headers to all responses - ensures headers are present"""
     origin = request.headers.get('Origin', '')
     correlation_id = getattr(g, 'correlation_id', None)
+    requested_headers = request.headers.get('Access-Control-Request-Headers', '')
+    base_headers = [
+        'Content-Type',
+        'Authorization',
+        'Accept',
+        'Origin',
+        'X-Requested-With',
+        'X-AI-Consent',
+        'X-AI-Mode',
+        'X-Client-Online',
+    ]
+    requested_header_list = [
+        header.strip()
+        for header in requested_headers.split(',')
+        if header.strip()
+    ]
+    merged_headers = base_headers.copy()
+    for header in requested_header_list:
+        if header not in merged_headers:
+            merged_headers.append(header)
+    allow_headers_value = ', '.join(merged_headers)
 
     # Check if origin is allowed using helper function
     if is_origin_allowed(origin):
@@ -239,7 +281,7 @@ def add_cors_headers(response):
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With, X-AI-Consent, X-AI-Mode, X-Client-Online'
+        response.headers['Access-Control-Allow-Headers'] = allow_headers_value
         response.headers['Vary'] = 'Origin'
 
     if correlation_id:
