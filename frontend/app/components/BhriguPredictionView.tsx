@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
@@ -12,6 +12,7 @@ import { AccordionItem } from '@/app/components/ui/AccordionItem';
 import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { deleteItem, getAllItems, getItem, setItem, STORES } from '@/lib/storage';
+import { useBhriguPrediction } from '@/lib/hooks/useBhriguPrediction';
 
 const SECTION_LANGUAGES: Language[] = ['en', 'hi'];
 
@@ -141,6 +142,7 @@ const COLOR_CLASSES: Record<string, { border: string; hover: string; accent: str
 const DEFAULT_COLOR = 'cyan';
 const SKELETON_LINES = 5;
 const STREAM_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const LEGACY_UA_TOKENS = ['MSIE', 'Trident/', 'Edge/'];
 
 const isLegacyBrowser = (): boolean => {
   if (typeof window === 'undefined') return false;
@@ -323,9 +325,14 @@ export default function BhriguPredictionView({
   const [isParsing, setIsParsing] = useState(false);
   const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
   const [expandingSections, setExpandingSections] = useState<Record<string, boolean>>({});
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [cacheTimestamp, setCacheTimestamp] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(false);
+  const [isLowEndDevice, setIsLowEndDevice] = useState(false);
+  const [streaming, setStreaming] = useState(false);
   const { encryptionKey } = useEncryption();
+
+  const queuedRequests: QueuedPredictionRequest[] = [];
 
   const workerRef = useRef<Worker | null>(null);
   const workerRequestId = useRef(0);
@@ -341,6 +348,14 @@ export default function BhriguPredictionView({
   const predictionMode = (process.env.NEXT_PUBLIC_PREDICTION_MODE || 'full').toLowerCase();
   const allowComplexParsing = predictionMode !== 'simple';
   const simplifiedRendering = isLowEndDevice || !allowComplexParsing;
+
+  // Translation wrapper using current language
+  const t = useCallback((key: string, vars?: Record<string, any>) => {
+    const translated = tLocale(key, language);
+    if (!vars) return translated;
+    return Object.entries(vars).reduce((str, [key, value]) =>
+      str.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value)), translated);
+  }, [language]);
 
   const reportMetric = useCallback((name: string, durationMs: number, metadata?: Record<string, unknown>) => {
     if (typeof window === 'undefined') return;
@@ -374,11 +389,6 @@ export default function BhriguPredictionView({
     setIsLowEndDevice(lowEnd);
   }, []);
 
-  // Client-side fallback to parse full_analysis into sections
-  const parseFullAnalysisIntoSections = (fullAnalysis: string, cat: string): Record<string, string> => {
-    const parsedSections: Record<string, string> = {};
-    const categoryConfig = CATEGORY_SECTIONS[cat] || [];
-
   useEffect(() => {
     if (profile && encryptionKey) {
       const checkProfile = async () => {
@@ -396,39 +406,7 @@ export default function BhriguPredictionView({
         await loadPrediction({ forceRegenerate: hasChanged, profileHash: currentHash });
       };
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const blocks = buffer.split('\n\n');
-        buffer = blocks.pop() ?? '';
-        for (const block of blocks) {
-          const lines = block.split('\n');
-          let eventName = 'message';
-          const dataLines: string[] = [];
-          for (const line of lines) {
-            if (line.startsWith('event:')) {
-              eventName = line.replace('event:', '').trim();
-            } else if (line.startsWith('data:')) {
-              dataLines.push(line.replace('data:', '').trim());
-            }
-          }
-          const dataText = dataLines.join('\n').trim();
-          if (!dataText) continue;
-          handleEvent(eventName, JSON.parse(dataText));
-        }
-      }
-
-      if (!completed) {
-        return false;
-      }
-
-      setLoading(false);
-      return true;
-    } catch (streamError) {
-      return false;
-    } finally {
-      setStreaming(false);
+      void checkProfile();
     }
   }, [profile, encryptionKey]);
 
@@ -440,162 +418,21 @@ export default function BhriguPredictionView({
       setIsOffline(true);
     };
 
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
+  }, []);
+
   const handleLanguageChange = (value: Language) => {
     setLanguage(value);
     setLanguagePreference(value);
   };
 
-  const loadPrediction = async (forceRegenerate = false, profileHash?: string) => {
-    if (!profile) return;
-    if (!encryptionKey) return;
-
-    const normalizedTitles = new Map<string, string>();
-    for (const section of categoryConfig) {
-      const sectionTitle = tLocale(section.titleKey, 'en');
-      normalizedTitles.set(normalizeHeading(sectionTitle), section.key);
-    }
-
-    if (requestInFlightRef.current && !options.skipQueue) {
-      const queuedQuestion = options.questionOverride ?? question;
-      enqueueRequest({
-        question: queuedQuestion,
-        forceRegenerate: options.forceRegenerate ?? false,
-      });
-      return;
-    }
-
-    requestInFlightRef.current = true;
-    setLoading(true);
-    setError(null);
-    setFromCache(false);
-    setCacheTimestamp(null);
-
-    try {
-      const resolvedHash = profileHash ?? await getProfileHash(profile);
-      const cacheKey = getPredictionCacheKey(profile, category, question, language);
-      const cached = localStorage.getItem(cacheKey);
-
-      if (!forceRegenerate && cached) {
-        try {
-          const parsed = JSON.parse(cached) as { profileHash: string; prediction: any };
-          if (parsed.profileHash === resolvedHash) {
-            setPrediction(parsed.prediction);
-            setFromCache(true);
-            setLoading(false);
-            return;
-          }
-          localStorage.removeItem(cacheKey);
-        } catch (parseError) {
-          localStorage.removeItem(cacheKey);
-        }
-        await deleteItem(STORES.SETTINGS, cacheKey);
-      }
-
-      if (offlineMode) {
-        if (cached?.prediction) {
-          setPrediction(cached.prediction);
-          setFromCache(true);
-          setCacheTimestamp(cached.cachedAt ?? null);
-          setLoading(false);
-          return;
-        }
-        setError('You are offline and no cached prediction is available.');
-        setErrorDetails({
-          code: 'OFFLINE',
-          action: 'Reconnect to fetch a new prediction or try again later.',
-          isNetwork: true,
-          message: 'No cached prediction is available while offline.',
-        });
-        return;
-      }
-
-      if (forceRegenerate) {
-        await deleteItem(STORES.SETTINGS, cacheKey);
-      }
-
-      const profileData = {
-        date_of_birth: profile.dateOfBirth,
-        time_of_birth:  profile.timeOfBirth,
-        place_of_birth:  profile.placeOfBirth,
-        latitude: profile.latitude,
-        longitude: profile.longitude,
-        question: question || undefined,
-        language,
-        force_regenerate: forceRegenerate
-      };
-
-      const streamSucceeded = await streamPrediction(profileData, resolvedHash, cacheKey);
-      if (streamSucceeded) {
-        return;
-      }
-
-      setPrediction(null);
-
-      const response = await fetchPrediction(profileData);
-      const normalized = normalizePredictionResponse<BhriguPrediction>(response);
-
-      if (normalized.status === 'success') {
-        setPrediction(normalized.prediction);
-        source = 'api';
-        setFromCache(Boolean(
-          normalized.metadata?.from_cache ||
-          normalized.metadata?.source === 'cache' ||
-          normalized.message?.toLowerCase()?.includes('cache')
-        ));
-        await setItem(
-          STORES.SETTINGS,
-          cacheKey,
-          {
-            profileHash: resolvedHash,
-            prediction: normalized.prediction,
-            cachedAt: new Date().toISOString(),
-            question: question.trim() || null,
-          },
-          encryptionKey
-        );
-      } else {
-        setError(normalized.message || 'Failed to generate prediction');
-      }
-    } catch (err: any) {
-      const status = err?.response?.status;
-      const apiMessage = err?.response?.data?.message || err?.response?.data?.error;
-      const message = apiMessage || err?.message || 'An error occurred';
-      const isNetwork = !err?.response;
-      const code = status ? `HTTP ${status}` : err?.code || err?.name;
-      const action = isNetwork
-        ? 'Check your connection, then retry or use cached data.'
-        : status && status >= 500
-          ? 'Server hiccup detected. Retry soon or use cached data if available.'
-          : 'Review your inputs and retry, or use cached data if available.';
-
-      setError(message);
-      setErrorDetails({
-        code,
-        action,
-        isNetwork,
-        message
-      });
-      if (typeof navigator !== 'undefined') {
-        setIsOffline(!navigator.onLine);
-      }
-    } finally {
-      const nextRequest = dequeueRequest();
-      if (nextRequest) {
-        void loadPrediction({
-          forceRegenerate: nextRequest.forceRegenerate,
-          questionOverride: nextRequest.question,
-          skipQueue: true,
-        });
-        return;
-      }
-      requestInFlightRef.current = false;
-      setLoading(false);
-    }
-  };
-
-    const lines = fullAnalysis.split('\n');
-    let currentKey: string | undefined;
-    let currentLines: string[] = [];
 
   const formatQueuedQuestion = (value: string) => {
     const trimmed = value.trim();
@@ -613,7 +450,7 @@ export default function BhriguPredictionView({
     
     for (const section of categoryConfig) {
       for (const title of section.titleVariants) {
-        const escapedTitle = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const escapedTitle = title.replace(/[.*+?^${}()|\\[\]]/g, '\\$&');
         
         const patterns = [
           new RegExp(`##\\s*(?:\\d+\\.? \\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
@@ -640,11 +477,15 @@ export default function BhriguPredictionView({
       }
     }
 
-    flushSection();
     return parsedSections;
   };
 
+  const getCategorySections = (normalizedCategory: string): CategorySectionConfig[] => {
+    return CATEGORY_SECTIONS[normalizedCategory] || [];
+  };
+
   useEffect(() => {
+    const predictionData = prediction;
     if (!predictionData?.full_analysis) {
       setParsedFromFullAnalysis({});
       setIsParsing(false);
@@ -753,7 +594,45 @@ export default function BhriguPredictionView({
     );
   };
 
+  const setExpandedSection = (sectionId: string, isOpen: boolean) => {
+    setExpandedSections(prev => ({ ...prev, [sectionId]: isOpen }));
+  };
+
+  const handleGoToProfile = () => {
+    window.location.href = '/profile';
+  };
+
+  const handleDownload = () => {
+    if (!prediction) return;
+    const data = JSON.stringify(prediction, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bhrigu-prediction-${category}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleShare = async () => {
+    if (navigator.share && prediction?.full_analysis) {
+      await navigator.share({
+        title: title,
+        text: prediction.full_analysis.substring(0, 100) + '...',
+      });
+    }
+  };
+
+  const handleToggleDebugMode = () => {
+    setDebugMode(!debugMode);
+  };
+
+  const handleQuestionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuestion(e.target.value);
+  };
+
   const renderPredictionContent = () => {
+    const predictionData = prediction;
     if (!predictionData) return null;
 
     // Get the sections configuration for this category
@@ -762,8 +641,7 @@ export default function BhriguPredictionView({
       typeof categoryValue === 'string' ? categoryValue : category
     );
      const sections = CATEGORY_SECTIONS[normalizedCategory] || [];
-    const availability = getSectionAvailability(prediction, normalizedCategory);
-    const shouldShowPartialBanner = availability.availableKeys.length > 0 && availability.missingKeys.length > 0;
+    const shouldShowPartialBanner = false;
 
     // First, try to get sections from the API response
     let availableSections = sections.filter(section => {
@@ -796,36 +674,9 @@ export default function BhriguPredictionView({
       if (typeof directContent === 'string') {
         return directContent;
       }
+      return parsedFromFullAnalysis[key] || '';
     };
 
-    const SectionRow = ({ index, style }: { index: number; style: React.CSSProperties }) => {
-      const section = availableSections[index];
-      const sectionId = `${normalizedCategory}:${section.key}`;
-      const isOpen = Boolean(expandedSections[sectionId]);
-      const content = getSectionContent(section.key);
-      const rowRef = useRef<HTMLDivElement | null>(null);
-
-      useLayoutEffect(() => {
-        if (!rowRef.current) return;
-        const height = rowRef.current.getBoundingClientRect().height;
-        setItemSize(index, height + 16);
-      }, [index, content, isOpen]);
-
-      return (
-        <div style={style}>
-          <div ref={rowRef} className="pb-4">
-            {renderSection(
-              section.key,
-              tLocale(section.titleKey, language),
-              content,
-              section.color,
-              isOpen,
-              (next) => setExpandedSection(sectionId, next)
-            )}
-          </div>
-        </div>
-      );
-    };
 
     if (simplifiedRendering) {
       return (
@@ -863,30 +714,6 @@ export default function BhriguPredictionView({
 
     return (
       <div className="space-y-6">
-        {shouldShowPartialBanner && (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
-            <p className="text-amber-300 text-sm font-semibold uppercase tracking-wide">
-              Partial insights available
-            </p>
-            <p className="text-gray-300 text-sm mt-1">
-              {partialCacheUsed
-                ? 'Showing cached sections while we continue fetching the remaining insights.'
-                : 'Some sections are still loading. Retry to complete the reading.'}
-            </p>
-            <p className="text-gray-400 text-xs mt-2">
-              {availability.availableKeys.length} of {availability.total} sections ready.
-            </p>
-            <div className="mt-3">
-              <button
-                onClick={() => loadPrediction(true)}
-                className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 px-3 py-1 text-xs text-amber-200 hover:border-amber-400 hover:text-amber-100"
-              >
-                <RefreshCw className="w-3 h-3" />
-                Fetch remaining sections
-              </button>
-            </div>
-          </div>
-        )}
         {/* Banner for client-side parsed sections */}
         {parsedFromFullAnalysisActive && (
           <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
@@ -922,17 +749,19 @@ export default function BhriguPredictionView({
             </div>
             
             <Accordion className="grid grid-cols-1 gap-4">
-              <VariableSizeList
-                ref={listRef}
-                height={sectionListHeight}
-                itemCount={availableSections.length}
-                itemSize={getItemSize}
-                width="100%"
-                overscanCount={2}
-                className="pr-2"
-              >
-                {SectionRow}
-              </VariableSizeList>
+              {availableSections.map((section) => {
+                const sectionId = `${normalizedCategory}:${section.key}`;
+                const isOpen = Boolean(expandedSections[sectionId]);
+                const content = getSectionContent(section.key);
+                return renderSection(
+                  section.key,
+                  tLocale(section.titleKey, language),
+                  content,
+                  section.color,
+                  isOpen,
+                  (next) => setExpandedSection(sectionId, next)
+                );
+              })}
             </Accordion>
           </div>
         )}
