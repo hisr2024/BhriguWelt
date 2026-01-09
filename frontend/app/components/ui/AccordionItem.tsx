@@ -11,6 +11,7 @@ type AccordionItemProps = {
   className?: string;
   triggerClassName?: string;
   panelClassName?: string;
+  lazyRender?: boolean;
 };
 
 export const AccordionItem = ({
@@ -20,13 +21,15 @@ export const AccordionItem = ({
   defaultOpen = false,
   className,
   triggerClassName,
-  panelClassName
+  panelClassName,
+  lazyRender = false
 }: AccordionItemProps) => {
   const generatedId = useId();
   const baseId = id ?? generatedId;
   const triggerId = `${baseId}-trigger`;
   const panelId = `${baseId}-panel`;
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const shouldRenderChildren = !lazyRender || isOpen;
 
   return (
     <div className={className} data-accordion-item>
@@ -54,7 +57,7 @@ export const AccordionItem = ({
         hidden={!isOpen}
         className={`${panelClassName ?? ''} ${isOpen ? 'block' : 'hidden'}`}
       >
-        {children}
+        {shouldRenderChildren ? children : null}
       </div>
     </div>
   );
