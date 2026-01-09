@@ -1,6 +1,7 @@
 """
 Centralized logging configuration for BhriguWelt backend
 """
+import json
 import logging
 import re
 import sys
@@ -79,12 +80,27 @@ def setup_logger(name: str, level: str = 'INFO') -> logging.Logger:
 
 def log_request(logger: logging.Logger, request_data: dict, endpoint: str):
     """Log incoming API request"""
-    logger.info(f"API Request to {endpoint}: {request_data}")
+    request_id = _get_request_id()
+    payload = {
+        "event": "api_request",
+        "endpoint": endpoint,
+        "request_id": request_id,
+        "request": _redact_data(request_data),
+    }
+    logger.info(json.dumps(payload, default=str))
 
 
 def log_response(logger: logging.Logger, response_data: dict, endpoint: str, status_code: int):
     """Log API response"""
-    logger.info(f"API Response from {endpoint} (status {status_code}): {response_data}")
+    request_id = _get_request_id()
+    payload = {
+        "event": "api_response",
+        "endpoint": endpoint,
+        "status_code": status_code,
+        "request_id": request_id,
+        "response": _redact_data(response_data),
+    }
+    logger.info(json.dumps(payload, default=str))
 
 
 def log_error(logger: logging.Logger, error: Exception, context: str = None):
@@ -108,6 +124,19 @@ def _redact_pii(value: str) -> str:
     for pattern, replacement in patterns:
         redacted = re.sub(pattern, replacement, redacted)
     return redacted
+
+
+def _redact_data(data):
+    """Recursively redact PII from structured data."""
+    if isinstance(data, dict):
+        return {key: _redact_data(value) for key, value in data.items()}
+    if isinstance(data, list):
+        return [_redact_data(item) for item in data]
+    if isinstance(data, tuple):
+        return tuple(_redact_data(item) for item in data)
+    if isinstance(data, str):
+        return _redact_pii(data)
+    return data
 
 
 def _get_request_id() -> str:
