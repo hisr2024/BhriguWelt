@@ -8,7 +8,7 @@ from datetime import datetime
 
 from services.astrology_calculator import AstrologyCalculator
 from services.openai_service import get_openai_service
-from services.bhrigu_offline_wisdom import get_bhrigu_offline_wisdom
+from services.bhrigu_offline_wisdom import get_offline_wisdom_generator
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class MatchmakingService:
     def __init__(self):
         self.astrology_calculator = AstrologyCalculator()
         self.openai_service = get_openai_service()
-        self.offline_wisdom = get_bhrigu_offline_wisdom()
+        self.offline_wisdom = get_offline_wisdom_generator()
         
     def calculate_compatibility(self, 
                                person1_data: Dict[str, Any],

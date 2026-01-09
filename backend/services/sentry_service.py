@@ -5,8 +5,14 @@ Sentry Error Tracking for Backend
 import os
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
-from sentry_sdk.integrations.celery import CeleryIntegration
 from utils.logger import setup_logger
+
+# Conditionally import CeleryIntegration only if celery is available
+try:
+    from sentry_sdk.integrations.celery import CeleryIntegration
+    CELERY_AVAILABLE = True
+except (ImportError, sentry_sdk.integrations.DidNotEnable):
+    CELERY_AVAILABLE = False
 
 logger = setup_logger(__name__)
 
@@ -31,16 +37,17 @@ def init_sentry(app=None):
     release = os.getenv('APP_VERSION', 'development')
 
     # Initialize Sentry
+    integrations = [FlaskIntegration()]
+    if CELERY_AVAILABLE:
+        integrations.append(CeleryIntegration())
+
     sentry_sdk.init(
         dsn=sentry_dsn,
         environment=environment,
         release=release,
 
         # Integrations
-        integrations=[
-            FlaskIntegration(),
-            CeleryIntegration(),
-        ],
+        integrations=integrations,
 
         # Performance monitoring
         traces_sample_rate=0.1 if environment == 'production' else 1.0,
