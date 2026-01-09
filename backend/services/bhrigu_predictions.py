@@ -3,7 +3,6 @@ Bhrigu Samhita and Nadi Jyotisa Predictions Service
 Comprehensive predictions based on ancient Vedic wisdom
 """
 import os
-import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import json
@@ -12,9 +11,9 @@ from services.openai_service import get_openai_service
 from services.astrology_calculator import AstrologyCalculator
 from services.section_parser import get_section_parser
 from services.bhrigu_corpus_db import get_corpus_database
+from utils.logger import setup_logger, log_exception
 
-# Configure logging
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 
 class BhriguPredictionsService:
@@ -804,6 +803,20 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
             ]
         }
 
+    @staticmethod
+    def _clean_value(value: Any) -> Any:
+        if value is None:
+            return "Unknown"
+        if isinstance(value, str):
+            cleaned = value.strip()
+            return cleaned if cleaned else "Unknown"
+        return value
+
+    def _safe_get(self, data: Optional[Dict[str, Any]], key: str) -> Any:
+        if not data:
+            return "Unknown"
+        return self._clean_value(data.get(key))
+
     def generate_comprehensive_prediction(self, birth_data: Dict[str, Any],
                                          category: str,
                                          question: Optional[str] = None) -> Dict[str, Any]:
@@ -834,7 +847,7 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
                     )
                     birth_data.update(chart_data)
                 except Exception as e:
-                    print(f"Error calculating chart: {e}")
+                    log_exception(logger, e, context="bhrigu_predictions.calculate_birth_chart")
             else:
                 logger.warning("Astrology calculator unavailable; proceeding without chart enrichment.")
 
@@ -1114,7 +1127,15 @@ Return only the section body (no header). Use at least 200 words with concrete a
         if fallback:
             return fallback
 
-        current_age = birth_data.get('age', self._calculate_age(birth_data.get('date_of_birth')))
+        current_age_value = birth_data.get('age')
+        if current_age_value is None:
+            current_age_value = self._calculate_age(birth_data.get('date_of_birth'))
+        if isinstance(current_age_value, (int, float)) and current_age_value > 0:
+            current_age_display = current_age_value
+            age_next = current_age_value + 1
+        else:
+            current_age_display = "Unknown"
+            age_next = "Unknown"
 
         if birth_data.get('age') is None:
             birth_data['age'] = current_age
@@ -1290,10 +1311,10 @@ Return only the section body (no header). Use at least 200 words with concrete a
     def _generate_metadata(self, birth_data: Dict[str, Any], category: Optional[str] = None) -> Dict[str, Any]:
         """Generate metadata for the prediction"""
         metadata = {
-            'zodiac_sign': birth_data.get('zodiac_sign'),
-            'nakshatra': birth_data.get('nakshatra'),
-            'moon_sign': birth_data.get('moon_sign'),
-            'ascendant': birth_data.get('ascendant'),
+            'zodiac_sign': self._safe_get(birth_data, 'zodiac_sign'),
+            'nakshatra': self._safe_get(birth_data, 'nakshatra'),
+            'moon_sign': self._safe_get(birth_data, 'moon_sign'),
+            'ascendant': self._safe_get(birth_data, 'ascendant'),
             'ai_model': 'gpt-4',
             'corpus_available': self.openai_service.corpus_available,
             'tradition': 'Bhrigu Samhita & Nadi Jyotisa'

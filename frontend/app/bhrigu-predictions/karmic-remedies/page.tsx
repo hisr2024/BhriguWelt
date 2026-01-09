@@ -7,9 +7,11 @@ import PredictionErrorBoundary from '@/app/components/PredictionErrorBoundary';
 import { PredictionViewSkeleton } from '@/app/components/LoadingStates';
 import { bhriguPredictionsAPI } from '@/lib/api';
 import { useEncryptedStorage } from '@/lib/hooks/useEncryptedStorage';
+import { useI18n } from '@/lib/context/I18nContext';
 import type { Profile } from '@/lib/types';
 
 export default function KarmicRemediesPage() {
+  const { t } = useI18n();
   const { getAllProfiles } = useEncryptedStorage();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileReady, setProfileReady] = useState(false);
@@ -39,8 +41,8 @@ export default function KarmicRemediesPage() {
     <PredictionErrorBoundary context="karmic-remedies">
       <BhriguPredictionView
         category="karmic-remedies"
-        title="Karmic Remedies"
-        description="Personalized spiritual practices and remedies for balance"
+        title={t('bhriguPages.karmicRemedies.title')}
+        description={t('bhriguPages.karmicRemedies.description')}
         icon={<Sparkles className="w-10 h-10 text-pink-400" />}
         fetchPrediction={bhriguPredictionsAPI.getKarmicRemedies}
         profile={profile}

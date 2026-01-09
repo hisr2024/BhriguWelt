@@ -6,8 +6,10 @@ from flask import Blueprint, request
 from services.astrology_calculator import astrology_calculator
 from services.openai_service import openai_service
 from utils.response_formatter import prediction_response, prediction_error_response
+from utils.validators import sanitize_input
 
 bp = Blueprint('future_lives', __name__, url_prefix='/api/future-lives')
+logger = setup_logger(__name__)
 
 @bp.route('/prediction', methods=['POST'])
 def future_lives_prediction():
@@ -49,7 +51,11 @@ def future_lives_prediction():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate future lives prediction: {str(e)}", 500)
+        log_exception(logger, e, context="future_lives.prediction")
+        return prediction_error_response(
+            "Failed to generate future lives prediction. Please try again later.",
+            500
+        )
 
 @bp.route('/evolution-path', methods=['POST'])
 def evolution_path():
@@ -95,7 +101,11 @@ def evolution_path():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate evolution path: {str(e)}", 500)
+        log_exception(logger, e, context="future_lives.evolution_path")
+        return prediction_error_response(
+            "Failed to generate evolution path. Please try again later.",
+            500
+        )
 
 @bp.route('/moksha-timeline', methods=['POST'])
 def moksha_timeline():
@@ -141,7 +151,11 @@ def moksha_timeline():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate moksha timeline: {str(e)}", 500)
+        log_exception(logger, e, context="future_lives.moksha_timeline")
+        return prediction_error_response(
+            "Failed to generate moksha timeline. Please try again later.",
+            500
+        )
 
 @bp.route('/future-missions', methods=['POST'])
 def future_missions():
@@ -187,7 +201,11 @@ def future_missions():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate future missions: {str(e)}", 500)
+        log_exception(logger, e, context="future_lives.future_missions")
+        return prediction_error_response(
+            "Failed to generate future missions. Please try again later.",
+            500
+        )
 
 @bp.route('/soul-advancement', methods=['POST'])
 def soul_advancement():
@@ -197,7 +215,9 @@ def soul_advancement():
         birth_chart = astrology_calculator.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
+            place=data['place_of_birth'],
+            timezone_override=sanitize_input(data['timezone'], max_length=64)
+            if data.get('timezone') else None
         )
 
         prompt = f"""
@@ -235,4 +255,8 @@ def soul_advancement():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate soul advancement: {str(e)}", 500)
+        log_exception(logger, e, context="future_lives.soul_advancement")
+        return prediction_error_response(
+            "Failed to generate soul advancement. Please try again later.",
+            500
+        )
