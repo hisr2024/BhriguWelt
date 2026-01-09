@@ -2,17 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sun, Star, Heart, Briefcase, Zap, ArrowLeft, TrendingUp, Loader2 } from 'lucide-react';
+import { Star, Heart, Briefcase, Zap, ArrowLeft, TrendingUp, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AnimatedBackground, { FloatingElements } from '../components/AnimatedBackground';
 import GenZCard from '../components/GenZCard';
-import GenZBadge, { StatusBadge } from '../components/GenZBadge';
+import GenZBadge from '../components/GenZBadge';
 import GenZButton from '../components/GenZButton';
 import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
-import { predictionsAPI, BirthDetails } from '@/lib/api';
+import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
+import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 
 export default function DailyInsightsPage() {
   const [insights, setInsights] = useState<any>(null);
@@ -68,7 +69,8 @@ export default function DailyInsightsPage() {
 
       // Call API to get daily prediction
       try {
-        const prediction = await predictionsAPI.getDaily(birthDetails);
+        const response = await bhriguPredictionsAPI.getPredictions(birthDetails);
+        const prediction = normalizePredictionResponse<any>(response).prediction;
         setInsights(parseDailyPrediction(prediction));
       } catch (apiError) {
         console.error('API error, using offline mode:', apiError);
@@ -85,12 +87,12 @@ export default function DailyInsightsPage() {
 
   const parseDailyPrediction = (prediction: any) => {
     // Parse the prediction text into categories
-    const text = prediction?.data?.prediction || prediction?.prediction || '';
+    const text = prediction?.daily || prediction?.prediction || prediction?.full_analysis || '';
     
     // Try to extract overall energy from response
-    const overallEnergy = prediction?.data?.overall_energy || 'High';
-    const overallRating = prediction?.data?.overall_rating || 5;
-    const overallMessage = prediction?.data?.overall_message || 
+    const overallEnergy = prediction?.overall_energy || 'High';
+    const overallRating = prediction?.overall_rating || 5;
+    const overallMessage = prediction?.overall_message || 
       'Today brings powerful cosmic energy for manifestation and growth.';
     
     return {
@@ -129,7 +131,7 @@ export default function DailyInsightsPage() {
           message: extractSection(text, ['finance', 'money', 'financial']) || 'Good time for financial planning.',
         },
       ],
-      luckyElements: prediction?.data?.lucky_elements || {
+      luckyElements: prediction?.lucky_elements || {
         number: 7,
         color: 'Electric Blue',
         gemstone: '💎',

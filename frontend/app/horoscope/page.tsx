@@ -12,7 +12,8 @@ import GenZButton from '../components/GenZButton';
 import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
-import { predictionsAPI, BirthDetails } from '@/lib/api';
+import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
+import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 
 export default function HoroscopePage() {
   const [predictions, setPredictions] = useState<any[]>([]);
@@ -63,37 +64,33 @@ export default function HoroscopePage() {
 
       // Load all four predictions in parallel
       try {
-        const [daily, weekly, monthly, yearly] = await Promise.all([
-          predictionsAPI.getDaily(birthDetails),
-          predictionsAPI.getWeekly(birthDetails),
-          predictionsAPI.getMonthly(birthDetails),
-          predictionsAPI.getYearly(birthDetails),
-        ]);
+        const response = await bhriguPredictionsAPI.getPredictions(birthDetails);
+        const prediction = normalizePredictionResponse<any>(response).prediction;
 
         setPredictions([
           { 
             period: 'Today', 
             icon: <Sun className="w-6 h-6" />, 
             color: 'from-genz-cyber-yellow to-genz-sunset-orange', 
-            text: extractPredictionText(daily) 
+            text: extractPredictionText(prediction?.daily) 
           },
           { 
             period: 'This Week', 
             icon: <Moon className="w-6 h-6" />, 
             color: 'from-genz-purple-haze to-genz-lavender-dream', 
-            text: extractPredictionText(weekly) 
+            text: extractPredictionText(prediction?.weekly) 
           },
           { 
             period: 'This Month', 
             icon: <Star className="w-6 h-6" />, 
             color: 'from-genz-electric-blue to-genz-mint-fresh', 
-            text: extractPredictionText(monthly) 
+            text: extractPredictionText(prediction?.monthly) 
           },
           { 
             period: 'This Year', 
             icon: <Zap className="w-6 h-6" />, 
             color: 'from-genz-hot-pink to-genz-coral-pop', 
-            text: extractPredictionText(yearly) 
+            text: extractPredictionText(prediction?.yearly) 
           },
         ]);
       } catch (apiError) {
@@ -108,13 +105,9 @@ export default function HoroscopePage() {
     }
   };
 
-  const extractPredictionText = (prediction: any): string => {
-    const text = prediction?.data?.prediction || 
-                 prediction?.data?.weekly_prediction || 
-                 prediction?.data?.monthly_prediction ||
-                 prediction?.data?.yearly_prediction ||
-                 prediction?.prediction || '';
-    
+  const extractPredictionText = (prediction: string | undefined): string => {
+    const text = prediction ?? '';
+
     // Get first 150 characters
     if (text.length > 150) {
       return text.substring(0, 150) + '...';

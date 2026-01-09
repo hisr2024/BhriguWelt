@@ -6,6 +6,9 @@ import os
 import json
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+from utils.logger import setup_logger, log_exception
+
+logger = setup_logger(__name__)
 
 class BhriguOfflineWisdomGenerator:
     """
@@ -80,7 +83,7 @@ class BhriguOfflineWisdomGenerator:
             except Exception as e:
                 message = f"Could not load Bhrigu corpus: {e}"
                 self.initialization_errors.append(message)
-                print(f"Warning: {message}")
+                log_exception(logger, e, context=message)
 
         # Load Nadi Jyotisha principles
         nadi_path = os.path.join(data_dir, 'nadi_jyotisha_principles.yml')
@@ -91,7 +94,7 @@ class BhriguOfflineWisdomGenerator:
             except Exception as e:
                 message = f"Could not load Nadi corpus: {e}"
                 self.initialization_errors.append(message)
-                print(f"Warning: {message}")
+                log_exception(logger, e, context=message)
 
         # Load soul journey model
         journey_path = os.path.join(data_dir, 'bhrigu_karmic_soul_journey_model.json')
@@ -102,7 +105,7 @@ class BhriguOfflineWisdomGenerator:
             except Exception as e:
                 message = f"Could not load soul journey model: {e}"
                 self.initialization_errors.append(message)
-                print(f"Warning: {message}")
+                log_exception(logger, e, context=message)
 
     def _get_zodiac_info(self, zodiac: str) -> Dict[str, str]:
         """Get zodiac characteristics"""

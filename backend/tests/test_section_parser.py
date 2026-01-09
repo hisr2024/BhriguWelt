@@ -2,6 +2,9 @@
 Unit tests for SectionParser
 Tests section extraction, validation, and generation
 """
+import json
+from pathlib import Path
+
 import pytest
 from services.section_parser import SectionParser, get_section_parser
 
@@ -436,6 +439,37 @@ Financial breakthroughs and wealth accumulation timing.
         assert 'marriage_timing' in sections
         assert len(sections['yearly_forecast']) > 50
         assert len(sections['marriage_timing']) > 50
+
+
+class TestSectionParserRealSamples:
+    """Test parsing against real AI samples stored in test_outputs."""
+
+    @pytest.fixture
+    def parser(self):
+        return SectionParser()
+
+    def test_karmic_journey_real_sample_numbered_headers(self, parser):
+        """Ensure numbered markdown headers are parsed from real AI output."""
+        sample_path = Path(__file__).resolve().parents[1] / "test_outputs" / "karmic_journey_test_result.json"
+        data = json.loads(sample_path.read_text(encoding="utf-8"))
+        full_analysis = data["full_analysis"]
+
+        result = parser.extract_section_content(full_analysis, "soul_purpose")
+
+        assert "ashwini" in result.lower()
+        assert "karmic blueprint" not in result.lower()
+
+    def test_predictions_real_sample_header_variants(self, parser):
+        """Validate extraction on AI output that mixes multiple headers."""
+        sample_path = Path(__file__).resolve().parents[1] / "test_outputs" / "predictions_test_result.json"
+        data = json.loads(sample_path.read_text(encoding="utf-8"))
+        text = data["yearly"]
+
+        daily = parser.extract_section_content(text, "daily")
+        weekly = parser.extract_section_content(text, "weekly")
+
+        assert "today" in daily.lower()
+        assert "weekly" in weekly.lower() or "this week" in weekly.lower()
 
 
 class TestSectionParserValidationAndLogging:
