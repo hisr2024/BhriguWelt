@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -259,7 +259,7 @@ export default function BhriguPredictionView({
   const [isParsing, setIsParsing] = useState(false);
   const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
   const [expandingSections, setExpandingSections] = useState<Record<string, boolean>>({});
-  const [streaming, setStreaming] = useState(false);
+  const [isLowEndDevice, setIsLowEndDevice] = useState(false);
 
   const workerRef = useRef<Worker | null>(null);
   const workerRequestId = useRef(0);
@@ -269,6 +269,41 @@ export default function BhriguPredictionView({
   const { debugUI } = useFeatureFlags();
   const searchParams = useSearchParams();
   const debugAllowed = searchParams?.get('debug') === 'true';
+  const predictionMode = (process.env.NEXT_PUBLIC_PREDICTION_MODE || 'full').toLowerCase();
+  const allowComplexParsing = predictionMode !== 'simple';
+  const simplifiedRendering = isLowEndDevice || !allowComplexParsing;
+
+  const reportMetric = useCallback((name: string, durationMs: number, metadata?: Record<string, unknown>) => {
+    if (typeof window === 'undefined') return;
+    const payload = {
+      name,
+      durationMs: Math.round(durationMs),
+      category,
+      ...metadata,
+    };
+    window.dispatchEvent(new CustomEvent('prediction:metric', { detail: payload }));
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.info('[prediction-metric]', payload);
+    }
+  }, [category]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const navigatorAny = navigator as Navigator & {
+      deviceMemory?: number;
+      connection?: { effectiveType?: string };
+    };
+    const deviceMemory = navigatorAny.deviceMemory;
+    const cores = navigator.hardwareConcurrency;
+    const effectiveType = navigatorAny.connection?.effectiveType;
+    const lowEnd =
+      (deviceMemory !== undefined && deviceMemory <= 4) ||
+      (cores !== undefined && cores <= 4) ||
+      effectiveType === '2g' ||
+      effectiveType === 'slow-2g';
+    setIsLowEndDevice(lowEnd);
+  }, []);
 
   // Client-side fallback to parse full_analysis into sections
   const parseFullAnalysisIntoSections = (fullAnalysis: string, cat: string): Record<string, string> => {
@@ -419,6 +454,8 @@ export default function BhriguPredictionView({
       normalizedTitles.set(normalizeHeading(sectionTitle), section.key);
     }
 
+    const startTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    let source: 'cache' | 'api' | 'none' = 'none';
     setLoading(true);
     setError(null);
     setFromCache(false);
@@ -435,6 +472,7 @@ export default function BhriguPredictionView({
           if (parsed.profileHash === resolvedHash) {
             setPrediction(parsed.prediction);
             setFromCache(true);
+            source = 'cache';
             setLoading(false);
             return;
           }
@@ -472,6 +510,7 @@ export default function BhriguPredictionView({
 
       if (normalized.status === 'success') {
         setPrediction(normalized.prediction);
+        source = 'api';
         setFromCache(Boolean(
           normalized.metadata?.from_cache ||
           normalized.metadata?.source === 'cache' ||
@@ -507,6 +546,10 @@ export default function BhriguPredictionView({
         message
       });
     } finally {
+      reportMetric('prediction.load', (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startTime, {
+        source,
+        simplifiedRendering,
+      });
       setLoading(false);
     }
   };
@@ -551,6 +594,12 @@ export default function BhriguPredictionView({
       return;
     }
 
+    if (simplifiedRendering) {
+      setParsedFromFullAnalysis({});
+      setIsParsing(false);
+      return;
+    }
+
     const categoryValue = prediction?.metadata?.category ?? prediction?.category ?? category;
     const normalizedCategory = normalizeCategoryKey(
       typeof categoryValue === 'string' ? categoryValue : category
@@ -574,7 +623,15 @@ export default function BhriguPredictionView({
 
     const worker = workerRef.current;
     if (!worker) {
-      setParsedFromFullAnalysis(parseFullAnalysisIntoSections(predictionData.full_analysis, category));
+      setIsParsing(true);
+      const parseStart = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      const parsed = parseFullAnalysisIntoSections(prediction.full_analysis, category);
+      setParsedFromFullAnalysis(parsed);
+      setIsParsing(false);
+      reportMetric('prediction.parse', (typeof performance !== 'undefined' ? performance.now() : Date.now()) - parseStart, {
+        mode: 'regex',
+        sectionsExtracted: Object.keys(parsed).length,
+      });
       return;
     }
 
@@ -585,7 +642,7 @@ export default function BhriguPredictionView({
       markdown: predictionData.full_analysis,
       sections: categoryConfig.map(section => ({ key: section.key, title: section.titleKey }))
     });
-  }, [predictionData?.full_analysis, category, predictionData]);
+  }, [prediction?.full_analysis, category, simplifiedRendering, reportMetric]);
 
   const renderSection = (
     sectionKey: string,
@@ -668,7 +725,7 @@ export default function BhriguPredictionView({
     });
 
     // FALLBACK: If no sections found but full_analysis exists, use worker/regex results
-    if (availableSections.length === 0 && predictionData.full_analysis) {
+    if (!simplifiedRendering && availableSections.length === 0 && prediction.full_analysis) {
       availableSections = sections.filter(section => {
         const content = parsedFromFullAnalysis[section.key];
         return content && content.trim().length > 50;
@@ -712,6 +769,40 @@ export default function BhriguPredictionView({
         </div>
       );
     };
+
+    if (simplifiedRendering) {
+      return (
+        <div className="space-y-6">
+          <div className="bg-gray-800/60 border border-gray-700/60 rounded-xl p-4 text-sm text-gray-300">
+            {allowComplexParsing
+              ? 'Simplified view enabled for low-end devices.'
+              : 'Simplified view enabled by configuration.'}
+          </div>
+          {availableSections.length > 0 && (
+            <div className="space-y-4">
+              {availableSections.map((section) => (
+                <div key={section.key} className="rounded-xl border border-gray-700/50 bg-gray-900/40 p-5">
+                  <h3 className="text-lg font-semibold text-cyan-300 mb-2">
+                    {tLocale(section.titleKey, language)}
+                  </h3>
+                  <p className="text-gray-300 whitespace-pre-wrap">
+                    {getSectionContent(section.key)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+          {availableSections.length === 0 && prediction.full_analysis && (
+            <div className="rounded-xl border border-gray-700/50 bg-gray-900/40 p-5">
+              <h3 className="text-lg font-semibold text-cyan-300 mb-2">Full Reading</h3>
+              <p className="text-gray-300 whitespace-pre-wrap">
+                {prediction.full_analysis}
+              </p>
+            </div>
+          )}
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-6">
