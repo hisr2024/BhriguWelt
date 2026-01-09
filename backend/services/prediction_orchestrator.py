@@ -65,7 +65,9 @@ class PredictionOrchestrator:
 
     def generate_prediction(self, category: str, chart_data: Dict[str, Any],
                           mode: str = "hybrid", language: str = "en",
-                          client_online: Optional[bool] = None) -> Dict[str, Any]:
+                          client_online: Optional[bool] = None,
+                          prompt: Optional[str] = None,
+                          **options: Any) -> Dict[str, Any]:
         """
         Generate prediction for any category with guaranteed results
         
@@ -93,9 +95,9 @@ class PredictionOrchestrator:
             if pred_mode == PredictionMode.OFFLINE:
                 return self._generate_offline(category, chart_data, language)
             elif pred_mode == PredictionMode.ONLINE:
-                return self._generate_online(category, chart_data, language)
+                return self._generate_online(category, chart_data, language, prompt=prompt, **options)
             else:  # HYBRID
-                return self._generate_hybrid(category, chart_data, language)
+                return self._generate_hybrid(category, chart_data, language, prompt=prompt, **options)
                 
         except Exception as e:
             logger.error(f"Prediction generation failed: {e}")
@@ -103,7 +105,8 @@ class PredictionOrchestrator:
             return self._emergency_fallback(category, chart_data, language)
 
     def _generate_online(self, category: str, chart_data: Dict[str, Any], 
-                        language: str) -> Dict[str, Any]:
+                        language: str, prompt: Optional[str] = None,
+                        **options: Any) -> Dict[str, Any]:
         """Generate prediction using OpenAI with corpus context"""
         if not self.openai_service or not self.openai_service.enabled:
             # Fallback to offline if OpenAI not available
@@ -120,7 +123,7 @@ class PredictionOrchestrator:
             
             # Generate using category-specific method
             prediction_text = self._call_openai_for_category(
-                category, chart_data, wisdom_context, language
+                category, chart_data, wisdom_context, language, prompt=prompt, **options
             )
             
             # Evaluate rules if rule engine available
@@ -178,11 +181,12 @@ class PredictionOrchestrator:
             return self._emergency_fallback(category, chart_data, language)
 
     def _generate_hybrid(self, category: str, chart_data: Dict[str, Any], 
-                        language: str) -> Dict[str, Any]:
+                        language: str, prompt: Optional[str] = None,
+                        **options: Any) -> Dict[str, Any]:
         """Try online first, fallback to offline if it fails"""
         try:
             # Attempt online generation
-            result = self._generate_online(category, chart_data, language)
+            result = self._generate_online(category, chart_data, language, prompt=prompt, **options)
             
             # Check if it actually used online mode
             if result.get('mode') == 'online':
@@ -202,16 +206,23 @@ class PredictionOrchestrator:
 
     def _call_openai_for_category(self, category: str, chart_data: Dict[str, Any],
                                   wisdom_context: Optional[Dict[str, Any]], 
-                                  language: str) -> str:
+                                  language: str, prompt: Optional[str] = None,
+                                  **options: Any) -> str:
         """Call appropriate OpenAI method based on category"""
+        if prompt:
+            return self.openai_service.generate_prediction(prompt, chart_data)
         # Map categories to OpenAI service methods
         category_methods = {
             'karmic_journey': lambda: self.openai_service.generate_karmic_journey(chart_data),
             'past_lives': lambda: self.openai_service.generate_past_lives_analysis(chart_data),
             'future_lives': lambda: self.openai_service.generate_future_lives_prediction(chart_data),
             'present_life': lambda: self.openai_service.generate_present_life_analysis(chart_data),
-            'life_events': lambda: self.openai_service.generate_life_events_prediction(chart_data),
-            'karmic_remedies': lambda: self.openai_service.generate_karmic_remedies(chart_data),
+            'life_events': lambda: self.openai_service.generate_life_events_prediction(
+                chart_data, options.get('years_ahead', 10)
+            ),
+            'karmic_remedies': lambda: self.openai_service.generate_karmic_remedies(
+                chart_data, options.get('challenges', [])
+            ),
         }
         
         # Check if category has dedicated method

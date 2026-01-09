@@ -23,6 +23,7 @@ import {
   generateKarmicJourneyPrediction,
   type KarmicJourneyOptions,
 } from '../engines/karmicJourneyEngine';
+import { isSectionContentValid } from '../sectionParserConfig';
 
 export type PredictionEngine =
   | 'karmic_journey'
@@ -186,13 +187,168 @@ const getClientOnlineHeader = (): Record<string, string> =>
     ? { 'X-Client-Online': navigator.onLine ? 'true' : 'false' }
     : {};
 
+const createAbortError = (): DOMException => new DOMException('Aborted', 'AbortError');
+
+const sleep = (
+  delayMs: number,
+  signal?: AbortSignal,
+  isCancelled?: () => boolean
+): Promise<void> =>
+  new Promise((resolve, reject) => {
+    if (signal?.aborted || isCancelled?.()) {
+      reject(createAbortError());
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      if (signal) {
+        signal.removeEventListener('abort', onAbort);
+      }
+      resolve();
+    }, delayMs);
+
+    const onAbort = (): void => {
+      clearTimeout(timeout);
+      if (signal) {
+        signal.removeEventListener('abort', onAbort);
+      }
+      reject(createAbortError());
+    };
+
+    if (signal) {
+      signal.addEventListener('abort', onAbort, { once: true });
+    }
+  });
+
+const retryWithBackoff = async (
+  operation: (signal: AbortSignal) => Promise<Response>,
+  options: {
+    retries: number;
+    baseDelayMs?: number;
+    shouldRetry: (response: Response) => boolean;
+    signal?: AbortSignal;
+    isCancelled?: () => boolean;
+  }
+): Promise<Response> => {
+  let attempt = 0;
+  const fallbackController = options.signal ? null : new AbortController();
+  const signal = options.signal ?? fallbackController.signal;
+
+  while (true) {
+    if (signal.aborted || options.isCancelled?.()) {
+      throw createAbortError();
+    }
+
+    const response = await operation(signal);
+
+    if (!options.shouldRetry(response) || attempt >= options.retries) {
+      return response;
+    }
+
+    const delayMs = (options.baseDelayMs ?? 500) * 2 ** attempt;
+    attempt += 1;
+    await sleep(delayMs, options.signal, options.isCancelled);
+  }
+};
+
 export class PredictionsAPI {
   private baseURL: string;
   private apiKey?: string;
+  private predictionAbortController: AbortController | null = null;
+  private predictionRequestId = 0;
 
   constructor(baseURL: string = '/api', apiKey?: string) {
     this.baseURL = baseURL;
     this.apiKey = apiKey;
+  }
+
+  private createPredictionRequestContext(cancelPrevious: boolean): {
+    controller: AbortController;
+    isCancelled: () => boolean;
+  } {
+    if (cancelPrevious) {
+      if (this.predictionAbortController) {
+        this.predictionAbortController.abort();
+      }
+      this.predictionAbortController = new AbortController();
+      this.predictionRequestId += 1;
+      const requestId = this.predictionRequestId;
+      return {
+        controller: this.predictionAbortController,
+        isCancelled: () => this.predictionRequestId !== requestId,
+      };
+    }
+
+    return {
+      controller: new AbortController(),
+      isCancelled: () => false,
+    };
+  }
+
+  private buildHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...getClientOnlineHeader(),
+    };
+
+    if (this.apiKey) {
+      headers['X-API-Key'] = this.apiKey;
+    }
+
+    return headers;
+  }
+
+  private async requestPrediction<T>(
+    url: string,
+    body: Record<string, unknown>,
+    {
+      cancelPrevious = true,
+    }: {
+      cancelPrevious?: boolean;
+    } = {}
+  ): Promise<T> {
+    const { controller, isCancelled } = this.createPredictionRequestContext(cancelPrevious);
+    const response = await retryWithBackoff(
+      signal =>
+        fetch(url, {
+          method: 'POST',
+          headers: this.buildHeaders(),
+          body: JSON.stringify(body),
+          signal,
+        }),
+      {
+        retries: 2,
+        baseDelayMs: 500,
+        shouldRetry: response => response.status === 429 || response.status === 503,
+        signal: controller.signal,
+        isCancelled,
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  private async generatePredictionWithOptions(
+    engine: PredictionEngine,
+    birthData: ChartData,
+    useAI: boolean = true,
+    language: PredictionLanguage = 'en',
+    cancelPrevious: boolean = true
+  ): Promise<PredictionResult> {
+    return this.requestPrediction(
+      `${this.baseURL}/predictions/generate`,
+      {
+        engine,
+        birth_data: birthData,
+        use_ai: useAI,
+        language,
+      },
+      { cancelPrevious }
+    );
   }
 
   /**
@@ -205,34 +361,7 @@ export class PredictionsAPI {
     language: PredictionLanguage = 'en'
   ): Promise<PredictionResult> {
     try {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-
-      const clientOnlineHeader = getClientOnlineHeader();
-      Object.assign(headers, clientOnlineHeader);
-
-      if (this.apiKey) {
-        headers['X-API-Key'] = this.apiKey;
-      }
-
-      const response = await fetch(`${this.baseURL}/predictions/generate`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          engine,
-          birth_data: birthData,
-          use_ai: useAI,
-          language,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.statusText}`);
-      }
-
-      const data: PredictionResult = await response.json();
-      return data;
+      return await this.generatePredictionWithOptions(engine, birthData, useAI, language, true);
     } catch (error) {
       console.error('Prediction generation failed:', error);
       throw error;
@@ -300,27 +429,12 @@ export class PredictionsAPI {
     options: { useAI?: boolean; mode?: 'offline' | 'online' | 'hybrid'; language?: PredictionLanguage } = {}
   ): Promise<PredictionResult> {
     try {
-      const response = await fetch(`${this.baseURL}/predictions/future-lives`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getClientOnlineHeader(),
-          ...(this.apiKey && { 'X-API-Key': this.apiKey }),
-        },
-        body: JSON.stringify({
-          birth_data: birthData,
-          use_ai: options.useAI ?? true,
-          mode: options.mode ?? 'offline',
-          language: options.language ?? 'en',
-        }),
+      return await this.requestPrediction(`${this.baseURL}/predictions/future-lives`, {
+        birth_data: birthData,
+        use_ai: options.useAI ?? true,
+        mode: options.mode ?? 'offline',
+        language: options.language ?? 'en',
       });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.statusText}`);
-      }
-
-      const data: PredictionResult = await response.json();
-      return data;
     } catch (error) {
       console.error('Future lives generation failed:', error);
       throw error;
@@ -342,27 +456,12 @@ export class PredictionsAPI {
     options: { useAI?: boolean; mode?: 'offline' | 'online' | 'hybrid'; language?: PredictionLanguage } = {}
   ): Promise<PredictionResult> {
     try {
-      const response = await fetch(`${this.baseURL}/predictions/present-life`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getClientOnlineHeader(),
-          ...(this.apiKey && { 'X-API-Key': this.apiKey }),
-        },
-        body: JSON.stringify({
-          birth_data: birthData,
-          use_ai: options.useAI ?? true,
-          mode: options.mode ?? 'offline',
-          language: options.language ?? 'en',
-        }),
+      return await this.requestPrediction(`${this.baseURL}/predictions/present-life`, {
+        birth_data: birthData,
+        use_ai: options.useAI ?? true,
+        mode: options.mode ?? 'offline',
+        language: options.language ?? 'en',
       });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.statusText}`);
-      }
-
-      const data: PredictionResult = await response.json();
-      return data;
     } catch (error) {
       console.error('Present life generation failed:', error);
       throw error;
@@ -499,14 +598,15 @@ export class PredictionsAPI {
 
       const aiResponse = await response.json();
       const refined = aiResponse?.data?.refined_section;
+      const acceptedRefined = isSectionContentValid(refined) ? refined : null;
 
       return {
         ...baseResult,
-        ai_synthesis: refined,
+        ai_synthesis: acceptedRefined ?? undefined,
         metadata: baseResult.metadata
-          ? { ...baseResult.metadata, ai_enhanced: true }
+          ? { ...baseResult.metadata, ai_enhanced: Boolean(acceptedRefined) }
           : baseResult.metadata,
-        mode: options.aiMode.mode,
+        mode: acceptedRefined ? options.aiMode.mode : baseResult.mode,
       };
     } catch (error) {
       console.warn('AI refinement failed, returning offline result:', error);
@@ -533,7 +633,7 @@ export class PredictionsAPI {
     ];
 
     const promises = engines.map(engine =>
-      this.generatePrediction(engine, birthData, useAI).catch(error => {
+      this.generatePredictionWithOptions(engine, birthData, useAI, 'en', false).catch(error => {
         console.error(`Failed to generate ${engine}:`, error);
         return {
           engine,

@@ -101,7 +101,7 @@ class TestKarmicJourneyEndpoints:
     def test_karmic_analysis_endpoint_exists(self, client, sample_birth_data):
         """Test that karmic analysis endpoint exists"""
         response = client.post(
-            '/api/karmic-journey/analysis',
+            '/api/bhrigu-predictions/karmic-journey',
             data=json.dumps(sample_birth_data),
             content_type='application/json'
         )
@@ -116,7 +116,7 @@ class TestPredictionEndpoints:
     def test_daily_prediction_endpoint(self, client, sample_birth_data):
         """Test daily prediction endpoint"""
         response = client.post(
-            '/api/predictions/daily',
+            '/api/bhrigu-predictions/predictions',
             data=json.dumps(sample_birth_data),
             content_type='application/json'
         )
@@ -132,7 +132,7 @@ class TestPredictionEndpoints:
         }
         
         response = client.post(
-            '/api/predictions/question',
+            '/api/bhrigu-predictions/predictions',
             data=json.dumps(data),
             content_type='application/json'
         )

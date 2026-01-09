@@ -24,6 +24,8 @@ export default function GetStartedPage() {
     time_of_birth: '',
     place_of_birth: '',
   });
+  const [manualCoordsEnabled, setManualCoordsEnabled] = useState(false);
+  const [manualCoords, setManualCoords] = useState({ latitude: '', longitude: '' });
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
 
   useEffect(() => {
@@ -44,15 +46,30 @@ export default function GetStartedPage() {
       setError('Please unlock the app first');
       return;
     }
+    const latitudeValue = manualCoords.latitude.trim() === '' ? undefined : Number(manualCoords.latitude);
+    const longitudeValue = manualCoords.longitude.trim() === '' ? undefined : Number(manualCoords.longitude);
+    if (manualCoordsEnabled && ((latitudeValue !== undefined && Number.isNaN(latitudeValue)) || (longitudeValue !== undefined && Number.isNaN(longitudeValue)))) {
+      setError('Please enter valid numeric values for latitude and longitude.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
-      const result = await astrologyAPI.calculateBirthChart(formData);
+      const requestData: BirthDetails = {
+        date_of_birth: formData.date_of_birth,
+        time_of_birth: formData.time_of_birth,
+        place_of_birth: formData.place_of_birth,
+        latitude: latitudeValue,
+        longitude: longitudeValue,
+      };
+      const result = await astrologyAPI.calculateBirthChart(requestData);
       const profileData = {
         name: formData.name,
         dateOfBirth: formData.date_of_birth,
         timeOfBirth: formData.time_of_birth,
         placeOfBirth: formData.place_of_birth,
+        latitude: latitudeValue,
+        longitude: longitudeValue,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -162,6 +179,43 @@ export default function GetStartedPage() {
                 </label>
                 <input type="text" required placeholder="e.g., New Delhi, India" value={formData.place_of_birth} onChange={(e) => setFormData({ ...formData, place_of_birth: e.target.value })} className="genz-input w-full text-lg" autoFocus />
                 <p className="text-sm text-white/70 mt-3">Enter city and country for accurate calculations</p>
+                <div className="mt-6 space-y-4">
+                  <label className="flex items-center gap-3 text-sm text-white/80">
+                    <input
+                      type="checkbox"
+                      checked={manualCoordsEnabled}
+                      onChange={(e) => setManualCoordsEnabled(e.target.checked)}
+                      className="h-4 w-4 rounded border-white/40 bg-white/10 text-genz-electric-blue focus:ring-genz-electric-blue"
+                    />
+                    Provide latitude/longitude manually (overrides geocoding)
+                  </label>
+                  {manualCoordsEnabled && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-white/70 mb-2">Latitude</label>
+                        <input
+                          type="number"
+                          step="0.0001"
+                          placeholder="e.g., 28.6139"
+                          value={manualCoords.latitude}
+                          onChange={(e) => setManualCoords({ ...manualCoords, latitude: e.target.value })}
+                          className="genz-input w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-white/70 mb-2">Longitude</label>
+                        <input
+                          type="number"
+                          step="0.0001"
+                          placeholder="e.g., 77.2090"
+                          value={manualCoords.longitude}
+                          onChange={(e) => setManualCoords({ ...manualCoords, longitude: e.target.value })}
+                          className="genz-input w-full"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </motion.div>
             )}
             {error && (<motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-genz-hot-pink/20 border-2 border-genz-hot-pink/50 rounded-2xl p-4 text-white backdrop-blur-xl">{error}</motion.div>)}

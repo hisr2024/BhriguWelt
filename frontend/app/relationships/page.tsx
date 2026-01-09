@@ -11,7 +11,8 @@ import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
-import { presentLifeAPI, BirthDetails } from '@/lib/api';
+import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
+import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import Link from 'next/link';
 
 export default function RelationshipsPage() {
@@ -79,8 +80,15 @@ export default function RelationshipsPage() {
       };
 
       try {
-        const analysis = await presentLifeAPI.getRelationshipsAnalysis(birthDetails);
-        setData(analysis);
+        const response = await bhriguPredictionsAPI.getRelationships(birthDetails);
+        const prediction = normalizePredictionResponse<any>(response).prediction;
+        setData({
+          ...prediction,
+          relationship_analysis: prediction?.romantic_marriage ?? prediction?.family ?? prediction?.full_analysis,
+          compatibility_insights: prediction?.soul_connections ?? prediction?.communication ?? prediction?.family,
+          romantic_patterns: prediction?.communication ?? prediction?.romantic_marriage,
+          karmic_connections: prediction?.karmic_patterns ?? prediction?.soul_connections
+        });
       } catch (apiError) {
         console.error('API error, using offline mode:', apiError);
         setData({

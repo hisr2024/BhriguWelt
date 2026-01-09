@@ -91,5 +91,181 @@
         "yearly": "Yearly Overview"
       }
     }
+  },
+  "settings": {
+    "badge": "⚙️ Settings",
+    "title": "Settings & Preferences",
+    "subtitle": "Customize your cosmic experience",
+    "back": "Back",
+    "save": "Save",
+    "saved": "Saved!",
+    "sections": {
+      "general": "General",
+      "privacySecurity": "Privacy & Security",
+      "accessibility": "Accessibility",
+      "aiFeatures": "AI Features",
+      "dataManagement": "Data Management"
+    },
+    "items": {
+      "notifications": {
+        "label": "Notifications",
+        "description": "Receive app notifications"
+      },
+      "dailyReminders": {
+        "label": "Daily Reminders",
+        "description": "Get daily cosmic insights"
+      },
+      "language": {
+        "label": "Language",
+        "description": "App language"
+      },
+      "changePasscode": {
+        "label": "Change Passcode",
+        "description": "Update your security passcode"
+      },
+      "showPasscode": {
+        "label": "Show Passcode",
+        "description": "Display passcode on unlock screen"
+      },
+      "offlineMode": {
+        "label": "Offline Mode",
+        "description": "Use app without internet"
+      },
+      "highContrast": {
+        "label": "High Contrast",
+        "description": "Boost text contrast for easier reading"
+      },
+      "aiInsights": {
+        "label": "AI Insights",
+        "description": "Enable OpenAI predictions"
+      },
+      "aiLanguage": {
+        "label": "AI Output Language",
+        "description": "Choose the language for AI responses"
+      },
+      "clearAllData": {
+        "label": "Clear All Data",
+        "description": "Delete all profiles and predictions"
+      }
+    },
+    "languageOptions": {
+      "en": "English",
+      "hi": "हिंदी (Hindi)"
+    },
+    "aiLanguageOptions": {
+      "en": "English",
+      "hi": "हिंदी (Hindi)",
+      "sa": "संस्कृत (Sanskrit)"
+    },
+    "buttons": {
+      "change": "Change",
+      "clear": "Clear",
+      "confirm": "Confirm?"
+    },
+    "appInfo": {
+      "appName": "BhriguWelt",
+      "version": "Version 1.0.0",
+      "poweredBy": "Powered by OpenAI"
+    }
+  },
+  "bhriguPredictionView": {
+    "parsedFromFullAnalysis": {
+      "title": "Parsed from full analysis",
+      "description": "These insights were extracted from the full reading for easier scanning."
+    },
+    "sectionFallbackNote": "Note: Individual sections could not be extracted from the analysis. The complete reading is shown below.",
+    "detailedInsights": "Detailed Insights",
+    "detailSubtitle": "Explore each aspect of your {title} in detail",
+    "fullReading": {
+      "title": "View Complete Reading",
+      "showDescription": "Show the full unstructured analysis",
+      "hideDescription": "Hide the full unstructured analysis",
+      "showAria": "Show full analysis",
+      "hideAria": "Hide full analysis"
+    },
+    "metadata": {
+      "zodiac": "Zodiac:",
+      "nakshatra": "Nakshatra:",
+      "tradition": "Tradition:"
+    },
+    "debug": {
+      "title": "🔧 Debug Mode - Raw API Response",
+      "sectionKeys": "Section Keys Available:",
+      "parsedSections": "Client-side Parsed Sections:",
+      "show": "Debug Mode",
+      "hide": "Hide Debug"
+    },
+    "profileMissing": {
+      "title": "Please create a profile to access predictions",
+      "action": "Create Profile"
+    },
+    "question": {
+      "placeholder": "Ask a specific question (optional)...",
+      "generating": "Generating...",
+      "generate": "Generate"
+    },
+    "profileUpdated": "Profile updated. Cached predictions cleared and a fresh reading is being generated.",
+    "cache": {
+      "loadedFromWisdom": "Loaded from Bhrigu wisdom cache",
+      "loadedFromCache": "Loaded from cache",
+      "refresh": "Refresh"
+    },
+    "errors": {
+      "missingBirthDetails": "Please complete your birth details in your profile to generate predictions.",
+      "failedToGenerate": "Failed to generate prediction",
+      "networkIssue": "Network issue detected",
+      "apiFailed": "API request failed",
+      "suggestedAction": "Suggested action",
+      "errorCode": "Error code",
+      "generic": "An error occurred",
+      "networkAction": "Check your connection, then retry or use cached data.",
+      "serverAction": "Server hiccup detected. Retry soon or use cached data if available.",
+      "clientAction": "Review your inputs and retry, or use cached data if available."
+    },
+    "loading": {
+      "title": "Consulting ancient Bhrigu Samhita wisdom...",
+      "subtitle": "This may take a moment as we generate your personalized prediction"
+    },
+    "actions": {
+      "retryCached": "Retry with cached data",
+      "retryRequest": "Retry request",
+      "regenerate": "Regenerate",
+      "download": "Download",
+      "share": "Share"
+    }
+  },
+  "bhriguPages": {
+    "karmicJourney": {
+      "title": "Karmic Journey",
+      "description": "Discover your soul's purpose and life mission through detailed karmic analysis"
+    },
+    "pastLives": {
+      "title": "Past Lives",
+      "description": "Explore your previous incarnations and karmic patterns across lifetimes"
+    },
+    "futureLives": {
+      "title": "Future Lives",
+      "description": "Envision your soul's evolution and future incarnation possibilities"
+    },
+    "presentLife": {
+      "title": "Present Life",
+      "description": "Comprehensive analysis of your current life path and opportunities"
+    },
+    "lifeEvents": {
+      "title": "Life Events",
+      "description": "Predict major life transitions with precision timing"
+    },
+    "karmicRemedies": {
+      "title": "Karmic Remedies",
+      "description": "Personalized spiritual practices and remedies for balance"
+    },
+    "relationships": {
+      "title": "Relationships",
+      "description": "Soul connections and compatibility analysis for deeper bonds"
+    },
+    "predictions": {
+      "title": "Predictions",
+      "description": "Daily, weekly, and monthly forecasts with actionable insights"
+    }
   }
 }
