@@ -12,18 +12,18 @@ import BottomNav from '../components/BottomNav';
 import CardSkeleton from '../components/CardSkeleton';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
-import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
-import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
+import { presentLifeAPI, BirthDetails } from '@/lib/api';
+import { useOfflineWisdomCards } from '@/lib/wisdom';
 import Link from 'next/link';
 
 export default function PresentLifePage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [wisdomCards, setWisdomCards] = useState<any[]>([]);
-  const [wisdomLoading, setWisdomLoading] = useState(true);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
+
+  const { cards: wisdomCards } = useOfflineWisdomCards({ limit: 6 });
 
   useEffect(() => {
     if (!encryptionLoading && !isSetup) {
@@ -36,23 +36,6 @@ export default function PresentLifePage() {
       router.push('/unlock');
     }
   }, [encryptionLoading, isSetup, isUnlocked, router]);
-
-  useEffect(() => {
-    const loadWisdomCards = async () => {
-      try {
-        setWisdomLoading(true);
-        const res = await fetch('/data/wisdom_cards.json');
-        const data = await res.json();
-        setWisdomCards(data.slice(0, 6));
-      } catch (err) {
-        console.error('Error loading wisdom cards:', err);
-      } finally {
-        setWisdomLoading(false);
-      }
-    };
-
-    loadWisdomCards();
-  }, []);
 
   useEffect(() => {
     if (encryptionKey) {

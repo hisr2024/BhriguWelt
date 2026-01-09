@@ -4,7 +4,7 @@
  */
 
 import { WisdomCard } from './types';
-import { initDB, setItem, getAllItems, STORES } from './storage';
+import { initDB, setItem, getItem, getAllItems, STORES } from './storage';
 
 // Cache for wisdom card matching results
 const wisdomCache = new Map<string, WisdomCard[]>();
@@ -45,6 +45,69 @@ export async function loadWisdomCards(): Promise<WisdomCard[]> {
   } catch (error) {
     console.error('Error loading wisdom cards:', error);
     return [];
+  }
+}
+
+const WISDOM_SYNC_METADATA_KEY = 'wisdomCardsSync';
+
+function hashWisdomPayload(payload: string): string {
+  let hash = 0;
+  for (let i = 0; i < payload.length; i += 1) {
+    hash = ((hash << 5) - hash) + payload.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash.toString();
+}
+
+async function clearWisdomStore(): Promise<void> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(STORES.WISDOM_CARDS, 'readwrite');
+    const store = transaction.objectStore(STORES.WISDOM_CARDS);
+    const request = store.clear();
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(new Error('Failed to clear wisdom store'));
+  });
+}
+
+export async function syncWisdomCards(encryptionKey?: CryptoKey): Promise<number> {
+  try {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return 0;
+    }
+
+    const cards = await loadWisdomCards();
+    if (cards.length === 0) {
+      return 0;
+    }
+
+    const payloadHash = hashWisdomPayload(JSON.stringify(cards));
+    const existingMetadata = await getItem(STORES.METADATA, WISDOM_SYNC_METADATA_KEY);
+
+    if (existingMetadata?.hash === payloadHash) {
+      return cards.length;
+    }
+
+    await clearWisdomStore();
+    await Promise.all(
+      cards.map((card, index) => {
+        const key = card.id ? String(card.id) : `card_${index}`;
+        return setItem(STORES.WISDOM_CARDS, key, card, encryptionKey);
+      })
+    );
+
+    await setItem(STORES.METADATA, WISDOM_SYNC_METADATA_KEY, {
+      hash: payloadHash,
+      syncedAt: new Date().toISOString(),
+      count: cards.length,
+    });
+
+    return cards.length;
+  } catch (error) {
+    console.error('[WisdomCards] Error syncing cards:', error);
+    return 0;
   }
 }
 
@@ -363,7 +426,7 @@ export async function needsSeeding(encryptionKey?: CryptoKey): Promise<boolean> 
 /**
  * React hook for wisdom cards
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export function useWisdomCards(encryptionKey: CryptoKey | null) {
   const [cards, setCards] = useState<WisdomCard[]>([]);
@@ -420,6 +483,66 @@ export function useWisdomCards(encryptionKey: CryptoKey | null) {
     isLoading,
     needsSeed,
     seed,
+    reload: loadCards,
+  };
+}
+
+export function useOfflineWisdomCards(options: {
+  filter?: (card: WisdomCard) => boolean;
+  limit?: number;
+  encryptionKey?: CryptoKey | null;
+  autoSync?: boolean;
+} = {}) {
+  const { filter, limit, encryptionKey = null, autoSync = true } = options;
+  const [cards, setCards] = useState<WisdomCard[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadCards = useCallback(async () => {
+    setIsLoading(true);
+
+    if (autoSync && typeof navigator !== 'undefined' && navigator.onLine) {
+      await syncWisdomCards(encryptionKey ?? undefined);
+    }
+
+    let storedCards = await getWisdomCards(encryptionKey ?? undefined);
+
+    if (storedCards.length === 0 && typeof navigator !== 'undefined' && navigator.onLine) {
+      await seedWisdomCards(encryptionKey ?? undefined);
+      storedCards = await getWisdomCards(encryptionKey ?? undefined);
+    }
+
+    let filteredCards = storedCards;
+    if (filter) {
+      filteredCards = filteredCards.filter(filter);
+    }
+    if (typeof limit === 'number') {
+      filteredCards = filteredCards.slice(0, limit);
+    }
+
+    setCards(filteredCards);
+    setIsLoading(false);
+  }, [autoSync, encryptionKey, filter, limit]);
+
+  useEffect(() => {
+    loadCards();
+  }, [loadCards]);
+
+  useEffect(() => {
+    if (!autoSync || typeof window === 'undefined') {
+      return;
+    }
+
+    const handleOnline = async () => {
+      await loadCards();
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [autoSync, loadCards]);
+
+  return {
+    cards,
+    isLoading,
     reload: loadCards,
   };
 }

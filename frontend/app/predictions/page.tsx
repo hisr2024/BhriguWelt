@@ -12,8 +12,9 @@ import BottomNav from '../components/BottomNav';
 import CardSkeleton from '../components/CardSkeleton';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, setItem, STORES } from '@/lib/storage';
-import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
-import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
+import { predictionsAPI, BirthDetails } from '@/lib/api';
+import { useOfflineWisdomCards } from '@/lib/wisdom';
+import type { WisdomCard } from '@/lib/types';
 import Link from 'next/link';
 import { useOnlineStatus } from '@/lib/hooks/useOnlineStatus';
 
@@ -22,8 +23,6 @@ export default function PredictionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
-  const [wisdomCards, setWisdomCards] = useState<any[]>([]);
-  const [wisdomLoading, setWisdomLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
   const [syncWhenOnline, setSyncWhenOnline] = useState(true);
   const [cacheTimestamp, setCacheTimestamp] = useState<string | null>(null);
@@ -31,6 +30,17 @@ export default function PredictionsPage() {
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
   const isOnline = useOnlineStatus();
+
+  const filterWisdomCards = useCallback(
+    (card: WisdomCard) =>
+      card.category === 'astrology' ||
+      (card.tags ?? []).some((tag) =>
+        ['sun', 'moon', 'mars', 'jupiter', 'venus', 'saturn', 'mercury'].includes(tag.toLowerCase())
+      ),
+    []
+  );
+
+  const { cards: wisdomCards } = useOfflineWisdomCards({ filter: filterWisdomCards });
 
   useEffect(() => {
     if (!encryptionLoading && !isSetup) {
@@ -43,29 +53,6 @@ export default function PredictionsPage() {
       router.push('/unlock');
     }
   }, [encryptionLoading, isSetup, isUnlocked, router]);
-
-  useEffect(() => {
-    const loadWisdomCards = async () => {
-      try {
-        setWisdomLoading(true);
-        const res = await fetch('/data/wisdom_cards.json');
-        const data = await res.json();
-        const filtered = data.filter((card: any) => 
-          card.category === 'astrology' ||
-          card.tags.some((tag: string) => 
-            ['sun', 'moon', 'mars', 'jupiter', 'venus', 'saturn', 'mercury'].includes(tag.toLowerCase())
-          )
-        );
-        setWisdomCards(filtered);
-      } catch (err) {
-        console.error('Error loading wisdom cards:', err);
-      } finally {
-        setWisdomLoading(false);
-      }
-    };
-
-    loadWisdomCards();
-  }, []);
 
   useEffect(() => {
     if (!encryptionKey) return;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Moon, History, Heart, Star, ArrowLeft, Loader2 } from 'lucide-react';
@@ -12,18 +12,29 @@ import BottomNav from '../components/BottomNav';
 import CardSkeleton from '../components/CardSkeleton';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
-import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
-import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
+import { pastLivesAPI, BirthDetails } from '@/lib/api';
+import { useOfflineWisdomCards } from '@/lib/wisdom';
+import type { WisdomCard } from '@/lib/types';
 import Link from 'next/link';
 
 export default function PastLivesPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [wisdomCards, setWisdomCards] = useState<any[]>([]);
-  const [wisdomLoading, setWisdomLoading] = useState(true);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
+
+  const filterWisdomCards = useCallback(
+    (card: WisdomCard) =>
+      card.tradition === 'Bhrigu Samhita' ||
+      (card.tags ?? []).some((tag: string) =>
+        tag.toLowerCase().includes('past') ||
+        tag.toLowerCase().includes('karma')
+      ),
+    []
+  );
+
+  const { cards: wisdomCards } = useOfflineWisdomCards({ filter: filterWisdomCards });
 
   // Redirect to passcode setup if encryption not configured
   useEffect(() => {
@@ -38,32 +49,6 @@ export default function PastLivesPage() {
       router.push('/unlock');
     }
   }, [encryptionLoading, isSetup, isUnlocked, router]);
-
-  // Load wisdom cards for offline mode
-  useEffect(() => {
-    const loadWisdomCards = async () => {
-      try {
-        setWisdomLoading(true);
-        const res = await fetch('/data/wisdom_cards.json');
-        const data = await res.json();
-        // Filter by past life and Bhrigu Samhita wisdom
-        const filtered = data.filter((card: any) => 
-          card.tradition === 'Bhrigu Samhita' ||
-          card.tags.some((tag: string) => 
-            tag.toLowerCase().includes('past') || 
-            tag.toLowerCase().includes('karma')
-          )
-        );
-        setWisdomCards(filtered);
-      } catch (err) {
-        console.error('Error loading wisdom cards:', err);
-      } finally {
-        setWisdomLoading(false);
-      }
-    };
-
-    loadWisdomCards();
-  }, []);
 
   // Load data
   useEffect(() => {
