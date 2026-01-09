@@ -10,7 +10,10 @@ import os
 import sys
 import json
 import uuid
+import gzip
+import io
 from datetime import datetime
+from werkzeug.exceptions import RequestEntityTooLarge
 from utils.logger import setup_logger, log_exception
 
 print("=" * 60)
@@ -45,6 +48,8 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-pro
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///bhriguwelt.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+MAX_REQUEST_BYTES = int(os.getenv('MAX_REQUEST_BYTES', str(1024 * 1024)))
+app.config['MAX_CONTENT_LENGTH'] = MAX_REQUEST_BYTES
 logger = setup_logger(__name__)
 print("✓ Flask app initialized")
 
@@ -130,6 +135,37 @@ def _assign_correlation_id():
 @app.before_request
 def ensure_correlation_id():
     _assign_correlation_id()
+
+@app.before_request
+def decompress_gzip_payload():
+    if request.method in ['POST', 'PUT', 'PATCH']:
+        content_encoding = request.headers.get('Content-Encoding', '').lower()
+        if content_encoding == 'gzip':
+            try:
+                compressed_data = request.get_data(cache=False)
+                decompressed_data = gzip.decompress(compressed_data)
+            except OSError:
+                return jsonify({
+                    'message': 'Invalid gzip payload. Ensure the request body is valid gzip data.',
+                    'error_code': 'INVALID_GZIP',
+                }), 400
+
+            if len(decompressed_data) > MAX_REQUEST_BYTES:
+                raise RequestEntityTooLarge()
+
+            request._cached_data = decompressed_data
+            request.environ['wsgi.input'] = io.BytesIO(decompressed_data)
+            request.environ['CONTENT_LENGTH'] = str(len(decompressed_data))
+
+@app.errorhandler(RequestEntityTooLarge)
+def handle_request_entity_too_large(error):
+    return jsonify({
+        'message': 'Request payload exceeds the allowed size limit.',
+        'error_code': 'PAYLOAD_TOO_LARGE',
+        'details': {
+            'max_bytes': MAX_REQUEST_BYTES,
+        },
+    }), 413
 
 @app.before_request
 def handle_preflight():
