@@ -10,6 +10,7 @@ import { tLocale } from '@/lib/locales';
 import { Accordion } from '@/app/components/ui/Accordion';
 import { AccordionItem } from '@/app/components/ui/AccordionItem';
 import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
+import useFeatureFlags from '@/hooks/useFeatureFlags';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS: Record<string, Array<{ key: string; titleKey: string; color: string }>> = {
@@ -222,9 +223,10 @@ export default function BhriguPredictionView({
   const workerRequestId = useRef(0);
   const expandingTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
 
+  const { debugUI } = useFeatureFlags();
   const searchParams = useSearchParams();
   const language = getCurrentLanguage();
-  const debugAllowed = searchParams?.get('debug') === 'true';
+  const debugAllowed = debugUI && searchParams?.get('debug') === 'true';
 
   useEffect(() => {
     if (profile) {
