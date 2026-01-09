@@ -11,7 +11,8 @@ import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, setItem, STORES } from '@/lib/storage';
-import { predictionsAPI, BirthDetails } from '@/lib/api';
+import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
+import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import Link from 'next/link';
 import { useOnlineStatus } from '@/lib/hooks/useOnlineStatus';
 
@@ -118,29 +119,17 @@ export default function PredictionsPage() {
       }
 
       try {
-        let prediction;
-        switch (activeTab) {
-          case 'daily':
-            prediction = await predictionsAPI.getDaily(birthDetails);
-            break;
-          case 'weekly':
-            prediction = await predictionsAPI.getWeekly(birthDetails);
-            break;
-          case 'monthly':
-            prediction = await predictionsAPI.getMonthly(birthDetails);
-            break;
-          case 'yearly':
-            prediction = await predictionsAPI.getYearly(birthDetails);
-            break;
-        }
-        setData(prediction);
+        const response = await bhriguPredictionsAPI.getPredictions(birthDetails);
+        const prediction = normalizePredictionResponse<any>(response).prediction;
+        const viewData = buildPredictionView(prediction, activeTab);
+        setData(viewData);
         setCacheTimestamp(null);
         setUsingCache(false);
         setIsOffline(false);
         await setItem(
           STORES.SETTINGS,
           cacheKey,
-          { data: prediction, fetchedAt: new Date().toISOString() },
+          { data: viewData, fetchedAt: new Date().toISOString() },
           encryptionKey
         );
       } catch (apiError) {
@@ -241,6 +230,59 @@ export default function PredictionsPage() {
   const getLuckyColor = () => {
     const colors = ['Blue', 'Green', 'Yellow', 'Red', 'Purple', 'White', 'Orange'];
     return colors[Math.floor(Math.random() * colors.length)];
+  };
+
+  const extractSection = (text: string, keywords: string[]): string | null => {
+    if (!text) return null;
+    const lines = text.split('\n');
+    for (const keyword of keywords) {
+      for (let i = 0; i < lines.length; i += 1) {
+        if (lines[i].toLowerCase().includes(keyword)) {
+          const section = lines.slice(i, Math.min(i + 3, lines.length)).join(' ');
+          if (section.length > 20) {
+            return section.substring(0, 200);
+          }
+        }
+      }
+    }
+    return null;
+  };
+
+  const extractLuckyColor = (text: string): string | null => {
+    const match = text.match(/lucky color[:\s-]*([a-z\s]+)/i);
+    return match?.[1]?.trim() ?? null;
+  };
+
+  const extractLuckyNumber = (text: string): number | null => {
+    const match = text.match(/lucky number[:\s-]*([0-9]+)/i);
+    return match ? Number(match[1]) : null;
+  };
+
+  const extractAdvice = (text: string): string[] | null => {
+    const lines = text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+    const adviceLines = lines.filter((line) =>
+      ['advice', 'guidance', 'avoid', 'focus'].some((keyword) =>
+        line.toLowerCase().includes(keyword)
+      )
+    );
+    return adviceLines.length > 0 ? adviceLines.slice(0, 3) : null;
+  };
+
+  const buildPredictionView = (prediction: any, period: string) => {
+    const text = prediction?.[period] ?? '';
+    return {
+      overall: text || getOfflinePrediction(period),
+      career: extractSection(text, ['career', 'professional', 'work']) || getOfflineCareerPrediction(period),
+      love: extractSection(text, ['love', 'relationship']) || getOfflineLovePrediction(period),
+      health: extractSection(text, ['health', 'wellness', 'energy']) || getOfflineHealthPrediction(period),
+      finance: extractSection(text, ['finance', 'money', 'financial']) || getOfflineFinancePrediction(period),
+      lucky_color: extractLuckyColor(text) || getLuckyColor(),
+      lucky_number: extractLuckyNumber(text) || Math.floor(Math.random() * 9) + 1,
+      advice: extractAdvice(text) || getOfflineAdvice(period)
+    };
   };
 
   const getOfflineAdvice = (period: string) => {

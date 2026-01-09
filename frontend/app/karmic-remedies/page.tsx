@@ -11,7 +11,8 @@ import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
-import { karmicRemediesAPI, BirthDetails } from '@/lib/api';
+import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
+import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import Link from 'next/link';
 
 export default function KarmicRemediesPage() {
@@ -81,8 +82,14 @@ export default function KarmicRemediesPage() {
       };
 
       try {
-        const remedies = await karmicRemediesAPI.getComprehensive(birthDetails);
-        setData(remedies);
+        const response = await bhriguPredictionsAPI.getKarmicRemedies(birthDetails);
+        const prediction = normalizePredictionResponse<any>(response).prediction;
+        setData({
+          ...prediction,
+          rituals: prediction?.planetary_rituals ?? prediction?.deity_worship ?? prediction?.fasting,
+          meditation_practices: prediction?.meditation,
+          yantra_recommendations: prediction?.yantras
+        });
       } catch (apiError) {
         console.error('API error, using offline mode:', apiError);
         setData({

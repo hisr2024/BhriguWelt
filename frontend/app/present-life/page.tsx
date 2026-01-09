@@ -11,7 +11,8 @@ import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
-import { presentLifeAPI, BirthDetails } from '@/lib/api';
+import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
+import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import Link from 'next/link';
 
 export default function PresentLifePage() {
@@ -72,8 +73,13 @@ export default function PresentLifePage() {
       };
 
       try {
-        const analysis = await presentLifeAPI.getComprehensiveAnalysis(birthDetails);
-        setData(analysis);
+        const response = await bhriguPredictionsAPI.getPresentLife(birthDetails);
+        const prediction = normalizePredictionResponse<any>(response).prediction;
+        setData({
+          ...prediction,
+          comprehensive_analysis: prediction?.current_phase ?? prediction?.life_purpose ?? prediction?.full_analysis,
+          financial: prediction?.finances ?? prediction?.financial
+        });
       } catch (apiError) {
         console.error('API error, using offline mode:', apiError);
         setData({
