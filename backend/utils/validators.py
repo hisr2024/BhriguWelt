@@ -3,7 +3,9 @@ Input validation utilities for BhriguWelt API
 """
 from datetime import datetime
 from typing import Dict, Any, Optional, Tuple
+import html
 import re
+from dateutil import parser
 
 class ValidationError(Exception):
     """Custom validation error"""
@@ -12,7 +14,7 @@ class ValidationError(Exception):
 
 def validate_date(date_str: str, field_name: str = "date") -> Tuple[bool, Optional[str]]:
     """
-    Validate date string format (YYYY-MM-DD)
+    Validate date string format across multiple common formats.
 
     Returns:
         (is_valid, error_message)
@@ -21,17 +23,17 @@ def validate_date(date_str: str, field_name: str = "date") -> Tuple[bool, Option
         return False, f"{field_name} is required"
 
     try:
-        datetime.strptime(date_str, '%Y-%m-%d')
+        parsed_date = parser.parse(str(date_str), dayfirst=False, yearfirst=False).date()
+    except (ValueError, TypeError, OverflowError):
+        return False, f"{field_name} must be a valid date format (e.g. YYYY-MM-DD, MM/DD/YYYY)"
 
-        # Check if date is reasonable (between 1900 and current year + 100)
-        year = int(date_str.split('-')[0])
-        current_year = datetime.now().year
-        if year < 1900 or year > current_year + 100:
-            return False, f"{field_name} year must be between 1900 and {current_year + 100}"
+    if parsed_date.year < 1900:
+        return False, f"{field_name} year must be 1900 or later"
 
-        return True, None
-    except ValueError:
-        return False, f"{field_name} must be in YYYY-MM-DD format"
+    if parsed_date > datetime.now().date():
+        return False, f"{field_name} cannot be in the future"
+
+    return True, None
 
 
 def validate_time(time_str: str, field_name: str = "time") -> Tuple[bool, Optional[str]]:
@@ -153,6 +155,40 @@ def sanitize_input(value: str, max_length: int = 500) -> str:
     sanitized = value.strip()
 
     # Limit length
+    if len(sanitized) > max_length:
+        sanitized = sanitized[:max_length]
+
+    return sanitized
+
+
+def sanitizeQuestion(value: str, max_length: int = 500) -> str:
+    """
+    Sanitize user questions by stripping HTML/JS and limiting length.
+
+    Args:
+        value: Input question
+        max_length: Maximum allowed length
+
+    Returns:
+        Sanitized question string
+    """
+    if not isinstance(value, str):
+        value = str(value)
+
+    sanitized = value.strip()
+
+    # Remove script tags and inline event handlers
+    sanitized = re.sub(r'<script[^>]*>.*?</script>', '', sanitized, flags=re.DOTALL | re.IGNORECASE)
+    sanitized = re.sub(r'\son\w+\s*=\s*["\'][^"\']*["\']', '', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'javascript:', '', sanitized, flags=re.IGNORECASE)
+
+    # Strip remaining HTML tags
+    sanitized = re.sub(r'<[^>]+>', '', sanitized)
+    sanitized = html.unescape(sanitized)
+
+    # Remove control characters
+    sanitized = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', sanitized)
+
     if len(sanitized) > max_length:
         sanitized = sanitized[:max_length]
 

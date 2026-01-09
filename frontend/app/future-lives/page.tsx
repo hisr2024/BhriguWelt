@@ -11,7 +11,8 @@ import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
-import { futureLivesAPI, BirthDetails } from '@/lib/api';
+import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
+import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import Link from 'next/link';
 
 export default function FutureLivesPage() {
@@ -79,8 +80,15 @@ export default function FutureLivesPage() {
       };
 
       try {
-        const prediction = await futureLivesAPI.getPrediction(birthDetails);
-        setData(prediction);
+        const response = await bhriguPredictionsAPI.getFutureLives(birthDetails);
+        const prediction = normalizePredictionResponse<any>(response).prediction;
+        setData({
+          ...prediction,
+          predictions: prediction?.next_incarnation ?? prediction?.future_scenarios ?? prediction?.full_analysis,
+          evolution_path: prediction?.evolution_trajectory ?? prediction?.ultimate_destiny,
+          moksha_timeline: prediction?.moksha_timeline,
+          future_missions: prediction?.bodhisattva_path ?? prediction?.higher_realms
+        });
       } catch (apiError) {
         console.error('API error, using offline mode:', apiError);
         setData({

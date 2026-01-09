@@ -54,6 +54,8 @@ The **Soul Journey** Flutter app is a production-ready, offline-first astrology 
 ### Prerequisites
 - Flutter 3.2+ and Dart 3.0+
 - iOS 13+ / Android 6.0+ / Modern browser
+- Node.js 22.x (frontend PWA tooling)
+- Python 3.11.9 (backend API/deployment)
 
 ### Installation
 
