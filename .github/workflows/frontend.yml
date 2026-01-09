@@ -20,13 +20,13 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "22.11.0"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Verify Node version
+      - name: Verify toolchain compatibility
         run: |
-          node -e "const fs=require('fs');const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));const expected=pkg.engines?.node; if(!expected){throw new Error('Missing engines.node in package.json');} const expectedMajor=(expected.match(/\\d+/)||[])[0]; const actualMajor=process.versions.node.split('.')[0]; if(expectedMajor!==actualMajor){throw new Error(`Expected Node ${expected}, got ${process.versions.node}`);} console.log(`Node version OK: ${process.versions.node}`);"
+          node -e "const pkg=require('./package.json'); const expectedNode=pkg.engines.node; const expectedNpm=pkg.engines.npm; const actualNode=process.version.replace('v',''); const {execSync}=require('child_process'); const actualNpm=execSync('npm --version').toString().trim(); if (actualNode !== expectedNode) { throw new Error(`Node version ${actualNode} does not match required ${expectedNode}`); } if (actualNpm !== expectedNpm) { throw new Error(`npm version ${actualNpm} does not match required ${expectedNpm}`); } console.log(`Node ${actualNode} and npm ${actualNpm} match package.json engines.`);"
 
       - name: Install dependencies
         working-directory: frontend

@@ -19,6 +19,7 @@ Before deploying, ensure you have:
 2. **GitHub Account** - For repository and deployments
 3. **Vercel Account** - Sign up at https://vercel.com
 4. **Render Account** - Sign up at https://render.com
+5. **Node.js 22.11.0 + npm 10.9.2** - Required for frontend builds and Vercel deploys
 
 ---
 
