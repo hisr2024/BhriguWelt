@@ -7,11 +7,14 @@ from services.astrology_calculator import get_astrology_calculator, get_astrolog
 from services.prediction_orchestrator import get_prediction_orchestrator
 from services.section_parser import get_section_parser
 from utils.client_status import parse_client_online
+from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
 from datetime import datetime
 import logging
+from utils.validators import sanitizeQuestion
 from utils.response_formatter import prediction_response, prediction_error_response
+from utils.validators import sanitize_input
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 bp = Blueprint('predictions', __name__, url_prefix='/api/predictions')
 orchestrator = get_prediction_orchestrator()
@@ -30,7 +33,9 @@ def daily_prediction():
             birth_chart = calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=data['place_of_birth']
+                place=data['place_of_birth'],
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
@@ -79,7 +84,11 @@ def daily_prediction():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate daily prediction: {str(e)}", 500)
+        log_exception(logger, e, context="predictions.daily")
+        return prediction_error_response(
+            "Failed to generate daily prediction. Please try again later.",
+            500
+        )
 
 @bp.route('/weekly', methods=['POST'])
 def weekly_prediction():
@@ -95,7 +104,9 @@ def weekly_prediction():
             birth_chart = calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=data['place_of_birth']
+                place=data['place_of_birth'],
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
@@ -139,7 +150,11 @@ def weekly_prediction():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate weekly prediction: {str(e)}", 500)
+        log_exception(logger, e, context="predictions.weekly")
+        return prediction_error_response(
+            "Failed to generate weekly prediction. Please try again later.",
+            500
+        )
 
 @bp.route('/monthly', methods=['POST'])
 def monthly_prediction():
@@ -155,7 +170,9 @@ def monthly_prediction():
             birth_chart = calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=data['place_of_birth']
+                place=data['place_of_birth'],
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
@@ -202,7 +219,11 @@ def monthly_prediction():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate monthly prediction: {str(e)}", 500)
+        log_exception(logger, e, context="predictions.monthly")
+        return prediction_error_response(
+            "Failed to generate monthly prediction. Please try again later.",
+            500
+        )
 
 @bp.route('/yearly', methods=['POST'])
 def yearly_prediction():
@@ -218,7 +239,9 @@ def yearly_prediction():
             birth_chart = calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=data['place_of_birth']
+                place=data['place_of_birth'],
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
@@ -266,17 +289,23 @@ def yearly_prediction():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate yearly prediction: {str(e)}", 500)
+        log_exception(logger, e, context="predictions.yearly")
+        return prediction_error_response(
+            "Failed to generate yearly prediction. Please try again later.",
+            500
+        )
 
 @bp.route('/question', methods=['POST'])
 def specific_question():
     """Get prediction for specific question"""
     try:
         data = request.get_json()
-        question = data.get('question')
+        raw_question = data.get('question')
+        question = sanitizeQuestion(raw_question, max_length=500) if raw_question else ''
 
         if not question:
             return prediction_error_response('Question is required', 400)
+        logger.info("Received sanitized question: %s", question)
 
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
@@ -287,7 +316,9 @@ def specific_question():
             birth_chart = calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=data['place_of_birth']
+                place=data['place_of_birth'],
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
@@ -338,7 +369,11 @@ def specific_question():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to answer prediction question: {str(e)}", 500)
+        log_exception(logger, e, context="predictions.question")
+        return prediction_error_response(
+            "Failed to answer prediction question. Please try again later.",
+            500
+        )
 
 @bp.route('/test-section-extraction', methods=['POST'])
 def test_section_extraction():
@@ -390,8 +425,8 @@ def test_section_extraction():
         }), 200
 
     except Exception as e:
-        logger.error(f"Error in test section extraction: {e}", exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        log_exception(logger, e, context="predictions.test_section_extraction")
+        return error_response("Failed to test section extraction.", 500)
 
 @bp.route('/debug-info', methods=['GET'])
 def debug_info():
@@ -422,5 +457,5 @@ def debug_info():
         }), 200
 
     except Exception as e:
-        logger.error(f"Error in debug info: {e}", exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        log_exception(logger, e, context="predictions.debug_info")
+        return error_response("Failed to load debug info.", 500)

@@ -5,7 +5,8 @@
 
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
+import { useOnlineStatus } from './useOnlineStatus';
 
 interface AutoLockOptions {
   enabled: boolean;
@@ -131,22 +132,7 @@ export function useLockOnBackground(onLock: () => void, enabled: boolean = true)
  * Hook for detecting when app goes offline
  */
 export function useOfflineDetection() {
-  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true);
-
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  return isOnline;
+  return useOnlineStatus();
 }
 
 /**
@@ -170,6 +156,3 @@ export function useTimeUntilLock(
 
   return remainingSeconds;
 }
-
-// Import useState for useOfflineDetection
-import { useState } from 'react';

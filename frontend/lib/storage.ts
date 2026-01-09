@@ -15,6 +15,13 @@ import {
 // Database configuration
 const DB_NAME = 'BhriguWeltDB';
 const DB_VERSION = 1;
+const METADATA_KEYS = {
+  LEGACY_SALT: 'encryptionSalt',
+  USER_ID: 'encryptionUserId',
+  ROTATION_PENDING: 'encryptionRotationPending',
+} as const;
+
+const getUserSaltKey = (userId: string) => `encryptionSalt:${userId}`;
 
 // Store names
 export const STORES = {
@@ -27,6 +34,14 @@ export const STORES = {
 
 // IndexedDB connection
 let db: IDBDatabase | null = null;
+
+function generateUserId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return uint8ArrayToBase64(crypto.getRandomValues(new Uint8Array(16)));
+}
 
 /**
  * Initialize the IndexedDB database
@@ -146,7 +161,13 @@ export async function secureWipe(): Promise<void> {
 
 export async function resetEncryption(): Promise<void> {
   try {
-    await deleteItem(STORES.METADATA, 'encryptionSalt');
+    const userId = await getItem(STORES.METADATA, METADATA_KEYS.USER_ID);
+    if (userId && typeof userId === 'string') {
+      await deleteItem(STORES.METADATA, getUserSaltKey(userId));
+    }
+    await deleteItem(STORES.METADATA, METADATA_KEYS.LEGACY_SALT);
+    await deleteItem(STORES.METADATA, METADATA_KEYS.USER_ID);
+    await deleteItem(STORES.METADATA, METADATA_KEYS.ROTATION_PENDING);
     await deleteItem(STORES.METADATA, 'encryptionTest');
     await deleteItem(STORES.METADATA, 'passcodeHash');
     await deleteItem(STORES.METADATA, 'setupComplete');
@@ -239,6 +260,33 @@ export async function getItem(
   });
 }
 
+async function getRawItems(storeName: string): Promise<any[]> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(storeName, 'readonly');
+    const store = transaction.objectStore(storeName);
+    const request = store.getAll();
+
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () => reject(new Error('Failed to retrieve items'));
+  });
+}
+
+async function putRawItems(storeName: string, items: any[]): Promise<void> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(storeName, 'readwrite');
+    const store = transaction.objectStore(storeName);
+
+    items.forEach((item) => store.put(item));
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(new Error('Failed to update items'));
+  });
+}
+
 export async function getAllItems(
   storeName: string,
   encryptionKey?: CryptoKey
@@ -291,6 +339,35 @@ export async function getAllItems(
   });
 }
 
+async function getActiveEncryptionUserId(): Promise<string | null> {
+  const existing = await getItem(STORES.METADATA, METADATA_KEYS.USER_ID);
+  if (existing && typeof existing === 'string') {
+    return existing;
+  }
+
+  const legacySalt = await getItem(STORES.METADATA, METADATA_KEYS.LEGACY_SALT);
+  if (legacySalt && typeof legacySalt === 'string') {
+    const userId = generateUserId();
+    await setItem(STORES.METADATA, METADATA_KEYS.USER_ID, userId);
+    await setItem(STORES.METADATA, getUserSaltKey(userId), legacySalt);
+    await deleteItem(STORES.METADATA, METADATA_KEYS.LEGACY_SALT);
+    return userId;
+  }
+
+  return null;
+}
+
+async function ensureEncryptionUserId(): Promise<string> {
+  const existing = await getActiveEncryptionUserId();
+  if (existing) {
+    return existing;
+  }
+
+  const userId = generateUserId();
+  await setItem(STORES.METADATA, METADATA_KEYS.USER_ID, userId);
+  return userId;
+}
+
 export async function deleteItem(
   storeName: string,
   key: string | number
@@ -321,11 +398,13 @@ export async function countItems(storeName: string): Promise<number> {
 }
 
 export async function setupEncryption(passcode: string): Promise<CryptoKey> {
+  const userId = await ensureEncryptionUserId();
   const salt = generateSalt();
   const saltBase64 = uint8ArrayToBase64(salt);
 
   // Store salt as a string value (not wrapped in an additional object)
-  await setItem(STORES.METADATA, 'encryptionSalt', saltBase64);
+  await deleteItem(STORES.METADATA, METADATA_KEYS.LEGACY_SALT);
+  await setItem(STORES.METADATA, getUserSaltKey(userId), saltBase64);
 
   const key = await deriveKey(passcode, salt);
 
@@ -336,7 +415,12 @@ export async function setupEncryption(passcode: string): Promise<CryptoKey> {
 }
 
 export async function getEncryptionKey(passcode: string): Promise<CryptoKey> {
-  const saltValue = await getItem(STORES.METADATA, 'encryptionSalt');
+  const userId = await getActiveEncryptionUserId();
+  if (!userId) {
+    throw new Error('Encryption not set up - user not found');
+  }
+
+  const saltValue = await getItem(STORES.METADATA, getUserSaltKey(userId));
 
   if (!saltValue || typeof saltValue !== 'string') {
     throw new Error('Encryption not set up - salt not found or invalid');
@@ -358,11 +442,69 @@ export async function verifyEncryptionKey(passcode: string): Promise<boolean> {
 
 export async function isEncryptionSetup(): Promise<boolean> {
   try {
-    const saltValue = await getItem(STORES.METADATA, 'encryptionSalt');
+    const userId = await getActiveEncryptionUserId();
+    if (!userId) {
+      return false;
+    }
+    const saltValue = await getItem(STORES.METADATA, getUserSaltKey(userId));
     return !!saltValue && typeof saltValue === 'string';
   } catch (error) {
     return false;
   }
+}
+
+export async function markKeyRotationRequired(): Promise<void> {
+  await setItem(STORES.METADATA, METADATA_KEYS.ROTATION_PENDING, true);
+}
+
+export async function isKeyRotationRequired(): Promise<boolean> {
+  const value = await getItem(STORES.METADATA, METADATA_KEYS.ROTATION_PENDING);
+  return value === true;
+}
+
+export async function clearKeyRotationRequired(): Promise<void> {
+  await deleteItem(STORES.METADATA, METADATA_KEYS.ROTATION_PENDING);
+}
+
+export async function rotateEncryptionKey(
+  passcode: string,
+  currentKey: CryptoKey
+): Promise<CryptoKey> {
+  const userId = await ensureEncryptionUserId();
+  const newSalt = generateSalt();
+  const newSaltBase64 = uint8ArrayToBase64(newSalt);
+  const newKey = await deriveKey(passcode, newSalt);
+
+  for (const storeName of Object.values(STORES)) {
+    const items = await getRawItems(storeName);
+    if (!items.length) {
+      continue;
+    }
+
+    const updatedItems = await Promise.all(
+      items.map(async (item) => {
+        if (!item.encrypted) {
+          return item;
+        }
+        const decrypted = await decryptFromStorage(item.value, currentKey);
+        const encryptedValue = await encryptForStorage(decrypted, newKey);
+        return {
+          ...item,
+          value: encryptedValue,
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+
+    await putRawItems(storeName, updatedItems);
+  }
+
+  await deleteItem(STORES.METADATA, METADATA_KEYS.LEGACY_SALT);
+  await setItem(STORES.METADATA, getUserSaltKey(userId), newSaltBase64);
+  const testData = { test: 'encryption setup successful' };
+  await setItem(STORES.METADATA, 'encryptionTest', testData, newKey);
+
+  return newKey;
 }
 
 export async function exportDatabase(encryptionKey?: CryptoKey): Promise<string> {

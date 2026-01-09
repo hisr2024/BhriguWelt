@@ -7,6 +7,7 @@ from services.astrology_calculator import astrology_calculator
 from services.prediction_orchestrator import get_prediction_orchestrator
 from utils.client_status import parse_client_online
 from utils.response_formatter import prediction_response, prediction_error_response
+from utils.validators import sanitize_input
 
 bp = Blueprint('present_life', __name__, url_prefix='/api/present-life')
 orchestrator = get_prediction_orchestrator()
@@ -54,7 +55,11 @@ def comprehensive_analysis():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate present life analysis: {str(e)}", 500)
+        log_exception(logger, e, context="present_life.analysis")
+        return prediction_error_response(
+            "Failed to generate present life analysis. Please try again later.",
+            500
+        )
 
 @bp.route('/career-guidance', methods=['POST'])
 def career_guidance():
@@ -106,7 +111,11 @@ def career_guidance():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate career guidance: {str(e)}", 500)
+        log_exception(logger, e, context="present_life.career_guidance")
+        return prediction_error_response(
+            "Failed to generate career guidance. Please try again later.",
+            500
+        )
 
 @bp.route('/relationships', methods=['POST'])
 def relationships_analysis():
@@ -158,7 +167,11 @@ def relationships_analysis():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate relationships analysis: {str(e)}", 500)
+        log_exception(logger, e, context="present_life.relationships")
+        return prediction_error_response(
+            "Failed to generate relationships analysis. Please try again later.",
+            500
+        )
 
 @bp.route('/health-wellness', methods=['POST'])
 def health_wellness():
@@ -210,7 +223,11 @@ def health_wellness():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate health guidance: {str(e)}", 500)
+        log_exception(logger, e, context="present_life.health_guidance")
+        return prediction_error_response(
+            "Failed to generate health guidance. Please try again later.",
+            500
+        )
 
 @bp.route('/financial-prospects', methods=['POST'])
 def financial_prospects():
@@ -262,7 +279,11 @@ def financial_prospects():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate financial prospects: {str(e)}", 500)
+        log_exception(logger, e, context="present_life.financial_prospects")
+        return prediction_error_response(
+            "Failed to generate financial prospects. Please try again later.",
+            500
+        )
 
 @bp.route('/spiritual-growth', methods=['POST'])
 def spiritual_growth():
@@ -314,7 +335,11 @@ def spiritual_growth():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate spiritual guidance: {str(e)}", 500)
+        log_exception(logger, e, context="present_life.spiritual_guidance")
+        return prediction_error_response(
+            "Failed to generate spiritual guidance. Please try again later.",
+            500
+        )
 
 @bp.route('/current-dasha', methods=['POST'])
 def current_dasha():
@@ -324,7 +349,9 @@ def current_dasha():
         birth_chart = astrology_calculator.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
+            place=data['place_of_birth'],
+            timezone_override=sanitize_input(data['timezone'], max_length=64)
+            if data.get('timezone') else None
         )
 
         prompt = f"""
@@ -366,4 +393,8 @@ def current_dasha():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate dasha analysis: {str(e)}", 500)
+        log_exception(logger, e, context="present_life.dasha_analysis")
+        return prediction_error_response(
+            "Failed to generate dasha analysis. Please try again later.",
+            500
+        )

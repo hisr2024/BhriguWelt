@@ -7,6 +7,7 @@ from services.astrology_calculator import astrology_calculator
 from services.prediction_orchestrator import get_prediction_orchestrator
 from utils.client_status import parse_client_online
 from utils.response_formatter import prediction_response, prediction_error_response
+from utils.validators import sanitize_input
 
 bp = Blueprint('past_lives', __name__, url_prefix='/api/past-lives')
 orchestrator = get_prediction_orchestrator()
@@ -53,7 +54,11 @@ def past_lives_analysis():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate past lives analysis: {str(e)}", 500)
+        log_exception(logger, e, context="past_lives.analysis")
+        return prediction_error_response(
+            "Failed to generate past lives analysis. Please try again later.",
+            500
+        )
 
 @bp.route('/karmic-patterns', methods=['POST'])
 def karmic_patterns():
@@ -102,7 +107,11 @@ def karmic_patterns():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate karmic patterns: {str(e)}", 500)
+        log_exception(logger, e, context="past_lives.karmic_patterns")
+        return prediction_error_response(
+            "Failed to generate karmic patterns. Please try again later.",
+            500
+        )
 
 @bp.route('/past-relationships', methods=['POST'])
 def past_relationships():
@@ -151,7 +160,11 @@ def past_relationships():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate past relationships: {str(e)}", 500)
+        log_exception(logger, e, context="past_lives.past_relationships")
+        return prediction_error_response(
+            "Failed to generate past relationships. Please try again later.",
+            500
+        )
 
 @bp.route('/talents-carried-forward', methods=['POST'])
 def talents_carried_forward():
@@ -161,7 +174,9 @@ def talents_carried_forward():
         birth_chart = astrology_calculator.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
+            place=data['place_of_birth'],
+            timezone_override=sanitize_input(data['timezone'], max_length=64)
+            if data.get('timezone') else None
         )
 
         prompt = f"""
@@ -202,7 +217,11 @@ def talents_carried_forward():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate talents carried forward: {str(e)}", 500)
+        log_exception(logger, e, context="past_lives.talents_carried_forward")
+        return prediction_error_response(
+            "Failed to generate talents carried forward. Please try again later.",
+            500
+        )
 
 @bp.route('/past-traumas', methods=['POST'])
 def past_traumas():
@@ -212,7 +231,9 @@ def past_traumas():
         birth_chart = astrology_calculator.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
+            place=data['place_of_birth'],
+            timezone_override=sanitize_input(data['timezone'], max_length=64)
+            if data.get('timezone') else None
         )
 
         prompt = f"""
@@ -253,4 +274,8 @@ def past_traumas():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate past traumas: {str(e)}", 500)
+        log_exception(logger, e, context="past_lives.past_traumas")
+        return prediction_error_response(
+            "Failed to generate past traumas. Please try again later.",
+            500
+        )

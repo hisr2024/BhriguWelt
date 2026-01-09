@@ -7,6 +7,7 @@ from services.astrology_calculator import astrology_calculator
 from services.prediction_orchestrator import get_prediction_orchestrator
 from utils.client_status import parse_client_online
 from utils.response_formatter import prediction_response, prediction_error_response
+from utils.validators import sanitize_input
 
 bp = Blueprint('karmic_journey', __name__, url_prefix='/api/karmic-journey')
 orchestrator = get_prediction_orchestrator()
@@ -54,7 +55,11 @@ def karmic_journey_analysis():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate karmic journey analysis: {str(e)}", 500)
+        log_exception(logger, e, context="karmic_journey.analysis")
+        return prediction_error_response(
+            "Failed to generate karmic journey analysis. Please try again later.",
+            500
+        )
 
 @bp.route('/soul-purpose', methods=['POST'])
 def soul_purpose():
@@ -103,7 +108,11 @@ def soul_purpose():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate soul purpose: {str(e)}", 500)
+        log_exception(logger, e, context="karmic_journey.soul_purpose")
+        return prediction_error_response(
+            "Failed to generate soul purpose. Please try again later.",
+            500
+        )
 
 @bp.route('/karmic-lessons', methods=['POST'])
 def karmic_lessons():
@@ -153,7 +162,11 @@ def karmic_lessons():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate karmic lessons: {str(e)}", 500)
+        log_exception(logger, e, context="karmic_journey.karmic_lessons")
+        return prediction_error_response(
+            "Failed to generate karmic lessons. Please try again later.",
+            500
+        )
 
 @bp.route('/soul-evolution', methods=['POST'])
 def soul_evolution():
@@ -202,7 +215,11 @@ def soul_evolution():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate soul evolution: {str(e)}", 500)
+        log_exception(logger, e, context="karmic_journey.soul_evolution")
+        return prediction_error_response(
+            "Failed to generate soul evolution. Please try again later.",
+            500
+        )
 
 @bp.route('/dharmic-path', methods=['POST'])
 def dharmic_path():
@@ -212,7 +229,9 @@ def dharmic_path():
         birth_chart = astrology_calculator.calculate_birth_chart(
             date_of_birth=data['date_of_birth'],
             time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth']
+            place=data['place_of_birth'],
+            timezone_override=sanitize_input(data['timezone'], max_length=64)
+            if data.get('timezone') else None
         )
 
         prompt = f"""
@@ -253,4 +272,8 @@ def dharmic_path():
         )
 
     except Exception as e:
-        return prediction_error_response(f"Failed to generate dharmic path: {str(e)}", 500)
+        log_exception(logger, e, context="karmic_journey.dharmic_path")
+        return prediction_error_response(
+            "Failed to generate dharmic path. Please try again later.",
+            500
+        )

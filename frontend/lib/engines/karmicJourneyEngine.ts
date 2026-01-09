@@ -3,8 +3,11 @@
  * Two-phase engine: generation + precision check using Bhrigu Samhita & Nadi Jyotisa rules.
  */
 
+import 'server-only';
+
 import type { ChartData, PredictionResult, Subcategory } from '../api/predictions';
 import { getAIMode } from '../ai-preferences';
+import { isSectionContentValid } from '../sectionParserConfig';
 
 type KarmicJourneyMode = 'offline' | 'online' | 'hybrid';
 
@@ -572,7 +575,8 @@ const fetchAISynthesis = async (
     }
 
     const payload = await response.json();
-    return payload?.data?.refined_section ?? null;
+    const refined = payload?.data?.refined_section ?? null;
+    return isSectionContentValid(refined) ? refined : null;
   } catch (error) {
     console.error('[KarmicJourneyEngine] AI synthesis failed:', error);
     return null;
