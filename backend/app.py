@@ -250,10 +250,18 @@ def handle_preflight():
             for header in requested_headers.split(',')
             if header.strip()
         ]
+        # Case-insensitive header merging - HTTP headers are case-insensitive
+        # Create a lowercase map of base headers for comparison
+        base_headers_lower = {h.lower(): h for h in base_headers}
         merged_headers = base_headers.copy()
+
         for header in requested_header_list:
-            if header not in merged_headers:
+            header_lower = header.lower()
+            # Only add if not already present (case-insensitive check)
+            if header_lower not in base_headers_lower:
                 merged_headers.append(header)
+                base_headers_lower[header_lower] = header
+
         allow_headers_value = ', '.join(merged_headers)
 
         # Create response for preflight
@@ -295,10 +303,18 @@ def add_cors_headers(response):
         for header in requested_headers.split(',')
         if header.strip()
     ]
+    # Case-insensitive header merging - HTTP headers are case-insensitive
+    # Create a lowercase map of base headers for comparison
+    base_headers_lower = {h.lower(): h for h in base_headers}
     merged_headers = base_headers.copy()
+
     for header in requested_header_list:
-        if header not in merged_headers:
+        header_lower = header.lower()
+        # Only add if not already present (case-insensitive check)
+        if header_lower not in base_headers_lower:
             merged_headers.append(header)
+            base_headers_lower[header_lower] = header
+
     allow_headers_value = ', '.join(merged_headers)
 
     # Check if origin is allowed using helper function
