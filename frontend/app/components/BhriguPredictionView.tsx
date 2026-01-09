@@ -5,13 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
-import { VariableSizeList } from 'react-window';
-import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
+import type { Profile, BirthDetails, PredictionResult } from '@/lib/types';
+import { getCurrentLanguage } from '@/lib/copy';
 import { tLocale } from '@/lib/locales';
 import { Accordion } from '@/app/components/ui/Accordion';
 import { AccordionItem } from '@/app/components/ui/AccordionItem';
-import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
-import { useI18n } from '@/lib/context/I18nContext';
+import { useBhriguPrediction } from '@/lib/hooks/useBhriguPrediction';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS: Record<string, Array<{ key: string; titleKey: string; color: string }>> = {
@@ -125,10 +124,6 @@ const COLOR_CLASSES: Record<string, { border: string; hover: string; accent: str
 
 // Default color for sections without a specific color mapping
 const DEFAULT_COLOR = 'cyan';
-const SECTION_HEADERS = sectionHeaders as Record<string, string[]>;
-const PROFILE_HASH_PREFIX = 'profile_hash_';
-const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_';
-const PARTIAL_PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_partial_';
 const SKELETON_LINES = 5;
 const LEGACY_UA_TOKENS = ['MSIE', 'Trident/', 'Edge/'];
 
@@ -216,17 +211,6 @@ const isHeaderLine = (line: string): boolean => {
   return false;
 };
 
-// Helper function to check if profile has required fields
-const hasRequiredProfileFields = (profile: Profile): boolean => {
-  return !!(
-    profile.dateOfBirth &&
-    profile.timeOfBirth &&
-    profile.placeOfBirth &&
-    profile.latitude != null &&
-    profile.longitude != null
-  );
-};
-
 // Helper function to normalize category keys
 const normalizeCategoryKey = (category: string): string => {
   return category?.toLowerCase().replace(/[^a-z0-9-]/g, '-') || '';
@@ -250,164 +234,6 @@ interface BhriguPredictionViewProps {
   profile: Profile | null;
 }
 
-interface NormalizedPrediction {
-  sections: Record<string, string>;
-  fullAnalysis: string;
-  metadata?: BhriguPrediction['metadata'] & { category?: string };
-}
-
-interface DebugPredictionPayload {
-  metadata?: BhriguPrediction['metadata'] & { category?: string };
-  fullAnalysisLength: number;
-  sectionKeys: string[];
-  sectionLengths: Record<string, number>;
-}
-
-const getProfileHashKey = (profile: Profile) => `${PROFILE_HASH_PREFIX}${profile.id ?? 'current'}`;
-
-const getPredictionCacheKey = (
-  profile: Profile,
-  category: string,
-  question: string,
-  language: string
-) => {
-  const questionKey = question.trim() === '' ? 'default' : encodeURIComponent(question.trim());
-  return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${questionKey}_${language}`;
-};
-
-const getPartialPredictionCacheKey = (profile: Profile, category: string, question: string) => {
-  const questionKey = question.trim() === '' ? 'default' : encodeURIComponent(question.trim());
-  return `${PARTIAL_PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${questionKey}`;
-};
-
-const isPredictionResult = (value: unknown): value is PredictionResult => {
-  return (
-    !!value &&
-    typeof value === 'object' &&
-    'status' in value &&
-    'data' in value &&
-    'timestamp' in value
-  );
-};
-
-const normalizeCachedPrediction = (value: unknown): PredictionResult | null => {
-  if (isPredictionResult(value)) {
-    return value;
-  }
-
-  if (value && typeof value === 'object') {
-    return {
-      status: 'success',
-      message: '',
-      data: value as BhriguPrediction,
-      timestamp: new Date().toISOString(),
-    };
-  }
-
-  return null;
-};
-
-const getPredictionPayload = (result: PredictionResult | null): BhriguPrediction | null => {
-  if (!result) return null;
-  const data = result.data;
-  if (data && typeof data === 'object' && 'prediction' in data) {
-    return (data as { prediction: BhriguPrediction }).prediction ?? null;
-  }
-  return data as BhriguPrediction;
-};
-
-const clearCachedPredictions = (profile: Profile) => {
-  if (typeof window === 'undefined') return;
-  const prefix = `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_`;
-  for (let i = localStorage.length - 1; i >= 0; i -= 1) {
-    const key = localStorage.key(i);
-    if (key && (key.startsWith(prefix) || key.startsWith(PARTIAL_PREDICTION_CACHE_PREFIX))) {
-      localStorage.removeItem(key);
-    }
-  }
-};
-
-const getProfileHash = async (profile: Profile) => {
-  const profilePayload = JSON.stringify({
-    id: profile.id ?? null,
-    name: profile.name ?? '',
-    dateOfBirth: profile.dateOfBirth ?? '',
-    timeOfBirth: profile.timeOfBirth ?? '',
-    placeOfBirth: profile.placeOfBirth ?? '',
-    latitude: profile.latitude ?? null,
-    longitude: profile.longitude ?? null,
-  });
-  const encoder = new TextEncoder();
-  const data = encoder.encode(profilePayload);
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-};
-
-const isSectionContentAvailable = (content: unknown) => {
-  if (typeof content !== 'string') return false;
-  const trimmedContent = content.trim();
-  if (!trimmedContent) return false;
-  const isRedirectOnly = (
-    trimmedContent.length < 50 &&
-    (trimmedContent.toLowerCase().includes('see full analysis') ||
-      trimmedContent.toLowerCase().includes('see complete') ||
-      trimmedContent.toLowerCase().includes('refer to'))
-  );
-  return !isRedirectOnly;
-};
-
-const getSectionAvailability = (prediction: BhriguPrediction, normalizedCategory: string) => {
-  const sections = CATEGORY_SECTIONS[normalizedCategory] || [];
-  const availableKeys = sections
-    .filter((section) => isSectionContentAvailable(prediction[section.key]))
-    .map((section) => section.key);
-  const missingKeys = sections
-    .filter((section) => !availableKeys.includes(section.key))
-    .map((section) => section.key);
-  return {
-    availableKeys,
-    missingKeys,
-    total: sections.length
-  };
-};
-
-const mergePredictionWithPartial = (
-  incoming: BhriguPrediction,
-  cached: BhriguPrediction | null,
-  normalizedCategory: string
-) => {
-  if (!cached) return incoming;
-  const merged: BhriguPrediction = {
-    ...cached,
-    ...incoming,
-    full_analysis: incoming.full_analysis || cached.full_analysis,
-    complete_analysis: incoming.complete_analysis || cached.complete_analysis,
-    metadata: incoming.metadata || cached.metadata,
-    category: incoming.category || cached.category,
-    title: incoming.title || cached.title,
-  };
-
-  const sections = CATEGORY_SECTIONS[normalizedCategory] || [];
-  for (const section of sections) {
-    const incomingContent = incoming[section.key];
-    const cachedContent = cached[section.key];
-    if (!isSectionContentAvailable(incomingContent) && isSectionContentAvailable(cachedContent)) {
-      merged[section.key] = cachedContent;
-    }
-  }
-
-  return merged;
-};
-
-type PartialPredictionCache = {
-  profileHash: string;
-  prediction: BhriguPrediction;
-  missingSectionKeys: string[];
-  updatedAt: string;
-};
-
 export default function BhriguPredictionView({
   category,
   title,
@@ -416,20 +242,19 @@ export default function BhriguPredictionView({
   fetchPrediction,
   profile
 }: BhriguPredictionViewProps) {
-  const [prediction, setPrediction] = useState<PredictionResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [errorDetails, setErrorDetails] = useState<{
-    code?: string;
-    action: string;
-    isNetwork: boolean;
-    message: string;
-  } | null>(null);
-  const [fromCache, setFromCache] = useState(false);
-  const [question, setQuestion] = useState('');
+  const {
+    prediction,
+    loading,
+    error,
+    errorDetails,
+    fromCache,
+    question,
+    setQuestion,
+    profileUpdated,
+    loadPrediction,
+  } = useBhriguPrediction({ category, fetchPrediction, profile });
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
-  const [profileUpdated, setProfileUpdated] = useState(false);
   const [parsedFromFullAnalysis, setParsedFromFullAnalysis] = useState<Record<string, string>>({});
   const [isParsing, setIsParsing] = useState(false);
   const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
@@ -444,284 +269,6 @@ export default function BhriguPredictionView({
   const { debugUI } = useFeatureFlags();
   const searchParams = useSearchParams();
   const debugAllowed = searchParams?.get('debug') === 'true';
-
-  const buildPredictionExport = (predictionData: BhriguPrediction) => {
-    const sections = CATEGORY_SECTIONS[category] ?? [];
-    const sectionBlocks = sections
-      .map((section) => {
-        const value = predictionData[section.key];
-        if (typeof value === 'string' && value.trim().length > 0) {
-          return `## ${tLocale(section.titleKey, language)}\n${value.trim()}`;
-        }
-        return null;
-      })
-      .filter((block): block is string => Boolean(block));
-
-    const analysisBlock =
-      typeof predictionData.full_analysis === 'string' && predictionData.full_analysis.trim().length > 0
-        ? predictionData.full_analysis.trim()
-        : typeof predictionData.complete_analysis === 'string'
-          ? predictionData.complete_analysis?.trim()
-          : '';
-
-    const metadataEntries = predictionData.metadata
-      ? Object.entries(predictionData.metadata)
-          .filter(([, value]) => typeof value === 'string' && value.trim().length > 0)
-          .map(([key, value]) => `- ${key.replace(/_/g, ' ')}: ${value}`)
-      : [];
-
-    const headerLines = [
-      'BhriguWelt Prediction',
-      `Category: ${title}`,
-      profile?.name ? `Profile: ${profile.name}` : null,
-      question ? `Question: ${question}` : null,
-      `Generated: ${predictionData.generated_at ?? new Date().toISOString()}`
-    ].filter((line): line is string => Boolean(line));
-
-    const bodyLines = [
-      ...sectionBlocks,
-      analysisBlock ? `## Complete Analysis\n${analysisBlock}` : null,
-      metadataEntries.length > 0 ? `## Metadata\n${metadataEntries.join('\n')}` : null
-    ].filter((block): block is string => Boolean(block));
-
-    return `${headerLines.join('\n')}\n\n${bodyLines.join('\n\n')}`;
-  };
-
-  const handleDownload = () => {
-    if (!prediction) return;
-
-    const exportText = buildPredictionExport(prediction);
-    const blob = new Blob([exportText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const dateStamp = new Date().toISOString().split('T')[0];
-    link.href = url;
-    link.download = `bhriguwelt-${category}-${dateStamp}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleShare = async () => {
-    if (!prediction) return;
-
-    const shareText = buildPredictionExport(prediction);
-    const shareTitle = `${title} Prediction`;
-
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: shareTitle, text: shareText });
-        return;
-      }
-
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(shareText);
-        return;
-      }
-
-      console.warn('Sharing is not supported in this browser.');
-    } catch (error) {
-      console.error('Failed to share prediction:', error);
-    }
-  };
-
-  useEffect(() => {
-    if (profile) {
-      const checkProfile = async () => {
-        const currentHash = await getProfileHash(profile);
-        const hashKey = getProfileHashKey(profile);
-        const storedHash = localStorage.getItem(hashKey);
-        const hasChanged = Boolean(storedHash && storedHash !== currentHash);
-
-        if (hasChanged) {
-          clearCachedPredictions(profile);
-        }
-
-        localStorage.setItem(hashKey, currentHash);
-        setProfileUpdated(hasChanged);
-        await loadPrediction(hasChanged, currentHash);
-      };
-      checkProfile();
-    }
-  }, [profile]);
-
-  useEffect(() => {
-    if (profile) {
-      loadPrediction(false);
-    }
-  }, [aiLanguage]);
-
-  const loadPrediction = async (forceRegenerate = false, profileHash?: string) => {
-    if (!profile) return;
-
-    if (!hasRequiredProfileFields(profile)) {
-      setError(t('bhriguPredictionView.errors.missingBirthDetails'));
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setFromCache(false);
-    setPartialCacheUsed(false);
-
-    try {
-      const resolvedHash = profileHash ?? await getProfileHash(profile);
-      const cacheKey = getPredictionCacheKey(profile, category, question, aiLanguage);
-      const cached = localStorage.getItem(cacheKey);
-      const cachedPartial = localStorage.getItem(partialCacheKey);
-
-      if (!forceRegenerate && cached) {
-        try {
-          const parsed = JSON.parse(cached) as { profileHash: string; prediction: unknown };
-          if (parsed.profileHash === resolvedHash) {
-            const normalizedCache = normalizeCachedPrediction(parsed.prediction);
-            if (normalizedCache) {
-              setPrediction(normalizedCache);
-              setFromCache(true);
-              setLoading(false);
-              return;
-            }
-            setFromCache(true);
-            setPartialCacheUsed(false);
-            setLoading(false);
-            return;
-          }
-          localStorage.removeItem(cacheKey);
-        } catch (parseError) {
-          localStorage.removeItem(cacheKey);
-        }
-      }
-
-      if (cachedPartial) {
-        try {
-          const parsedPartial = JSON.parse(cachedPartial) as PartialPredictionCache;
-          if (parsedPartial.profileHash === resolvedHash) {
-            setPrediction(parsedPartial.prediction);
-            setPartialCacheUsed(true);
-          } else {
-            localStorage.removeItem(partialCacheKey);
-          }
-        } catch (parseError) {
-          localStorage.removeItem(partialCacheKey);
-        }
-      }
-
-      if (forceRegenerate) {
-        localStorage.removeItem(cacheKey);
-      }
-
-      const profileData = {
-        date_of_birth: profile.dateOfBirth,
-        time_of_birth:  profile.timeOfBirth,
-        place_of_birth:  profile.placeOfBirth,
-        latitude: profile.latitude,
-        longitude: profile.longitude,
-        question: question || undefined,
-        force_regenerate: forceRegenerate,
-        language: aiLanguage
-      };
-
-      const response = await fetchPrediction(profileData);
-      const normalized = normalizePredictionResponse<BhriguPrediction>(response);
-      const normalizedResult: PredictionResult = {
-        status: normalized.status,
-        message: normalized.message ?? response?.message ?? '',
-        data: normalized.prediction ?? response?.data ?? response,
-        timestamp: response?.timestamp ?? new Date().toISOString(),
-        meta: normalized.metadata ?? response?.meta,
-      };
-      const resolvedPredictionData = getPredictionPayload(normalizedResult);
-      const cacheMetadata =
-        normalizedResult.meta ??
-        (resolvedPredictionData?.metadata as Record<string, unknown> | undefined);
-
-      if (normalizedResult.status === 'success') {
-        setPrediction(normalizedResult);
-        setFromCache(Boolean(
-          cacheMetadata?.from_cache ||
-          cacheMetadata?.source === 'cache' ||
-          normalizedResult.message?.toLowerCase()?.includes('cache')
-        ));
-        const availability = getSectionAvailability(mergedPrediction, normalizedCategory);
-        const isPartial = availability.availableKeys.length > 0 && availability.missingKeys.length > 0;
-        if (isPartial) {
-          const partialPayload: PartialPredictionCache = {
-            profileHash: resolvedHash,
-            prediction: mergedPrediction,
-            missingSectionKeys: availability.missingKeys,
-            updatedAt: new Date().toISOString()
-          };
-          localStorage.setItem(partialCacheKey, JSON.stringify(partialPayload));
-          setPartialCacheUsed(true);
-        } else {
-          localStorage.removeItem(partialCacheKey);
-          setPartialCacheUsed(false);
-        }
-        localStorage.setItem(
-          cacheKey,
-          JSON.stringify({
-            profileHash: resolvedHash,
-            prediction: normalizedResult,
-          })
-        );
-      } else {
-        setError(normalizedResult.message || 'Failed to generate prediction');
-      }
-    } catch (err: any) {
-      const status = err?.response?.status;
-      const apiMessage = err?.response?.data?.message || err?.response?.data?.error;
-      const message = apiMessage || err?.message || t('bhriguPredictionView.errors.generic');
-      const isNetwork = !err?.response;
-      const code = status ? `HTTP ${status}` : err?.code || err?.name;
-      const action = isNetwork
-        ? t('bhriguPredictionView.errors.networkAction')
-        : status && status >= 500
-          ? t('bhriguPredictionView.errors.serverAction')
-          : t('bhriguPredictionView.errors.clientAction');
-
-      setError(message);
-      setErrorDetails({
-        code,
-        action,
-        isNetwork,
-        message
-      });
-
-      if (!prediction && cachedPartial) {
-        try {
-          const parsedPartial = JSON.parse(cachedPartial) as PartialPredictionCache;
-          if (parsedPartial.profileHash === resolvedHash) {
-            setPrediction(parsedPartial.prediction);
-            setPartialCacheUsed(true);
-          }
-        } catch (parseError) {
-          localStorage.removeItem(partialCacheKey);
-        }
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [profile, category, question, fetchPrediction]);
-
-  useEffect(() => {
-    if (debugAllowed && debugMode && prediction) {
-      setRawPrediction(buildDebugPayload(prediction));
-    } else {
-      setRawPrediction(null);
-    }
-  }, [debugAllowed, debugMode, prediction]);
-
-  const formatCacheAge = (ageSeconds: number | null) => {
-    if (ageSeconds === null) return 'Unknown';
-    if (ageSeconds < 60) return `${ageSeconds}s`;
-    const minutes = Math.floor(ageSeconds / 60);
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ${minutes % 60}m`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ${hours % 24}h`;
-  };
 
   // Client-side fallback to parse full_analysis into sections
   const parseFullAnalysisIntoSections = (fullAnalysis: string, cat: string): Record<string, string> => {
