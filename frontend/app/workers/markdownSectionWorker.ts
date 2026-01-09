@@ -1,6 +1,6 @@
 type SectionConfig = {
   key: string;
-  title: string;
+  titles: string[];
 };
 
 type WorkerRequest = {
@@ -83,7 +83,10 @@ const extractSectionsFromAst = (
   const normalizedTitles = new Map<string, string>();
 
   for (const section of sections) {
-    normalizedTitles.set(normalizeHeading(section.title), section.key);
+    for (const title of section.titles) {
+      if (!title) continue;
+      normalizedTitles.set(normalizeHeading(title), section.key);
+    }
   }
 
   const findMatchingKey = (headingText: string): string | undefined => {
