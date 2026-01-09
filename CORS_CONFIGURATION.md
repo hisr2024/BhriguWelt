@@ -62,6 +62,46 @@ Content-Encoding       # For gzip support
 
 ## Architecture
 
+### 🚨 CRITICAL: Infrastructure Layer (Layer 0)
+
+**MOST IMPORTANT:** Before CORS can work at the application level, the infrastructure layer (CDN/proxy) must forward custom headers.
+
+#### CloudFront Configuration (AWS)
+- **Location:** `infra/aws/terraform/main.tf` lines 75-98
+- **Purpose:** Forward custom headers from browser to backend
+- **CRITICAL SETTING:** `forwarded_values.headers` list
+
+**Required Headers to Forward:**
+```terraform
+headers = [
+  "Authorization",
+  "Content-Type",
+  "X-Client-Online",           # ← CRITICAL: Must be forwarded
+  "X-AI-Consent",              # ← CRITICAL: Must be forwarded
+  "X-AI-Mode",                 # ← CRITICAL: Must be forwarded
+  "X-Uncompressed-Content-Length",
+  "Content-Encoding",
+  "X-API-Key",
+  "X-Request-ID",
+  "X-Correlation-ID",
+  "Accept",
+  "Origin",
+  "X-Requested-With",
+  "Access-Control-Request-Headers",
+  "Access-Control-Request-Method"
+]
+```
+
+**⚠️ WHY THIS MATTERS:**
+- If CloudFront doesn't forward a header, it gets **stripped** before reaching Flask
+- Flask-CORS can allow headers in CORS policy, but if CloudFront strips them, the backend never receives them
+- This is why the error says "Request header field x-client-online is not allowed" - CloudFront is blocking it before the CORS preflight response is even evaluated
+
+**Historical Issue:**
+- Previous CORS fixes only addressed Flask/browser level
+- Infrastructure layer (CloudFront) was stripping headers all along
+- This is why the issue kept recurring across multiple PRs
+
 ### Three-Layer CORS Implementation
 
 #### Layer 1: Flask-CORS Library (Primary)
@@ -103,6 +143,23 @@ Content-Encoding       # For gzip support
 - Merges dynamically requested headers with standard headers
 
 ## Changes Made (2026-01-09)
+
+### 🚨 CRITICAL FIX: Infrastructure Layer
+
+**ROOT CAUSE IDENTIFIED AND FIXED:**
+
+1. **Fixed CloudFront Header Forwarding**
+   - **Location:** `infra/aws/terraform/main.tf` line 77
+   - **Problem:** Only `["Authorization", "Content-Type"]` were being forwarded
+   - **Result:** ALL custom headers (`X-Client-Online`, `X-AI-Consent`, etc.) were being **stripped** by CloudFront before reaching Flask
+   - **Fix:** Added all 15 required custom headers to `forwarded_values.headers` list
+   - **Impact:** This is why CORS kept failing across multiple PRs - the infrastructure layer was blocking headers even though Flask-CORS was configured correctly
+
+**Why Previous Fixes Failed:**
+- All previous CORS fixes addressed Flask/backend configuration
+- None addressed the CloudFront infrastructure layer
+- CloudFront was silently stripping custom headers before they reached the Flask application
+- Flask-CORS preflight responses would allow the headers, but actual requests would fail because CloudFront blocked them
 
 ### Optimizations
 
@@ -204,9 +261,14 @@ curl -X POST 'https://bhriguwelt.onrender.com/api/chart/calculate' \
 - **Fix:** Add origin to `PRODUCTION_FRONTEND_URLS` or `FRONTEND_URL` env var
 
 **Issue 2: "CORS policy: Request header field X-Client-Online is not allowed"**
-- **Cause:** Header not in `STANDARD_CORS_HEADERS`
-- **Fix:** This should NOT happen with current config (header is included)
-- **Debug:** Check if backend is running latest code
+- **Root Cause:** Infrastructure layer (CloudFront) not forwarding the header
+- **Secondary Cause:** Header not in `STANDARD_CORS_HEADERS` (less likely)
+- **Fix Steps:**
+  1. Check `infra/aws/terraform/main.tf` - verify header is in `forwarded_values.headers` list
+  2. If using CloudFront, deploy updated Terraform configuration
+  3. Check Flask `STANDARD_CORS_HEADERS` includes the header
+  4. Verify backend is running latest code
+- **Note:** This was the root cause of recurring CORS failures - infrastructure layer was stripping headers
 
 **Issue 3: "CORS policy: The value of the 'Access-Control-Allow-Credentials' header is empty"**
 - **Cause:** Missing `supports_credentials=True` in CORS config

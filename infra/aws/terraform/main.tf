@@ -74,7 +74,23 @@ resource "aws_cloudfront_distribution" "bhriguwelt" {
 
     forwarded_values {
       query_string = true
-      headers      = ["Authorization", "Content-Type"]
+      headers      = [
+        "Authorization",
+        "Content-Type",
+        "X-Client-Online",
+        "X-AI-Consent",
+        "X-AI-Mode",
+        "X-Uncompressed-Content-Length",
+        "Content-Encoding",
+        "X-API-Key",
+        "X-Request-ID",
+        "X-Correlation-ID",
+        "Accept",
+        "Origin",
+        "X-Requested-With",
+        "Access-Control-Request-Headers",
+        "Access-Control-Request-Method"
+      ]
 
       cookies {
         forward = "all"
