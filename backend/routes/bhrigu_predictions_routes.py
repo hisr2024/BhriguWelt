@@ -9,13 +9,13 @@ from models import db, BhriguPredictionCache, BhriguWisdomEntry, BhriguSessionLo
 from middleware.rate_limiter import limiter
 from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
 from utils.validators import validate_birth_data
+from utils.logger import setup_logger, log_error, sanitize_error
 from utils.response_formatter import (
     success_response,
     error_response,
     prediction_response,
     prediction_error_response
 )
-import traceback
 from datetime import datetime
 from typing import Optional
 import uuid
@@ -25,6 +25,7 @@ import time
 bp = Blueprint('bhrigu_predictions', __name__, url_prefix='/api/bhrigu-predictions')
 
 bhrigu_service = get_bhrigu_service()
+logger = setup_logger(__name__)
 
 
 def _get_chart_data(data):
@@ -146,10 +147,9 @@ def karmic_journey():
         )
 
     except Exception as e:
-        print(f"Error in karmic_journey: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in karmic_journey")
         return prediction_error_response(
-            f"Failed to generate karmic journey analysis: {str(e)}",
+            f"Failed to generate karmic journey analysis: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'karmic_journey'}
         )
@@ -217,10 +217,9 @@ def past_lives():
         )
 
     except Exception as e:
-        print(f"Error in past_lives: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in past_lives")
         return prediction_error_response(
-            f"Failed to generate past lives analysis: {str(e)}",
+            f"Failed to generate past lives analysis: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'past_lives'}
         )
@@ -281,10 +280,9 @@ def future_lives():
         )
 
     except Exception as e:
-        print(f"Error in future_lives: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in future_lives")
         return prediction_error_response(
-            f"Failed to generate future lives prediction: {str(e)}",
+            f"Failed to generate future lives prediction: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'future_lives'}
         )
@@ -345,10 +343,9 @@ def present_life():
         )
 
     except Exception as e:
-        print(f"Error in present_life: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in present_life")
         return prediction_error_response(
-            f"Failed to generate present life analysis: {str(e)}",
+            f"Failed to generate present life analysis: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'present_life'}
         )
@@ -409,10 +406,9 @@ def life_events():
         )
 
     except Exception as e:
-        print(f"Error in life_events: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in life_events")
         return prediction_error_response(
-            f"Failed to generate life events prediction: {str(e)}",
+            f"Failed to generate life events prediction: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'life_events'}
         )
@@ -473,10 +469,9 @@ def karmic_remedies():
         )
 
     except Exception as e:
-        print(f"Error in karmic_remedies: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in karmic_remedies")
         return prediction_error_response(
-            f"Failed to generate karmic remedies: {str(e)}",
+            f"Failed to generate karmic remedies: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'karmic_remedies'}
         )
@@ -537,10 +532,9 @@ def relationships():
         )
 
     except Exception as e:
-        print(f"Error in relationships: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in relationships")
         return prediction_error_response(
-            f"Failed to generate relationships analysis: {str(e)}",
+            f"Failed to generate relationships analysis: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'relationships'}
         )
@@ -601,10 +595,9 @@ def predictions():
         )
 
     except Exception as e:
-        print(f"Error in predictions: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in predictions")
         return prediction_error_response(
-            f"Failed to generate predictions: {str(e)}",
+            f"Failed to generate predictions: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'predictions'}
         )
@@ -640,8 +633,8 @@ def wisdom_search():
         })
 
     except Exception as e:
-        print(f"Error in wisdom_search: {str(e)}")
-        return error_response(f"Failed to search wisdom: {str(e)}", 500)
+        log_error(logger, e, "Error in wisdom_search")
+        return error_response(f"Failed to search wisdom: {sanitize_error(str(e))}", 500)
 
 
 @bp.route('/cache-stats', methods=['GET'])
@@ -668,8 +661,8 @@ def cache_stats():
         })
 
     except Exception as e:
-        print(f"Error in cache_stats: {str(e)}")
-        return error_response(f"Failed to get cache stats: {str(e)}", 500)
+        log_error(logger, e, "Error in cache_stats")
+        return error_response(f"Failed to get cache stats: {sanitize_error(str(e))}", 500)
 
 
 @bp.route('/session/start', methods=['POST'])
@@ -698,8 +691,8 @@ def start_session():
         })
 
     except Exception as e:
-        print(f"Error starting session: {str(e)}")
-        return error_response(f"Failed to start session: {str(e)}", 500)
+        log_error(logger, e, "Error starting session")
+        return error_response(f"Failed to start session: {sanitize_error(str(e))}", 500)
 
 
 @bp.route('/comprehensive', methods=['POST'])
@@ -782,10 +775,9 @@ def comprehensive_prediction():
         )
 
     except Exception as e:
-        print(f"Error in comprehensive_prediction: {str(e)}")
-        traceback.print_exc()
+        log_error(logger, e, "Error in comprehensive_prediction")
         return prediction_error_response(
-            f"Failed to generate comprehensive prediction: {str(e)}",
+            f"Failed to generate comprehensive prediction: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'comprehensive'}
         )
@@ -799,6 +791,5 @@ def ratelimit_handler(e):
 
 @bp.errorhandler(Exception)
 def handle_error(e):
-    print(f"Unhandled error in bhrigu_predictions: {str(e)}")
-    traceback.print_exc()
+    log_error(logger, e, "Unhandled error in bhrigu_predictions")
     return prediction_error_response("An unexpected error occurred", 500)
