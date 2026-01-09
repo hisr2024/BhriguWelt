@@ -10,6 +10,7 @@ import { tLocale } from '@/lib/locales';
 import { Accordion } from '@/app/components/ui/Accordion';
 import { AccordionItem } from '@/app/components/ui/AccordionItem';
 import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
+import { parseFullAnalysisIntoSections } from '@/lib/bhrigu/parseFullAnalysisIntoSections';
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS: Record<string, Array<{ key: string; titleKey: string; color: string }>> = {
@@ -347,47 +348,6 @@ export default function BhriguPredictionView({
     return `${days}d ${hours % 24}h`;
   };
 
-  // Client-side fallback to parse full_analysis into sections
-  const parseFullAnalysisIntoSections = (fullAnalysis: string, cat: string): Record<string, string> => {
-    const parsedSections: Record<string, string> = {};
-    const categoryConfig = CATEGORY_SECTIONS[cat] || [];
-
-    if (!fullAnalysis) return parsedSections;
-    
-    for (const section of categoryConfig) {
-      const sectionTitle = tLocale(section.titleKey, 'en');
-      // Escape special regex characters in title
-      const escapedTitle = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      
-      // Try multiple patterns to find section content
-      const patterns = [
-        // ## Header format (most common)
-        new RegExp(`##\\s*(?:\\d+\\.? \\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
-        // Numbered format (1.  Header)
-        new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
-        // Bold format (**Header**)
-        new RegExp(`\\*\\*${escapedTitle}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n##|$)`, 'i'),
-        // Plain header with colon
-        new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i'),
-      ];
-
-      for (const pattern of patterns) {
-        try {
-          const match = fullAnalysis.match(pattern);
-          if (match && match[1]?.trim().length > 50) {
-            parsedSections[section.key] = match[1].trim();
-            break;
-          }
-        } catch (e) {
-          // Pattern failed, try next
-          continue;
-        }
-      }
-    }
-
-    return parsedSections;
-  };
-
   useEffect(() => {
     if (!prediction?.full_analysis) {
       setParsedFromFullAnalysis({});
@@ -402,7 +362,13 @@ export default function BhriguPredictionView({
 
     const worker = workerRef.current;
     if (!worker) {
-      setParsedFromFullAnalysis(parseFullAnalysisIntoSections(prediction.full_analysis, category));
+      setParsedFromFullAnalysis(
+        parseFullAnalysisIntoSections(
+          prediction.full_analysis,
+          categoryConfig,
+          (titleKey: string) => tLocale(titleKey, 'en')
+        )
+      );
       return;
     }
 
