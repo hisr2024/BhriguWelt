@@ -2,10 +2,12 @@
 Advanced Section Parser for Bhrigu Predictions
 Ensures 100% structured output with AI-powered section generation
 """
-import re
+import difflib
 import logging
+import re
 import unicodedata
-from typing import Dict, List, Any, Optional
+import uuid
+from typing import Any, Dict, List, Optional, Tuple
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -282,13 +284,6 @@ class SectionParser:
                     normalized_map.setdefault(normalized, section_key)
         return normalized_map
 
-    def _normalize_title(self, title: str) -> str:
-        if not title:
-            return ""
-        cleaned = re.sub(r"^[#>*\-\+\d\.\)\s]+", "", title.strip())
-        cleaned = re.sub(r"[^\w\s]", "", cleaned.lower())
-        return re.sub(r"\s+", " ", cleaned).strip()
-
     def _match_normalized_title(self, normalized: str) -> str:
         if normalized in self.normalized_title_map:
             return self.normalized_title_map[normalized]
@@ -389,7 +384,7 @@ class SectionParser:
                     len(markdown_section),
                     header
                 )
-                return markdown_section
+                return markdown_section, "markdown"
 
             # Try multiple pattern variations for maximum flexibility
             patterns = [
@@ -401,14 +396,20 @@ class SectionParser:
                 rf'^\s*#{1,3}\s*\d*\.?\s*{re.escape(header)}\s*[:\n](.*?)(?=\n\s*#{1,3}\s|\Z)',
                 # Numbered sections (1., 2., etc.) - IMPROVED
                 rf'\n\d+(?:\.\d+)*\.?\s*{re.escape(header)}\s*[:\n]?(.*?)(?=\n\d+(?:\.\d+)*\.?\s|\n##|\Z)',
+                # Numbered sections with parentheses or separators
+                rf'\n\(?\d+(?:\.\d+)*\)?[\).\-\:]\s*{re.escape(header)}\s*[:\n]?(.*?)(?=\n\(?\d+(?:\.\d+)*\)?[\).\-\:]|\n##|\Z)',
+                # Roman numeral numbering (I., II., etc.)
+                rf'\n[IVXLCDM]+[\).\-\:]\s*{re.escape(header)}\s*[:\n]?(.*?)(?=\n[IVXLCDM]+[\).\-\:]|\n##|\Z)',
                 # Without markdown symbols (plain text headers)
                 rf'\n{re.escape(header)}\s*[:\n](.*?)(?=\n[A-Z][a-z]+[^\n]*[:\n]|\n\d+\. |\Z)',
                 # Bold or emphasized headers
-                rf'\*\*\d*\.?\s*{re.escape(header)}\*\*\s*[:\n]?(.*?)(?=\n\*\*|\n##|\Z)',
+                rf'\*\*\s*(?:\(?\d+(?:\.\d+)*\)?|[IVXLCDM]+)?\s*[\).\-\:]?\s*{re.escape(header)}\*\*\s*[:\n]?(.*?)(?=\n\*\*|\n##|\Z)',
                 # Bullet list headers
                 rf'^\s*[-*+]\s*\d*\.?\s*{re.escape(header)}\s*[:\n](.*?)(?=\n\s*[-*+]\s|\n#+\s|\Z)',
                 # Header with colon on same line
                 rf'{re.escape(header)}:\s*(.*?)(?=\n[A-Z][a-z]+.*? :|\n##|\n\d+\.|\Z)',
+                # "Section 1: Header" style
+                rf'\nSection\s+\d+(?:\.\d+)*\s*[:\-\)]\s*{re.escape(header)}\s*[:\n]?(.*?)(?=\nSection\s+\d+(?:\.\d+)*\s*[:\-\)]|\n##|\Z)',
             ]
 
             for i, pattern in enumerate(patterns):
@@ -432,13 +433,13 @@ class SectionParser:
         normalized_result = self._extract_by_normalized_headers(text, section_key)
         if normalized_result:
             logger.info(f"Section '{section_key}': Extracted {len(normalized_result)} chars via normalized header match")
-            return normalized_result
+            return normalized_result, "normalized"
 
         # Try generic extraction by section number or keywords
         fuzzy_result = self._extract_by_fuzzy_title(text, section_key)
         if fuzzy_result:
             logger.info(f"Section '{section_key}': Extracted {len(fuzzy_result)} chars via fuzzy title matching")
-            return fuzzy_result
+            return fuzzy_result, "fuzzy"
 
         logger.info(f"Section '{section_key}': No header match found, trying keyword extraction")
         keyword_result = self._extract_by_keywords(text, section_key)
@@ -447,7 +448,46 @@ class SectionParser:
             logger.info(f"Section '{section_key}': Extracted {len(keyword_result)} chars via keyword search")
             return keyword_result, "keyword"
 
-        return keyword_result
+        return "", "none"
+
+    def _extract_markdown_section(self, text: str, header: str) -> str:
+        """
+        Extract a markdown section by header, preserving nested subheaders.
+        """
+        if not text or not header:
+            return ""
+        target = self._normalize_title(header)
+        if not target:
+            return ""
+
+        lines = text.splitlines()
+        for index, line in enumerate(lines):
+            match = re.match(r"^(#{1,6})\s*(.+)$", line.strip())
+            if not match:
+                continue
+            level = len(match.group(1))
+            candidate = self._strip_header_markers(match.group(2))
+            if self._normalize_title(candidate) != target:
+                continue
+
+            content_lines = []
+            for following in range(index + 1, len(lines)):
+                next_line = lines[following]
+                next_match = re.match(r"^(#{1,6})\s+.+$", next_line.strip())
+                if next_match and len(next_match.group(1)) <= level:
+                    break
+                content_lines.append(next_line)
+            content = "\n".join(content_lines).strip()
+            if content:
+                return content
+
+        return ""
+
+    def _extract_by_fuzzy_title(self, text: str, section_key: str) -> str:
+        """
+        Extract content using fuzzy title similarity against paragraph headings.
+        """
+        return self._extract_by_title_similarity(text, section_key)
 
     def _normalize_header_text(self, text: str) -> str:
         """
@@ -473,7 +513,15 @@ class SectionParser:
             return ""
         cleaned = line.strip()
         cleaned = re.sub(r"^\s*#{1,6}\s*", "", cleaned)
-        cleaned = re.sub(r"^\s*\d+\.\s*", "", cleaned)
+        cleaned = re.sub(r"^\s*[-*+]\s*", "", cleaned)
+        cleaned = re.sub(
+            r"^\s*section\s+\d+(?:\.\d+)*\s*[:\-\)]\s*",
+            "",
+            cleaned,
+            flags=re.IGNORECASE
+        )
+        cleaned = re.sub(r"^\s*\(?\d+(?:\.\d+)*\)?\s*[\).\-\:]?\s*", "", cleaned)
+        cleaned = re.sub(r"^\s*[IVXLCDM]+\s*[\).\-\:]?\s*", "", cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r"^\s*\*\*\s*", "", cleaned)
         cleaned = re.sub(r"\s*\*\*\s*$", "", cleaned)
         cleaned = cleaned.rstrip(":").strip()
@@ -487,6 +535,12 @@ class SectionParser:
         if stripped.startswith("#"):
             return True
         if re.match(r"^\d+\.\s+\S", stripped):
+            return True
+        if re.match(r"^\(?\d+(?:\.\d+)*\)?[\).\-\:]\s+\S", stripped):
+            return True
+        if re.match(r"^[IVXLCDM]+[\).\-\:]\s+\S", stripped, re.IGNORECASE):
+            return True
+        if re.match(r"^section\s+\d+(?:\.\d+)*\s*[:\-\)]\s+\S", stripped, re.IGNORECASE):
             return True
         if re.match(r"^\*\*.+\*\*$", stripped):
             return True
@@ -599,9 +653,11 @@ class SectionParser:
         return ""
 
     def _normalize_title(self, title: str) -> str:
-        title = re.sub(r'^[#*\s\d\.\-:]+', '', title)
-        title = re.sub(r'[^a-zA-Z\s]', '', title)
-        return re.sub(r'\s+', ' ', title).strip().lower()
+        if not title:
+            return ""
+        cleaned = self._strip_header_markers(title)
+        cleaned = re.sub(r"[^\w\s]", "", cleaned.lower())
+        return re.sub(r"\s+", " ", cleaned).strip()
 
     def _strip_title_line(self, paragraph: str) -> str:
         lines = paragraph.splitlines()
