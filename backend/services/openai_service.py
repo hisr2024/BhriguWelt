@@ -8,23 +8,12 @@ import random
 import re
 import time
 import importlib
+import logging
 from typing import Dict, Any, List, Optional, Tuple, Union
 import requests
 from utils.logger import setup_logger, log_exception
 
-# Import corpus loader for RAG-style context injection
-CORPUS_AVAILABLE = importlib.util.find_spec("services.corpus_loader") is not None
-if CORPUS_AVAILABLE:
-    from services.corpus_loader import get_corpus_loader
-else:
-    get_corpus_loader = None
-
-# Import offline wisdom generator for category-specific fallbacks
-OFFLINE_WISDOM_AVAILABLE = importlib.util.find_spec("services.bhrigu_offline_wisdom") is not None
-if OFFLINE_WISDOM_AVAILABLE:
-    from services.bhrigu_offline_wisdom import get_offline_wisdom_generator
-else:
-    get_offline_wisdom_generator = None
+from utils.errors import OptionalDependencyError
 
 logger = setup_logger(__name__)
 
@@ -45,51 +34,62 @@ class OpenAIService:
         self.corpus_loader = None
         self.corpus_available = False
         self.corpus_error = None
-        if CORPUS_AVAILABLE:
-            try:
-                corpus_result = get_corpus_loader()
-                self.corpus_loader = corpus_result.get("loader")
-                self.corpus_error = corpus_result.get("error")
-                if self.corpus_error:
-                    logger.warning(
-                        "Corpus files missing: %s",
-                        self.corpus_error.get("message"),
-                    )
-                else:
-                    self.corpus_available = True
-                    logger.info(
-                        "✓ Corpus loader initialized - predictions will reference authentic Bhrigu/Nadi sources"
-                    )
-            except Exception as e:
-                self.corpus_error = {
-                    "code": "corpus_loader_error",
-                    "message": str(e),
-                }
-                log_exception(logger, e, context="openai.corpus_loader_init_failed")
+        try:
+            get_corpus_loader = self._load_optional_factory(
+                "services.corpus_loader",
+                "get_corpus_loader",
+                "Corpus loader",
+            )
+            corpus_result = get_corpus_loader()
+            self.corpus_loader = corpus_result.get("loader")
+            self.corpus_error = corpus_result.get("error")
+            if self.corpus_error:
+                print(f"Warning: Corpus files missing: {self.corpus_error.get('message')}")
+            else:
+                self.corpus_available = True
+                print("✓ Corpus loader initialized - predictions will reference authentic Bhrigu/Nadi sources")
+        except OptionalDependencyError as exc:
+            self.corpus_error = {"code": "corpus_loader_missing", "message": str(exc)}
+            logger.warning(
+                "Corpus loader dependency missing",
+                extra={"error_code": "CORPUS_LOADER_MISSING", "error": str(exc)},
+            )
+        except Exception as e:
+            self.corpus_error = {
+                "code": "corpus_loader_error",
+                "message": str(e),
+            }
+            print(f"Warning: Could not initialize corpus loader: {e}")
 
         # Initialize offline wisdom generator for category-specific fallbacks
         self.offline_wisdom = None
-        if OFFLINE_WISDOM_AVAILABLE:
-            try:
-                self.offline_wisdom = get_offline_wisdom_generator()
-                logger.info(
-                    "Offline wisdom generator initialized - category-specific fallbacks available",
-                    extra={"error_code": "OPENAI_OFFLINE_WISDOM_READY"},
-                )
-            except Exception as e:
-                self._set_last_error(
-                    "OPENAI_OFFLINE_WISDOM_INIT_FAILED",
-                    "Could not initialize offline wisdom generator.",
-                    {"error": str(e)},
-                )
-                logger.warning(
-                    "Could not initialize offline wisdom generator",
-                    extra={"error_code": "OPENAI_OFFLINE_WISDOM_INIT_FAILED", "error": str(e)},
-                )
-        else:
+        self.offline_wisdom_error = None
+        try:
+            get_offline_wisdom_generator = self._load_optional_factory(
+                "services.bhrigu_offline_wisdom",
+                "get_offline_wisdom_generator",
+                "Offline wisdom generator",
+            )
+            self.offline_wisdom = get_offline_wisdom_generator()
+            logger.info(
+                "Offline wisdom generator initialized - category-specific fallbacks available",
+                extra={"error_code": "OPENAI_OFFLINE_WISDOM_READY"},
+            )
+        except OptionalDependencyError as exc:
+            self.offline_wisdom_error = {"code": "offline_wisdom_missing", "message": str(exc)}
             logger.warning(
                 "Offline wisdom generator not available. Fallbacks will be generic.",
-                extra={"error_code": "OPENAI_OFFLINE_WISDOM_MISSING"},
+                extra={"error_code": "OPENAI_OFFLINE_WISDOM_MISSING", "error": str(exc)},
+            )
+        except Exception as e:
+            self._set_last_error(
+                "OPENAI_OFFLINE_WISDOM_INIT_FAILED",
+                "Could not initialize offline wisdom generator.",
+                {"error": str(e)},
+            )
+            logger.warning(
+                "Could not initialize offline wisdom generator",
+                extra={"error_code": "OPENAI_OFFLINE_WISDOM_INIT_FAILED", "error": str(e)},
             )
 
         if not self.enabled:
@@ -106,6 +106,23 @@ class OpenAIService:
             'Authorization': f'Bearer {self.api_key}',
             'Content-Type': 'application/json'
         } if self.enabled else {}
+
+    @staticmethod
+    def _load_optional_factory(
+        module_path: str,
+        factory_name: str,
+        feature_label: str,
+    ):
+        try:
+            module = importlib.import_module(module_path)
+        except ModuleNotFoundError as exc:
+            raise OptionalDependencyError.for_missing(feature_label, module_path) from exc
+        try:
+            factory = getattr(module, factory_name)
+        except AttributeError as exc:
+            missing_path = f"{module_path}.{factory_name}"
+            raise OptionalDependencyError.for_missing(feature_label, missing_path) from exc
+        return factory
 
     def _approx_token_count(self, text: str) -> int:
         if not text:
