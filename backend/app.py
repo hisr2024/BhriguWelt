@@ -125,7 +125,18 @@ CORS(app,
          r"/api/.*": {
              "origins": allowed_origins,
              "methods": ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-             "allow_headers": ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'X-AI-Consent', 'X-AI-Mode', 'X-Client-Online'],
+             "allow_headers": [
+                 'Content-Type',
+                 'Authorization',
+                 'Accept',
+                 'Origin',
+                 'X-Requested-With',
+                 'X-AI-Consent',
+                 'X-AI-Mode',
+                 'X-Client-Online',
+                 'X-Uncompressed-Content-Length',
+                 'Content-Encoding',
+             ],
              "expose_headers": ['Content-Type', 'Authorization'],
              "supports_credentials": True,
              "max_age": 86400
@@ -137,7 +148,18 @@ CORS(app,
          }
      },
      supports_credentials=True,
-     allow_headers=['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'X-AI-Consent', 'X-AI-Mode', 'X-Client-Online'],
+     allow_headers=[
+         'Content-Type',
+         'Authorization',
+         'Accept',
+         'Origin',
+         'X-Requested-With',
+         'X-AI-Consent',
+         'X-AI-Mode',
+         'X-Client-Online',
+         'X-Uncompressed-Content-Length',
+         'Content-Encoding',
+     ],
      expose_headers=['Content-Type', 'Authorization'],
      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
      max_age=86400)  # Cache preflight for 24 hours
@@ -220,6 +242,8 @@ def handle_preflight():
             'X-AI-Consent',
             'X-AI-Mode',
             'X-Client-Online',
+            'X-Uncompressed-Content-Length',
+            'Content-Encoding',
         ]
         requested_header_list = [
             header.strip()
@@ -263,6 +287,8 @@ def add_cors_headers(response):
         'X-AI-Consent',
         'X-AI-Mode',
         'X-Client-Online',
+        'X-Uncompressed-Content-Length',
+        'Content-Encoding',
     ]
     requested_header_list = [
         header.strip()
