@@ -145,21 +145,23 @@ def _merge_cors_headers_case_insensitive(existing_headers, requested_headers):
             merged[normalized] = header
     return list(merged.values())
 
-CORS(
-    app,
-    resources={
-        r"/api/*": {
-            "origins": ALLOWED_ORIGINS,
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-            "allow_headers": STANDARD_CORS_HEADERS,
-            "supports_credentials": True,
-            "expose_headers": ["X-Correlation-ID"],
-            "max_age": 86400,
-        }
-    },
-)
+# TEMPORARILY DISABLED FOR DEBUGGING - WILL RE-ENABLE WITH FIX
+# CORS(
+#     app,
+#     resources={
+#         r"/api/*": {
+#             "origins": ALLOWED_ORIGINS,
+#             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+#             "allow_headers": STANDARD_CORS_HEADERS,
+#             "supports_credentials": True,
+#             "expose_headers": ["X-Correlation-ID"],
+#             "max_age": 86400,
+#         }
+#     },
+# )
 
-logger.info("✓ CORS configured with allowed origins: %s", ", ".join(ALLOWED_ORIGINS))
+logger.info("✓ CORS temporarily disabled for debugging")
+logger.info("⚠️  PERMISSIVE CORS MODE ACTIVE - ALLOWS ALL ORIGINS")
 
 # Request preprocessing middleware
 def _assign_correlation_id():
@@ -171,34 +173,25 @@ def _assign_correlation_id():
 def ensure_correlation_id():
     _assign_correlation_id()
 
+# PERMISSIVE CORS FOR TESTING - ALLOWS ALL ORIGINS AND HEADERS
 @app.before_request
-def handle_preflight():
+def handle_permissive_cors():
     """
-    Explicitly handle OPTIONS (preflight) requests to ensure CORS headers
-    are properly set even if Flask-CORS doesn't catch them.
+    TEMPORARY: Permissive CORS handler for debugging.
+    Allows all origins and all headers.
     """
     if request.method == 'OPTIONS':
-        # Flask-CORS will handle this, but ensure all headers are present
         response = app.make_default_options_response()
-        origin = request.headers.get('Origin')
+        origin = request.headers.get('Origin', '*')
 
-        if origin and origin in ALLOWED_ORIGINS:
-            # Merge requested headers with standard headers (case-insensitive)
-            request_headers_str = request.headers.get('Access-Control-Request-Headers', '')
-            requested_headers = [h.strip() for h in request_headers_str.split(',') if h.strip()]
+        # Allow all headers that are requested
+        request_headers_str = request.headers.get('Access-Control-Request-Headers', '')
 
-            # Combine and deduplicate headers (case-insensitive)
-            all_headers = _merge_cors_headers_case_insensitive(
-                STANDARD_CORS_HEADERS,
-                requested_headers
-            )
-
-            response.headers['Access-Control-Allow-Origin'] = origin
-            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-            response.headers['Access-Control-Allow-Headers'] = ', '.join(all_headers)
-            response.headers['Access-Control-Allow-Credentials'] = 'true'
-            response.headers['Access-Control-Max-Age'] = '86400'
-            response.headers['Vary'] = 'Origin'
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+        response.headers['Access-Control-Allow-Headers'] = request_headers_str if request_headers_str else '*'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Max-Age'] = '86400'
 
         return response
 
@@ -253,22 +246,14 @@ def add_response_headers(response):
                 response_data['correlation_id'] = correlation_id
                 response.set_data(json.dumps(response_data))
 
+    # PERMISSIVE CORS FOR TESTING - ALLOWS ALL ORIGINS
     origin = request.headers.get("Origin")
     if origin:
-        request_headers = request.headers.get("Access-Control-Request-Headers", "")
-        requested_headers = [header.strip() for header in request_headers.split(",") if header.strip()]
-        existing_allow_headers = response.headers.get("Access-Control-Allow-Headers", "")
-        existing_headers = [header.strip() for header in existing_allow_headers.split(",") if header.strip()]
-        merged_headers = _merge_cors_headers_case_insensitive(
-            existing_headers + STANDARD_CORS_HEADERS,
-            requested_headers,
-        )
-        if merged_headers:
-            response.headers["Access-Control-Allow-Headers"] = ", ".join(merged_headers)
-        if "Access-Control-Allow-Origin" not in response.headers and origin in ALLOWED_ORIGINS:
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers.setdefault("Access-Control-Allow-Credentials", "true")
-            response.headers["Vary"] = "Origin"
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Expose-Headers"] = "X-Correlation-ID"
 
     return response
 
