@@ -265,7 +265,7 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-32 pb-20 px-4">
+      <section className="relative overflow-hidden pt-32 pb-20 px-4 landscape:px-6 landscape:pt-36 landscape:pb-24">
         <div className="genz-container">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <motion.div
@@ -399,7 +399,7 @@ export default function HomePage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 px-4 bg-dark-elevated/30 backdrop-blur-2xl border-y border-genz-electric-blue/20">
+      <section className="py-16 px-4 landscape:px-6 bg-dark-elevated/30 backdrop-blur-2xl border-y border-genz-electric-blue/20">
         <div className="genz-container">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
@@ -429,7 +429,7 @@ export default function HomePage() {
       </section>
 
       {/* Features Grid */}
-      <section id="features" className="genz-section px-4">
+      <section id="features" className="genz-section px-4 landscape:px-6">
         <div className="genz-container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -501,9 +501,13 @@ export default function HomePage() {
       </section>
 
       {/* Advanced Features */}
-      {advancedControls && (
-        <section className="genz-section px-4 bg-gradient-to-b from-dark-elevated/20 to-transparent">
-          <div className="genz-container">
+      <section className="genz-section px-4 landscape:px-6 bg-gradient-to-b from-dark-elevated/20 to-transparent">
+        <div className="genz-container">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            className="text-center mb-16"
+          >
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -555,7 +559,7 @@ export default function HomePage() {
       )}
 
       {/* How It Works */}
-      <section id="how-it-works" className="genz-section px-4">
+      <section id="how-it-works" className="genz-section px-4 landscape:px-6">
         <div className="genz-container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -639,7 +643,7 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="genz-section px-4 bg-dark-surface/30">
+      <section id="testimonials" className="genz-section px-4 landscape:px-6 bg-dark-surface/30">
         <div className="genz-container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -710,7 +714,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="genz-section px-4">
+      <section className="genz-section px-4 landscape:px-6">
         <div className="max-w-5xl mx-auto">
           <GenZCardGradient className="text-center relative overflow-hidden p-12 md:p-16">
             <div className="absolute inset-0 bg-mesh-gradient opacity-50"></div>
@@ -774,7 +778,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-genz-electric-blue/20 py-16 px-4 bg-dark-surface/50 backdrop-blur-2xl mt-20">
+      <footer className="border-t border-genz-electric-blue/20 py-16 px-4 landscape:px-6 bg-dark-surface/50 backdrop-blur-2xl mt-20">
         <div className="genz-container">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div>
