@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
@@ -126,6 +126,7 @@ const DEFAULT_COLOR = 'cyan';
 const PROFILE_HASH_PREFIX = 'profile_hash_';
 const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_';
 const SKELETON_LINES = 5;
+const sectionPatternCache = new Map<string, RegExp[]>();
 
 // Helper function to check if profile has required fields
 const hasRequiredProfileFields = (profile: Profile): boolean => {
@@ -141,6 +142,27 @@ const hasRequiredProfileFields = (profile: Profile): boolean => {
 // Helper function to normalize category keys
 const normalizeCategoryKey = (category: string): string => {
   return category?.toLowerCase().replace(/[^a-z0-9-]/g, '-') || '';
+};
+
+const getSectionPatterns = (category: string, sectionTitle: string): RegExp[] => {
+  const cacheKey = `${category}::${sectionTitle}`;
+  const cached = sectionPatternCache.get(cacheKey);
+  if (cached) return cached;
+
+  const escapedTitle = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const patterns = [
+    // ## Header format (most common)
+    new RegExp(`##\\s*(?:\\d+\\.? \\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
+    // Numbered format (1.  Header)
+    new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
+    // Bold format (**Header**)
+    new RegExp(`\\*\\*${escapedTitle}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n##|$)`, 'i'),
+    // Plain header with colon
+    new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i'),
+  ];
+
+  sectionPatternCache.set(cacheKey, patterns);
+  return patterns;
 };
 
 interface BhriguPredictionViewProps {
@@ -213,14 +235,7 @@ export default function BhriguPredictionView({
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [debugMode, setDebugMode] = useState(false);
   const [profileUpdated, setProfileUpdated] = useState(false);
-  const [parsedFromFullAnalysis, setParsedFromFullAnalysis] = useState<Record<string, string>>({});
-  const [isParsing, setIsParsing] = useState(false);
-  const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
-  const [expandingSections, setExpandingSections] = useState<Record<string, boolean>>({});
-
-  const workerRef = useRef<Worker | null>(null);
-  const workerRequestId = useRef(0);
-  const expandingTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
+  const isParsing = false;
 
   const searchParams = useSearchParams();
   const language = getCurrentLanguage();
@@ -347,6 +362,38 @@ export default function BhriguPredictionView({
     return `${days}d ${hours % 24}h`;
   };
 
+  const normalizedCategory = useMemo(() => {
+    const categoryValue = prediction?.metadata?.category ?? prediction?.category ?? category;
+    return normalizeCategoryKey(typeof categoryValue === 'string' ? categoryValue : category);
+  }, [category, prediction?.category, prediction?.metadata?.category]);
+
+  const sections = useMemo(
+    () => CATEGORY_SECTIONS[normalizedCategory] || [],
+    [normalizedCategory]
+  );
+
+  const directAvailableSections = useMemo(() => {
+    if (!prediction) return [];
+    return sections.filter(section => {
+      const content = prediction[section.key];
+      if (!content || typeof content !== 'string' || content.trim() === '') {
+        return false;
+      }
+      const trimmedContent = content.trim();
+      const isRedirectOnly = (
+        trimmedContent.length < 50 &&
+        (trimmedContent.toLowerCase().includes('see full analysis') ||
+         trimmedContent.toLowerCase().includes('see complete') ||
+         trimmedContent.toLowerCase().includes('refer to'))
+      );
+      return !isRedirectOnly;
+    });
+  }, [prediction, sections]);
+
+  const shouldParseFallback = Boolean(
+    prediction?.full_analysis && sections.length > 0 && directAvailableSections.length === 0
+  );
+
   // Client-side fallback to parse full_analysis into sections
   const parseFullAnalysisIntoSections = (fullAnalysis: string, cat: string): Record<string, string> => {
     const parsedSections: Record<string, string> = {};
@@ -356,20 +403,7 @@ export default function BhriguPredictionView({
     
     for (const section of categoryConfig) {
       const sectionTitle = tLocale(section.titleKey, 'en');
-      // Escape special regex characters in title
-      const escapedTitle = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      
-      // Try multiple patterns to find section content
-      const patterns = [
-        // ## Header format (most common)
-        new RegExp(`##\\s*(?:\\d+\\.? \\s*)?${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n##|$)`, 'i'),
-        // Numbered format (1.  Header)
-        new RegExp(`\\n\\d+\\.\\s*${escapedTitle}[:\\s]*([\\s\\S]*?)(?=\\n\\d+\\.|\\n##|$)`, 'i'),
-        // Bold format (**Header**)
-        new RegExp(`\\*\\*${escapedTitle}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n##|$)`, 'i'),
-        // Plain header with colon
-        new RegExp(`${escapedTitle}:\\s*([\\s\\S]*?)(?=\\n[A-Z][a-z]+:|\\n##|\\n\\d+\\.|$)`, 'i'),
-      ];
+      const patterns = getSectionPatterns(cat, sectionTitle);
 
       for (const pattern of patterns) {
         try {
@@ -388,31 +422,12 @@ export default function BhriguPredictionView({
     return parsedSections;
   };
 
-  useEffect(() => {
-    if (!prediction?.full_analysis) {
-      setParsedFromFullAnalysis({});
-      return;
+  const parsedFromFullAnalysis = useMemo(() => {
+    if (!shouldParseFallback || !prediction?.full_analysis) {
+      return {};
     }
-
-    const categoryConfig = CATEGORY_SECTIONS[category] || [];
-    if (categoryConfig.length === 0) {
-      setParsedFromFullAnalysis({});
-      return;
-    }
-
-    const worker = workerRef.current;
-    if (!worker) {
-      setParsedFromFullAnalysis(parseFullAnalysisIntoSections(prediction.full_analysis, category));
-      return;
-    }
-
-    workerRequestId.current += 1;
-    worker.postMessage({
-      id: workerRequestId.current,
-      markdown: prediction.full_analysis,
-      sections: categoryConfig.map(section => ({ key: section.key, title: section.titleKey }))
-    });
-  }, [prediction?.full_analysis, category]);
+    return parseFullAnalysisIntoSections(prediction.full_analysis, normalizedCategory);
+  }, [normalizedCategory, prediction?.full_analysis, shouldParseFallback]);
 
   const renderSection = (sectionKey: string, sectionTitle: string, content: string, color: string) => {
     // More lenient filtering - only exclude truly empty or placeholder content
@@ -459,30 +474,10 @@ export default function BhriguPredictionView({
   const renderPredictionContent = () => {
     if (!prediction) return null;
 
-    // Get the sections configuration for this category
-    const categoryValue = prediction?.metadata?.category ?? prediction?.category ?? category;
-    const normalizedCategory = normalizeCategoryKey(
-      typeof categoryValue === 'string' ? categoryValue : category
-    );
-    const sections = CATEGORY_SECTIONS[normalizedCategory] || [];
-
     // First, try to get sections from the API response
-    let availableSections = sections.filter(section => {
-      const content = prediction[section.key];
-      if (!content || typeof content !== 'string' || content.trim() === '') {
-        return false;
-      }
-      const trimmedContent = content.trim();
-      const isRedirectOnly = (
-        trimmedContent.length < 50 &&
-        (trimmedContent.toLowerCase().includes('see full analysis') ||
-         trimmedContent.toLowerCase().includes('see complete') ||
-         trimmedContent.toLowerCase().includes('refer to'))
-      );
-      return !isRedirectOnly;
-    });
+    let availableSections = directAvailableSections;
 
-    // FALLBACK: If no sections found but full_analysis exists, use worker/regex results
+    // FALLBACK: If no sections found but full_analysis exists, use regex results
     if (availableSections.length === 0 && prediction.full_analysis) {
       availableSections = sections.filter(section => {
         const content = parsedFromFullAnalysis[section.key];
