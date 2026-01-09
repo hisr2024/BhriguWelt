@@ -9,7 +9,7 @@ from services.astrology_calculator import get_astrology_calculator, get_astrolog
 from services.bhrigu_core_wisdom import get_bhrigu_core_wisdom
 from datetime import datetime
 from utils.response_formatter import prediction_response, prediction_error_response
-from utils.logger import setup_logger, log_exception
+from utils.validators import sanitize_input
 
 logger = setup_logger(__name__)
 
@@ -114,7 +114,9 @@ def generate_category_prediction(category):
             birth_chart = astrology_calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=data['place_of_birth']
+                place=data['place_of_birth'],
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         except Exception as e:
             log_exception(logger, e, context="predictions_unified.birth_chart")
@@ -202,7 +204,9 @@ def generate_cosmic_blueprint():
             birth_chart = astrology_calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=data['place_of_birth']
+                place=data['place_of_birth'],
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         except Exception as e:
             log_exception(logger, e, context="predictions_unified.cosmic_blueprint.birth_chart")

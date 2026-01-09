@@ -8,7 +8,7 @@ from services.astrology_calculator import get_astrology_calculator, get_astrolog
 from models import db, BhriguPredictionCache, BhriguWisdomEntry, BhriguSessionLog
 from middleware.rate_limiter import limiter
 from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
-from utils.validators import validate_birth_data, sanitizeQuestion
+from utils.validators import validate_birth_data, sanitize_input
 from utils.response_formatter import (
     success_response,
     error_response,
@@ -38,7 +38,9 @@ def _get_chart_data(data):
             time_of_birth=data['time_of_birth'],
             place=data.get('place_of_birth', ''),
             latitude=data.get('latitude'),
-            longitude=data.get('longitude')
+            longitude=data.get('longitude'),
+            timezone_override=sanitize_input(data['timezone'], max_length=64)
+            if data.get('timezone') else None
         ), None
     if cached_birth_data:
         return cached_birth_data, None

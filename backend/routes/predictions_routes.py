@@ -12,6 +12,7 @@ from datetime import datetime
 import logging
 from utils.validators import sanitizeQuestion
 from utils.response_formatter import prediction_response, prediction_error_response
+from utils.validators import sanitize_input
 
 logger = setup_logger(__name__)
 
@@ -31,7 +32,9 @@ def daily_prediction():
             birth_chart = calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=data['place_of_birth']
+                place=data['place_of_birth'],
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
@@ -96,7 +99,9 @@ def weekly_prediction():
             birth_chart = calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=data['place_of_birth']
+                place=data['place_of_birth'],
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
@@ -156,7 +161,9 @@ def monthly_prediction():
             birth_chart = calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=data['place_of_birth']
+                place=data['place_of_birth'],
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
@@ -219,7 +226,9 @@ def yearly_prediction():
             birth_chart = calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=data['place_of_birth']
+                place=data['place_of_birth'],
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
@@ -290,7 +299,9 @@ def specific_question():
             birth_chart = calculator.calculate_birth_chart(
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
-                place=data['place_of_birth']
+                place=data['place_of_birth'],
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
             )
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
