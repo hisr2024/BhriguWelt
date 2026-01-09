@@ -13,6 +13,7 @@ type AccordionItemProps = {
   className?: string;
   triggerClassName?: string;
   panelClassName?: string;
+  lazyRender?: boolean;
 };
 
 export const AccordionItem = ({
@@ -24,7 +25,8 @@ export const AccordionItem = ({
   onToggle,
   className,
   triggerClassName,
-  panelClassName
+  panelClassName,
+  lazyRender = false
 }: AccordionItemProps) => {
   const generatedId = useId();
   const baseId = id ?? generatedId;
@@ -67,7 +69,7 @@ export const AccordionItem = ({
         hidden={!openState}
         className={`${panelClassName ?? ''} ${openState ? 'block' : 'hidden'}`}
       >
-        {children}
+        {shouldRenderChildren ? children : null}
       </div>
     </div>
   );
