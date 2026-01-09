@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, RefreshCw, Download, Share2, BookOpen } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
 import { getCurrentLanguage, type Language } from '@/lib/copy';
@@ -10,6 +11,9 @@ import { tLocale } from '@/lib/locales';
 import { Accordion } from '@/app/components/ui/Accordion';
 import { AccordionItem } from '@/app/components/ui/AccordionItem';
 import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
+
+const FullAnalysisPanel = dynamic(() => import('@/app/components/FullAnalysisPanel'));
+const DebugPanel = dynamic(() => import('@/app/components/DebugPanel'));
 
 // Category-specific section configurations (moved outside component for performance)
 const CATEGORY_SECTIONS: Record<string, Array<{ key: string; titleKey: string; color: string }>> = {
@@ -209,7 +213,6 @@ export default function BhriguPredictionView({
   } | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [question, setQuestion] = useState('');
-  const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [debugMode, setDebugMode] = useState(false);
   const [profileUpdated, setProfileUpdated] = useState(false);
@@ -446,6 +449,7 @@ export default function BhriguPredictionView({
         )}
         className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40
                    border ${colorClass.border} ${colorClass.hover} rounded-xl transition-all p-6`}
+        lazyRender
       >
         <div className="prose prose-invert prose-cyan max-w-none">
           <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
@@ -554,58 +558,7 @@ export default function BhriguPredictionView({
 
         {/* Full Analysis - Collapsible at the bottom */}
         {prediction.full_analysis && (
-          <div className="mt-8 pt-8 border-t border-gray-700/50">
-            <button
-              onClick={() => setShowFullAnalysis(!showFullAnalysis)}
-              aria-expanded={showFullAnalysis}
-              aria-controls="full-analysis-content"
-              className="w-full bg-gradient-to-br from-gray-800/50 to-gray-900/50
-                       border border-gray-700/50 rounded-xl p-6
-                       hover:border-cyan-500/30 transition-all
-                       flex items-center justify-between group relative z-10"
-            >
-              <div className="flex items-center gap-3">
-                <BookOpen className="w-6 h-6 text-cyan-400" />
-                <div className="text-left">
-                  <h3 className="text-xl font-bold text-white relative z-10">
-                    View Complete Reading
-                  </h3>
-                  <p className="text-sm text-gray-400 mt-1">
-                    {showFullAnalysis ? 'Hide' : 'Show'} the full unstructured analysis
-                  </p>
-                </div>
-              </div>
-              {showFullAnalysis ? (
-                <ChevronUp className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
-              ) : (
-                <ChevronDown className="w-6 h-6 text-gray-400 group-hover:text-cyan-400 transition-colors" />
-              )}
-              <span className="sr-only">
-                {showFullAnalysis ? 'Hide full analysis' : 'Show full analysis'}
-              </span>
-            </button>
-
-            <AnimatePresence initial={false}>
-              {showFullAnalysis && (
-                <motion.div
-                  key="full-analysis"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3 }}
-                  id="full-analysis-content"
-                  className="mt-4 bg-gradient-to-br from-gray-800/30 to-gray-900/30
-                           border border-gray-700/50 rounded-xl p-6 overflow-visible"
-                >
-                  <div className="prose prose-invert prose-cyan max-w-none">
-                    <div className="text-gray-300 leading-relaxed whitespace-pre-wrap max-h-[70vh] overflow-auto pr-2">
-                      {prediction.full_analysis}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <FullAnalysisPanel fullAnalysis={prediction.full_analysis} />
         )}
 
         {/* Metadata */}
@@ -636,50 +589,10 @@ export default function BhriguPredictionView({
 
         {/* Debug Mode - Raw API Response */}
         {debugAllowed && debugMode && (
-          <div className="mt-8 pt-6 border-t border-red-500/30">
-            <div className="bg-gray-900/50 border border-red-500/30 rounded-xl p-6">
-              <h3 className="text-xl font-bold text-red-400 mb-4">🔧 Debug Mode - Raw API Response</h3>
-              <div className="bg-black/50 rounded-lg p-4 overflow-auto max-h-96">
-                <pre className="text-xs text-gray-300 whitespace-pre-wrap font-mono">
-                  {JSON.stringify(prediction, null, 2)}
-                </pre>
-              </div>
-              <div className="mt-4 text-sm text-gray-400">
-                <p className="mb-2">Section Keys Available:</p>
-                <div className="flex flex-wrap gap-2">
-                  {Object.keys(prediction).map(key => {
-                    const value = prediction[key as keyof typeof prediction];
-                    const isLongString = value && typeof value === 'string' && value.length > 100;
-                    return (
-                      <span
-                        key={key}
-                        className={`px-2 py-1 rounded ${
-                          isLongString
-                            ? 'bg-green-500/20 text-green-400'
-                            : 'bg-gray-700/50 text-gray-400'
-                        }`}
-                      >
-                        {key} ({typeof value === 'string' ? value.length : 'N/A'} chars)
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-              {/* Show parsed sections if fallback was used */}
-              {Object.keys(parsedFromFullAnalysis).length > 0 && (
-                <div className="mt-4 text-sm">
-                  <p className="text-yellow-400 mb-2">Client-side Parsed Sections:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.keys(parsedFromFullAnalysis).map(key => (
-                      <span key={key} className="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">
-                        {key} ({parsedFromFullAnalysis[key]?.length || 0} chars)
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <DebugPanel
+            prediction={prediction}
+            parsedFromFullAnalysis={parsedFromFullAnalysis}
+          />
         )}
       </div>
     );
