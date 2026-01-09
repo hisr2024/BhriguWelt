@@ -4,11 +4,36 @@ Ensures 100% structured output with AI-powered section generation
 """
 import re
 import logging
+import math
+import os
 import unicodedata
 from typing import Dict, List, Any, Optional
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+
+def _read_int_env(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
+def _read_ratio_env(name: str, default: float) -> float:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        ratio = float(value)
+    except ValueError:
+        return default
+    if ratio <= 0 or ratio > 1:
+        return default
+    return ratio
 
 
 class SectionParser:
@@ -18,8 +43,9 @@ class SectionParser:
     """
     
     # Content validation thresholds
-    MINIMUM_SECTION_LENGTH = 100  # Minimum characters for a valid section
-    HEADER_EXTRACTION_MIN_LENGTH = 50  # Minimum for header-based extraction
+    MINIMUM_SECTION_LENGTH = _read_int_env("SECTION_PARSER_MIN_LENGTH", 100)
+    HEADER_EXTRACTION_MIN_LENGTH = _read_int_env("SECTION_PARSER_HEADER_MIN_LENGTH", 50)
+    KEYWORD_MATCH_RATIO = _read_ratio_env("SECTION_PARSER_KEYWORD_MATCH_RATIO", 0.5)
     
     # Required sections for each category
     REQUIRED_SECTIONS = {
@@ -560,8 +586,13 @@ class SectionParser:
 
         # If no exact matches, try partial matching (at least 50% of keywords)
         if not relevant_paras and len(keywords) > 1:
-            threshold = max(1, len(keywords) // 2)
-            logger.debug(f"No exact matches, trying partial match with threshold {threshold}/{len(keywords)}")
+            threshold = max(1, math.ceil(len(keywords) * self.KEYWORD_MATCH_RATIO))
+            logger.debug(
+                "No exact matches, trying partial match with threshold %s/%s (ratio %.2f)",
+                threshold,
+                len(keywords),
+                self.KEYWORD_MATCH_RATIO
+            )
 
             for para in paragraphs:
                 matches = sum(1 for kw in keywords if kw.lower() in para.lower())

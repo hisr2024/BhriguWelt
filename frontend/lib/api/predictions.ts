@@ -23,6 +23,7 @@ import {
   generateKarmicJourneyPrediction,
   type KarmicJourneyOptions,
 } from '../engines/karmicJourneyEngine';
+import { isSectionContentValid } from '../sectionParserConfig';
 
 export type PredictionEngine =
   | 'karmic_journey'
@@ -499,14 +500,15 @@ export class PredictionsAPI {
 
       const aiResponse = await response.json();
       const refined = aiResponse?.data?.refined_section;
+      const acceptedRefined = isSectionContentValid(refined) ? refined : null;
 
       return {
         ...baseResult,
-        ai_synthesis: refined,
+        ai_synthesis: acceptedRefined ?? undefined,
         metadata: baseResult.metadata
-          ? { ...baseResult.metadata, ai_enhanced: true }
+          ? { ...baseResult.metadata, ai_enhanced: Boolean(acceptedRefined) }
           : baseResult.metadata,
-        mode: options.aiMode.mode,
+        mode: acceptedRefined ? options.aiMode.mode : baseResult.mode,
       };
     } catch (error) {
       console.warn('AI refinement failed, returning offline result:', error);
