@@ -46,6 +46,10 @@
     font-size-adjust: var(--font-size-adjust-sans);
   }
 
+  button {
+    min-height: 44px;
+  }
+
   html {
     scroll-behavior: smooth;
   }
@@ -345,4 +349,26 @@
 
 .haptic-feedback:active {
   animation: haptic-tap 0.1s ease-out;
+}
+
+@media (orientation: landscape) and (max-width: 1024px) {
+  .genz-section {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+
+  .genz-title {
+    font-size: clamp(2.5rem, 5vw, 3.75rem);
+  }
+
+  .cosmic-card,
+  .genz-card,
+  .genz-card-glass,
+  .genz-card-neon {
+    padding: 1.25rem;
+  }
+
+  .bottom-nav-blur {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

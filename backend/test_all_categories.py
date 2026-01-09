@@ -12,6 +12,9 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from services.bhrigu_predictions import get_bhrigu_service
 from services.astrology_calculator import AstrologyCalculator
+from utils.logger import setup_logger, log_exception
+
+logger = setup_logger(__name__)
 
 def test_category_predictions():
     """Test all 5 main categories for prediction generation"""
@@ -213,6 +216,5 @@ if __name__ == '__main__':
         sys.exit(0 if results['failed'] == 0 else 1)
     except Exception as e:
         print(f"FATAL ERROR: {e}")
-        import traceback
-        traceback.print_exc()
+        log_exception(logger, e, "Fatal error in test_all_categories")
         sys.exit(1)
