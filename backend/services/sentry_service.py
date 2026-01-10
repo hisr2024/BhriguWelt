@@ -1,20 +1,30 @@
 """
 Sentry Error Tracking for Backend
+Optional dependency - gracefully degrades if sentry_sdk not available
 """
 
 import os
-import sentry_sdk
-from sentry_sdk.integrations.flask import FlaskIntegration
 from utils.logger import setup_logger
 
-# Conditionally import CeleryIntegration only if celery is available
-try:
-    from sentry_sdk.integrations.celery import CeleryIntegration
-    CELERY_AVAILABLE = True
-except (ImportError, sentry_sdk.integrations.DidNotEnable):
-    CELERY_AVAILABLE = False
-
 logger = setup_logger(__name__)
+
+# Try to import sentry_sdk - it's optional
+try:
+    import sentry_sdk
+    from sentry_sdk.integrations.flask import FlaskIntegration
+    SENTRY_AVAILABLE = True
+
+    # Conditionally import CeleryIntegration only if celery is available
+    try:
+        from sentry_sdk.integrations.celery import CeleryIntegration
+        CELERY_AVAILABLE = True
+    except (ImportError, Exception):
+        CELERY_AVAILABLE = False
+
+except ImportError:
+    SENTRY_AVAILABLE = False
+    CELERY_AVAILABLE = False
+    logger.warning("sentry_sdk not installed - error tracking disabled")
 
 
 def init_sentry(app=None):
@@ -24,6 +34,10 @@ def init_sentry(app=None):
     Args:
         app: Flask application instance (optional)
     """
+    if not SENTRY_AVAILABLE:
+        logger.info('sentry_sdk not installed - error tracking disabled')
+        return
+
     sentry_dsn = os.getenv('SENTRY_DSN')
 
     if not sentry_dsn:
@@ -80,6 +94,9 @@ def before_send_filter(event, hint):
     Returns:
         Modified event or None to drop
     """
+    if not SENTRY_AVAILABLE:
+        return None
+
     # Remove sensitive request data
     if 'request' in event:
         request = event['request']
@@ -120,6 +137,10 @@ def capture_exception(error, context=None):
         error: Exception to capture
         context: Additional context data
     """
+    if not SENTRY_AVAILABLE:
+        logger.debug(f"Sentry not available - would have captured: {error}")
+        return
+
     if context:
         with sentry_sdk.push_scope() as scope:
             for key, value in context.items():
@@ -138,6 +159,10 @@ def capture_message(message, level='info', context=None):
         level: Message level (debug, info, warning, error, fatal)
         context: Additional context data
     """
+    if not SENTRY_AVAILABLE:
+        logger.debug(f"Sentry not available - would have captured message: {message}")
+        return
+
     if context:
         with sentry_sdk.push_scope() as scope:
             for key, value in context.items():
@@ -156,6 +181,9 @@ def set_user_context(user_id, username=None, email=None):
         username: Username (optional)
         email: Email (optional, not recommended for privacy)
     """
+    if not SENTRY_AVAILABLE:
+        return
+
     sentry_sdk.set_user({
         'id': user_id,
         'username': username,
@@ -165,6 +193,8 @@ def set_user_context(user_id, username=None, email=None):
 
 def clear_user_context():
     """Clear user context"""
+    if not SENTRY_AVAILABLE:
+        return
     sentry_sdk.set_user(None)
 
 
@@ -178,6 +208,9 @@ def add_breadcrumb(message, category, data=None, level='info'):
         data: Additional data
         level: Breadcrumb level
     """
+    if not SENTRY_AVAILABLE:
+        return
+
     sentry_sdk.add_breadcrumb(
         message=message,
         category=category,

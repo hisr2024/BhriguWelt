@@ -3,12 +3,21 @@ Prediction Orchestrator
 Central hub connecting ALL prediction categories to Bhrigu Core Wisdom
 Supports three modes: online, offline, hybrid
 Ensures guaranteed fallback to offline wisdom when OpenAI API fails
+Enhanced with Nadi Jyotisha integration across all prediction modes
 """
 import logging
 from typing import Dict, Any, Optional, List
 from enum import Enum
 
 logger = logging.getLogger(__name__)
+
+# Import Nadi Integration for enriched predictions
+try:
+    from services.bhrigu_nadi_integration import BhriguNadiIntegration
+    NADI_AVAILABLE = True
+except ImportError:
+    NADI_AVAILABLE = False
+    logger.warning("Nadi integration not available")
 
 
 class PredictionMode(Enum):
@@ -152,11 +161,11 @@ class PredictionOrchestrator:
             matched_rules = []
             if self.rule_engine and wisdom_context:
                 matched_rules = self.rule_engine.evaluate_rules(
-                    wisdom_context.get('rules', []), 
+                    wisdom_context.get('rules', []),
                     chart_data
                 )
-            
-            return {
+
+            result = {
                 'status': 'success',
                 'mode': 'online',
                 'category': category,
@@ -166,6 +175,19 @@ class PredictionOrchestrator:
                 'citations': wisdom_context.get('citations', []) if wisdom_context else [],
                 'source': 'OpenAI + Bhrigu Core Wisdom'
             }
+
+            # Enrich with Nadi insights
+            if NADI_AVAILABLE:
+                try:
+                    nadi_reading = BhriguNadiIntegration.generate_for_category(
+                        category, chart_data, depth='comprehensive'
+                    )
+                    result['nadi_insights'] = nadi_reading.get('data', {})
+                    logger.info(f"✓ Nadi enrichment added to online prediction for {category}")
+                except Exception as e:
+                    logger.warning(f"Nadi enrichment failed for {category}: {e}")
+
+            return result
             
         except Exception as e:
             logger.error(f"Online generation failed: {e}")
@@ -191,7 +213,7 @@ class PredictionOrchestrator:
                         except Exception as rule_err:
                             logger.warning(f"Rule evaluation failed: {rule_err}")
 
-                    return {
+                    result = {
                         'status': 'success',
                         'mode': 'offline',
                         'category': category,
@@ -200,6 +222,20 @@ class PredictionOrchestrator:
                         'matched_rules': matched_rules,
                         'source': 'Bhrigu Samhita & Nadi Jyotisha (Offline Database)'
                     }
+
+                    # Enrich with Nadi insights
+                    if NADI_AVAILABLE:
+                        try:
+                            nadi_reading = BhriguNadiIntegration.generate_for_category(
+                                category, chart_data, depth='comprehensive'
+                            )
+                            result['nadi_insights'] = nadi_reading.get('data', {})
+                            logger.info(f"✓ Nadi enrichment added to offline prediction for {category}")
+                        except Exception as e:
+                            logger.warning(f"Nadi enrichment failed for {category}: {e}")
+
+                    return result
+
                 except Exception as offline_err:
                     logger.error(f"Offline wisdom service failed: {offline_err}", exc_info=True)
 
