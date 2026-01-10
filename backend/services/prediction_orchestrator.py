@@ -70,17 +70,39 @@ class PredictionOrchestrator:
                           **options: Any) -> Dict[str, Any]:
         """
         Generate prediction for any category with guaranteed results
-        
+
         Args:
             category: Prediction category (karmic_journey, past_lives, etc.)
             chart_data: Birth chart data
             mode: Generation mode (online/offline/hybrid)
             language: Output language (en/hi/sa)
-            
+
         Returns:
             Dictionary with prediction and metadata
         """
         try:
+            # Validate inputs
+            if not category or not isinstance(category, str):
+                raise ValueError("Invalid category: must be a non-empty string")
+
+            if not chart_data or not isinstance(chart_data, dict):
+                raise ValueError("Invalid chart_data: must be a non-empty dictionary")
+
+            # Validate category is supported
+            valid_categories = {
+                'karmic_journey', 'past_lives', 'future_lives', 'present_life',
+                'life_events', 'karmic_remedies', 'relationships', 'predictions'
+            }
+            normalized_category = category.lower().strip()
+            if normalized_category not in valid_categories:
+                logger.warning(f"Unknown category '{category}', proceeding with caution")
+
+            # Validate essential chart data fields
+            required_fields = ['zodiac_sign']
+            missing_fields = [f for f in required_fields if f not in chart_data]
+            if missing_fields:
+                logger.warning(f"Missing recommended fields in chart_data: {missing_fields}")
+
             # Normalize mode
             try:
                 pred_mode = PredictionMode(mode.lower())

@@ -956,6 +956,44 @@ def comprehensive_prediction():
         )
 
 
+@bp.route('/health', methods=['GET'])
+def health_check():
+    """
+    Health check endpoint for monitoring service status
+    Returns detailed information about all service components
+    """
+    try:
+        health_status = bhrigu_service.get_health_status()
+
+        # Determine overall HTTP status code
+        status_code = 200 if health_status['healthy'] else 503
+
+        return jsonify({
+            'status': 'healthy' if health_status['healthy'] else 'degraded',
+            'timestamp': health_status['timestamp'],
+            'services': health_status['services'],
+            'errors': {
+                'count': health_status['initialization_errors'],
+                'details': health_status['errors']
+            },
+            'version': '2.0',
+            'capabilities': {
+                'predictions': health_status['services']['openai_service']['available'] or
+                              health_status['services']['corpus_db']['available'],
+                'astrology': health_status['services']['astrology_calculator']['available'],
+                'fallback_mode': not health_status['healthy']
+            }
+        }), status_code
+
+    except Exception as e:
+        log_error(logger, e, "Health check failed")
+        return jsonify({
+            'status': 'error',
+            'message': 'Health check failed',
+            'timestamp': datetime.utcnow().isoformat()
+        }), 500
+
+
 # Error handlers for this blueprint
 @bp.errorhandler(429)
 def ratelimit_handler(e):
