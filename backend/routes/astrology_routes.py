@@ -62,14 +62,22 @@ def calculate_birth_chart():
             if data.get('timezone'):
                 sanitized_data['timezone'] = sanitize_input(data['timezone'], max_length=64)
 
-            # Validate coordinates if provided
-            if 'latitude' in data and 'longitude' in data:
-                is_valid, error_msg = validate_coordinates(data['latitude'], data['longitude'])
+            # Validate coordinates if provided (only if both are present AND not None)
+            lat = data.get('latitude')
+            lon = data.get('longitude')
+            if lat is not None and lon is not None:
+                is_valid, error_msg = validate_coordinates(lat, lon)
                 if not is_valid:
                     logger.warning(f"Coordinate validation failed: {error_msg}")
                     return validation_error_response(error_msg)
-                sanitized_data['latitude'] = data['latitude']
-                sanitized_data['longitude'] = data['longitude']
+                sanitized_data['latitude'] = lat
+                sanitized_data['longitude'] = lon
+            elif lat is not None or lon is not None:
+                # Only one coordinate provided - this is invalid
+                logger.warning("Incomplete coordinates: both latitude and longitude are required")
+                return validation_error_response(
+                    "Both latitude and longitude must be provided together, or neither"
+                )
 
             # Calculate birth chart
             logger.info(f"Calculating birth chart for {sanitized_data['place_of_birth']}")

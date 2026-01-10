@@ -53,20 +53,36 @@ export default function BirthChartPage() {
       // Try API first if profile exists
       if (profile) {
         try {
-          const response = await astrologyAPI.calculateBirthChart({
+          // Build request data - only include coordinates if both are valid numbers
+          const requestData: any = {
             date_of_birth: profile.dateOfBirth,
             time_of_birth: profile.timeOfBirth,
             place_of_birth: profile.placeOfBirth,
-            latitude: profile.latitude,
-            longitude: profile.longitude
-          });
+          };
+
+          // Only add coordinates if both are present and are valid numbers
+          if (
+            typeof profile.latitude === 'number' &&
+            typeof profile.longitude === 'number' &&
+            !isNaN(profile.latitude) &&
+            !isNaN(profile.longitude)
+          ) {
+            requestData.latitude = profile.latitude;
+            requestData.longitude = profile.longitude;
+          }
+
+          const response = await astrologyAPI.calculateBirthChart(requestData);
           
           if (response && response.data) {
             setChartData(response.data);
             return;
           }
-        } catch (apiError) {
+        } catch (apiError: any) {
           console.warn('API call failed, trying stored data:', apiError);
+          // Log detailed error for debugging
+          if (apiError.response?.data) {
+            console.error('API error details:', apiError.response.data);
+          }
         }
       }
       
