@@ -226,3 +226,45 @@ def log_exception(logger: logging.Logger, error: Exception, context: str = None,
         message = f"{request_prefix}{redacted_error}"
 
     logger.error(message, exc_info=True)
+
+
+def secure_log(logger: logging.Logger, level: str, message: str, extra: dict = None):
+    """
+    Log with explicit sanitization - ensures no secrets leak
+
+    Args:
+        logger: Logger instance
+        level: Log level (info, warning, error, etc.)
+        message: Log message
+        extra: Additional structured data (will be sanitized)
+    """
+    sanitized_extra = _redact_sensitive_data(extra) if extra else {}
+    sanitized_message = sanitize_error(message)
+
+    # Ensure API keys are redacted even if not in standard fields
+    for env_key in ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'API_KEY']:
+        api_key = os.getenv(env_key, '')
+        if api_key and api_key in sanitized_message:
+            sanitized_message = sanitized_message.replace(api_key, '[REDACTED]')
+
+    log_func = getattr(logger, level.lower(), logger.info)
+
+    if sanitized_extra:
+        log_func(json.dumps({
+            'message': sanitized_message,
+            'timestamp': datetime.utcnow().isoformat(),
+            **sanitized_extra
+        }))
+    else:
+        log_func(sanitized_message)
+
+
+def secure_log_with_context(logger: logging.Logger, level: str, message: str, **kwargs):
+    """
+    Convenience wrapper for secure_log with keyword arguments
+
+    Example:
+        secure_log_with_context(logger, 'info', 'Prediction generated',
+                               category='karmic_journey', user_id=123)
+    """
+    secure_log(logger, level, message, extra=kwargs)

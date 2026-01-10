@@ -11,7 +11,7 @@ from services.openai_service import get_openai_service
 from services.astrology_calculator import AstrologyCalculator
 from services.section_parser import get_section_parser
 from services.bhrigu_corpus_db import get_corpus_database
-from utils.logger import setup_logger, log_exception
+from utils.logger import setup_logger, log_exception, secure_log, sanitize_error
 
 logger = setup_logger(__name__)
 
@@ -150,15 +150,34 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
 - Uttara Kalamrita: Remedial measures"""
 
     def _record_init_error(self, component: str, exception: Exception) -> None:
-        """Record initialization error for a component"""
+        """
+        Record initialization error for a component with secure logging
+
+        Stores error details and logs securely without exposing sensitive data
+        """
+        error_message = sanitize_error(str(exception))
         error_info = {
             'component': component,
-            'error': str(exception),
+            'error': error_message,
             'type': exception.__class__.__name__,
             'timestamp': datetime.utcnow().isoformat()
         }
         self.init_errors.append(error_info)
-        logger.error(f"Failed to initialize {component}: {str(exception)}", exc_info=True)
+
+        # Use secure logging to prevent API key leakage
+        secure_log(
+            logger,
+            'error',
+            f"Failed to initialize {component}: {error_message}",
+            extra={
+                'component': component,
+                'error_type': exception.__class__.__name__,
+                'initialization_context': 'BhriguPredictionsService'
+            }
+        )
+
+        # Also log full exception with traceback (will be sanitized)
+        log_exception(logger, exception, context=f"Initialization of {component}")
 
     def _is_healthy(self) -> bool:
         """Check if critical services are operational"""
@@ -167,6 +186,35 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
             self.section_parser and
             not self.init_errors
         )
+
+    def get_health_status(self) -> Dict[str, Any]:
+        """
+        Get detailed health status of all services
+
+        Returns:
+            Dictionary with service health details for monitoring
+        """
+        return {
+            'healthy': self._is_healthy(),
+            'services': {
+                'openai_service': {
+                    'available': bool(self.openai_service),
+                    'enabled': getattr(self.openai_service, 'enabled', False) if self.openai_service else False
+                },
+                'astrology_calculator': {
+                    'available': bool(self.astrology_calculator)
+                },
+                'section_parser': {
+                    'available': bool(self.section_parser)
+                },
+                'corpus_db': {
+                    'available': bool(self.corpus_db)
+                }
+            },
+            'initialization_errors': len(self.init_errors),
+            'errors': self.init_errors,
+            'timestamp': datetime.utcnow().isoformat()
+        }
 
     def _get_fallback_if_unavailable(self, category: str, birth_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
@@ -1248,7 +1296,7 @@ Return only the section body (no header). Use at least 200 words with concrete a
             age_next = "Unknown"
 
         if birth_data.get('age') is None:
-            birth_data['age'] = current_age
+            birth_data['age'] = current_age_display
 
         prediction_payload = self._generate_sectioned_prediction(
             'life_events',
