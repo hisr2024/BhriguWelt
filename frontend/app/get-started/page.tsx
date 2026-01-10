@@ -93,8 +93,8 @@ export default function GetStartedPage() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      // Use add() instead of put() to let auto-increment generate the ID
-      const database = await setItem(STORES.PROFILES, Date.now().toString(), profileData, encryptionKey);
+      // Save profile with consistent key 'current_profile' for easy retrieval across all features
+      const database = await setItem(STORES.PROFILES, 'current_profile', profileData, encryptionKey);
       const reportData = {
         profileId: 1,
         type: 'birth-chart',
