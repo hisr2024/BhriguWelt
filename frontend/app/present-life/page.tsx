@@ -12,7 +12,8 @@ import BottomNav from '../components/BottomNav';
 import CardSkeleton from '../components/CardSkeleton';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
-import { presentLifeAPI, BirthDetails } from '@/lib/api';
+import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
+import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import { useOfflineWisdomCards } from '@/lib/wisdom';
 import Link from 'next/link';
 
@@ -23,7 +24,7 @@ export default function PresentLifePage() {
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
 
-  const { cards: wisdomCards } = useOfflineWisdomCards({ limit: 6 });
+  const { cards: wisdomCards, isLoading: wisdomLoading } = useOfflineWisdomCards({ limit: 6 });
 
   useEffect(() => {
     if (!encryptionLoading && !isSetup) {
