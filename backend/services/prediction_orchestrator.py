@@ -150,35 +150,52 @@ class PredictionOrchestrator:
             # Fallback to offline
             return self._generate_offline(category, chart_data, language)
 
-    def _generate_offline(self, category: str, chart_data: Dict[str, Any], 
+    def _generate_offline(self, category: str, chart_data: Dict[str, Any],
                          language: str) -> Dict[str, Any]:
-        """Generate prediction using only offline wisdom database"""
-        if not self.offline_wisdom:
-            return self._emergency_fallback(category, chart_data, language)
-        
+        """Generate prediction using only offline wisdom database - NEVER FAILS"""
         try:
-            # Route to category-specific offline generator
-            prediction_text = self._call_offline_for_category(category, chart_data, language)
-            
-            # Get matched rules
-            matched_rules = []
-            if self.rule_engine and self.core_wisdom:
-                rules = self.core_wisdom.get_rules_for_category(category)
-                matched_rules = self.rule_engine.evaluate_rules(rules, chart_data)
-            
+            # First try offline wisdom service if available
+            if self.offline_wisdom:
+                try:
+                    # Route to category-specific offline generator
+                    prediction_text = self._call_offline_for_category(category, chart_data, language)
+
+                    # Get matched rules
+                    matched_rules = []
+                    if self.rule_engine and self.core_wisdom:
+                        try:
+                            rules = self.core_wisdom.get_rules_for_category(category)
+                            matched_rules = self.rule_engine.evaluate_rules(rules, chart_data)
+                        except Exception as rule_err:
+                            logger.warning(f"Rule evaluation failed: {rule_err}")
+
+                    return {
+                        'status': 'success',
+                        'mode': 'offline',
+                        'category': category,
+                        'language': language,
+                        'prediction': prediction_text,
+                        'matched_rules': matched_rules,
+                        'source': 'Bhrigu Samhita & Nadi Jyotisha (Offline Database)'
+                    }
+                except Exception as offline_err:
+                    logger.error(f"Offline wisdom service failed: {offline_err}", exc_info=True)
+
+            # If offline wisdom failed or unavailable, use emergency fallback
+            return self._emergency_fallback(category, chart_data, language)
+
+        except Exception as e:
+            logger.error(f"Offline generation completely failed: {e}", exc_info=True)
+            # Absolute last resort - manually construct response
             return {
                 'status': 'success',
-                'mode': 'offline',
+                'mode': 'emergency_offline',
                 'category': category,
                 'language': language,
-                'prediction': prediction_text,
-                'matched_rules': matched_rules,
-                'source': 'Bhrigu Samhita & Nadi Jyotisha (Offline Database)'
+                'prediction': self._emergency_fallback_text(category, chart_data),
+                'source': 'Emergency Offline Generator',
+                'note': 'This is a basic prediction. Services are temporarily unavailable.'
             }
-            
-        except Exception as e:
-            logger.error(f"Offline generation failed: {e}")
-            return self._emergency_fallback(category, chart_data, language)
 
     def _generate_hybrid(self, category: str, chart_data: Dict[str, Any], 
                         language: str, prompt: Optional[str] = None,
