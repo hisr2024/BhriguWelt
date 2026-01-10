@@ -1726,7 +1726,8 @@ Return only the section body (no header). Use at least 200 words with concrete a
             today = datetime.now()
             age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
             return age
-        except:
+        except (ValueError, AttributeError) as e:
+            # Return 0 if date format invalid
             return 0
 
 

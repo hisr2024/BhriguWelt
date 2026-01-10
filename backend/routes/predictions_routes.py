@@ -13,7 +13,7 @@ import logging
 from utils.validators import sanitizeQuestion
 from utils.response_formatter import prediction_response, prediction_error_response
 from utils.validators import sanitize_input
-from utils.logger import setup_logger
+from utils.logger import setup_logger, log_exception
 
 logger = setup_logger(__name__)
 

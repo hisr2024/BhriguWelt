@@ -60,7 +60,7 @@ const refreshClient = axios.create({
 api.interceptors.request.use(
   async (config) => {
     if (process.env.NODE_ENV === 'development') {
-      console.debug(`[API] ${config.method?. toUpperCase()} ${config.url}`);
+      console.debug(`[API] ${config.method?.toUpperCase()} ${config.url}`);
     }
     if (typeof navigator !== 'undefined') {
       config.headers = config.headers ?? {};
@@ -188,8 +188,8 @@ api.interceptors.response.use(
     }
     
     // Offline detection
-    if (typeof navigator !== 'undefined' && ! navigator.onLine) {
-      return Promise.reject(new Error('You are offline.  Please check your connection. '));
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return Promise.reject(new Error('You are offline. Please check your connection.'));
     }
 
     const message = responseData?.message || error.message || 'Request failed';
@@ -230,13 +230,13 @@ export function isOnline(): boolean {
  * Process queued requests when connection is restored
  */
 export async function processOfflineQueue(): Promise<void> {
-  while (offlineQueue. length > 0 && isOnline()) {
+  while (offlineQueue.length > 0 && isOnline()) {
     const request = offlineQueue.shift();
     if (request) {
       try {
         await request();
       } catch (error) {
-        console. error('Failed to process queued request:', error);
+        console.error('Failed to process queued request:', error);
       }
     }
   }
@@ -257,8 +257,8 @@ export type {
 // API Methods
 export const astrologyAPI = {
   calculateBirthChart: async (data: BirthDetails) => {
-    const response = await api. post('/api/astrology/birth-chart', data);
-    return response. data;
+    const response = await api.post('/api/astrology/birth-chart', data);
+    return response.data;
   },
 
   getZodiacAnalysis: async (data: BirthDetails) => {
@@ -561,8 +561,8 @@ export const aiAPI = {
    * Get AI consent information and requirements
    */
   getConsentInfo: async () => {
-    const response = await api. get('/api/ai/consent');
-    return response. data;
+    const response = await api.get('/api/ai/consent');
+    return response.data;
   },
 
   /**
@@ -578,7 +578,7 @@ export const aiAPI = {
    * Requires AI consent header
    */
   composeReport: async (data: AIComposeRequest, aiMode: AIMode) => {
-    if (!aiMode. consent) {
+    if (!aiMode.consent) {
       throw new Error('AI consent required');
     }
     
@@ -596,7 +596,7 @@ export const aiAPI = {
    * Requires AI consent header
    */
   chat: async (data:  AIChatRequest, aiMode: AIMode) => {
-    if (!aiMode. consent) {
+    if (!aiMode.consent) {
       throw new Error('AI consent required');
     }
     
@@ -604,13 +604,13 @@ export const aiAPI = {
       throw new Error('Conversational mode required for chat');
     }
     
-    const response = await api. post('/api/ai/chat', data, {
+    const response = await api.post('/api/ai/chat', data, {
       headers:  {
         'X-AI-Consent': 'granted',
         'X-AI-Mode': 'conversational'
       }
     });
-    return response. data;
+    return response.data;
   },
 
   /**
@@ -625,7 +625,7 @@ export const aiAPI = {
     const response = await api.post('/api/ai/summarize', data, {
       headers: {
         'X-AI-Consent': 'granted',
-        'X-AI-Mode': aiMode. mode
+        'X-AI-Mode': aiMode.mode
       }
     });
     return response.data;
@@ -644,7 +644,7 @@ export const bhriguPredictionsAPI = {
    */
   getKarmicJourney:  async (data: BirthDetails & { question?:  string; force_regenerate?: boolean }) => {
     const response = await api.post<PredictionResult>('/api/bhrigu-predictions/karmic-journey', data);
-    return response. data;
+    return response.data;
   },
 
   /**
@@ -698,7 +698,7 @@ export const bhriguPredictionsAPI = {
    */
   getRelationships:  async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
     const response = await api.post<PredictionResult>('/api/bhrigu-predictions/relationships', data);
-    return response. data;
+    return response.data;
   },
 
   /**
@@ -716,7 +716,7 @@ export const bhriguPredictionsAPI = {
    */
   getComprehensive:  async (data: BirthDetails & { force_regenerate?: boolean }) => {
     const response = await api.post<PredictionResult>('/api/bhrigu-predictions/comprehensive', data);
-    return response. data;
+    return response.data;
   },
 
   /**
@@ -823,7 +823,7 @@ export const matchmakingAPI = {
    * Get compatibility between two individuals (alias for calculateCompatibility)
    */
   getCompatibility: async (person1: BirthDetails, person2: BirthDetails) => {
-    const response = await api. post('/api/matchmaking/compatibility', {
+    const response = await api.post('/api/matchmaking/compatibility', {
       person1,
       person2,
     });
@@ -843,14 +843,14 @@ export const matchmakingAPI = {
    */
   checkDoshas: async (data: BirthDetails) => {
     const response = await api.post('/api/matchmaking/doshas', data);
-    return response. data;
+    return response.data;
   },
 
   /**
    * Get detailed Ashtakoot analysis
    */
   getAshtakootAnalysis: async (person1: BirthDetails, person2: BirthDetails) => {
-    const response = await api. post('/api/matchmaking/ashtakoot', {
+    const response = await api.post('/api/matchmaking/ashtakoot', {
       person1,
       person2,
     });

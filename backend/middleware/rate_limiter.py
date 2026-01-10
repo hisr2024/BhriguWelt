@@ -23,7 +23,8 @@ def get_rate_limit_key():
         user_id = get_jwt_identity()
         if user_id:
             return f"user:{user_id}"
-    except:
+    except Exception:
+        # JWT not available or invalid, fall back to IP
         pass
 
     # Fallback to IP address

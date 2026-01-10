@@ -8,12 +8,12 @@ const nextConfig = {
   // Enable standalone output for Docker production builds
   output: 'standalone',
   eslint: {
-    // Don't fail build on ESLint errors during production builds
-    ignoreDuringBuilds: true,
+    // Fail build on ESLint errors to ensure code quality
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    // Don't fail build on TypeScript errors during production builds
-    ignoreBuildErrors: true,
+    // Fail build on TypeScript errors to ensure type safety
+    ignoreBuildErrors: false,
   },
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
