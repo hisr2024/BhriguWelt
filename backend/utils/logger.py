@@ -273,3 +273,59 @@ def secure_log_with_context(logger: logging.Logger, level: str, message: str, **
                                category='karmic_journey', user_id=123)
     """
     secure_log(logger, level, message, extra=kwargs)
+
+
+def log_response_generated(logger: logging.Logger, category: str, success: bool,
+                           duration_ms: float = None, error: str = None):
+    """
+    Log response generation event with structured data for monitoring
+    VISIBILITY: Track all prediction generation attempts and outcomes
+    """
+    event_data = {
+        'event': 'response_generated',
+        'category': category,
+        'success': success,
+        'timestamp': datetime.utcnow().isoformat()
+    }
+
+    if duration_ms is not None:
+        event_data['duration_ms'] = duration_ms
+
+    if error:
+        event_data['error'] = sanitize_error(str(error))
+
+    logger.info(json.dumps(event_data))
+
+
+def log_response_failure(logger: logging.Logger, category: str, error: Exception,
+                        fallback_used: bool = False):
+    """
+    Log response failure with fallback status
+    VISIBILITY: Track failures and fallback usage
+    """
+    event_data = {
+        'event': 'response_failure',
+        'category': category,
+        'error': sanitize_error(str(error)),
+        'fallback_used': fallback_used,
+        'timestamp': datetime.utcnow().isoformat()
+    }
+
+    logger.error(json.dumps(event_data))
+
+
+def log_concurrent_request(logger: logging.Logger, count: int, category: str = None):
+    """
+    Log concurrent request metrics
+    VISIBILITY: Track system load and concurrency
+    """
+    event_data = {
+        'event': 'concurrent_request',
+        'concurrent_count': count,
+        'timestamp': datetime.utcnow().isoformat()
+    }
+
+    if category:
+        event_data['category'] = category
+
+    logger.info(json.dumps(event_data))
