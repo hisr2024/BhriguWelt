@@ -5,14 +5,14 @@ Aggregates service readiness and initialization errors.
 from typing import Dict, Any, List
 
 from services.openai_service import get_openai_service, get_openai_initialization_errors
-from services.corpus_loader import get_corpus_loader, get_corpus_loader_initialization_errors
+from services.corpus_loader import get_corpus_loader
 from services.bhrigu_offline_wisdom import (
     get_offline_wisdom_generator,
     get_offline_wisdom_initialization_errors,
 )
 from services.astrology_calculator import (
     get_astrology_calculator,
-    get_astrology_calculator_initialization_error,
+    get_astrology_dependency_error,
 )
 
 
@@ -40,16 +40,19 @@ class HealthReporter:
         if not openai_available and not openai_errors:
             openai_errors = ["OpenAI service not enabled."]
 
-        corpus_loader = get_corpus_loader()
-        corpus_errors = get_corpus_loader_initialization_errors()
-        corpus_available = bool(corpus_loader)
+        corpus_result = get_corpus_loader()
+        corpus_available = bool(corpus_result and corpus_result.get('loader'))
+        corpus_errors = []
+        if not corpus_available and corpus_result and corpus_result.get('error'):
+            error_info = corpus_result['error']
+            corpus_errors = [f"{error_info.get('code', 'unknown')}: {error_info.get('message', 'Corpus loader unavailable')}"]
 
         offline_wisdom = get_offline_wisdom_generator()
         offline_errors = get_offline_wisdom_initialization_errors()
         offline_available = bool(offline_wisdom)
 
         calculator = get_astrology_calculator()
-        calculator_error = get_astrology_calculator_initialization_error()
+        calculator_error = get_astrology_dependency_error()
         calculator_errors = [calculator_error] if calculator_error else []
         calculator_available = bool(calculator)
 

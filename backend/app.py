@@ -80,8 +80,21 @@ _check_corpus_files()
 # Initialize Flask app
 logger.info("Initializing Flask application...")
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key')
+
+# Security: Generate secure random secrets if not provided
+import secrets
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    SECRET_KEY = secrets.token_hex(32)
+    logger.warning("SECRET_KEY not set - generated random key for this session. Set SECRET_KEY in production!")
+
+JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+if not JWT_SECRET_KEY:
+    JWT_SECRET_KEY = secrets.token_hex(32)
+    logger.warning("JWT_SECRET_KEY not set - generated random key for this session. Set JWT_SECRET_KEY in production!")
+
+app.config['SECRET_KEY'] = SECRET_KEY
+app.config['JWT_SECRET_KEY'] = JWT_SECRET_KEY
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///bhriguwelt.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 MAX_REQUEST_BYTES = int(os.getenv('MAX_REQUEST_BYTES', str(1024 * 1024)))

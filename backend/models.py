@@ -61,7 +61,8 @@ class BhriguPredictionCache(db.Model):
         """Convert to dictionary"""
         try:
             prediction_dict = json.loads(self.prediction_data)
-        except:
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.warning(f"Failed to parse prediction_data as JSON: {e}")
             prediction_dict = {'raw': self.prediction_data}
 
         cache_age_seconds = None
@@ -80,11 +81,6 @@ class BhriguPredictionCache(db.Model):
             'cache_key': f"{self.birth_data_hash}:{self.category}:{self.question or ''}",
             'access_count': self.access_count
         }
-
-        if isinstance(prediction_dict, dict) and 'full_analysis' in prediction_dict:
-            response['full_analysis'] = prediction_dict.get('full_analysis')
-
-        return response
 
     @classmethod
     def create_hash(cls, birth_data: dict, category: str = None, question: str = None,
@@ -117,23 +113,28 @@ class BhriguPredictionCache(db.Model):
     def cache_prediction(cls, birth_data: dict, category: str, prediction: dict,
                         question: str = None, metadata: dict = None):
         """Cache a new prediction"""
-        prediction_payload = dict(prediction)
-        complete_analysis = prediction_payload.pop('complete_analysis', None)
-        cache_entry = cls(
-            birth_data_hash=cls.create_hash(birth_data, category, question),
-            category=category,
-            question=question,
-            prediction_data=json.dumps(prediction_payload),
-            complete_analysis=complete_analysis,
-            zodiac_sign=metadata.get('zodiac_sign') if metadata else None,
-            nakshatra=metadata.get('nakshatra') if metadata else None,
-            moon_sign=metadata.get('moon_sign') if metadata else None,
-            ascendant=metadata.get('ascendant') if metadata else None,
-            ai_model=metadata.get('ai_model', 'gpt-4') if metadata else 'gpt-4'
-        )
-        db.session.add(cache_entry)
-        db.session.commit()
-        return cache_entry
+        try:
+            prediction_payload = dict(prediction)
+            complete_analysis = prediction_payload.pop('complete_analysis', None)
+            cache_entry = cls(
+                birth_data_hash=cls.create_hash(birth_data, category, question),
+                category=category,
+                question=question,
+                prediction_data=json.dumps(prediction_payload),
+                complete_analysis=complete_analysis,
+                zodiac_sign=metadata.get('zodiac_sign') if metadata else None,
+                nakshatra=metadata.get('nakshatra') if metadata else None,
+                moon_sign=metadata.get('moon_sign') if metadata else None,
+                ascendant=metadata.get('ascendant') if metadata else None,
+                ai_model=metadata.get('ai_model', 'gpt-4') if metadata else 'gpt-4'
+            )
+            db.session.add(cache_entry)
+            db.session.commit()
+            return cache_entry
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Failed to cache prediction: {e}")
+            return None
 
     @classmethod
     def get_cached_prediction(cls, birth_data: dict, category: str, question: str = None):
@@ -152,10 +153,14 @@ class BhriguPredictionCache(db.Model):
                 break
 
         if cached:
-            # Update access metadata
-            cached.accessed_at = datetime.utcnow()
-            cached.access_count += 1
-            db.session.commit()
+            try:
+                # Update access metadata
+                cached.accessed_at = datetime.utcnow()
+                cached.access_count += 1
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                logger.warning(f"Failed to update cache access metadata: {e}")
 
         return cached
 
@@ -251,10 +256,14 @@ class BhriguWisdomEntry(db.Model):
             cls.access_count.desc()
         ).limit(limit).all()
 
-        # Update access counts
-        for entry in wisdom_entries:
-            entry.access_count += 1
-        db.session.commit()
+        try:
+            # Update access counts
+            for entry in wisdom_entries:
+                entry.access_count += 1
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.warning(f"Failed to update wisdom access counts: {e}")
 
         return wisdom_entries
 
@@ -342,11 +351,15 @@ def seed_initial_wisdom():
         }
     ]
 
-    for wisdom_data in initial_wisdom:
-        existing = BhriguWisdomEntry.query.filter_by(title=wisdom_data['title']).first()
-        if not existing:
-            wisdom = BhriguWisdomEntry(**wisdom_data)
-            db.session.add(wisdom)
+    try:
+        for wisdom_data in initial_wisdom:
+            existing = BhriguWisdomEntry.query.filter_by(title=wisdom_data['title']).first()
+            if not existing:
+                wisdom = BhriguWisdomEntry(**wisdom_data)
+                db.session.add(wisdom)
 
-    db.session.commit()
-    logger.info("✓ Seeded %s initial wisdom entries", len(initial_wisdom))
+        db.session.commit()
+        logger.info("✓ Seeded %s initial wisdom entries", len(initial_wisdom))
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to seed initial wisdom: {e}")

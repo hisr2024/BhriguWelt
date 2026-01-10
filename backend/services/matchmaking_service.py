@@ -449,7 +449,8 @@ class MatchmakingService:
         try:
             planet_data = chart.get('planets', {}).get(planet_name, {})
             return planet_data.get('house', 1)
-        except:
+        except (KeyError, AttributeError, TypeError) as e:
+            # Return default house if planet data unavailable
             return 1
     
     def _get_recommendation(self, total_score: int, doshas: Dict) -> Dict[str, str]:

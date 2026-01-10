@@ -87,6 +87,67 @@ def calculate_compatibility():
         return error_response("Compatibility calculation failed. Please try again later.", 500)
 
 
+@bp.route('/ashtakoot', methods=['POST'])
+def ashtakoot_analysis():
+    """
+    Get detailed Ashtakoot (8-fold) Guna Milan analysis
+
+    Request JSON:
+    {
+        "person1": { birth details },
+        "person2": { birth details }
+    }
+    """
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({'error': 'Request body is required'}), 400
+
+        person1_data = data.get('person1')
+        person2_data = data.get('person2')
+
+        calculator = get_astrology_calculator()
+        if not calculator:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        # Validate input
+        if not person1_data or not person2_data:
+            return jsonify({'error': 'Both person1 and person2 data required'}), 400
+
+        required_fields = ['date_of_birth', 'time_of_birth', 'place_of_birth']
+        for field in required_fields:
+            if field not in person1_data or field not in person2_data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+
+        # Calculate compatibility to get ashtakoot details
+        matchmaking_service = get_matchmaking_service()
+        result = matchmaking_service.calculate_compatibility(
+            person1_data=person1_data,
+            person2_data=person2_data,
+            mode='offline'  # Use offline mode for quick ashtakoot calculation
+        )
+
+        # Extract and return only ashtakoot details
+        ashtakoot_response = {
+            'ashtakoot_details': result.get('ashtakoot_details', {}),
+            'ashtakoot_scores': result.get('ashtakoot_scores', {}),
+            'total_score': result.get('ashtakoot_scores', {}).get('total_score', 0),
+            'max_score': result.get('ashtakoot_scores', {}).get('max_score', 36),
+            'compatibility_percentage': result.get('compatibility_percentage', 0)
+        }
+
+        return jsonify(ashtakoot_response), 200
+
+    except KeyError as e:
+        field = e.args[0] if e.args else "unknown"
+        logger.warning("Missing required field: %s", field)
+        return error_response(f"Missing required field: {field}", 400)
+    except Exception as e:
+        log_exception(logger, e, context="matchmaking.ashtakoot")
+        return error_response("Ashtakoot analysis failed. Please try again later.", 500)
+
+
 @bp.route('/quick-match', methods=['POST'])
 def quick_match():
     """
