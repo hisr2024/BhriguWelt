@@ -307,29 +307,39 @@ export class PredictionsAPI {
       cancelPrevious?: boolean;
     } = {}
   ): Promise<T> {
-    const { controller, isCancelled } = this.createPredictionRequestContext(cancelPrevious);
-    const response = await retryWithBackoff(
-      signal =>
-        fetch(url, {
-          method: 'POST',
-          headers: this.buildHeaders(),
-          body: JSON.stringify(body),
-          signal,
-        }),
-      {
-        retries: 2,
-        baseDelayMs: 500,
-        shouldRetry: response => response.status === 429 || response.status === 503,
-        signal: controller.signal,
-        isCancelled,
+    try {
+      const { controller, isCancelled } = this.createPredictionRequestContext(cancelPrevious);
+      const response = await retryWithBackoff(
+        signal =>
+          fetch(url, {
+            method: 'POST',
+            headers: this.buildHeaders(),
+            body: JSON.stringify(body),
+            signal,
+          }),
+        {
+          retries: 2,
+          baseDelayMs: 500,
+          shouldRetry: response => response.status === 429 || response.status === 503,
+          signal: controller.signal,
+          isCancelled,
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => response.statusText);
+        console.error(`API error [${response.status}]: ${errorText}`);
+        throw new Error(`API error: ${response.statusText} (${response.status})`);
       }
-    );
 
-    if (!response.ok) {
-      throw new Error(`API error: ${response.statusText}`);
+      return response.json();
+    } catch (error) {
+      console.error('Request prediction failed:', {
+        url,
+        error: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
     }
-
-    return response.json();
   }
 
   private async generatePredictionWithOptions(
@@ -353,6 +363,7 @@ export class PredictionsAPI {
 
   /**
    * Generate prediction for specified engine
+   * Implements bulletproof fallback - never throws, always returns structured response
    */
   async generatePrediction(
     engine: PredictionEngine,
@@ -363,8 +374,28 @@ export class PredictionsAPI {
     try {
       return await this.generatePredictionWithOptions(engine, birthData, useAI, language, true);
     } catch (error) {
-      console.error('Prediction generation failed:', error);
-      throw error;
+      console.error('Prediction generation failed, returning emergency fallback:', error);
+
+      // Emergency fallback - return structured response instead of throwing
+      return {
+        engine,
+        title: this.getEngineDisplayName(engine),
+        success: false,
+        error: error instanceof Error ? error.message : 'Prediction service temporarily unavailable',
+        subcategories: {},
+        metadata: {
+          engine,
+          zodiac_sign: birthData.zodiac_sign || 'Unknown',
+          moon_sign: birthData.moon_sign || 'Unknown',
+          ascendant: birthData.ascendant || 'Unknown',
+          nakshatra: birthData.nakshatra || 'Unknown',
+          ai_enhanced: false,
+          tradition: 'Bhrigu Samhita & Nadi Jyotisa',
+          calculation_method: 'emergency_fallback'
+        },
+        mode: 'offline',
+        generated_at: new Date().toISOString()
+      };
     }
   }
 
