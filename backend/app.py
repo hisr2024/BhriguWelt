@@ -294,9 +294,11 @@ logger.info("Initializing security middleware...")
 try:
     from middleware.security import SecurityMiddleware
     from middleware.rate_limiter import setup_rate_limiter
+    from middleware.csrf_protection import CSRFMiddleware
     security_middleware = SecurityMiddleware(app)
     limiter = setup_rate_limiter(app)
-    logger.info("✓ Security middleware initialized")
+    csrf_middleware = CSRFMiddleware(app)
+    logger.info("✓ Security middleware initialized (including CSRF protection)")
 except Exception as e:
     log_exception(logger, e, context="Failed to initialize security middleware")
 
@@ -316,6 +318,16 @@ try:
 except Exception as e:
     log_exception(logger, e, context="Database initialization failed")
     # Continue without database - API will still work with reduced functionality
+
+# Initialize Sentry error tracking
+logger.info("Initializing Sentry error tracking...")
+try:
+    from services.sentry_service import init_sentry
+    init_sentry(app)
+    logger.info("✓ Sentry error tracking initialized (if configured)")
+except Exception as e:
+    log_exception(logger, e, context="Sentry initialization skipped")
+    # Continue without Sentry - graceful degradation
 
 # Import routes
 logger.info("Importing route modules...")

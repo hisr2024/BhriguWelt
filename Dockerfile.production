@@ -1,0 +1,94 @@
+# ===========================================
+# Production Dockerfile - Multi-stage Build
+# Optimized for size, security, and performance
+# ===========================================
+
+# Stage 1: Builder - Install dependencies
+FROM python:3.11.9-slim as builder
+
+# Set environment variables for optimization
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /build
+
+# Install build dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        gcc \
+        g++ \
+        build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy and install Python dependencies
+COPY backend/requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+# Stage 2: Runtime - Minimal production image
+FROM python:3.11.9-slim
+
+# Create non-root user for security
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app/backend \
+    PORT=8000 \
+    WORKERS=4 \
+    TIMEOUT=120 \
+    FLASK_ENV=production \
+    PATH=/home/appuser/.local/bin:$PATH
+
+WORKDIR /app
+
+# Install only runtime dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        bash \
+        ca-certificates \
+        curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Copy Python packages from builder
+COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
+
+# Copy application code
+COPY --chown=appuser:appuser backend /app/backend
+COPY --chown=appuser:appuser core_wisdom /app/core_wisdom
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/backend/logs /app/backend/data \
+    && chown -R appuser:appuser /app \
+    && chmod +x /app/backend/start.sh
+
+# Switch to non-root user
+USER appuser
+
+WORKDIR /app/backend
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Use gunicorn with production settings
+CMD ["gunicorn", \
+     "--bind", "0.0.0.0:8000", \
+     "--workers", "4", \
+     "--worker-class", "sync", \
+     "--worker-tmp-dir", "/dev/shm", \
+     "--timeout", "120", \
+     "--graceful-timeout", "30", \
+     "--keep-alive", "5", \
+     "--max-requests", "1000", \
+     "--max-requests-jitter", "100", \
+     "--log-level", "info", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-", \
+     "app:app"]
