@@ -4,6 +4,7 @@ Input validation utilities for BhriguWelt API
 from datetime import datetime
 from typing import Dict, Any, Optional, Tuple
 import html
+import math
 import re
 from dateutil import parser
 
@@ -125,14 +126,24 @@ def validate_coordinates(lat: float, lon: float) -> Tuple[bool, Optional[str]]:
     Returns:
         (is_valid, error_message)
     """
-    if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
-        return False, "Latitude and longitude must be numbers"
+    # Check for None/null values first
+    if lat is None or lon is None:
+        return False, "Both latitude and longitude are required"
 
+    # Check for valid numeric types
+    if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
+        return False, "Latitude and longitude must be valid numbers"
+
+    # Check for NaN
+    if math.isnan(lat) or math.isnan(lon):
+        return False, "Latitude and longitude cannot be NaN"
+
+    # Validate ranges
     if lat < -90 or lat > 90:
-        return False, "Latitude must be between -90 and 90"
+        return False, f"Latitude must be between -90 and 90 (got {lat})"
 
     if lon < -180 or lon > 180:
-        return False, "Longitude must be between -180 and 180"
+        return False, f"Longitude must be between -180 and 180 (got {lon})"
 
     return True, None
 

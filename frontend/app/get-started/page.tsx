@@ -55,13 +55,24 @@ export default function GetStartedPage() {
     setLoading(true);
     setError('');
     try {
+      // Build request data - only include coordinates if both are valid numbers
       const requestData: BirthDetails = {
         date_of_birth: formData.date_of_birth,
         time_of_birth: formData.time_of_birth,
         place_of_birth: formData.place_of_birth,
-        latitude: latitudeValue,
-        longitude: longitudeValue,
       };
+
+      // Only add coordinates if both are present and are valid numbers
+      if (
+        latitudeValue !== undefined &&
+        longitudeValue !== undefined &&
+        !Number.isNaN(latitudeValue) &&
+        !Number.isNaN(longitudeValue)
+      ) {
+        requestData.latitude = latitudeValue;
+        requestData.longitude = longitudeValue;
+      }
+
       const result = await astrologyAPI.calculateBirthChart(requestData);
       const profileData = {
         name: formData.name,
@@ -87,7 +98,14 @@ export default function GetStartedPage() {
       await setItem(STORES.REPORTS, 'current_birth_chart', reportData, encryptionKey);
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to calculate birth chart. Please try again.');
+      // Enhanced error handling with better messages
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        'Failed to calculate birth chart. Please try again.';
+      setError(errorMessage);
+      console.error('Birth chart calculation failed:', err);
     } finally {
       setLoading(false);
     }
