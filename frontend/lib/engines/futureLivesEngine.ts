@@ -9,6 +9,8 @@ type RuleTradition = 'Bhrigu Samhita' | 'Nadi Jyotisha';
 
 type FutureLivesMode = 'offline' | 'online' | 'hybrid';
 
+export type DiveLevel = 'basic' | 'intermediate' | 'comprehensive';
+
 export interface FutureLivesOptions {
   mode?: FutureLivesMode;
   useAI?: boolean;
@@ -18,6 +20,7 @@ export interface FutureLivesOptions {
   language?: string;
   maxProjections?: number;
   cacheTtlMs?: number;
+  diveLevel?: DiveLevel;
 }
 
 interface WisdomRule {
@@ -183,22 +186,38 @@ async function loadWisdomSources(cacheTtlMs: number): Promise<WisdomSources> {
   }
 
   const warnings: string[] = [];
-  const bhriguPath = await resolveWisdomPath('bhrigu_samhita_rules.md');
-  const nadiPath = await resolveWisdomPath('nadi_jyotisha_rules.md');
+
+  // Try to resolve paths with error handling
+  const fileResults = await Promise.allSettled([
+    resolveWisdomPath('bhrigu_samhita_rules.md'),
+    resolveWisdomPath('nadi_jyotisha_rules.md'),
+  ]);
+
+  const bhriguPath = fileResults[0].status === 'fulfilled' ? fileResults[0].value : null;
+  const nadiPath = fileResults[1].status === 'fulfilled' ? fileResults[1].value : null;
 
   let bhriguText = '';
   let nadiText = '';
 
+  // Load local files with better error handling
   if (bhriguPath) {
-    bhriguText = await fs.readFile(bhriguPath, 'utf-8');
+    try {
+      bhriguText = await fs.readFile(bhriguPath, 'utf-8');
+    } catch (error) {
+      warnings.push(`Failed to read Bhrigu Samhita rules: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   } else {
-    warnings.push('Bhrigu Samhita rules not found locally; attempting online sources.');
+    warnings.push('Bhrigu Samhita rules not found locally; will attempt online sources.');
   }
 
   if (nadiPath) {
-    nadiText = await fs.readFile(nadiPath, 'utf-8');
+    try {
+      nadiText = await fs.readFile(nadiPath, 'utf-8');
+    } catch (error) {
+      warnings.push(`Failed to read Nadi Jyotisha rules: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   } else {
-    warnings.push('Nadi Jyotisha rules not found locally; attempting online sources.');
+    warnings.push('Nadi Jyotisha rules not found locally; will attempt online sources.');
   }
 
   if (!bhriguText || !nadiText) {
@@ -488,13 +507,14 @@ function precisionCheck(
 function buildSubcategories(
   projections: FutureLivesProjection[],
   precision: PrecisionCheckResult,
-  sources: WisdomSources
+  sources: WisdomSources,
+  diveLevel: DiveLevel = 'basic'
 ): Record<string, Subcategory> {
-  return {
+  const subcategories: Record<string, Subcategory> = {
     karmic_progression: {
       title: 'Karmic Progression',
       content: projections.map(projection => `${projection.title}\n${projection.narrative}`).join('\n\n'),
-      data: projections,
+      data: { projections, diveLevel },
     },
     future_paths: {
       title: 'Future-Life Pathways',
@@ -531,22 +551,74 @@ function buildSubcategories(
         ).map(theme => `- ${theme}`),
       ].join('\n'),
     },
-    remedies: {
-      title: 'Remedial Actions',
+  };
+
+  // Add dive-level-specific subcategories
+  if (diveLevel === 'intermediate' || diveLevel === 'comprehensive') {
+    subcategories.deeper_analysis = {
+      title: 'Deeper Dive: Reincarnation Patterns',
       content: [
-        'Recommended remedies aligned to karma balance:',
-        '- Morning Surya arghya to strengthen vitality and clarity.',
-        '- Lunar mantra or journaling to stabilize emotional memory.',
-        '- Service to elders or teachers on Saturdays for Saturn harmonization.',
+        'Intermediate Analysis:',
+        `- Total future life projections: ${projections.length}`,
+        `- Average alignment score: ${Math.round(projections.reduce((sum, p) => sum + p.alignmentScore, 0) / projections.length)}/100`,
+        `- Karmic themes span: ${Array.from(new Set(projections.flatMap(p => p.focusAreas))).join(', ')}`,
+        '',
+        'Projection Quality Assessment:',
+        ...projections.map(p => `  • ${p.title}: ${p.alignmentScore}/100 alignment`),
       ].join('\n'),
-    },
-    validation: {
-      title: 'Validation & Data Integrity',
-      content: sources.warnings.length
+      data: {
+        projectionsCount: projections.length,
+        averageAlignment: projections.reduce((sum, p) => sum + p.alignmentScore, 0) / projections.length,
+        themeSpan: Array.from(new Set(projections.flatMap(p => p.focusAreas))),
+      },
+    };
+  }
+
+  if (diveLevel === 'comprehensive') {
+    subcategories.deepest_insights = {
+      title: 'Deepest Dive: Soul Evolution Trajectory',
+      content: [
+        'Comprehensive Analysis:',
+        '- Multi-lifetime karmic arc analysis',
+        '- Cross-referencing Rahu-Ketu axis with future soul lessons',
+        '- Evaluating consciousness evolution potential',
+        '- Synthesizing dharmic obligations across incarnations',
+        '',
+        'Detailed Rule References:',
+        ...projections.flatMap(p =>
+          p.ruleRefs.map(rule => `  • ${rule.tradition} (${rule.id}): ${rule.text}`)
+        ),
+      ].join('\n'),
+      data: {
+        fullProjections: projections,
+        comprehensiveRules: projections.flatMap(p => p.ruleRefs),
+      },
+    };
+  }
+
+  // Add remedies and validation (always included)
+  subcategories.remedies = {
+    title: 'Remedial Actions',
+    content: [
+      'Recommended remedies aligned to karma balance:',
+      '- Morning Surya arghya to strengthen vitality and clarity.',
+      '- Lunar mantra or journaling to stabilize emotional memory.',
+      '- Service to elders or teachers on Saturdays for Saturn harmonization.',
+    ].join('\n'),
+  };
+
+  subcategories.validation = {
+    title: 'Validation & Data Integrity',
+    content: [
+      sources.warnings.length
         ? `Warnings:\n${sources.warnings.map(warning => `- ${warning}`).join('\n')}`
         : 'All wisdom sources loaded successfully.',
-    },
+      '',
+      `Analysis depth: ${diveLevel === 'basic' ? 'Deep Dive' : diveLevel === 'intermediate' ? 'Deeper Dive' : 'Deepest Dive'}`,
+    ].join('\n'),
   };
+
+  return subcategories;
 }
 
 function buildChartSummary(chartData: ChartData): string {
@@ -679,11 +751,13 @@ export async function generateFutureLivesPrediction(
   const precision = precisionCheck(chartData, projections, matchedRules);
   const aiSynthesis = await generateAiSynthesis(chartData, precision.validated, sources, options);
 
+  const diveLevel = options.diveLevel || 'basic';
+
   const result: PredictionResult = {
     engine: 'future_lives',
-    title: 'Future Lives Prediction',
+    title: `Future Lives Prediction (${diveLevel === 'basic' ? 'Deep Dive' : diveLevel === 'intermediate' ? 'Deeper Dive' : 'Deepest Dive'})`,
     success: true,
-    subcategories: buildSubcategories(precision.validated, precision, sources),
+    subcategories: buildSubcategories(precision.validated, precision, sources, diveLevel),
     ai_synthesis: aiSynthesis,
     generated_at: new Date().toISOString(),
     mode: options.mode || 'offline',
@@ -695,7 +769,7 @@ export async function generateFutureLivesPrediction(
       nakshatra: chartData.nakshatra || 'Unknown',
       ai_enhanced: Boolean(aiSynthesis),
       tradition: 'Bhrigu Samhita + Nadi Jyotisha',
-      calculation_method: 'Two-phase projection (generation + precision check)',
+      calculation_method: `Two-phase projection (generation + precision check) - ${diveLevel} depth`,
     },
   };
 

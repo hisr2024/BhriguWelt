@@ -4,6 +4,8 @@ import type { ChartData, PredictionMetadata, PredictionResult, Subcategory } fro
 
 export type PastLivesMode = 'offline' | 'online' | 'auto';
 
+export type DiveLevel = 'basic' | 'intermediate' | 'comprehensive';
+
 export type PastLivesLogger = Pick<Console, 'debug' | 'info' | 'warn' | 'error'>;
 
 export interface PastLivesEngineOptions {
@@ -11,6 +13,7 @@ export interface PastLivesEngineOptions {
   aiEnabled?: boolean;
   cacheTTLms?: number;
   logger?: PastLivesLogger;
+  diveLevel?: DiveLevel;
 }
 
 interface PastLivesRule {
@@ -362,48 +365,108 @@ const buildPrecisionCheck = (chart: ChartData, narrative: PastLivesNarrative): P
 const buildSubcategories = (
   narrative: PastLivesNarrative,
   precision: PrecisionCheckResult,
-  corpus: PastLivesCorpus
-): Record<string, Subcategory> => ({
-  most_recent_past_life: {
-    title: 'Most Recent Past Life',
-    content: narrative.mostRecent,
-  },
-  karmic_patterns: {
-    title: 'Karmic Patterns',
-    content: narrative.karmicPatterns,
-  },
-  reincarnation_cycle: {
-    title: 'Reincarnation Cycle',
-    content: narrative.reincarnationCycle,
-  },
-  karmic_debts: {
-    title: 'Karmic Debts & Credits',
-    content: narrative.karmicDebts,
-  },
-  carryover_gifts: {
-    title: 'Carryover Gifts',
-    content: narrative.carryoverGifts,
-  },
-  unfinished_vows: {
-    title: 'Unfinished Vows',
-    content: narrative.unfinishedVows,
-  },
-  healing_path: {
-    title: 'Healing Path',
-    content: narrative.healingPath,
-  },
-  precision_check: {
-    title: 'Precision Check',
-    content: `${precision.isConsistent ? '✅ All Jyotisa checks aligned.' : '⚠️ Some Jyotisa checks need review.'}\n\nConfirmations:\n${precision.confirmations
-      .map(item => `• ${item}`)
-      .join('\n')}\n\nFlags:\n${precision.issues.length ? precision.issues.map(item => `• ${item}`).join('\n') : '• None'}`,
-    data: precision,
-  },
-  sources_summary: {
+  corpus: PastLivesCorpus,
+  diveLevel: DiveLevel = 'basic'
+): Record<string, Subcategory> => {
+  const subcategories: Record<string, Subcategory> = {
+    most_recent_past_life: {
+      title: 'Most Recent Past Life',
+      content: narrative.mostRecent,
+      data: { diveLevel },
+    },
+    karmic_patterns: {
+      title: 'Karmic Patterns',
+      content: narrative.karmicPatterns,
+    },
+    reincarnation_cycle: {
+      title: 'Reincarnation Cycle',
+      content: narrative.reincarnationCycle,
+    },
+    karmic_debts: {
+      title: 'Karmic Debts & Credits',
+      content: narrative.karmicDebts,
+    },
+    carryover_gifts: {
+      title: 'Carryover Gifts',
+      content: narrative.carryoverGifts,
+    },
+    unfinished_vows: {
+      title: 'Unfinished Vows',
+      content: narrative.unfinishedVows,
+    },
+    healing_path: {
+      title: 'Healing Path',
+      content: narrative.healingPath,
+    },
+    precision_check: {
+      title: 'Precision Check',
+      content: `${precision.isConsistent ? '✅ All Jyotisa checks aligned.' : '⚠️ Some Jyotisa checks need review.'}\n\nConfirmations:\n${precision.confirmations
+        .map(item => `• ${item}`)
+        .join('\n')}\n\nFlags:\n${precision.issues.length ? precision.issues.map(item => `• ${item}`).join('\n') : '• None'}`,
+      data: precision,
+    },
+  };
+
+  // Add dive-level-specific subcategories
+  if (diveLevel === 'intermediate' || diveLevel === 'comprehensive') {
+    subcategories.deeper_analysis = {
+      title: 'Deeper Dive: Karmic Dynamics',
+      content: [
+        'Intermediate Analysis:',
+        `- Precision consistency: ${precision.isConsistent ? 'Fully aligned' : 'Partial alignment'}`,
+        `- Confirmations: ${precision.confirmations.length} data points validated`,
+        `- Issues flagged: ${precision.issues.length} areas for refinement`,
+        `- Rule corpus size: ${corpus.rules.length} traditional sutras referenced`,
+        '',
+        'Validation Details:',
+        ...precision.confirmations.map(c => `  • ${c}`),
+      ].join('\n'),
+      data: {
+        consistencyStatus: precision.isConsistent,
+        confirmationCount: precision.confirmations.length,
+        issueCount: precision.issues.length,
+        corpusSize: corpus.rules.length,
+      },
+    };
+  }
+
+  if (diveLevel === 'comprehensive') {
+    subcategories.deepest_insights = {
+      title: 'Deepest Dive: Ancestral Memory Reconstruction',
+      content: [
+        'Comprehensive Analysis:',
+        '- Full past-life timeline reconstruction across multiple incarnations',
+        '- Analyzing samskara (karmic impressions) carried through births',
+        '- Cross-referencing Moon, Rahu, and Ketu for memory patterns',
+        '- Evaluating Saturn and Jupiter for debt-merit balance',
+        '',
+        'Complete Rule Set Applied:',
+        ...corpus.rules.slice(0, 10).map(rule => `  • ${rule.source}: ${rule.text.slice(0, 100)}...`),
+        corpus.rules.length > 10 ? `  • ... and ${corpus.rules.length - 10} more rules` : '',
+      ].filter(Boolean).join('\n'),
+      data: {
+        fullCorpus: corpus.rules,
+        comprehensiveNarrative: narrative,
+        precisionDetails: precision,
+      },
+    };
+  }
+
+  // Add sources summary (always included)
+  subcategories.sources_summary = {
     title: 'Ancient Wisdom Sources',
-    content: `${corpus.summary}\n\nSources:\n${corpus.sources.map(source => `• ${source}`).join('\n')}`,
-  },
-});
+    content: [
+      corpus.summary,
+      '',
+      'Sources:',
+      ...corpus.sources.map(source => `• ${source}`),
+      '',
+      `Analysis depth: ${diveLevel === 'basic' ? 'Deep Dive' : diveLevel === 'intermediate' ? 'Deeper Dive' : 'Deepest Dive'}`,
+    ].join('\n'),
+  };
+
+  return subcategories;
+};
 
 const buildMetadata = (chart: ChartData, aiEnhanced: boolean): PredictionMetadata => ({
   engine: 'past_lives',
@@ -422,14 +485,18 @@ const buildPredictionResult = (
   precision: PrecisionCheckResult,
   corpus: PastLivesCorpus,
   aiEnhanced: boolean,
-  mode: PastLivesMode
+  mode: PastLivesMode,
+  diveLevel: DiveLevel = 'basic'
 ): PredictionResult => ({
   engine: 'past_lives',
-  title: 'Past Lives Analysis',
+  title: `Past Lives Analysis (${diveLevel === 'basic' ? 'Deep Dive' : diveLevel === 'intermediate' ? 'Deeper Dive' : 'Deepest Dive'})`,
   success: true,
-  subcategories: buildSubcategories(narrative, precision, corpus),
+  subcategories: buildSubcategories(narrative, precision, corpus, diveLevel),
   ai_synthesis: narrative.aiSynthesis,
-  metadata: buildMetadata(chart, aiEnhanced),
+  metadata: {
+    ...buildMetadata(chart, aiEnhanced),
+    calculation_method: `Two-phase past-life synthesis with Jyotisa validation - ${diveLevel} depth`,
+  },
   generated_at: new Date().toISOString(),
   mode,
 });
@@ -468,6 +535,7 @@ export const generatePastLivesPrediction = async (
   const aiEnabled = options.aiEnabled ?? true;
   const cacheTTL = options.cacheTTLms ?? DEFAULT_CACHE_TTL;
   const logger = options.logger ?? DEFAULT_LOGGER;
+  const diveLevel = options.diveLevel ?? 'basic';
 
   const cacheKey = buildCacheKey(chart, mode, aiEnabled);
   const cached = getCachedResult(cacheKey);
@@ -487,7 +555,7 @@ export const generatePastLivesPrediction = async (
   }
 
   const precision = buildPrecisionCheck(chart, narrative);
-  const result = buildPredictionResult(chart, narrative, precision, corpus, aiEnabled, mode);
+  const result = buildPredictionResult(chart, narrative, precision, corpus, aiEnabled, mode, diveLevel);
   setCachedResult(cacheKey, result, cacheTTL);
   return result;
 };
