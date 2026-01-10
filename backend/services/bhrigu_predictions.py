@@ -13,7 +13,18 @@ from services.section_parser import get_section_parser
 from services.bhrigu_corpus_db import get_corpus_database
 from utils.logger import setup_logger, log_exception, secure_log, sanitize_error
 
-logger = setup_logger(__name__)
+# Import Nadi Integration for enriched predictions
+try:
+    from services.bhrigu_nadi_integration import BhriguNadiIntegration
+    NADI_AVAILABLE = True
+except ImportError:
+    NADI_AVAILABLE = False
+    logger = None  # Will be set later
+
+if logger is None:
+    logger = setup_logger(__name__)
+else:
+    logger = setup_logger(__name__)
 
 
 _DEFAULT_DEPENDENCY = object()
@@ -285,8 +296,42 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
         # Services are healthy or no fallback needed
         return None
 
-        self.section_specs = {
-            'karmic_journey': [
+    def _enrich_with_nadi(self, result: Dict[str, Any], category: str, birth_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Enrich prediction result with Nadi Jyotisha insights
+
+        Args:
+            result: Prediction result dictionary
+            category: Prediction category
+            birth_data: User's birth data
+
+        Returns:
+            Enriched result dictionary with nadi_insights field
+        """
+        if not NADI_AVAILABLE:
+            return result
+
+        try:
+            nadi_reading = BhriguNadiIntegration.generate_for_category(
+                category,
+                birth_data,
+                depth='comprehensive'
+            )
+            result['nadi_insights'] = nadi_reading.get('data', {})
+            if 'metadata' in result:
+                result['metadata']['nadi_integrated'] = True
+            logger.info(f"✓ Nadi enrichment successful for {category}")
+        except Exception as e:
+            logger.warning(f"Nadi integration failed for {category}: {e}")
+            if 'metadata' in result:
+                result['metadata']['nadi_integrated'] = False
+
+        return result
+
+    # Section specifications for all 8 prediction categories
+    # Defines the structure and required sections for each category
+    SECTION_SPECS = {
+        'karmic_journey': [
                 {
                     'key': 'soul_purpose',
                     'title': "Soul's Primary Purpose",
@@ -1142,7 +1187,7 @@ Return only the section body (no header). Use at least 200 words with concrete a
         birth_data: Dict[str, Any],
         question: Optional[str] = None
     ) -> Dict[str, Any]:
-        section_specs = self.section_specs.get(category, [])
+        section_specs = self.SECTION_SPECS.get(category, [])
         sections: Dict[str, Any] = {}
         status_map: Dict[str, Any] = {}
 
@@ -1171,6 +1216,7 @@ Return only the section body (no header). Use at least 200 words with concrete a
         """
         Karmic Journey: Discover your soul's purpose and life mission
         Based on Bhrigu Samhita principles of soul evolution
+        Enhanced with Nadi Jyotisha integration
         """
         fallback = self._get_fallback_if_unavailable('karmic_journey', birth_data)
         if fallback:
@@ -1185,7 +1231,7 @@ Return only the section body (no header). Use at least 200 words with concrete a
         metadata = self._generate_metadata(birth_data, 'karmic_journey')
         metadata['chunking'] = prediction_payload['chunking']
 
-        return {
+        result = {
             'category': 'karmic_journey',
             'title': 'Your Karmic Journey & Soul Purpose',
             'full_analysis': prediction_text,
@@ -1194,10 +1240,27 @@ Return only the section body (no header). Use at least 200 words with concrete a
             'generated_at': datetime.utcnow().isoformat()
         }
 
+        # Enrich with Nadi integration if available
+        if NADI_AVAILABLE:
+            try:
+                nadi_reading = BhriguNadiIntegration.generate_for_category(
+                    'karmic_journey',
+                    birth_data,
+                    depth='comprehensive'
+                )
+                result['nadi_insights'] = nadi_reading.get('data', {})
+                metadata['nadi_integrated'] = True
+            except Exception as e:
+                logger.warning(f"Nadi integration failed for karmic_journey: {e}")
+                metadata['nadi_integrated'] = False
+
+        return result
+
     def generate_past_lives_prediction(self, birth_data: Dict[str, Any],
                                       question: Optional[str] = None) -> Dict[str, Any]:
         """
         Past Lives: Explore previous incarnations and karmic patterns
+        Enhanced with Nadi Jyotisha integration
         """
         fallback = self._get_fallback_if_unavailable('past_lives', birth_data)
         if fallback:
@@ -1212,7 +1275,7 @@ Return only the section body (no header). Use at least 200 words with concrete a
         metadata = self._generate_metadata(birth_data, 'past_lives')
         metadata['chunking'] = prediction_payload['chunking']
 
-        return {
+        result = {
             'category': 'past_lives',
             'title': 'Your Past Lives & Karmic Patterns',
             'full_analysis': prediction_text,
@@ -1221,10 +1284,27 @@ Return only the section body (no header). Use at least 200 words with concrete a
             'generated_at': datetime.utcnow().isoformat()
         }
 
+        # Enrich with Nadi integration if available
+        if NADI_AVAILABLE:
+            try:
+                nadi_reading = BhriguNadiIntegration.generate_for_category(
+                    'past_lives',
+                    birth_data,
+                    depth='comprehensive'
+                )
+                result['nadi_insights'] = nadi_reading.get('data', {})
+                metadata['nadi_integrated'] = True
+            except Exception as e:
+                logger.warning(f"Nadi integration failed for past_lives: {e}")
+                metadata['nadi_integrated'] = False
+
+        return result
+
     def generate_future_lives_prediction(self, birth_data: Dict[str, Any],
                                         question: Optional[str] = None) -> Dict[str, Any]:
         """
         Future Lives: Envision soul's evolution and future incarnations
+        Enhanced with Nadi Jyotisha integration
         """
         fallback = self._get_fallback_if_unavailable('future_lives', birth_data)
         if fallback:
@@ -1240,7 +1320,7 @@ Return only the section body (no header). Use at least 200 words with concrete a
         metadata = self._generate_metadata(birth_data, 'future_lives')
         metadata['chunking'] = prediction_payload['chunking']
 
-        return {
+        result = {
             'category': 'future_lives',
             'title': 'Your Future Lives & Soul Evolution',
             'full_analysis': prediction_text,
@@ -1249,10 +1329,27 @@ Return only the section body (no header). Use at least 200 words with concrete a
             'generated_at': datetime.utcnow().isoformat()
         }
 
+        # Enrich with Nadi integration if available
+        if NADI_AVAILABLE:
+            try:
+                nadi_reading = BhriguNadiIntegration.generate_for_category(
+                    'future_lives',
+                    birth_data,
+                    depth='comprehensive'
+                )
+                result['nadi_insights'] = nadi_reading.get('data', {})
+                metadata['nadi_integrated'] = True
+            except Exception as e:
+                logger.warning(f"Nadi integration failed for future_lives: {e}")
+                metadata['nadi_integrated'] = False
+
+        return result
+
     def generate_present_life_prediction(self, birth_data: Dict[str, Any],
                                         question: Optional[str] = None) -> Dict[str, Any]:
         """
         Present Life: Comprehensive analysis of current life and opportunities
+        Enhanced with Nadi Jyotisha integration
         """
         fallback = self._get_fallback_if_unavailable('present_life', birth_data)
         if fallback:
@@ -1267,7 +1364,7 @@ Return only the section body (no header). Use at least 200 words with concrete a
         metadata = self._generate_metadata(birth_data, 'present_life')
         metadata['chunking'] = prediction_payload['chunking']
 
-        return {
+        result = {
             'category': 'present_life',
             'title': 'Your Present Life Comprehensive Analysis',
             'full_analysis': prediction_text,
@@ -1276,10 +1373,13 @@ Return only the section body (no header). Use at least 200 words with concrete a
             'generated_at': datetime.utcnow().isoformat()
         }
 
+        return self._enrich_with_nadi(result, 'present_life', birth_data)
+
     def generate_life_events_prediction(self, birth_data: Dict[str, Any],
                                        question: Optional[str] = None) -> Dict[str, Any]:
         """
         Life Events: Predict major transitions with precision timing
+        Enhanced with Nadi Jyotisha integration
         """
         fallback = self._get_fallback_if_unavailable('life_events', birth_data)
         if fallback:
@@ -1308,7 +1408,7 @@ Return only the section body (no header). Use at least 200 words with concrete a
         metadata = self._generate_metadata(birth_data, 'life_events')
         metadata['chunking'] = prediction_payload['chunking']
 
-        return {
+        result = {
             'category': 'life_events',
             'title': 'Your Life Events with Precision Timing',
             'full_analysis': prediction_text,
@@ -1317,10 +1417,13 @@ Return only the section body (no header). Use at least 200 words with concrete a
             'generated_at': datetime.utcnow().isoformat()
         }
 
+        return self._enrich_with_nadi(result, 'life_events', birth_data)
+
     def generate_karmic_remedies_prediction(self, birth_data: Dict[str, Any],
                                            question: Optional[str] = None) -> Dict[str, Any]:
         """
         Karmic Remedies: Personalized spiritual practices and remedies
+        Enhanced with Nadi Jyotisha integration
         """
         fallback = self._get_fallback_if_unavailable('karmic_remedies', birth_data)
         if fallback:
@@ -1335,7 +1438,7 @@ Return only the section body (no header). Use at least 200 words with concrete a
         metadata = self._generate_metadata(birth_data, 'karmic_remedies')
         metadata['chunking'] = prediction_payload['chunking']
 
-        return {
+        result = {
             'category': 'karmic_remedies',
             'title': 'Your Personalized Karmic Remedies',
             'full_analysis': prediction_text,
@@ -1344,10 +1447,13 @@ Return only the section body (no header). Use at least 200 words with concrete a
             'generated_at': datetime.utcnow().isoformat()
         }
 
+        return self._enrich_with_nadi(result, 'karmic_remedies', birth_data)
+
     def generate_relationships_prediction(self, birth_data: Dict[str, Any],
                                          question: Optional[str] = None) -> Dict[str, Any]:
         """
         Relationships: Soul connections and compatibility analysis
+        Enhanced with Nadi Jyotisha integration
         """
         fallback = self._get_fallback_if_unavailable('relationships', birth_data)
         if fallback:
@@ -1362,7 +1468,7 @@ Return only the section body (no header). Use at least 200 words with concrete a
         metadata = self._generate_metadata(birth_data, 'relationships')
         metadata['chunking'] = prediction_payload['chunking']
 
-        return {
+        result = {
             'category': 'relationships',
             'title': 'Your Relationships & Soul Connections',
             'full_analysis': prediction_text,
@@ -1371,10 +1477,13 @@ Return only the section body (no header). Use at least 200 words with concrete a
             'generated_at': datetime.utcnow().isoformat()
         }
 
+        return self._enrich_with_nadi(result, 'relationships', birth_data)
+
     def generate_general_predictions(self, birth_data: Dict[str, Any],
                                     question: Optional[str] = None) -> Dict[str, Any]:
         """
         General Predictions: Daily, weekly, monthly forecasts
+        Enhanced with Nadi Jyotisha integration
         """
         fallback = self._get_fallback_if_unavailable('predictions', birth_data)
         if fallback:
@@ -1389,7 +1498,7 @@ Return only the section body (no header). Use at least 200 words with concrete a
         metadata = self._generate_metadata(birth_data, 'predictions')
         metadata['chunking'] = prediction_payload['chunking']
 
-        return {
+        result = {
             'category': 'predictions',
             'title': 'Your General Predictions',
             'full_analysis': prediction_text,
@@ -1397,6 +1506,8 @@ Return only the section body (no header). Use at least 200 words with concrete a
             'metadata': metadata,
             'generated_at': datetime.utcnow().isoformat()
         }
+
+        return self._enrich_with_nadi(result, 'predictions', birth_data)
 
     # Helper methods
 
