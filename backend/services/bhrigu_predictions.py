@@ -13,18 +13,16 @@ from services.section_parser import get_section_parser
 from services.bhrigu_corpus_db import get_corpus_database
 from utils.logger import setup_logger, log_exception, secure_log, sanitize_error
 
+# Initialize logger first
+logger = setup_logger(__name__)
+
 # Import Nadi Integration for enriched predictions
 try:
     from services.bhrigu_nadi_integration import BhriguNadiIntegration
     NADI_AVAILABLE = True
 except ImportError:
     NADI_AVAILABLE = False
-    logger = None  # Will be set later
-
-if logger is None:
-    logger = setup_logger(__name__)
-else:
-    logger = setup_logger(__name__)
+    logger.warning("Nadi integration not available")
 
 
 _DEFAULT_DEPENDENCY = object()
@@ -1187,29 +1185,45 @@ Return only the section body (no header). Use at least 200 words with concrete a
         birth_data: Dict[str, Any],
         question: Optional[str] = None
     ) -> Dict[str, Any]:
-        section_specs = self.SECTION_SPECS.get(category, [])
-        sections: Dict[str, Any] = {}
-        status_map: Dict[str, Any] = {}
+        """Generate sectioned prediction with crash prevention"""
+        try:
+            section_specs = self.SECTION_SPECS.get(category, [])
+            sections: Dict[str, Any] = {}
+            status_map: Dict[str, Any] = {}
 
-        for section_spec in section_specs:
-            prompt = self._build_section_prompt(category, section_spec, birth_data, question)
-            section_text = self.openai_service.generate_prediction(prompt, birth_data)
-            sections[section_spec['key']] = self._strip_section_header(
-                section_text,
-                section_spec['title']
-            )
-            status_map[section_spec['key']] = {'status': 'generated'}
+            for section_spec in section_specs:
+                try:
+                    prompt = self._build_section_prompt(category, section_spec, birth_data, question)
+                    section_text = self.openai_service.generate_prediction(prompt, birth_data)
+                    sections[section_spec['key']] = self._strip_section_header(
+                        section_text,
+                        section_spec['title']
+                    )
+                    status_map[section_spec['key']] = {'status': 'generated'}
+                except Exception as e:
+                    logger.error(f"Section generation failed for {section_spec['key']}: {e}")
+                    sections[section_spec['key']] = f"Section temporarily unavailable. {section_spec['title']} content will be available shortly."
+                    status_map[section_spec['key']] = {'status': 'fallback', 'error': str(e)}
 
-        sections['section_generation_status'] = status_map
-        full_analysis = self._assemble_full_analysis(section_specs, sections)
-        sections = self._auto_repair_sections(sections, full_analysis, category, birth_data)
-        full_analysis = self._assemble_full_analysis(section_specs, sections)
+            sections['section_generation_status'] = status_map
+            full_analysis = self._assemble_full_analysis(section_specs, sections)
+            sections = self._auto_repair_sections(sections, full_analysis, category, birth_data)
+            full_analysis = self._assemble_full_analysis(section_specs, sections)
 
-        return {
-            'full_analysis': full_analysis,
-            'sections': sections,
-            'chunking': self._is_long_profile(birth_data)
-        }
+            return {
+                'full_analysis': full_analysis,
+                'sections': sections,
+                'chunking': self._is_long_profile(birth_data)
+            }
+        except Exception as e:
+            logger.error(f"Critical error in _generate_sectioned_prediction: {e}", exc_info=True)
+            # Return minimal valid structure
+            return {
+                'full_analysis': f"Prediction generation encountered an error. Category: {category}",
+                'sections': {},
+                'chunking': False,
+                'error': str(e)
+            }
 
     def generate_karmic_journey_prediction(self, birth_data: Dict[str, Any],
                                           question: Optional[str] = None) -> Dict[str, Any]:
@@ -1217,297 +1231,397 @@ Return only the section body (no header). Use at least 200 words with concrete a
         Karmic Journey: Discover your soul's purpose and life mission
         Based on Bhrigu Samhita principles of soul evolution
         Enhanced with Nadi Jyotisha integration
+        GUARANTEED to return a valid dict - never fails
         """
-        fallback = self._get_fallback_if_unavailable('karmic_journey', birth_data)
-        if fallback:
-            return fallback
-        prediction_payload = self._generate_sectioned_prediction(
-            'karmic_journey',
-            birth_data,
-            question
-        )
-        prediction_text = prediction_payload['full_analysis']
-        sections = prediction_payload['sections']
-        metadata = self._generate_metadata(birth_data, 'karmic_journey')
-        metadata['chunking'] = prediction_payload['chunking']
+        try:
+            fallback = self._get_fallback_if_unavailable('karmic_journey', birth_data)
+            if fallback:
+                return fallback
 
-        result = {
-            'category': 'karmic_journey',
-            'title': 'Your Karmic Journey & Soul Purpose',
-            'full_analysis': prediction_text,
-            **sections,  # Include all extracted/generated sections
-            'metadata': metadata,
-            'generated_at': datetime.utcnow().isoformat()
-        }
+            prediction_payload = self._generate_sectioned_prediction(
+                'karmic_journey',
+                birth_data,
+                question
+            )
+            prediction_text = prediction_payload['full_analysis']
+            sections = prediction_payload['sections']
+            metadata = self._generate_metadata(birth_data, 'karmic_journey')
+            metadata['chunking'] = prediction_payload.get('chunking', False)
 
-        # Enrich with Nadi integration if available
-        if NADI_AVAILABLE:
-            try:
-                nadi_reading = BhriguNadiIntegration.generate_for_category(
-                    'karmic_journey',
-                    birth_data,
-                    depth='comprehensive'
-                )
-                result['nadi_insights'] = nadi_reading.get('data', {})
-                metadata['nadi_integrated'] = True
-            except Exception as e:
-                logger.warning(f"Nadi integration failed for karmic_journey: {e}")
-                metadata['nadi_integrated'] = False
+            result = {
+                'category': 'karmic_journey',
+                'title': 'Your Karmic Journey & Soul Purpose',
+                'full_analysis': prediction_text,
+                **sections,  # Include all extracted/generated sections
+                'metadata': metadata,
+                'generated_at': datetime.utcnow().isoformat()
+            }
 
-        return result
+            # Enrich with Nadi integration if available
+            if NADI_AVAILABLE:
+                try:
+                    nadi_reading = BhriguNadiIntegration.generate_for_category(
+                        'karmic_journey',
+                        birth_data,
+                        depth='comprehensive'
+                    )
+                    result['nadi_insights'] = nadi_reading.get('data', {})
+                    metadata['nadi_integrated'] = True
+                except Exception as e:
+                    logger.warning(f"Nadi integration failed for karmic_journey: {e}")
+                    metadata['nadi_integrated'] = False
+
+            return result
+        except Exception as e:
+            logger.error(f"Karmic journey prediction failed: {e}", exc_info=True)
+            # GUARANTEED fallback - always return valid dict
+            return self._get_fallback_if_unavailable('karmic_journey', birth_data) or {
+                'category': 'karmic_journey',
+                'title': 'Your Karmic Journey & Soul Purpose',
+                'full_analysis': 'Prediction temporarily unavailable. Please try again.',
+                'error': 'generation_failed',
+                'metadata': {'error': str(e)},
+                'generated_at': datetime.utcnow().isoformat()
+            }
 
     def generate_past_lives_prediction(self, birth_data: Dict[str, Any],
                                       question: Optional[str] = None) -> Dict[str, Any]:
         """
         Past Lives: Explore previous incarnations and karmic patterns
         Enhanced with Nadi Jyotisha integration
+        GUARANTEED to return a valid dict - never fails
         """
-        fallback = self._get_fallback_if_unavailable('past_lives', birth_data)
-        if fallback:
-            return fallback
-        prediction_payload = self._generate_sectioned_prediction(
-            'past_lives',
-            birth_data,
-            question
-        )
-        prediction_text = prediction_payload['full_analysis']
-        sections = prediction_payload['sections']
-        metadata = self._generate_metadata(birth_data, 'past_lives')
-        metadata['chunking'] = prediction_payload['chunking']
+        try:
+            fallback = self._get_fallback_if_unavailable('past_lives', birth_data)
+            if fallback:
+                return fallback
 
-        result = {
-            'category': 'past_lives',
-            'title': 'Your Past Lives & Karmic Patterns',
-            'full_analysis': prediction_text,
-            **sections,  # Include all extracted/generated sections
-            'metadata': metadata,
-            'generated_at': datetime.utcnow().isoformat()
-        }
+            prediction_payload = self._generate_sectioned_prediction(
+                'past_lives',
+                birth_data,
+                question
+            )
+            prediction_text = prediction_payload['full_analysis']
+            sections = prediction_payload['sections']
+            metadata = self._generate_metadata(birth_data, 'past_lives')
+            metadata['chunking'] = prediction_payload.get('chunking', False)
 
-        # Enrich with Nadi integration if available
-        if NADI_AVAILABLE:
-            try:
-                nadi_reading = BhriguNadiIntegration.generate_for_category(
-                    'past_lives',
-                    birth_data,
-                    depth='comprehensive'
-                )
-                result['nadi_insights'] = nadi_reading.get('data', {})
-                metadata['nadi_integrated'] = True
-            except Exception as e:
-                logger.warning(f"Nadi integration failed for past_lives: {e}")
-                metadata['nadi_integrated'] = False
+            result = {
+                'category': 'past_lives',
+                'title': 'Your Past Lives & Karmic Patterns',
+                'full_analysis': prediction_text,
+                **sections,  # Include all extracted/generated sections
+                'metadata': metadata,
+                'generated_at': datetime.utcnow().isoformat()
+            }
 
-        return result
+            # Enrich with Nadi integration if available
+            if NADI_AVAILABLE:
+                try:
+                    nadi_reading = BhriguNadiIntegration.generate_for_category(
+                        'past_lives',
+                        birth_data,
+                        depth='comprehensive'
+                    )
+                    result['nadi_insights'] = nadi_reading.get('data', {})
+                    metadata['nadi_integrated'] = True
+                except Exception as e:
+                    logger.warning(f"Nadi integration failed for past_lives: {e}")
+                    metadata['nadi_integrated'] = False
+
+            return result
+        except Exception as e:
+            logger.error(f"Past lives prediction failed: {e}", exc_info=True)
+            return self._get_fallback_if_unavailable('past_lives', birth_data) or {
+                'category': 'past_lives',
+                'title': 'Your Past Lives & Karmic Patterns',
+                'full_analysis': 'Prediction temporarily unavailable. Please try again.',
+                'error': 'generation_failed',
+                'metadata': {'error': str(e)},
+                'generated_at': datetime.utcnow().isoformat()
+            }
 
     def generate_future_lives_prediction(self, birth_data: Dict[str, Any],
                                         question: Optional[str] = None) -> Dict[str, Any]:
         """
         Future Lives: Envision soul's evolution and future incarnations
         Enhanced with Nadi Jyotisha integration
+        GUARANTEED to return a valid dict - never fails
         """
-        fallback = self._get_fallback_if_unavailable('future_lives', birth_data)
-        if fallback:
-            return fallback
+        try:
+            fallback = self._get_fallback_if_unavailable('future_lives', birth_data)
+            if fallback:
+                return fallback
 
-        prediction_payload = self._generate_sectioned_prediction(
-            'future_lives',
-            birth_data,
-            question
-        )
-        prediction_text = prediction_payload['full_analysis']
-        sections = prediction_payload['sections']
-        metadata = self._generate_metadata(birth_data, 'future_lives')
-        metadata['chunking'] = prediction_payload['chunking']
+            prediction_payload = self._generate_sectioned_prediction(
+                'future_lives',
+                birth_data,
+                question
+            )
+            prediction_text = prediction_payload['full_analysis']
+            sections = prediction_payload['sections']
+            metadata = self._generate_metadata(birth_data, 'future_lives')
+            metadata['chunking'] = prediction_payload.get('chunking', False)
 
-        result = {
-            'category': 'future_lives',
-            'title': 'Your Future Lives & Soul Evolution',
-            'full_analysis': prediction_text,
-            **sections,  # Include all extracted/generated sections
-            'metadata': metadata,
-            'generated_at': datetime.utcnow().isoformat()
-        }
+            result = {
+                'category': 'future_lives',
+                'title': 'Your Future Lives & Soul Evolution',
+                'full_analysis': prediction_text,
+                **sections,  # Include all extracted/generated sections
+                'metadata': metadata,
+                'generated_at': datetime.utcnow().isoformat()
+            }
 
-        # Enrich with Nadi integration if available
-        if NADI_AVAILABLE:
-            try:
-                nadi_reading = BhriguNadiIntegration.generate_for_category(
-                    'future_lives',
-                    birth_data,
-                    depth='comprehensive'
-                )
-                result['nadi_insights'] = nadi_reading.get('data', {})
-                metadata['nadi_integrated'] = True
-            except Exception as e:
-                logger.warning(f"Nadi integration failed for future_lives: {e}")
-                metadata['nadi_integrated'] = False
+            # Enrich with Nadi integration if available
+            if NADI_AVAILABLE:
+                try:
+                    nadi_reading = BhriguNadiIntegration.generate_for_category(
+                        'future_lives',
+                        birth_data,
+                        depth='comprehensive'
+                    )
+                    result['nadi_insights'] = nadi_reading.get('data', {})
+                    metadata['nadi_integrated'] = True
+                except Exception as e:
+                    logger.warning(f"Nadi integration failed for future_lives: {e}")
+                    metadata['nadi_integrated'] = False
 
-        return result
+            return result
+        except Exception as e:
+            logger.error(f"Future lives prediction failed: {e}", exc_info=True)
+            return self._get_fallback_if_unavailable('future_lives', birth_data) or {
+                'category': 'future_lives',
+                'title': 'Your Future Lives & Soul Evolution',
+                'full_analysis': 'Prediction temporarily unavailable. Please try again.',
+                'error': 'generation_failed',
+                'metadata': {'error': str(e)},
+                'generated_at': datetime.utcnow().isoformat()
+            }
 
     def generate_present_life_prediction(self, birth_data: Dict[str, Any],
                                         question: Optional[str] = None) -> Dict[str, Any]:
         """
         Present Life: Comprehensive analysis of current life and opportunities
         Enhanced with Nadi Jyotisha integration
+        GUARANTEED to return a valid dict - never fails
         """
-        fallback = self._get_fallback_if_unavailable('present_life', birth_data)
-        if fallback:
-            return fallback
-        prediction_payload = self._generate_sectioned_prediction(
-            'present_life',
-            birth_data,
-            question
-        )
-        prediction_text = prediction_payload['full_analysis']
-        sections = prediction_payload['sections']
-        metadata = self._generate_metadata(birth_data, 'present_life')
-        metadata['chunking'] = prediction_payload['chunking']
+        try:
+            fallback = self._get_fallback_if_unavailable('present_life', birth_data)
+            if fallback:
+                return fallback
 
-        result = {
-            'category': 'present_life',
-            'title': 'Your Present Life Comprehensive Analysis',
-            'full_analysis': prediction_text,
-            **sections,  # Include all extracted/generated sections
-            'metadata': metadata,
-            'generated_at': datetime.utcnow().isoformat()
-        }
+            prediction_payload = self._generate_sectioned_prediction(
+                'present_life',
+                birth_data,
+                question
+            )
+            prediction_text = prediction_payload['full_analysis']
+            sections = prediction_payload['sections']
+            metadata = self._generate_metadata(birth_data, 'present_life')
+            metadata['chunking'] = prediction_payload.get('chunking', False)
 
-        return self._enrich_with_nadi(result, 'present_life', birth_data)
+            result = {
+                'category': 'present_life',
+                'title': 'Your Present Life Comprehensive Analysis',
+                'full_analysis': prediction_text,
+                **sections,  # Include all extracted/generated sections
+                'metadata': metadata,
+                'generated_at': datetime.utcnow().isoformat()
+            }
+
+            return self._enrich_with_nadi(result, 'present_life', birth_data)
+        except Exception as e:
+            logger.error(f"Present life prediction failed: {e}", exc_info=True)
+            return self._get_fallback_if_unavailable('present_life', birth_data) or {
+                'category': 'present_life',
+                'title': 'Your Present Life Comprehensive Analysis',
+                'full_analysis': 'Prediction temporarily unavailable. Please try again.',
+                'error': 'generation_failed',
+                'metadata': {'error': str(e)},
+                'generated_at': datetime.utcnow().isoformat()
+            }
 
     def generate_life_events_prediction(self, birth_data: Dict[str, Any],
                                        question: Optional[str] = None) -> Dict[str, Any]:
         """
         Life Events: Predict major transitions with precision timing
         Enhanced with Nadi Jyotisha integration
+        GUARANTEED to return a valid dict - never fails
         """
-        fallback = self._get_fallback_if_unavailable('life_events', birth_data)
-        if fallback:
-            return fallback
+        try:
+            fallback = self._get_fallback_if_unavailable('life_events', birth_data)
+            if fallback:
+                return fallback
 
-        current_age_value = birth_data.get('age')
-        if current_age_value is None:
-            current_age_value = self._calculate_age(birth_data.get('date_of_birth'))
-        if isinstance(current_age_value, (int, float)) and current_age_value > 0:
-            current_age_display = current_age_value
-            age_next = current_age_value + 1
-        else:
-            current_age_display = "Unknown"
-            age_next = "Unknown"
+            current_age_value = birth_data.get('age')
+            if current_age_value is None:
+                current_age_value = self._calculate_age(birth_data.get('date_of_birth'))
+            if isinstance(current_age_value, (int, float)) and current_age_value > 0:
+                current_age_display = current_age_value
+                age_next = current_age_value + 1
+            else:
+                current_age_display = "Unknown"
+                age_next = "Unknown"
 
-        if birth_data.get('age') is None:
-            birth_data['age'] = current_age_display
+            if birth_data.get('age') is None:
+                birth_data['age'] = current_age_display
 
-        prediction_payload = self._generate_sectioned_prediction(
-            'life_events',
-            birth_data,
-            question
-        )
-        prediction_text = prediction_payload['full_analysis']
-        sections = prediction_payload['sections']
-        metadata = self._generate_metadata(birth_data, 'life_events')
-        metadata['chunking'] = prediction_payload['chunking']
+            prediction_payload = self._generate_sectioned_prediction(
+                'life_events',
+                birth_data,
+                question
+            )
+            prediction_text = prediction_payload['full_analysis']
+            sections = prediction_payload['sections']
+            metadata = self._generate_metadata(birth_data, 'life_events')
+            metadata['chunking'] = prediction_payload.get('chunking', False)
 
-        result = {
-            'category': 'life_events',
-            'title': 'Your Life Events with Precision Timing',
-            'full_analysis': prediction_text,
-            **sections,  # Include all extracted/generated sections
-            'metadata': metadata,
-            'generated_at': datetime.utcnow().isoformat()
-        }
+            result = {
+                'category': 'life_events',
+                'title': 'Your Life Events with Precision Timing',
+                'full_analysis': prediction_text,
+                **sections,  # Include all extracted/generated sections
+                'metadata': metadata,
+                'generated_at': datetime.utcnow().isoformat()
+            }
 
-        return self._enrich_with_nadi(result, 'life_events', birth_data)
+            return self._enrich_with_nadi(result, 'life_events', birth_data)
+        except Exception as e:
+            logger.error(f"Life events prediction failed: {e}", exc_info=True)
+            return self._get_fallback_if_unavailable('life_events', birth_data) or {
+                'category': 'life_events',
+                'title': 'Your Life Events with Precision Timing',
+                'full_analysis': 'Prediction temporarily unavailable. Please try again.',
+                'error': 'generation_failed',
+                'metadata': {'error': str(e)},
+                'generated_at': datetime.utcnow().isoformat()
+            }
 
     def generate_karmic_remedies_prediction(self, birth_data: Dict[str, Any],
                                            question: Optional[str] = None) -> Dict[str, Any]:
         """
         Karmic Remedies: Personalized spiritual practices and remedies
         Enhanced with Nadi Jyotisha integration
+        GUARANTEED to return a valid dict - never fails
         """
-        fallback = self._get_fallback_if_unavailable('karmic_remedies', birth_data)
-        if fallback:
-            return fallback
-        prediction_payload = self._generate_sectioned_prediction(
-            'karmic_remedies',
-            birth_data,
-            question
-        )
-        prediction_text = prediction_payload['full_analysis']
-        sections = prediction_payload['sections']
-        metadata = self._generate_metadata(birth_data, 'karmic_remedies')
-        metadata['chunking'] = prediction_payload['chunking']
+        try:
+            fallback = self._get_fallback_if_unavailable('karmic_remedies', birth_data)
+            if fallback:
+                return fallback
+            prediction_payload = self._generate_sectioned_prediction(
+                'karmic_remedies',
+                birth_data,
+                question
+            )
+            prediction_text = prediction_payload['full_analysis']
+            sections = prediction_payload['sections']
+            metadata = self._generate_metadata(birth_data, 'karmic_remedies')
+            metadata['chunking'] = prediction_payload.get('chunking', False)
 
-        result = {
-            'category': 'karmic_remedies',
-            'title': 'Your Personalized Karmic Remedies',
-            'full_analysis': prediction_text,
-            **sections,  # Include all extracted/generated sections
-            'metadata': metadata,
-            'generated_at': datetime.utcnow().isoformat()
-        }
+            result = {
+                'category': 'karmic_remedies',
+                'title': 'Your Personalized Karmic Remedies',
+                'full_analysis': prediction_text,
+                **sections,  # Include all extracted/generated sections
+                'metadata': metadata,
+                'generated_at': datetime.utcnow().isoformat()
+            }
 
-        return self._enrich_with_nadi(result, 'karmic_remedies', birth_data)
+            return self._enrich_with_nadi(result, 'karmic_remedies', birth_data)
+        except Exception as e:
+            logger.error(f"Karmic remedies prediction failed: {e}", exc_info=True)
+            return self._get_fallback_if_unavailable('karmic_remedies', birth_data) or {
+                'category': 'karmic_remedies',
+                'title': 'Your Personalized Karmic Remedies',
+                'full_analysis': 'Prediction temporarily unavailable. Please try again.',
+                'error': 'generation_failed',
+                'metadata': {'error': str(e)},
+                'generated_at': datetime.utcnow().isoformat()
+            }
 
     def generate_relationships_prediction(self, birth_data: Dict[str, Any],
                                          question: Optional[str] = None) -> Dict[str, Any]:
         """
         Relationships: Soul connections and compatibility analysis
         Enhanced with Nadi Jyotisha integration
+        GUARANTEED to return a valid dict - never fails
         """
-        fallback = self._get_fallback_if_unavailable('relationships', birth_data)
-        if fallback:
-            return fallback
-        prediction_payload = self._generate_sectioned_prediction(
-            'relationships',
-            birth_data,
-            question
-        )
-        prediction_text = prediction_payload['full_analysis']
-        sections = prediction_payload['sections']
-        metadata = self._generate_metadata(birth_data, 'relationships')
-        metadata['chunking'] = prediction_payload['chunking']
+        try:
+            fallback = self._get_fallback_if_unavailable('relationships', birth_data)
+            if fallback:
+                return fallback
+            prediction_payload = self._generate_sectioned_prediction(
+                'relationships',
+                birth_data,
+                question
+            )
+            prediction_text = prediction_payload['full_analysis']
+            sections = prediction_payload['sections']
+            metadata = self._generate_metadata(birth_data, 'relationships')
+            metadata['chunking'] = prediction_payload.get('chunking', False)
 
-        result = {
-            'category': 'relationships',
-            'title': 'Your Relationships & Soul Connections',
-            'full_analysis': prediction_text,
-            **sections,  # Include all extracted/generated sections
-            'metadata': metadata,
-            'generated_at': datetime.utcnow().isoformat()
-        }
+            result = {
+                'category': 'relationships',
+                'title': 'Your Relationships & Soul Connections',
+                'full_analysis': prediction_text,
+                **sections,  # Include all extracted/generated sections
+                'metadata': metadata,
+                'generated_at': datetime.utcnow().isoformat()
+            }
 
-        return self._enrich_with_nadi(result, 'relationships', birth_data)
+            return self._enrich_with_nadi(result, 'relationships', birth_data)
+        except Exception as e:
+            logger.error(f"Relationships prediction failed: {e}", exc_info=True)
+            return self._get_fallback_if_unavailable('relationships', birth_data) or {
+                'category': 'relationships',
+                'title': 'Your Relationships & Soul Connections',
+                'full_analysis': 'Prediction temporarily unavailable. Please try again.',
+                'error': 'generation_failed',
+                'metadata': {'error': str(e)},
+                'generated_at': datetime.utcnow().isoformat()
+            }
 
     def generate_general_predictions(self, birth_data: Dict[str, Any],
                                     question: Optional[str] = None) -> Dict[str, Any]:
         """
         General Predictions: Daily, weekly, monthly forecasts
         Enhanced with Nadi Jyotisha integration
+        GUARANTEED to return a valid dict - never fails
         """
-        fallback = self._get_fallback_if_unavailable('predictions', birth_data)
-        if fallback:
-            return fallback
-        prediction_payload = self._generate_sectioned_prediction(
-            'predictions',
-            birth_data,
-            question
-        )
-        prediction_text = prediction_payload['full_analysis']
-        sections = prediction_payload['sections']
-        metadata = self._generate_metadata(birth_data, 'predictions')
-        metadata['chunking'] = prediction_payload['chunking']
+        try:
+            fallback = self._get_fallback_if_unavailable('predictions', birth_data)
+            if fallback:
+                return fallback
+            prediction_payload = self._generate_sectioned_prediction(
+                'predictions',
+                birth_data,
+                question
+            )
+            prediction_text = prediction_payload['full_analysis']
+            sections = prediction_payload['sections']
+            metadata = self._generate_metadata(birth_data, 'predictions')
+            metadata['chunking'] = prediction_payload.get('chunking', False)
 
-        result = {
-            'category': 'predictions',
-            'title': 'Your General Predictions',
-            'full_analysis': prediction_text,
-            **sections,  # Include all extracted/generated sections
-            'metadata': metadata,
-            'generated_at': datetime.utcnow().isoformat()
-        }
+            result = {
+                'category': 'predictions',
+                'title': 'Your General Predictions',
+                'full_analysis': prediction_text,
+                **sections,  # Include all extracted/generated sections
+                'metadata': metadata,
+                'generated_at': datetime.utcnow().isoformat()
+            }
 
-        return self._enrich_with_nadi(result, 'predictions', birth_data)
+            return self._enrich_with_nadi(result, 'predictions', birth_data)
+        except Exception as e:
+            logger.error(f"General predictions failed: {e}", exc_info=True)
+            return self._get_fallback_if_unavailable('predictions', birth_data) or {
+                'category': 'predictions',
+                'title': 'Your General Predictions',
+                'full_analysis': 'Prediction temporarily unavailable. Please try again.',
+                'error': 'generation_failed',
+                'metadata': {'error': str(e)},
+                'generated_at': datetime.utcnow().isoformat()
+            }
 
     # Helper methods
 

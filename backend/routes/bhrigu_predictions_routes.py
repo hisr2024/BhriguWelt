@@ -1,6 +1,7 @@
 """
 Bhrigu Predictions Routes
 Handles all Bhrigu Samhita and Nadi Jyotisa prediction requests
+FORTIFIED: All routes guaranteed to return JSON responses - never crash
 """
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 from services.bhrigu_predictions import get_bhrigu_service
@@ -22,10 +23,40 @@ import uuid
 import json
 import time
 import logging
+from functools import wraps
 from utils.logger import setup_logger, log_error, sanitize_error
 
 bp = Blueprint('bhrigu_predictions', __name__, url_prefix='/api/bhrigu-predictions')
 logger = setup_logger(__name__)
+
+
+def route_error_handler(f):
+    """
+    Decorator to ensure all routes ALWAYS return a valid JSON response
+    Catches ALL exceptions and returns structured error responses
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            logger.error(f"Route handler {f.__name__} crashed: {e}", exc_info=True)
+            # Log structured error for visibility
+            logger.error(json.dumps({
+                'event': 'route_error',
+                'route': f.__name__,
+                'error': str(e),
+                'timestamp': datetime.utcnow().isoformat()
+            }))
+            # ALWAYS return valid JSON - NEVER crash
+            return jsonify({
+                'success': False,
+                'error': 'An unexpected error occurred',
+                'message': 'The prediction service encountered an error. Please try again.',
+                'details': sanitize_error(str(e)),
+                'timestamp': datetime.utcnow().isoformat()
+            }), 500
+    return decorated_function
 
 bhrigu_service = get_bhrigu_service()
 section_parser = get_section_parser()
@@ -158,6 +189,7 @@ def _generate_prediction(category: str, birth_data: dict, generator_func):
 
 @bp.route('/<category>/stream', methods=['POST'])
 @limiter.limit("10 per minute")
+@route_error_handler
 def stream_prediction_sections(category: str):
     """
     Stream prediction sections using Server-Sent Events (SSE).
@@ -239,6 +271,7 @@ def stream_prediction_sections(category: str):
 
 @bp.route('/karmic-journey', methods=['POST'])
 @limiter.limit("10 per minute")
+@route_error_handler
 def karmic_journey():
     """
     Generate comprehensive Karmic Journey analysis
@@ -322,6 +355,7 @@ def karmic_journey():
 
 @bp.route('/past-lives', methods=['POST'])
 @limiter.limit("10 per minute")
+@route_error_handler
 def past_lives():
     """
     Generate Past Lives analysis
@@ -393,6 +427,7 @@ def past_lives():
 
 @bp.route('/future-lives', methods=['POST'])
 @limiter.limit("10 per minute")
+@route_error_handler
 def future_lives():
     """
     Generate Future Lives prediction
@@ -457,6 +492,7 @@ def future_lives():
 
 @bp.route('/present-life', methods=['POST'])
 @limiter.limit("10 per minute")
+@route_error_handler
 def present_life():
     """
     Generate Present Life comprehensive analysis
@@ -521,6 +557,7 @@ def present_life():
 
 @bp.route('/life-events', methods=['POST'])
 @limiter.limit("10 per minute")
+@route_error_handler
 def life_events():
     """
     Generate Life Events prediction with precision timing
@@ -585,6 +622,7 @@ def life_events():
 
 @bp.route('/karmic-remedies', methods=['POST'])
 @limiter.limit("10 per minute")
+@route_error_handler
 def karmic_remedies():
     """
     Generate Karmic Remedies
@@ -649,6 +687,7 @@ def karmic_remedies():
 
 @bp.route('/relationships', methods=['POST'])
 @limiter.limit("10 per minute")
+@route_error_handler
 def relationships():
     """
     Generate Relationships analysis
@@ -713,6 +752,7 @@ def relationships():
 
 @bp.route('/predictions', methods=['POST'])
 @limiter.limit("20 per minute")
+@route_error_handler
 def predictions():
     """
     Generate General Predictions
@@ -777,6 +817,7 @@ def predictions():
 
 @bp.route('/wisdom-search', methods=['POST'])
 @limiter.limit("30 per minute")
+@route_error_handler
 def wisdom_search():
     """
     Search Bhrigu wisdom database
@@ -811,6 +852,7 @@ def wisdom_search():
 
 
 @bp.route('/cache-stats', methods=['GET'])
+@route_error_handler
 def cache_stats():
     """
     Get cache statistics
@@ -839,6 +881,7 @@ def cache_stats():
 
 
 @bp.route('/session/start', methods=['POST'])
+@route_error_handler
 def start_session():
     """
     Start a new Bhrigu predictions session
@@ -870,6 +913,7 @@ def start_session():
 
 @bp.route('/comprehensive', methods=['POST'])
 @limiter.limit("5 per minute")
+@route_error_handler
 def comprehensive_prediction():
     """
     Generate comprehensive prediction for ALL categories
@@ -957,6 +1001,7 @@ def comprehensive_prediction():
 
 
 @bp.route('/health', methods=['GET'])
+@route_error_handler
 def health_check():
     """
     Health check endpoint for monitoring service status

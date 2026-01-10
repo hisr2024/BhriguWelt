@@ -4,8 +4,10 @@ Central hub connecting ALL prediction categories to Bhrigu Core Wisdom
 Supports three modes: online, offline, hybrid
 Ensures guaranteed fallback to offline wisdom when OpenAI API fails
 Enhanced with Nadi Jyotisha integration across all prediction modes
+FORTIFIED: Thread-safe with locks for concurrent request handling
 """
 import logging
+import threading
 from typing import Dict, Any, Optional, List
 from enum import Enum
 
@@ -31,6 +33,7 @@ class PredictionOrchestrator:
     """
     Central orchestrator for all prediction categories
     Routes requests through appropriate services with guaranteed results
+    THREAD-SAFE: Uses locks to handle concurrent requests safely
     """
 
     def __init__(self):
@@ -39,7 +42,11 @@ class PredictionOrchestrator:
         self.offline_wisdom = None
         self.core_wisdom = None
         self.rule_engine = None
-        
+
+        # Thread safety lock for concurrent request handling
+        self.lock = threading.RLock()
+        logger.info("✓ Concurrency lock initialized for thread-safe operations")
+
         self._initialize_services()
 
     def _initialize_services(self):
@@ -79,6 +86,7 @@ class PredictionOrchestrator:
                           **options: Any) -> Dict[str, Any]:
         """
         Generate prediction for any category with guaranteed results
+        THREAD-SAFE: Uses lock to prevent race conditions in concurrent requests
 
         Args:
             category: Prediction category (karmic_journey, past_lives, etc.)
@@ -89,51 +97,53 @@ class PredictionOrchestrator:
         Returns:
             Dictionary with prediction and metadata
         """
-        try:
-            # Validate inputs
-            if not category or not isinstance(category, str):
-                raise ValueError("Invalid category: must be a non-empty string")
-
-            if not chart_data or not isinstance(chart_data, dict):
-                raise ValueError("Invalid chart_data: must be a non-empty dictionary")
-
-            # Validate category is supported
-            valid_categories = {
-                'karmic_journey', 'past_lives', 'future_lives', 'present_life',
-                'life_events', 'karmic_remedies', 'relationships', 'predictions'
-            }
-            normalized_category = category.lower().strip()
-            if normalized_category not in valid_categories:
-                logger.warning(f"Unknown category '{category}', proceeding with caution")
-
-            # Validate essential chart data fields
-            required_fields = ['zodiac_sign']
-            missing_fields = [f for f in required_fields if f not in chart_data]
-            if missing_fields:
-                logger.warning(f"Missing recommended fields in chart_data: {missing_fields}")
-
-            # Normalize mode
+        # Use lock for thread-safe concurrent request handling
+        with self.lock:
             try:
-                pred_mode = PredictionMode(mode.lower())
-            except ValueError:
-                pred_mode = PredictionMode.HYBRID
-                logger.warning(f"Invalid mode '{mode}', using hybrid")
+                # Validate inputs
+                if not category or not isinstance(category, str):
+                    raise ValueError("Invalid category: must be a non-empty string")
 
-            if client_online is False:
-                pred_mode = PredictionMode.OFFLINE
-            
-            # Route to appropriate generation method
-            if pred_mode == PredictionMode.OFFLINE:
-                return self._generate_offline(category, chart_data, language)
-            elif pred_mode == PredictionMode.ONLINE:
-                return self._generate_online(category, chart_data, language, prompt=prompt, **options)
-            else:  # HYBRID
-                return self._generate_hybrid(category, chart_data, language, prompt=prompt, **options)
-                
-        except Exception as e:
-            logger.error(f"Prediction generation failed: {e}")
-            # GUARANTEED fallback - never fail
-            return self._emergency_fallback(category, chart_data, language)
+                if not chart_data or not isinstance(chart_data, dict):
+                    raise ValueError("Invalid chart_data: must be a non-empty dictionary")
+
+                # Validate category is supported
+                valid_categories = {
+                    'karmic_journey', 'past_lives', 'future_lives', 'present_life',
+                    'life_events', 'karmic_remedies', 'relationships', 'predictions'
+                }
+                normalized_category = category.lower().strip()
+                if normalized_category not in valid_categories:
+                    logger.warning(f"Unknown category '{category}', proceeding with caution")
+
+                # Validate essential chart data fields
+                required_fields = ['zodiac_sign']
+                missing_fields = [f for f in required_fields if f not in chart_data]
+                if missing_fields:
+                    logger.warning(f"Missing recommended fields in chart_data: {missing_fields}")
+
+                # Normalize mode
+                try:
+                    pred_mode = PredictionMode(mode.lower())
+                except ValueError:
+                    pred_mode = PredictionMode.HYBRID
+                    logger.warning(f"Invalid mode '{mode}', using hybrid")
+
+                if client_online is False:
+                    pred_mode = PredictionMode.OFFLINE
+
+                # Route to appropriate generation method
+                if pred_mode == PredictionMode.OFFLINE:
+                    return self._generate_offline(category, chart_data, language)
+                elif pred_mode == PredictionMode.ONLINE:
+                    return self._generate_online(category, chart_data, language, prompt=prompt, **options)
+                else:  # HYBRID
+                    return self._generate_hybrid(category, chart_data, language, prompt=prompt, **options)
+
+            except Exception as e:
+                logger.error(f"Prediction generation failed: {e}")
+                # GUARANTEED fallback - never fail
+                return self._emergency_fallback(category, chart_data, language)
 
     def _generate_online(self, category: str, chart_data: Dict[str, Any], 
                         language: str, prompt: Optional[str] = None,
