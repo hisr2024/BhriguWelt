@@ -1288,7 +1288,7 @@ export default function BhriguPredictionView({
 
       {/* Content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {loading && !predictionData && (
+        {loading && !prediction && (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="w-12 h-12 text-cyan-400 animate-spin mb-4" />
             <p className="text-lg text-gray-400">
@@ -1338,7 +1338,7 @@ export default function BhriguPredictionView({
         {prediction && (!loading || streaming) && renderPredictionContent()}
 
         {/* Actions */}
-        {predictionData && (
+        {prediction && (
           <div className="mt-12 flex gap-4 justify-center flex-wrap">
             <button
               onClick={() => loadPrediction({ forceRegenerate: true })}

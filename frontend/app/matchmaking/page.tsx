@@ -112,7 +112,7 @@ export default function MatchmakingPage() {
       });
 
       if (response.data.status === 'success') {
-        setResult(response.data.data);
+        setResult(response.data);
         setStep('result');
       } else {
         throw new Error(response.data.message || 'Failed to calculate compatibility');

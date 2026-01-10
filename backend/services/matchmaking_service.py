@@ -79,12 +79,37 @@ class MatchmakingService:
             if mode in ['offline', 'hybrid'] or (mode == 'online' and not ai_insights):
                 offline_insights = self._get_offline_insights(chart1, chart2, ashtakoot_scores, doshas)
             
+            # Prepare dosha structure for frontend
+            doshas_for_frontend = {
+                'mangal_dosha_person1': doshas['mangal_dosha']['person1'],
+                'mangal_dosha_person2': doshas['mangal_dosha']['person2'],
+                'nadi_dosha': ashtakoot_scores['nadi']['score'] == 0
+            }
+
+            # Get recommendation
+            recommendation_data = self._get_recommendation(total_score, doshas)
+
             return {
                 'status': 'success',
+                'total_score': total_score,
+                'max_score': max_score,
+                'percentage': round(compatibility_percentage, 1),
                 'compatibility_percentage': round(compatibility_percentage, 1),
+                'ashtakoot_details': {
+                    'varna': ashtakoot_scores['varna'],
+                    'vashya': ashtakoot_scores['vashya'],
+                    'tara': ashtakoot_scores['tara'],
+                    'yoni': ashtakoot_scores['yoni'],
+                    'graha_maitri': ashtakoot_scores['graha_maitri'],
+                    'gana': ashtakoot_scores['gana'],
+                    'bhakoot': ashtakoot_scores['bhakoot'],
+                    'nadi': ashtakoot_scores['nadi']
+                },
                 'ashtakoot_scores': ashtakoot_scores,
-                'doshas': doshas,
-                'recommendation': self._get_recommendation(total_score, doshas),
+                'doshas': doshas_for_frontend,
+                'doshas_detailed': doshas,
+                'recommendation': recommendation_data['message'],
+                'recommendation_detailed': recommendation_data,
                 'person1': {
                     'name': person1_data.get('name', 'Person 1'),
                     'zodiac_sign': chart1['zodiac_sign'],
