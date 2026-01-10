@@ -912,7 +912,7 @@ export default function BhriguPredictionView({
                 const isOpen = expandedSections.has(sectionId); // ✨ QUANTUM FIX: Use Set.has() instead of Record lookup
                 const content = getSectionContent(section.key);
                 return renderSection(
-                  section.key,
+                  sectionId,
                   tLocale(section.titleKey, language),
                   content,
                   section.color,
