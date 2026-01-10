@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'ui/theme/app_theme.dart';
 import 'ui/screens/home_screen.dart';
+import 'ui/screens/onboarding_screen.dart';
+import 'ui/screens/pin_screen.dart';
+import 'ui/screens/profile_create_screen.dart';
+import 'ui/screens/profile_list_screen.dart';
+import 'ui/screens/wisdom_library_screen.dart';
+import 'ui/widgets/animated_logo.dart';
 import 'core/constants/app_constants.dart';
+import 'core/security/app_lock_manager.dart';
+import 'core/security/pin_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,19 +50,27 @@ class SoulJourneyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: const SplashScreen(),
+      routes: {
+        '/home': (context) => const HomeScreen(),
+        '/onboarding': (context) => const OnboardingScreen(),
+        '/pin': (context) => const PinScreen(),
+        '/profiles': (context) => const ProfileListScreen(),
+        '/profiles/create': (context) => const ProfileCreateScreen(),
+        '/wisdom': (context) => const WisdomLibraryScreen(),
+      },
     );
   }
 }
 
 /// Splash Screen with animated logo
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
@@ -64,14 +81,29 @@ class _SplashScreenState extends State<SplashScreen> {
     // Wait for splash duration
     await Future.delayed(AppConstants.splashDuration);
 
-    // TODO: Check if first launch, show onboarding
-    // TODO: Check if app is locked, show PIN screen
-    // For now, navigate directly to home
+    const secureStorage = FlutterSecureStorage();
+    final pinManager = PinManager(secureStorage: secureStorage);
+    final isPinSet = await pinManager.isPinSet();
+    final firstLaunchFlag =
+        await secureStorage.read(key: AppConstants.firstLaunchKey);
+    final isFirstLaunch =
+        !isPinSet || firstLaunchFlag == null || firstLaunchFlag == 'true';
+    final isLocked = ref.read(appLockManagerProvider).isLocked;
+
+    Widget destination;
+
+    if (isFirstLaunch) {
+      destination = const OnboardingScreen();
+    } else if (isLocked) {
+      destination = const PinScreen();
+    } else {
+      destination = const HomeScreen();
+    }
 
     if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => const HomeScreen(),
+          builder: (context) => destination,
         ),
       );
     }
@@ -127,6 +159,3 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
-
-// Import AnimatedLogo
-import 'ui/widgets/animated_logo.dart';

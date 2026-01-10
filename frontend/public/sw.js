@@ -233,9 +233,39 @@ self.addEventListener('notificationclick', (event) => {
 // Helper function for syncing reports
 async function syncReports() {
   try {
-    // TODO: Implement report syncing logic
     console.log('[SW] Syncing reports...');
-    return Promise.resolve();
+
+    const clientsList = await self.clients.matchAll({
+      includeUncontrolled: true,
+      type: 'window',
+    });
+
+    if (!clientsList.length) {
+      console.log('[SW] No active clients available for report sync');
+      return;
+    }
+
+    await Promise.all(
+      clientsList.map(
+        (client) =>
+          new Promise((resolve) => {
+            const channel = new MessageChannel();
+            const timeout = setTimeout(resolve, 2000);
+
+            channel.port1.onmessage = () => {
+              clearTimeout(timeout);
+              resolve();
+            };
+
+            client.postMessage(
+              { type: 'SYNC_REPORTS' },
+              [channel.port2]
+            );
+          })
+      )
+    );
+
+    console.log('[SW] Report sync request dispatched');
   } catch (error) {
     console.error('[SW] Error syncing reports:', error);
     return Promise.reject(error);

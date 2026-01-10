@@ -359,7 +359,7 @@ class HomeScreen extends StatelessWidget {
       children: [
         ElevatedButton.icon(
           onPressed: () {
-            // TODO: Navigate to create profile screen
+            Navigator.of(context).pushNamed('/profiles/create');
           },
           icon: const Icon(Icons.add_circle_outline),
           label: const Text('Create New Profile'),
@@ -381,7 +381,7 @@ class HomeScreen extends StatelessWidget {
 
         OutlinedButton.icon(
           onPressed: () {
-            // TODO: Navigate to profiles list
+            Navigator.of(context).pushNamed('/profiles');
           },
           icon: const Icon(Icons.people_outline),
           label: const Text('View Saved Profiles'),
@@ -396,7 +396,7 @@ class HomeScreen extends StatelessWidget {
 
         OutlinedButton.icon(
           onPressed: () {
-            // TODO: Navigate to wisdom library
+            Navigator.of(context).pushNamed('/wisdom');
           },
           icon: const Icon(Icons.library_books_outlined),
           label: const Text('Wisdom Library'),

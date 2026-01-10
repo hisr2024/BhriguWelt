@@ -385,7 +385,7 @@ curl http://localhost:5000/api/bhrigu-predictions/health
 1. ✅ API documentation updated with health endpoint
 2. ✅ Test suite documentation complete
 3. ✅ Security guidelines documented
-4. ⚠️ **TODO**: Update main README.md with new features
+4. ✅ **DONE**: Updated main README.md with new features
 
 ---
 

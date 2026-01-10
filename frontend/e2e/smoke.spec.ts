@@ -15,10 +15,9 @@ test.describe('Smoke Tests', () => {
   test('navigation is accessible', async ({ page }) => {
     await page.goto('/');
     
-    // Check for main navigation elements
-    // This is a placeholder - adjust based on actual UI
     const navigation = page.locator('nav');
     await expect(navigation).toBeVisible();
+    await expect(navigation).toContainText('BhriguWelt');
   });
 
   test('health check endpoint is accessible', async ({ request }) => {

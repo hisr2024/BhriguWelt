@@ -40,6 +40,14 @@ export function PWAInstaller() {
       });
     }
 
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'SYNC_REPORTS') {
+        event.ports?.[0]?.postMessage({ ok: true });
+      }
+    };
+
+    navigator.serviceWorker?.addEventListener('message', handleServiceWorkerMessage);
+
     // Handle install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -63,6 +71,7 @@ export function PWAInstaller() {
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      navigator.serviceWorker?.removeEventListener('message', handleServiceWorkerMessage);
     };
   }, []);
 

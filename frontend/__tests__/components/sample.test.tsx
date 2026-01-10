@@ -4,17 +4,20 @@
  */
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-
-// This is a placeholder test file
-// Add actual component tests as components are created
+import GenZButton from '@/app/components/GenZButton';
 
 describe('Component Tests', () => {
-  describe('Sample Component Test', () => {
-    it('should render without crashing', () => {
-      // Example test structure
-      // const { container } = render(<YourComponent />);
-      // expect(container).toBeInTheDocument();
-      expect(true).toBe(true);
+  describe('GenZButton', () => {
+    it('renders provided label', () => {
+      render(<GenZButton>Cosmic Action</GenZButton>);
+
+      expect(screen.getByRole('button', { name: 'Cosmic Action' })).toBeInTheDocument();
+    });
+
+    it('disables the button when loading', () => {
+      render(<GenZButton loading>Sending</GenZButton>);
+
+      expect(screen.getByRole('button', { name: 'Sending' })).toBeDisabled();
     });
   });
 });
