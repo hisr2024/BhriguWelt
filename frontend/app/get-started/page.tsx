@@ -74,13 +74,22 @@ export default function GetStartedPage() {
       }
 
       const result = await astrologyAPI.calculateBirthChart(requestData);
+
+      // Use geocoded coordinates from backend if manual coordinates weren't provided
+      const finalLatitude = latitudeValue !== undefined
+        ? latitudeValue
+        : result.data?.birth_details?.latitude;
+      const finalLongitude = longitudeValue !== undefined
+        ? longitudeValue
+        : result.data?.birth_details?.longitude;
+
       const profileData = {
         name: formData.name,
         dateOfBirth: formData.date_of_birth,
         timeOfBirth: formData.time_of_birth,
         placeOfBirth: formData.place_of_birth,
-        latitude: latitudeValue,
-        longitude: longitudeValue,
+        latitude: finalLatitude,
+        longitude: finalLongitude,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

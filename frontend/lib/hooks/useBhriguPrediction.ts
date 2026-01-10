@@ -21,12 +21,11 @@ interface UseBhriguPredictionArgs {
 }
 
 const hasRequiredProfileFields = (profile: Profile): boolean => {
+  // Latitude and longitude are now optional - backend will geocode if not provided
   return Boolean(
     profile.dateOfBirth &&
       profile.timeOfBirth &&
-      profile.placeOfBirth &&
-      profile.latitude != null &&
-      profile.longitude != null
+      profile.placeOfBirth
   );
 };
 
