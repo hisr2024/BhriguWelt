@@ -12,7 +12,8 @@ import BottomNav from '../components/BottomNav';
 import CardSkeleton from '../components/CardSkeleton';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
-import { futureLivesAPI, BirthDetails } from '@/lib/api';
+import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
+import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import { useOfflineWisdomCards } from '@/lib/wisdom';
 import type { WisdomCard } from '@/lib/types';
 import Link from 'next/link';
@@ -34,7 +35,7 @@ export default function FutureLivesPage() {
     []
   );
 
-  const { cards: wisdomCards } = useOfflineWisdomCards({ filter: filterWisdomCards });
+  const { cards: wisdomCards, isLoading: wisdomLoading } = useOfflineWisdomCards({ filter: filterWisdomCards });
 
   useEffect(() => {
     if (!encryptionLoading && !isSetup) {
