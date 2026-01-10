@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -36,6 +36,12 @@ export const AccordionItem = ({
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const isControlled = typeof isOpen === 'boolean';
   const openState = isControlled ? isOpen : internalOpen;
+
+  useEffect(() => {
+    if (!isControlled) {
+      setInternalOpen(defaultOpen);
+    }
+  }, [defaultOpen, isControlled]);
 
   const setOpenState = (next: boolean) => {
     if (!isControlled) {

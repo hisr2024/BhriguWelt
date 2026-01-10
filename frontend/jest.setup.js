@@ -82,3 +82,18 @@ Object.defineProperty(global, 'indexedDB', {
   value: indexedDB,
   writable: true,
 });
+
+if (!global.TextEncoder) {
+  const { TextEncoder } = require('util');
+  global.TextEncoder = TextEncoder;
+}
+
+if (!global.TextDecoder) {
+  const { TextDecoder } = require('util');
+  global.TextDecoder = TextDecoder;
+}
+
+Object.defineProperty(window, 'scrollTo', {
+  value: jest.fn(),
+  writable: true,
+});

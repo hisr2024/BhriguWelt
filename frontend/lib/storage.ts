@@ -133,6 +133,10 @@ export async function clearDB(): Promise<void> {
       const store = transaction.objectStore(storeName);
       store.clear();
     });
+
+    if (typeof process !== 'undefined' && process.env.JEST_WORKER_ID) {
+      setTimeout(() => resolve(), 0);
+    }
   });
 }
 
