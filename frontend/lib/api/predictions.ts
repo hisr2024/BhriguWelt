@@ -232,7 +232,7 @@ const retryWithBackoff = async (
 ): Promise<Response> => {
   let attempt = 0;
   const fallbackController = options.signal ? null : new AbortController();
-  const signal = options.signal ?? fallbackController.signal;
+  const signal = options.signal ?? fallbackController!.signal;
 
   while (true) {
     if (signal.aborted || options.isCancelled?.()) {

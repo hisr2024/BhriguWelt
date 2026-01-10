@@ -36,11 +36,15 @@ export const STORES = {
 let db: IDBDatabase | null = null;
 
 function generateUserId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID();
+  if (typeof window === 'undefined' || typeof window.crypto === 'undefined') {
+    throw new Error('crypto is not available');
   }
 
-  return uint8ArrayToBase64(crypto.getRandomValues(new Uint8Array(16)));
+  if ('randomUUID' in window.crypto && typeof window.crypto.randomUUID === 'function') {
+    return window.crypto.randomUUID();
+  }
+
+  return uint8ArrayToBase64(window.crypto.getRandomValues(new Uint8Array(16)));
 }
 
 /**

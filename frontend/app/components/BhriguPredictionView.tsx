@@ -469,8 +469,7 @@ export default function BhriguPredictionView({
         }
 
         await setItem(STORES.SETTINGS, hashKey, currentHash, encryptionKey);
-        setProfileUpdated(hasChanged);
-        await loadPrediction({ forceRegenerate: hasChanged, profileHash: currentHash });
+        await loadPrediction(hasChanged, currentHash);
       };
 
       void checkProfile();
@@ -591,7 +590,7 @@ export default function BhriguPredictionView({
       return;
     }
 
-    const categoryValue = prediction?.metadata?.category ?? prediction?.category ?? category;
+    const categoryValue = predictionData?.metadata?.category ?? predictionData?.category ?? category;
     const normalizedCategory = normalizeCategoryKey(
       typeof categoryValue === 'string' ? categoryValue : category
     );
@@ -603,7 +602,7 @@ export default function BhriguPredictionView({
     }
 
     const hasStructuredSections = categoryConfig.some(section => {
-      const content = prediction[section.key];
+      const content = predictionData[section.key];
       return typeof content === 'string' && content.trim().length > 0;
     });
 
@@ -616,7 +615,7 @@ export default function BhriguPredictionView({
     if (!worker) {
       setIsParsing(true);
       const parseStart = typeof performance !== 'undefined' ? performance.now() : Date.now();
-      const parsed = parseFullAnalysisIntoSections(prediction.full_analysis, category);
+      const parsed = parseFullAnalysisIntoSections(predictionData.full_analysis, category);
       setParsedFromFullAnalysis(parsed);
       setIsParsing(false);
       reportMetric('prediction.parse', (typeof performance !== 'undefined' ? performance.now() : Date.now()) - parseStart, {
@@ -630,7 +629,7 @@ export default function BhriguPredictionView({
     workerRequestId.current += 1;
     worker.postMessage({
       id: workerRequestId.current,
-      markdown: prediction.full_analysis,
+      markdown: predictionData.full_analysis,
       sections: categoryConfig.map(section => ({ key: section.key, titles: section.titleVariants }))
     });
   }, [prediction?.full_analysis, category, simplifiedRendering, reportMetric]);
@@ -1341,7 +1340,7 @@ export default function BhriguPredictionView({
         {prediction && (
           <div className="mt-12 flex gap-4 justify-center flex-wrap">
             <button
-              onClick={() => loadPrediction({ forceRegenerate: true })}
+              onClick={() => loadPrediction(true)}
               className="px-6 py-3 bg-gray-700/50 border border-gray-600
                        text-white rounded-lg hover:bg-gray-700 transition-all
                        flex items-center gap-2 disabled:opacity-50"
