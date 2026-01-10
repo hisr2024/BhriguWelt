@@ -148,6 +148,95 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
 - Phaladeepika: Yogas and planetary effects
 - Saravali: Detailed planetary interpretations
 - Uttara Kalamrita: Remedial measures"""
+
+    def _record_init_error(self, component: str, exception: Exception) -> None:
+        """Record initialization error for a component"""
+        error_info = {
+            'component': component,
+            'error': str(exception),
+            'type': exception.__class__.__name__,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        self.init_errors.append(error_info)
+        logger.error(f"Failed to initialize {component}: {str(exception)}", exc_info=True)
+
+    def _is_healthy(self) -> bool:
+        """Check if critical services are operational"""
+        return bool(
+            self.openai_service and
+            self.section_parser and
+            not self.init_errors
+        )
+
+    def _get_fallback_if_unavailable(self, category: str, birth_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Check service availability and return emergency fallback if needed
+
+        This method ensures predictions ALWAYS return valid data even when services fail.
+        It checks service health and returns category-specific fallbacks from prediction_helpers.
+
+        Args:
+            category: Prediction category (karmic_journey, past_lives, etc.)
+            birth_data: User's birth details
+
+        Returns:
+            Fallback prediction dict if services unavailable, None if services OK
+        """
+        # Check if critical services are missing or initialization failed
+        if not self._is_healthy():
+            logger.warning(
+                f"Critical services unavailable for {category}. "
+                f"Services status: openai={bool(self.openai_service)}, "
+                f"parser={bool(self.section_parser)}, "
+                f"errors={len(self.init_errors)}"
+            )
+
+            # Import fallback functions
+            from services.prediction_helpers import (
+                fallback_karmic_journey,
+                fallback_past_lives,
+                fallback_future_lives,
+                fallback_present_life,
+                fallback_life_events,
+                fallback_karmic_remedies,
+                fallback_relationships,
+                fallback_predictions
+            )
+
+            # Map categories to their fallback functions
+            fallbacks = {
+                'karmic_journey': fallback_karmic_journey,
+                'past_lives': fallback_past_lives,
+                'future_lives': fallback_future_lives,
+                'present_life': fallback_present_life,
+                'life_events': fallback_life_events,
+                'karmic_remedies': fallback_karmic_remedies,
+                'relationships': fallback_relationships,
+                'predictions': fallback_predictions
+            }
+
+            # Get the appropriate fallback function
+            fallback_func = fallbacks.get(category)
+            if fallback_func:
+                try:
+                    result = fallback_func(birth_data)
+                    logger.info(f"Emergency fallback activated for {category}")
+                    # Ensure result has required structure
+                    if isinstance(result, dict):
+                        # Add metadata to indicate fallback mode
+                        if 'metadata' not in result:
+                            result['metadata'] = {}
+                        result['metadata']['fallback_mode'] = True
+                        result['metadata']['service_errors'] = len(self.init_errors)
+                        return result
+                except Exception as e:
+                    logger.error(f"Fallback generation failed for {category}: {str(e)}", exc_info=True)
+            else:
+                logger.warning(f"No fallback function found for category: {category}")
+
+        # Services are healthy or no fallback needed
+        return None
+
         self.section_specs = {
             'karmic_journey': [
                 {
