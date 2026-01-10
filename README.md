@@ -25,6 +25,14 @@ The **Soul Journey** Flutter app is a production-ready, offline-first astrology 
 - 🎨 **Sacred Geometry UI** - Animated Om logo matching spiritual traditions
 - 🌓 **Cross-Platform** - Works on iOS, Android, and Web
 
+### 🌐 Web PWA Highlights
+
+- 💬 **AI Chat Assistant** - Ask questions about your chart (with consent and API key)
+- 🔮 **Prediction Engines** - Karmic journey, life events, remedies, and more
+- 💞 **Kundali Matchmaking** - 36-point Ashtakoot compatibility analysis
+- 📦 **Offline-First Storage** - Encrypted IndexedDB for profiles and reports
+- 📡 **Progressive Web App** - Installable, cached, and resilient offline UX
+
 ### 🔒 Security Model
 
 **Privacy-First Architecture:**

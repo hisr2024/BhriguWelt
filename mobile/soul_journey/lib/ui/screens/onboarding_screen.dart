@@ -6,6 +6,7 @@ import '../widgets/animated_logo.dart';
 import '../../core/security/pin_manager.dart';
 import '../../core/security/app_lock_manager.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../core/constants/app_constants.dart';
 
 /// Onboarding screen with PIN setup (4-digit numeric input)
 ///
@@ -68,6 +69,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
       // Setup PIN
       await _pinManager.setupPin(firstPin);
+      await const FlutterSecureStorage().write(
+        key: AppConstants.firstLaunchKey,
+        value: 'false',
+      );
+      ref.read(appLockManagerProvider).unlock();
 
       setState(() => _pinSetupComplete = true);
 

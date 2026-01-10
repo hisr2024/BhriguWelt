@@ -16,17 +16,8 @@ test.describe('Authentication Flow', () => {
   });
 
   test('offline mode is available', async ({ page }) => {
-    // Check if offline mode is accessible
-    // This is a placeholder - adjust based on actual implementation
-    await page.goto('/');
-    
-    // Service worker registration should occur
-    await page.waitForLoadState('networkidle');
-    
-    // Test offline functionality if implemented
-    // await page.context().setOffline(true);
-    // await page.reload();
-    // Verify offline mode UI
+    await page.goto('/offline');
+    await expect(page.getByRole('heading', { name: "You're Offline" })).toBeVisible();
   });
 
   test('user preferences are persisted', async ({ page }) => {
@@ -43,16 +34,18 @@ test.describe('Authentication Flow', () => {
     // }
   });
 
-  test('AI consent flow works correctly', async ({ page }) => {
-    // Test AI consent modal/flow if it exists
-    await page.goto('/');
-    
-    // Look for AI consent UI elements
-    // This is a placeholder - adjust based on actual AI consent implementation
-    // const consentModal = page.locator('[data-testid="ai-consent-modal"]');
-    // if (await consentModal.isVisible()) {
-    //   await expect(consentModal).toContainText(/AI/i);
-    // }
+  test('GDPR consent prompt can be accepted', async ({ page }) => {
+    await page.evaluate(() => {
+      localStorage.removeItem('bhriguwelt_gdpr_consent');
+    });
+
+    await page.reload();
+
+    const consentHeading = page.getByRole('heading', { name: 'Privacy & Data Protection' });
+    await expect(consentHeading).toBeVisible();
+
+    await page.getByRole('button', { name: 'I Accept & Continue' }).click();
+    await expect(consentHeading).not.toBeVisible();
   });
 
   test('secure storage is initialized', async ({ page }) => {
