@@ -309,6 +309,151 @@ Add cities to `assets/cities/cities.json`:
 
 ---
 
+## 🌐 API Endpoints
+
+BhriguWelt provides a comprehensive Flask backend API for generating astrological predictions and charts. All endpoints include security middleware, rate limiting, and PII sanitization.
+
+### Base URL
+- **Production**: `https://your-production-domain.com`
+- **Development**: `http://localhost:8000`
+
+### Core Endpoints
+
+#### Health & Status
+- `GET /health` - Health check with service status
+  - Returns: System status, services operational state, response guarantees
+  - Rate limit: Unlimited
+
+- `GET /` - API information and feature list
+  - Returns: Available features, API version, endpoints
+
+#### Astrology Calculations (`/api/astrology/`)
+- `POST /api/astrology/birth-chart` - Calculate complete Vedic birth chart
+  - Body: `{ "date": "YYYY-MM-DD", "time": "HH:MM", "latitude": float, "longitude": float }`
+  - Returns: Zodiac sign, nakshatra, moon sign, ascendant, planetary positions
+  - Rate limit: 100/min per IP
+
+- `POST /api/astrology/planetary-positions` - Get planetary positions
+  - Body: Same as birth-chart
+  - Returns: Positions of Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn, Rahu, Ketu
+
+- `POST /api/astrology/dasha-periods` - Calculate Vimshottari Dasha periods
+  - Body: Same as birth-chart
+  - Returns: Current dasha, sub-periods, timeline
+
+- `POST /api/astrology/divisional-charts` - Generate divisional charts (D1-D60)
+  - Body: Same as birth-chart + `{ "divisional_chart": "D1" }`
+  - Returns: Specific divisional chart data
+
+#### Predictions - Unified API (`/api/predictions/`)
+- `GET /api/predictions/health` - Feature health check
+- `GET /api/predictions/categories` - List all 14+ prediction categories
+- `POST /api/predictions/<category>` - Generate prediction for any category
+  - Categories: `karmic_journey`, `past_lives`, `future_lives`, `present_life`, `life_events`, `karmic_remedies`, `relationships`, `predictions`, `cosmic_blueprint_overview`, `soul_purpose`, `karmic_debts`, `dharmic_path`, `spiritual_evolution`, `moksha_indicators`
+  - Body: `{ "date": "YYYY-MM-DD", "time": "HH:MM", "latitude": float, "longitude": float, "name": "optional" }`
+  - Rate limit: 100/min per IP
+
+#### Bhrigu Predictions (`/api/bhrigu-predictions/`)
+- `POST /api/bhrigu-predictions/generate` - Generate predictions using Bhrigu Samhita & Nadi Jyotisha
+  - Body: Same as predictions + optional `{ "question": "specific question" }`
+  - Returns: Comprehensive prediction with wisdom from ancient texts
+
+- `POST /api/bhrigu-predictions/career` - Career predictions
+- `POST /api/bhrigu-predictions/marriage` - Marriage and relationships
+- `POST /api/bhrigu-predictions/financial` - Financial predictions
+- `POST /api/bhrigu-predictions/health` - Health insights
+  - All endpoints use same body format as `/generate`
+
+#### AI-Enhanced Features (`/api/ai/`) 🔐
+**Requires AI consent header**: `X-AI-Consent: granted`
+
+- `POST /api/ai/compose` - Refine report sections using AI
+  - Headers: `X-AI-Consent: granted`
+  - Body: `{ "section": "text to refine", "context": {...} }`
+  - Rate limit: 10/min per user
+
+- `POST /api/ai/chat` - Interactive AI chat about predictions
+  - Headers: `X-AI-Consent: granted`
+  - Body: `{ "message": "user question", "context": {...} }`
+  - Rate limit: 10/min per user
+
+- `POST /api/ai/summarize` - Summarize predictions
+  - Headers: `X-AI-Consent: granted`
+  - Body: `{ "text": "prediction to summarize" }`
+  - Rate limit: 10/min per user
+
+#### Matchmaking (`/api/matchmaking/`)
+- `POST /api/matchmaking/compatibility` - Ashtakoot compatibility analysis
+  - Body: Two birth profiles (`person1`, `person2`)
+  - Returns: 8 Koot scores, overall compatibility percentage
+
+- `POST /api/matchmaking/guna-milan` - Guna Milan scoring (36-point system)
+  - Body: Same as compatibility
+  - Returns: Detailed Guna Milan breakdown
+
+#### User Management (`/api/users/`)
+- User profile CRUD operations
+- Birth profile management
+- Encrypted storage support
+
+### Security Features
+
+All endpoints include:
+- **HTTPS enforcement** in production
+- **Content Security Policy (CSP)** headers
+- **XSS protection** (X-XSS-Protection, X-Content-Type-Options)
+- **HSTS** (Strict-Transport-Security with 1-year max-age)
+- **CORS** with explicit origin whitelist
+- **Rate limiting** (100/min general, 10/min AI, 60/hour sync)
+- **Input sanitization** (HTML escaping, PII detection, control character removal)
+- **Correlation IDs** (X-Correlation-ID header in all responses)
+- **PII redaction** in logs (API keys, emails, SSN, credit cards)
+
+### Error Handling
+
+All endpoints return consistent error format:
+```json
+{
+  "error": "Error message",
+  "correlation_id": "uuid-v4",
+  "status": 400/500,
+  "timestamp": "ISO-8601"
+}
+```
+
+### Caching
+
+- **Database cache**: AI-generated predictions cached by birth data hash (SHA-256)
+- **Redis cache** (optional): Rate limiter and quota management
+- **Cache headers**: ETags and Cache-Control for static resources
+
+### Testing Endpoints
+
+Use the health endpoint to verify system status:
+```bash
+curl http://localhost:8000/health
+```
+
+Expected response:
+```json
+{
+  "status": "healthy",
+  "services": {
+    "api": "operational",
+    "database": "operational",
+    "openai": "operational",
+    "prediction_orchestrator": "operational"
+  },
+  "response_system": {
+    "guaranteed_response": true,
+    "fallback_enabled": true,
+    "concurrent_safe": true
+  }
+}
+```
+
+---
+
 ## 🌐 Deployment
 
 ### iOS App Store

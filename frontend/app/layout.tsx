@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { PWAInstaller } from './components/PWAInstaller'
 import { Providers } from './providers'
+import { GDPRNotice } from '../components/GDPRNotice'
 
 export const metadata: Metadata = {
   title: 'BhriguWelt - Discover Your Soul\'s Journey',
@@ -55,6 +56,7 @@ export default function RootLayout({
         <Providers>
           {children}
           <PWAInstaller />
+          <GDPRNotice />
         </Providers>
       </body>
     </html>

@@ -38,6 +38,7 @@ celery==5.3.6
 # Security & Rate Limiting
 flask-limiter==3.5.0
 flask-talisman==1.1.0
+flask-wtf==1.2.1
 
 # Error Tracking & Monitoring
 sentry-sdk[flask]==1.40.0
