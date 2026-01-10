@@ -49,32 +49,22 @@ const parseMarkdownAst = (markdown: string, checkTime: () => void): HeadingNode[
   const lines = markdown.split('\n');
   const headings: HeadingNode[] = [];
 
-  for (const line of lines) {
+  for (let index = 0; index < lines.length; index++) {
     checkTime();
+    const line = lines[index];
     const match = line.match(/^(#{1,6})\s+(.*)$/);
     if (match) {
       const depth = match[1].length;
       const text = match[2].trim();
-      headings.push({
-        type: 'heading',
-        depth,
-        text,
-        start: offset,
-        end: offset + line.length
-      });
+      if (text) {
+        headings.push({
+          type: 'heading',
+          depth,
+          text,
+          lineIndex: index
+        });
+      }
     }
-
-    const text = line.slice(hashCount).trim();
-    if (!text) {
-      continue;
-    }
-
-    headings.push({
-      type: 'heading',
-      depth: hashCount,
-      text,
-      lineIndex: index
-    });
   }
 
   return headings;
@@ -248,7 +238,6 @@ const extractSectionsLineBased = (
     }
   }
 
-  flushSection();
   return parsedSections;
 };
 
@@ -289,7 +278,7 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
     let errorMessage = error instanceof Error ? error.message : 'Markdown parsing failed';
 
     try {
-      fallbackSections = extractSectionsWithRegex(safeMarkdown, sections, checkTime);
+      fallbackSections = extractSectionsLineBased(safeMarkdown, sections, checkTime);
     } catch (fallbackError) {
       if (fallbackError instanceof Error) {
         errorMessage = fallbackError.message;
