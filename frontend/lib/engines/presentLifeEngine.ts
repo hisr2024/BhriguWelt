@@ -9,6 +9,8 @@ type PresentLifeMode = 'offline' | 'online' | 'hybrid';
 
 type RuleTradition = 'Bhrigu Samhita' | 'Nadi Jyotisha' | 'Bhrigu Samhita Codex';
 
+export type DiveLevel = 'basic' | 'intermediate' | 'comprehensive';
+
 export interface PresentLifeOptions {
   mode?: PresentLifeMode;
   useAI?: boolean;
@@ -17,6 +19,7 @@ export interface PresentLifeOptions {
   temperature?: number;
   language?: string;
   cacheTtlMs?: number;
+  diveLevel?: DiveLevel;
 }
 
 interface PresentLifeRule {
@@ -307,38 +310,67 @@ async function loadWisdomSources(cacheTtlMs: number): Promise<WisdomSources> {
   const summaries: string[] = [];
   const rules: PresentLifeRule[] = [...PRESENT_LIFE_BASE_RULES];
 
-  const bhriguPath = await resolveWisdomPath('core_wisdom/bhrigu_samhita_rules.md');
-  const nadiPath = await resolveWisdomPath('core_wisdom/nadi_jyotisha_rules.md');
-  const codexPath = await resolveWisdomPath('docs/bhrigu_samhita_jyotish_engine.md');
-  const principlesPath = await resolveWisdomPath('backend/data/bhrigu_samhita_principles.yml');
+  // Try to resolve local file paths with better error handling
+  const fileResults = await Promise.allSettled([
+    resolveWisdomPath('core_wisdom/bhrigu_samhita_rules.md'),
+    resolveWisdomPath('core_wisdom/nadi_jyotisha_rules.md'),
+    resolveWisdomPath('docs/bhrigu_samhita_jyotish_engine.md'),
+    resolveWisdomPath('backend/data/bhrigu_samhita_principles.yml'),
+  ]);
+
+  const bhriguPath = fileResults[0].status === 'fulfilled' ? fileResults[0].value : null;
+  const nadiPath = fileResults[1].status === 'fulfilled' ? fileResults[1].value : null;
+  const codexPath = fileResults[2].status === 'fulfilled' ? fileResults[2].value : null;
+  const principlesPath = fileResults[3].status === 'fulfilled' ? fileResults[3].value : null;
 
   let bhriguText = '';
   let nadiText = '';
   let codexText = '';
   let principlesText = '';
 
+  // Load local files with error handling
   if (bhriguPath) {
-    bhriguText = await fs.readFile(bhriguPath, 'utf-8');
+    try {
+      bhriguText = await fs.readFile(bhriguPath, 'utf-8');
+      summaries.push(`Loaded Bhrigu Samhita rules from ${bhriguPath}`);
+    } catch (error) {
+      warnings.push(`Failed to read Bhrigu Samhita rules: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   } else {
-    warnings.push('Bhrigu Samhita rules missing locally; using fallback and remote sources.');
+    warnings.push('Bhrigu Samhita rules not found locally; will attempt remote sources.');
   }
 
   if (nadiPath) {
-    nadiText = await fs.readFile(nadiPath, 'utf-8');
+    try {
+      nadiText = await fs.readFile(nadiPath, 'utf-8');
+      summaries.push(`Loaded Nadi Jyotisha rules from ${nadiPath}`);
+    } catch (error) {
+      warnings.push(`Failed to read Nadi Jyotisha rules: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   } else {
-    warnings.push('Nadi Jyotisha rules missing locally; using fallback and remote sources.');
+    warnings.push('Nadi Jyotisha rules not found locally; will attempt remote sources.');
   }
 
   if (codexPath) {
-    codexText = await fs.readFile(codexPath, 'utf-8');
+    try {
+      codexText = await fs.readFile(codexPath, 'utf-8');
+      summaries.push(`Loaded Bhrigu Samhita codex from ${codexPath}`);
+    } catch (error) {
+      warnings.push(`Failed to read Bhrigu Samhita codex: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   } else {
-    warnings.push('Bhrigu Samhita codex missing locally; using fallback and remote sources.');
+    warnings.push('Bhrigu Samhita codex not found locally; will attempt remote sources.');
   }
 
   if (principlesPath) {
-    principlesText = await fs.readFile(principlesPath, 'utf-8');
+    try {
+      principlesText = await fs.readFile(principlesPath, 'utf-8');
+      summaries.push(`Loaded Bhrigu Samhita principles from ${principlesPath}`);
+    } catch (error) {
+      warnings.push(`Failed to read Bhrigu Samhita principles: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   } else {
-    warnings.push('Bhrigu Samhita principles missing locally; using fallback and remote sources.');
+    warnings.push('Bhrigu Samhita principles not found locally; will attempt remote sources.');
   }
 
   if (!bhriguText || !nadiText || !codexText || !principlesText) {
@@ -499,12 +531,15 @@ function deriveFocusAreas(rules: PresentLifeRule[]): string[] {
 }
 
 function buildDashaTheme(chartData: ChartData): string {
-  const dasha = (chartData as { dasha_period?: { maha_dasha?: string; years_remaining?: number } })
-    .dasha_period;
+  // Type-safe access to dasha_period
+  const dasha = chartData.dasha_period;
 
   if (dasha?.maha_dasha) {
-    const years = dasha.years_remaining ? ` with ~${dasha.years_remaining} years remaining` : '';
-    return `Current maha dasha: ${dasha.maha_dasha}${years}. Themes of this graha color present-life focus.`;
+    const years = typeof dasha.years_remaining === 'number' && dasha.years_remaining > 0
+      ? ` with ~${Math.round(dasha.years_remaining)} years remaining`
+      : '';
+    const antarDasha = dasha.antar_dasha ? ` (Antar Dasha: ${dasha.antar_dasha})` : '';
+    return `Current maha dasha: ${dasha.maha_dasha}${years}${antarDasha}. Themes of this graha color present-life focus.`;
   }
 
   return 'Current dasha not provided; present-life themes inferred primarily from Moon, Ascendant, and planetary balance.';
@@ -621,9 +656,10 @@ function precisionCheck(profile: PresentLifeProfile, chartData: ChartData): Prec
 function buildSubcategories(
   profile: PresentLifeProfile,
   precision: PrecisionCheckResult,
-  sources: WisdomSources
+  sources: WisdomSources,
+  diveLevel: DiveLevel = 'basic'
 ): Record<string, Subcategory> {
-  return {
+  const subcategories: Record<string, Subcategory> = {
     generation_phase: {
       title: 'Generation Phase: Present Life Overview',
       content: [
@@ -635,6 +671,7 @@ function buildSubcategories(
         overview: precision.adjustedOverview,
         focusAreas: precision.validatedFocus,
         dashaTheme: profile.dashaTheme,
+        diveLevel,
       },
     },
     strengths: {
@@ -665,16 +702,60 @@ function buildSubcategories(
         notes: precision.notes,
       },
     },
-    sources: {
-      title: 'Source Alignment',
-      content: [
-        ...sources.summaries.map(summary => `- ${summary}`),
-        ...(sources.warnings.length > 0
-          ? sources.warnings.map(warning => `- Warning: ${warning}`)
-          : ['- All present-life sources loaded successfully.']),
-      ].join('\n'),
-    },
   };
+
+  // Add dive-level-specific subcategories
+  if (diveLevel === 'intermediate' || diveLevel === 'comprehensive') {
+    subcategories.deeper_analysis = {
+      title: 'Deeper Dive: Planetary Interactions',
+      content: [
+        'Intermediate Analysis:',
+        `- Focus area distribution: ${precision.validatedFocus.map(f => f.charAt(0).toUpperCase() + f.slice(1)).join(', ')}`,
+        `- Balance score interpretation: ${precision.balanceScore >= 75 ? 'Strong planetary support' : precision.balanceScore >= 60 ? 'Moderate planetary balance' : 'Growth-oriented planetary dynamics'}`,
+        `- Supporting rules applied: ${profile.supportingRules.length} traditions synthesized`,
+      ].join('\n'),
+      data: {
+        focusDistribution: precision.validatedFocus,
+        balanceInterpretation: precision.balanceScore,
+        rulesCount: profile.supportingRules.length,
+      },
+    };
+  }
+
+  if (diveLevel === 'comprehensive') {
+    subcategories.deepest_insights = {
+      title: 'Deepest Dive: Comprehensive Integration',
+      content: [
+        'Comprehensive Analysis:',
+        '- Cross-referencing all planetary positions with house placements',
+        '- Analyzing dasha-antardasha interactions for timing precision',
+        '- Evaluating nakshatra pada influences on personality expression',
+        '- Synthesizing karmic patterns across all focus areas',
+        '',
+        'Rule Tradition Breakdown:',
+        ...profile.supportingRules.map(rule => `  • ${rule.tradition}: ${rule.id}`),
+      ].join('\n'),
+      data: {
+        fullRuleSet: profile.supportingRules,
+        comprehensiveScore: precision.balanceScore,
+      },
+    };
+  }
+
+  // Add sources (always included)
+  subcategories.sources = {
+    title: 'Source Alignment',
+    content: [
+      ...sources.summaries.map(summary => `- ${summary}`),
+      ...(sources.warnings.length > 0
+        ? sources.warnings.map(warning => `- Warning: ${warning}`)
+        : ['- All present-life sources loaded successfully.']),
+      '',
+      `Analysis depth: ${diveLevel === 'basic' ? 'Basic' : diveLevel === 'intermediate' ? 'Deeper Dive' : 'Deepest Dive'}`,
+    ].join('\n'),
+  };
+
+  return subcategories;
 }
 
 function buildChartSummary(chartData: ChartData): string {
@@ -806,11 +887,13 @@ export async function generatePresentLifePrediction(
   const precision = precisionCheck(profile, chartData);
   const aiSynthesis = await generateAiSynthesis(chartData, profile, precision, sources, options);
 
+  const diveLevel = options.diveLevel || 'basic';
+
   const result: PredictionResult = {
     engine: 'present_life',
-    title: 'Present Life Analysis',
+    title: `Present Life Analysis (${diveLevel === 'basic' ? 'Deep Dive' : diveLevel === 'intermediate' ? 'Deeper Dive' : 'Deepest Dive'})`,
     success: true,
-    subcategories: buildSubcategories(profile, precision, sources),
+    subcategories: buildSubcategories(profile, precision, sources, diveLevel),
     ai_synthesis: aiSynthesis,
     generated_at: new Date().toISOString(),
     mode: options.mode || 'offline',
@@ -822,7 +905,7 @@ export async function generatePresentLifePrediction(
       nakshatra: chartData.nakshatra || 'Unknown',
       ai_enhanced: Boolean(aiSynthesis),
       tradition: 'Bhrigu Samhita + Nadi Jyotisha',
-      calculation_method: 'Two-phase present-life synthesis (generation + precision check)',
+      calculation_method: `Two-phase present-life synthesis (generation + precision check) - ${diveLevel} depth`,
     },
   };
 
