@@ -97,13 +97,13 @@ export default function AnalyticsPage() {
     const planets = chart.planets || [];
     planets.forEach((planet: any) => {
       if (planet.is_exalted) {
-        strengths.push(\`\${planet.name} in exaltation brings exceptional \${getPlanetTheme(planet.name)}\`);
+        strengths.push(`${planet.name} in exaltation brings exceptional ${getPlanetTheme(planet.name)}`);
       }
       if (planet.is_debilitated) {
-        challenges.push(\`\${planet.name} debilitated requires attention in \${getPlanetTheme(planet.name)}\`);
+        challenges.push(`${planet.name} debilitated requires attention in ${getPlanetTheme(planet.name)}`);
       }
       if (planet.is_retrograde) {
-        opportunities.push(\`\${planet.name} retrograde offers deep introspection in \${getPlanetTheme(planet.name)}\`);
+        opportunities.push(`${planet.name} retrograde offers deep introspection in ${getPlanetTheme(planet.name)}`);
       }
     });
 
@@ -205,7 +205,7 @@ export default function AnalyticsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = \`bhriguwelt-analytics-\${Date.now()}.json\`;
+    a.download = `bhriguwelt-analytics-${Date.now()}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
