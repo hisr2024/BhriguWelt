@@ -11,6 +11,7 @@ from datetime import datetime
 from utils.response_formatter import prediction_response, prediction_error_response
 from utils.validators import sanitize_input
 from utils.logger import setup_logger, log_exception
+from utils.astrology_helpers import handle_birth_chart_error
 
 logger = setup_logger(__name__)
 
@@ -127,6 +128,11 @@ def generate_category_prediction(category):
                 500,
                 metadata={'category': category}
             )
+
+        # Check if calculator returned error dict instead of raising exception
+        error_response_tuple = handle_birth_chart_error(birth_chart)
+        if error_response_tuple:
+            return error_response_tuple
         
         # Generate prediction
         result = orchestrator.generate_prediction(

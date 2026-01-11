@@ -387,7 +387,88 @@ Always provide detailed, specific predictions with timing when possible.''' + co
     def get_selected_model(self) -> str:
         return self.last_model_used or os.getenv('OPENAI_MODEL', 'gpt-4')
 
+    def _parse_json_response(self, content: str) -> str:
+        """
+        Robustly parse JSON from OpenAI response with fallback to free-text.
+
+        Strategy:
+        1. Try direct JSON parsing
+        2. Try extracting JSON-like substring using regex
+        3. Fall back to original text with warning
+
+        Args:
+            content: Raw response text from OpenAI
+
+        Returns:
+            Parsed JSON string or original content
+        """
+        if not content:
+            return content
+
+        # Attempt 1: Direct JSON parsing
+        try:
+            parsed = json.loads(content)
+            # Validate expected structure
+            if isinstance(parsed, dict):
+                logger.info("Successfully parsed structured JSON response")
+                return json.dumps(parsed)  # Return normalized JSON string
+        except json.JSONDecodeError:
+            pass
+
+        # Attempt 2: Extract JSON from text using regex
+        try:
+            # Look for JSON object boundaries
+            json_match = re.search(r'\{[\s\S]*\}', content)
+            if json_match:
+                json_str = json_match.group(0)
+                parsed = json.loads(json_str)
+                if isinstance(parsed, dict):
+                    logger.info("Successfully extracted and parsed embedded JSON")
+                    return json.dumps(parsed)
+        except (json.JSONDecodeError, AttributeError):
+            pass
+
+        # Fallback: Return original text and log warning
+        logger.warning(
+            "Failed to parse response as JSON - using free-text fallback",
+            extra={'content_preview': content[:200]}
+        )
+
+        # Increment telemetry counter if available
+        try:
+            import sentry_sdk
+            sentry_sdk.metrics.incr(
+                'openai.json_parse_failure',
+                tags={'model': self.get_selected_model()}
+            )
+        except Exception:
+            pass
+
+        return content
+
     def _request_completion(self, prompt: str, system_content: str) -> Tuple[str, bool]:
+        # Add JSON format instruction to system content if not already present
+        use_json_format = os.getenv('OPENAI_USE_JSON_FORMAT', 'true').lower() == 'true'
+
+        if use_json_format and 'JSON' not in system_content.upper():
+            json_instruction = '''
+
+**OUTPUT FORMAT REQUIREMENT**:
+You MUST return your response as a valid JSON object with this exact structure:
+{
+  "summary": "Brief summary of the prediction (1-2 sentences)",
+  "sections": {
+    "section_name_1": "Detailed content for section 1",
+    "section_name_2": "Detailed content for section 2",
+    ...
+  },
+  "confidence": 0.85
+}
+
+CRITICAL: Return ONLY the JSON object. No additional text before or after. Use double quotes for all strings. Ensure the JSON is valid and parseable.
+'''
+            system_content = system_content + json_instruction
+
         payload = {
             'model': os.getenv('OPENAI_MODEL', 'gpt-4'),
             'messages': [
@@ -404,11 +485,21 @@ Always provide detailed, specific predictions with timing when possible.''' + co
             'max_tokens': int(os.getenv('OPENAI_MAX_TOKENS', '4000'))  # Increased for comprehensive predictions
         }
 
+        # Try to use JSON mode if model supports it (GPT-4 Turbo and later)
+        model = payload['model']
+        if use_json_format and ('gpt-4-turbo' in model.lower() or 'gpt-4o' in model.lower()):
+            payload['response_format'] = {'type': 'json_object'}
+
         response = self._post_with_model_fallbacks(payload)
         result = response.json()
         choice = result['choices'][0]
         content = choice['message']['content']
         finish_reason = choice.get('finish_reason')
+
+        # Try to parse as JSON and validate structure
+        if use_json_format:
+            content = self._parse_json_response(content)
+
         return content, finish_reason == 'length'
 
     def _post_with_retry(self, payload: Dict[str, Any]) -> requests.Response:
