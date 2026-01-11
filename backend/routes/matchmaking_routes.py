@@ -5,7 +5,7 @@ Kundali matching and compatibility analysis endpoints
 from flask import Blueprint, request, jsonify
 from services.matchmaking_service import get_matchmaking_service
 from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
-from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
+from utils.astrology_helpers import dependency_error_response, get_cached_birth_data, handle_birth_chart_error
 from utils.validators import sanitize_input
 from utils.logger import setup_logger, log_exception
 from utils.response_formatter import error_response
@@ -260,9 +260,14 @@ def check_doshas():
                 timezone_override=sanitize_input(data['timezone'], max_length=64)
                 if data.get('timezone') else None
             )
+
+            # Check for errors in birth chart calculation
+            error_response_tuple = handle_birth_chart_error(chart)
+            if error_response_tuple:
+                return error_response_tuple
         else:
             chart = cached_birth_data
-        
+
         # Check Mangal Dosha
         matchmaking_service = get_matchmaking_service()
         mars_house = matchmaking_service._get_planet_house(chart, 'Mars')

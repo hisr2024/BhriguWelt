@@ -7,7 +7,7 @@ from services.astrology_calculator import get_astrology_calculator, get_astrolog
 from services.prediction_orchestrator import get_prediction_orchestrator
 from services.section_parser import get_section_parser
 from utils.client_status import parse_client_online
-from utils.astrology_helpers import dependency_error_response, get_cached_birth_data
+from utils.astrology_helpers import dependency_error_response, get_cached_birth_data, handle_birth_chart_error
 from datetime import datetime
 import logging
 from utils.validators import sanitizeQuestion
@@ -38,6 +38,11 @@ def daily_prediction():
                 timezone_override=sanitize_input(data['timezone'], max_length=64)
                 if data.get('timezone') else None
             )
+
+            # Check for errors in birth chart calculation
+            error_response_tuple = handle_birth_chart_error(birth_chart)
+            if error_response_tuple:
+                return error_response_tuple
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
             birth_chart = cached_birth_data
@@ -109,6 +114,11 @@ def weekly_prediction():
                 timezone_override=sanitize_input(data['timezone'], max_length=64)
                 if data.get('timezone') else None
             )
+
+            # Check for errors in birth chart calculation
+            error_response_tuple = handle_birth_chart_error(birth_chart)
+            if error_response_tuple:
+                return error_response_tuple
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
             birth_chart = cached_birth_data
@@ -175,6 +185,11 @@ def monthly_prediction():
                 timezone_override=sanitize_input(data['timezone'], max_length=64)
                 if data.get('timezone') else None
             )
+
+            # Check for errors in birth chart calculation
+            error_response_tuple = handle_birth_chart_error(birth_chart)
+            if error_response_tuple:
+                return error_response_tuple
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
             birth_chart = cached_birth_data
@@ -244,6 +259,11 @@ def yearly_prediction():
                 timezone_override=sanitize_input(data['timezone'], max_length=64)
                 if data.get('timezone') else None
             )
+
+            # Check for errors in birth chart calculation
+            error_response_tuple = handle_birth_chart_error(birth_chart)
+            if error_response_tuple:
+                return error_response_tuple
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
             birth_chart = cached_birth_data
@@ -321,6 +341,11 @@ def specific_question():
                 timezone_override=sanitize_input(data['timezone'], max_length=64)
                 if data.get('timezone') else None
             )
+
+            # Check for errors in birth chart calculation
+            error_response_tuple = handle_birth_chart_error(birth_chart)
+            if error_response_tuple:
+                return error_response_tuple
         else:
             logger.warning("Astrology calculator unavailable; using cached birth data.")
             birth_chart = cached_birth_data
