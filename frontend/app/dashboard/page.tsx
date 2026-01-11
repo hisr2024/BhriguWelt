@@ -13,7 +13,7 @@ import GenZButton from '../components/GenZButton';
 import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
-import { getItem, STORES } from '@/lib/storage';
+import { loadCurrentProfile } from '@/lib/profileHelpers';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
@@ -42,7 +42,7 @@ export default function DashboardPage() {
   const loadBirthDetails = async () => {
     if (!encryptionKey) return;
     try {
-      const profile = await getItem(STORES.PROFILES, 'current_profile', encryptionKey);
+      const profile = await loadCurrentProfile(encryptionKey);
       if (profile) {
         setBirthDetails({
           date_of_birth: profile.dateOfBirth,
