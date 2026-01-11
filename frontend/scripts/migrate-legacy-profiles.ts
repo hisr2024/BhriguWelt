@@ -308,4 +308,6 @@ if (require.main === module) {
   });
 }
 
-export { analyzeProfiles, applyMigration, createBackup, MigrationOptions, MigrationReport };
+// Export types separately to satisfy isolatedModules requirement
+export type { MigrationOptions, MigrationReport };
+export { analyzeProfiles, applyMigration, createBackup };
