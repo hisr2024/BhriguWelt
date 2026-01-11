@@ -127,7 +127,13 @@ export default function BirthChartPage() {
     );
   }
 
-  const planetDetails = chartData.planets || [];
+  // Defensive normalization for planets data - prevents UI crashes from various data shapes
+  // Handles: array, object with planets, nested structures, and undefined/null
+  const planetsRaw = chartData?.planets ?? chartData?.chart?.planets ?? chartData?.planets_data ?? [];
+  const planetsArray = Array.isArray(planetsRaw)
+    ? planetsRaw
+    : (planetsRaw && typeof planetsRaw === 'object' ? Object.values(planetsRaw) : []);
+  const planetDetails = planetsArray.filter((p: any) => p && typeof p === 'object');
 
   const interpretations = {
     sun: `Your Sun in ${chartData.zodiac_sign || 'Leo'} reveals your core essence and life force. This placement indicates strong leadership qualities, creativity, and a natural magnetism. You're meant to shine and inspire others.`,
