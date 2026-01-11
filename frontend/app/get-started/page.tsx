@@ -12,6 +12,7 @@ import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { setItem, STORES } from '@/lib/storage';
+import { setCurrentProfileId } from '@/lib/profileHelpers';
 
 export default function GetStartedPage() {
   const router = useRouter();
@@ -94,9 +95,18 @@ export default function GetStartedPage() {
         updatedAt: new Date().toISOString(),
       };
       // Save profile with consistent key 'current_profile' for easy retrieval across all features
-      const database = await setItem(STORES.PROFILES, 'current_profile', profileData, encryptionKey);
+      // setItem now returns the assigned ID
+      const profileId = await setItem(STORES.PROFILES, 'current_profile', profileData, encryptionKey);
+
+      // Persist the profile ID to localStorage for quick future access
+      if (profileId) {
+        setCurrentProfileId(profileId);
+      } else {
+        console.warn('Profile saved but ID not returned - using fallback');
+      }
+
       const reportData = {
-        profileId: 1,
+        profileId: profileId || 1,
         type: 'birth-chart',
         title: 'Birth Chart',
         data: result.data,
