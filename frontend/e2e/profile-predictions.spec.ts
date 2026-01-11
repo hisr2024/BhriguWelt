@@ -195,3 +195,108 @@ test('uses cached bhrigu predictions when API is unavailable', async ({ page }) 
   await page.reload();
   await expect(page.getByText('Loaded from cache')).toBeVisible();
 });
+
+test('handles legacy-shaped profile records with storage fallback', async ({ page }) => {
+  await setupPasscode(page);
+
+  // Seed a legacy-shaped profile record (simulates older client data)
+  await seedProfileRecord(page, {
+    id: 10,
+    key: 'current_profile',
+    value: {
+      ...testProfile,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    encrypted: false,
+  });
+
+  // Mock API to ensure page renders with profile
+  await page.route('**/api/bhrigu-predictions/**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(mockBhriguPredictionResponse),
+    })
+  );
+
+  // Visit horoscope page - should find profile via fallback cursor
+  await page.goto('/horoscope');
+
+  // Should not show "Please complete your profile first"
+  await expect(page.getByText('Please complete your profile first')).not.toBeVisible();
+
+  // Should show prediction content
+  await expect(page.getByText('Your Predictions')).toBeVisible();
+});
+
+test('profile creation flow sets localStorage.current_profile_id', async ({ page }) => {
+  await page.route('**/api/astrology/birth-chart', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(mockBirthChartResponse),
+    })
+  );
+
+  await setupPasscode(page);
+  await submitProfile(page);
+
+  // Check that localStorage.current_profile_id is set
+  const profileId = await page.evaluate(() => {
+    return window.localStorage.getItem('current_profile_id');
+  });
+
+  expect(profileId).not.toBeNull();
+  expect(profileId).toBeTruthy();
+
+  // Verify profile can be loaded on another page
+  await page.route('**/api/bhrigu-predictions/**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(mockBhriguPredictionResponse),
+    })
+  );
+
+  await page.goto('/horoscope');
+  await expect(page.getByText('Your Predictions')).toBeVisible();
+});
+
+test('loads profile by ID when localStorage.current_profile_id is set', async ({ page }) => {
+  await setupPasscode(page);
+
+  // Seed profile with specific ID
+  const profileId = 42;
+  await seedProfileRecord(page, {
+    id: profileId,
+    key: 'test_profile',
+    value: {
+      ...testProfile,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    encrypted: false,
+  });
+
+  // Set localStorage to point to this profile
+  await page.evaluate((id) => {
+    window.localStorage.setItem('current_profile_id', String(id));
+  }, profileId);
+
+  // Mock API
+  await page.route('**/api/bhrigu-predictions/**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(mockBhriguPredictionResponse),
+    })
+  );
+
+  // Visit page - should load profile by ID
+  await page.goto('/daily-insights');
+
+  // Should render content
+  await expect(page.getByText('Today\'s Forecast')).toBeVisible();
+  await expect(page.getByText('Please complete your profile first')).not.toBeVisible();
+});
