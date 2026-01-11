@@ -7,13 +7,13 @@
 import type { ChartData, PredictionResult } from '@/lib/api/predictions';
 
 // Import all prediction engines
-import { generateKarmicJourneyPredictions } from './karmicJourneyEngine';
-import { generatePastLivesPredictions } from './pastLivesEngine';
-import { generateFutureLivesPredictions } from './futureLivesEngine';
-import { generatePresentLifePredictions } from './presentLifeEngine';
-import { generateLifeEventsPredictions } from './lifeEventsEngine';
-import { generateRelationshipsPredictions } from './relationshipsEngine';
-import { generateRemediesPredictions } from './remediesEngine';
+import { generateKarmicJourneyPrediction } from './karmicJourneyEngine';
+import { generatePastLivesPrediction } from './pastLivesEngine';
+import { generateFutureLivesPrediction } from './futureLivesEngine';
+import { generatePresentLifePrediction } from './presentLifeEngine';
+import { generateLifeEventsPrediction } from './lifeEventsEngine';
+import { generateRelationshipsPrediction } from './relationshipsEngine';
+import { generateRemediesPrediction } from './remediesEngine';
 import { generateGeneralPredictions } from './generalPredictionsEngine';
 
 export interface ComprehensivePredictions {
@@ -69,6 +69,12 @@ export async function generateComprehensivePredictions(
   console.log('[OfflinePredictionCoordinator] Generating comprehensive predictions...');
 
   try {
+    // Map coordinator mode to engine-specific modes
+    // PastLivesEngine uses 'auto' instead of 'hybrid'
+    const pastLivesMode = opts.mode === 'hybrid' ? 'auto' : opts.mode;
+    // RemediesEngine doesn't support 'hybrid', fallback to 'online'
+    const remediesMode = opts.mode === 'hybrid' ? 'online' : opts.mode;
+
     // Run all engines in parallel for maximum performance
     const [
       karmicJourney,
@@ -80,14 +86,14 @@ export async function generateComprehensivePredictions(
       remedies,
       general,
     ] = await Promise.all([
-      generateKarmicJourneyPredictions(chartData, { mode: opts.mode, useAI: opts.useAI }),
-      generatePastLivesPredictions(chartData, { mode: opts.mode, useAI: opts.useAI }),
-      generateFutureLivesPredictions(chartData, { mode: opts.mode, useAI: opts.useAI }),
-      generatePresentLifePredictions(chartData, { mode: opts.mode, useAI: opts.useAI }),
-      generateLifeEventsPredictions(chartData, { mode: opts.mode, useAI: opts.useAI }),
-      generateRelationshipsPredictions(chartData, { mode: opts.mode, useAI: opts.useAI }),
-      generateRemediesPredictions(chartData, { mode: opts.mode, useAI: opts.useAI }),
-      generateGeneralPredictions(chartData, { mode: opts.mode, useAI: opts.useAI }),
+      generateKarmicJourneyPrediction(chartData, { mode: opts.mode, useAI: opts.useAI }),
+      generatePastLivesPrediction(chartData, { mode: pastLivesMode as any, aiEnabled: opts.useAI }),
+      generateFutureLivesPrediction(chartData, { mode: opts.mode, useAI: opts.useAI }),
+      generatePresentLifePrediction(chartData, { mode: opts.mode, useAI: opts.useAI }),
+      generateLifeEventsPrediction(chartData, { mode: opts.mode, useAI: opts.useAI }),
+      generateRelationshipsPrediction(chartData, { mode: opts.mode, useAI: opts.useAI }),
+      generateRemediesPrediction(chartData, { mode: remediesMode as any, useAI: opts.useAI }),
+      generateGeneralPredictions(chartData, { locale: opts.language }),
     ]);
 
     // Generate horoscope predictions
@@ -136,8 +142,7 @@ function generateHoroscopePredictions(
   lifeEvents: PredictionResult
 ): ComprehensivePredictions['horoscope'] {
   // Extract current dasha information
-  const currentDasha = chartData.vimshottari_dasha?.current_dasha || {};
-  const dashaPlanet = currentDasha.maha_dasha || 'Unknown';
+  const dashaPlanet = chartData.dasha_period?.maha_dasha || 'Unknown';
 
   // Get Moon sign and Nakshatra for daily predictions
   const moonSign = chartData.moon_sign || 'Unknown';
@@ -250,16 +255,16 @@ function generateAnalytics(
   const opportunities: string[] = [];
 
   // Analyze planetary strengths
-  const planets = chartData.planets || [];
-  planets.forEach((planet: any) => {
-    if (planet.is_exalted) {
-      strengths.push(`${planet.name} in exaltation brings exceptional ${getPlanetTheme(planet.name)}`);
+  const planets = chartData.planets || {};
+  Object.entries(planets).forEach(([name, position]: [string, any]) => {
+    if (position.is_exalted) {
+      strengths.push(`${name} in exaltation brings exceptional ${getPlanetTheme(name)}`);
     }
-    if (planet.is_debilitated) {
-      challenges.push(`${planet.name} debilitated requires attention in ${getPlanetTheme(planet.name)}`);
+    if (position.is_debilitated) {
+      challenges.push(`${name} debilitated requires attention in ${getPlanetTheme(name)}`);
     }
-    if (planet.is_retrograde) {
-      opportunities.push(`${planet.name} retrograde offers deep introspection in ${getPlanetTheme(planet.name)}`);
+    if (position.is_retrograde) {
+      opportunities.push(`${name} retrograde offers deep introspection in ${getPlanetTheme(name)}`);
     }
   });
 
@@ -306,14 +311,14 @@ function calculateKarmaScore(chartData: ChartData, predictions: any): number {
   }
 
   // Analyze Saturn (karma)
-  const saturn = chartData.planets?.find((p: any) => p.name === 'Saturn');
+  const saturn: any = chartData.planets?.Saturn;
   if (saturn) {
     if (saturn.house === 10 || saturn.house === 1) score += 15;
     if (saturn.is_retrograde) score -= 10;
   }
 
   // Analyze Rahu-Ketu axis
-  const rahu = chartData.planets?.find((p: any) => p.name === 'Rahu');
+  const rahu: any = chartData.planets?.Rahu;
   if (rahu && (rahu.house === 6 || rahu.house === 8 || rahu.house === 12)) {
     score += 10;
   }
@@ -330,14 +335,14 @@ function calculateDharmaScore(chartData: ChartData, predictions: any): number {
   }
 
   // Analyze Jupiter (dharma)
-  const jupiter = chartData.planets?.find((p: any) => p.name === 'Jupiter');
+  const jupiter: any = chartData.planets?.Jupiter;
   if (jupiter) {
     if (jupiter.is_exalted) score += 20;
     if (jupiter.house === 9 || jupiter.house === 1) score += 15;
   }
 
   // Analyze Sun (soul purpose)
-  const sun = chartData.planets?.find((p: any) => p.name === 'Sun');
+  const sun: any = chartData.planets?.Sun;
   if (sun && (sun.house === 10 || sun.house === 9)) {
     score += 10;
   }
@@ -354,14 +359,14 @@ function calculateMokshaScore(chartData: ChartData, predictions: any): number {
   }
 
   // Analyze Ketu (spiritual liberation)
-  const ketu = chartData.planets?.find((p: any) => p.name === 'Ketu');
+  const ketu: any = chartData.planets?.Ketu;
   if (ketu) {
     if (ketu.house === 12 || ketu.house === 9) score += 20;
     if (ketu.house === 8) score += 15;
   }
 
   // Analyze Moon (spiritual awareness)
-  const moon = chartData.planets?.find((p: any) => p.name === 'Moon');
+  const moon: any = chartData.planets?.Moon;
   if (moon && (moon.house === 12 || moon.house === 9)) {
     score += 10;
   }
@@ -398,13 +403,20 @@ export function exportPredictions(predictions: ComprehensivePredictions): string
  * Get prediction summary for quick overview
  */
 export function getPredictionSummary(predictions: ComprehensivePredictions): string {
+  // Extract first subcategory content as summary (truncated)
+  const getFirstContent = (result: PredictionResult) => {
+    const firstKey = Object.keys(result.subcategories)[0];
+    const content = firstKey ? result.subcategories[firstKey].content : result.title;
+    return content.substring(0, 150);
+  };
+
   return `
 === Bhrigu Welt Comprehensive Predictions ===
 
-KARMIC JOURNEY: ${predictions.karmicJourney.summary}
-PRESENT LIFE: ${predictions.presentLife.summary}
-LIFE EVENTS: ${predictions.lifeEvents.summary}
-RELATIONSHIPS: ${predictions.relationships.summary}
+KARMIC JOURNEY: ${getFirstContent(predictions.karmicJourney)}
+PRESENT LIFE: ${getFirstContent(predictions.presentLife)}
+LIFE EVENTS: ${getFirstContent(predictions.lifeEvents)}
+RELATIONSHIPS: ${getFirstContent(predictions.relationships)}
 
 ANALYTICS:
 - Karma Score: ${predictions.analytics.karmaScore}/100
