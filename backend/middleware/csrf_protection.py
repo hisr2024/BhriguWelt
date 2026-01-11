@@ -6,7 +6,6 @@ Implements double-submit cookie pattern for stateless API security
 import os
 from functools import wraps
 from flask import request, jsonify
-from werkzeug.security import safe_str_cmp
 import secrets
 from utils.logger import setup_logger
 
