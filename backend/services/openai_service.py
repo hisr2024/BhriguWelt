@@ -198,11 +198,10 @@ class OpenAIService:
             if return_metadata:
                 return {
                     'text': fallback,
-                    'partial': False,
                     'metadata': {
-                        'ai_model': self.get_selected_model(),
+                        'ai_model': self.get_selected_model() or 'offline',
                         'fallback': True,
-                        'reason': 'api_disabled'
+                        'reason': 'api_error'
                     }
                 }
             return fallback
@@ -298,9 +297,8 @@ Always provide detailed, specific predictions with timing when possible.''' + co
             if return_metadata:
                 return {
                     'text': fallback,
-                    'partial': False,
                     'metadata': {
-                        'ai_model': self.get_selected_model(),
+                        'ai_model': self.get_selected_model() or 'offline',
                         'fallback': True,
                         'reason': error_reason
                     }
@@ -323,9 +321,8 @@ Always provide detailed, specific predictions with timing when possible.''' + co
             if return_metadata:
                 return {
                     'text': fallback,
-                    'partial': False,
                     'metadata': {
-                        'ai_model': self.get_selected_model(),
+                        'ai_model': self.get_selected_model() or 'offline',
                         'fallback': True,
                         'reason': 'api_error'
                     }
@@ -537,14 +534,15 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
                 }
             ],
             'temperature': float(os.getenv('OPENAI_TEMPERATURE', '0.7')),
-            'max_tokens': int(os.getenv('OPENAI_MAX_TOKENS', '4000'))  # Increased for comprehensive predictions
+            'max_tokens': int(os.getenv('OPENAI_MAX_TOKENS', '512'))
         }
 
         # ==================== QUOTA AND COST CHECKS ====================
 
         # Estimate tokens for quota check
-        prompt_tokens_estimated = estimate_tokens(prompt) + estimate_tokens(system_content)
-        response_tokens_estimated = payload['max_tokens']
+        prompt_text = f"{system_content}\n\n{prompt}"
+        prompt_tokens_estimated = estimate_tokens(prompt_text)
+        response_tokens_estimated = int(os.getenv('OPENAI_MAX_TOKENS', '512'))
         total_tokens_estimated = prompt_tokens_estimated + response_tokens_estimated
 
         # Check cost limit BEFORE checking quota (fail fast)
