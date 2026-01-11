@@ -28,6 +28,9 @@ export interface NormalizedPrediction {
   };
 }
 
+// Type alias for timeframe-specific string keys
+type TimeframeKey = 'daily' | 'weekly' | 'monthly' | 'yearly';
+
 export interface RawPredictionResponse {
   success?: boolean;
   prediction?: any;
@@ -145,7 +148,7 @@ function normalizeFromSections(
   for (const [targetKey, sourceKeys] of Object.entries(keyMappings)) {
     for (const sourceKey of sourceKeys) {
       if (sections[sourceKey]) {
-        normalized[targetKey as keyof NormalizedPrediction] = sections[sourceKey];
+        normalized[targetKey as TimeframeKey] = sections[sourceKey];
         break;
       }
     }
@@ -238,8 +241,8 @@ function extractSectionsByMarkers(text: string): Partial<NormalizedPrediction> {
     ],
   };
 
-  for (const [key, patterns] of Object.entries(patterns)) {
-    for (const pattern of patterns) {
+  for (const [key, regexPatterns] of Object.entries(patterns)) {
+    for (const pattern of regexPatterns) {
       const match = text.match(pattern);
       if (match) {
         // Extract content after the marker until next section or end
@@ -250,7 +253,7 @@ function extractSectionsByMarkers(text: string): Partial<NormalizedPrediction> {
         const nextSectionMatch = remainingText.match(/\n##\s/);
         const endIndex = nextSectionMatch ? nextSectionMatch.index! : remainingText.length;
 
-        sections[key as keyof NormalizedPrediction] = remainingText
+        sections[key as TimeframeKey] = remainingText
           .slice(0, endIndex)
           .trim();
         break;
