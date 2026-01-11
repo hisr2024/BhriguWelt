@@ -16,6 +16,15 @@ import requests
 from utils.logger import setup_logger, log_exception
 
 from services.sentry_service import capture_message
+from services.ai_quota import (
+    estimate_tokens,
+    estimate_cost,
+    check_daily_quota_and_reserve,
+    update_usage_after_call,
+    sanitize_log,
+    QuotaExceededError,
+    CostLimitExceededError
+)
 
 # Import corpus loader for RAG-style context injection
 CORPUS_AVAILABLE = importlib.util.find_spec("services.corpus_loader") is not None
@@ -168,7 +177,8 @@ class OpenAIService:
         self,
         prompt: str,
         context: Dict[str, Any] = None,
-        return_metadata: bool = False
+        return_metadata: bool = False,
+        user_id: Optional[str] = None
     ) -> Union[str, Dict[str, Any]]:
         """
         Generate AI-powered predictions using OpenAI with authentic corpus integration
@@ -176,9 +186,11 @@ class OpenAIService:
         Args:
             prompt: The prediction prompt
             context: Additional context for the prediction
+            return_metadata: Whether to return metadata with the response
+            user_id: User ID for quota tracking (optional, defaults to 'anonymous')
 
         Returns:
-            Generated prediction text
+            Generated prediction text or dict with metadata
         """
         # Use fallback if AI is not enabled
         if not self.enabled:
@@ -187,7 +199,11 @@ class OpenAIService:
                 return {
                     'text': fallback,
                     'partial': False,
-                    'metadata': {'ai_model': self.get_selected_model()}
+                    'metadata': {
+                        'ai_model': self.get_selected_model(),
+                        'fallback': True,
+                        'reason': 'api_disabled'
+                    }
                 }
             return fallback
 
@@ -214,6 +230,7 @@ class OpenAIService:
                         "proper citations.\n"
                     )
 
+            # Pass user_id through to chunking
             # Prepare the request payload with enhanced settings for comprehensive predictions
             system_content = '''You are a master Vedic astrologer deeply versed in the ancient texts of Bhrigu Samhita and Nadi Jyotisha.
 
@@ -257,15 +274,38 @@ Always provide detailed, specific predictions with timing when possible.''' + co
                     if normalized_raw_context:
                         system_content += f"\n\nBirth Chart Context (raw JSON): {normalized_raw_context}"
 
-            prediction, partial = self._generate_with_chunking(prompt, system_content)
+            prediction, partial = self._generate_with_chunking(prompt, system_content, user_id)
 
             if return_metadata:
                 return {
                     'text': prediction,
                     'partial': partial,
-                    'metadata': {'ai_model': self.get_selected_model()}
+                    'metadata': {
+                        'ai_model': self.get_selected_model(),
+                        'fallback': False
+                    }
                 }
             return prediction
+
+        except (QuotaExceededError, CostLimitExceededError) as e:
+            # Use fallback when quota or cost limit exceeded
+            error_reason = 'quota' if isinstance(e, QuotaExceededError) else 'cost'
+            logger.warning(
+                f"{error_reason.capitalize()} limit reached, using fallback: {sanitize_log(str(e)[:200])}"
+            )
+
+            fallback = self._fallback_prediction(prompt, context)
+            if return_metadata:
+                return {
+                    'text': fallback,
+                    'partial': False,
+                    'metadata': {
+                        'ai_model': self.get_selected_model(),
+                        'fallback': True,
+                        'reason': error_reason
+                    }
+                }
+            return fallback
 
         except requests.exceptions.RequestException as e:
             # Log the error for debugging
@@ -276,7 +316,7 @@ Always provide detailed, specific predictions with timing when possible.''' + co
             )
             logger.error(
                 "OpenAI API call failed",
-                extra={"error_code": "OPENAI_API_REQUEST_FAILED", "error": str(e)},
+                extra={"error_code": "OPENAI_API_REQUEST_FAILED", "error": sanitize_log(str(e))},
             )
             # Fallback to traditional analysis if API fails
             fallback = self._fallback_prediction(prompt, context)
@@ -284,22 +324,26 @@ Always provide detailed, specific predictions with timing when possible.''' + co
                 return {
                     'text': fallback,
                     'partial': False,
-                    'metadata': {'ai_model': self.get_selected_model()}
+                    'metadata': {
+                        'ai_model': self.get_selected_model(),
+                        'fallback': True,
+                        'reason': 'api_error'
+                    }
                 }
             return fallback
 
-    def _generate_with_chunking(self, prompt: str, system_content: str) -> Tuple[str, bool]:
+    def _generate_with_chunking(self, prompt: str, system_content: str, user_id: Optional[str] = None) -> Tuple[str, bool]:
         max_prompt_tokens = int(os.getenv('OPENAI_PROMPT_TOKEN_BUDGET', '8000'))
         system_tokens = self._estimate_tokens(system_content)
         prompt_tokens = self._estimate_tokens(prompt)
 
         if system_tokens + prompt_tokens <= max_prompt_tokens:
-            prediction, partial = self._request_completion(prompt, system_content)
+            prediction, partial = self._request_completion(prompt, system_content, user_id)
             return prediction, partial
 
         preamble, sections = self._split_prompt_sections(prompt)
         if not sections:
-            prediction, partial = self._request_completion(prompt, system_content)
+            prediction, partial = self._request_completion(prompt, system_content, user_id)
             return prediction, partial
 
         chunk_prompts = []
@@ -324,7 +368,7 @@ Always provide detailed, specific predictions with timing when possible.''' + co
         responses = []
         partial = False
         for chunk_prompt in chunk_prompts:
-            chunk_response, chunk_partial = self._request_completion(chunk_prompt, system_content)
+            chunk_response, chunk_partial = self._request_completion(chunk_prompt, system_content, user_id)
             responses.append(chunk_response)
             partial = partial or chunk_partial
 
@@ -446,7 +490,18 @@ Always provide detailed, specific predictions with timing when possible.''' + co
 
         return content
 
-    def _request_completion(self, prompt: str, system_content: str) -> Tuple[str, bool]:
+    def _request_completion(self, prompt: str, system_content: str, user_id: Optional[str] = None) -> Tuple[str, bool]:
+        """
+        Request completion from OpenAI with quota and cost management.
+
+        Args:
+            prompt: User prompt
+            system_content: System context
+            user_id: Optional user ID for quota tracking (defaults to 'anonymous')
+
+        Returns:
+            Tuple of (content: str, partial: bool)
+        """
         # Add JSON format instruction to system content if not already present
         use_json_format = os.getenv('OPENAI_USE_JSON_FORMAT', 'true').lower() == 'true'
 
@@ -485,22 +540,106 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
             'max_tokens': int(os.getenv('OPENAI_MAX_TOKENS', '4000'))  # Increased for comprehensive predictions
         }
 
+        # ==================== QUOTA AND COST CHECKS ====================
+
+        # Estimate tokens for quota check
+        prompt_tokens_estimated = estimate_tokens(prompt) + estimate_tokens(system_content)
+        response_tokens_estimated = payload['max_tokens']
+        total_tokens_estimated = prompt_tokens_estimated + response_tokens_estimated
+
+        # Check cost limit BEFORE checking quota (fail fast)
+        per_request_cost_limit = float(os.getenv('PER_REQUEST_COST_LIMIT', '1.0'))  # Default: $1.00
+        estimated_cost = estimate_cost(prompt_tokens_estimated, response_tokens_estimated)
+
+        if estimated_cost > per_request_cost_limit:
+            logger.warning(
+                f"Cost limit exceeded: estimated=${estimated_cost:.4f}, limit=${per_request_cost_limit:.4f}"
+            )
+            raise CostLimitExceededError(
+                f"Estimated cost (${estimated_cost:.4f}) exceeds per-request limit (${per_request_cost_limit:.4f})"
+            )
+
+        # Check daily quota and reserve tokens
+        user_id = user_id or 'anonymous'
+        try:
+            allowed, remaining = check_daily_quota_and_reserve(user_id, total_tokens_estimated)
+            logger.info(
+                f"Quota check passed for user {sanitize_log(user_id)}: "
+                f"estimated_tokens={total_tokens_estimated}, remaining={remaining}"
+            )
+        except QuotaExceededError as e:
+            logger.warning(f"Quota exceeded for user {sanitize_log(user_id)}: {str(e)}")
+            raise  # Re-raise to be caught by caller
+
+        # ==================== END QUOTA CHECKS ====================
+
         # Try to use JSON mode if model supports it (GPT-4 Turbo and later)
         model = payload['model']
         if use_json_format and ('gpt-4-turbo' in model.lower() or 'gpt-4o' in model.lower()):
             payload['response_format'] = {'type': 'json_object'}
 
-        response = self._post_with_model_fallbacks(payload)
-        result = response.json()
-        choice = result['choices'][0]
-        content = choice['message']['content']
-        finish_reason = choice.get('finish_reason')
+        try:
+            response = self._post_with_model_fallbacks(payload)
+            result = response.json()
 
-        # Try to parse as JSON and validate structure
-        if use_json_format:
-            content = self._parse_json_response(content)
+            # ==================== UPDATE ACTUAL USAGE ====================
+            # Extract actual token usage from OpenAI response
+            usage = result.get('usage', {})
+            if usage:
+                actual_total_tokens = usage.get('total_tokens', 0)
+                actual_prompt_tokens = usage.get('prompt_tokens', 0)
+                actual_completion_tokens = usage.get('completion_tokens', 0)
 
-        return content, finish_reason == 'length'
+                # Calculate actual cost
+                actual_cost = estimate_cost(actual_prompt_tokens, actual_completion_tokens)
+
+                # Log actual vs estimated
+                logger.info(
+                    f"OpenAI usage: prompt={actual_prompt_tokens}, "
+                    f"completion={actual_completion_tokens}, total={actual_total_tokens}, "
+                    f"cost=${actual_cost:.4f} (estimated=${estimated_cost:.4f})"
+                )
+
+                # Update usage counter with actual tokens
+                # Note: We already reserved estimated tokens, so we add actual tokens
+                # This may slightly over-count but ensures we never under-count
+                update_usage_after_call(user_id, actual_total_tokens)
+            else:
+                logger.warning("No usage data in OpenAI response - using estimates")
+                update_usage_after_call(user_id, total_tokens_estimated)
+            # ==================== END USAGE UPDATE ====================
+
+            choice = result['choices'][0]
+            content = choice['message']['content']
+            finish_reason = choice.get('finish_reason')
+
+            # Try to parse as JSON and validate structure
+            if use_json_format:
+                content = self._parse_json_response(content)
+
+            return content, finish_reason == 'length'
+
+        except requests.exceptions.HTTPError as e:
+            # Handle 429 (rate limit) and insufficient_quota errors
+            if e.response is not None:
+                status_code = e.response.status_code
+                try:
+                    error_body = e.response.json()
+                    error_preview = sanitize_log(str(error_body))
+                except:
+                    error_preview = sanitize_log(e.response.text)
+
+                logger.error(
+                    f"OpenAI API error: status={status_code}, "
+                    f"body_preview={error_preview[:256]}"
+                )
+
+                # If it's a quota/rate limit error, raise specific exception
+                if status_code == 429 or 'insufficient_quota' in error_preview.lower():
+                    raise QuotaExceededError(
+                        f"OpenAI API quota/rate limit error: {error_preview[:200]}"
+                    )
+            raise
 
     def _post_with_retry(self, payload: Dict[str, Any]) -> requests.Response:
         max_retries = int(os.getenv('OPENAI_MAX_RETRIES', '3'))
@@ -594,7 +733,7 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
         preamble = "\n".join(preamble_lines).strip()
         sections = [section for section in sections if section]
         return preamble, sections
-    def generate_karmic_journey(self, birth_data: Dict[str, Any]) -> Dict[str, Any]:
+    def generate_karmic_journey(self, birth_data: Dict[str, Any], user_id: Optional[str] = None) -> Dict[str, Any]:
         """Generate comprehensive karmic journey analysis"""
         prompt = f"""
         Generate a comprehensive karmic journey analysis for:
@@ -613,7 +752,7 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
         6. Soul group connections
         """
 
-        prediction_result = self.generate_prediction(prompt, birth_data, return_metadata=True)
+        prediction_result = self.generate_prediction(prompt, birth_data, return_metadata=True, user_id=user_id)
         prediction = prediction_result['text']
 
         return {
@@ -625,7 +764,7 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
             'timestamp': self._get_timestamp()
         }
 
-    def generate_past_lives_analysis(self, birth_data: Dict[str, Any]) -> Dict[str, Any]:
+    def generate_past_lives_analysis(self, birth_data: Dict[str, Any], user_id: Optional[str] = None) -> Dict[str, Any]:
         """Generate past lives analysis with authentic corpus integration"""
         # Get relevant past life patterns from corpus
         corpus_context = ""
@@ -654,7 +793,7 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
         **Reference the authentic corpus patterns above and cite specific sutras/folios.**
         """
 
-        analysis_result = self.generate_prediction(prompt, birth_data, return_metadata=True)
+        analysis_result = self.generate_prediction(prompt, birth_data, return_metadata=True, user_id=user_id)
         analysis = analysis_result['text']
 
         return {
