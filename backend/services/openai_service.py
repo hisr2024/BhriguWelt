@@ -38,13 +38,32 @@ logger = setup_logger(__name__)
 class OpenAIService:
     """Service for interacting with OpenAI API"""
 
+    def _get_int_env(self, key: str, default: int) -> int:
+        raw_value = os.getenv(key)
+        if raw_value is None or raw_value == "":
+            return default
+        cleaned = raw_value.split("#", 1)[0].strip()
+        if cleaned == "":
+            return default
+        try:
+            return int(cleaned)
+        except ValueError:
+            logger.warning(
+                "Invalid integer for %s: %r. Falling back to default %s.",
+                key,
+                raw_value,
+                default,
+            )
+            return default
+
     def __init__(self):
         self.api_key = os.getenv('OPENAI_API_KEY')
         self.base_urls = self._load_base_urls()
         self.base_url = self.base_urls[0]
-        self.prompt_token_limit = int(os.getenv('PROMPT_TOKEN_LIMIT', '6000'))
-        self.response_token_limit = int(
-            os.getenv('RESPONSE_TOKEN_LIMIT', os.getenv('OPENAI_MAX_TOKENS', '4000'))
+        self.prompt_token_limit = self._get_int_env('PROMPT_TOKEN_LIMIT', 6000)
+        self.response_token_limit = self._get_int_env(
+            'RESPONSE_TOKEN_LIMIT',
+            self._get_int_env('OPENAI_MAX_TOKENS', 4000),
         )
         self.enabled = bool(self.api_key)
         self.last_error: Optional[Dict[str, Any]] = None
@@ -330,7 +349,7 @@ Always provide detailed, specific predictions with timing when possible.''' + co
             return fallback
 
     def _generate_with_chunking(self, prompt: str, system_content: str, user_id: Optional[str] = None) -> Tuple[str, bool]:
-        max_prompt_tokens = int(os.getenv('OPENAI_PROMPT_TOKEN_BUDGET', '8000'))
+        max_prompt_tokens = self._get_int_env('OPENAI_PROMPT_TOKEN_BUDGET', 8000)
         system_tokens = self._estimate_tokens(system_content)
         prompt_tokens = self._estimate_tokens(prompt)
 
@@ -534,7 +553,7 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
                 }
             ],
             'temperature': float(os.getenv('OPENAI_TEMPERATURE', '0.7')),
-            'max_tokens': int(os.getenv('OPENAI_MAX_TOKENS', '512'))
+            'max_tokens': self._get_int_env('OPENAI_MAX_TOKENS', 512)
         }
 
         # ==================== QUOTA AND COST CHECKS ====================
@@ -542,7 +561,7 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
         # Estimate tokens for quota check
         prompt_text = f"{system_content}\n\n{prompt}"
         prompt_tokens_estimated = estimate_tokens(prompt_text)
-        response_tokens_estimated = int(os.getenv('OPENAI_MAX_TOKENS', '512'))
+        response_tokens_estimated = self._get_int_env('OPENAI_MAX_TOKENS', 512)
         total_tokens_estimated = prompt_tokens_estimated + response_tokens_estimated
 
         # Check cost limit BEFORE checking quota (fail fast)
@@ -640,9 +659,9 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
             raise
 
     def _post_with_retry(self, payload: Dict[str, Any]) -> requests.Response:
-        max_retries = int(os.getenv('OPENAI_MAX_RETRIES', '3'))
+        max_retries = self._get_int_env('OPENAI_MAX_RETRIES', 3)
         backoff_base = float(os.getenv('OPENAI_BACKOFF_BASE', '1'))
-        timeout = int(os.getenv('OPENAI_TIMEOUT', '90'))
+        timeout = self._get_int_env('OPENAI_TIMEOUT', 90)
 
         for attempt in range(max_retries + 1):
             try:
