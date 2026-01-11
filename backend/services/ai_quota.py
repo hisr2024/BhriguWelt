@@ -52,8 +52,8 @@ def estimate_tokens(text: str) -> int:
         encoding = tiktoken.encoding_for_model("gpt-4")
         return len(encoding.encode(text))
     """
-    if not text:
-        return 0
+    if text is None:
+        text = ""
     return max(1, len(text) // 4)
 
 
@@ -208,41 +208,39 @@ def check_daily_quota_and_reserve(user_id: str, tokens_needed: int) -> Tuple[boo
     quota_key = _get_quota_key(user_id)
 
     try:
-        # Use Redis pipeline for atomic operations
-        pipe = client.pipeline()
+        script = """
+        local key = KEYS[1]
+        local limit = tonumber(ARGV[1])
+        local incr = tonumber(ARGV[2])
+        local current = tonumber(redis.call('GET', key) or '0')
+        if (current + incr) > limit then
+            return {0, limit - current}
+        end
+        local new_total = redis.call('INCRBY', key, incr)
+        redis.call('EXPIRE', key, 172800)
+        return {1, limit - new_total}
+        """
 
-        # Get current usage
-        current_usage = client.get(quota_key)
-        current_usage = int(current_usage) if current_usage else 0
+        allowed, remaining = client.eval(script, 1, quota_key, daily_limit, tokens_needed)
+        allowed = bool(allowed)
 
-        # Calculate remaining quota
-        remaining = daily_limit - current_usage
-
-        # Check if sufficient quota
-        if remaining < tokens_needed:
+        if not allowed:
             logger.warning(
                 f"Quota exceeded for user {sanitize_log(user_id)}: "
                 f"needed={tokens_needed}, remaining={remaining}, limit={daily_limit}"
             )
+            current_usage = daily_limit - int(remaining)
             raise QuotaExceededError(
                 f"Daily token quota exceeded. Used: {current_usage}/{daily_limit} tokens. "
                 f"Needed: {tokens_needed}, Available: {remaining}"
             )
 
-        # Atomically increment usage and reserve tokens
-        pipe.incrby(quota_key, tokens_needed)
-        # Set expiry to 48 hours (gives buffer beyond day boundary)
-        pipe.expire(quota_key, 48 * 60 * 60)
-        pipe.execute()
-
-        new_remaining = remaining - tokens_needed
-
         logger.info(
             f"Quota reserved for user {sanitize_log(user_id)}: "
-            f"reserved={tokens_needed}, remaining={new_remaining}/{daily_limit}"
+            f"reserved={tokens_needed}, remaining={remaining}/{daily_limit}"
         )
 
-        return True, new_remaining
+        return True, int(remaining)
 
     except QuotaExceededError:
         # Re-raise quota errors
@@ -382,7 +380,7 @@ class TestTokenEstimation:
     def test_estimate_tokens_basic(self):
         """Test basic token estimation"""
         # Empty string
-        assert estimate_tokens("") == 0
+        assert estimate_tokens("") == 1
 
         # Short text
         assert estimate_tokens("Hello world") == max(1, len("Hello world") // 4)
@@ -399,7 +397,7 @@ class TestTokenEstimation:
 
     def test_estimate_tokens_none(self):
         """Test handling of None input"""
-        assert estimate_tokens(None) == 0
+        assert estimate_tokens(None) == 1
 
 
 class TestCostEstimation:
@@ -484,10 +482,7 @@ class TestQuotaManagement:
         """Test quota check with sufficient quota"""
         # Mock Redis client
         mock_client = MagicMock()
-        mock_client.get.return_value = '10000'  # 10K tokens already used
-        mock_client.pipeline.return_value = mock_client
-        mock_client.__enter__ = MagicMock(return_value=mock_client)
-        mock_client.__exit__ = MagicMock(return_value=False)
+        mock_client.eval.return_value = [1, 85000]
         mock_redis.return_value = mock_client
 
         with patch.dict(os.environ, {'USER_DAILY_TOKEN_LIMIT': '100000'}):
@@ -495,14 +490,14 @@ class TestQuotaManagement:
 
             assert allowed is True
             assert remaining == 85000  # 100K - 10K - 5K
-            mock_client.incrby.assert_called_once()
+            mock_client.eval.assert_called_once()
 
     @patch('backend.services.ai_quota._get_redis_client')
     def test_check_quota_exceeded(self, mock_redis):
         """Test quota check when quota exceeded"""
         # Mock Redis client with high usage
         mock_client = MagicMock()
-        mock_client.get.return_value = '95000'  # 95K tokens already used
+        mock_client.eval.return_value = [0, 5000]
         mock_redis.return_value = mock_client
 
         with patch.dict(os.environ, {'USER_DAILY_TOKEN_LIMIT': '100000'}):
@@ -514,10 +509,7 @@ class TestQuotaManagement:
         """Test quota check for first use of the day"""
         # Mock Redis client with no previous usage
         mock_client = MagicMock()
-        mock_client.get.return_value = None
-        mock_client.pipeline.return_value = mock_client
-        mock_client.__enter__ = MagicMock(return_value=mock_client)
-        mock_client.__exit__ = MagicMock(return_value=False)
+        mock_client.eval.return_value = [1, 99000]
         mock_redis.return_value = mock_client
 
         with patch.dict(os.environ, {'USER_DAILY_TOKEN_LIMIT': '100000'}):

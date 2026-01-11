@@ -95,7 +95,7 @@ export default function HoroscopePage() {
           },
         ]);
       } catch (apiError) {
-        console.error('API error, using offline fallback:', apiError);
+        console.warn('API error, using offline fallback data for horoscope.', apiError);
         setPredictions(getOfflinePredictions());
       }
     } catch (error) {

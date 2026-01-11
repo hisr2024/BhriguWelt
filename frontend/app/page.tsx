@@ -16,6 +16,7 @@ import GenZButton from './components/GenZButton';
 import GenZCard, { GenZCardGradient } from './components/GenZCard';
 import GenZBadge, { StatusBadge } from './components/GenZBadge';
 import BottomNav from './components/BottomNav';
+import HoroscopeBricks from './components/HoroscopeBricks';
 import OnboardingTutorial from '../components/OnboardingTutorial';
 import useFeatureFlags from '../hooks/useFeatureFlags';
 
@@ -552,6 +553,26 @@ export default function HomePage() {
               ))}
             </div>
           </div>
+      </section>
+
+      {/* Horoscope Bricks */}
+      <section className="genz-section px-4 landscape:px-6">
+        <div className="genz-container">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            className="text-center mb-16"
+          >
+            <GenZBadge variant="neon" size="lg" className="mb-4">
+              🌙 Horoscope
+            </GenZBadge>
+            <h2 className="genz-heading mb-4">Pick Your Cosmic Window</h2>
+            <p className="text-xl text-white/80 max-w-3xl mx-auto">
+              Tap a timeframe to explore tailored insights in seconds.
+            </p>
+          </motion.div>
+          <HoroscopeBricks />
+        </div>
       </section>
 
       {/* How It Works */}
