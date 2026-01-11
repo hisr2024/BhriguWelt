@@ -38,6 +38,20 @@ export default function BirthChartVisualization({
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
 
+  // Defensive normalization for planets data - prevents crashes from various data shapes
+  const normalizePlanets = (data: any): Planet[] => {
+    const planetsRaw = data?.planets ?? data?.chart?.planets ?? data?.planets_data ?? [];
+    const planetsArray = Array.isArray(planetsRaw)
+      ? planetsRaw
+      : (planetsRaw && typeof planetsRaw === 'object' ? Object.values(planetsRaw) : []);
+    return planetsArray.filter((p: any) => p && typeof p === 'object' && p.name);
+  };
+
+  const normalizedChartData = {
+    ...chartData,
+    planets: normalizePlanets(chartData)
+  };
+
   const zodiacSigns = [
     'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
     'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
@@ -245,7 +259,7 @@ export default function BirthChartVisualization({
           ))}
 
           {/* Planets */}
-          {chartData.planets && chartData.planets.map((planet, index) => {
+          {normalizedChartData.planets && normalizedChartData.planets.map((planet, index) => {
             const pos = getPlanetPosition(planet);
             const PlanetIcon = planetIcons[planet.name] || Circle;
 
@@ -318,7 +332,7 @@ export default function BirthChartVisualization({
             fontWeight="bold"
             textAnchor="middle"
           >
-            {chartData.ascendant}
+            {normalizedChartData.ascendant || 'N/A'}
           </text>
           <text
             x={size / 2}
@@ -337,7 +351,7 @@ export default function BirthChartVisualization({
             textAnchor="middle"
             opacity="0.7"
           >
-            {chartData.nakshatra}
+            {normalizedChartData.nakshatra || ''}
           </text>
         </motion.svg>
       </motion.div>
