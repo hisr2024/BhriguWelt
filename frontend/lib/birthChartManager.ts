@@ -51,7 +51,17 @@ export async function createAndSaveBirthChart(
 
   if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
     try {
-      window.localStorage.setItem('current_birth_chart', JSON.stringify(reportData));
+      const sanitizedReportData = {
+        ...reportData,
+        data: {
+          ...reportData.data,
+          dateOfBirth: undefined,
+          timeOfBirth: undefined,
+          latitude: undefined,
+          longitude: undefined,
+        },
+      };
+      window.localStorage.setItem('current_birth_chart', JSON.stringify(sanitizedReportData));
       return { success: true, id: 'local' };
     } catch (error) {
       console.warn('Birth chart localStorage save failed', error);
