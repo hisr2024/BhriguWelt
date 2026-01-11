@@ -100,7 +100,9 @@ export default function GetStartedPage() {
 
       // Persist the profile ID to localStorage for quick future access
       if (profileId) {
-        setCurrentProfileId(profileId);
+        // profileId from IndexedDB will be either number (autoIncrement) or string (manual key)
+        // Type-assert since IDBValidKey is broader but our schema ensures it's string | number
+        setCurrentProfileId(profileId as string | number);
       } else {
         console.warn('Profile saved but ID not returned - using fallback');
       }
