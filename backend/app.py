@@ -374,7 +374,7 @@ try:
         matchmaking_routes
     )
     print("✓ Core route modules imported successfully")
-    
+
     # Import new unified predictions routes
     try:
         from routes import predictions_unified
@@ -382,7 +382,15 @@ try:
     except Exception as e:
         log_exception(logger, e, context="Failed to import unified predictions routes")
         predictions_unified = None
-        
+
+    # Import health monitoring routes
+    try:
+        from routes import health_routes
+        logger.info("✓ Health monitoring routes imported successfully")
+    except Exception as e:
+        log_exception(logger, e, context="Failed to import health routes")
+        health_routes = None
+
 except Exception as e:
     log_exception(logger, e, context="Failed to import routes")
     raise
@@ -399,6 +407,11 @@ app.register_blueprint(matchmaking_routes.bp)
 if predictions_unified:
     app.register_blueprint(predictions_unified.bp)
     logger.info("✓ Unified predictions blueprint registered")
+
+# Register health monitoring blueprint
+if health_routes:
+    app.register_blueprint(health_routes.bp, url_prefix='/api/health')
+    logger.info("✓ Health monitoring blueprint registered")
 
 logger.info("✓ All blueprints registered")
 
