@@ -58,11 +58,11 @@ class AstrologyCalculator:
         self.Nominatim = geopy_geocoders.Nominatim
 
         self.tf = self.TimezoneFinder()
-        self.geolocator = self.Nominatim(user_agent="bhriguwelt")
+        self.geolocator = self.Nominatim(user_agent="bhriguwelt", timeout=10)
         self.MapBox = getattr(geopy_geocoders, "MapBox", None)
         self.mapbox_token = os.getenv("MAPBOX_ACCESS_TOKEN") or os.getenv("MAPBOX_TOKEN")
         self.mapbox_geolocator = (
-            self.MapBox(api_key=self.mapbox_token)
+            self.MapBox(api_key=self.mapbox_token, timeout=10)
             if self.MapBox and self.mapbox_token
             else None
         )
@@ -194,27 +194,18 @@ class AstrologyCalculator:
         }
 
     def _geocode_location(self, place: str) -> Dict[str, float]:
-        """Geocode location to get latitude/longitude"""
+        """Geocode location to get latitude/longitude with retry logic"""
         place_key = place.strip().lower()
         if not place_key:
             return None
         cached = self._get_cached_geocode(place_key)
         if cached:
             return cached
-        try:
-            location = self.geolocator.geocode(place)
-            if location:
-                coords = {
-                    'latitude': location.latitude,
-                    'longitude': location.longitude
-                }
-                self._set_cached_geocode(place_key, coords)
-                return coords
-        except Exception as exc:
-            logger.warning("Nominatim geocode error for place=%s: %s", place, exc)
-        if self.mapbox_geolocator:
+
+        # Try Nominatim with retry logic (max 3 attempts)
+        for attempt in range(3):
             try:
-                location = self.mapbox_geolocator.geocode(place)
+                location = self.geolocator.geocode(place, timeout=10)
                 if location:
                     coords = {
                         'latitude': location.latitude,
@@ -223,7 +214,28 @@ class AstrologyCalculator:
                     self._set_cached_geocode(place_key, coords)
                     return coords
             except Exception as exc:
-                logger.warning("Mapbox geocode error for place=%s: %s", place, exc)
+                if attempt < 2:
+                    logger.debug("Nominatim geocode attempt %d failed for place=%s: %s", attempt + 1, place, exc)
+                else:
+                    logger.warning("Nominatim geocode error for place=%s after 3 attempts: %s", place, exc)
+
+        # Fallback to MapBox if available
+        if self.mapbox_geolocator:
+            for attempt in range(3):
+                try:
+                    location = self.mapbox_geolocator.geocode(place, timeout=10)
+                    if location:
+                        coords = {
+                            'latitude': location.latitude,
+                            'longitude': location.longitude
+                        }
+                        self._set_cached_geocode(place_key, coords)
+                        return coords
+                except Exception as exc:
+                    if attempt < 2:
+                        logger.debug("Mapbox geocode attempt %d failed for place=%s: %s", attempt + 1, place, exc)
+                    else:
+                        logger.warning("Mapbox geocode error for place=%s after 3 attempts: %s", place, exc)
         return None
 
     def _get_cached_geocode(self, place_key: str) -> Dict[str, float]:

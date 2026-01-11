@@ -39,13 +39,46 @@ def _exit_startup(error_lines):
     sys.exit(1)
 
 def _check_required_env_vars():
-    # Only require critical vars; allow defaults for development
+    """Validate environment variables with detailed feedback"""
+    # Only require critical vars in production; allow defaults for development
     if IS_PRODUCTION:
-        required_vars = ['OPENAI_API_KEY', 'SECRET_KEY', 'JWT_SECRET_KEY', 'FRONTEND_URL']
-        missing_vars = [var for var in required_vars if not os.getenv(var)]
+        required_vars = {
+            'OPENAI_API_KEY': 'Required for AI-enhanced predictions (e.g., sk-...)',
+            'SECRET_KEY': 'Required for Flask session security (generate with: python -c "import secrets; print(secrets.token_hex(32))")',
+            'JWT_SECRET_KEY': 'Required for JWT token signing (generate with: python -c "import secrets; print(secrets.token_hex(32))")',
+            'FRONTEND_URL': 'Required for CORS configuration (e.g., https://yourdomain.com)',
+        }
+        missing_vars = []
+        for var, description in required_vars.items():
+            if not os.getenv(var):
+                missing_vars.append(f"{var}: {description}")
+
         if missing_vars:
-            _exit_startup([f"Missing required environment variables: {', '.join(missing_vars)}"])
-    print("✓ All required environment variables are set (or using defaults for development)")
+            error_lines = ["Missing required environment variables in PRODUCTION mode:"]
+            error_lines.extend(missing_vars)
+            error_lines.append("\nSet these in your .env file or environment configuration.")
+            _exit_startup(error_lines)
+
+        # Validate OPENAI_API_KEY format
+        openai_key = os.getenv('OPENAI_API_KEY')
+        if openai_key and not openai_key.startswith('sk-'):
+            logger.warning("OPENAI_API_KEY does not start with 'sk-' - this may be invalid")
+
+    # Log environment variable status
+    env_status = {
+        'OPENAI_API_KEY': '✓ Set' if os.getenv('OPENAI_API_KEY') else '✗ Not set (offline mode only)',
+        'SECRET_KEY': '✓ Set' if os.getenv('SECRET_KEY') else '⚠ Will generate random key',
+        'JWT_SECRET_KEY': '✓ Set' if os.getenv('JWT_SECRET_KEY') else '⚠ Will generate random key',
+        'DATABASE_URL': '✓ Set' if os.getenv('DATABASE_URL') else '⚠ Using SQLite default',
+        'REDIS_URL': '✓ Set' if os.getenv('REDIS_URL') else '✗ Not set (caching disabled)',
+        'MAPBOX_ACCESS_TOKEN': '✓ Set' if os.getenv('MAPBOX_ACCESS_TOKEN') or os.getenv('MAPBOX_TOKEN') else '✗ Not set (Nominatim only)',
+    }
+
+    logger.info("Environment Variables Status:")
+    for key, status in env_status.items():
+        logger.info(f"  {key}: {status}")
+
+    print("✓ Environment variable validation complete")
 
 def _check_corpus_files():
     required_files = [
@@ -310,7 +343,8 @@ try:
 
     # Seed initial wisdom if database is empty
     try:
-        seed_initial_wisdom()
+        with app.app_context():
+            seed_initial_wisdom()
     except Exception as e:
         log_exception(logger, e, context="Wisdom seeding skipped (may already exist)")
 
@@ -399,8 +433,8 @@ def index():
 @app.route('/health')
 def health():
     """
-    Detailed health check with response generation metrics
-    ENHANCED: Includes response rate tracking and system stability metrics
+    Comprehensive health check with Vedic wisdom system status
+    ENHANCED: Includes geocoding, corpus, wisdom database, and astrology calculator status
     """
     # Check orchestrator status
     orchestrator_status = 'not_initialized'
@@ -432,15 +466,61 @@ def health():
     except Exception as e:
         logger.warning(f"Bhrigu service error check failed: {e}")
 
+    # Check astrology calculator status
+    astrology_status = 'operational'
+    geocoding_services = {'nominatim': 'unknown', 'mapbox': 'unknown'}
+    try:
+        from services.astrology_calculator import get_astrology_calculator
+        calc = get_astrology_calculator()
+        if calc:
+            geocoding_services['nominatim'] = 'operational'
+            geocoding_services['mapbox'] = 'operational' if calc.mapbox_geolocator else 'not_configured'
+        else:
+            astrology_status = 'unavailable'
+    except Exception as e:
+        astrology_status = 'error'
+        logger.warning(f"Astrology calculator check failed: {e}")
+
+    # Check corpus files availability
+    corpus_status = {}
+    import os
+    from pathlib import Path
+    data_dir = Path(__file__).parent / 'data'
+    corpus_files = {
+        'bhrigu_samhita': 'bhrigu_samhita_principles.yml',
+        'nadi_jyotisha': 'nadi_jyotisha_principles.yml',
+        'soul_journey': 'bhrigu_karmic_soul_journey_model.json'
+    }
+    for key, filename in corpus_files.items():
+        file_path = data_dir / filename
+        corpus_status[key] = 'available' if file_path.exists() else 'missing'
+
+    # Check wisdom database
+    wisdom_count = 0
+    try:
+        from models import BhriguWisdomEntry
+        wisdom_count = BhriguWisdomEntry.query.count()
+    except Exception as e:
+        logger.warning(f"Wisdom database check failed: {e}")
+
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.utcnow().isoformat(),
+        'version': '2.0.0',
         'services': {
             'api': 'operational',
             'database': 'operational',
             'openai': 'operational' if online_available else 'offline',
             'prediction_orchestrator': orchestrator_status,
-            'offline_wisdom': 'operational' if offline_available else 'unavailable'
+            'offline_wisdom': 'operational' if offline_available else 'unavailable',
+            'astrology_calculator': astrology_status,
+            'geocoding': geocoding_services
+        },
+        'vedic_wisdom_system': {
+            'corpus_files': corpus_status,
+            'wisdom_entries': wisdom_count,
+            'traditions_supported': ['Bhrigu Samhita', 'Nadi Jyotisha', 'Parashara', 'Jaimini'],
+            'calculation_engine': 'Swiss Ephemeris with Lahiri Ayanamsa'
         },
         'response_system': {
             'guaranteed_response': response_metrics['guaranteed'],
@@ -459,8 +539,14 @@ def health():
             'hybrid_mode': online_available and offline_available,
             'trilingual_support': True,
             'resilient_routes': True,
-            'thread_safe': True
-        }
+            'thread_safe': True,
+            'geocoding_retry': True,
+            'cache_enabled': True
+        },
+        'prediction_categories': [
+            'karmic_journey', 'past_lives', 'future_lives', 'present_life',
+            'life_events', 'karmic_remedies', 'relationships', 'predictions'
+        ]
     })
 
 @app.errorhandler(404)
