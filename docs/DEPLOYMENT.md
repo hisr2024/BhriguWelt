@@ -29,9 +29,14 @@ The following environment variables are **required** in production and will caus
 # Flask Security
 SECRET_KEY=<64-char-hex>          # Flask session security
 JWT_SECRET_KEY=<64-char-hex>      # JWT token signing
+BHRIGUWELT_JWT_SECRET=<64-char-hex>  # Alternative JWT secret (used by some modules)
 
 # OpenAI Integration
 OPENAI_API_KEY=sk-...             # OpenAI API key for predictions
+OPENAI_MODEL=gpt-4                # OpenAI model to use (default: gpt-4)
+OPENAI_MAX_TOKENS=4000            # Max tokens for responses
+OPENAI_TEMPERATURE=0.7            # Temperature for creativity (0-1)
+OPENAI_USE_JSON_FORMAT=true       # Force JSON output format
 
 # Frontend CORS
 FRONTEND_URL=https://yourdomain.com   # Frontend URL for CORS
@@ -71,6 +76,21 @@ CELERY_RESULT_BACKEND=${REDIS_URL}
 # Rate Limiting
 RATE_LIMIT_GENERAL=100            # General API rate limit (per minute)
 RATE_LIMIT_AI=10                  # AI endpoint rate limit (per minute)
+PASSCODE_MAX_ATTEMPTS=10          # Max failed passcode attempts
+PASSCODE_LOCKOUT_DURATION=600     # Lockout duration in seconds (10 min)
+
+# Redis Configuration
+REDIS_MAX_CONNECTIONS=50          # Max Redis connections in pool
+REDIS_DEFAULT_TTL=3600            # Default cache TTL in seconds (1 hour)
+ENABLE_CACHING=true               # Enable/disable Redis caching
+
+# Section Parser Configuration
+SECTION_PARSER_MIN_LENGTH=120     # Min section length (default: 120)
+SECTION_PARSER_KEYWORD_MATCH_RATIO=0.5  # Keyword match ratio (0-1)
+
+# Quotas
+DAILY_AI_QUOTA=1000               # Daily AI requests per user
+MONTHLY_AI_QUOTA=30000            # Monthly AI requests per user
 
 # Request Limits
 MAX_REQUEST_BYTES=1048576         # Max request size (1MB default)
