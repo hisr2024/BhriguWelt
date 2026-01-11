@@ -12,6 +12,7 @@ import BottomNav from '../components/BottomNav';
 import CardSkeleton from '../components/CardSkeleton';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, setItem, STORES } from '@/lib/storage';
+import { loadCurrentProfile } from '@/lib/profileHelpers';
 import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
 import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import { useOfflineWisdomCards } from '@/lib/wisdom';
@@ -73,7 +74,7 @@ export default function PredictionsPage() {
       setLoading(true);
       setError(null);
 
-      const profile = await getItem(STORES.PROFILES, 'current_profile', encryptionKey);
+      const profile = await loadCurrentProfile(encryptionKey);
       if (!profile) {
         setError('Please complete your profile first');
         setLoading(false);

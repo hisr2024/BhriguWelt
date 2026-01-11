@@ -13,6 +13,7 @@ import BirthChartVisualization from '../components/BirthChartVisualization';
 import AIChatInterface from '../components/AIChatInterface';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
+import { loadCurrentProfile } from '@/lib/profileHelpers';
 import { useRouter } from 'next/navigation';
 import { astrologyAPI } from '@/lib/api';
 
@@ -48,7 +49,7 @@ export default function BirthChartPage() {
     if (!encryptionKey) return;
 
     try {
-      const profile = await getItem(STORES.PROFILES, 'current_profile', encryptionKey);
+      const profile = await loadCurrentProfile(encryptionKey);
       
       // Try API first if profile exists
       if (profile) {
