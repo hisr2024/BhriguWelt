@@ -56,7 +56,7 @@ export function normalizePredictionResponse(response: RawPredictionResponse): No
   const predictionData = response.prediction || response.data || response;
 
   // Scenario 1: Already has category-specific fields
-  if (hasCategory SpecificFields(predictionData)) {
+  if (hasCategorySpecificFields(predictionData)) {
     return {
       daily: predictionData.daily,
       weekly: predictionData.weekly,
@@ -113,7 +113,7 @@ export function normalizePredictionResponse(response: RawPredictionResponse): No
 /**
  * Check if prediction has category-specific fields
  */
-function hasCategory SpecificFields(data: any): boolean {
+function hasCategorySpecificFields(data: any): boolean {
   if (!data || typeof data !== 'object') return false;
   const hasDaily = 'daily' in data;
   const hasWeekly = 'weekly' in data;
