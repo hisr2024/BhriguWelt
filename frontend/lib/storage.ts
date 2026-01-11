@@ -189,7 +189,7 @@ export async function setItem(
   key: string,
   data: any,
   encryptionKey?: CryptoKey
-): Promise<void> {
+): Promise<IDBValidKey> {
   const database = await initDB();
 
   return new Promise(async (resolve, reject) => {
@@ -219,7 +219,7 @@ export async function setItem(
 
       const request = store.put(item);
 
-      request.onsuccess = () => resolve();
+      request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(new Error('Failed to store item'));
     } catch (error) {
       reject(error);
@@ -243,27 +243,113 @@ export async function getItem(
       request.onsuccess = async () => {
         const item = request.result;
 
-        if (!item) {
+        if (item) {
+          // Direct match found
+          if (item.encrypted && encryptionKey) {
+            try {
+              const decrypted = await decryptFromStorage(item.value, encryptionKey);
+              resolve(decrypted);
+            } catch (error) {
+              console.error('Failed to decrypt item - incorrect key?', error);
+              resolve(null);
+            }
+          } else {
+            // Return just the value for unencrypted items
+            resolve(item.value);
+          }
+          return;
+        }
+
+        // No direct match - try fallback cursor search for legacy-shaped records
+        // Feature flag check (default: enabled)
+        const fallbackEnabled = typeof process === 'undefined' ||
+          process.env.FRONTEND_ENABLE_STORAGE_FALLBACK !== 'false';
+
+        if (!fallbackEnabled) {
           resolve(null);
           return;
         }
 
-        if (item.encrypted && encryptionKey) {
+        console.warn(`Storage fallback: searching for legacy record with key="${key}" in store="${storeName}"`);
+
+        // Open cursor to search for matching records
+        const cursorTransaction = database.transaction(storeName, 'readonly');
+        const cursorStore = cursorTransaction.objectStore(storeName);
+        const cursorRequest = cursorStore.openCursor();
+        let matchFound = false;
+        let recordsScanned = 0;
+        const MAX_SCAN = 2000; // Safety limit to prevent infinite loops
+
+        cursorRequest.onsuccess = async (event: any) => {
           try {
-            const decrypted = await decryptFromStorage(item.value, encryptionKey);
-            resolve(decrypted);
+            const cursor = event.target.result;
+
+            if (!cursor || matchFound || recordsScanned >= MAX_SCAN) {
+              if (recordsScanned >= MAX_SCAN) {
+                console.warn(`Storage fallback: scanned ${MAX_SCAN} records without finding match for key="${key}"`);
+              }
+              if (!matchFound) {
+                resolve(null);
+              }
+              return;
+            }
+
+            recordsScanned++;
+            const entry = cursor.value;
+
+            // Check multiple match patterns for backward compatibility
+            const keyMatch =
+              entry.key === key ||
+              entry.value?.key === key ||
+              entry.value?.id === key;
+
+            if (keyMatch) {
+              matchFound = true;
+              console.warn(`Storage fallback: found match at cursor position ${recordsScanned}`);
+
+              // Decrypt if necessary
+              if (entry.encrypted && encryptionKey) {
+                try {
+                  const decrypted = await decryptFromStorage(entry.value, encryptionKey);
+                  resolve(decrypted);
+                } catch (error) {
+                  console.error('Storage fallback: decryption failed', error);
+                  resolve(null);
+                }
+              } else if (typeof entry.value === 'object' && entry.value !== null && 'value' in entry.value) {
+                // Legacy shape: { key, value, encrypted }
+                resolve(entry.value.value);
+              } else {
+                // Direct value
+                resolve(entry.value);
+              }
+              return;
+            }
+
+            cursor.continue();
           } catch (error) {
-            reject(new Error('Failed to decrypt item - incorrect key?'));
+            console.error('Storage fallback: cursor error', error);
+            if (!matchFound) {
+              resolve(null);
+            }
           }
-        } else {
-          // Return just the value for unencrypted items, not the entire item object
-          resolve(item.value);
-        }
+        };
+
+        cursorRequest.onerror = () => {
+          console.error('Storage fallback: cursor request failed');
+          if (!matchFound) {
+            resolve(null);
+          }
+        };
       };
 
-      request.onerror = () => reject(new Error('Failed to retrieve item'));
+      request.onerror = () => {
+        console.error('Failed to retrieve item');
+        resolve(null);
+      };
     } catch (error) {
-      reject(error);
+      console.error('getItem error:', error);
+      resolve(null);
     }
   });
 }
