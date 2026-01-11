@@ -29,14 +29,16 @@ class CSRFMiddleware:
     def __init__(self, app=None):
         self.app = app
         self.csrf = None
-        self.enabled = os.getenv('ENABLE_CSRF_PROTECTION', 'true').lower() == 'true'
+        # Disable CSRF for API endpoints - using CORS + client-side auth instead
+        # CSRF is primarily for server-side session-based authentication
+        # This app uses client-side encryption (IndexedDB) with no server sessions
+        self.enabled = os.getenv('ENABLE_CSRF_PROTECTION', 'false').lower() == 'true'
 
-        # Exempt paths (health checks, public endpoints)
+        # Exempt paths (health checks, public endpoints, and ALL API endpoints)
         self.exempt_paths = [
             '/health',
             '/',
-            '/api/predictions/health',
-            '/api/predictions/categories',
+            '/api/',  # Exempt all API endpoints
         ]
 
         # Safe methods that don't need CSRF protection
@@ -101,9 +103,10 @@ class CSRFMiddleware:
         if request.method in self.safe_methods:
             return None
 
-        # Skip exempt paths
-        if request.path in self.exempt_paths:
-            return None
+        # Skip exempt paths (check both exact match and prefix match)
+        for exempt_path in self.exempt_paths:
+            if request.path == exempt_path or request.path.startswith(exempt_path):
+                return None
 
         # Skip OPTIONS (CORS preflight)
         if request.method == 'OPTIONS':
