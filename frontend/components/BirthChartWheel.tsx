@@ -78,7 +78,13 @@ export default function BirthChartWheel({ planets, size = 280, simplified = true
 
   const handleTouchMove = (event: TouchEvent<SVGSVGElement>) => {
     if (event.touches.length === 2) {
-      const [a, b] = event.touches;
+      const firstTouch = event.touches.item(0);
+      const secondTouch = event.touches.item(1);
+      if (!firstTouch || !secondTouch) {
+        return;
+      }
+      const a = firstTouch;
+      const b = secondTouch;
       const distance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
       if (pointerState.current?.lastDistance) {
         const delta = distance - pointerState.current.lastDistance;
