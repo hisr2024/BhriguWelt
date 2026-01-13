@@ -391,6 +391,13 @@ try:
         log_exception(logger, e, context="Failed to import health routes")
         health_routes = None
 
+    try:
+        import api_birthchart
+        logger.info("✓ Birth chart routes imported successfully")
+    except Exception as e:
+        log_exception(logger, e, context="Failed to import birth chart routes")
+        api_birthchart = None
+
 except Exception as e:
     log_exception(logger, e, context="Failed to import routes")
     raise
@@ -412,6 +419,10 @@ if predictions_unified:
 if health_routes:
     app.register_blueprint(health_routes.bp, url_prefix='/api/health')
     logger.info("✓ Health monitoring blueprint registered")
+
+if api_birthchart:
+    app.register_blueprint(api_birthchart.bp)
+    logger.info("✓ Birth chart blueprint registered")
 
 logger.info("✓ All blueprints registered")
 

@@ -272,6 +272,13 @@ export const astrologyAPI = {
   },
 };
 
+export const birthChartAPI = {
+  compute: async (data: Record<string, unknown>) => {
+    const response = await api.post('/api/v1/birthchart/compute', data);
+    return response.data;
+  },
+};
+
 const extractPredictionPayload = <T = unknown>(response: any): T => {
   return normalizePredictionResponse<T>(response).prediction as T;
 };
