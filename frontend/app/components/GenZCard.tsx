@@ -1,9 +1,9 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ReactNode } from 'react';
+import type { ReactNode, HTMLAttributes } from 'react';
 
-interface GenZCardProps {
+interface GenZCardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   variant?: 'default' | 'glass' | 'neon' | 'gradient';
   className?: string;
@@ -19,6 +19,7 @@ export default function GenZCard({
   onClick,
   animate = true,
   hoverEffect = true,
+  ...rest
 }: GenZCardProps) {
   const baseClass = 'rounded-3xl p-6 transition-all duration-300';
 
@@ -48,6 +49,7 @@ export default function GenZCard({
       className={`${baseClass} ${variantClasses[variant]} ${hoverClass} ${className} haptic-feedback`}
       onClick={onClick}
       {...animationProps}
+      {...rest}
     >
       {children}
     </CardWrapper>

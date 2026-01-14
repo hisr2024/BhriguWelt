@@ -23,6 +23,110 @@ interface AIChatInterfaceProps {
   context?: 'general' | 'birth-chart' | 'compatibility' | 'predictions';
 }
 
+type CoreWisdomRule = {
+  rule_id: string;
+  tradition: 'bhrigu' | 'nadi';
+  priority: number;
+  domain: string;
+  narrative_template: string;
+  citations?: string[];
+};
+
+type CoreWisdomIndex = {
+  rules: CoreWisdomRule[];
+  metadata?: {
+    version?: string;
+    total_rules?: number;
+    traditions?: string[];
+    domains?: string[];
+    last_updated?: string;
+  };
+};
+
+let cachedCoreWisdom: CoreWisdomIndex | null = null;
+
+const DOMAIN_KEYWORDS: Record<string, string[]> = {
+  career: ['career', 'job', 'profession', 'work', 'business', 'promotion'],
+  wealth: ['wealth', 'money', 'finance', 'income', 'prosperity'],
+  marriage: ['marriage', 'spouse', 'partner', 'relationship', 'love'],
+  relationships: ['relationship', 'friend', 'family', 'bond'],
+  health: ['health', 'wellness', 'illness', 'healing', 'energy'],
+  spirituality: ['spiritual', 'soul', 'dharma', 'moksha', 'meditation'],
+  education: ['education', 'study', 'learning', 'school', 'college'],
+  travel: ['travel', 'journey', 'abroad', 'foreign'],
+  timing: ['timing', 'dasha', 'period', 'transit', 'cycle'],
+  daily: ['daily', 'today'],
+  weekly: ['weekly', 'week'],
+  monthly: ['monthly', 'month'],
+  yearly: ['yearly', 'year'],
+  personality: ['personality', 'traits', 'strength', 'weakness'],
+};
+
+const resolveName = (birthChartData: any) => {
+  return (
+    birthChartData?.name ||
+    birthChartData?.profile?.name ||
+    birthChartData?.birth_details?.name ||
+    'Seeker'
+  );
+};
+
+const fillNarrativeTemplate = (template: string, birthChartData: any) => {
+  return template
+    .replaceAll('{name}', resolveName(birthChartData))
+    .replaceAll('{moon_nakshatra}', birthChartData?.nakshatra || 'your Moon nakshatra')
+    .replaceAll('{kuta_score}', birthChartData?.kuta_score || 'N/A')
+    .replaceAll('{compatibility_type}', birthChartData?.compatibility_type || 'balanced')
+    .replaceAll('{compatibility_level}', birthChartData?.compatibility_level || 'supportive')
+    .replaceAll('{aesthetic_compatibility}', birthChartData?.aesthetic_compatibility || 'aligned tastes')
+    .replaceAll('{shared_values}', birthChartData?.shared_values || 'shared values');
+};
+
+const loadCoreWisdom = async (): Promise<CoreWisdomIndex> => {
+  if (cachedCoreWisdom) {
+    return cachedCoreWisdom;
+  }
+  const response = await fetch('/data/bhrigu_core_rules.json');
+  if (!response.ok) {
+    throw new Error('Unable to load Bhrigu core wisdom data.');
+  }
+  const payload = (await response.json()) as CoreWisdomIndex;
+  cachedCoreWisdom = payload;
+  return payload;
+};
+
+const getDomainMatches = (message: string): string[] => {
+  const lower = message.toLowerCase();
+  return Object.entries(DOMAIN_KEYWORDS)
+    .filter(([, keywords]) => keywords.some((keyword) => lower.includes(keyword)))
+    .map(([domain]) => domain);
+};
+
+const buildWisdomContext = async (message: string, birthChartData: any): Promise<string> => {
+  try {
+    const domains = getDomainMatches(message);
+    const { rules } = await loadCoreWisdom();
+    const filtered = rules.filter((rule) => {
+      if (domains.length === 0) return true;
+      return domains.includes(rule.domain);
+    });
+
+    const prioritized = filtered
+      .sort((a, b) => b.priority - a.priority)
+      .slice(0, 4)
+      .map((rule) => {
+        const narrative = fillNarrativeTemplate(rule.narrative_template, birthChartData);
+        const tradition = rule.tradition === 'bhrigu' ? 'Bhrigu Samhita' : 'Nadi Jyotisa';
+        return `• (${tradition}) ${narrative}`;
+      });
+
+    return prioritized.length > 0 ? prioritized.join('\n') : '';
+  } catch (error) {
+    console.warn('Unable to build wisdom context', error);
+    return '';
+  }
+};
+
 export default function AIChatInterface({
   birthChartData,
   onSendMessage,
@@ -184,14 +288,14 @@ export default function AIChatInterface({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           <AnimatePresence initial={false}>
             {messages.map((message, index) => (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ delay: index * 0.05 }}
-                className={`flex gap-4 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
-              >
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ delay: index * 0.05 }}
+                  className={`flex gap-4 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                >
                 {/* Avatar */}
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
@@ -216,7 +320,7 @@ export default function AIChatInterface({
                         : 'bg-gradient-to-r from-genz-electric-blue/10 to-genz-purple-haze/10 border border-genz-electric-blue/20'
                     } backdrop-blur-xl max-w-[85%]`}
                   >
-                    <p className="text-white whitespace-pre-wrap">{message.content}</p>
+                    <p className="text-white whitespace-pre-wrap text-sm sm:text-base leading-relaxed">{message.content}</p>
                   </div>
 
                   {/* Message Actions */}
@@ -310,7 +414,7 @@ export default function AIChatInterface({
             onKeyPress={handleKeyPress}
             placeholder="Ask me anything about your cosmic journey..."
             maxLength={500}
-            className="w-full min-h-[64px] p-3 pr-10 sm:min-h-[72px] sm:p-4 sm:pr-12 md:min-h-[80px] md:p-5 md:pr-14 max-[480px]:min-h-[60px] max-[480px]:p-3 max-[480px]:pr-10 rounded-2xl bg-white/5 border border-white/10 focus:border-genz-electric-blue/50 text-white placeholder-white/40 resize-none backdrop-blur-xl transition-colors"
+            className="w-full min-h-[64px] p-3 pr-10 sm:min-h-[72px] sm:p-4 sm:pr-12 md:min-h-[80px] md:p-5 md:pr-14 max-[480px]:min-h-[60px] max-[480px]:p-3 max-[480px]:pr-10 rounded-2xl bg-white/5 border border-white/10 focus:border-genz-electric-blue/50 text-white placeholder-white/40 resize-none backdrop-blur-xl transition-colors text-sm sm:text-base leading-relaxed"
             rows={2}
             disabled={isLoading}
           />
@@ -347,6 +451,10 @@ async function generateRealAIResponse(
   try {
     // Import the AI API
     const { aiAPI } = await import('@/lib/api');
+    const wisdomContext = await buildWisdomContext(userMessage, birthChartData);
+    const promptWithWisdom = wisdomContext
+      ? `${userMessage}\n\nBhrigu Samhita + Nadi Jyotisa core wisdom excerpts:\n${wisdomContext}`
+      : userMessage;
 
     // Prepare birth data for AI
     const birthData = {
@@ -377,44 +485,58 @@ async function generateRealAIResponse(
     // Call the AI chat endpoint
     const response = await aiAPI.chat(
       {
-        message: userMessage,
+        message: promptWithWisdom,
         birth_data: birthData,
         conversation_history: history,
       },
       aiMode
     );
 
-    return response.response || response.message || 'I apologize, but I encountered an issue. Please try again.';
+    const aiText = response.response || response.message || '';
+    if (!aiText) {
+      return generateMockResponse(userMessage, context, wisdomContext);
+    }
+    return wisdomContext ? `${aiText}\n\nBhrigu Core Wisdom:\n${wisdomContext}` : aiText;
   } catch (error) {
     console.error('Error calling AI API:', error);
     // Fallback to mock response
-    return generateMockResponse(userMessage, context);
+    const wisdomContext = await buildWisdomContext(userMessage, birthChartData);
+    return generateMockResponse(userMessage, context, wisdomContext);
   }
 }
 
 // Mock response generator (fallback)
-async function generateMockResponse(userMessage: string, context: string): Promise<string> {
+async function generateMockResponse(
+  userMessage: string,
+  context: string,
+  wisdomContext?: string
+): Promise<string> {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
 
   const lowerMessage = userMessage.toLowerCase();
 
   if (lowerMessage.includes('purpose') || lowerMessage.includes('life mission')) {
-    return `Based on your birth chart, your life purpose is deeply connected to spiritual growth and helping others. Your planetary placements suggest you're here to bridge the material and spiritual worlds, bringing ancient wisdom into modern contexts. Focus on developing your intuitive abilities and sharing your insights with others.`;
+    const base = `Based on your birth chart, your life purpose is deeply connected to spiritual growth and helping others. Your planetary placements suggest you're here to bridge the material and spiritual worlds, bringing ancient wisdom into modern contexts. Focus on developing your intuitive abilities and sharing your insights with others.`;
+    return wisdomContext ? `${base}\n\nBhrigu Core Wisdom:\n${wisdomContext}` : base;
   }
 
   if (lowerMessage.includes('career') || lowerMessage.includes('profession')) {
-    return `Your astrological profile indicates strong potential in fields related to counseling, healing, teaching, or creative arts. The placement of Jupiter in your 10th house suggests success through service to others. Consider careers where you can use both your analytical mind and compassionate heart.`;
+    const base = `Your astrological profile indicates strong potential in fields related to counseling, healing, teaching, or creative arts. The placement of Jupiter in your 10th house suggests success through service to others. Consider careers where you can use both your analytical mind and compassionate heart.`;
+    return wisdomContext ? `${base}\n\nBhrigu Core Wisdom:\n${wisdomContext}` : base;
   }
 
   if (lowerMessage.includes('relationship') || lowerMessage.includes('love')) {
-    return `In relationships, your Venus placement suggests you value deep emotional connections and intellectual compatibility. You're attracted to partners who can engage you mentally and spiritually. For the best relationships, look for someone who respects your need for both independence and intimacy.`;
+    const base = `In relationships, your Venus placement suggests you value deep emotional connections and intellectual compatibility. You're attracted to partners who can engage you mentally and spiritually. For the best relationships, look for someone who respects your need for both independence and intimacy.`;
+    return wisdomContext ? `${base}\n\nBhrigu Core Wisdom:\n${wisdomContext}` : base;
   }
 
   if (lowerMessage.includes('strength') || lowerMessage.includes('weakness')) {
-    return `Your strengths include strong intuition, creativity, and the ability to understand complex emotional dynamics. You're naturally empathetic and can read between the lines. Your challenges may include overthinking, being too self-critical, and difficulty setting boundaries. Work on trusting your first instincts more.`;
+    const base = `Your strengths include strong intuition, creativity, and the ability to understand complex emotional dynamics. You're naturally empathetic and can read between the lines. Your challenges may include overthinking, being too self-critical, and difficulty setting boundaries. Work on trusting your first instincts more.`;
+    return wisdomContext ? `${base}\n\nBhrigu Core Wisdom:\n${wisdomContext}` : base;
   }
 
   // Default response
-  return `That's an interesting question! Based on your birth chart and current planetary transits, I can provide insights. Your chart shows a unique combination of energies that shape your personality and life path. Would you like me to explore any specific area in more detail?`;
+  const base = `That's an interesting question! Based on your birth chart and current planetary transits, I can provide insights. Your chart shows a unique combination of energies that shape your personality and life path. Would you like me to explore any specific area in more detail?`;
+  return wisdomContext ? `${base}\n\nBhrigu Core Wisdom:\n${wisdomContext}` : base;
 }

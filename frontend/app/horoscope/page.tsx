@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { Star, ArrowLeft, Moon, Sun, Zap, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -31,6 +31,7 @@ export default function HoroscopePage() {
   const [activeIndex, setActiveIndex] = useState(0);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
+  const detailsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!encryptionLoading && !isSetup) {
@@ -121,6 +122,13 @@ export default function HoroscopePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSelect = (index: number) => {
+    setActiveIndex(index);
+    requestAnimationFrame(() => {
+      detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   };
 
   const extractPredictionText = (prediction: string | undefined): string => {
@@ -240,12 +248,21 @@ export default function HoroscopePage() {
             <GenZCard
               key={index}
               variant="glass"
-              className={`group cursor-pointer transition-all duration-300 ${
+              className={`group cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-genz-electric-blue/60 ${
                 activeIndex === index
-                  ? 'ring-2 ring-genz-electric-blue/60 shadow-genz-glow'
+                  ? 'ring-2 ring-genz-electric-blue/60 shadow-genz-glow bg-white/10'
                   : 'hover:ring-2 hover:ring-genz-electric-blue/30'
               }`}
-              onClick={() => setActiveIndex(index)}
+              onClick={() => handleSelect(index)}
+              role="button"
+              tabIndex={0}
+              aria-pressed={activeIndex === index}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  handleSelect(index);
+                }
+              }}
             >
               <div className="flex flex-col sm:flex-row items-start gap-4">
                 <motion.div
@@ -256,10 +273,15 @@ export default function HoroscopePage() {
                   {pred.icon}
                 </motion.div>
                 <div className="flex-1">
-                  <h3 className="text-lg sm:text-xl font-display font-bold text-white mb-3 group-hover:text-genz-electric-blue transition-colors">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg sm:text-xl font-display font-bold text-white mb-3 group-hover:text-genz-electric-blue transition-colors">
                     {pred.period}
-                  </h3>
-                  <p className="text-sm sm:text-base text-white/80 leading-relaxed">
+                    </h3>
+                    {activeIndex === index && (
+                      <span className="text-xs uppercase tracking-wide text-genz-electric-blue">Active</span>
+                    )}
+                  </div>
+                  <p className="text-base sm:text-base text-white/80 leading-relaxed">
                     {pred.text}
                   </p>
                 </div>
@@ -274,6 +296,7 @@ export default function HoroscopePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mt-10"
+            ref={detailsRef}
           >
             <GenZCard variant="gradient" className="text-left">
               <div className="flex flex-col sm:flex-row gap-4 sm:items-center mb-4">
@@ -287,7 +310,7 @@ export default function HoroscopePage() {
                   <p className="text-white/70 text-sm sm:text-base">Tap the tiles above to switch between periods.</p>
                 </div>
               </div>
-              <p className="text-white/90 leading-relaxed text-base sm:text-lg">
+              <p className="text-white/90 leading-relaxed text-base sm:text-lg whitespace-pre-line">
                 {predictions[activeIndex].fullText}
               </p>
             </GenZCard>

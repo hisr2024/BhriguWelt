@@ -61,28 +61,56 @@ export default function BirthChartForm({ defaultTimezone }: BirthChartFormProps)
     houseSystem: 'Placidus',
   });
 
+  const today = new Date().toISOString().split('T')[0];
+  const validateName = (value: string) => !value || (value.trim().length >= 2 && value.trim().length <= 80);
+  const validateDate = (value: string) => Boolean(value) && value >= '1900-01-01' && value <= today;
+  const validateTime = (value: string) => !value || /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
+  const validateCoordinates = (value: string, min: number, max: number) => {
+    if (!value) return false;
+    const numeric = Number(value);
+    return !Number.isNaN(numeric) && numeric >= min && numeric <= max;
+  };
+
   const canContinue = useMemo(() => {
     if (step === 1) {
-      return Boolean(formData.dob);
+      return Boolean(formData.dob && validateDate(formData.dob) && validateName(formData.name));
     }
     if (step === 2) {
-      return Boolean(formData.timezone && (formData.latitude || formData.placeName));
+      const hasLocation = Boolean(formData.latitude && formData.longitude) || Boolean(formData.placeName);
+      const timeOk = unknownTime || validateTime(formData.time);
+      return Boolean(formData.timezone && hasLocation && timeOk);
     }
     return true;
-  }, [formData, step]);
+  }, [formData, step, unknownTime]);
 
   const handleSubmit = async () => {
     setError(null);
-    if (!formData.dob) {
-      setError('Please enter your date of birth.');
+    if (!validateName(formData.name)) {
+      setError('Please enter a valid name (2-80 characters).');
+      return;
+    }
+    if (!validateDate(formData.dob)) {
+      setError('Please enter a valid date of birth.');
       return;
     }
     if (!formData.timezone) {
       setError('Please provide your timezone.');
       return;
     }
-    if (!formData.latitude || !formData.longitude) {
-      setError('Latitude and longitude are required for accurate charts.');
+    if (!unknownTime && !validateTime(formData.time)) {
+      setError('Please enter a valid birth time.');
+      return;
+    }
+    if (!formData.placeName && (!formData.latitude || !formData.longitude)) {
+      setError('Provide a place name or coordinates for accurate charts.');
+      return;
+    }
+    if (formData.latitude && !validateCoordinates(formData.latitude, -90, 90)) {
+      setError('Latitude must be between -90 and 90.');
+      return;
+    }
+    if (formData.longitude && !validateCoordinates(formData.longitude, -180, 180)) {
+      setError('Longitude must be between -180 and 180.');
       return;
     }
 

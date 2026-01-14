@@ -10,9 +10,28 @@ export interface BirthChartInput {
 }
 
 export function validateBirthChart(chart: BirthChartInput): string | null {
+  const trimmedName = chart.name?.trim();
+  const trimmedPlace = chart.placeOfBirth?.trim();
+  const today = new Date().toISOString().split('T')[0];
+
+  if (trimmedName && (trimmedName.length < 2 || trimmedName.length > 80)) {
+    return 'Please enter a valid name (2-80 characters).';
+  }
   if (!chart.dateOfBirth) return 'Please enter your date of birth.';
+  if (chart.dateOfBirth < '1900-01-01' || chart.dateOfBirth > today) {
+    return 'Please enter a valid birth date.';
+  }
   if (!chart.timeOfBirth) return 'Please enter your time of birth.';
-  if (!chart.placeOfBirth) return 'Please enter your place of birth.';
+  const timeMatch = chart.timeOfBirth.match(/^([01]\\d|2[0-3]):([0-5]\\d)$/);
+  if (!timeMatch) {
+    return 'Please enter a valid birth time.';
+  }
+  if (!trimmedPlace || trimmedPlace.length < 2) {
+    return 'Please enter your place of birth.';
+  }
+  if (!/[a-zA-Z]/.test(trimmedPlace)) {
+    return 'Please enter a valid place of birth.';
+  }
   return null;
 }
 

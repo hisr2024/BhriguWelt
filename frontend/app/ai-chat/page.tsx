@@ -109,14 +109,14 @@ export default function AIChatPage() {
             </GenZBadge>
 
             <h1 className="genz-title mb-4">Chat with AI Assistant</h1>
-            <p className="text-xl text-white/80 max-w-2xl mx-auto">
+            <p className="text-base sm:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed">
               Ask me anything about your cosmic journey, birth chart, or astrology. I'm here to provide personalized insights and guidance.
             </p>
           </motion.div>
 
           {/* Chat Interface */}
           <div className="max-w-5xl mx-auto">
-            <div className="h-[calc(100vh-280px)] min-h-[520px] max-h-[760px]">
+            <div className="h-[calc(100vh-240px)] min-h-[420px] sm:min-h-[520px] max-h-[760px]">
               <AIChatInterface
                 birthChartData={birthChartData}
                 context="general"

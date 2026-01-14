@@ -204,7 +204,9 @@ export default function BirthChartResultPage() {
               </button>
             </div>
           </div>
-          <p className="mt-4 text-sm text-white/80">{chart.interpretation.summary}</p>
+          <p className="mt-4 text-base text-white/90 leading-relaxed">
+            {chart.interpretation.summary}
+          </p>
         </section>
 
         {chart.profile?.time_unknown && (
@@ -283,6 +285,35 @@ export default function BirthChartResultPage() {
           </div>
         </section>
 
+        {(chart.interpretation.placements || chart.chart.nakshatra) && (
+          <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <h2 className="text-lg font-semibold">Detailed Interpretation</h2>
+            <p className="mt-2 text-sm text-white/70">
+              Expanded insights grounded in your planetary placements and nakshatra.
+            </p>
+            {chart.chart.nakshatra && (
+              <p className="mt-4 text-base text-white/90 leading-relaxed">
+                Your chart centers around the {chart.chart.nakshatra} nakshatra, which sets the emotional tone and
+                karmic signature for your journey. Consider this as the underlying rhythm influencing your responses
+                and life decisions.
+              </p>
+            )}
+            {chart.interpretation.placements && (
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {Object.entries(chart.interpretation.placements).map(([planet, insight]) => (
+                  <div
+                    key={planet}
+                    className="rounded-xl border border-white/10 bg-slate-950/40 p-4 text-sm text-white/80"
+                  >
+                    <p className="text-white font-semibold">{planet.toUpperCase()}</p>
+                    <p className="mt-2 text-white/80 leading-relaxed">{insight}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
         <section className="grid gap-4">
           {chart.interpretation.sections.map((section) => {
             const isOpen = openSections[section.title] ?? true;
@@ -303,7 +334,7 @@ export default function BirthChartResultPage() {
                   <span className="text-sm text-white/60">Score {Math.round(section.score * 100)}%</span>
                 </button>
                 {isOpen && (
-                  <p className="mt-3 text-sm text-white/80">{section.text}</p>
+                  <p className="mt-3 text-base text-white/90 leading-relaxed whitespace-pre-line">{section.text}</p>
                 )}
               </div>
             );
