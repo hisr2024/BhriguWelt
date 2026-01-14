@@ -29,6 +29,10 @@ export default function BirthChartViewPage() {
   const [chartSize, setChartSize] = useState(600);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
+  const zodiacSigns = [
+    'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+    'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces',
+  ];
 
   // Redirect to passcode setup if encryption not configured
   useEffect(() => {
@@ -187,23 +191,93 @@ export default function BirthChartViewPage() {
     );
   }
 
+  const resolveAscendant = (data: any): string => {
+    if (!data?.ascendant) return 'Aries';
+    if (typeof data.ascendant === 'string') return data.ascendant;
+    return data.ascendant?.sign ?? data.ascendant?.name ?? 'Aries';
+  };
+
+  const resolveZodiacSign = (data: any): string => {
+    if (!data?.zodiac_sign) return 'Leo';
+    if (typeof data.zodiac_sign === 'string') return data.zodiac_sign;
+    return data.zodiac_sign?.sign ?? data.zodiac_sign?.name ?? 'Leo';
+  };
+
+  const resolveMoonSign = (data: any): string => {
+    if (!data?.moon_sign) return 'Taurus';
+    if (typeof data.moon_sign === 'string') return data.moon_sign;
+    return data.moon_sign?.sign ?? data.moon_sign?.name ?? 'Taurus';
+  };
+
+  const getPositionFromPlanet = (planet: any): number | null => {
+    if (!planet || typeof planet !== 'object') return null;
+    if (typeof planet.position === 'number') return planet.position;
+    if (typeof planet.longitude === 'number') return planet.longitude;
+    if (typeof planet.degree === 'number') return planet.degree;
+    if (typeof planet.degree_in_sign === 'number' && typeof planet.sign === 'string') {
+      const signIndex = zodiacSigns.indexOf(planet.sign);
+      if (signIndex >= 0) {
+        return signIndex * 30 + planet.degree_in_sign;
+      }
+    }
+    return null;
+  };
+
+  const getHouseFromSign = (sign?: string, houses?: string[]): number | null => {
+    if (!sign || !houses?.length) return null;
+    const index = houses.findIndex((houseSign) => houseSign === sign);
+    return index >= 0 ? index + 1 : null;
+  };
+
   // Defensive normalization for planets data - prevents UI crashes from various data shapes
   // Handles: array, object with planets, nested structures, and undefined/null
   const planetsRaw = chartData?.planets ?? chartData?.chart?.planets ?? chartData?.planets_data ?? [];
+  const housesRaw = Array.isArray(chartData?.houses) ? chartData.houses : [];
+  const houses = housesRaw.every((house: any) => typeof house === 'string') ? (housesRaw as string[]) : [];
   const planetsArray = Array.isArray(planetsRaw)
     ? planetsRaw
-    : (planetsRaw && typeof planetsRaw === 'object' ? Object.values(planetsRaw) : []);
-  const planetDetails = planetsArray.filter((p: any) => p && typeof p === 'object');
+    : (planetsRaw && typeof planetsRaw === 'object' ? Object.entries(planetsRaw) : []);
+  const planetDetails = planetsArray
+    .map((entry: any) => {
+      if (Array.isArray(entry) && entry.length === 2) {
+        const [name, value] = entry;
+        return { name, ...value };
+      }
+      return entry;
+    })
+    .map((planet: any) => {
+      if (!planet || typeof planet !== 'object') return null;
+      const name = planet.name ?? planet.planet ?? planet.key;
+      if (!name) return null;
+      const position = getPositionFromPlanet(planet);
+      if (typeof position !== 'number' || Number.isNaN(position)) return null;
+      const sign = typeof planet.sign === 'string' ? planet.sign : 'Unknown';
+      const house = typeof planet.house === 'number'
+        ? planet.house
+        : (getHouseFromSign(sign, houses) ?? undefined);
+      return {
+        ...planet,
+        name,
+        position,
+        sign,
+        house,
+      };
+    })
+    .filter((planet: any) => Boolean(planet));
+
+  const resolvedAscendant = resolveAscendant(chartData);
+  const resolvedZodiacSign = resolveZodiacSign(chartData);
+  const resolvedMoonSign = resolveMoonSign(chartData);
 
   const interpretations = {
-    sun: `Your Sun in ${chartData.zodiac_sign || 'Leo'} reveals your core essence and life force. This placement highlights where you are meant to lead, create, and express your authentic self. When you align with this energy, you feel energized, confident, and capable of inspiring others. The Sun also speaks to your sense of purpose—what you naturally gravitate toward when you want to feel alive and fulfilled.`,
-    moon: `Your Moon in ${chartData.moon_sign || 'Taurus'} describes your emotional needs, intuitive rhythms, and how you restore balance. This placement indicates the kind of environment that helps you feel safe, loved, and grounded. It also highlights how you process stress and what comforts you most during transitions. By honoring your Moon sign, you strengthen your inner resilience and emotional clarity.`,
-    ascendant: `${chartData.ascendant || 'Aries'} rising shapes your first impressions, life approach, and the lens through which people experience you. This placement signals how you move through new situations, the way you initiate action, and the persona you wear in public. It also influences your physical presence, style, and your instinctive response to opportunities.`,
+    sun: `Your Sun in ${resolvedZodiacSign || 'Leo'} reveals your core essence and life force. This placement highlights where you are meant to lead, create, and express your authentic self. When you align with this energy, you feel energized, confident, and capable of inspiring others. The Sun also speaks to your sense of purpose—what you naturally gravitate toward when you want to feel alive and fulfilled.`,
+    moon: `Your Moon in ${resolvedMoonSign || 'Taurus'} describes your emotional needs, intuitive rhythms, and how you restore balance. This placement indicates the kind of environment that helps you feel safe, loved, and grounded. It also highlights how you process stress and what comforts you most during transitions. By honoring your Moon sign, you strengthen your inner resilience and emotional clarity.`,
+    ascendant: `${resolvedAscendant || 'Aries'} rising shapes your first impressions, life approach, and the lens through which people experience you. This placement signals how you move through new situations, the way you initiate action, and the persona you wear in public. It also influences your physical presence, style, and your instinctive response to opportunities.`,
     overall: `Your birth chart reveals a multidimensional blueprint that blends destiny (the karmic themes you carry), free will (the choices you make), and timing (the cycles that activate growth). Together, your Sun, Moon, and Ascendant create a signature of purpose, emotional intelligence, and outward expression. Understanding this alignment helps you navigate relationships, career, and spiritual evolution with clarity and confidence.`,
     strengths: [
-      `Natural talents in ${chartData.zodiac_sign || 'your Sun sign'} themes such as leadership, creativity, and authentic self-expression.`,
-      `Emotional steadiness through ${chartData.moon_sign || 'your Moon sign'}—you can anchor others when life feels uncertain.`,
-      `A proactive outer style shaped by ${chartData.ascendant || 'your Ascendant'}, helping you initiate change.`,
+      `Natural talents in ${resolvedZodiacSign || 'your Sun sign'} themes such as leadership, creativity, and authentic self-expression.`,
+      `Emotional steadiness through ${resolvedMoonSign || 'your Moon sign'}—you can anchor others when life feels uncertain.`,
+      `A proactive outer style shaped by ${resolvedAscendant || 'your Ascendant'}, helping you initiate change.`,
     ],
     growth: [
       'Balance self-expression with patience so your gifts are received with trust.',
@@ -360,10 +434,10 @@ export default function BirthChartViewPage() {
                             )}
                           </div>
                           <p className="text-white/70">
-                            {planet.sign} • House {planet.house}
+                            {planet.sign ?? 'Unknown'} • House {planet.house ? planet.house : '—'}
                           </p>
                           <p className="text-genz-electric-blue text-sm mt-1">
-                            {planet.position.toFixed(2)}°
+                            {Number.isFinite(planet.position) ? `${planet.position.toFixed(2)}°` : '—'}
                           </p>
                         </div>
                       </div>
@@ -377,7 +451,7 @@ export default function BirthChartViewPage() {
                     <Sun className="w-12 h-12 mx-auto mb-4 text-genz-cyber-yellow" />
                     <h3 className="text-xl font-bold text-white mb-2">Sun Sign</h3>
                     <p className="text-2xl font-display font-bold bg-gradient-to-r from-genz-electric-blue to-genz-hot-pink bg-clip-text text-transparent">
-                      {chartData.zodiac_sign}
+                      {resolvedZodiacSign}
                     </p>
                   </GenZCard>
 
@@ -385,7 +459,7 @@ export default function BirthChartViewPage() {
                     <Moon className="w-12 h-12 mx-auto mb-4 text-genz-purple-haze" />
                     <h3 className="text-xl font-bold text-white mb-2">Moon Sign</h3>
                     <p className="text-2xl font-display font-bold bg-gradient-to-r from-genz-electric-blue to-genz-hot-pink bg-clip-text text-transparent">
-                      {chartData.moon_sign}
+                      {resolvedMoonSign}
                     </p>
                   </GenZCard>
 
@@ -393,7 +467,7 @@ export default function BirthChartViewPage() {
                     <Sparkles className="w-12 h-12 mx-auto mb-4 text-genz-mint-fresh" />
                     <h3 className="text-xl font-bold text-white mb-2">Ascendant</h3>
                     <p className="text-2xl font-display font-bold bg-gradient-to-r from-genz-electric-blue to-genz-hot-pink bg-clip-text text-transparent">
-                      {chartData.ascendant}
+                      {resolvedAscendant}
                     </p>
                   </GenZCard>
                 </div>

@@ -192,31 +192,30 @@ export async function setItem(
 ): Promise<IDBValidKey> {
   const database = await initDB();
 
-  return new Promise(async (resolve, reject) => {
+  let item: any;
+
+  if (encryptionKey) {
+    const encryptedValue = await encryptForStorage(data, encryptionKey);
+    item = {
+      key,
+      value: encryptedValue,
+      encrypted: true,
+      updatedAt: new Date().toISOString(),
+    };
+  } else {
+    // Store data as the value (no extraction of nested properties)
+    item = {
+      key,
+      value: data,
+      encrypted: false,
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  return new Promise((resolve, reject) => {
     try {
       const transaction = database.transaction(storeName, 'readwrite');
       const store = transaction.objectStore(storeName);
-
-      let item: any;
-
-      if (encryptionKey) {
-        const encryptedValue = await encryptForStorage(data, encryptionKey);
-        item = {
-          key,
-          value: encryptedValue,
-          encrypted: true,
-          updatedAt: new Date().toISOString(),
-        };
-      } else {
-        // Store data as the value (no extraction of nested properties)
-        item = {
-          key,
-          value: data,
-          encrypted: false,
-          updatedAt: new Date().toISOString(),
-        };
-      }
-
       const request = store.put(item);
 
       request.onsuccess = () => resolve(request.result);
