@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Send, Sparkles, Loader2, User, Bot, Trash2, Copy, Check,
-  MessageSquare, Settings, Volume2, VolumeX
+  Send, Loader2, User, Bot, Trash2, Copy, Check,
+  Volume2, VolumeX
 } from 'lucide-react';
 import GenZButton from './GenZButton';
 import GenZCard from './GenZCard';
@@ -74,7 +74,10 @@ export default function AIChatInterface({
         response = await onSendMessage(userMessage.content);
       } else {
         // Use real AI response with OpenAI
-        response = await generateRealAIResponse(userMessage.content, context, birthChartData);
+        const history = [...messages, userMessage]
+          .slice(-6)
+          .map((message) => ({ role: message.role, content: message.content }));
+        response = await generateRealAIResponse(userMessage.content, context, birthChartData, history);
       }
 
       const assistantMessage: Message = {
@@ -162,6 +165,7 @@ export default function AIChatInterface({
             <GenZBadge variant="neon" size="sm">
               {context === 'general' ? 'General' : context === 'birth-chart' ? 'Birth Chart' : context}
             </GenZBadge>
+            <p className="text-xs text-white/60 mt-1">Bhrigu Samhita • Nadi Jyotisa</p>
           </div>
         </div>
 
@@ -305,6 +309,7 @@ export default function AIChatInterface({
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Ask me anything about your cosmic journey..."
+            maxLength={500}
             className="w-full min-h-[64px] p-3 pr-10 sm:min-h-[72px] sm:p-4 sm:pr-12 md:min-h-[80px] md:p-5 md:pr-14 max-[480px]:min-h-[60px] max-[480px]:p-3 max-[480px]:pr-10 rounded-2xl bg-white/5 border border-white/10 focus:border-genz-electric-blue/50 text-white placeholder-white/40 resize-none backdrop-blur-xl transition-colors"
             rows={2}
             disabled={isLoading}
@@ -332,11 +337,12 @@ export default function AIChatInterface({
   );
 }
 
-// Real AI response generator using OpenAI
+  // Real AI response generator using OpenAI
 async function generateRealAIResponse(
   userMessage: string,
   context: string,
-  birthChartData: any
+  birthChartData: any,
+  history: Array<{ role: string; content: string }>
 ): Promise<string> {
   try {
     // Import the AI API
@@ -373,7 +379,7 @@ async function generateRealAIResponse(
       {
         message: userMessage,
         birth_data: birthData,
-        conversation_history: [],
+        conversation_history: history,
       },
       aiMode
     );

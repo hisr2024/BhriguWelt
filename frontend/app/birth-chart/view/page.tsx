@@ -26,6 +26,7 @@ export default function BirthChartViewPage() {
   const [missingChart, setMissingChart] = useState(false);
   const [usingDemo, setUsingDemo] = useState(false);
   const [loadingChart, setLoadingChart] = useState(true);
+  const [chartSize, setChartSize] = useState(600);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
 
@@ -49,6 +50,17 @@ export default function BirthChartViewPage() {
       loadChartData();
     }
   }, [encryptionKey]);
+
+  useEffect(() => {
+    const updateChartSize = () => {
+      const viewportWidth = window.innerWidth;
+      const nextSize = Math.min(600, Math.max(280, viewportWidth - 80));
+      setChartSize(nextSize);
+    };
+    updateChartSize();
+    window.addEventListener('resize', updateChartSize);
+    return () => window.removeEventListener('resize', updateChartSize);
+  }, []);
 
   const loadChartData = async () => {
     if (!encryptionKey) return;
@@ -184,10 +196,25 @@ export default function BirthChartViewPage() {
   const planetDetails = planetsArray.filter((p: any) => p && typeof p === 'object');
 
   const interpretations = {
-    sun: `Your Sun in ${chartData.zodiac_sign || 'Leo'} reveals your core essence and life force. This placement indicates strong leadership qualities, creativity, and a natural magnetism. You're meant to shine and inspire others.`,
-    moon: `Moon in ${chartData.moon_sign || 'Taurus'} shows your emotional nature and inner world. You seek stability and comfort in relationships, and have a deep appreciation for beauty and sensory pleasures.`,
-    ascendant: `${chartData.ascendant || 'Aries'} rising shapes how you present yourself to the world. You come across as confident, pioneering, and action-oriented. First impressions matter to you.`,
-    overall: `Your birth chart reveals a unique blend of fire and earth energies, combining passion with practicality. The planetary positions at your birth time create a blueprint for your soul's journey in this lifetime.`
+    sun: `Your Sun in ${chartData.zodiac_sign || 'Leo'} reveals your core essence and life force. This placement highlights where you are meant to lead, create, and express your authentic self. When you align with this energy, you feel energized, confident, and capable of inspiring others. The Sun also speaks to your sense of purpose—what you naturally gravitate toward when you want to feel alive and fulfilled.`,
+    moon: `Your Moon in ${chartData.moon_sign || 'Taurus'} describes your emotional needs, intuitive rhythms, and how you restore balance. This placement indicates the kind of environment that helps you feel safe, loved, and grounded. It also highlights how you process stress and what comforts you most during transitions. By honoring your Moon sign, you strengthen your inner resilience and emotional clarity.`,
+    ascendant: `${chartData.ascendant || 'Aries'} rising shapes your first impressions, life approach, and the lens through which people experience you. This placement signals how you move through new situations, the way you initiate action, and the persona you wear in public. It also influences your physical presence, style, and your instinctive response to opportunities.`,
+    overall: `Your birth chart reveals a multidimensional blueprint that blends destiny (the karmic themes you carry), free will (the choices you make), and timing (the cycles that activate growth). Together, your Sun, Moon, and Ascendant create a signature of purpose, emotional intelligence, and outward expression. Understanding this alignment helps you navigate relationships, career, and spiritual evolution with clarity and confidence.`,
+    strengths: [
+      `Natural talents in ${chartData.zodiac_sign || 'your Sun sign'} themes such as leadership, creativity, and authentic self-expression.`,
+      `Emotional steadiness through ${chartData.moon_sign || 'your Moon sign'}—you can anchor others when life feels uncertain.`,
+      `A proactive outer style shaped by ${chartData.ascendant || 'your Ascendant'}, helping you initiate change.`,
+    ],
+    growth: [
+      'Balance self-expression with patience so your gifts are received with trust.',
+      'Protect your energy by building restorative rituals and quiet reflection time.',
+      'Stay open to feedback when major cycles activate new responsibilities.',
+    ],
+    focusAreas: [
+      'Career and calling: align daily work with your long-term soul purpose.',
+      'Relationships: communicate needs clearly and create emotional safety.',
+      'Spiritual practices: integrate meditation, mantra, or breathwork for balance.',
+    ],
   };
 
   return (
@@ -296,7 +323,7 @@ export default function BirthChartViewPage() {
                 exit={{ opacity: 0, y: -20 }}
                 className="mb-12"
               >
-                <BirthChartVisualization chartData={chartData} size={600} />
+                <BirthChartVisualization chartData={chartData} size={chartSize} />
               </motion.div>
             )}
 
@@ -382,7 +409,7 @@ export default function BirthChartViewPage() {
                 className="space-y-6"
               >
                 <GenZCard variant="glass">
-                  <div className="flex items-start gap-4 mb-4">
+                  <div className="flex flex-col sm:flex-row items-start gap-4 mb-4">
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-genz-cyber-yellow to-genz-sunset-orange flex items-center justify-center shadow-genz-glow flex-shrink-0">
                       <Sun className="w-6 h-6" />
                     </div>
@@ -394,7 +421,7 @@ export default function BirthChartViewPage() {
                 </GenZCard>
 
                 <GenZCard variant="glass">
-                  <div className="flex items-start gap-4 mb-4">
+                  <div className="flex flex-col sm:flex-row items-start gap-4 mb-4">
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-genz-purple-haze to-genz-lavender-dream flex items-center justify-center shadow-genz-glow flex-shrink-0">
                       <Moon className="w-6 h-6" />
                     </div>
@@ -406,7 +433,7 @@ export default function BirthChartViewPage() {
                 </GenZCard>
 
                 <GenZCard variant="glass">
-                  <div className="flex items-start gap-4 mb-4">
+                  <div className="flex flex-col sm:flex-row items-start gap-4 mb-4">
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-genz-electric-blue to-genz-mint-fresh flex items-center justify-center shadow-genz-glow flex-shrink-0">
                       <Sparkles className="w-6 h-6" />
                     </div>
@@ -417,10 +444,49 @@ export default function BirthChartViewPage() {
                   </div>
                 </GenZCard>
 
+                <GenZCard variant="glass">
+                  <div className="flex flex-col sm:flex-row items-start gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-genz-neon-green to-genz-mint-fresh flex items-center justify-center shadow-genz-glow flex-shrink-0">
+                      <Star className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-display font-bold text-white mb-3">Strengths & Natural Gifts</h3>
+                      <ul className="space-y-2 text-white/80 leading-relaxed list-disc list-inside">
+                        {interpretations.strengths.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </GenZCard>
+
+                <GenZCard variant="glass">
+                  <div className="flex flex-col sm:flex-row items-start gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-genz-hot-pink to-genz-coral-pop flex items-center justify-center shadow-genz-glow flex-shrink-0">
+                      <Sparkles className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-display font-bold text-white mb-3">Growth Areas</h3>
+                      <ul className="space-y-2 text-white/80 leading-relaxed list-disc list-inside">
+                        {interpretations.growth.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </GenZCard>
+
                 <GenZCard variant="gradient">
-                  <div className="text-center">
-                    <h3 className="text-2xl font-display font-bold text-white mb-4">Overall Chart Analysis</h3>
+                  <div className="text-center space-y-4">
+                    <h3 className="text-2xl font-display font-bold text-white">Overall Chart Analysis</h3>
                     <p className="text-white/90 leading-relaxed text-lg">{interpretations.overall}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+                      {interpretations.focusAreas.map((focus) => (
+                        <div key={focus} className="bg-white/10 rounded-2xl p-4 border border-white/10">
+                          <p className="text-white/80 text-sm leading-relaxed">{focus}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </GenZCard>
               </motion.div>

@@ -86,7 +86,7 @@ export default function AIChatPage() {
             </GenZButton>
 
             <GenZBadge variant="neon" size="sm">
-              Powered by OpenAI
+              Bhrigu Samhita + Nadi Jyotisa
             </GenZBadge>
           </div>
 
@@ -116,7 +116,7 @@ export default function AIChatPage() {
 
           {/* Chat Interface */}
           <div className="max-w-5xl mx-auto">
-            <div className="h-[calc(100vh-300px)] min-h-[600px]">
+            <div className="h-[calc(100vh-280px)] min-h-[520px] max-h-[760px]">
               <AIChatInterface
                 birthChartData={birthChartData}
                 context="general"
