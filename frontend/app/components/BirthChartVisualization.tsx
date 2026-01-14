@@ -38,24 +38,93 @@ export default function BirthChartVisualization({
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
 
-  // Defensive normalization for planets data - prevents crashes from various data shapes
-  const normalizePlanets = (data: any): Planet[] => {
-    const planetsRaw = data?.planets ?? data?.chart?.planets ?? data?.planets_data ?? [];
-    const planetsArray = Array.isArray(planetsRaw)
-      ? planetsRaw
-      : (planetsRaw && typeof planetsRaw === 'object' ? Object.values(planetsRaw) : []);
-    return planetsArray.filter((p: any) => p && typeof p === 'object' && p.name);
-  };
-
-  const normalizedChartData = {
-    ...chartData,
-    planets: normalizePlanets(chartData)
-  };
-
   const zodiacSigns = [
     'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
     'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
   ];
+
+  const resolveAscendant = (data: any): string => {
+    if (!data?.ascendant) return 'N/A';
+    if (typeof data.ascendant === 'string') return data.ascendant;
+    return data.ascendant?.sign ?? data.ascendant?.name ?? 'N/A';
+  };
+
+  const resolveNakshatra = (data: any): string => {
+    if (!data?.nakshatra) return '';
+    if (typeof data.nakshatra === 'string') return data.nakshatra;
+    return data.nakshatra?.name ?? '';
+  };
+
+  const getPositionFromPlanet = (planet: any): number | null => {
+    if (!planet || typeof planet !== 'object') return null;
+    if (typeof planet.position === 'number') return planet.position;
+    if (typeof planet.longitude === 'number') return planet.longitude;
+    if (typeof planet.degree === 'number') return planet.degree;
+    if (typeof planet.degree_in_sign === 'number' && typeof planet.sign === 'string') {
+      const signIndex = zodiacSigns.indexOf(planet.sign);
+      if (signIndex >= 0) {
+        return signIndex * 30 + planet.degree_in_sign;
+      }
+    }
+    return null;
+  };
+
+  const getHouseFromSign = (sign?: string, houses?: string[]): number | null => {
+    if (!sign || !houses?.length) return null;
+    const index = houses.findIndex((houseSign) => houseSign === sign);
+    return index >= 0 ? index + 1 : null;
+  };
+
+  // Defensive normalization for planets data - prevents crashes from various data shapes
+  const normalizePlanets = (data: any): Planet[] => {
+    const planetsRaw = data?.planets ?? data?.chart?.planets ?? data?.planets_data ?? [];
+    const housesRaw = Array.isArray(data?.houses) ? data.houses : [];
+    const houses = housesRaw.every((house) => typeof house === 'string') ? (housesRaw as string[]) : [];
+    const planetsArray = Array.isArray(planetsRaw)
+      ? planetsRaw
+      : (planetsRaw && typeof planetsRaw === 'object' ? Object.entries(planetsRaw) : []);
+
+    return planetsArray
+      .map((entry: any) => {
+        if (Array.isArray(entry) && entry.length === 2) {
+          const [name, value] = entry;
+          return { name, ...value };
+        }
+        return entry;
+      })
+      .map((planet: any) => {
+        if (!planet || typeof planet !== 'object') {
+          return null;
+        }
+        const name = planet.name ?? planet.planet ?? planet.key;
+        if (!name) {
+          return null;
+        }
+        const position = getPositionFromPlanet(planet);
+        if (typeof position !== 'number' || Number.isNaN(position)) {
+          return null;
+        }
+        const sign = typeof planet.sign === 'string' ? planet.sign : 'Unknown';
+        const house = typeof planet.house === 'number'
+          ? planet.house
+          : (getHouseFromSign(sign, houses) ?? undefined);
+        return {
+          name,
+          position,
+          sign,
+          house: house ?? 0,
+          retrograde: planet.retrograde,
+        } as Planet;
+      })
+      .filter((planet): planet is Planet => Boolean(planet));
+  };
+
+  const normalizedChartData = {
+    ...chartData,
+    ascendant: resolveAscendant(chartData),
+    nakshatra: resolveNakshatra(chartData),
+    planets: normalizePlanets(chartData)
+  };
 
   const planetColors: Record<string, string> = {
     'Sun': '#FFD700',
@@ -378,7 +447,7 @@ export default function BirthChartVisualization({
               <div>
                 <h3 className="text-2xl font-bold text-white">{selectedPlanet.name}</h3>
                 <p className="text-genz-electric-blue">
-                  {selectedPlanet.sign} • House {selectedPlanet.house}
+                  {selectedPlanet.sign} • House {selectedPlanet.house ? selectedPlanet.house : '—'}
                 </p>
               </div>
             </div>
@@ -386,7 +455,11 @@ export default function BirthChartVisualization({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-white/60 text-sm">Position</p>
-                <p className="text-white font-bold">{selectedPlanet.position.toFixed(2)}°</p>
+                <p className="text-white font-bold">
+                  {Number.isFinite(selectedPlanet.position)
+                    ? `${selectedPlanet.position.toFixed(2)}°`
+                    : '—'}
+                </p>
               </div>
               <div>
                 <p className="text-white/60 text-sm">Status</p>
