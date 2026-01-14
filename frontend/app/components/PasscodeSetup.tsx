@@ -128,6 +128,9 @@ export default function PasscodeSetup({ onComplete }: PasscodeSetupProps) {
                   autoFocus
                   disabled={isLoading}
                   autoComplete="off"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  enterKeyHint="done"
                 />
                 <button
                   type="button"

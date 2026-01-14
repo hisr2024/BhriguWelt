@@ -112,11 +112,11 @@
   }
 
   .genz-input {
-    @apply bg-dark-surface/50 backdrop-blur-xl border-2 border-white/20 rounded-2xl px-6 py-4 text-white placeholder-white/40 focus:outline-none focus:border-genz-electric-blue focus:shadow-neon-cyan transition-all duration-300;
+    @apply bg-dark-surface/50 backdrop-blur-xl border-2 border-white/20 rounded-2xl px-6 py-4 text-white placeholder-white/40 focus:outline-none focus:border-genz-electric-blue focus:shadow-neon-cyan transition-all duration-300 touch-manipulation;
   }
 
   .genz-input-glass {
-    @apply bg-white/5 backdrop-blur-xl border border-white/30 rounded-2xl px-6 py-4 text-white placeholder-white/50 focus:outline-none focus:bg-white/10 focus:border-genz-purple-haze focus:shadow-genz-glow transition-all duration-300;
+    @apply bg-white/5 backdrop-blur-xl border border-white/30 rounded-2xl px-6 py-4 text-white placeholder-white/50 focus:outline-none focus:bg-white/10 focus:border-genz-purple-haze focus:shadow-genz-glow transition-all duration-300 touch-manipulation;
   }
 
   /* Text Styles */

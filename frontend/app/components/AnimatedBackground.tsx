@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 
 export default function AnimatedBackground() {
   return (
-    <div className="fixed inset-0 -z-10 overflow-hidden">
+    <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
       {/* Base gradient background */}
       <div className="absolute inset-0 genz-mesh-bg" />
 
@@ -89,7 +89,7 @@ export default function AnimatedBackground() {
 
 export function FloatingElements() {
   return (
-    <div className="fixed inset-0 -z-10 overflow-hidden">
+    <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
       <motion.div
         className="absolute top-1/4 left-10 text-6xl opacity-10"
         animate={{
