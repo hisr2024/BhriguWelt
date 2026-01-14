@@ -5,6 +5,7 @@ Handles AI-powered features with privacy controls
 import os
 from typing import Dict, Any, List, Optional
 from services.openai_service import openai_service
+from services.bhrigu_core_wisdom import get_bhrigu_core_wisdom
 from middleware.sanitizer import RequestSanitizer
 from middleware.ai_constants import PII_FIELDS
 import logging
@@ -25,6 +26,13 @@ class AIService:
     def __init__(self):
         self.openai = openai_service
         self.ai_enabled = bool(os.getenv('OPENAI_API_KEY'))
+        self.core_wisdom = None
+        self.offline_ready = False
+        try:
+            self.core_wisdom = get_bhrigu_core_wisdom()
+            self.offline_ready = True
+        except Exception as exc:
+            logger.warning(f"Core wisdom database unavailable: {exc}")
     
     def refine_report_section(
         self,
@@ -83,7 +91,11 @@ class AIService:
             AI response text
         """
         if not self.ai_enabled:
-            return "AI chatbot is not available. Please use offline mode."
+            return self._offline_chat_response(
+                user_message=user_message,
+                astrological_data=astrological_data,
+                history=history or []
+            )
         
         try:
             # Validate no PII
@@ -106,7 +118,11 @@ class AIService:
             
         except Exception as e:
             logger.error(f"AI chat error: {e}")
-            return "I apologize, but I'm unable to respond right now. Please try again later or use offline mode."
+            return self._offline_chat_response(
+                user_message=user_message,
+                astrological_data=astrological_data,
+                history=history or []
+            )
     
     def generate_summary(
         self,
@@ -237,15 +253,30 @@ class AIService:
                 content = msg.get('content', '')
                 context += f"{role}: {content}\n"
         
+        wisdom_context = ""
+        if self.core_wisdom:
+            category = self._detect_chat_category(message)
+            wisdom_payload = self.core_wisdom.get_wisdom_context_for_prediction(category, data)
+            wisdom_context = self.core_wisdom.format_rules_for_prompt(wisdom_payload.get('rules', []))
+            nakshatra_info = wisdom_payload.get('nakshatra_info', {}) or {}
+            if nakshatra_info:
+                wisdom_context += (
+                    f"\n\nNakshatra context: {nakshatra_info.get('characteristics', '')} "
+                    f"Deity: {nakshatra_info.get('deity', '')}."
+                )
+
         prompt = f"""
         You are a compassionate Vedic astrology expert helping someone understand their birth chart.
+        Ground every answer in Bhrigu Samhita and Nadi Jyotisha principles, using the core wisdom rules below.
         
         Birth chart summary:
         - Zodiac Sign: {data.get('zodiac_sign', 'Unknown')}
         - Nakshatra: {data.get('nakshatra', 'Unknown')}
         - Moon Sign: {data.get('moon_sign', 'Unknown')}
         - Ascendant: {data.get('ascendant', 'Unknown')}
-        
+
+        {wisdom_context}
+
         {context}
         
         User question: {message}
@@ -254,6 +285,90 @@ class AIService:
         """
         
         return prompt
+
+    def _detect_chat_category(self, message: str) -> str:
+        message_lower = message.lower()
+        if any(word in message_lower for word in ['past life', 'past lives', 'previous incarnation']):
+            return 'past_lives'
+        if any(word in message_lower for word in ['future life', 'future lives', 'next life', 'moksha']):
+            return 'future_lives'
+        if any(word in message_lower for word in ['relationship', 'marriage', 'partner', 'love']):
+            return 'relationships'
+        if any(word in message_lower for word in ['remedy', 'mantra', 'gemstone', 'puja', 'ritual']):
+            return 'karmic_remedies'
+        if any(word in message_lower for word in ['career', 'profession', 'job', 'wealth', 'money']):
+            return 'present_life'
+        if any(word in message_lower for word in ['daily', 'weekly', 'monthly', 'yearly', 'horoscope']):
+            return 'predictions'
+        return 'karmic_journey'
+
+    def _offline_chat_response(
+        self,
+        user_message: str,
+        astrological_data: Dict[str, Any],
+        history: List[Dict[str, str]]
+    ) -> str:
+        """Generate offline chat response using Bhrigu core wisdom database."""
+        zodiac = astrological_data.get('zodiac_sign', 'Unknown')
+        moon_sign = astrological_data.get('moon_sign', zodiac)
+        ascendant = astrological_data.get('ascendant', 'Unknown')
+        nakshatra = astrological_data.get('nakshatra', 'Unknown')
+        category = self._detect_chat_category(user_message)
+
+        if not self.core_wisdom:
+            return (
+                "The Bhrigu core wisdom database is unavailable right now. "
+                "Please try again later for a detailed Bhrigu/Nadi reading."
+            )
+
+        wisdom_payload = self.core_wisdom.get_wisdom_context_for_prediction(category, astrological_data)
+        rules = wisdom_payload.get('rules', [])[:3]
+        remedies = wisdom_payload.get('remedies', [])[:3]
+        citations = wisdom_payload.get('citations', [])[:3]
+        nakshatra_info = wisdom_payload.get('nakshatra_info', {}) or {}
+
+        rules_lines = []
+        for rule in rules:
+            narrative = rule.get('narrative_template') or rule.get('description') or ''
+            rule_id = rule.get('rule_id', 'Rule')
+            tradition = rule.get('tradition', 'Bhrigu/Nadi')
+            if narrative:
+                rules_lines.append(f"- {rule_id} ({tradition}): {narrative}")
+
+        remedy_lines = []
+        for remedy in remedies:
+            data = remedy.get('data', {})
+            title = ''
+            description = ''
+            if isinstance(data, dict):
+                title = data.get('name') or data.get('title') or data.get('mantra') or data.get('gemstone') or ''
+                description = data.get('description') or data.get('meaning') or data.get('use') or ''
+            else:
+                title = str(data)
+            line = f"- {title}" if title else "- Traditional remedy"
+            if description:
+                line += f": {description}"
+            remedy_lines.append(line)
+
+        citation_text = ", ".join(citations) if citations else "Bhrigu Samhita & Nadi Jyotisa core rules"
+        nakshatra_focus = nakshatra_info.get('characteristics') or nakshatra_info.get('career') or 'unique spiritual gifts'
+
+        return f"""## Bhrigu-Nadi Guidance (Offline Wisdom)
+
+**Chart Snapshot:** Sun/Zodiac {zodiac}, Moon {moon_sign}, Ascendant {ascendant}, Nakshatra {nakshatra}.
+**Nakshatra Focus:** {nakshatra_focus}.
+
+### Key Principles Activated
+{chr(10).join(rules_lines) if rules_lines else "- Core spiritual alignment and karmic duty are emphasized."}
+
+### Guidance for Your Question
+Your inquiry points toward **{category.replace('_', ' ')}** themes. In Bhrigu Samhita and Nadi Jyotisa, this area is refined by steady self-discipline, timing awareness, and honoring your dharmic responsibilities. Use your {zodiac} strengths with the emotional steadiness of {moon_sign} to stay grounded while you act.
+
+### Remedies & Practices
+{chr(10).join(remedy_lines) if remedy_lines else "- Daily mantra, mindful routines, and disciplined action are advised."}
+
+**References:** {citation_text}
+"""
     
     def _build_summary_prompt(
         self,

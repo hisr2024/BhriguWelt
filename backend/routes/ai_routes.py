@@ -23,7 +23,7 @@ def require_ai_consent(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         # Check if AI is enabled in environment
-        if not os.getenv('OPENAI_API_KEY'):
+        if not os.getenv('OPENAI_API_KEY') and not ai_service.offline_ready:
             return jsonify({
                 'error': 'AI features not configured',
                 'message': 'AI integration is not available'
