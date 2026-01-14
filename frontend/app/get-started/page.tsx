@@ -188,7 +188,7 @@ export default function GetStartedPage() {
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-genz-hot-pink to-genz-coral-pop flex items-center justify-center shadow-genz-glow"><User className="w-6 h-6" /></div>
                   Your Name
                 </label>
-                <input type="text" required placeholder="e.g., Arjun Kumar" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="genz-input w-full text-lg" autoFocus />
+                <input type="text" required placeholder="e.g., Arjun Kumar" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="genz-input w-full text-lg touch-manipulation" autoFocus />
               </motion.div>
             )}
             {step === 2 && (
@@ -197,7 +197,7 @@ export default function GetStartedPage() {
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-genz-electric-blue to-genz-mint-fresh flex items-center justify-center shadow-genz-glow"><Calendar className="w-6 h-6" /></div>
                   Date of Birth
                 </label>
-                <input type="date" required value={formData.date_of_birth} onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })} className="genz-input w-full text-lg" autoFocus />
+                <input type="date" required value={formData.date_of_birth} onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })} className="genz-input w-full text-lg touch-manipulation" autoFocus />
               </motion.div>
             )}
             {step === 3 && (
@@ -206,7 +206,7 @@ export default function GetStartedPage() {
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-genz-purple-haze to-genz-lavender-dream flex items-center justify-center shadow-genz-glow"><Clock className="w-6 h-6" /></div>
                   Time of Birth
                 </label>
-                <input type="time" required value={formData.time_of_birth} onChange={(e) => setFormData({ ...formData, time_of_birth: e.target.value })} className="genz-input w-full text-lg" autoFocus />
+                <input type="time" required value={formData.time_of_birth} onChange={(e) => setFormData({ ...formData, time_of_birth: e.target.value })} className="genz-input w-full text-lg touch-manipulation" autoFocus />
                 <p className="text-sm text-genz-mint-fresh mt-3 flex items-center gap-2"><Zap className="w-4 h-4" />Exact time gives more accurate predictions</p>
               </motion.div>
             )}
@@ -216,7 +216,7 @@ export default function GetStartedPage() {
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-genz-cyber-yellow to-genz-sunset-orange flex items-center justify-center shadow-genz-glow"><MapPin className="w-6 h-6" /></div>
                   Place of Birth
                 </label>
-                <input type="text" required placeholder="e.g., New Delhi, India" value={formData.place_of_birth} onChange={(e) => setFormData({ ...formData, place_of_birth: e.target.value })} className="genz-input w-full text-lg" autoFocus />
+                <input type="text" required placeholder="e.g., New Delhi, India" value={formData.place_of_birth} onChange={(e) => setFormData({ ...formData, place_of_birth: e.target.value })} className="genz-input w-full text-lg touch-manipulation" autoFocus />
                 <p className="text-sm text-white/70 mt-3">Enter city and country for accurate calculations</p>
                 <div className="mt-6 space-y-4">
                   <label className="flex items-center gap-3 text-sm text-white/80">
@@ -238,7 +238,7 @@ export default function GetStartedPage() {
                           placeholder="e.g., 28.6139"
                           value={manualCoords.latitude}
                           onChange={(e) => setManualCoords({ ...manualCoords, latitude: e.target.value })}
-                          className="genz-input w-full"
+                          className="genz-input w-full touch-manipulation"
                         />
                       </div>
                       <div>
@@ -249,7 +249,7 @@ export default function GetStartedPage() {
                           placeholder="e.g., 77.2090"
                           value={manualCoords.longitude}
                           onChange={(e) => setManualCoords({ ...manualCoords, longitude: e.target.value })}
-                          className="genz-input w-full"
+                          className="genz-input w-full touch-manipulation"
                         />
                       </div>
                     </div>

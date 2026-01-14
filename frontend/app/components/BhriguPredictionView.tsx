@@ -696,7 +696,7 @@ export default function BhriguPredictionView({
             touchAction: 'manipulation' // Prevents 300ms delay on mobile
           }}
         >
-          <h3 id={headerId} className={`text-lg font-semibold ${colorClass.text} flex items-center gap-3 flex-1`}>
+          <h3 id={headerId} className={`text-lg md:text-xl font-semibold ${colorClass.text} flex items-center gap-3 flex-1`}>
             <span className={`w-1.5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} aria-hidden="true" />
             {sectionTitle}
           </h3>
@@ -729,7 +729,7 @@ export default function BhriguPredictionView({
             >
               <div className="px-6 pb-6 pt-0">
                 <div className="prose prose-invert prose-cyan max-w-none">
-                  <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                  <div className="text-slate-100/90 text-base md:text-lg leading-7 md:leading-8 whitespace-pre-wrap">
                     {content}
                   </div>
                 </div>
@@ -839,7 +839,7 @@ export default function BhriguPredictionView({
     if (simplifiedRendering) {
       return (
         <div className="space-y-6">
-          <div className="bg-gray-800/60 border border-gray-700/60 rounded-xl p-4 text-sm text-gray-300">
+          <div className="bg-gray-800/60 border border-gray-700/60 rounded-xl p-4 text-sm text-slate-100/80">
             {allowComplexParsing
               ? 'Simplified view enabled for low-end devices.'
               : 'Simplified view enabled by configuration.'}
@@ -848,10 +848,10 @@ export default function BhriguPredictionView({
             <div className="space-y-4">
               {availableSections.map((section) => (
                 <div key={section.key} className="rounded-xl border border-gray-700/50 bg-gray-900/40 p-5">
-                  <h3 className="text-lg font-semibold text-cyan-300 mb-2">
+                  <h3 className="text-lg md:text-xl font-semibold text-cyan-300 mb-2">
                     {tLocale(section.titleKey, language)}
                   </h3>
-                  <p className="text-gray-300 whitespace-pre-wrap">
+                  <p className="text-slate-100/90 text-base md:text-lg leading-7 md:leading-8 whitespace-pre-wrap">
                     {getSectionContent(section.key)}
                   </p>
                 </div>
@@ -860,8 +860,8 @@ export default function BhriguPredictionView({
           )}
           {availableSections.length === 0 && prediction.full_analysis && (
             <div className="rounded-xl border border-gray-700/50 bg-gray-900/40 p-5">
-              <h3 className="text-lg font-semibold text-cyan-300 mb-2">Full Reading</h3>
-              <p className="text-gray-300 whitespace-pre-wrap">
+              <h3 className="text-lg md:text-xl font-semibold text-cyan-300 mb-2">Full Reading</h3>
+              <p className="text-slate-100/90 text-base md:text-lg leading-7 md:leading-8 whitespace-pre-wrap">
                 {prediction.full_analysis}
               </p>
             </div>
@@ -878,7 +878,7 @@ export default function BhriguPredictionView({
             <p className="text-cyan-300 text-sm font-semibold uppercase tracking-wide">
               {t('bhriguPredictionView.parsedFromFullAnalysis.title')}
             </p>
-            <p className="text-gray-300 text-sm mt-1">
+            <p className="text-slate-100/80 text-sm mt-1">
               {t('bhriguPredictionView.parsedFromFullAnalysis.description')}
             </p>
           </div>
@@ -901,7 +901,7 @@ export default function BhriguPredictionView({
                 {icon}
                 {t('bhriguPredictionView.detailedInsights')}
               </h2>
-              <p className="text-gray-400 text-sm">
+              <p className="text-slate-100/70 text-sm">
                 {t('bhriguPredictionView.detailSubtitle', { title })}
               </p>
             </div>
@@ -942,7 +942,7 @@ export default function BhriguPredictionView({
                   <h3 className="text-xl font-bold text-white relative z-10">
                     {t('bhriguPredictionView.fullReading.title')}
                   </h3>
-                  <p className="text-sm text-gray-400 mt-1">
+                  <p className="text-sm text-slate-100/70 mt-1">
                     {showFullAnalysis
                       ? t('bhriguPredictionView.fullReading.hideDescription')
                       : t('bhriguPredictionView.fullReading.showDescription')}
@@ -974,7 +974,7 @@ export default function BhriguPredictionView({
                            border border-gray-700/50 rounded-xl p-6 overflow-visible"
                 >
                   <div className="prose prose-invert prose-cyan max-w-none">
-                    <div className="text-gray-300 leading-relaxed whitespace-pre-wrap max-h-[70vh] overflow-auto pr-2">
+                    <div className="text-slate-100/90 text-base md:text-lg leading-7 md:leading-8 whitespace-pre-wrap max-h-[70vh] overflow-auto pr-2">
                       {predictionData.full_analysis}
                     </div>
                   </div>
