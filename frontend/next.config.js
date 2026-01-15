@@ -7,10 +7,8 @@ const nextConfig = {
   reactStrictMode: true,
   // Enable standalone output for Docker production builds
   output: 'standalone',
-  eslint: {
-    // Fail build on ESLint errors to ensure code quality
-    ignoreDuringBuilds: false,
-  },
+  // Empty turbopack config to enable Turbopack in Next.js 16+
+  turbopack: {},
   typescript: {
     // Fail build on TypeScript errors to ensure type safety
     ignoreBuildErrors: false,
@@ -26,9 +24,12 @@ const nextConfig = {
 
   // Image optimization with CDN support
   images: {
-    domains: ['localhost'],
     // Add CDN domains for image optimization
     remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
       {
         protocol: 'https',
         hostname: '**.vercel.app',
