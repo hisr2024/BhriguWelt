@@ -444,7 +444,7 @@ export class PDFGenerator {
    * Add footer with disclaimer and copyright
    */
   private addFooter(): void {
-    const pageCount = this.pdf.getNumberOfPages();
+    const pageCount = (this.pdf as any).internal.getNumberOfPages();
 
     for (let i = 1; i <= pageCount; i++) {
       this.pdf.setPage(i);

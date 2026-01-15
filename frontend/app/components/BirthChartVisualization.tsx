@@ -79,7 +79,7 @@ export default function BirthChartVisualization({
   const normalizePlanets = (data: any): Planet[] => {
     const planetsRaw = data?.planets ?? data?.chart?.planets ?? data?.planets_data ?? [];
     const housesRaw = Array.isArray(data?.houses) ? data.houses : [];
-    const houses = housesRaw.every((house) => typeof house === 'string') ? (housesRaw as string[]) : [];
+    const houses = housesRaw.every((house: unknown) => typeof house === 'string') ? (housesRaw as string[]) : [];
     const planetsArray = Array.isArray(planetsRaw)
       ? planetsRaw
       : (planetsRaw && typeof planetsRaw === 'object' ? Object.entries(planetsRaw) : []);
