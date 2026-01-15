@@ -1,0 +1,53 @@
+# npm audit report
+
+@sentry/nextjs  8.10.0 - 8.48.0
+Depends on vulnerable versions of @sentry/node
+Potential DoS when using ContextLines integration - https://github.com/advisories/GHSA-r5w7-f542-q2j4
+fix available via `npm audit fix --force`
+Will install @sentry/nextjs@8.55.0, which is outside the stated dependency range
+node_modules/@sentry/nextjs
+
+@sentry/node  8.10.0 - 8.48.0
+Potential DoS when using ContextLines integration - https://github.com/advisories/GHSA-r5w7-f542-q2j4
+fix available via `npm audit fix --force`
+Will install @sentry/nextjs@8.55.0, which is outside the stated dependency range
+node_modules/@sentry/node
+
+axios  1.0.0 - 1.11.0
+Severity: high
+Server-Side Request Forgery in axios - https://github.com/advisories/GHSA-8hc4-vh64-cxmj
+Axios is vulnerable to DoS attack through lack of data size check - https://github.com/advisories/GHSA-4hjh-wcwx-xvwj
+axios Requests Vulnerable To Possible SSRF and Credential Leakage via Absolute URL - https://github.com/advisories/GHSA-jr5f-v2jv-69x6
+fix available via `npm audit fix --force`
+Will install axios@1.13.2, which is outside the stated dependency range
+node_modules/axios
+
+next  15.0.0-canary.0 - 15.4.6
+Severity: critical
+Information exposure in Next.js dev server due to lack of origin verification - https://github.com/advisories/GHSA-3h52-269p-cp9r
+Next.JS vulnerability can lead to DoS via cache poisoning  - https://github.com/advisories/GHSA-67rr-84xm-4c7r
+Next.js Affected by Cache Key Confusion for Image Optimization API Routes - https://github.com/advisories/GHSA-g5qg-72qw-gw5v
+Next.js Content Injection Vulnerability for Image Optimization - https://github.com/advisories/GHSA-xv57-4mr9-wg8v
+Next.js Improper Middleware Redirect Handling Leads to SSRF - https://github.com/advisories/GHSA-4342-x723-ch2f
+Authorization Bypass in Next.js Middleware - https://github.com/advisories/GHSA-f82v-jwr5-mffw
+Next.js is vulnerable to RCE in React flight protocol - https://github.com/advisories/GHSA-9qr9-h5gf-34mp
+Next Server Actions Source Code Exposure  - https://github.com/advisories/GHSA-w37m-7fhw-fmv9
+Next Vulnerable to Denial of Service with Server Components - https://github.com/advisories/GHSA-mwv6-3258-q52c
+fix available via `npm audit fix --force`
+Will install next@15.5.9, which is outside the stated dependency range
+node_modules/next
+
+playwright  <1.55.1
+Severity: high
+Playwright downloads and installs browsers without verifying the authenticity of the SSL certificate - https://github.com/advisories/GHSA-7mvr-c777-76hp
+fix available via `npm audit fix --force`
+Will install @playwright/test@1.57.0, which is outside the stated dependency range
+node_modules/playwright
+  @playwright/test  0.9.7 - 0.1112.0-alpha2 || 1.38.0-alpha-1692262648000 - 1.55.1-beta-1758616458000
+  Depends on vulnerable versions of playwright
+  node_modules/@playwright/test
+
+6 vulnerabilities (2 low, 3 high, 1 critical)
+
+To address all issues, run:
+  npm audit fix --force
