@@ -4,15 +4,19 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Sparkles, Calendar, Clock, MapPin, ArrowRight, Shield, Zap, User } from 'lucide-react';
-import { astrologyAPI, type BirthDetails } from '@/lib/api';
+import { type BirthDetails } from '@/lib/api';
 import AnimatedBackground, { FloatingElements } from '../components/AnimatedBackground';
 import GenZButton from '../components/GenZButton';
 import GenZCard from '../components/GenZCard';
 import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
-import { setItem, STORES } from '@/lib/storage';
-import { setCurrentProfileId } from '@/lib/profileHelpers';
+import {
+  createProfileWithRetry,
+  type ProfileData,
+  type ProfileCreationProgress,
+} from '@/lib/services/profileCreationService';
+import ProfileCreationProgress from '../components/ProfileCreationProgress';
 
 export default function GetStartedPage() {
   const router = useRouter();
@@ -27,6 +31,7 @@ export default function GetStartedPage() {
   });
   const [manualCoordsEnabled, setManualCoordsEnabled] = useState(false);
   const [manualCoords, setManualCoords] = useState({ latitude: '', longitude: '' });
+  const [creationProgress, setCreationProgress] = useState<ProfileCreationProgress | null>(null);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const today = new Date().toISOString().split('T')[0];
 
@@ -76,9 +81,12 @@ export default function GetStartedPage() {
     }
     setLoading(true);
     setError('');
+    setCreationProgress(null);
+
     try {
-      // Build request data - only include coordinates if both are valid numbers
-      const requestData: BirthDetails = {
+      // Build profile data
+      const profileData: ProfileData = {
+        name: formData.name,
         date_of_birth: formData.date_of_birth,
         time_of_birth: formData.time_of_birth,
         place_of_birth: formData.place_of_birth,
@@ -91,63 +99,37 @@ export default function GetStartedPage() {
         !Number.isNaN(latitudeValue) &&
         !Number.isNaN(longitudeValue)
       ) {
-        requestData.latitude = latitudeValue;
-        requestData.longitude = longitudeValue;
+        profileData.latitude = latitudeValue;
+        profileData.longitude = longitudeValue;
       }
 
-      const result = await astrologyAPI.calculateBirthChart(requestData);
+      // Create profile with progress tracking and retry logic
+      const result = await createProfileWithRetry(
+        profileData,
+        {
+          encryptionKey,
+          onProgress: (progress) => {
+            setCreationProgress(progress);
+          },
+        },
+        2 // Max 2 retries
+      );
 
-      // Use geocoded coordinates from backend if manual coordinates weren't provided
-      const finalLatitude = latitudeValue !== undefined
-        ? latitudeValue
-        : result.data?.birth_details?.latitude;
-      const finalLongitude = longitudeValue !== undefined
-        ? longitudeValue
-        : result.data?.birth_details?.longitude;
-
-      const profileData = {
-        name: formData.name,
-        dateOfBirth: formData.date_of_birth,
-        timeOfBirth: formData.time_of_birth,
-        placeOfBirth: formData.place_of_birth,
-        latitude: finalLatitude,
-        longitude: finalLongitude,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      // Save profile with consistent key 'current_profile' for easy retrieval across all features
-      // setItem now returns the assigned ID
-      const profileId = await setItem(STORES.PROFILES, 'current_profile', profileData, encryptionKey);
-
-      // Persist the profile ID to localStorage for quick future access
-      if (profileId) {
-        // profileId from IndexedDB will be either number (autoIncrement) or string (manual key)
-        // Type-assert since IDBValidKey is broader but our schema ensures it's string | number
-        setCurrentProfileId(profileId as string | number);
+      if (result.success) {
+        // Navigate to dashboard on success
+        router.push('/dashboard');
       } else {
-        console.warn('Profile saved but ID not returned - using fallback');
+        // Handle error with user-friendly message
+        const errorMessage = result.error?.message || 'Failed to create profile. Please try again.';
+        setError(errorMessage);
+        setCreationProgress(null);
       }
-
-      const reportData = {
-        profileId: profileId || 1,
-        type: 'birth-chart',
-        title: 'Birth Chart',
-        data: result.data,
-        generatedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      await setItem(STORES.REPORTS, 'current_birth_chart', reportData, encryptionKey);
-      router.push('/dashboard');
     } catch (err: any) {
-      // Enhanced error handling with better messages
-      const errorMessage =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        err.message ||
-        'Failed to calculate birth chart. Please try again.';
+      // Fallback error handling
+      const errorMessage = err.message || 'An unexpected error occurred. Please try again.';
       setError(errorMessage);
-      console.error('Birth chart calculation failed:', err);
+      setCreationProgress(null);
+      console.error('Profile creation failed:', err);
     } finally {
       setLoading(false);
     }
@@ -279,6 +261,9 @@ export default function GetStartedPage() {
               </motion.div>
             )}
             {error && (<motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-genz-hot-pink/20 border-2 border-genz-hot-pink/50 rounded-2xl p-4 text-white backdrop-blur-xl">{error}</motion.div>)}
+            {loading && creationProgress && (
+              <ProfileCreationProgress progress={creationProgress} error={error} />
+            )}
             <div className="flex gap-4 pt-6">
               {step > 1 && (<GenZButton variant="outline" size="lg" onClick={() => setStep(step - 1)} type="button" className="flex-1">Back</GenZButton>)}
               {step < 4 ? (

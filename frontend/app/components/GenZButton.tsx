@@ -14,6 +14,8 @@ interface GenZButtonProps {
   className?: string;
   fullWidth?: boolean;
   type?: 'button' | 'submit' | 'reset';
+  'aria-label'?: string;
+  'aria-describedby'?: string;
 }
 
 export default function GenZButton({
@@ -26,8 +28,10 @@ export default function GenZButton({
   className = '',
   fullWidth = false,
   type = 'button',
+  'aria-label': ariaLabel,
+  'aria-describedby': ariaDescribedBy,
 }: GenZButtonProps) {
-  const baseClass = 'font-bold transition-all duration-300 haptic-feedback inline-flex min-h-[44px] items-center justify-center gap-2 py-3';
+  const baseClass = 'font-bold transition-all duration-300 haptic-feedback inline-flex min-h-[44px] items-center justify-center gap-2 py-3 focus:outline-none focus:ring-4 focus:ring-genz-electric-blue/50 focus-visible:ring-4 focus-visible:ring-genz-electric-blue';
 
   const variantClasses = {
     primary: 'genz-button',
@@ -52,11 +56,15 @@ export default function GenZButton({
       className={`${baseClass} ${variantClasses[variant]} ${sizeClasses[size]} ${disabledClass} ${widthClass} ${className}`}
       onClick={onClick}
       disabled={disabled || loading}
+      aria-label={ariaLabel}
+      aria-describedby={ariaDescribedBy}
+      aria-busy={loading}
+      aria-disabled={disabled || loading}
       whileHover={!disabled && !loading ? { scale: 1.05 } : {}}
       whileTap={!disabled && !loading ? { scale: 0.95 } : {}}
       transition={{ duration: 0.2 }}
     >
-      {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+      {loading && <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />}
       {children}
     </motion.button>
   );
@@ -66,15 +74,18 @@ export function FloatingActionButton({
   children,
   onClick,
   className = '',
+  'aria-label': ariaLabel = 'Action button',
 }: {
   children: ReactNode;
   onClick?: () => void;
   className?: string;
+  'aria-label'?: string;
 }) {
   return (
     <motion.button
-      className={`fixed bottom-24 right-6 md:bottom-8 md:right-8 w-14 h-14 bg-gradient-to-r from-genz-electric-blue to-genz-purple-haze rounded-full shadow-genz-glow flex items-center justify-center z-40 haptic-feedback ${className}`}
+      className={`fixed bottom-24 right-6 md:bottom-8 md:right-8 w-14 h-14 bg-gradient-to-r from-genz-electric-blue to-genz-purple-haze rounded-full shadow-genz-glow flex items-center justify-center z-40 haptic-feedback focus:outline-none focus:ring-4 focus:ring-genz-electric-blue ${className}`}
       onClick={onClick}
+      aria-label={ariaLabel}
       whileHover={{ scale: 1.1, rotate: 90 }}
       whileTap={{ scale: 0.9 }}
       initial={{ scale: 0, rotate: -180 }}

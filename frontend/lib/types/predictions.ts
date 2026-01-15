@@ -46,7 +46,7 @@ export interface PredictionDisplayProps {
 }
 
 export type ShareMethod = 'native' | 'whatsapp' | 'email' | 'copy' | 'twitter';
-export type ExportFormat = 'txt' | 'pdf' | 'json' | 'markdown';
+export type ExportFormat = 'txt' | 'pdf' | 'json' | 'markdown' | 'image' | 'png';
 
 export interface ContentCleaningOptions {
   removeIntroductions?: boolean;
