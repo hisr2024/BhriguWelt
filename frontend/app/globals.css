@@ -372,3 +372,205 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* ============================================================================
+   PREDICTION DISPLAY ANIMATIONS
+   ============================================================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* ============================================================================
+   PRINT STYLES
+   ============================================================================ */
+
+@media print {
+  /* Hide non-essential elements */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Force page breaks */
+  .print\:break-before-page {
+    page-break-before: always;
+  }
+
+  .print\:break-after-page {
+    page-break-after: always;
+  }
+
+  .print\:break-inside-avoid {
+    page-break-inside: avoid;
+  }
+
+  /* Optimize for print */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Remove shadows and gradients */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Flatten gradients to solid colors */
+  .bg-gradient-to-r,
+  .bg-gradient-to-br,
+  .bg-gradient-to-l {
+    background: #6366f1 !important; /* Purple-600 */
+    color: white !important;
+  }
+
+  /* Expand all sections for print */
+  .prediction-section-content {
+    display: block !important;
+    height: auto !important;
+  }
+
+  /* Ensure readable font sizes */
+  body {
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  h1 { font-size: 24pt; }
+  h2 { font-size: 18pt; }
+  h3 { font-size: 14pt; }
+  h4 { font-size: 12pt; }
+
+  /* Add borders for sections */
+  .section-print-border {
+    border: 1px solid #e5e7eb;
+    padding: 12pt;
+    margin-bottom: 12pt;
+  }
+
+  /* Page margins */
+  @page {
+    margin: 2cm;
+  }
+
+  /* Avoid breaking inside elements */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Print URLs */
+  a[href^="http"]:after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
+}
+
+/* ============================================================================
+   RESPONSIVE UTILITIES
+   ============================================================================ */
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ============================================================================
+   PROSE ENHANCEMENTS FOR PREDICTIONS
+   ============================================================================ */
+
+.prose-prediction {
+  @apply max-w-none text-gray-700;
+}
+
+.prose-prediction p {
+  @apply leading-relaxed mb-4;
+}
+
+.prose-prediction strong {
+  @apply text-gray-900 font-semibold;
+}
+
+.prose-prediction em {
+  @apply text-purple-700 font-medium not-italic;
+}
+
+.prose-prediction ul,
+.prose-prediction ol {
+  @apply my-4 space-y-2 ml-6;
+}
+
+.prose-prediction li {
+  @apply text-gray-700;
+}
+
+.prose-prediction blockquote {
+  @apply border-l-4 border-purple-500 pl-4 italic text-gray-600 my-4;
+}
