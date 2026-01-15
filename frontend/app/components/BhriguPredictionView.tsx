@@ -497,6 +497,7 @@ export default function BhriguPredictionView({
         window.removeEventListener('offline', handleOffline);
       };
     }
+    return undefined;
   }, []);
 
   // ✨ QUANTUM FIX: Save prediction to localStorage for offline fallback

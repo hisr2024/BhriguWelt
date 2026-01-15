@@ -25,6 +25,7 @@ export function GDPRNotice({ onAccept, onDecline }: GDPRNoticeProps) {
       const timer = setTimeout(() => setIsVisible(true), 1000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, []);
 
   const handleAccept = () => {
