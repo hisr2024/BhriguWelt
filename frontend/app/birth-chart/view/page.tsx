@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Star, Moon, Sun, ArrowLeft, MessageSquare, Eye, Download } from 'lucide-react';
+import { Sparkles, Star, Moon, Sun, ArrowLeft, MessageSquare, Eye, Download, Share2, Printer } from 'lucide-react';
 import Link from 'next/link';
 import AnimatedBackground, { FloatingElements } from '../../components/AnimatedBackground';
 import GenZCard from '../../components/GenZCard';
@@ -18,6 +18,8 @@ import { loadCurrentProfile } from '@/lib/profileHelpers';
 import { useRouter } from 'next/navigation';
 import { astrologyAPI } from '@/lib/api';
 import ErrorBoundary from '../../components/ErrorBoundary';
+import { PDFGenerator, downloadBirthChartPDF, type BirthData, type ChartData as PDFChartData, type Interpretation } from '@/lib/export/pdfGenerator';
+import { ShareUtils, showShareSuccess, showShareError } from '@/lib/export/shareUtils';
 
 export default function BirthChartViewPage() {
   const [chartData, setChartData] = useState<any>(null);
@@ -27,6 +29,10 @@ export default function BirthChartViewPage() {
   const [usingDemo, setUsingDemo] = useState(false);
   const [loadingChart, setLoadingChart] = useState(true);
   const [chartSize, setChartSize] = useState(600);
+  const [exportingPDF, setExportingPDF] = useState(false);
+  const [sharingChart, setSharingChart] = useState(false);
+  const [printingChart, setPrintingChart] = useState(false);
+  const [currentProfile, setCurrentProfile] = useState<any>(null);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
   const zodiacSigns = [
@@ -72,6 +78,11 @@ export default function BirthChartViewPage() {
     try {
       setLoadingChart(true);
       const profile = await loadCurrentProfile(encryptionKey);
+
+      // Store profile for export/share operations
+      if (profile) {
+        setCurrentProfile(profile);
+      }
 
       // Try API first if profile exists
       if (profile) {
@@ -269,6 +280,230 @@ export default function BirthChartViewPage() {
   const resolvedZodiacSign = resolveZodiacSign(chartData);
   const resolvedMoonSign = resolveMoonSign(chartData);
 
+  /**
+   * Export birth chart as PDF
+   */
+  const handleExportPDF = async () => {
+    if (!currentProfile || !chartData) {
+      showShareError('No birth chart data available to export');
+      return;
+    }
+
+    try {
+      setExportingPDF(true);
+
+      // Prepare birth data
+      const birthData: BirthData = {
+        name: currentProfile.name || 'Unknown',
+        dateOfBirth: currentProfile.dateOfBirth || '',
+        timeOfBirth: currentProfile.timeOfBirth || '',
+        placeOfBirth: currentProfile.placeOfBirth || '',
+        latitude: currentProfile.latitude,
+        longitude: currentProfile.longitude,
+        timezone: currentProfile.timezone,
+      };
+
+      // Prepare chart data for PDF
+      const pdfChartData: PDFChartData = {
+        sun: chartData.sun || chartData.planets?.find((p: any) => p.name === 'Sun'),
+        moon: chartData.moon || chartData.planets?.find((p: any) => p.name === 'Moon'),
+        ascendant: {
+          sign: resolvedAscendant,
+          degree: chartData.ascendant?.degree || 0,
+        },
+        planets: planetDetails.map((planet: any) => ({
+          name: planet.name,
+          sign: planet.sign,
+          house: planet.house,
+          degree: planet.position || 0,
+          retrograde: planet.retrograde,
+        })),
+        houses: chartData.houses,
+        dashas: chartData.dashas,
+        yogas: chartData.yogas,
+      };
+
+      // Prepare interpretations
+      const pdfInterpretations: Interpretation[] = [
+        {
+          category: 'Sun Sign',
+          title: resolvedZodiacSign,
+          content: interpretations.sun,
+          confidence: 0.95,
+          sources: ['Vedic Astrology Core Principles'],
+        },
+        {
+          category: 'Moon Sign',
+          title: resolvedMoonSign,
+          content: interpretations.moon,
+          confidence: 0.95,
+          sources: ['Vedic Astrology Core Principles'],
+        },
+        {
+          category: 'Ascendant',
+          title: resolvedAscendant,
+          content: interpretations.ascendant,
+          confidence: 0.95,
+          sources: ['Vedic Astrology Core Principles'],
+        },
+        {
+          category: 'Overall Analysis',
+          title: 'Birth Chart Summary',
+          content: interpretations.overall,
+          confidence: 0.90,
+          sources: ['Bhrigu Samhita', 'Nadi Jyotisha'],
+        },
+      ];
+
+      // Generate and download PDF
+      await downloadBirthChartPDF(birthData, pdfChartData, pdfInterpretations, {
+        includeChartImage: true,
+        includePlanets: true,
+        includeHouses: true,
+        includeDashas: true,
+        includeYogas: true,
+        includeInterpretations: true,
+        includeCitations: true,
+        onProgress: (progress, message) => {
+          console.log(`PDF Export: ${progress}% - ${message}`);
+        },
+      });
+
+      showShareSuccess('download');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      showShareError(error instanceof Error ? error.message : 'Failed to export PDF');
+    } finally {
+      setExportingPDF(false);
+    }
+  };
+
+  /**
+   * Share birth chart using native share or clipboard
+   */
+  const handleShareChart = async () => {
+    if (!currentProfile || !chartData) {
+      showShareError('No birth chart data available to share');
+      return;
+    }
+
+    try {
+      setSharingChart(true);
+
+      const shareTitle = `${currentProfile.name}'s Birth Chart - BhriguWelt`;
+      const shareContent = `
+Birth Chart Analysis for ${currentProfile.name}
+
+Born: ${currentProfile.dateOfBirth} at ${currentProfile.timeOfBirth}
+Place: ${currentProfile.placeOfBirth}
+
+Key Points:
+• Sun Sign: ${resolvedZodiacSign}
+• Moon Sign: ${resolvedMoonSign}
+• Ascendant: ${resolvedAscendant}
+
+${interpretations.overall}
+
+Generated by BhriguWelt - Your AI-powered Vedic Astrology companion
+      `.trim();
+
+      const result = await ShareUtils.sharePrediction(
+        {
+          title: shareTitle,
+          content: shareContent,
+          birthData: {
+            name: currentProfile.name,
+            dateOfBirth: currentProfile.dateOfBirth,
+            timeOfBirth: currentProfile.timeOfBirth,
+            placeOfBirth: currentProfile.placeOfBirth,
+          },
+        },
+        {
+          includeLink: true,
+          onSuccess: (method) => {
+            showShareSuccess(method);
+          },
+          onError: (error) => {
+            showShareError(error);
+          },
+        }
+      );
+
+      if (!result.success && result.error) {
+        showShareError(result.error);
+      }
+    } catch (error) {
+      console.error('Error sharing chart:', error);
+      showShareError(error instanceof Error ? error.message : 'Failed to share chart');
+    } finally {
+      setSharingChart(false);
+    }
+  };
+
+  /**
+   * Print birth chart with optimized layout
+   */
+  const handlePrintChart = async () => {
+    if (!currentProfile || !chartData) {
+      showShareError('No birth chart data available to print');
+      return;
+    }
+
+    try {
+      setPrintingChart(true);
+
+      const printData = {
+        title: `${currentProfile.name}'s Birth Chart`,
+        content: `
+${interpretations.overall}
+
+Sun Sign Interpretation:
+${interpretations.sun}
+
+Moon Sign Interpretation:
+${interpretations.moon}
+
+Ascendant Interpretation:
+${interpretations.ascendant}
+
+Strengths & Natural Gifts:
+${interpretations.strengths.map((s: string) => `• ${s}`).join('\n')}
+
+Growth Areas:
+${interpretations.growth.map((g: string) => `• ${g}`).join('\n')}
+        `.trim(),
+        birthData: {
+          name: currentProfile.name,
+          dateOfBirth: currentProfile.dateOfBirth,
+          timeOfBirth: currentProfile.timeOfBirth,
+          placeOfBirth: currentProfile.placeOfBirth,
+        },
+      };
+
+      const result = await ShareUtils.printPrediction(printData, {
+        onBeforePrint: () => {
+          console.log('Opening print dialog...');
+        },
+        onAfterPrint: () => {
+          console.log('Print dialog closed');
+          showShareSuccess('print');
+        },
+        onError: (error) => {
+          showShareError(error);
+        },
+      });
+
+      if (!result.success && result.error) {
+        showShareError(result.error);
+      }
+    } catch (error) {
+      console.error('Error printing chart:', error);
+      showShareError(error instanceof Error ? error.message : 'Failed to print chart');
+    } finally {
+      setPrintingChart(false);
+    }
+  };
+
   const interpretations = {
     sun: `Your Sun in ${resolvedZodiacSign || 'Leo'} reveals your core essence and life force. This placement highlights where you are meant to lead, create, and express your authentic self. When you align with this energy, you feel energized, confident, and capable of inspiring others. The Sun also speaks to your sense of purpose—what you naturally gravitate toward when you want to feel alive and fulfilled.`,
     moon: `Your Moon in ${resolvedMoonSign || 'Taurus'} describes your emotional needs, intuitive rhythms, and how you restore balance. This placement indicates the kind of environment that helps you feel safe, loved, and grounded. It also highlights how you process stress and what comforts you most during transitions. By honoring your Moon sign, you strengthen your inner resilience and emotional clarity.`,
@@ -343,10 +578,32 @@ export default function BirthChartViewPage() {
             <GenZButton
               variant="outline"
               size="lg"
+              onClick={handleExportPDF}
+              disabled={exportingPDF || !currentProfile}
               className="group"
             >
-              <Download className="w-5 h-5 group-hover:translate-y-1 transition-transform" />
-              Export PDF
+              <Download className={`w-5 h-5 ${exportingPDF ? 'animate-bounce' : 'group-hover:translate-y-1'} transition-transform`} />
+              {exportingPDF ? 'Generating...' : 'Export PDF'}
+            </GenZButton>
+            <GenZButton
+              variant="outline"
+              size="lg"
+              onClick={handleShareChart}
+              disabled={sharingChart || !currentProfile}
+              className="group"
+            >
+              <Share2 className={`w-5 h-5 ${sharingChart ? 'animate-spin' : 'group-hover:scale-110'} transition-transform`} />
+              {sharingChart ? 'Sharing...' : 'Share'}
+            </GenZButton>
+            <GenZButton
+              variant="outline"
+              size="lg"
+              onClick={handlePrintChart}
+              disabled={printingChart || !currentProfile}
+              className="group"
+            >
+              <Printer className={`w-5 h-5 ${printingChart ? 'animate-pulse' : 'group-hover:rotate-12'} transition-transform`} />
+              {printingChart ? 'Printing...' : 'Print'}
             </GenZButton>
           </div>
 
