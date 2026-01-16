@@ -326,6 +326,10 @@ export default function BhriguPredictionView({
   } = useBhriguPrediction({ category, fetchPrediction, profile });
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+
+  // View mode state management
+  const [viewMode, setViewMode] = useState<'layman' | 'astrologer'>('layman');
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
   const [parsedFromFullAnalysis, setParsedFromFullAnalysis] = useState<Record<string, string>>({});
   const [isParsing, setIsParsing] = useState(false);
   const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
@@ -415,6 +419,40 @@ export default function BhriguPredictionView({
     return Object.entries(vars).reduce((str, [key, value]) =>
       str.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value)), translated);
   }, [language]);
+
+  // Load view mode preference from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedViewMode = localStorage.getItem('predictionViewMode');
+        if (savedViewMode === 'layman' || savedViewMode === 'astrologer') {
+          setViewMode(savedViewMode);
+          setShowTechnicalDetails(savedViewMode === 'astrologer');
+          console.log('📖 Loaded view mode preference:', savedViewMode);
+        }
+      } catch (error) {
+        console.warn('⚠️ Failed to load view mode preference:', error);
+      }
+    }
+  }, []);
+
+  // Save view mode preference to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('predictionViewMode', viewMode);
+        console.log('💾 Saved view mode preference:', viewMode);
+      } catch (error) {
+        console.warn('⚠️ Failed to save view mode preference:', error);
+      }
+    }
+  }, [viewMode]);
+
+  // Handle view mode toggle
+  const handleViewModeChange = useCallback((mode: 'layman' | 'astrologer') => {
+    setViewMode(mode);
+    setShowTechnicalDetails(mode === 'astrologer');
+  }, []);
 
   const reportMetric = useCallback((name: string, durationMs: number, metadata?: Record<string, unknown>) => {
     if (typeof window === 'undefined') return;
@@ -1113,6 +1151,64 @@ export default function BhriguPredictionView({
             <div>
               <h1 className="text-4xl font-bold text-white mb-2">{title}</h1>
               <p className="text-gray-400">{description}</p>
+            </div>
+          </div>
+
+          {/* View Mode Toggle */}
+          <div className="mt-6 mb-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              {/* Simple View Button */}
+              <button
+                onClick={() => handleViewModeChange('layman')}
+                aria-pressed={viewMode === 'layman'}
+                aria-label="Switch to Simple View"
+                className={`flex-1 sm:flex-initial px-6 py-3 rounded-xl font-semibold
+                           transition-all duration-300 flex items-center justify-center gap-2
+                           min-h-[44px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900
+                           ${
+                             viewMode === 'layman'
+                               ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-genz-glow focus:ring-cyan-400'
+                               : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700 hover:text-white focus:ring-gray-500'
+                           }`}
+              >
+                <span className="text-xl" aria-hidden="true">👤</span>
+                <span>Simple View</span>
+              </button>
+
+              {/* Astrologer View Button */}
+              <button
+                onClick={() => handleViewModeChange('astrologer')}
+                aria-pressed={viewMode === 'astrologer'}
+                aria-label="Switch to Astrologer View"
+                className={`flex-1 sm:flex-initial px-6 py-3 rounded-xl font-semibold
+                           transition-all duration-300 flex items-center justify-center gap-2
+                           min-h-[44px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900
+                           ${
+                             viewMode === 'astrologer'
+                               ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-genz-glow focus:ring-purple-400'
+                               : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700 hover:text-white focus:ring-gray-500'
+                           }`}
+              >
+                <span className="text-xl" aria-hidden="true">🔮</span>
+                <span>Astrologer View</span>
+              </button>
+            </div>
+
+            {/* Explainer Text */}
+            <div className="mt-3 text-center">
+              <p className="text-sm text-slate-100/70">
+                {viewMode === 'layman' ? (
+                  <>
+                    <span className="text-cyan-400" aria-hidden="true">✨</span>
+                    {' '}Reading simplified for easy understanding
+                  </>
+                ) : (
+                  <>
+                    <span className="text-purple-400" aria-hidden="true">📊</span>
+                    {' '}Technical analysis with astrological references
+                  </>
+                )}
+              </p>
             </div>
           </div>
 
