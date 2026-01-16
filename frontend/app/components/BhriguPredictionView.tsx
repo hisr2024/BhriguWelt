@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useLayoutEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp, Clock, Star, Shield, Sparkles } from 'lucide-react';
+import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp, Clock, Star, Shield, Sparkles, Code } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
 import { getCurrentLanguage, setLanguage as setLanguagePreference, type Language } from '@/lib/copy';
@@ -14,6 +14,7 @@ import { useEncryption } from '@/lib/context/EncryptionContext';
 import { deleteItem, getAllItems, getItem, setItem, STORES } from '@/lib/storage';
 import { useBhriguPrediction } from '@/lib/hooks/useBhriguPrediction';
 import useFeatureFlags from '@/hooks/useFeatureFlags';
+import { getSectionIcon, SectionIcon } from '@/lib/sectionIcons';
 
 const SECTION_LANGUAGES: Language[] = ['en', 'hi'];
 
@@ -454,6 +455,38 @@ const extractTiming = (prediction: any): string => {
 
   // Fallback
   return 'Timing details available in full analysis below';
+};
+
+/**
+ * Filter sections based on view mode (layman vs astrologer)
+ * Layman mode hides technical astrological sections
+ */
+const filterSectionsByViewMode = (
+  sections: CategorySectionConfig[],
+  viewMode: 'layman' | 'astrologer'
+): CategorySectionConfig[] => {
+  if (viewMode === 'astrologer') {
+    return sections; // Show all sections for astrologer mode
+  }
+
+  // Filter out technical sections for layman mode
+  const technicalKeywords = [
+    'technical',
+    'planetary_combinations',
+    'dosha_identification',
+    'ashtakavarga',
+    'bhava_analysis',
+    'dasha_analysis',
+    'transit_analysis',
+    'yogas',
+    'divisional_charts',
+    'nakshatra_lord'
+  ];
+
+  return sections.filter(section => {
+    const sectionKey = section.key.toLowerCase();
+    return !technicalKeywords.some(keyword => sectionKey.includes(keyword));
+  });
 };
 
 export default function BhriguPredictionView({
@@ -951,7 +984,7 @@ export default function BhriguPredictionView({
           }}
         >
           <h3 id={headerId} className={`text-lg md:text-xl font-semibold ${colorClass.text} flex items-center gap-3 flex-1`}>
-            <span className={`w-1.5 h-6 bg-gradient-to-b ${colorClass.accent} rounded-full`} aria-hidden="true" />
+            <SectionIcon sectionKey={sectionKey} size="md" color={color} />
             {sectionTitle}
           </h3>
           {/* Chevron icon with animation */}
@@ -1053,6 +1086,24 @@ export default function BhriguPredictionView({
   const handleQuestionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuestion(e.target.value);
   };
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 🚀 PERFORMANCE OPTIMIZATIONS - Memoize expensive computations
+  // ═══════════════════════════════════════════════════════════════════════════
+  const memoizedKeyInsight = useMemo(
+    () => prediction ? extractKeyInsight(prediction) : '',
+    [prediction]
+  );
+
+  const memoizedActionItems = useMemo(
+    () => prediction ? extractActionItems(prediction) : '',
+    [prediction]
+  );
+
+  const memoizedTiming = useMemo(
+    () => prediction ? extractTiming(prediction) : '',
+    [prediction]
+  );
 
   // ✨ QUANTUM FIX: Optimized rendering function with performance checks
   const renderPredictionContent = useCallback(() => {
@@ -1178,7 +1229,7 @@ export default function BhriguPredictionView({
                 Key Insight
               </div>
               <p className="text-white text-lg font-medium leading-relaxed">
-                {extractKeyInsight(predictionData)}
+                {memoizedKeyInsight}
               </p>
             </div>
 
@@ -1189,7 +1240,7 @@ export default function BhriguPredictionView({
                 Recommended Actions
               </div>
               <p className="text-white text-lg font-medium leading-relaxed">
-                {extractActionItems(predictionData)}
+                {memoizedActionItems}
               </p>
             </div>
 
@@ -1200,7 +1251,7 @@ export default function BhriguPredictionView({
                 Important Timing
               </div>
               <p className="text-white text-lg font-medium leading-relaxed">
-                {extractTiming(predictionData)}
+                {memoizedTiming}
               </p>
             </div>
           </div>
