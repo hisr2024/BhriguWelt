@@ -36,7 +36,7 @@ redis==7.1.0
 celery==5.3.6
 
 # Security & Rate Limiting
-flask-limiter==3.5.0
+flask-limiter==4.1.1
 flask-talisman==1.1.0
 flask-wtf==1.2.1
 
