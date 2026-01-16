@@ -5,6 +5,7 @@
 
 'use client';
 
+import { useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Loader2, AlertCircle } from 'lucide-react';
 import type { ProfileCreationProgress } from '@/lib/services/profileCreationService';
@@ -12,12 +13,14 @@ import type { ProfileCreationProgress } from '@/lib/services/profileCreationServ
 interface ProfileCreationProgressProps {
   progress: ProfileCreationProgress;
   error?: string;
+  onRetry?: () => void;
 }
 
 const STEP_LABELS = {
   validating: 'Validating Birth Details',
   geocoding: 'Finding Location',
   calculating: 'Calculating Birth Chart',
+  encrypting: 'Encrypting Data',
   saving: 'Saving Profile',
   complete: 'Complete',
 };
@@ -26,13 +29,37 @@ const STEP_ICONS = {
   validating: '🔍',
   geocoding: '🌍',
   calculating: '✨',
+  encrypting: '🔐',
   saving: '💾',
   complete: '✅',
 };
 
-export default function ProfileCreationProgress({ progress, error }: ProfileCreationProgressProps) {
-  const steps = ['validating', 'geocoding', 'calculating', 'saving', 'complete'] as const;
+export default function ProfileCreationProgress({ progress, error, onRetry }: ProfileCreationProgressProps) {
+  const steps = ['validating', 'geocoding', 'calculating', 'encrypting', 'saving', 'complete'] as const;
   const currentStepIndex = steps.indexOf(progress.step);
+  const startTimeRef = useRef<number | null>(null);
+
+  if (startTimeRef.current === null && progress.progress > 0 && progress.progress < 100) {
+    startTimeRef.current = Date.now();
+  }
+
+  if (progress.progress >= 100 || error) {
+    startTimeRef.current = null;
+  }
+
+  const estimatedSecondsRemaining = useMemo(() => {
+    if (!startTimeRef.current || progress.progress <= 0 || progress.progress >= 100) {
+      return null;
+    }
+    const elapsedSeconds = (Date.now() - startTimeRef.current) / 1000;
+    const completionRatio = progress.progress / 100;
+    if (completionRatio <= 0) {
+      return null;
+    }
+    const estimatedTotalSeconds = elapsedSeconds / completionRatio;
+    const remainingSeconds = Math.max(0, estimatedTotalSeconds - elapsedSeconds);
+    return Math.round(remainingSeconds);
+  }, [progress.progress]);
 
   return (
     <motion.div
@@ -64,7 +91,7 @@ export default function ProfileCreationProgress({ progress, error }: ProfileCrea
       </div>
 
       {/* Step Indicators */}
-      <div className="grid grid-cols-5 gap-2" role="list" aria-label="Creation steps">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2" role="list" aria-label="Creation steps">
         {steps.map((step, index) => {
           const isComplete = index < currentStepIndex || progress.step === 'complete';
           const isCurrent = index === currentStepIndex && progress.step !== 'complete';
@@ -161,8 +188,21 @@ export default function ProfileCreationProgress({ progress, error }: ProfileCrea
             {progress.step === 'validating' && '✨ Checking your birth details for accuracy...'}
             {progress.step === 'geocoding' && '🌍 Finding precise coordinates for your birthplace...'}
             {progress.step === 'calculating' && '🔮 Calculating planetary positions at your birth time...'}
+            {progress.step === 'encrypting' && '🔐 Preparing encrypted storage for your profile...'}
             {progress.step === 'saving' && '🔒 Encrypting and saving your profile securely...'}
           </p>
+        </motion.div>
+      )}
+
+      {/* Estimated time remaining */}
+      {!error && estimatedSecondsRemaining !== null && progress.step !== 'complete' && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="text-center text-sm text-white/70"
+        >
+          Estimated time remaining: <span className="text-white font-semibold">{estimatedSecondsRemaining}s</span>
         </motion.div>
       )}
 
@@ -183,6 +223,23 @@ export default function ProfileCreationProgress({ progress, error }: ProfileCrea
           </motion.div>
           <h3 className="text-2xl font-display font-bold text-white mb-2">Profile Created!</h3>
           <p className="text-white/80">Your cosmic journey begins now...</p>
+        </motion.div>
+      )}
+
+      {/* Retry Action */}
+      {error && onRetry && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex justify-center"
+        >
+          <button
+            type="button"
+            onClick={onRetry}
+            className="px-5 py-2 rounded-full bg-genz-electric-blue text-white font-semibold shadow-genz-glow hover:bg-genz-purple-haze transition-colors"
+          >
+            Retry profile creation
+          </button>
         </motion.div>
       )}
     </motion.div>
