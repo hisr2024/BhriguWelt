@@ -477,7 +477,6 @@ export default function BhriguPredictionView({
   } = useBhriguPrediction({ category, fetchPrediction, profile });
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
-  const [viewMode, setViewMode] = useState<'standard' | 'layman'>('layman');
   const [parsedFromFullAnalysis, setParsedFromFullAnalysis] = useState<Record<string, string>>({});
   const [isParsing, setIsParsing] = useState(false);
   const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
@@ -1502,12 +1501,12 @@ export default function BhriguPredictionView({
               <select
                 id="view-mode"
                 value={viewMode}
-                onChange={(e) => setViewMode(e.target.value as 'standard' | 'layman')}
+                onChange={(e) => setViewMode(e.target.value as 'layman' | 'astrologer')}
                 className="bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-3 text-white
                          focus:outline-none focus:border-cyan-400 transition-colors"
               >
                 <option value="layman">Layman</option>
-                <option value="standard">Standard</option>
+                <option value="astrologer">Astrologer</option>
               </select>
             </div>
             <button
