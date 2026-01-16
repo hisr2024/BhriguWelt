@@ -825,6 +825,54 @@ export default function BhriguPredictionView({
     return `💫 ${fallbackText}`;
   };
 
+  // Filter sections based on view mode (layman vs astrologer)
+  const filterSectionsByViewMode = (
+    sections: CategorySectionConfig[],
+    mode: 'layman' | 'astrologer'
+  ): CategorySectionConfig[] => {
+    if (!sections || sections.length === 0) {
+      return [];
+    }
+
+    // Astrologers see all sections
+    if (mode === 'astrologer') {
+      return sections;
+    }
+
+    // Filter out technical sections for layman mode
+    const technicalKeywords = [
+      'technical',
+      'planetary_combinations',
+      'dosha_identification',
+      'ashtakavarga',
+      'bhava_analysis',
+      'divisional_charts',
+    ];
+
+    return sections.filter((section) => {
+      const sectionKey = section.key.toLowerCase();
+      return !technicalKeywords.some((keyword) => sectionKey.includes(keyword));
+    });
+  };
+
+  // Get simplified section content based on view mode
+  const getSimplifiedSectionContent = (
+    content: string | null | undefined,
+    mode: 'layman' | 'astrologer'
+  ): string => {
+    if (!content) {
+      return '';
+    }
+
+    // Astrologers get original content
+    if (mode === 'astrologer') {
+      return typeof content === 'string' ? content : '';
+    }
+
+    // Apply simplification for layman mode
+    return simplifyContent(content);
+  };
+
   // ✨ QUANTUM FIX: Memoize category sections for performance
   const getCategorySections = useCallback((normalizedCategory: string): CategorySectionConfig[] => {
     return CATEGORY_SECTIONS[normalizedCategory] || [];
