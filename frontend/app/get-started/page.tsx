@@ -13,6 +13,7 @@ import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import {
   createProfileWithRetry,
+  createEmergencyProfile,
   type ProfileData,
   type ProfileCreationProgress,
 } from '@/lib/services/profileCreationService';
@@ -146,6 +147,41 @@ export default function GetStartedPage() {
     await runProfileCreation();
   };
 
+  const handleEmergencyProfile = async () => {
+    if (!encryptionKey) {
+      setError('Please unlock the app first');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setCreationProgress(null);
+
+    try {
+      const result = await createEmergencyProfile({
+        encryptionKey,
+        onProgress: (progress) => {
+          setCreationProgress(progress);
+        },
+      });
+
+      if (result.success) {
+        router.push('/dashboard');
+      } else {
+        const errorMessage = result.error?.message || 'Failed to create emergency profile.';
+        setError(errorMessage);
+        setCreationProgress(null);
+      }
+    } catch (err: any) {
+      const errorMessage = err.message || 'An unexpected error occurred.';
+      setError(errorMessage);
+      setCreationProgress(null);
+      console.error('Emergency profile creation failed:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (encryptionLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -168,6 +204,21 @@ export default function GetStartedPage() {
       <AnimatedBackground />
       <FloatingElements />
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl w-full relative z-10">
+
+        {/* Emergency Profile Button */}
+        <div className="mb-8 text-center">
+          <motion.button
+            onClick={handleEmergencyProfile}
+            disabled={loading || !encryptionKey}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-500 disabled:to-gray-600 text-white rounded-lg font-medium transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            🚀 Create Emergency Test Profile
+          </motion.button>
+          <p className="text-white/60 text-sm mt-2">Use this to test predictions immediately with default values</p>
+        </div>
+
         <div className="text-center mb-12">
           <motion.div className="flex justify-center mb-6" animate={{ scale: [1, 1.2, 1], rotate: [0, 360] }} transition={{ duration: 3, repeat: Infinity }}>
             <div className="relative">

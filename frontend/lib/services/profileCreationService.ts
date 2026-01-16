@@ -7,6 +7,16 @@ import { astrologyAPI, type BirthDetails } from '@/lib/api';
 import { setItem, STORES } from '@/lib/storage';
 import { setCurrentProfileId } from '@/lib/profileHelpers';
 
+/**
+ * Custom error class for validation failures
+ */
+export class ValidationError extends Error {
+  constructor(message: string, public errors: string[]) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
 export interface ProfileData extends BirthDetails {
   name: string;
   latitude?: number;
@@ -413,4 +423,29 @@ export async function createProfileWithRetry(
     success: false,
     error: lastError,
   };
+}
+
+/**
+ * Create an emergency test profile with default values
+ * Useful for testing and demo purposes
+ */
+export async function createEmergencyProfile(
+  config: ProfileCreationConfig
+): Promise<ProfileCreationResult> {
+  const emergencyData: ProfileData = {
+    name: 'Test User',
+    date_of_birth: '1990-01-01',
+    time_of_birth: '12:00',
+    place_of_birth: 'Mumbai, India',
+    latitude: 19.0760,
+    longitude: 72.8777
+  };
+
+  config.onProgress?.({
+    step: 'validating',
+    progress: 10,
+    message: 'Creating emergency test profile...',
+  });
+
+  return await createProfile(emergencyData, config);
 }
