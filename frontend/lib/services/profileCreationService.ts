@@ -21,7 +21,7 @@ export interface ProfileCreationProgress {
 
 export interface ProfileCreationResult {
   success: boolean;
-  profileId?: string | number;
+  profileId?: IDBValidKey;
   birthChartData?: any;
   error?: {
     type: 'validation' | 'timeout' | 'network' | 'server' | 'unknown';
@@ -33,7 +33,7 @@ export interface ProfileCreationResult {
 export interface ProfileCreationConfig {
   timeoutMs?: number;
   onProgress?: (progress: ProfileCreationProgress) => void;
-  encryptionKey: string;
+  encryptionKey: CryptoKey;
 }
 
 const DEFAULT_TIMEOUT = 120000; // 120 seconds (matches API timeout)

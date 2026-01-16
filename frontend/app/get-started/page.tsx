@@ -16,7 +16,7 @@ import {
   type ProfileData,
   type ProfileCreationProgress,
 } from '@/lib/services/profileCreationService';
-import ProfileCreationProgress from '../components/ProfileCreationProgress';
+import ProfileCreationProgressComponent from '@/components/ProfileCreationProgress';
 
 export default function GetStartedPage() {
   const router = useRouter();
@@ -101,6 +101,13 @@ export default function GetStartedPage() {
       ) {
         profileData.latitude = latitudeValue;
         profileData.longitude = longitudeValue;
+      }
+
+      // Ensure encryption key is available
+      if (!encryptionKey) {
+        setError('Encryption key not available. Please unlock your profile first.');
+        setLoading(false);
+        return;
       }
 
       // Create profile with progress tracking and retry logic
@@ -262,7 +269,7 @@ export default function GetStartedPage() {
             )}
             {error && (<motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-genz-hot-pink/20 border-2 border-genz-hot-pink/50 rounded-2xl p-4 text-white backdrop-blur-xl">{error}</motion.div>)}
             {loading && creationProgress && (
-              <ProfileCreationProgress progress={creationProgress} error={error} />
+              <ProfileCreationProgressComponent progress={creationProgress} error={error} />
             )}
             <div className="flex gap-4 pt-6">
               {step > 1 && (<GenZButton variant="outline" size="lg" onClick={() => setStep(step - 1)} type="button" className="flex-1">Back</GenZButton>)}
