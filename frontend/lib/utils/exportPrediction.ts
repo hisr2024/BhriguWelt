@@ -5,7 +5,8 @@ import type { ParsedPrediction, ExportFormat } from '@/lib/types/predictions';
  */
 export async function exportPrediction(
   prediction: ParsedPrediction,
-  format: ExportFormat
+  format: ExportFormat,
+  elementId?: string
 ): Promise<void> {
   switch (format) {
     case 'txt':
@@ -19,6 +20,10 @@ export async function exportPrediction(
       break;
     case 'json':
       exportAsJSON(prediction);
+      break;
+    case 'image':
+    case 'png':
+      await exportAsImage(prediction, elementId);
       break;
     default:
       console.error('Unsupported export format:', format);
@@ -208,6 +213,68 @@ function exportAsJSON(prediction: ParsedPrediction): void {
     `${slugify(prediction.category)}.json`,
     'application/json'
   );
+}
+
+/**
+ * Export as Image/PNG (requires html2canvas library)
+ * @param prediction - The prediction data
+ * @param elementId - Optional ID of element to capture. If not provided, captures entire prediction container
+ */
+async function exportAsImage(prediction: ParsedPrediction, elementId?: string): Promise<void> {
+  try {
+    // Dynamic import to reduce bundle size
+    const html2canvas = (await import('html2canvas')).default;
+
+    // Find the element to capture
+    const element = elementId
+      ? document.getElementById(elementId)
+      : document.querySelector('[data-prediction-container]') || document.querySelector('main');
+
+    if (!element) {
+      throw new Error('Could not find element to capture');
+    }
+
+    // Show loading indicator
+    const loadingDiv = document.createElement('div');
+    loadingDiv.textContent = 'Generating image...';
+    loadingDiv.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px; z-index: 10000;';
+    document.body.appendChild(loadingDiv);
+
+    // Capture the element
+    const canvas = await html2canvas(element as HTMLElement, {
+      backgroundColor: '#1a1a2e', // Match app background
+      scale: 2, // Higher resolution
+      logging: false,
+      useCORS: true, // Allow cross-origin images
+      allowTaint: true,
+      windowWidth: element.scrollWidth,
+      windowHeight: element.scrollHeight,
+    });
+
+    // Remove loading indicator
+    document.body.removeChild(loadingDiv);
+
+    // Convert canvas to blob
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        throw new Error('Failed to create image');
+      }
+
+      // Download the image
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${slugify(prediction.category)}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 'image/png');
+
+  } catch (error) {
+    console.error('Image export failed:', error);
+    alert('Image export failed. Please try a different format or ensure all content is loaded.');
+  }
 }
 
 /**

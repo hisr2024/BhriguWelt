@@ -193,6 +193,26 @@ export async function isBookmarked(url: string): Promise<boolean> {
 }
 
 /**
+ * Get bookmark by URL (returns first match if multiple exist)
+ */
+export async function getBookmarkByUrl(url: string): Promise<Bookmark | null> {
+  const db = await ensureBookmarkStore();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(BOOKMARK_STORE, 'readonly');
+    const store = transaction.objectStore(BOOKMARK_STORE);
+    const index = store.index('url');
+    const request = index.getAll(url);
+
+    request.onsuccess = () => {
+      const results = request.result;
+      resolve(results.length > 0 ? results[0] : null);
+    };
+    request.onerror = () => reject(new Error('Failed to get bookmark by URL'));
+  });
+}
+
+/**
  * Track bookmark access
  */
 export async function trackBookmarkAccess(id: number): Promise<void> {
