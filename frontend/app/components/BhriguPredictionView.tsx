@@ -475,22 +475,52 @@ export default function BhriguPredictionView({
     profileUpdated,
     loadPrediction,
   } = useBhriguPrediction({ category, fetchPrediction, profile });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 🎨 UI STATE
+  // ═══════════════════════════════════════════════════════════════════════════
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 🔄 PARSING STATE
+  // ═══════════════════════════════════════════════════════════════════════════
   const [parsedFromFullAnalysis, setParsedFromFullAnalysis] = useState<Record<string, string>>({});
   const [isParsing, setIsParsing] = useState(false);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 📂 SECTION STATE
+  // ═══════════════════════════════════════════════════════════════════════════
   const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
   const [expandingSections, setExpandingSections] = useState<Record<string, boolean>>({});
-
-  // ✨ QUANTUM FIX: Use Set<string> for O(1) lookups and immutable ref tracking
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
-  const expandedRef = useRef<Set<string>>(new Set()); // Immutable tracking for performance
+  const expandedRef = useRef<Set<string>>(new Set());
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ⚡ PERFORMANCE STATE
+  // ═══════════════════════════════════════════════════════════════════════════
   const [cacheTimestamp, setCacheTimestamp] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(false);
   const [isLowEndDevice, setIsLowEndDevice] = useState(false);
   const [streaming, setStreaming] = useState(false);
-  const [viewMode, setViewMode] = useState<'layman' | 'astrologer'>('layman');
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 📊 VIEW MODE STATE (Layman vs Astrologer)
+  // ═══════════════════════════════════════════════════════════════════════════
+  const [viewMode, setViewMode] = useState<'layman' | 'astrologer'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('predictionViewMode');
+      if (saved === 'layman' || saved === 'astrologer') {
+        return saved;
+      }
+    }
+    return 'layman';
+  });
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState<boolean>(false);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 🔧 CONTEXT & ENCRYPTION
+  // ═══════════════════════════════════════════════════════════════════════════
   const { encryptionKey } = useEncryption();
 
   const queuedRequests: QueuedPredictionRequest[] = [];
@@ -568,21 +598,10 @@ export default function BhriguPredictionView({
       str.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value)), translated);
   }, [language]);
 
-  // Load view mode preference from localStorage on mount
+  // Sync showTechnicalDetails with viewMode on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const savedViewMode = localStorage.getItem('predictionViewMode');
-        if (savedViewMode === 'layman' || savedViewMode === 'astrologer') {
-          setViewMode(savedViewMode);
-          setShowTechnicalDetails(savedViewMode === 'astrologer');
-          console.log('📖 Loaded view mode preference:', savedViewMode);
-        }
-      } catch (error) {
-        console.warn('⚠️ Failed to load view mode preference:', error);
-      }
-    }
-  }, []);
+    setShowTechnicalDetails(viewMode === 'astrologer');
+  }, [viewMode]);
 
   // Save view mode preference to localStorage when it changes
   useEffect(() => {
