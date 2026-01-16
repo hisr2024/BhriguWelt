@@ -36,15 +36,50 @@ const getPredictionCacheKey = (profile: Profile, category: string, question: str
   return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${questionKey}`;
 };
 
+/**
+ * Efficiently clear cached predictions for a profile
+ * Uses a tracked key set to avoid O(n) localStorage iteration
+ */
 const clearCachedPredictions = (profile: Profile) => {
   if (typeof window === 'undefined') return;
   const prefix = `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_`;
-  for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+
+  // Get tracked keys from registry (much faster than iterating all localStorage)
+  const trackedKeysKey = `${prefix}_registry`;
+  try {
+    const trackedKeysJson = localStorage.getItem(trackedKeysKey);
+    if (trackedKeysJson) {
+      const trackedKeys = JSON.parse(trackedKeysJson) as string[];
+      trackedKeys.forEach(key => {
+        try {
+          localStorage.removeItem(key);
+        } catch (e) {
+          console.warn('Failed to remove cached prediction:', e);
+        }
+      });
+      localStorage.removeItem(trackedKeysKey);
+      return;
+    }
+  } catch (e) {
+    console.warn('Failed to use key registry, falling back to full scan:', e);
+  }
+
+  // Fallback: legacy behavior for existing caches without registry
+  // Collect keys first to avoid mutation during iteration
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && key.startsWith(prefix)) {
-      localStorage.removeItem(key);
+    if (key && key.startsWith(prefix) && key !== trackedKeysKey) {
+      keysToRemove.push(key);
     }
   }
+  keysToRemove.forEach(key => {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {
+      console.warn('Failed to remove cached prediction:', e);
+    }
+  });
 };
 
 const getProfileHash = async (profile: Profile) => {
@@ -139,13 +174,30 @@ export const useBhriguPrediction = ({
           normalized.message?.toLowerCase()?.includes('cache')
         ));
         if (typeof window !== 'undefined') {
-          localStorage.setItem(
-            cacheKey,
-            JSON.stringify({
-              profileHash: resolvedHash,
-              prediction: normalized.prediction,
-            })
-          );
+          try {
+            localStorage.setItem(
+              cacheKey,
+              JSON.stringify({
+                profileHash: resolvedHash,
+                prediction: normalized.prediction,
+              })
+            );
+
+            // Track this key in the registry for efficient clearing
+            const registryKey = `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}__registry`;
+            try {
+              const existingKeysJson = localStorage.getItem(registryKey);
+              const existingKeys = existingKeysJson ? JSON.parse(existingKeysJson) as string[] : [];
+              if (!existingKeys.includes(cacheKey)) {
+                existingKeys.push(cacheKey);
+                localStorage.setItem(registryKey, JSON.stringify(existingKeys));
+              }
+            } catch (registryError) {
+              console.warn('Failed to update cache registry:', registryError);
+            }
+          } catch (cacheError) {
+            console.warn('Failed to cache prediction:', cacheError);
+          }
         }
       } else {
         setError(normalized.message || 'Failed to generate prediction');

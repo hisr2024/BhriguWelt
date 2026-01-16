@@ -70,7 +70,9 @@ const nextConfig = {
 
     const contentSecurityPolicy = [
       "default-src 'self'",
-      `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${cdnUrl}`,
+      // Note: 'unsafe-inline' is required for Next.js and Framer Motion inline styles
+      // 'unsafe-eval' removed for better security - not needed for production
+      `script-src 'self' 'unsafe-inline' ${cdnUrl}`,
       `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com ${cdnUrl}`,
       `img-src 'self' data: https: ${cdnUrl}`,
       `font-src 'self' data: https://fonts.gstatic.com ${cdnUrl}`,
