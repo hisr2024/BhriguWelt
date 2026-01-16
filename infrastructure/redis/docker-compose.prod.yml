@@ -1,0 +1,211 @@
+version: '3.8'
+
+services:
+  redis-master:
+    image: redis:7.2-alpine
+    container_name: bhriguwelt-redis-master
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_master_data:/data
+      - ./redis.conf:/etc/redis/redis.conf
+    command: >
+      sh -c "
+      sed 's/\$${REDIS_PASSWORD}/${REDIS_PASSWORD}/g' /etc/redis/redis.conf > /etc/redis/redis-runtime.conf &&
+      redis-server /etc/redis/redis-runtime.conf --requirepass ${REDIS_PASSWORD}
+      "
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_MASTER_HOST=redis-master
+    networks:
+      - bhriguwelt-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  redis-replica:
+    image: redis:7.2-alpine
+    container_name: bhriguwelt-redis-replica
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_replica_data:/data
+      - ./redis.conf:/etc/redis/redis.conf
+    command: >
+      sh -c "
+      sed 's/\$${REDIS_PASSWORD}/${REDIS_PASSWORD}/g' /etc/redis/redis.conf > /etc/redis/redis-runtime.conf &&
+      redis-server /etc/redis/redis-runtime.conf --requirepass ${REDIS_PASSWORD} --replicaof redis-master 6379 --masterauth ${REDIS_PASSWORD}
+      "
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_MASTER_HOST=redis-master
+    networks:
+      - bhriguwelt-network
+    depends_on:
+      redis-master:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  redis-sentinel-1:
+    image: redis:7.2-alpine
+    container_name: bhriguwelt-redis-sentinel-1
+    restart: unless-stopped
+    ports:
+      - "26379:26379"
+    command: >
+      sh -c "
+      echo 'port 26379' > /etc/redis/sentinel-runtime.conf &&
+      echo 'daemonize no' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'loglevel notice' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'sentinel monitor bhriguwelt-master redis-master 6379 2' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'sentinel auth-pass bhriguwelt-master ${REDIS_PASSWORD}' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'sentinel down-after-milliseconds bhriguwelt-master 5000' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'sentinel parallel-syncs bhriguwelt-master 1' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'sentinel failover-timeout bhriguwelt-master 60000' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'protected-mode no' >> /etc/redis/sentinel-runtime.conf &&
+      redis-sentinel /etc/redis/sentinel-runtime.conf
+      "
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    networks:
+      - bhriguwelt-network
+    depends_on:
+      - redis-master
+      - redis-replica
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.2'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+
+  redis-sentinel-2:
+    image: redis:7.2-alpine
+    container_name: bhriguwelt-redis-sentinel-2
+    restart: unless-stopped
+    ports:
+      - "26380:26379"
+    command: >
+      sh -c "
+      echo 'port 26379' > /etc/redis/sentinel-runtime.conf &&
+      echo 'daemonize no' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'loglevel notice' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'sentinel monitor bhriguwelt-master redis-master 6379 2' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'sentinel auth-pass bhriguwelt-master ${REDIS_PASSWORD}' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'sentinel down-after-milliseconds bhriguwelt-master 5000' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'sentinel parallel-syncs bhriguwelt-master 1' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'sentinel failover-timeout bhriguwelt-master 60000' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'protected-mode no' >> /etc/redis/sentinel-runtime.conf &&
+      redis-sentinel /etc/redis/sentinel-runtime.conf
+      "
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    networks:
+      - bhriguwelt-network
+    depends_on:
+      - redis-master
+      - redis-replica
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.2'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+
+  redis-sentinel-3:
+    image: redis:7.2-alpine
+    container_name: bhriguwelt-redis-sentinel-3
+    restart: unless-stopped
+    ports:
+      - "26381:26379"
+    command: >
+      sh -c "
+      echo 'port 26379' > /etc/redis/sentinel-runtime.conf &&
+      echo 'daemonize no' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'loglevel notice' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'sentinel monitor bhriguwelt-master redis-master 6379 2' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'sentinel auth-pass bhriguwelt-master ${REDIS_PASSWORD}' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'sentinel down-after-milliseconds bhriguwelt-master 5000' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'sentinel parallel-syncs bhriguwelt-master 1' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'sentinel failover-timeout bhriguwelt-master 60000' >> /etc/redis/sentinel-runtime.conf &&
+      echo 'protected-mode no' >> /etc/redis/sentinel-runtime.conf &&
+      redis-sentinel /etc/redis/sentinel-runtime.conf
+      "
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    networks:
+      - bhriguwelt-network
+    depends_on:
+      - redis-master
+      - redis-replica
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.2'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: bhriguwelt-redis-exporter
+    restart: unless-stopped
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis://redis-master:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    networks:
+      - bhriguwelt-network
+    depends_on:
+      redis-master:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.2'
+
+volumes:
+  redis_master_data:
+    driver: local
+  redis_replica_data:
+    driver: local
+
+networks:
+  bhriguwelt-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
