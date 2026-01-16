@@ -27,7 +27,7 @@ import {
   Mountain,
   Waves,
   Flame,
-  Tree,
+  Trees,
   LucideIcon,
 } from 'lucide-react';
 
@@ -160,7 +160,7 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   earth: Mountain,
   water: Waves,
   air: Wind,
-  nature: Tree,
+  nature: Trees,
   energy: Zap,
 };
 
