@@ -56,6 +56,7 @@ The core of the Soul Journey app - generates deterministic, explainable Soul Jou
 ### OpenAI & Advanced Features
 - **[OpenAI Integration](./features/OPENAI_INTEGRATION.md)** - OpenAI integration documentation
 - **[Structured Predictions Implementation](./features/STRUCTURED_PREDICTIONS_IMPLEMENTATION.md)** - Structured predictions feature
+- **[Ultimate Quantum Dive](./features/ULTIMATE_QUANTUM_DIVE.md)** - Theoretical frontier integration roadmap
 
 ### Progressive Web App (PWA)
 - **[PWA Implementation](./features/PWA_IMPLEMENTATION.md)** - PWA setup and implementation
