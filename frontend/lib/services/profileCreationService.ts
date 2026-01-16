@@ -14,7 +14,7 @@ export interface ProfileData extends BirthDetails {
 }
 
 export interface ProfileCreationProgress {
-  step: 'validating' | 'geocoding' | 'calculating' | 'saving' | 'complete';
+  step: 'validating' | 'geocoding' | 'calculating' | 'encrypting' | 'saving' | 'complete';
   progress: number; // 0-100
   message: string;
 }
@@ -37,6 +37,52 @@ export interface ProfileCreationConfig {
 }
 
 const DEFAULT_TIMEOUT = 120000; // 120 seconds (matches API timeout)
+
+function ensureEncryptionReadiness(encryptionKey: CryptoKey | undefined): { ready: boolean; message?: string } {
+  if (!encryptionKey) {
+    return {
+      ready: false,
+      message: 'Encryption key not available. Please unlock your profile and try again.',
+    };
+  }
+
+  if (typeof crypto === 'undefined' || !crypto.subtle) {
+    return {
+      ready: false,
+      message: 'Secure encryption is not supported in this browser. Please update your browser and try again.',
+    };
+  }
+
+  const keyHasUsages = typeof (encryptionKey as CryptoKey).usages !== 'undefined';
+  if (!keyHasUsages) {
+    return {
+      ready: false,
+      message: 'Encryption initialization failed. Please refresh and try again.',
+    };
+  }
+
+  return { ready: true };
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutHandle = setTimeout(() => {
+      const error = new Error('Request timed out');
+      (error as { code?: string }).code = 'ECONNABORTED';
+      reject(error);
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  }
+}
 
 /**
  * Validates profile data before creation
@@ -146,7 +192,7 @@ export async function createProfile(
 ): Promise<ProfileCreationResult> {
   const { timeoutMs = DEFAULT_TIMEOUT, onProgress, encryptionKey } = config;
 
-  // Step 1: Validation (0-10%)
+  // Step 1: Validation (0-15%)
   onProgress?.({
     step: 'validating',
     progress: 5,
@@ -165,23 +211,35 @@ export async function createProfile(
     };
   }
 
+  const encryptionReady = ensureEncryptionReadiness(encryptionKey);
+  if (!encryptionReady.ready) {
+    return {
+      success: false,
+      error: {
+        type: 'validation',
+        message: encryptionReady.message || 'Encryption readiness check failed.',
+        retryable: false,
+      },
+    };
+  }
+
   onProgress?.({
     step: 'validating',
-    progress: 10,
+    progress: 15,
     message: 'Birth details validated successfully',
   });
 
   try {
-    // Step 2: Geocoding (10-30%) - if manual coordinates not provided
+    // Step 2: Geocoding (15-30%) - if manual coordinates not provided
     if (data.latitude === undefined || data.longitude === undefined) {
       onProgress?.({
         step: 'geocoding',
-        progress: 15,
+        progress: 20,
         message: 'Finding geographic coordinates...',
       });
     }
 
-    // Step 3: Calculate birth chart (30-70%)
+    // Step 3: Calculate birth chart (30-65%)
     onProgress?.({
       step: 'calculating',
       progress: 30,
@@ -208,23 +266,30 @@ export async function createProfile(
 
     onProgress?.({
       step: 'calculating',
-      progress: 50,
+      progress: 45,
       message: 'Calculating planetary positions...',
     });
 
-    // Make API call (with automatic retry logic from API client)
-    const result = await astrologyAPI.calculateBirthChart(requestData);
+    // Make API call (with automatic retry logic from API client and timeout handling)
+    const result = await withTimeout(astrologyAPI.calculateBirthChart(requestData), timeoutMs);
 
     onProgress?.({
       step: 'calculating',
-      progress: 70,
+      progress: 65,
       message: 'Birth chart calculated successfully',
     });
 
-    // Step 4: Save profile (70-90%)
+    // Step 4: Prepare encryption (65-75%)
+    onProgress?.({
+      step: 'encrypting',
+      progress: 70,
+      message: 'Preparing secure encryption...',
+    });
+
+    // Step 5: Save profile (75-90%)
     onProgress?.({
       step: 'saving',
-      progress: 75,
+      progress: 78,
       message: 'Saving your profile securely...',
     });
 
@@ -252,7 +317,7 @@ export async function createProfile(
 
     onProgress?.({
       step: 'saving',
-      progress: 85,
+      progress: 88,
       message: 'Profile saved successfully',
     });
 
@@ -273,7 +338,7 @@ export async function createProfile(
     };
     await setItem(STORES.REPORTS, 'current_birth_chart', reportData, encryptionKey);
 
-    // Step 5: Complete (90-100%)
+    // Step 6: Complete (90-100%)
     onProgress?.({
       step: 'complete',
       progress: 100,

@@ -63,8 +63,7 @@ export default function GetStartedPage() {
     }
   }, [encryptionLoading, isSetup, isUnlocked, router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const runProfileCreation = async () => {
     if (!encryptionKey) {
       setError('Please unlock the app first');
       return;
@@ -119,7 +118,7 @@ export default function GetStartedPage() {
             setCreationProgress(progress);
           },
         },
-        2 // Max 2 retries
+        2 // Max 3 attempts total (2 retries)
       );
 
       if (result.success) {
@@ -140,6 +139,11 @@ export default function GetStartedPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await runProfileCreation();
   };
 
   if (encryptionLoading) {
@@ -269,7 +273,11 @@ export default function GetStartedPage() {
             )}
             {error && (<motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-genz-hot-pink/20 border-2 border-genz-hot-pink/50 rounded-2xl p-4 text-white backdrop-blur-xl">{error}</motion.div>)}
             {loading && creationProgress && (
-              <ProfileCreationProgressComponent progress={creationProgress} error={error} />
+              <ProfileCreationProgressComponent
+                progress={creationProgress}
+                error={error}
+                onRetry={error ? runProfileCreation : undefined}
+              />
             )}
             <div className="flex gap-4 pt-6">
               {step > 1 && (<GenZButton variant="outline" size="lg" onClick={() => setStep(step - 1)} type="button" className="flex-1">Back</GenZButton>)}
