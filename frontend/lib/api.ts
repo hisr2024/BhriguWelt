@@ -17,7 +17,7 @@ import { emitToast, buildIssueReportUrl } from './toast';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const AUTH_REFRESH_ENDPOINT = '/api/auth/refresh';
-const API_TIMEOUT_MS = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '120000', 10);
+const API_TIMEOUT_MS = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '300000', 10); // 5 minutes (increased from 120000)
 const MAX_REQUEST_BYTES = parseInt(process.env.NEXT_PUBLIC_MAX_REQUEST_BYTES || '1048576', 10);
 const COMPRESSION_THRESHOLD_BYTES = parseInt(
   process.env.NEXT_PUBLIC_COMPRESSION_THRESHOLD_BYTES || '65536',
@@ -43,8 +43,9 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: API_TIMEOUT_MS,  // 120 seconds - increased for AI-powered predictions
+  timeout: API_TIMEOUT_MS,  // 5 minutes - increased for AI-powered predictions
   withCredentials: true,  // Enable CORS credentials for cross-origin requests
+  validateStatus: (status) => status < 500, // Don't throw on 4xx errors
 });
 
 const refreshClient = axios.create({
@@ -111,12 +112,12 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor with retry logic
+// Response interceptor with enhanced retry logic
 // Use WeakMap to track retry state without modifying config object
 const retryState = new WeakMap<any, { count: number; inProgress: boolean }>();
 const unauthorizedState = new WeakMap<any, { attempted: boolean }>();
-const MAX_RETRIES = 3;
-const BASE_RETRY_DELAY_MS = 1000;
+const MAX_RETRIES = 3; // Max retry attempts
+const BASE_RETRY_DELAY_MS = 2000; // Start with 2 seconds
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const redirectToUnlock = () => {
@@ -129,22 +130,48 @@ const tryRefreshSession = async () => {
   await refreshClient.post(AUTH_REFRESH_ENDPOINT);
 };
 
+/**
+ * Determines if an error should be retried
+ */
+const shouldRetryError = (error: any, status?: number): boolean => {
+  // Retry on network errors (no response)
+  if (!error.response) {
+    return true;
+  }
+
+  // Retry on timeout errors
+  if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+    return true;
+  }
+
+  // Retry on 5xx server errors
+  if (status && status >= 500 && status < 600) {
+    return true;
+  }
+
+  // Retry if backend explicitly marks as retryable
+  if (error.response?.data?.retryable) {
+    return true;
+  }
+
+  return false;
+};
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const config = error.config;
-    
+
     // Initialize retry state for this config if not exists
     if (config && !retryState.has(config)) {
       retryState.set(config, { count: 0, inProgress: false });
     }
-    
+
     const state = config ? retryState.get(config)! : undefined;
     const unauthorized = config ? unauthorizedState.get(config) : undefined;
     const status = error.response?.status;
     const responseData = error.response?.data ?? {};
-    const retryable = Boolean(responseData?.retryable);
-    
+
     // Handle unauthorized responses with refresh/redirect flow
     if (status === 401 && config && config.url !== AUTH_REFRESH_ENDPOINT) {
       if (!unauthorized) {
@@ -174,19 +201,27 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Retry logic for retryable responses or transient 5xx errors
-    if (state && (retryable || (status >= 500 && status < 600)) && !state.inProgress && state.count < MAX_RETRIES) {
+    // Enhanced retry logic with exponential backoff
+    if (state && !state.inProgress && state.count < MAX_RETRIES && shouldRetryError(error, status)) {
       state.count++;
       state.inProgress = true;
-      
-      // Exponential backoff
+
+      // Exponential backoff: 2s, 4s, 8s
       const delayMs = BASE_RETRY_DELAY_MS * Math.pow(2, state.count - 1);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(
+          `[API] Retrying request (attempt ${state.count}/${MAX_RETRIES}) after ${delayMs}ms`,
+          { url: config?.url, method: config?.method, error: error.message }
+        );
+      }
+
       await delay(delayMs);
-      
+
       state.inProgress = false;
       return api(config);
     }
-    
+
     // Offline detection
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       return Promise.reject(new Error('You are offline. Please check your connection.'));
