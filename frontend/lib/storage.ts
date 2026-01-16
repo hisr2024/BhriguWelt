@@ -18,7 +18,6 @@ const DB_VERSION = 1;
 const METADATA_KEYS = {
   LEGACY_SALT: 'encryptionSalt',
   USER_ID: 'encryptionUserId',
-  ROTATION_PENDING: 'encryptionRotationPending',
 } as const;
 
 const getUserSaltKey = (userId: string) => `encryptionSalt:${userId}`;
@@ -31,6 +30,63 @@ export const STORES = {
   SETTINGS: 'settings',
   METADATA: 'metadata',
 } as const;
+
+/**
+ * Check if debug mode is enabled
+ */
+const isDebugEnabled = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem('storageDebug') === 'true';
+};
+
+/**
+ * Enable verbose storage logging for debugging
+ * Usage: window.enableStorageDebug()
+ */
+export const enableStorageDebug = () => {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem('storageDebug', 'true');
+    console.log('✅ Storage debug logging enabled');
+  }
+};
+
+/**
+ * Disable verbose storage logging
+ * Usage: window.disableStorageDebug()
+ */
+export const disableStorageDebug = () => {
+  if (typeof window !== 'undefined') {
+    window.localStorage.removeItem('storageDebug');
+    console.log('✅ Storage debug logging disabled');
+  }
+};
+
+/**
+ * Performance monitoring wrapper for storage operations
+ * Only logs slow operations (>100ms) and errors
+ */
+const withPerformanceTracking = async <T>(
+  operation: string,
+  fn: () => Promise<T>
+): Promise<T> => {
+  const startTime = performance.now();
+
+  try {
+    const result = await fn();
+    const duration = performance.now() - startTime;
+
+    // Only log slow operations (>100ms)
+    if (duration > 100) {
+      console.warn(`⚠️ Slow storage operation: ${operation} took ${duration.toFixed(2)}ms`);
+    }
+
+    return result;
+  } catch (error) {
+    const duration = performance.now() - startTime;
+    console.error(`❌ Storage operation failed: ${operation} (${duration.toFixed(2)}ms)`, error);
+    throw error;
+  }
+};
 
 // IndexedDB connection
 let db: IDBDatabase | null = null;
@@ -175,7 +231,6 @@ export async function resetEncryption(): Promise<void> {
     }
     await deleteItem(STORES.METADATA, METADATA_KEYS.LEGACY_SALT);
     await deleteItem(STORES.METADATA, METADATA_KEYS.USER_ID);
-    await deleteItem(STORES.METADATA, METADATA_KEYS.ROTATION_PENDING);
     await deleteItem(STORES.METADATA, 'encryptionTest');
     await deleteItem(STORES.METADATA, 'passcodeHash');
     await deleteItem(STORES.METADATA, 'setupComplete');
@@ -218,9 +273,17 @@ export async function setItem(
       const store = transaction.objectStore(storeName);
       const request = store.put(item);
 
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(new Error('Failed to store item'));
+      request.onsuccess = () => {
+        // Silent success
+        resolve(request.result);
+      };
+
+      request.onerror = () => {
+        console.error(`Failed to set item (key="${key}", store="${storeName}"):`, request.error);
+        reject(new Error(`Failed to store item: ${request.error}`));
+      };
     } catch (error) {
+      console.error(`Storage error in setItem (key="${key}", store="${storeName}"):`, error);
       reject(error);
     }
   });
@@ -269,7 +332,11 @@ export async function getItem(
           return;
         }
 
-        console.warn(`Storage fallback: searching for legacy record with key="${key}" in store="${storeName}"`);
+        // Silently return null for missing items (not an error condition)
+        // Only log if explicitly in debug mode
+        if (isDebugEnabled()) {
+          console.debug(`Storage: key="${key}" not found in store="${storeName}", checking legacy format`);
+        }
 
         // Open cursor to search for matching records
         const cursorTransaction = database.transaction(storeName, 'readonly');
@@ -304,7 +371,10 @@ export async function getItem(
 
             if (keyMatch) {
               matchFound = true;
-              console.warn(`Storage fallback: found match at cursor position ${recordsScanned}`);
+              // Silent success - only log in debug mode
+              if (isDebugEnabled()) {
+                console.debug(`Storage: legacy record found at cursor position ${recordsScanned}`);
+              }
 
               // Decrypt if necessary
               if (entry.encrypted && encryptionKey) {
@@ -396,6 +466,7 @@ export async function getAllItems(
         const items = request.result;
 
         if (!items || items.length === 0) {
+          // Silent success - empty result is not an error
           resolve([]);
           return;
         }
@@ -415,18 +486,25 @@ export async function getAllItems(
                 return { ...data, id: item.id };
               })
             );
+            // Silent success
             resolve(decrypted);
           } catch (error) {
+            console.error(`Failed to decrypt items from store="${storeName}":`, error);
             reject(new Error('Failed to decrypt items - incorrect key?'));
           }
         } else {
           // Return values with their IDs for unencrypted items
+          // Silent success
           resolve(items.map(item => ({ ...item.value, id: item.id })));
         }
       };
 
-      request.onerror = () => reject(new Error('Failed to retrieve items'));
+      request.onerror = () => {
+        console.error(`Failed to get all items from store="${storeName}":`, request.error);
+        reject(new Error(`Failed to retrieve items: ${request.error}`));
+      };
     } catch (error) {
+      console.error(`Storage error in getAllItems (store="${storeName}"):`, error);
       reject(error);
     }
   });
@@ -468,12 +546,24 @@ export async function deleteItem(
   const database = await initDB();
 
   return new Promise((resolve, reject) => {
-    const transaction = database.transaction(storeName, 'readwrite');
-    const store = transaction.objectStore(storeName);
-    const request = store.delete(key);
+    try {
+      const transaction = database.transaction(storeName, 'readwrite');
+      const store = transaction.objectStore(storeName);
+      const request = store.delete(key);
 
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(new Error('Failed to delete item'));
+      request.onsuccess = () => {
+        // Silent success
+        resolve();
+      };
+
+      request.onerror = () => {
+        console.error(`Failed to delete item (key="${key}", store="${storeName}"):`, request.error);
+        reject(new Error(`Failed to delete item: ${request.error}`));
+      };
+    } catch (error) {
+      console.error(`Storage error in deleteItem (key="${key}", store="${storeName}"):`, error);
+      reject(error);
+    }
   });
 }
 
@@ -546,17 +636,29 @@ export async function isEncryptionSetup(): Promise<boolean> {
   }
 }
 
+/**
+ * Mark that encryption key rotation is required
+ * Uses new location: SETTINGS store with key 'encryption_rotation_status'
+ */
 export async function markKeyRotationRequired(): Promise<void> {
-  await setItem(STORES.METADATA, METADATA_KEYS.ROTATION_PENDING, true);
+  await setItem(STORES.SETTINGS, 'encryption_rotation_status', true);
 }
 
+/**
+ * Check if encryption key rotation is required
+ * Uses new location: SETTINGS store with key 'encryption_rotation_status'
+ */
 export async function isKeyRotationRequired(): Promise<boolean> {
-  const value = await getItem(STORES.METADATA, METADATA_KEYS.ROTATION_PENDING);
+  const value = await getItem(STORES.SETTINGS, 'encryption_rotation_status');
   return value === true;
 }
 
+/**
+ * Clear the encryption key rotation required flag
+ * Uses new location: SETTINGS store with key 'encryption_rotation_status'
+ */
 export async function clearKeyRotationRequired(): Promise<void> {
-  await deleteItem(STORES.METADATA, METADATA_KEYS.ROTATION_PENDING);
+  await deleteItem(STORES.SETTINGS, 'encryption_rotation_status');
 }
 
 export async function rotateEncryptionKey(
