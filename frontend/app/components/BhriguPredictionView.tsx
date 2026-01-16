@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useLayoutEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp, Clock, Star, Shield } from 'lucide-react';
+import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp, Clock, Star, Shield, Sparkles } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
 import { getCurrentLanguage, setLanguage as setLanguagePreference, type Language } from '@/lib/copy';
