@@ -85,24 +85,34 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    // Load settings from localStorage
-    const savedSettings = localStorage.getItem('app_settings');
-    if (savedSettings) {
-      try {
-        const parsedSettings = JSON.parse(savedSettings);
-        setSettings((prev) => ({
-          ...prev,
-          ...parsedSettings,
-        }));
-        if (parsedSettings.language === 'en' || parsedSettings.language === 'hi') {
-          setLanguage(parsedSettings.language);
+    // Load settings from localStorage with error handling
+    try {
+      const savedSettings = localStorage.getItem('app_settings');
+      if (savedSettings) {
+        try {
+          const parsedSettings = JSON.parse(savedSettings);
+          setSettings((prev) => ({
+            ...prev,
+            ...parsedSettings,
+          }));
+          if (parsedSettings.language === 'en' || parsedSettings.language === 'hi') {
+            setLanguage(parsedSettings.language);
+          }
+          if (parsedSettings.aiLanguage === 'en' || parsedSettings.aiLanguage === 'hi' || parsedSettings.aiLanguage === 'sa') {
+            setAiLanguage(parsedSettings.aiLanguage);
+          }
+        } catch (parseError) {
+          console.error('Error parsing settings:', parseError);
+          // Clear corrupted settings
+          try {
+            localStorage.removeItem('app_settings');
+          } catch (removeError) {
+            console.error('Error removing corrupted settings:', removeError);
+          }
         }
-        if (parsedSettings.aiLanguage === 'en' || parsedSettings.aiLanguage === 'hi' || parsedSettings.aiLanguage === 'sa') {
-          setAiLanguage(parsedSettings.aiLanguage);
-        }
-      } catch (error) {
-        console.error('Error loading settings:', error);
       }
+    } catch (storageError) {
+      console.error('Error accessing localStorage:', storageError);
     }
   }, []);
 
@@ -119,9 +129,14 @@ export default function SettingsPage() {
   }, [settings.highContrast]);
 
   const handleSaveSettings = () => {
-    localStorage.setItem('app_settings', JSON.stringify(settings));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      localStorage.setItem('app_settings', JSON.stringify(settings));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (error) {
+      console.error('Error saving settings to localStorage:', error);
+      // Could show user-friendly error message here
+    }
   };
 
   const handleClearAllData = async () => {
