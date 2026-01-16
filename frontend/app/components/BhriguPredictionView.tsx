@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useLayoutEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp, Clock } from 'lucide-react';
+import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp, Clock, Star, Shield } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
 import { getCurrentLanguage, setLanguage as setLanguagePreference, type Language } from '@/lib/copy';
@@ -303,6 +303,157 @@ const getProfileHash = async (profile: Profile) => {
   return Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
+};
+
+/**
+ * Helper function to simplify and clean extracted content
+ * Removes excessive formatting, markdown, and cleans up the text
+ */
+const simplifyContent = (text: string): string => {
+  if (!text) return '';
+
+  return text
+    .trim()
+    // Remove markdown headers
+    .replace(/^#+\s*/gm, '')
+    // Remove bold/italic markdown
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    // Remove numbered list markers
+    .replace(/^\d+\.\s*/gm, '')
+    // Remove bullet points
+    .replace(/^[•\-*]\s*/gm, '')
+    // Clean up multiple newlines
+    .replace(/\n{3,}/g, '\n\n')
+    // Clean up multiple spaces
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+};
+
+/**
+ * Extract key insight from prediction focusing on karmic purpose and life mission
+ * Searches through full_analysis for patterns related to soul purpose, destiny, and dharma
+ */
+const extractKeyInsight = (prediction: any): string => {
+  if (!prediction?.full_analysis) {
+    return 'Your unique karmic journey is unfolding with purpose';
+  }
+
+  const fullAnalysis = prediction.full_analysis;
+
+  // Priority search patterns for key insights
+  const patterns = [
+    // Pattern 1: Karmic purpose/destiny/mission
+    /karmic\s+(?:purpose|destiny|mission):\s*([^.!?]{30,200}[.!?])/i,
+    // Pattern 2: Soul purpose
+    /soul\s+purpose:\s*([^.!?]{30,200}[.!?])/i,
+    // Pattern 3: Primary lesson/teaching
+    /primary\s+(?:lesson|teaching):\s*([^.!?]{30,200}[.!?])/i,
+    // Pattern 4: Life mission
+    /life\s+mission:\s*([^.!?]{30,200}[.!?])/i,
+    // Pattern 5: Dharma
+    /dharma:\s*([^.!?]{30,200}[.!?])/i,
+  ];
+
+  // Try each pattern in order
+  for (const pattern of patterns) {
+    const match = fullAnalysis.match(pattern);
+    if (match && match[1]) {
+      return simplifyContent(match[1]);
+    }
+  }
+
+  // Fallback: Extract first meaningful sentence (>50 chars)
+  const sentences = fullAnalysis.split(/[.!?]+/).filter((s: string) => s.trim().length > 50);
+  if (sentences.length > 0) {
+    return simplifyContent(sentences[0] + '.');
+  }
+
+  // Emergency fallback
+  return 'Your unique karmic journey is unfolding with purpose';
+};
+
+/**
+ * Extract recommended actions from prediction
+ * Searches for remedies, practices, and actionable guidance
+ */
+const extractActionItems = (prediction: any): string => {
+  if (!prediction) {
+    return 'Regular meditation and self-reflection recommended';
+  }
+
+  const fullAnalysis = prediction.full_analysis || '';
+  const remedies = prediction.remedies || prediction.karmic_remedies || '';
+  const searchText = `${fullAnalysis}\n${remedies}`;
+
+  // Search patterns for actionable items
+  const patterns = [
+    // Pattern 1: Recommended/advised/suggested
+    /(?:recommended|advised|suggested):\s*([^.!?]{20,200}[.!?])/i,
+    // Pattern 2: Specific remedies (mantra, gemstone, yantra)
+    /(?:mantra|gemstone|yantra|remedy):\s*([^.!?]{20,200}[.!?])/i,
+    // Pattern 3: Action verbs
+    /(?:practice|perform|chant|wear|donate):\s*([^.!?]{20,200}[.!?])/i,
+    // Pattern 4: Spiritual practices
+    /(?:meditation|prayer|ritual):\s*([^.!?]{20,200}[.!?])/i,
+  ];
+
+  // Try each pattern
+  for (const pattern of patterns) {
+    const match = searchText.match(pattern);
+    if (match && match[1]) {
+      return simplifyContent(match[1]);
+    }
+  }
+
+  // Fallback
+  return 'Regular meditation and self-reflection recommended';
+};
+
+/**
+ * Extract important timing information from prediction
+ * Searches for dasha periods, age ranges, and temporal guidance
+ */
+const extractTiming = (prediction: any): string => {
+  if (!prediction) {
+    return 'Timing details available in full analysis below';
+  }
+
+  const fullAnalysis = prediction.full_analysis || '';
+  const timing = prediction.timing || '';
+  const searchText = `${fullAnalysis}\n${timing}`;
+
+  // Search patterns for timing information
+  const patterns = [
+    // Pattern 1: Dasha/period/phase
+    /(?:dasha|period|phase):\s*([^.!?]{20,150}[.!?])/i,
+    // Pattern 2: Age ranges
+    /(?:age|year)\s+(\d+)(?:\s+(?:to|through|-)\s+(\d+))?/i,
+    // Pattern 3: Temporal references
+    /(?:after|before|during|around)\s+(?:age|year)\s+\d+[^.!?]{0,100}[.!?]/i,
+    // Pattern 4: Current/upcoming periods
+    /(?:current|present|upcoming)\s+(?:dasha|period|phase)[^.!?]{0,100}[.!?]/i,
+  ];
+
+  // Try each pattern
+  for (const pattern of patterns) {
+    const match = searchText.match(pattern);
+    if (match) {
+      if (match[0]) {
+        return simplifyContent(match[0]);
+      }
+      if (match[1]) {
+        // For age patterns, format nicely
+        if (match[2]) {
+          return `Age ${match[1]} to ${match[2]} is a significant period`;
+        }
+        return simplifyContent(match[1]);
+      }
+    }
+  }
+
+  // Fallback
+  return 'Timing details available in full analysis below';
 };
 
 export default function BhriguPredictionView({
@@ -929,6 +1080,44 @@ export default function BhriguPredictionView({
             <p className="text-amber-400 text-sm">
               {t('bhriguPredictionView.sectionFallbackNote')}
             </p>
+          </div>
+        )}
+
+        {/* ✨ Insight Summary Cards - 3-Card Grid */}
+        {predictionData.full_analysis && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            {/* Card 1: Key Insight */}
+            <div className="p-6 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 rounded-2xl backdrop-blur-sm hover:shadow-lg hover:shadow-cyan-500/20 transition-all">
+              <div className="text-cyan-400 text-sm font-semibold uppercase tracking-wide mb-2 flex items-center gap-2">
+                <Star className="w-4 h-4" />
+                Key Insight
+              </div>
+              <p className="text-white text-lg font-medium leading-relaxed">
+                {extractKeyInsight(predictionData)}
+              </p>
+            </div>
+
+            {/* Card 2: Recommended Actions */}
+            <div className="p-6 bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-2xl backdrop-blur-sm hover:shadow-lg hover:shadow-purple-500/20 transition-all">
+              <div className="text-purple-400 text-sm font-semibold uppercase tracking-wide mb-2 flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                Recommended Actions
+              </div>
+              <p className="text-white text-lg font-medium leading-relaxed">
+                {extractActionItems(predictionData)}
+              </p>
+            </div>
+
+            {/* Card 3: Important Timing */}
+            <div className="p-6 bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-2xl backdrop-blur-sm hover:shadow-lg hover:shadow-amber-500/20 transition-all">
+              <div className="text-amber-400 text-sm font-semibold uppercase tracking-wide mb-2 flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Important Timing
+              </div>
+              <p className="text-white text-lg font-medium leading-relaxed">
+                {extractTiming(predictionData)}
+              </p>
+            </div>
           </div>
         )}
 
