@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useLayoutEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp, Clock } from 'lucide-react';
+import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp, Clock, Sparkles } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
 import { getCurrentLanguage, setLanguage as setLanguagePreference, type Language } from '@/lib/copy';
@@ -326,10 +326,7 @@ export default function BhriguPredictionView({
   } = useBhriguPrediction({ category, fetchPrediction, profile });
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
-
-  // View mode state management
-  const [viewMode, setViewMode] = useState<'layman' | 'astrologer'>('layman');
-  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
+  const [viewMode, setViewMode] = useState<'standard' | 'layman'>('layman');
   const [parsedFromFullAnalysis, setParsedFromFullAnalysis] = useState<Record<string, string>>({});
   const [isParsing, setIsParsing] = useState(false);
   const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
@@ -611,201 +608,52 @@ export default function BhriguPredictionView({
     return parsedSections;
   };
 
-  /**
-   * Simplifies technical astrological content for layman understanding
-   *
-   * @param content - Raw astrological text with technical terms
-   * @returns Simplified, personalized text
-   *
-   * @example
-   * simplifyContent("The native will experience success (Bikaner 12b)")
-   * // Returns: "You will experience success"
-   */
-  const simplifyContent = (content: string | null | undefined): string => {
-    // Edge case: Handle null, undefined, or empty content
-    if (!content || typeof content !== 'string') {
-      return '';
-    }
+  // Helper function to simplify content for fallback summaries
+  const simplifyContent = (text: string): string => {
+    // Remove markdown formatting
+    let simplified = text
+      .replace(/\*\*(.*?)\*\*/g, '$1')  // Remove bold
+      .replace(/\*(.*?)\*/g, '$1')       // Remove italic
+      .replace(/#{1,6}\s/g, '')          // Remove headers
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links, keep text
+      .replace(/`([^`]+)`/g, '$1');      // Remove code blocks
 
-    let simplified = content;
-
-    // ==========================================
-    // PATTERN REMOVAL - Remove technical jargon
-    // ==========================================
-
-    // Remove folio references: (Bikaner 12b, Pune Modi 3c)
-    simplified = simplified.replace(/\((?:Bikaner|Pune Modi|Jaipur|Mumbai)\s+\d+[a-z]?\)/gi, '');
-
-    // Remove Nadi references: (Chidambaram 7a, Vaitheeswaran Koil 12c)
-    simplified = simplified.replace(/\((?:Chidambaram|Vaitheeswaran Koil|Nadi Palm)\s+\d+[a-z]?\)/gi, '');
-
-    // Remove Dasha codes: (ND-5), (BR-123), (VD-456)
-    simplified = simplified.replace(/\([A-Z]{2,3}-\d+\)/g, '');
-
-    // Remove Sanskrit bracketed terms: [Sanskrit: dharma], [Skt: karma]
-    simplified = simplified.replace(/\[(?:Sanskrit|Skt):\s*[^\]]+\]/gi, '');
-
-    // Remove confidence scores: {"confidence": 0.9}, confidence: 0.95
-    simplified = simplified.replace(/\{?\s*"?confidence"?\s*:\s*\d*\.?\d+\s*\}?/gi, '');
-
-    // Remove technical house references
-    simplified = simplified.replace(/\s+(?:in|from|to|aspecting)\s+the\s+(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth)\s+house\b/gi, '');
-
-    // Remove chart reference markers: [Chart: XYZ], (See Chart 5)
-    simplified = simplified.replace(/[\[\(](?:Chart|See Chart|Ref):\s*[^\]\)]+[\]\)]/gi, '');
-
-    // ==========================================
-    // PHRASE TRANSFORMATIONS - Personalization
-    // ==========================================
-
-    // "the native" → "you" (case-insensitive, word boundaries)
-    simplified = simplified.replace(/\bthe\s+native\b/gi, 'you');
-
-    // "native's" → "your"
-    simplified = simplified.replace(/\bnative'?s\b/gi, 'your');
-
-    // "the chart shows" → "your birth chart reveals"
-    simplified = simplified.replace(/\bthe\s+chart\s+shows\b/gi, 'your birth chart reveals');
-
-    // "indicates" → "suggests"
-    simplified = simplified.replace(/\bindicates?\b/gi, (match) => {
-      return match[0] === match[0].toUpperCase() ? 'Suggests' : 'suggests';
-    });
-
-    // "signifies" → "points to"
-    simplified = simplified.replace(/\bsignifies\b/gi, (match) => {
-      return match[0] === match[0].toUpperCase() ? 'Points to' : 'points to';
-    });
-
-    // Additional personalizations
-    simplified = simplified.replace(/\bthe\s+individual\b/gi, 'you');
-    simplified = simplified.replace(/\bindividual'?s\b/gi, 'your');
-    simplified = simplified.replace(/\bone\s+will\b/gi, 'you will');
-    simplified = simplified.replace(/\bone'?s\b/gi, 'your');
-
-    // ==========================================
-    // POST-PROCESSING - Clean up formatting
-    // ==========================================
-
-    // Remove multiple consecutive spaces (but preserve single spaces)
-    simplified = simplified.replace(/[ \t]{2,}/g, ' ');
-
-    // Remove multiple consecutive newlines (preserve double newlines for paragraphs)
-    simplified = simplified.replace(/\n{3,}/g, '\n\n');
-
-    // Trim leading/trailing whitespace
-    simplified = simplified.trim();
-
-    // Ensure sentences end with proper punctuation
-    // Split into lines and process each
-    const lines = simplified.split('\n');
-    const processedLines = lines.map((line) => {
-      const trimmedLine = line.trim();
-      if (!trimmedLine) return trimmedLine;
-
-      // Check if line ends with punctuation
-      const lastChar = trimmedLine[trimmedLine.length - 1];
-      const hasPunctuation = /[.!?;:]/.test(lastChar);
-
-      // If it's a substantial line (not a header) and lacks punctuation, add a period
-      if (!hasPunctuation && trimmedLine.length > 20 && !trimmedLine.endsWith(':')) {
-        return trimmedLine + '.';
-      }
-
-      return trimmedLine;
-    });
-
-    simplified = processedLines.join('\n');
-
-    // Remove any remaining empty parentheses or brackets
-    simplified = simplified.replace(/\(\s*\)/g, '');
-    simplified = simplified.replace(/\[\s*\]/g, '');
-
-    // Clean up spacing around punctuation
-    simplified = simplified.replace(/\s+([.,!?;:])/g, '$1');
-    simplified = simplified.replace(/([.,!?;:])\s{2,}/g, '$1 ');
-
-    return simplified;
+    // Get first meaningful sentence
+    const sentences = simplified.split(/[.!?]+/).filter(s => s.trim().length > 50);
+    return sentences[0]?.trim() || simplified.substring(0, 150).trim() + '...';
   };
 
-  /**
-   * Filters sections based on view mode (layman vs astrologer)
-   *
-   * @param sections - Array of section configurations
-   * @param viewMode - Current view mode ('layman' or 'astrologer')
-   * @returns Filtered sections array
-   *
-   * @example
-   * filterSectionsByViewMode(sections, 'layman')
-   * // Returns sections without technical/planetary keys
-   */
-  const filterSectionsByViewMode = (
-    sections: CategorySectionConfig[],
-    viewMode: 'layman' | 'astrologer'
-  ): CategorySectionConfig[] => {
-    // Edge case: Handle empty sections
-    if (!sections || sections.length === 0) {
-      return [];
+  // Generate layman-friendly summary based on section key
+  const generateLaymanSummary = (sectionKey: string, content: string): string => {
+    const summaryTemplates: Record<string, string> = {
+      soul_purpose: "🌟 This describes your life's deeper meaning and what you're meant to achieve in this lifetime.",
+      karmic_lessons: "📚 These are important lessons you're here to learn. Understanding them helps you grow.",
+      past_relationships: "💞 This reveals patterns from past connections that influence how you relate to others today.",
+      recent_life: "🔄 This describes who you may have been in your most recent past life and what you carried forward.",
+      career: "💼 This shows your natural talents and the career path that aligns with your birth chart.",
+      health: "🏥 This highlights areas of health to be mindful of and preventive measures you can take.",
+      finances: "💰 This explains your relationship with money and wealth patterns in your life.",
+      spiritual_growth: "🧘 This outlines your spiritual journey and practices that can accelerate your growth.",
+      timing: "⏰ This shows when major life events are likely to occur based on planetary periods.",
+      remedies: "🌿 These are practices recommended to balance energies and improve various areas of your life.",
+      mantras: "🕉️ These sacred sounds help harmonize planetary energies when chanted with devotion.",
+      gemstones: "💎 Wearing these can strengthen beneficial planetary influences in your chart.",
+      relationships: "❤️ This reveals how you connect with others and what makes your relationships thrive.",
+      family: "👨‍👩‍👧‍👦 This shows family dynamics and your role within your family structure.",
+      education: "📖 This indicates your learning style and educational opportunities in your life.",
+    };
+
+    // Extract the base section key (without category prefix if present)
+    const baseKey = sectionKey.includes(':') ? sectionKey.split(':')[1] : sectionKey;
+
+    // Check if we have a template for this section
+    if (summaryTemplates[baseKey]) {
+      return summaryTemplates[baseKey];
     }
 
-    // Astrologer mode: Include ALL sections (no filtering)
-    if (viewMode === 'astrologer') {
-      return sections;
-    }
-
-    // Layman mode: Exclude technical sections
-    const technicalKeywords = [
-      'technical',
-      'planetary_combinations',
-      'dosha_identification',
-      'ashtakavarga',
-      'bhava_analysis',
-      'divisional_charts',
-      'varga',
-      'dasha_analysis',
-      'transit_technical',
-      'yogas',
-      'aspects'
-    ];
-
-    return sections.filter((section) => {
-      const sectionKey = section.key.toLowerCase();
-
-      // Exclude if key contains any technical keyword
-      return !technicalKeywords.some((keyword) => sectionKey.includes(keyword));
-    });
-  };
-
-  /**
-   * Gets section content with optional simplification based on view mode
-   *
-   * @param content - Raw section content
-   * @param viewMode - Current view mode ('layman' or 'astrologer')
-   * @returns Original or simplified content based on view mode
-   *
-   * @example
-   * getSimplifiedSectionContent("The native succeeds", 'layman')
-   * // Returns: "You succeed"
-   *
-   * getSimplifiedSectionContent("The native succeeds", 'astrologer')
-   * // Returns: "The native succeeds"
-   */
-  const getSimplifiedSectionContent = (
-    content: string | null | undefined,
-    viewMode: 'layman' | 'astrologer'
-  ): string => {
-    // Edge case: Handle null/undefined content
-    if (!content) {
-      return '';
-    }
-
-    // Astrologer mode: Return original content unchanged
-    if (viewMode === 'astrologer') {
-      return typeof content === 'string' ? content : '';
-    }
-
-    // Layman mode: Apply simplification
-    return simplifyContent(content);
+    // Fallback: extract first meaningful sentence
+    const fallbackText = simplifyContent(content);
+    return `💫 ${fallbackText}`;
   };
 
   // ✨ QUANTUM FIX: Memoize category sections for performance
@@ -965,6 +813,18 @@ export default function BhriguPredictionView({
               className="overflow-hidden"
             >
               <div className="px-6 pb-6 pt-0">
+                {/* What This Means Card - Layman View */}
+                {viewMode === 'layman' && (
+                  <div className="mb-4 p-4 bg-cyan-500/10 border border-cyan-500/30 rounded-lg backdrop-blur-sm">
+                    <p className="text-xs uppercase tracking-wide text-cyan-400 font-semibold mb-2 flex items-center gap-2">
+                      <Sparkles className="w-3 h-3" />
+                      What This Means For You
+                    </p>
+                    <p className="text-sm text-slate-100/90 leading-relaxed">
+                      {generateLaymanSummary(sectionKey, content)}
+                    </p>
+                  </div>
+                )}
                 <div className="prose prose-invert prose-cyan max-w-none">
                   <div className="text-slate-100/90 text-base md:text-lg leading-7 md:leading-8 whitespace-pre-wrap">
                     {content}
@@ -1448,18 +1308,17 @@ export default function BhriguPredictionView({
             </div>
             <div className="flex items-center gap-2">
               <label htmlFor="view-mode" className="text-sm text-gray-400">
-                View Mode
+                View
               </label>
               <select
                 id="view-mode"
                 value={viewMode}
-                onChange={(e) => setViewMode(e.target.value as 'layman' | 'astrologer')}
+                onChange={(e) => setViewMode(e.target.value as 'standard' | 'layman')}
                 className="bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-3 text-white
                          focus:outline-none focus:border-cyan-400 transition-colors"
-                title="Layman mode simplifies technical terms, Astrologer mode shows full technical details"
               >
                 <option value="layman">Layman</option>
-                <option value="astrologer">Astrologer</option>
+                <option value="standard">Standard</option>
               </select>
             </div>
             <button
