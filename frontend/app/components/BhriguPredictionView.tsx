@@ -477,10 +477,7 @@ export default function BhriguPredictionView({
   } = useBhriguPrediction({ category, fetchPrediction, profile });
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
-
-  // View mode state management
-  const [viewMode, setViewMode] = useState<'layman' | 'astrologer'>('layman');
-  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
+  const [viewMode, setViewMode] = useState<'standard' | 'layman'>('layman');
   const [parsedFromFullAnalysis, setParsedFromFullAnalysis] = useState<Record<string, string>>({});
   const [isParsing, setIsParsing] = useState(false);
   const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
@@ -494,6 +491,7 @@ export default function BhriguPredictionView({
   const [isOffline, setIsOffline] = useState(false);
   const [isLowEndDevice, setIsLowEndDevice] = useState(false);
   const [streaming, setStreaming] = useState(false);
+  const [viewMode, setViewMode] = useState<'layman' | 'astrologer'>('layman');
   const { encryptionKey } = useEncryption();
 
   const queuedRequests: QueuedPredictionRequest[] = [];
@@ -761,6 +759,54 @@ export default function BhriguPredictionView({
     return parsedSections;
   };
 
+  // Helper function to simplify content for fallback summaries
+  const simplifyContent = (text: string): string => {
+    // Remove markdown formatting
+    let simplified = text
+      .replace(/\*\*(.*?)\*\*/g, '$1')  // Remove bold
+      .replace(/\*(.*?)\*/g, '$1')       // Remove italic
+      .replace(/#{1,6}\s/g, '')          // Remove headers
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links, keep text
+      .replace(/`([^`]+)`/g, '$1');      // Remove code blocks
+
+    // Get first meaningful sentence
+    const sentences = simplified.split(/[.!?]+/).filter(s => s.trim().length > 50);
+    return sentences[0]?.trim() || simplified.substring(0, 150).trim() + '...';
+  };
+
+  // Generate layman-friendly summary based on section key
+  const generateLaymanSummary = (sectionKey: string, content: string): string => {
+    const summaryTemplates: Record<string, string> = {
+      soul_purpose: "🌟 This describes your life's deeper meaning and what you're meant to achieve in this lifetime.",
+      karmic_lessons: "📚 These are important lessons you're here to learn. Understanding them helps you grow.",
+      past_relationships: "💞 This reveals patterns from past connections that influence how you relate to others today.",
+      recent_life: "🔄 This describes who you may have been in your most recent past life and what you carried forward.",
+      career: "💼 This shows your natural talents and the career path that aligns with your birth chart.",
+      health: "🏥 This highlights areas of health to be mindful of and preventive measures you can take.",
+      finances: "💰 This explains your relationship with money and wealth patterns in your life.",
+      spiritual_growth: "🧘 This outlines your spiritual journey and practices that can accelerate your growth.",
+      timing: "⏰ This shows when major life events are likely to occur based on planetary periods.",
+      remedies: "🌿 These are practices recommended to balance energies and improve various areas of your life.",
+      mantras: "🕉️ These sacred sounds help harmonize planetary energies when chanted with devotion.",
+      gemstones: "💎 Wearing these can strengthen beneficial planetary influences in your chart.",
+      relationships: "❤️ This reveals how you connect with others and what makes your relationships thrive.",
+      family: "👨‍👩‍👧‍👦 This shows family dynamics and your role within your family structure.",
+      education: "📖 This indicates your learning style and educational opportunities in your life.",
+    };
+
+    // Extract the base section key (without category prefix if present)
+    const baseKey = sectionKey.includes(':') ? sectionKey.split(':')[1] : sectionKey;
+
+    // Check if we have a template for this section
+    if (summaryTemplates[baseKey]) {
+      return summaryTemplates[baseKey];
+    }
+
+    // Fallback: extract first meaningful sentence
+    const fallbackText = simplifyContent(content);
+    return `💫 ${fallbackText}`;
+  };
+
   // ✨ QUANTUM FIX: Memoize category sections for performance
   const getCategorySections = useCallback((normalizedCategory: string): CategorySectionConfig[] => {
     return CATEGORY_SECTIONS[normalizedCategory] || [];
@@ -918,6 +964,18 @@ export default function BhriguPredictionView({
               className="overflow-hidden"
             >
               <div className="px-6 pb-6 pt-0">
+                {/* What This Means Card - Layman View */}
+                {viewMode === 'layman' && (
+                  <div className="mb-4 p-4 bg-cyan-500/10 border border-cyan-500/30 rounded-lg backdrop-blur-sm">
+                    <p className="text-xs uppercase tracking-wide text-cyan-400 font-semibold mb-2 flex items-center gap-2">
+                      <Sparkles className="w-3 h-3" />
+                      What This Means For You
+                    </p>
+                    <p className="text-sm text-slate-100/90 leading-relaxed">
+                      {generateLaymanSummary(sectionKey, content)}
+                    </p>
+                  </div>
+                )}
                 <div className="prose prose-invert prose-cyan max-w-none">
                   <div className="text-slate-100/90 text-base md:text-lg leading-7 md:leading-8 whitespace-pre-wrap">
                     {content}
@@ -988,7 +1046,10 @@ export default function BhriguPredictionView({
     const normalizedCategory = normalizeCategoryKey(
       typeof categoryValue === 'string' ? categoryValue : category
     );
-     const sections = CATEGORY_SECTIONS[normalizedCategory] || [];
+     const allSections = CATEGORY_SECTIONS[normalizedCategory] || [];
+
+    // Filter sections based on view mode (layman vs astrologer)
+    const sections = filterSectionsByViewMode(allSections, viewMode);
     const shouldShowPartialBanner = false;
 
     // First, try to get sections from the API response
@@ -1019,10 +1080,16 @@ export default function BhriguPredictionView({
     // Helper function to get section content from either source
     const getSectionContent = (key: string): string => {
       const directContent = predictionData[key];
+      let rawContent: string;
+
       if (typeof directContent === 'string') {
-        return directContent;
+        rawContent = directContent;
+      } else {
+        rawContent = parsedFromFullAnalysis[key] || '';
       }
-      return parsedFromFullAnalysis[key] || '';
+
+      // Apply simplification based on view mode
+      return getSimplifiedSectionContent(rawContent, viewMode);
     };
 
 
@@ -1203,7 +1270,7 @@ export default function BhriguPredictionView({
                 >
                   <div className="prose prose-invert prose-cyan max-w-none">
                     <div className="text-slate-100/90 text-base md:text-lg leading-7 md:leading-8 whitespace-pre-wrap max-h-[70vh] overflow-auto pr-2">
-                      {predictionData.full_analysis}
+                      {getSimplifiedSectionContent(predictionData.full_analysis, viewMode)}
                     </div>
                   </div>
                 </motion.div>
@@ -1304,7 +1371,8 @@ export default function BhriguPredictionView({
     expandedSections,
     renderSection,
     setExpandedSection,
-    t
+    t,
+    viewMode
   ]); // ✨ QUANTUM FIX: Dependencies for useCallback
 
   if (! profile) {
@@ -1425,6 +1493,21 @@ export default function BhriguPredictionView({
               >
                 <option value="en">English</option>
                 <option value="hi">हिंदी</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label htmlFor="view-mode" className="text-sm text-gray-400">
+                View
+              </label>
+              <select
+                id="view-mode"
+                value={viewMode}
+                onChange={(e) => setViewMode(e.target.value as 'standard' | 'layman')}
+                className="bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-3 text-white
+                         focus:outline-none focus:border-cyan-400 transition-colors"
+              >
+                <option value="layman">Layman</option>
+                <option value="standard">Standard</option>
               </select>
             </div>
             <button
