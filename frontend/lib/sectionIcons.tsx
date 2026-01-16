@@ -26,8 +26,8 @@ import {
   Wind,
   Mountain,
   Waves,
-  FlameKindling,
-  TreePine,
+  Flame,
+  Tree,
   LucideIcon,
 } from 'lucide-react';
 
@@ -58,6 +58,10 @@ export interface SectionIconProps {
   showBackground?: boolean;
   /** Background color class for the container */
   backgroundColor?: string;
+  /** Icon size (sm, md, lg, xl) */
+  size?: IconSize;
+  /** Icon color class */
+  color?: string;
 }
 
 /**
@@ -152,11 +156,11 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   yearly: Star,
 
   // Additional Categories
-  fire: FlameKindling,
+  fire: Flame,
   earth: Mountain,
   water: Waves,
   air: Wind,
-  nature: TreePine,
+  nature: Tree,
   energy: Zap,
 };
 
@@ -248,11 +252,19 @@ export const getSectionIcon = (
  */
 export const SectionIcon: React.FC<SectionIconProps> = ({
   sectionKey,
-  className = 'w-5 h-5',
+  className,
   showBackground = true,
   backgroundColor = 'bg-white/5',
+  size = 'md',
+  color,
 }) => {
-  const icon = getSectionIcon(sectionKey, className);
+  // Determine final className: use provided className, or fall back to size, or default
+  const finalClassName = className || ICON_SIZES[size];
+
+  // Add color class if provided
+  const iconClassName = color ? `${finalClassName} ${color}` : finalClassName;
+
+  const icon = getSectionIcon(sectionKey, iconClassName);
 
   if (showBackground) {
     return (
