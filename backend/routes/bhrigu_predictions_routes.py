@@ -129,6 +129,7 @@ def _get_prediction_generator(category_key: str):
         'present_life': bhrigu_service.generate_present_life_prediction,
         'life_events': bhrigu_service.generate_life_events_prediction,
         'karmic_remedies': bhrigu_service.generate_karmic_remedies_prediction,
+        'karma_reset': bhrigu_service.generate_karma_reset,
         'relationships': bhrigu_service.generate_relationships_prediction,
         'predictions': bhrigu_service.generate_general_predictions,
     }
@@ -639,7 +640,14 @@ def karmic_remedies():
         if calculator:
             validation_error = validate_birth_data(data)
             if validation_error:
-                return error_response(validation_error, 400)
+                logger.warning(f"Karmic remedies validation failed: {validation_error}")
+                prediction = bhrigu_service.generate_karmic_remedies_prediction(
+                    data, data.get('question')
+                )
+                return prediction_response(
+                    prediction,
+                    metadata={'category': 'karmic_remedies', 'validation_error': validation_error}
+                )
 
         cached = BhriguPredictionCache.get_cached_prediction(
             data, 'karmic_remedies', data.get('question')
@@ -682,6 +690,78 @@ def karmic_remedies():
             f"Failed to generate karmic remedies: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'karmic_remedies'}
+        )
+
+
+@bp.route('/karma-reset', methods=['POST'])
+@limiter.limit("10 per minute")
+@route_error_handler
+def karma_reset():
+    """
+    Generate Karma Reset guidance
+    Provides a reset plan with fallback template
+    """
+    try:
+        data = request.get_json()
+        _sanitize_question_field(data)
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            validation_error = validate_birth_data(data)
+            if validation_error:
+                logger.warning(f"Karma reset validation failed: {validation_error}")
+                prediction = bhrigu_service.generate_karma_reset(
+                    data, data.get('question')
+                )
+                return prediction_response(
+                    prediction,
+                    metadata={'category': 'karma_reset', 'validation_error': validation_error}
+                )
+
+        cached = BhriguPredictionCache.get_cached_prediction(
+            data, 'karma_reset', data.get('question')
+        )
+        if cached and not data.get('force_regenerate'):
+            cached_prediction = cached.to_dict().get('prediction')
+            return prediction_response(
+                cached_prediction,
+                metadata=_build_cache_metadata(cached),
+                message="From cache"
+            )
+
+        chart_data, error = _get_chart_data(data)
+        if error:
+            return error
+        birth_data = {**data, **chart_data}
+
+        prediction = _generate_prediction(
+            "karma_reset",
+            birth_data,
+            lambda: bhrigu_service.generate_karma_reset(
+                birth_data, data.get('question')
+            )
+        )
+
+        BhriguPredictionCache.cache_prediction(
+            birth_data, 'karma_reset', prediction, data.get('question'),
+            {'zodiac_sign': chart_data.get('zodiac_sign'),
+             'nakshatra': chart_data.get('nakshatra')}
+        )
+
+        return prediction_response(
+            prediction,
+            metadata=_build_chart_metadata(chart_data, category='karma_reset')
+        )
+
+    except Exception as e:
+        log_error(logger, e, "Error in karma_reset")
+        return prediction_error_response(
+            f"Failed to generate karma reset: {sanitize_error(str(e))}",
+            500,
+            metadata={'category': 'karma_reset'}
         )
 
 

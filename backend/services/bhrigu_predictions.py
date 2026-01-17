@@ -11,6 +11,7 @@ from services.openai_service import get_openai_service
 from services.astrology_calculator import AstrologyCalculator
 from services.section_parser import get_section_parser
 from services.bhrigu_corpus_db import get_corpus_database
+from services.bhrigu_core_wisdom import BhriguCoreWisdom
 from utils.logger import setup_logger, log_exception, secure_log, sanitize_error
 
 # Initialize logger first
@@ -79,6 +80,8 @@ class BhriguPredictionsService:
                 self._record_init_error('corpus_db', exc)
         else:
             self.corpus_db = corpus_db
+
+        self.core_wisdom = BhriguCoreWisdom()
 
         # Bhrigu Samhita system prompts for enhanced accuracy and precision
         self.bhrigu_system_prompt = """You are a master Vedic astrologer deeply versed in the ancient texts of Bhrigu Samhita and Nadi Jyotisha. 
@@ -256,6 +259,7 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
                 fallback_present_life,
                 fallback_life_events,
                 fallback_karmic_remedies,
+                fallback_karma_reset,
                 fallback_relationships,
                 fallback_predictions
             )
@@ -268,6 +272,7 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
                 'present_life': fallback_present_life,
                 'life_events': fallback_life_events,
                 'karmic_remedies': fallback_karmic_remedies,
+                'karma_reset': fallback_karma_reset,
                 'relationships': fallback_relationships,
                 'predictions': fallback_predictions
             }
@@ -293,6 +298,85 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
 
         # Services are healthy or no fallback needed
         return None
+
+    def _has_required_birth_inputs(self, birth_data: Dict[str, Any]) -> bool:
+        if not isinstance(birth_data, dict):
+            return False
+        required_keys = ['date_of_birth', 'time_of_birth', 'place_of_birth']
+        return all(birth_data.get(key) for key in required_keys)
+
+    def _validate_section_payload(self, payload: Dict[str, Any], category: str) -> Optional[str]:
+        if not isinstance(payload, dict):
+            return 'invalid_payload'
+        sections = payload.get('sections')
+        full_analysis = payload.get('full_analysis')
+        if not isinstance(sections, dict):
+            return 'missing_sections'
+        if not full_analysis:
+            return 'missing_full_analysis'
+        required_sections = self.section_parser.REQUIRED_SECTIONS.get(category, [])
+        if required_sections and not any(sections.get(key) for key in required_sections):
+            return 'missing_required_sections'
+        return None
+
+    def _build_remedies_fallback(self, birth_data: Dict[str, Any]) -> Dict[str, Any]:
+        remedies = self.core_wisdom.get_remedies_for_category('karmic_remedies', birth_data, limit=6)
+        mantra_items = [r['data'] for r in remedies if r.get('type') == 'mantra']
+        gemstone_items = [r['data'] for r in remedies if r.get('type') == 'gemstone']
+
+        mantras = [
+            f"{item.get('name', {}).get('en', 'Mantra')}: {item.get('mantra', '')}".strip()
+            for item in mantra_items
+            if isinstance(item, dict)
+        ]
+        gemstones = [
+            f"{item.get('name', {}).get('en', 'Gemstone')} - {item.get('planet', 'Planetary support')}"
+            for item in gemstone_items
+            if isinstance(item, dict)
+        ]
+
+        if not mantras:
+            mantras = [
+                'Om Namah Shivaya - Daily grounding for transformation',
+                'Gayatri Mantra - Morning clarity and protection'
+            ]
+        if not gemstones:
+            gemstones = [
+                'Pearl - Emotional balance and calm',
+                'Emerald - Mental clarity and communication'
+            ]
+
+        return {
+            'category': 'karmic_remedies',
+            'title': 'Your Personalized Karmic Remedies',
+            'full_analysis': "## Core Wisdom Remedies\n" + "\n".join(
+                [f"- {item}" for item in (mantras + gemstones)]
+            ),
+            'mantras': "\n".join(mantras),
+            'gemstones': "\n".join(gemstones),
+            'yantras': 'Sri Yantra - For harmony and spiritual alignment.',
+            'charitable_activities': 'Offer food or education support weekly.',
+            'fasting': 'Observe a light fast on Ekadashi or Mondays.',
+            'deity_worship': 'Simple daily prayer to your chosen deity.',
+            'pilgrimage': 'Visit a nearby sacred space with mindfulness.',
+            'lifestyle': 'Prioritize sleep, clean food, and mindful speech.',
+            'planetary_rituals': 'Light a lamp on Saturdays for Saturn balance.',
+            'karmic_cleansing': 'Practice forgiveness journaling weekly.',
+            'service': 'Volunteer or mentor to balance karma.',
+            'meditation': '10-minute breath meditation daily.',
+            'metadata': {
+                'zodiac_sign': birth_data.get('zodiac_sign', 'Unknown'),
+                'ai_model': 'core_wisdom_fallback',
+                'corpus_available': False,
+                'tradition': 'Bhrigu Samhita & Nadi Jyotisa',
+                'fallback_mode': True
+            },
+            'generated_at': datetime.utcnow().isoformat()
+        }
+
+    def _build_karma_reset_fallback(self, birth_data: Dict[str, Any]) -> Dict[str, Any]:
+        from services.prediction_helpers import fallback_karma_reset
+        return fallback_karma_reset(birth_data)
 
     def _enrich_with_nadi(self, result: Dict[str, Any], category: str, birth_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -872,6 +956,53 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
                     ]
                 }
             ],
+            'karma_reset': [
+                {
+                    'key': 'reset_overview',
+                    'title': 'Karma Reset Overview',
+                    'bullets': [
+                        "Key themes for this reset cycle",
+                        "Primary karmic patterns to release",
+                        "Overall energetic focus"
+                    ]
+                },
+                {
+                    'key': 'release_practices',
+                    'title': 'Release Practices',
+                    'bullets': [
+                        "Practices to let go of burdens",
+                        "Journaling and forgiveness rituals",
+                        "Supportive habits for closure"
+                    ]
+                },
+                {
+                    'key': 'daily_reset',
+                    'title': 'Daily Reset Ritual',
+                    'bullets': [
+                        "Morning grounding steps",
+                        "Evening integration routine",
+                        "Mantra or breath anchor"
+                    ]
+                },
+                {
+                    'key': 'affirmations',
+                    'title': 'Anchor Affirmations',
+                    'bullets': [
+                        "Short affirmations for clarity",
+                        "Statements for emotional release",
+                        "Mantra suggestions"
+                    ]
+                },
+                {
+                    'key': 'integration',
+                    'title': 'Integration Guidance',
+                    'bullets': [
+                        "How to sustain the reset",
+                        "Service or seva recommendations",
+                        "Next steps for spiritual alignment"
+                    ]
+                }
+            ],
             'relationships': [
                 {
                     'key': 'romantic_marriage',
@@ -1060,6 +1191,7 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
             'present_life': self.generate_present_life_prediction,
             'life_events': self.generate_life_events_prediction,
             'karmic_remedies': self.generate_karmic_remedies_prediction,
+            'karma_reset': self.generate_karma_reset,
             'relationships': self.generate_relationships_prediction,
             'predictions': self.generate_general_predictions
         }
@@ -1508,11 +1640,20 @@ Return only the section body (no header). Use at least 200 words with concrete a
             fallback = self._get_fallback_if_unavailable('karmic_remedies', birth_data)
             if fallback:
                 return fallback
+            if not self._has_required_birth_inputs(birth_data):
+                logger.warning("Missing birth data for karmic remedies; returning core wisdom fallback")
+                return self._build_remedies_fallback(birth_data)
             prediction_payload = self._generate_sectioned_prediction(
                 'karmic_remedies',
                 birth_data,
                 question
             )
+            validation_error = self._validate_section_payload(prediction_payload, 'karmic_remedies')
+            if validation_error:
+                logger.warning(
+                    f"Karmic remedies payload invalid ({validation_error}); using core wisdom fallback"
+                )
+                return self._build_remedies_fallback(birth_data)
             prediction_text = prediction_payload['full_analysis']
             sections = prediction_payload['sections']
             metadata = self._generate_metadata(birth_data, 'karmic_remedies')
@@ -1538,6 +1679,51 @@ Return only the section body (no header). Use at least 200 words with concrete a
                 'metadata': {'error': str(e)},
                 'generated_at': datetime.utcnow().isoformat()
             }
+
+    def generate_karma_reset(self, birth_data: Dict[str, Any],
+                             question: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Karma Reset: Guided reset plan with default template fallback
+        GUARANTEED to return a valid dict - never fails
+        """
+        try:
+            fallback = self._get_fallback_if_unavailable('karma_reset', birth_data)
+            if fallback:
+                return fallback
+            if not self._has_required_birth_inputs(birth_data):
+                logger.warning("Missing birth data for karma reset; returning default template")
+                return self._build_karma_reset_fallback(birth_data)
+
+            prediction_payload = self._generate_sectioned_prediction(
+                'karma_reset',
+                birth_data,
+                question
+            )
+            validation_error = self._validate_section_payload(prediction_payload, 'karma_reset')
+            if validation_error:
+                logger.warning(
+                    f"Karma reset payload invalid ({validation_error}); using default template"
+                )
+                return self._build_karma_reset_fallback(birth_data)
+
+            prediction_text = prediction_payload['full_analysis']
+            sections = prediction_payload['sections']
+            metadata = self._generate_metadata(birth_data, 'karma_reset')
+            metadata['chunking'] = prediction_payload.get('chunking', False)
+
+            result = {
+                'category': 'karma_reset',
+                'title': 'Your Karma Reset Plan',
+                'full_analysis': prediction_text,
+                **sections,
+                'metadata': metadata,
+                'generated_at': datetime.utcnow().isoformat()
+            }
+
+            return self._enrich_with_nadi(result, 'karma_reset', birth_data)
+        except Exception as e:
+            logger.error(f"Karma reset prediction failed: {e}", exc_info=True)
+            return self._get_fallback_if_unavailable('karma_reset', birth_data) or self._build_karma_reset_fallback(birth_data)
 
     def generate_relationships_prediction(self, birth_data: Dict[str, Any],
                                          question: Optional[str] = None) -> Dict[str, Any]:

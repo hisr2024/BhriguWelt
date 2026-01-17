@@ -734,6 +734,15 @@ export const bhriguPredictionsAPI = {
   },
 
   /**
+   * Get Karma Reset guidance
+   * Default reset plan with fallback template
+   */
+  getKarmaReset: async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/karma-reset', data);
+    return response.data;
+  },
+
+  /**
    * Get Relationships analysis
    * Soul connections and compatibility
    */

@@ -808,6 +808,73 @@ def fallback_karmic_remedies(chart_data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def fallback_karma_reset(chart_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Default fallback for karma reset predictions."""
+    zodiac = chart_data.get('zodiac_sign', 'Unknown')
+
+    reset_overview = (
+        "Your karma reset begins with clarity about what no longer serves you. "
+        "This period emphasizes releasing outdated patterns, simplifying commitments, and "
+        "re-aligning with your highest values."
+    )
+
+    release_practices = (
+        "- Write down recurring emotional triggers and consciously forgive them.\n"
+        "- Practice a weekly digital detox and short silence period.\n"
+        "- Offer a simple gratitude prayer to close unfinished chapters."
+    )
+
+    daily_reset = (
+        "Start each day with three intentional breaths, a brief mantra, and a grounded intention. "
+        "End the day with a review of what felt aligned versus draining."
+    )
+
+    affirmations = (
+        "- I release what is not mine to carry.\n"
+        "- I choose peace over repetition.\n"
+        "- I am guided toward clean, steady karma."
+    )
+
+    integration = (
+        "Keep your reset gentle and sustainable. Service, honesty, and consistency are the most "
+        "effective karmic cleansers during this cycle."
+    )
+
+    full_analysis = f"""## Karma Reset Overview
+{reset_overview}
+
+## Release Practices
+{release_practices}
+
+## Daily Reset Ritual
+{daily_reset}
+
+## Anchor Affirmations
+{affirmations}
+
+## Integration Guidance
+{integration}"""
+
+    return {
+        'category': 'karma_reset',
+        'title': 'Your Karma Reset Plan',
+        'full_analysis': full_analysis,
+        'reset_overview': reset_overview,
+        'release_practices': release_practices,
+        'daily_reset': daily_reset,
+        'affirmations': affirmations,
+        'integration': integration,
+        'metadata': {
+            'zodiac_sign': zodiac,
+            'ai_model': 'offline_fallback',
+            'corpus_available': False,
+            'tradition': 'Bhrigu Samhita & Nadi Jyotisa',
+            'fallback_mode': True
+        },
+        'generated_at': datetime.utcnow().isoformat()
+    }
+
+
 def fallback_relationships(chart_data: Dict[str, Any]) -> Dict[str, Any]:
     """Complete fallback for relationships - matches bhrigu_predictions structure"""
     zodiac = chart_data.get('zodiac_sign', 'Unknown')
@@ -958,6 +1025,7 @@ __all__ = [
     'fallback_present_life',
     'fallback_life_events',
     'fallback_karmic_remedies',
+    'fallback_karma_reset',
     'fallback_relationships',
     'fallback_predictions'
 ]

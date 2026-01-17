@@ -144,6 +144,13 @@ class SectionParser:
             'service',
             'meditation'
         ],
+        'karma_reset': [
+            'reset_overview',
+            'release_practices',
+            'daily_reset',
+            'affirmations',
+            'integration'
+        ],
         'relationships': [
             'romantic_marriage',
             'family',
