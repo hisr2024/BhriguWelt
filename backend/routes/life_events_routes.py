@@ -2,15 +2,73 @@
 Life Events API Routes
 Important life events prediction endpoints
 """
+from datetime import datetime
+
 from flask import Blueprint, request
-from services.astrology_calculator import astrology_calculator
+from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.prediction_orchestrator import get_prediction_orchestrator
+from utils.astrology_helpers import dependency_error_response, get_cached_birth_data, handle_birth_chart_error
 from utils.client_status import parse_client_online
+from utils.logger import log_exception, setup_logger
 from utils.response_formatter import prediction_response, prediction_error_response
-from utils.validators import sanitize_input
+from utils.validators import sanitize_input, validate_birth_details
 
 bp = Blueprint('life_events', __name__, url_prefix='/api/life-events')
 orchestrator = get_prediction_orchestrator()
+logger = setup_logger(__name__)
+
+
+@bp.errorhandler(405)
+def method_not_allowed(error):
+    """Handle invalid method calls for life events endpoints."""
+    logger.warning("Method not allowed: %s %s", request.method, request.path)
+    return prediction_error_response(
+        "Method not allowed. Please use POST for this endpoint.",
+        405
+    )
+
+
+def _get_request_payload():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        logger.warning("Missing or invalid JSON payload for %s", request.path)
+        return None, prediction_error_response(
+            "Request body must be a valid JSON object.",
+            400
+        )
+    return data, None
+
+
+def _get_birth_chart(data):
+    is_valid, error = validate_birth_details(data)
+    if not is_valid:
+        logger.warning("Invalid birth details for %s: %s", request.path, error)
+        return None, prediction_error_response(error, 400)
+
+    calculator = get_astrology_calculator()
+    cached_birth_data = get_cached_birth_data(data)
+    if not calculator and not cached_birth_data:
+        return None, dependency_error_response(get_astrology_dependency_error())
+
+    if calculator:
+        birth_chart = calculator.calculate_birth_chart(
+            date_of_birth=data['date_of_birth'],
+            time_of_birth=data['time_of_birth'],
+            place=data['place_of_birth'],
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude'),
+            timezone_override=sanitize_input(data['timezone'], max_length=64)
+            if data.get('timezone') else None
+        )
+
+        error_response_tuple = handle_birth_chart_error(birth_chart)
+        if error_response_tuple:
+            return None, error_response_tuple
+    else:
+        logger.warning("Astrology calculator unavailable; using cached birth data.")
+        birth_chart = cached_birth_data
+
+    return birth_chart, None
 
 @bp.route('/prediction', methods=['POST'])
 def life_events_prediction():
@@ -26,7 +84,9 @@ def life_events_prediction():
     }
     """
     try:
-        data = request.get_json()
+        data, error = _get_request_payload()
+        if error:
+            return error
         years_ahead = data.get('years_ahead', 10)
 
         # Calculate birth chart
@@ -69,7 +129,9 @@ def life_events_prediction():
 def career_milestones():
     """Predict career milestones and transitions"""
     try:
-        data = request.get_json()
+        data, error = _get_request_payload()
+        if error:
+            return error
         birth_chart, error = _get_birth_chart(data)
         if error:
             return error
@@ -122,7 +184,9 @@ def career_milestones():
 def relationship_events():
     """Predict relationship and marriage events"""
     try:
-        data = request.get_json()
+        data, error = _get_request_payload()
+        if error:
+            return error
         birth_chart, error = _get_birth_chart(data)
         if error:
             return error
@@ -176,7 +240,9 @@ def relationship_events():
 def financial_events():
     """Predict major financial events"""
     try:
-        data = request.get_json()
+        data, error = _get_request_payload()
+        if error:
+            return error
         birth_chart, error = _get_birth_chart(data)
         if error:
             return error
@@ -230,7 +296,9 @@ def financial_events():
 def health_alerts():
     """Get health alerts and wellness periods"""
     try:
-        data = request.get_json()
+        data, error = _get_request_payload()
+        if error:
+            return error
         birth_chart, error = _get_birth_chart(data)
         if error:
             return error
@@ -284,7 +352,9 @@ def health_alerts():
 def spiritual_breakthroughs():
     """Predict spiritual breakthroughs and initiations"""
     try:
-        data = request.get_json()
+        data, error = _get_request_payload()
+        if error:
+            return error
         birth_chart, error = _get_birth_chart(data)
         if error:
             return error
@@ -338,14 +408,12 @@ def spiritual_breakthroughs():
 def auspicious_timings():
     """Get auspicious timings for major decisions"""
     try:
-        data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth'],
-            timezone_override=sanitize_input(data['timezone'], max_length=64)
-            if data.get('timezone') else None
-        )
+        data, error = _get_request_payload()
+        if error:
+            return error
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Identify auspicious periods for:
@@ -389,5 +457,82 @@ def auspicious_timings():
         log_exception(logger, e, context="life_events.auspicious_timings")
         return prediction_error_response(
             "Failed to generate auspicious timings. Please try again later.",
+            500
+        )
+
+
+@bp.route('/varshaphal', methods=['POST'])
+def varshaphal():
+    """Generate Varshaphal (annual) insights"""
+    try:
+        data, error = _get_request_payload()
+        if error:
+            return error
+
+        year_value = data.get('year', datetime.utcnow().year)
+        try:
+            year = int(year_value)
+        except (TypeError, ValueError):
+            logger.warning("Invalid year provided for varshaphal: %s", year_value)
+            return prediction_error_response(
+                "Year must be a valid integer.",
+                400
+            )
+
+        max_year = datetime.utcnow().year + 10
+        if year < 1900 or year > max_year:
+            logger.warning("Out-of-range year for varshaphal: %s", year)
+            return prediction_error_response(
+                f"Year must be between 1900 and {max_year}.",
+                400
+            )
+
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
+
+        prompt = f"""
+        Provide Varshaphal (annual) forecast for {year}:
+        - Zodiac: {birth_chart['zodiac_sign']}
+        - Nakshatra: {birth_chart['nakshatra']}
+        - Current Dasha: {birth_chart['dasha_period']['maha_dasha']}
+
+        Include:
+        1. Major themes for the year
+        2. Career and financial growth
+        3. Relationships and family matters
+        4. Health and wellness focus
+        5. Spiritual growth opportunities
+        6. Key months and timing highlights
+        """
+
+        client_online = parse_client_online(request.headers.get('X-Client-Online'))
+        mode = data.get('mode', 'hybrid')
+        result = orchestrator.generate_prediction(
+            category='life_events',
+            chart_data=birth_chart,
+            mode=mode,
+            client_online=client_online,
+            prompt=prompt
+        )
+        prediction = result.get('prediction', result)
+
+        return prediction_response(
+            {
+                'year': year,
+                'varshaphal': prediction
+            },
+            metadata={
+                'year': year,
+                'zodiac_sign': birth_chart.get('zodiac_sign'),
+                'nakshatra': birth_chart.get('nakshatra'),
+                'mode': result.get('mode', mode)
+            }
+        )
+
+    except Exception as e:
+        log_exception(logger, e, context="life_events.varshaphal")
+        return prediction_error_response(
+            "Failed to generate Varshaphal insights. Please try again later.",
             500
         )

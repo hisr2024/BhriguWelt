@@ -3,6 +3,7 @@ BhriguWelt - Comprehensive Astrology API
 Main application entry point
 """
 from flask import Flask, jsonify, request, g
+from werkzeug.exceptions import HTTPException
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_limiter import Limiter
@@ -384,7 +385,8 @@ try:
         user_routes,
         ai_routes,
         bhrigu_predictions_routes,
-        matchmaking_routes
+        matchmaking_routes,
+        life_events_routes
     )
     print("✓ Core route modules imported successfully")
 
@@ -422,6 +424,7 @@ app.register_blueprint(user_routes.bp)
 app.register_blueprint(ai_routes.bp)
 app.register_blueprint(bhrigu_predictions_routes.bp)
 app.register_blueprint(matchmaking_routes.bp)
+app.register_blueprint(life_events_routes.bp)
 
 # Register new unified predictions blueprint
 if predictions_unified:
@@ -601,6 +604,16 @@ def not_found(error):
         'message': str(error)
     }), 404
 
+
+@app.errorhandler(405)
+def method_not_allowed(error):
+    """Handle 405 errors with a user-friendly response."""
+    logger.warning("Method not allowed: %s %s", request.method, request.path)
+    return jsonify({
+        'error': 'Method not allowed',
+        'message': 'Method not allowed. Please use the correct HTTP method for this endpoint.'
+    }), 405
+
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors"""
@@ -613,6 +626,8 @@ def internal_error(error):
 @app.errorhandler(Exception)
 def handle_exception(e):
     """Handle all unhandled exceptions"""
+    if isinstance(e, HTTPException):
+        return e
     log_exception(logger, e, context="Unhandled exception")
     return jsonify({
         'error': 'Internal server error',
