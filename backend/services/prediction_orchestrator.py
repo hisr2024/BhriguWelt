@@ -36,6 +36,17 @@ class PredictionOrchestrator:
     THREAD-SAFE: Uses locks to handle concurrent requests safely
     """
 
+    COSMIC_BLUEPRINT_SECTIONS = [
+        'karmic_journey',
+        'soul_purpose',
+        'karmic_debts',
+        'dharmic_path',
+        'spiritual_evolution',
+        'moksha_indicators',
+        'present_life',
+        'life_events',
+    ]
+
     def __init__(self):
         # Import services (lazy loading to avoid circular imports)
         self.openai_service = None
@@ -109,8 +120,19 @@ class PredictionOrchestrator:
 
                 # Validate category is supported
                 valid_categories = {
-                    'karmic_journey', 'past_lives', 'future_lives', 'present_life',
-                    'life_events', 'karmic_remedies', 'relationships', 'predictions'
+                    'karmic_journey',
+                    'past_lives',
+                    'future_lives',
+                    'present_life',
+                    'life_events',
+                    'karmic_remedies',
+                    'relationships',
+                    'predictions',
+                    'soul_purpose',
+                    'karmic_debts',
+                    'dharmic_path',
+                    'spiritual_evolution',
+                    'moksha_indicators',
                 }
                 normalized_category = category.lower().strip()
                 if normalized_category not in valid_categories:
@@ -535,16 +557,8 @@ Based on Vedic astrology principles:
         }
         
         # Key sections for cosmic blueprint
-        sections = [
-            'karmic_journey',
-            'soul_purpose',
-            'karmic_debts',
-            'dharmic_path',
-            'spiritual_evolution',
-            'moksha_indicators',
-            'present_life',
-            'life_events'
-        ]
+        sections = list(self.COSMIC_BLUEPRINT_SECTIONS)
+        blueprint['sections'] = {section: "" for section in sections}
         
         # Generate each section
         for section in sections:

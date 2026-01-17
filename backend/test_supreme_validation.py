@@ -206,12 +206,15 @@ class SupremeValidation:
 
         service = get_bhrigu_service()
         health = service.get_health_status()
+        is_healthy = service._is_healthy()
 
         assert 'healthy' in health, "Health status missing 'healthy' field"
         assert 'services' in health, "Health status missing 'services' field"
         assert 'initialization_errors' in health, "Health status missing 'initialization_errors'"
+        assert isinstance(is_healthy, bool), "_is_healthy did not return a boolean"
 
         print(f"✓ Health check working: {health['initialization_errors']} errors")
+        print(f"✓ _is_healthy returned: {is_healthy}")
 
     def test_10_input_validation(self):
         """Test 10: Input validation exists"""
@@ -264,10 +267,13 @@ class SupremeValidation:
     def test_13_section_specs(self):
         """Test 13: Section specs are properly defined"""
         from services.bhrigu_predictions import BhriguPredictionsService
+        from services.section_parser import SectionParser
+        from services.prediction_orchestrator import PredictionOrchestrator
 
         assert hasattr(BhriguPredictionsService, 'SECTION_SPECS'), "SECTION_SPECS not defined"
 
         specs = BhriguPredictionsService.SECTION_SPECS
+        required_sections = SectionParser.REQUIRED_SECTIONS
 
         categories = ['karmic_journey', 'past_lives', 'future_lives', 'present_life',
                      'life_events', 'karmic_remedies', 'relationships', 'predictions']
@@ -275,8 +281,19 @@ class SupremeValidation:
         for category in categories:
             assert category in specs, f"Section spec missing for {category}"
             assert len(specs[category]) > 0, f"Empty section spec for {category}"
+            spec_keys = [section['key'] for section in specs[category]]
+            required_keys = required_sections.get(category, [])
+            missing = set(required_keys) - set(spec_keys)
+            extra = set(spec_keys) - set(required_keys)
+            assert not missing, f"Section spec missing keys for {category}: {sorted(missing)}"
+            assert not extra, f"Section spec has extra keys for {category}: {sorted(extra)}"
+
+        orchestrator_sections = PredictionOrchestrator.COSMIC_BLUEPRINT_SECTIONS
+        assert len(orchestrator_sections) == len(set(orchestrator_sections)), "Duplicate orchestrator sections"
+        assert orchestrator_sections, "Orchestrator cosmic blueprint sections not defined"
 
         print(f"✓ Section specs defined for all 8 categories")
+        print(f"✓ Orchestrator sections defined: {len(orchestrator_sections)} sections")
 
     def test_14_orchestrator_modes(self):
         """Test 14: Prediction orchestrator supports all modes"""

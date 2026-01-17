@@ -130,13 +130,13 @@ def _redact_pii(value: str) -> str:
         return value
 
     patterns = [
+        # OpenAI/Anthropic API keys (redact before generic numeric patterns)
+        (r'\b(sk-[A-Za-z0-9]{10,})', '[REDACTED_API_KEY]'),
+        (r'\b(sk-ant-[A-Za-z0-9\-]{10,})', '[REDACTED_API_KEY]'),
         (r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b', '[REDACTED_EMAIL]'),
         (r'\b\d{3}-\d{2}-\d{4}\b', '[REDACTED_SSN]'),
         (r'\b(?:\d[ -]*?){13,16}\b', '[REDACTED_CARD]'),
         (r'\b(?:\+?\d{1,3}[ -]?)?(?:\(?\d{3}\)?[ -]?)?\d{3}[ -]?\d{4}\b', '[REDACTED_PHONE]'),
-        # OpenAI/Anthropic API keys
-        (r'\b(sk-[A-Za-z0-9]{20,})', '[REDACTED_API_KEY]'),
-        (r'\b(sk-ant-[A-Za-z0-9\-]{20,})', '[REDACTED_API_KEY]'),
         # Generic API key patterns
         (r'(?i)(api[_\s]?key|apikey)[\s:=]+["\']?([A-Za-z0-9\-_]{20,})["\']?', r'\1: [REDACTED_API_KEY]'),
     ]
