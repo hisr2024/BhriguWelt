@@ -19,5 +19,29 @@ services:
         value: https://api.openai.com/v1
       - key: FRONTEND_URL
         value: https://bhrigu-welt.vercel.app
+      - key: REDIS_ENABLED
+        value: true
+      - key: REDIS_URL
+        fromDatabase:
+          name: bhriguwelt-redis
+          property: connectionString
+      - key: REDIS_MAX_CONNECTIONS
+        value: 50
+      - key: REDIS_SOCKET_TIMEOUT
+        value: 5
+      - key: REDIS_CONNECT_TIMEOUT
+        value: 5
+      - key: USER_DAILY_TOKEN_LIMIT
+        value: 100000
+      - key: OPENAI_USE_JSON_FORMAT
+        value: true
+      - key: CORE_WISDOM_PATH
+        value: /opt/render/project/src/core_wisdom
     healthCheckPath: /health
     autoDeploy: true
+
+  - type: redis
+    name: bhriguwelt-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []

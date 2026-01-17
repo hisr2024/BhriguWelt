@@ -102,9 +102,65 @@ class PrincipleLoader:
         self.principles_by_domain: Dict[str, List[Principle]] = {}
         self.loaded = False
 
-        # Base paths
+        # Dynamic path resolution - try multiple locations
         self.backend_data_path = Path(__file__).parent.parent / 'data'
-        self.core_wisdom_path = Path(__file__).parent.parent.parent / 'core_wisdom'
+        self.core_wisdom_paths = self._resolve_core_wisdom_paths()
+
+    def _resolve_core_wisdom_paths(self) -> List[Path]:
+        """
+        Resolve core_wisdom directory from multiple possible locations.
+        Tries locations in order of likelihood based on deployment environment.
+
+        Returns:
+            List of Path objects to try for core_wisdom directory
+        """
+        possible_paths = [
+            # Docker/production paths
+            Path('/app/core_wisdom'),
+            Path('/app/backend/core_wisdom'),
+
+            # Relative to this file (backend/services/principle_loader.py)
+            Path(__file__).parent.parent.parent / 'core_wisdom',  # Go up to project root
+            Path(__file__).parent.parent / 'core_wisdom',  # Inside backend
+
+            # Development paths
+            Path.cwd() / 'core_wisdom',
+            Path.cwd() / 'backend' / 'core_wisdom',
+
+            # Environment variable override
+        ]
+
+        # Allow environment variable to override
+        env_path = os.getenv('CORE_WISDOM_PATH')
+        if env_path:
+            possible_paths.insert(0, Path(env_path))
+
+        logger.info(f"Attempting to locate core_wisdom directory in {len(possible_paths)} possible locations")
+
+        # Log which paths we're trying
+        for i, path in enumerate(possible_paths, 1):
+            logger.debug(f"  {i}. {path} (exists: {path.exists()})")
+
+        return possible_paths
+
+    def _find_file(self, filename: str) -> Optional[Path]:
+        """
+        Find a file in core_wisdom directory by trying all possible paths.
+
+        Args:
+            filename: Name of the file to find
+
+        Returns:
+            Path object if found, None otherwise
+        """
+        for base_path in self.core_wisdom_paths:
+            file_path = base_path / filename
+            if file_path.exists():
+                logger.info(f"Found {filename} at {file_path}")
+                return file_path
+
+        logger.warning(f"Could not find {filename} in any of the {len(self.core_wisdom_paths)} core_wisdom locations")
+        return None
 
     def load_all(self) -> None:
         """Load all principles from all sources"""
@@ -238,20 +294,32 @@ class PrincipleLoader:
 
     def _load_bhrigu_markdown(self) -> None:
         """Load structured rules from bhrigu_samhita_rules.md"""
-        md_path = self.core_wisdom_path / 'bhrigu_samhita_rules.md'
+        md_path = self._find_file('bhrigu_samhita_rules.md')
 
-        if not md_path.exists():
-            logger.warning(f"Bhrigu MD not found: {md_path}")
+        if not md_path or not md_path.exists():
+            logger.warning(f"Bhrigu MD not found in any location. Using embedded fallback.")
+            self._load_bhrigu_fallback()
             return
 
         try:
             with open(md_path, 'r', encoding='utf-8') as f:
                 content = f.read()
 
-            # Parse markdown rules (BS-001 to BS-050)
+            # Validate file has minimum content
+            if len(content) < 1000:
+                logger.warning(f"Bhrigu MD file too small ({len(content)} bytes). Using embedded fallback.")
+                self._load_bhrigu_fallback()
+                return
+
+            # Parse markdown rules (BS-001 to BS-270)
             import re
             pattern = r'\*\*Rule (BS-\d+)\*\*:\s*(.+?)(?=\n\n|\*\*Rule|$)'
             matches = re.findall(pattern, content, re.DOTALL)
+
+            if len(matches) == 0:
+                logger.warning("No Bhrigu rules found in markdown file. Using embedded fallback.")
+                self._load_bhrigu_fallback()
+                return
 
             for rule_id, description in matches:
                 principle = Principle(
@@ -262,27 +330,40 @@ class PrincipleLoader:
                 )
                 self.principles.append(principle)
 
-            logger.info(f"✓ Loaded {len(matches)} Bhrigu MD rules")
+            logger.info(f"✓ Loaded {len(matches)} Bhrigu MD rules from {md_path}")
 
         except Exception as e:
-            logger.error(f"Error loading Bhrigu MD: {e}")
+            logger.error(f"Error loading Bhrigu MD: {e}. Using embedded fallback.")
+            self._load_bhrigu_fallback()
 
     def _load_nadi_markdown(self) -> None:
         """Load structured rules from nadi_jyotisha_rules.md"""
-        md_path = self.core_wisdom_path / 'nadi_jyotisha_rules.md'
+        md_path = self._find_file('nadi_jyotisha_rules.md')
 
-        if not md_path.exists():
-            logger.warning(f"Nadi MD not found: {md_path}")
+        if not md_path or not md_path.exists():
+            logger.warning(f"Nadi MD not found in any location. Using embedded fallback.")
+            self._load_nadi_fallback()
             return
 
         try:
             with open(md_path, 'r', encoding='utf-8') as f:
                 content = f.read()
 
-            # Parse markdown rules (ND-001 to ND-070)
+            # Validate file has minimum content
+            if len(content) < 1000:
+                logger.warning(f"Nadi MD file too small ({len(content)} bytes). Using embedded fallback.")
+                self._load_nadi_fallback()
+                return
+
+            # Parse markdown rules (ND-001 to ND-243)
             import re
             pattern = r'\*\*Rule (ND-\d+)\*\*:\s*(.+?)(?=\n\n|\*\*Rule|$)'
             matches = re.findall(pattern, content, re.DOTALL)
+
+            if len(matches) == 0:
+                logger.warning("No Nadi rules found in markdown file. Using embedded fallback.")
+                self._load_nadi_fallback()
+                return
 
             for rule_id, description in matches:
                 principle = Principle(
@@ -293,10 +374,67 @@ class PrincipleLoader:
                 )
                 self.principles.append(principle)
 
-            logger.info(f"✓ Loaded {len(matches)} Nadi MD rules")
+            logger.info(f"✓ Loaded {len(matches)} Nadi MD rules from {md_path}")
 
         except Exception as e:
-            logger.error(f"Error loading Nadi MD: {e}")
+            logger.error(f"Error loading Nadi MD: {e}. Using embedded fallback.")
+            self._load_nadi_fallback()
+
+    def _load_bhrigu_fallback(self) -> None:
+        """Load embedded fallback Bhrigu principles when files not available"""
+        logger.info("Loading embedded Bhrigu fallback principles")
+
+        fallback_principles = [
+            ("BS-001", "The Ascendant (Lagna) represents the soul's entry point into the current incarnation and reveals the primary life purpose."),
+            ("BS-002", "The Moon's position and Nakshatra at birth determine the emotional blueprint and mind patterns carried from past lives."),
+            ("BS-003", "The Sun's house placement indicates the father's karma and its influence on the native's life path."),
+            ("BS-004", "Saturn's position reveals the most significant karmic debts that must be repaid in this lifetime."),
+            ("BS-005", "Jupiter's placement shows accumulated spiritual merit (punya) from past lives and protective blessings."),
+            ("BS-020", "Sun in 2nd house indicates wealth earned through father's lineage or government connections in past lives."),
+            ("BS-044", "Jupiter in 5th house (most auspicious) indicates highly meritorious children and abundant creativity from past spiritual practices."),
+            ("BS-061", "Mars in 7th house creates Kuja Dosha (Mangal Dosha) indicating aggressive spouse or delayed marriage requiring remedies."),
+            ("BS-087", "Sun in 10th house (excellent placement) indicates government career or leadership position with strong public reputation."),
+            ("BS-114", "When lords of 9th and 10th houses conjoin or aspect each other, Raja Yoga forms granting wealth, status, and authority."),
+        ]
+
+        for rule_id, description in fallback_principles:
+            principle = Principle(
+                rule_id=rule_id,
+                tradition='bhrigu',
+                source_reference='Bhrigu Samhita Core Rules (Embedded Fallback)',
+                description=description
+            )
+            self.principles.append(principle)
+
+        logger.info(f"✓ Loaded {len(fallback_principles)} embedded Bhrigu fallback principles")
+
+    def _load_nadi_fallback(self) -> None:
+        """Load embedded fallback Nadi principles when files not available"""
+        logger.info("Loading embedded Nadi fallback principles")
+
+        fallback_principles = [
+            ("ND-001", "The thumb impression reveals the soul's karmic category through 108 primary classifications based on whorl patterns."),
+            ("ND-011", "First chapter reveals name, birth details, parents' names, siblings count, and spouse information with precise accuracy."),
+            ("ND-016", "Detailed wealth patterns across entire life span from birth to death predicted."),
+            ("ND-036", "Exact number of children the seeker will have across lifetime predicted."),
+            ("ND-053", "Timing of marriage predicted to specific year and often month of occurrence."),
+            ("ND-064", "Approximate age of death predicted within 5-year range for the seeker."),
+            ("ND-112", "Detailed narrative of immediate past life including era, location, and identity."),
+            ("ND-120", "Specific mantras with exact repetition counts for resolving major life obstacles."),
+            ("ND-166", "Nadi uses Vimshottari Dasha but interprets through karmic lens of past-life actions."),
+            ("ND-242", "Nadi reminds: predictions are roadmap, not prison; awareness empowers conscious living."),
+        ]
+
+        for rule_id, description in fallback_principles:
+            principle = Principle(
+                rule_id=rule_id,
+                tradition='nadi',
+                source_reference='Nadi Jyotisha Core Rules (Embedded Fallback)',
+                description=description
+            )
+            self.principles.append(principle)
+
+        logger.info(f"✓ Loaded {len(fallback_principles)} embedded Nadi fallback principles")
 
     def _build_indices(self) -> None:
         """Build lookup indices for fast access"""

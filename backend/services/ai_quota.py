@@ -116,7 +116,7 @@ def sanitize_log(s: str, max_length: int = 256) -> str:
 
 def _get_redis_client() -> Optional[redis.Redis]:
     """
-    Get Redis client instance.
+    Get Redis client instance using production-grade connection manager.
 
     Returns:
         Redis client or None if Redis is unavailable
@@ -124,22 +124,30 @@ def _get_redis_client() -> Optional[redis.Redis]:
     if not REDIS_AVAILABLE:
         return None
 
-    redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
-
     try:
-        client = redis.from_url(
-            redis_url,
-            decode_responses=True,
-            socket_connect_timeout=5,
-            socket_timeout=5,
-            retry_on_timeout=True
-        )
-        # Test connection
-        client.ping()
-        return client
+        # Use the new Redis connection manager with connection pooling,
+        # retry logic, and circuit breaker pattern
+        from services.redis_connection import get_redis_client
+        return get_redis_client()
     except Exception as e:
-        logger.warning(f"Failed to connect to Redis: {sanitize_log(str(e))}")
-        return None
+        # Fallback to old behavior if new module fails to import
+        logger.warning(f"Failed to use Redis connection manager, falling back: {sanitize_log(str(e))}")
+        redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
+
+        try:
+            client = redis.from_url(
+                redis_url,
+                decode_responses=True,
+                socket_connect_timeout=5,
+                socket_timeout=5,
+                retry_on_timeout=True
+            )
+            # Test connection
+            client.ping()
+            return client
+        except Exception as e2:
+            logger.warning(f"Failed to connect to Redis: {sanitize_log(str(e2))}")
+            return None
 
 
 def _get_quota_key(user_id: str) -> str:
@@ -200,9 +208,15 @@ def check_daily_quota_and_reserve(user_id: str, tokens_needed: int) -> Tuple[boo
     # Get Redis client
     client = _get_redis_client()
 
-    # If Redis unavailable, allow but log warning
+    # If Redis unavailable, allow but log appropriately based on configuration
     if not client:
-        logger.warning(f"Redis unavailable - bypassing quota check for user {sanitize_log(user_id)}")
+        redis_enabled = os.getenv('REDIS_ENABLED', 'true').lower() == 'true'
+        if redis_enabled:
+            # Only log warning if Redis is supposed to be enabled
+            logger.warning(f"Redis unavailable - bypassing quota check for user {sanitize_log(user_id)}")
+        else:
+            # Info level if Redis is intentionally disabled
+            logger.debug(f"Redis disabled - bypassing quota check for user {sanitize_log(user_id)}")
         return True, daily_limit
 
     quota_key = _get_quota_key(user_id)
@@ -281,7 +295,11 @@ def update_usage_after_call(user_id: str, tokens_used: int) -> bool:
     client = _get_redis_client()
 
     if not client:
-        logger.warning("Redis unavailable - cannot update usage counter")
+        redis_enabled = os.getenv('REDIS_ENABLED', 'true').lower() == 'true'
+        if redis_enabled:
+            logger.warning("Redis unavailable - cannot update usage counter")
+        else:
+            logger.debug("Redis disabled - skipping usage counter update")
         return False
 
     quota_key = _get_quota_key(user_id)
