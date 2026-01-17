@@ -15,6 +15,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  status?: 'pending' | 'complete' | 'error';
 }
 
 interface AIChatInterfaceProps {
@@ -62,8 +63,16 @@ export default function AIChatInterface({
       content: inputMessage.trim(),
       timestamp: new Date()
     };
+    const pendingId = `${Date.now()}-assistant`;
+    const pendingMessage: Message = {
+      id: pendingId,
+      role: 'assistant',
+      content: 'Consulting the stars...',
+      timestamp: new Date(),
+      status: 'pending'
+    };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage, pendingMessage]);
     setInputMessage('');
     setIsLoading(true);
 
@@ -80,23 +89,34 @@ export default function AIChatInterface({
         response = await generateRealAIResponse(userMessage.content, context, birthChartData, history);
       }
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response,
-        timestamp: new Date()
-      };
+      const finalResponse = normalizeChatResponse(response);
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === pendingId
+            ? {
+              ...message,
+              content: finalResponse,
+              timestamp: new Date(),
+              status: 'complete'
+            }
+            : message
+        )
+      );
     } catch (error) {
       console.error('Error sending message:', error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'I apologize, but I encountered an error. Please try again.',
-        timestamp: new Date()
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === pendingId
+            ? {
+              ...message,
+              content: 'I apologize, but I encountered an issue. Please try again shortly.',
+              timestamp: new Date(),
+              status: 'error'
+            }
+            : message
+        )
+      );
     } finally {
       setIsLoading(false);
     }
@@ -337,7 +357,18 @@ export default function AIChatInterface({
   );
 }
 
-  // Real AI response generator using OpenAI
+const normalizeChatResponse = (response: string | null | undefined): string => {
+  if (!response) {
+    return 'I’m here and ready to help. Could you rephrase your question or share a bit more detail?';
+  }
+  const cleaned = response.trim();
+  if (!cleaned) {
+    return 'I’m here and ready to help. Could you rephrase your question or share a bit more detail?';
+  }
+  return cleaned;
+};
+
+// Real AI response generator using OpenAI
 async function generateRealAIResponse(
   userMessage: string,
   context: string,
@@ -384,7 +415,7 @@ async function generateRealAIResponse(
       aiMode
     );
 
-    return response.response || response.message || 'I apologize, but I encountered an issue. Please try again.';
+    return normalizeChatResponse(response.response || response.message);
   } catch (error) {
     console.error('Error calling AI API:', error);
     // Fallback to mock response
@@ -395,7 +426,7 @@ async function generateRealAIResponse(
 // Mock response generator (fallback)
 async function generateMockResponse(userMessage: string, context: string): Promise<string> {
   // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+  await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 500));
 
   const lowerMessage = userMessage.toLowerCase();
 

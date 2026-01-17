@@ -1237,6 +1237,8 @@ Nadi Jyotisha provides precise predictions from palm leaf manuscripts. Key techn
         
         try:
             synthesis = self.openai_service.generate_prediction(synthesis_prompt, {})
+            if not synthesis or not synthesis.strip():
+                raise ValueError("Empty synthesis response")
             return synthesis
         except Exception as e:
             return f"Complete analysis synthesis: See detailed sections above for comprehensive insights into your {category.replace('_', ' ')}."
@@ -1285,7 +1287,72 @@ Birth Details:
 Focus on:
 {focus_lines}
 
-Return only the section body (no header). Use at least 200 words with concrete astrological references."""
+Return only the section body (no header). Use at least 200 words with concrete astrological references.
+Use clear, readable language and end with an "Actionable Guidance" list of 2-3 bullet points."""
+
+    def _actionable_guidance(self, category: str) -> List[str]:
+        guidance_map = {
+            'karmic_journey': [
+                "Write a one-sentence dharma statement and revisit it daily.",
+                "Choose one spiritual practice to commit to for the next 21 days.",
+                "Note one recurring life lesson and plan a small change this week."
+            ],
+            'past_lives': [
+                "Journal recurring themes that feel familiar or karmic.",
+                "Release one outdated fear through a short meditation ritual.",
+                "Act on a skill you sense you carried from past lives."
+            ],
+            'future_lives': [
+                "Clarify one long-term intention and align a weekly habit to it.",
+                "Strengthen a service-oriented goal that supports dharma.",
+                "Track choices that increase peace and steadiness this month."
+            ],
+            'present_life': [
+                "Prioritize one key goal and outline the next three actions.",
+                "Balance work and rest by scheduling a consistent recovery block.",
+                "Commit to one practice that stabilizes emotions."
+            ],
+            'life_events': [
+                "Identify the next key window and mark it for mindful preparation.",
+                "Simplify one major decision to its most dharmic option.",
+                "Schedule a check-in ritual at each monthly turning point."
+            ],
+            'karmic_remedies': [
+                "Begin a daily mantra or meditation routine at a fixed time.",
+                "Offer a weekly act of seva aligned with your values.",
+                "Reduce one habit that drains your planetary balance."
+            ],
+            'relationships': [
+                "Name one boundary that supports emotional safety.",
+                "Plan a meaningful conversation to clarify expectations.",
+                "Offer one intentional act of kindness this week."
+            ],
+            'predictions': [
+                "Set a weekly intention and review it each evening.",
+                "Track one energy pattern to sync with transit shifts.",
+                "Make one small lifestyle adjustment that promotes stability."
+            ]
+        }
+        return guidance_map.get(category, guidance_map['karmic_journey'])
+
+    def _fallback_section_text(self, category: str, section_title: str) -> str:
+        guidance = "\n".join(f"- {item}" for item in self._actionable_guidance(category)[:3])
+        return (
+            f"This section is temporarily unavailable, but your {category.replace('_', ' ')} journey "
+            f"still benefits from steady reflection and practical focus. Stay aligned with your "
+            f"core dharma and revisit the themes of {section_title.lower()} as you move forward.\n\n"
+            "Actionable Guidance:\n"
+            f"{guidance}"
+        )
+
+    def _normalize_section_text(self, text: str, category: str, section_title: str) -> str:
+        cleaned = (text or "").strip()
+        if len(cleaned) < 80:
+            cleaned = self._fallback_section_text(category, section_title)
+        if "actionable guidance" not in cleaned.lower():
+            guidance = "\n".join(f"- {item}" for item in self._actionable_guidance(category)[:3])
+            cleaned = f"{cleaned}\n\nActionable Guidance:\n{guidance}"
+        return cleaned
 
     def _strip_section_header(self, text: str, section_title: str) -> str:
         if not text:
@@ -1327,14 +1394,22 @@ Return only the section body (no header). Use at least 200 words with concrete a
                 try:
                     prompt = self._build_section_prompt(category, section_spec, birth_data, question)
                     section_text = self.openai_service.generate_prediction(prompt, birth_data)
-                    sections[section_spec['key']] = self._strip_section_header(
+                    cleaned_section = self._strip_section_header(
                         section_text,
+                        section_spec['title']
+                    )
+                    sections[section_spec['key']] = self._normalize_section_text(
+                        cleaned_section,
+                        category,
                         section_spec['title']
                     )
                     status_map[section_spec['key']] = {'status': 'generated'}
                 except Exception as e:
                     logger.error(f"Section generation failed for {section_spec['key']}: {e}")
-                    sections[section_spec['key']] = f"Section temporarily unavailable. {section_spec['title']} content will be available shortly."
+                    sections[section_spec['key']] = self._fallback_section_text(
+                        category,
+                        section_spec['title']
+                    )
                     status_map[section_spec['key']] = {'status': 'fallback', 'error': str(e)}
 
             sections['section_generation_status'] = status_map
