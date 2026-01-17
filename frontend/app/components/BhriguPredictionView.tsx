@@ -15,6 +15,8 @@ import { deleteItem, getAllItems, getItem, setItem, STORES } from '@/lib/storage
 import { useBhriguPrediction } from '@/lib/hooks/useBhriguPrediction';
 import useFeatureFlags from '@/hooks/useFeatureFlags';
 import { getSectionIcon, SectionIcon } from '@/lib/sectionIcons';
+import { parsePredictionResponse, type ParsedPrediction, type PredictionSection as ParsedSection } from '@/lib/predictionParser';
+import { MarkdownRenderer } from '@/app/components/MarkdownRenderer';
 
 const SECTION_LANGUAGES: Language[] = ['en', 'hi'];
 
@@ -520,6 +522,7 @@ export default function BhriguPredictionView({
   // ═══════════════════════════════════════════════════════════════════════════
   const [parsedFromFullAnalysis, setParsedFromFullAnalysis] = useState<Record<string, string>>({});
   const [isParsing, setIsParsing] = useState(false);
+  const [parsedPrediction, setParsedPrediction] = useState<ParsedPrediction | null>(null);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 📂 SECTION STATE
@@ -757,6 +760,21 @@ export default function BhriguPredictionView({
       }
     }
   }, [prediction, category, profile?.id, language]);
+
+  // Parse prediction response whenever prediction or viewMode changes
+  useEffect(() => {
+    if (prediction) {
+      const parsed = parsePredictionResponse(prediction, viewMode);
+      setParsedPrediction(parsed);
+      console.log('📊 Parsed prediction:', {
+        summary: parsed.summary.substring(0, 100),
+        sectionCount: parsed.sections.length,
+        sections: parsed.sections.map(s => ({ key: s.key, title: s.title, contentLength: s.content.length }))
+      });
+    } else {
+      setParsedPrediction(null);
+    }
+  }, [prediction, viewMode]);
 
   const handleLanguageChange = (value: Language) => {
     setLanguage(value);
@@ -1076,9 +1094,11 @@ export default function BhriguPredictionView({
                   </div>
                 )}
                 <div className="prose prose-invert prose-cyan max-w-none">
-                  <div className="text-slate-100/90 text-base md:text-lg leading-7 md:leading-8 whitespace-pre-wrap">
-                    {content}
-                  </div>
+                  {/* Use MarkdownRenderer for formatted content */}
+                  <MarkdownRenderer
+                    content={content}
+                    viewMode={viewMode}
+                  />
                 </div>
               </div>
             </motion.div>
@@ -1158,6 +1178,17 @@ export default function BhriguPredictionView({
     if (!prediction) return null;
     const predictionData = prediction;
 
+    // 🆕 PRIORITY 1: Check if we have parsed sections from nested structure
+    // This handles the case where API returns { summary: "...", sections: { "## Title": "content" } }
+    let useParsedSections = false;
+    let parsedSectionsToRender: ParsedSection[] = [];
+
+    if (parsedPrediction && parsedPrediction.sections.length > 0) {
+      useParsedSections = true;
+      parsedSectionsToRender = parsedPrediction.sections;
+      console.log('✅ Using parsed sections from nested structure:', parsedSectionsToRender.length);
+    }
+
     // Get the sections configuration for this category
     const categoryValue = predictionData?.metadata?.category ?? predictionData?.category ?? category;
     const normalizedCategory = normalizeCategoryKey(
@@ -1169,7 +1200,7 @@ export default function BhriguPredictionView({
     const sections = filterSectionsByViewMode(allSections, viewMode);
     const shouldShowPartialBanner = false;
 
-    // First, try to get sections from the API response
+    // First, try to get sections from the API response (direct properties)
     let availableSections = sections.filter(section => {
       const content = predictionData[section.key];
       if (!content || typeof content !== 'string' || content.trim() === '') {
@@ -1246,8 +1277,21 @@ export default function BhriguPredictionView({
 
     return (
       <div className="space-y-6">
+        {/* Banner for parsed sections from nested structure */}
+        {useParsedSections && parsedSectionsToRender.length > 0 && (
+          <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4">
+            <p className="text-purple-300 text-sm font-semibold uppercase tracking-wide flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              Structured Prediction
+            </p>
+            <p className="text-slate-100/80 text-sm mt-1">
+              Your prediction has been organized into {parsedSectionsToRender.length} detailed sections for easy reading
+            </p>
+          </div>
+        )}
+
         {/* Banner for client-side parsed sections */}
-        {parsedFromFullAnalysisActive && (
+        {!useParsedSections && parsedFromFullAnalysisActive && (
           <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
             <p className="text-cyan-300 text-sm font-semibold uppercase tracking-wide">
               {t('bhriguPredictionView.parsedFromFullAnalysis.title')}
@@ -1259,11 +1303,24 @@ export default function BhriguPredictionView({
         )}
 
         {/* Show message if no sections were extracted successfully */}
-        {availableSections.length === 0 && predictionData.full_analysis && !isParsing && (
+        {!useParsedSections && availableSections.length === 0 && predictionData.full_analysis && !isParsing && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 mb-6">
             <p className="text-amber-400 text-sm">
               {t('bhriguPredictionView.sectionFallbackNote')}
             </p>
+          </div>
+        )}
+
+        {/* ✨ Main Summary Card - Display parsed summary prominently */}
+        {parsedPrediction && parsedPrediction.summary && (
+          <div className="mb-8 p-8 bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 rounded-2xl backdrop-blur-sm hover:shadow-lg hover:shadow-purple-500/20 transition-all">
+            <div className="text-purple-400 text-sm font-semibold uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Sparkles className="w-5 h-5" />
+              Overview
+            </div>
+            <div className="text-white text-xl font-medium leading-relaxed">
+              <MarkdownRenderer content={parsedPrediction.summary} viewMode={viewMode} />
+            </div>
           </div>
         )}
 
@@ -1305,8 +1362,41 @@ export default function BhriguPredictionView({
           </div>
         )}
 
-        {/* Category-Specific Sections - Display FIRST and prominently */}
-        {availableSections.length > 0 && (
+        {/* 🆕 PARSED SECTIONS - From nested structure (Priority rendering) */}
+        {useParsedSections && parsedSectionsToRender.length > 0 && (
+          <div className="space-y-4">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-3 relative z-10">
+                {icon}
+                {t('bhriguPredictionView.detailedInsights')}
+              </h2>
+              <p className="text-slate-100/70 text-sm">
+                {parsedPrediction?.summary || description}
+              </p>
+            </div>
+
+            <Accordion className="grid grid-cols-1 gap-4">
+              {parsedSectionsToRender.map((section, index) => {
+                const sectionId = `parsed:${section.key}`;
+                const isOpen = expandedSections.has(sectionId);
+                const colorOptions = ['cyan', 'purple', 'blue', 'indigo', 'violet', 'pink', 'rose', 'amber'];
+                const sectionColor = section.color || colorOptions[index % colorOptions.length];
+
+                return renderSection(
+                  sectionId,
+                  section.title,
+                  section.content,
+                  sectionColor,
+                  isOpen,
+                  (next) => setExpandedSection(sectionId, next)
+                );
+              })}
+            </Accordion>
+          </div>
+        )}
+
+        {/* Category-Specific Sections - Display when NOT using parsed sections */}
+        {!useParsedSections && availableSections.length > 0 && (
           <div className="space-y-4">
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-3 relative z-10">
@@ -1477,6 +1567,7 @@ export default function BhriguPredictionView({
     );
   }, [
     prediction,
+    parsedPrediction,
     simplifiedRendering,
     parsedFromFullAnalysis,
     isParsing,
@@ -1489,7 +1580,9 @@ export default function BhriguPredictionView({
     renderSection,
     setExpandedSection,
     t,
-    viewMode
+    viewMode,
+    icon,
+    description
   ]); // ✨ QUANTUM FIX: Dependencies for useCallback
 
   if (! profile) {
