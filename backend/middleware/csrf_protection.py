@@ -123,8 +123,8 @@ class CSRFMiddleware:
         if request.is_json:
             try:
                 token_json = request.json.get('csrf_token')
-            except:
-                pass
+            except (AttributeError, TypeError):
+                token_json = None
 
         # Use any available token
         token = token_header or token_form or token_json

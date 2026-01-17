@@ -140,9 +140,10 @@ def main():
     try:
         response = requests.get(f"{BASE_URL}/health", timeout=5)
         print(f"✓ Server is running (HTTP {response.status_code})")
-    except:
+    except (requests.exceptions.RequestException, ConnectionError) as e:
         print("✗ ERROR: Cannot connect to server")
         print(f"  Make sure the backend is running at {BASE_URL}")
+        print(f"  Error: {e}")
         sys.exit(1)
 
     # Run tests

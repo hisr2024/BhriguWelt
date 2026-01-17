@@ -309,8 +309,8 @@ class RedisCache:
                 stats['redis_connected_clients'] = info.get('connected_clients', 0)
                 stats['redis_used_memory'] = info.get('used_memory_human', 'N/A')
                 stats['redis_total_commands'] = info.get('total_commands_processed', 0)
-            except:
-                pass
+            except (redis.ConnectionError, redis.TimeoutError) as e:
+                logger.debug(f"Redis info unavailable: {e}")
 
         return stats
 

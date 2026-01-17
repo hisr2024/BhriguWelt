@@ -314,6 +314,9 @@ def add_security_headers(response):
     # X-XSS-Protection
     response.headers['X-XSS-Protection'] = '1; mode=block'
 
+    # Strict-Transport-Security (HSTS)
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+
     # Referrer-Policy
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
 

@@ -290,7 +290,8 @@ def create_or_update_profile(payload: Dict[str, Any]) -> Profile:
                 )
         connection.commit()
         row = connection.execute("SELECT * FROM profiles WHERE id = ?", (profile_id,)).fetchone()
-    assert row is not None  # pragma: no cover
+    if row is None:
+        raise ValueError(f"Profile not found: {profile_id}")
     return _row_to_profile(row)
 
 
@@ -403,7 +404,8 @@ def add_alert(*, profile_id: int, label: str, event_time: str, notes: str | None
             "SELECT id, profile_id, label, event_time, notes, created_at FROM alerts WHERE id = ?",
             (cursor.lastrowid,),
         ).fetchone()
-    assert row is not None  # pragma: no cover
+    if row is None:
+        raise ValueError(f"Alert not found after creation for profile: {profile_id}")
     return Alert(
         id=row["id"],
         profile_id=row["profile_id"],

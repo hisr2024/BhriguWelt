@@ -104,24 +104,20 @@ export class MonitoringService {
    * Initialize Datadog RUM (if package is available)
    */
   private initDatadog(): void {
-    // This would require installing @datadog/browser-rum
-    // For now, we'll prepare the integration point
+    // Initialize Datadog RUM if enabled
     if (this.config.enableConsole) {
-      console.log('[Monitoring] Datadog RUM ready for initialization');
-      console.log('[Monitoring] Install @datadog/browser-rum to enable');
+      console.log('[Monitoring] Datadog RUM initialization starting');
     }
 
-    // TODO: Uncomment when @datadog/browser-rum is installed
-    /*
     try {
       import('@datadog/browser-rum').then(({ datadogRum }) => {
         datadogRum.init({
           applicationId: process.env.NEXT_PUBLIC_DATADOG_APP_ID!,
           clientToken: process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN!,
-          site: 'datadoghq.com',
-          service: this.config.serviceName!,
-          env: this.config.environment!,
-          version: this.config.version!,
+          site: process.env.NEXT_PUBLIC_DATADOG_SITE || 'datadoghq.com',
+          service: this.config.serviceName || 'bhriguwelt-frontend',
+          env: this.config.environment || 'development',
+          version: this.config.version || '1.0.0',
           sessionSampleRate: 100,
           sessionReplaySampleRate: process.env.NODE_ENV === 'production' ? 20 : 100,
           trackUserInteractions: true,
@@ -133,11 +129,12 @@ export class MonitoringService {
         if (this.config.enableConsole) {
           console.log('[Monitoring] Datadog RUM initialized');
         }
+      }).catch((error) => {
+        console.warn('[Monitoring] Datadog initialization failed:', error);
       });
     } catch (error) {
-      console.error('[Monitoring] Datadog initialization failed:', error);
+      console.error('[Monitoring] Datadog initialization error:', error);
     }
-    */
   }
 
   /**
@@ -190,9 +187,11 @@ export class MonitoringService {
     // Send to Datadog (if available)
     if (this.config.enableDatadog && typeof window !== 'undefined') {
       try {
-        // TODO: Uncomment when @datadog/browser-rum is installed
-        // const { datadogRum } = await import('@datadog/browser-rum');
-        // datadogRum.addAction(eventName, enrichedProperties);
+        import('@datadog/browser-rum').then(({ datadogRum }) => {
+          datadogRum.addAction(eventName, enrichedProperties);
+        }).catch(() => {
+          // Silently fail if Datadog is not available
+        });
       } catch (error) {
         // Silently fail if Datadog is not available
       }

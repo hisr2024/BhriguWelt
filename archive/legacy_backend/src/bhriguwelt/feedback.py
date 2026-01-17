@@ -126,7 +126,8 @@ def record_feedback(
             "SELECT id, engine, rating, seeker_name, notes, created_at, inputs_json FROM feedback WHERE id = ?",
             (inserted_id,),
         ).fetchone()
-    assert row is not None  # pragma: no cover - ensured by preceding insert
+    if row is None:
+        raise ValueError("Failed to retrieve feedback entry")
     return FeedbackEntry(
         id=row["id"],
         engine=row["engine"],
