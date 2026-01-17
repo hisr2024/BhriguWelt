@@ -5,6 +5,8 @@ Main application entry point
 from flask import Flask, jsonify, request, g
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 import os
 import sys
@@ -206,6 +208,17 @@ CORS(
 )
 
 logger.info("✓ CORS configured with allowed origins: %s", ", ".join(ALLOWED_ORIGINS))
+
+# Initialize Rate Limiter
+logger.info("Initializing rate limiter...")
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri=os.getenv('REDIS_URL', 'memory://'),
+    strategy="fixed-window",
+)
+logger.info("✓ Rate limiter initialized with default limits: 200/day, 50/hour")
 
 # Request preprocessing middleware
 def _assign_correlation_id():
@@ -425,6 +438,13 @@ if api_birthchart:
     logger.info("✓ Birth chart blueprint registered")
 
 logger.info("✓ All blueprints registered")
+
+# Apply rate limiting to specific endpoints
+logger.info("Applying rate limiting to prediction endpoints...")
+limiter.limit("10 per minute")(bhrigu_predictions_routes.bp)
+if predictions_unified:
+    limiter.limit("10 per minute")(predictions_unified.bp)
+logger.info("✓ Rate limiting applied to prediction endpoints")
 
 @app.route('/')
 def index():

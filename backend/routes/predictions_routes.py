@@ -20,6 +20,13 @@ logger = setup_logger(__name__)
 bp = Blueprint('predictions', __name__, url_prefix='/api/predictions')
 orchestrator = get_prediction_orchestrator()
 
+# Import limiter from app (will be set when app.py loads this module)
+limiter = None
+try:
+    from app import limiter
+except ImportError:
+    pass  # Limiter not available during testing
+
 @bp.route('/daily', methods=['POST'])
 def daily_prediction():
     """Get daily horoscope prediction"""
@@ -89,6 +96,24 @@ def daily_prediction():
             }
         )
 
+    except KeyError as e:
+        logger.warning(f"Missing required field in daily prediction: {e}")
+        return prediction_error_response(
+            f"Missing required field: {str(e)}",
+            400
+        )
+    except ValueError as e:
+        logger.warning(f"Invalid input in daily prediction: {e}")
+        return prediction_error_response(
+            f"Invalid input: {str(e)}",
+            400
+        )
+    except PermissionError as e:
+        logger.warning(f"Permission denied in daily prediction: {e}")
+        return prediction_error_response(
+            "Permission denied",
+            403
+        )
     except Exception as e:
         log_exception(logger, e, context="predictions.daily")
         return prediction_error_response(
@@ -160,6 +185,24 @@ def weekly_prediction():
             }
         )
 
+    except KeyError as e:
+        logger.warning(f"Missing required field in weekly prediction: {e}")
+        return prediction_error_response(
+            f"Missing required field: {str(e)}",
+            400
+        )
+    except ValueError as e:
+        logger.warning(f"Invalid input in weekly prediction: {e}")
+        return prediction_error_response(
+            f"Invalid input: {str(e)}",
+            400
+        )
+    except PermissionError as e:
+        logger.warning(f"Permission denied in weekly prediction: {e}")
+        return prediction_error_response(
+            "Permission denied",
+            403
+        )
     except Exception as e:
         log_exception(logger, e, context="predictions.weekly")
         return prediction_error_response(
@@ -234,6 +277,24 @@ def monthly_prediction():
             }
         )
 
+    except KeyError as e:
+        logger.warning(f"Missing required field in monthly prediction: {e}")
+        return prediction_error_response(
+            f"Missing required field: {str(e)}",
+            400
+        )
+    except ValueError as e:
+        logger.warning(f"Invalid input in monthly prediction: {e}")
+        return prediction_error_response(
+            f"Invalid input: {str(e)}",
+            400
+        )
+    except PermissionError as e:
+        logger.warning(f"Permission denied in monthly prediction: {e}")
+        return prediction_error_response(
+            "Permission denied",
+            403
+        )
     except Exception as e:
         log_exception(logger, e, context="predictions.monthly")
         return prediction_error_response(

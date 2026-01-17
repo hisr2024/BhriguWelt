@@ -648,8 +648,8 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
                 try:
                     error_body = e.response.json()
                     error_preview = sanitize_log(str(error_body))
-                except:
-                    error_preview = sanitize_log(e.response.text)
+                except (AttributeError, TypeError):
+                    error_preview = sanitize_log(str(e))
 
                 logger.error(
                     f"OpenAI API error: status={status_code}, "

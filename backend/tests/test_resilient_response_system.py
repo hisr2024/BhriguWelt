@@ -143,7 +143,9 @@ class TestFrontendBackendDown:
         })
 
         assert isinstance(result, dict), "Result must be dict"
-        assert result.get('offline') == True or result.get('success') == False
+        offline_mode = result.get('offline', False)
+        success = result.get('success', True)
+        assert offline_mode or not success, f"Expected offline mode or failure, got: {result}"
         print("✓ Test 5 PASSED: Frontend handles backend down")
 
 
@@ -167,7 +169,9 @@ class TestFrontendTimeout:
         duration = time.time() - start
 
         assert duration < 5, f"Request should timeout quickly, took {duration}s"
-        assert result.get('timedOut') == True or result.get('success') == False
+        timeout_occurred = result.get('timedOut', False)
+        success = result.get('success', True)
+        assert timeout_occurred or not success, f"Expected timeout or failure, got: {result}"
         print("✓ Test 6 PASSED: Frontend aborts on timeout")
 
 
@@ -185,7 +189,7 @@ class TestFrontendCacheRecovery:
         try:
             import js
             js.localStorage.setItem(test_key, '{invalid json')
-        except:
+        except (ImportError, AttributeError):
             # Not in browser environment, skip localStorage test
             pass
 
@@ -245,7 +249,8 @@ class TestLoadTest:
             try:
                 result = orchestrator.generate_prediction(category, sample_birth_data)
                 return True
-            except:
+            except Exception as e:
+                # Log exception for debugging but return False to track failures
                 return False
 
         with ThreadPoolExecutor(max_workers=20) as executor:

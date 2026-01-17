@@ -249,6 +249,153 @@ def generate_daily_insights():
         }
 
 
+def _get_user_email(user_id):
+    """
+    Get user email from database
+
+    Args:
+        user_id: User ID
+
+    Returns:
+        str: User email address or None
+    """
+    try:
+        # Try to get email from user profile or authentication system
+        # This is a placeholder - implement based on your user model
+        from backend.models import Profile
+
+        # Try to find profile with user_id
+        profile = Profile.query.filter_by(user_id=user_id).first()
+
+        if profile and hasattr(profile, 'email'):
+            return profile.email
+
+        # Fallback: if user_id is an email format, use it
+        if '@' in str(user_id):
+            return user_id
+
+        return None
+    except Exception as e:
+        from utils.logger import setup_logger
+        logger = setup_logger(__name__)
+        logger.warning(f"Failed to get user email for {user_id}: {e}")
+        return None
+
+
+def _send_email_notification(user_id, notification_type, data):
+    """
+    Send email notification using SendGrid
+
+    Args:
+        user_id: User ID
+        notification_type: Type of notification
+        data: Notification data dict
+
+    Returns:
+        dict: {'success': bool, 'message': str}
+    """
+    try:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail
+        import os
+
+        # Get user email
+        user_email = _get_user_email(user_id)
+        if not user_email:
+            return {
+                'success': False,
+                'error': 'User email not found'
+            }
+
+        # Get SendGrid configuration
+        sg_api_key = os.getenv('SENDGRID_API_KEY')
+        from_email = os.getenv('FROM_EMAIL', 'noreply@bhriguwelt.com')
+
+        if not sg_api_key:
+            return {
+                'success': False,
+                'error': 'SendGrid not configured'
+            }
+
+        # Build email content based on notification type
+        subject, html_content = _build_email_content(notification_type, data)
+
+        # Create message
+        message = Mail(
+            from_email=from_email,
+            to_emails=user_email,
+            subject=subject,
+            html_content=html_content
+        )
+
+        # Send email
+        sg = SendGridAPIClient(sg_api_key)
+        response = sg.send(message)
+
+        return {
+            'success': True,
+            'message': f'Email sent to {user_email}',
+            'status_code': response.status_code
+        }
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
+def _build_email_content(notification_type, data):
+    """
+    Build email subject and HTML content based on notification type
+
+    Args:
+        notification_type: Type of notification
+        data: Notification data dict
+
+    Returns:
+        tuple: (subject, html_content)
+    """
+    if notification_type == 'daily_insight':
+        subject = 'Your Daily Astrological Insight - BhriguWelt'
+        html_content = f"""
+        <html>
+        <body>
+            <h2>Your Daily Insight</h2>
+            <p>Here's your personalized astrological insight for today:</p>
+            <div style="margin: 20px 0; padding: 20px; background-color: #f5f5f5; border-radius: 8px;">
+                {data.get('content', 'Visit BhriguWelt to see your insights.')}
+            </div>
+            <p>Visit <a href="https://bhriguwelt.com">BhriguWelt</a> for more insights.</p>
+        </body>
+        </html>
+        """
+    elif notification_type == 'prediction_ready':
+        subject = 'Your Prediction is Ready - BhriguWelt'
+        html_content = f"""
+        <html>
+        <body>
+            <h2>Your Prediction is Ready</h2>
+            <p>Your requested astrological prediction has been generated:</p>
+            <p><strong>{data.get('category', 'Prediction')}</strong></p>
+            <p>Visit <a href="https://bhriguwelt.com">BhriguWelt</a> to view your prediction.</p>
+        </body>
+        </html>
+        """
+    else:
+        subject = f'Notification from BhriguWelt - {notification_type}'
+        html_content = f"""
+        <html>
+        <body>
+            <h2>Notification</h2>
+            <p>You have a new notification from BhriguWelt.</p>
+            <p>Visit <a href="https://bhriguwelt.com">BhriguWelt</a> for more details.</p>
+        </body>
+        </html>
+        """
+
+    return subject, html_content
+
+
 @celery_app.task(name='backend.services.celery_tasks.send_notification')
 def send_notification_async(user_id, notification_type, data):
     """
@@ -296,14 +443,29 @@ def send_notification_async(user_id, notification_type, data):
             except Exception:
                 pass  # Silently fail if Sentry not available
 
-        # TODO: Implement actual notification delivery (email, push, etc.)
-        # For now, just log and return success
+        # Implement actual email notification if SendGrid is configured
+        if os.getenv('SENDGRID_API_KEY'):
+            try:
+                email_result = _send_email_notification(user_id, notification_type, data)
+                if email_result['success']:
+                    logger.info(f"Email notification sent to user {user_id}")
+                    return {
+                        'success': True,
+                        'user_id': user_id,
+                        'type': notification_type,
+                        'message': 'Email notification sent successfully',
+                        'delivery': 'email',
+                    }
+            except Exception as email_error:
+                logger.warning(f"Email notification failed, falling back to logging: {email_error}")
 
+        # Fallback: just log and return success
         return {
             'success': True,
             'user_id': user_id,
             'type': notification_type,
             'message': 'Notification logged successfully',
+            'delivery': 'log_only',
         }
     except Exception as e:
         from utils.logger import setup_logger

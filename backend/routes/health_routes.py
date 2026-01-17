@@ -394,7 +394,8 @@ def _get_uptime():
             'seconds': int(uptime_seconds),
             'human_readable': _format_uptime(uptime_seconds)
         }
-    except:
+    except (ImportError, AttributeError, OSError) as e:
+        logger.warning(f"Failed to get uptime: {e}")
         return {'seconds': 0, 'human_readable': 'unknown'}
 
 
