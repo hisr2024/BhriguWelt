@@ -1,77 +1,47 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Shield, Music, Gem, Flame, Sparkles, BookOpen, ArrowLeft, Loader2 } from 'lucide-react';
+import { RefreshCcw, Feather, BookOpen, Sparkles, Heart, ArrowLeft, Loader2 } from 'lucide-react';
 import AnimatedBackground, { FloatingElements } from '../components/AnimatedBackground';
-import GenZCard from '../components/GenZCard';
-import GenZButton from '../components/GenZButton';
 import GenZBadge from '../components/GenZBadge';
+import GenZButton from '../components/GenZButton';
+import GenZCard from '../components/GenZCard';
 import BottomNav from '../components/BottomNav';
 import CardSkeleton from '../components/CardSkeleton';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { loadCurrentProfile } from '@/lib/profileHelpers';
 import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
 import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
-import { useOfflineWisdomCards } from '@/lib/wisdom';
-import type { WisdomCard } from '@/lib/types';
 import Link from 'next/link';
 
-export default function KarmicRemediesPage() {
+export default function KarmaResetPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
 
-  const filterWisdomCards = useCallback(
-    (card: WisdomCard) =>
-      card.category === 'remedies' ||
-      card.category === 'mantras' ||
-      (card.tags ?? []).some((tag) =>
-        tag.toLowerCase().includes('remedy') ||
-        tag.toLowerCase().includes('gemstone') ||
-        tag.toLowerCase().includes('mantra')
-      ),
-    []
-  );
-
-  const { cards: wisdomCards, isLoading: wisdomLoading } = useOfflineWisdomCards({ filter: filterWisdomCards });
-
-  const buildFallbackRemedies = (reason: string) => ({
+  const buildFallbackReset = (reason: string) => ({
     offline: true,
     fallback_reason: reason,
-    mantras: [
-      'Om Namah Shivaya - For spiritual growth and transformation',
-      'Gayatri Mantra - For wisdom and enlightenment',
-      'Om Gam Ganapataye Namaha - For removing obstacles',
-      'Maha Mrityunjaya Mantra - For health and protection'
+    reset_overview:
+      'This reset focuses on releasing repeating patterns and restoring inner clarity. Take gentle, consistent steps to realign with your values.',
+    release_practices: [
+      'Write and release one recurring worry each week.',
+      'Practice forgiveness for yourself and others.',
+      'Create space by clearing one physical area daily.'
     ],
-    gemstones: [
-      'Blue Sapphire - For Saturn\'s blessings and discipline',
-      'Pearl - For emotional balance and Moon\'s energy',
-      'Ruby - For Sun\'s vitality and confidence',
-      'Emerald - For Mercury\'s communication skills'
+    daily_reset:
+      'Start with three calm breaths, set a clear intention, and close the day with gratitude journaling.',
+    affirmations: [
+      'I release what no longer serves my growth.',
+      'I choose peace, clarity, and renewal.',
+      'My karma aligns with compassionate action.'
     ],
-    rituals: [
-      'Daily sunrise meditation',
-      'Full moon ceremonies',
-      'Weekly fasting on specific days',
-      'Offering flowers to deities'
-    ],
-    meditation_practices: [
-      'Chakra meditation - 20 minutes daily',
-      'Breath awareness - Morning and evening',
-      'Loving-kindness meditation',
-      'Kundalini yoga practices'
-    ],
-    yantra_recommendations: [
-      'Sri Yantra - For prosperity and spiritual growth',
-      'Navagraha Yantra - For planetary balance',
-      'Mahamrityunjaya Yantra - For health and longevity',
-      'Lakshmi Yantra - For abundance and wealth'
-    ]
+    integration:
+      'Sustain the reset through service, honesty, and mindful choices. Keep routines light but consistent.'
   });
 
   useEffect(() => {
@@ -115,27 +85,21 @@ export default function KarmicRemediesPage() {
       };
 
       try {
-        const response = await bhriguPredictionsAPI.getKarmicRemedies(birthDetails);
+        const response = await bhriguPredictionsAPI.getKarmaReset(birthDetails);
         const normalized = normalizePredictionResponse<any>(response);
         if (normalized.status === 'error' || !normalized.prediction) {
-          console.warn('Karmic remedies response invalid, using fallback:', normalized.message);
-          setData(buildFallbackRemedies(normalized.message ?? 'Prediction unavailable'));
+          console.warn('Karma reset response invalid, using fallback:', normalized.message);
+          setData(buildFallbackReset(normalized.message ?? 'Prediction unavailable'));
           return;
         }
-        const prediction = normalized.prediction;
-        setData({
-          ...prediction,
-          rituals: prediction?.planetary_rituals ?? prediction?.deity_worship ?? prediction?.fasting,
-          meditation_practices: prediction?.meditation,
-          yantra_recommendations: prediction?.yantras
-        });
+        setData(normalized.prediction);
       } catch (apiError) {
-        console.error('API error, using offline mode:', apiError);
-        setData(buildFallbackRemedies('API error'));
+        console.error('API error, using fallback reset:', apiError);
+        setData(buildFallbackReset('API error'));
       }
     } catch (error) {
-      console.error('Error loading karmic remedies:', error);
-      setError('Failed to load karmic remedies');
+      console.error('Error loading karma reset:', error);
+      setError('Failed to load karma reset guidance');
     } finally {
       setLoading(false);
     }
@@ -147,7 +111,7 @@ export default function KarmicRemediesPage() {
         <AnimatedBackground />
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-12 h-12 text-genz-electric-blue animate-spin" />
-          <div className="text-white text-xl">Loading your remedies...</div>
+          <div className="text-white text-xl">Resetting your karma path...</div>
         </div>
       </div>
     );
@@ -173,34 +137,34 @@ export default function KarmicRemediesPage() {
 
   const sections = [
     {
-      title: 'Mantras',
-      icon: <Music className="w-6 h-6" />,
-      content: data?.mantras,
-      color: 'from-genz-purple-haze to-genz-lavender-dream',
-    },
-    {
-      title: 'Gemstones',
-      icon: <Gem className="w-6 h-6" />,
-      content: data?.gemstones,
+      title: 'Reset Overview',
+      icon: <RefreshCcw className="w-6 h-6" />,
+      content: data?.reset_overview,
       color: 'from-genz-electric-blue to-genz-mint-fresh',
     },
     {
-      title: 'Rituals',
-      icon: <Flame className="w-6 h-6" />,
-      content: data?.rituals,
-      color: 'from-genz-cyber-yellow to-genz-sunset-orange',
+      title: 'Release Practices',
+      icon: <Feather className="w-6 h-6" />,
+      content: data?.release_practices,
+      color: 'from-genz-hot-pink to-genz-coral-pop',
     },
     {
-      title: 'Meditation Practices',
+      title: 'Daily Reset',
+      icon: <BookOpen className="w-6 h-6" />,
+      content: data?.daily_reset,
+      color: 'from-genz-purple-haze to-genz-lavender-dream',
+    },
+    {
+      title: 'Affirmations',
       icon: <Sparkles className="w-6 h-6" />,
-      content: data?.meditation_practices,
+      content: data?.affirmations,
       color: 'from-genz-neon-green to-genz-lime-zest',
     },
     {
-      title: 'Yantra Recommendations',
-      icon: <BookOpen className="w-6 h-6" />,
-      content: data?.yantra_recommendations,
-      color: 'from-genz-hot-pink to-genz-coral-pop',
+      title: 'Integration',
+      icon: <Heart className="w-6 h-6" />,
+      content: data?.integration,
+      color: 'from-genz-cyber-yellow to-genz-sunset-orange',
     },
   ];
 
@@ -221,12 +185,12 @@ export default function KarmicRemediesPage() {
               Back to Dashboard
             </GenZButton>
           </Link>
-          
+
           <div className="flex items-center gap-4 mb-4">
             <GenZBadge variant="neon">
               {data?.offline ? 'Fallback Mode' : 'Live'}
             </GenZBadge>
-            <h1 className="genz-title">Karmic Remedies 🛡️</h1>
+            <h1 className="genz-title">Karma Reset ✨</h1>
           </div>
           {data?.offline && data?.fallback_reason && (
             <p className="text-sm text-white/70 mb-2">
@@ -234,14 +198,14 @@ export default function KarmicRemediesPage() {
             </p>
           )}
           <p className="text-xl text-white/80">
-            Personalized spiritual practices and remedies for balance
+            A guided reset plan to release patterns and restore balance
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sections.map((section, index) => (
             <motion.div
-              key={index}
+              key={section.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
@@ -262,40 +226,15 @@ export default function KarmicRemediesPage() {
                       </li>
                     ))}
                   </ul>
-                ) : (
+                ) : section.content ? (
                   <p className="text-white/80">{section.content}</p>
+                ) : (
+                  <CardSkeleton />
                 )}
               </GenZCard>
             </motion.div>
           ))}
         </div>
-
-        {data?.offline && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <h2 className="text-3xl font-display font-bold mb-6 text-white">
-              Remedy Wisdom
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {wisdomLoading
-                ? Array.from({ length: 4 }).map((_, index) => (
-                    <CardSkeleton key={index} />
-                  ))
-                : wisdomCards.slice(0, 4).map((card, index) => (
-                    <GenZCard key={index} variant="glass">
-                      <GenZBadge variant="default" size="sm" className="mb-3">
-                        {card.tradition}
-                      </GenZBadge>
-                      <h4 className="text-xl font-bold mb-2 text-white">{card.title}</h4>
-                      <p className="text-white/70 text-sm">{card.content}</p>
-                    </GenZCard>
-                  ))}
-            </div>
-          </motion.div>
-        )}
       </div>
 
       <BottomNav />
