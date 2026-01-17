@@ -37,7 +37,10 @@ export class MonitoringService {
 
   private constructor() {
     this.config = {
-      enableDatadog: false, // Will be enabled when NEXT_PUBLIC_DATADOG_* env vars are set
+      enableDatadog: Boolean(
+        process.env.NEXT_PUBLIC_DATADOG_APP_ID &&
+          process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN
+      ),
       enableSentry: true, // Already integrated
       enableConsole: process.env.NODE_ENV === 'development',
       environment: process.env.NODE_ENV || 'development',
