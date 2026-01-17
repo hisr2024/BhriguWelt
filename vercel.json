@@ -1,8 +1,20 @@
 {
   "framework": "nextjs",
-  "installCommand": "npm install",
-  "buildCommand": "npm run build",
+  "nodeVersion": "22",
+  "installCommand": "cd frontend && npm ci --legacy-peer-deps --workspaces=false",
+  "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/.next",
-  "devCommand": "npm run dev",
+  "devCommand": "cd frontend && npm run dev",
+  "errorOnCommandFailure": true,
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://your-api.example.com",
+    "NEXT_PUBLIC_BACKEND_URL": "https://your-backend.example.com"
+  },
+  "functions": {
+    "app/api/**": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
   "regions": ["iad1", "sfo1", "fra1"]
 }
