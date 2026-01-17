@@ -3,8 +3,7 @@
  * Supports English, Hindi, and RTL-ready Arabic structure
  */
 
-export const copy = {
-  en: {
+const enCopy = {
     common: {
       appName: 'BhriguWelt',
       tagline: "Discover Your Soul's Journey Through Vedic Astrology",
@@ -134,6 +133,10 @@ export const copy = {
       generic: 'An error occurred. Please try again.',
     },
   },
+};
+
+export const copy = {
+  en: enCopy,
   hi: {
     common: {
       appName: 'भृगुवेल्ट',
@@ -264,6 +267,7 @@ export const copy = {
       generic: 'एक त्रुटि हुई। कृपया पुन: प्रयास करें।',
     },
   },
+  ar: enCopy,
 };
 
 export type Language = 'en' | 'hi' | 'ar';
