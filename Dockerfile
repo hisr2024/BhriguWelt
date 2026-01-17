@@ -31,7 +31,8 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/backend \
     PORT=8000 \
     WORKERS=1 \
-    TIMEOUT=120
+    TIMEOUT=120 \
+    PATH=/home/appuser/.local/bin:$PATH
 
 WORKDIR /app
 
@@ -46,8 +47,9 @@ RUN apt-get update \
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
-# Copy Python packages from builder stage
-COPY --from=builder /root/.local /root/.local
+# CRITICAL FIX: Copy Python packages to appuser's home directory
+# This ensures the non-root user can access installed packages
+COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
 
 # Copy backend application code
 COPY --chown=appuser:appuser backend /app/backend
