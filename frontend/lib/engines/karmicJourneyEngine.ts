@@ -1,10 +1,11 @@
+'use client';
+
 /**
  * Karmic Journey Prediction Engine
  * Two-phase engine: generation + precision check using Bhrigu Samhita & Nadi Jyotisa rules.
+ *
+ * Offline-first: pure computation with optional AI refinement, no secrets or database access.
  */
-
-import 'server-only';
-
 import type { ChartData, PredictionResult, Subcategory } from '../api/predictions';
 import { getAIMode } from '../ai-preferences';
 import { isSectionContentValid } from '../sectionParserConfig';
@@ -176,11 +177,12 @@ const TEXT_SOURCES = [
   'docs/bhrigu_samhita_jyotish_engine.md',
 ];
 
-const isServer = () => typeof window === 'undefined';
+const isServer = (): boolean => typeof window === 'undefined';
 
-const safeTitle = (value?: string) => (value ? value.charAt(0).toUpperCase() + value.slice(1) : 'Unknown');
+const safeTitle = (value?: string): string =>
+  value ? value.charAt(0).toUpperCase() + value.slice(1) : 'Unknown';
 
-const resolveHouseIndex = (houses: string[] | undefined, sign: string | undefined) => {
+const resolveHouseIndex = (houses: string[] | undefined, sign: string | undefined): number | null => {
   if (!houses || !sign) {
     return null;
   }
@@ -188,7 +190,7 @@ const resolveHouseIndex = (houses: string[] | undefined, sign: string | undefine
   return index >= 0 ? index + 1 : null;
 };
 
-const resolvePlanetHouses = (chart: ChartData) => {
+const resolvePlanetHouses = (chart: ChartData): Record<string, number | null> => {
   const planetHouses: Record<string, number | null> = {};
   if (!chart.planets || !chart.houses) {
     return planetHouses;
@@ -199,7 +201,7 @@ const resolvePlanetHouses = (chart: ChartData) => {
   return planetHouses;
 };
 
-const buildCacheKey = (chart: ChartData, mode: KarmicJourneyMode, useAI: boolean, language: string) =>
+const buildCacheKey = (chart: ChartData, mode: KarmicJourneyMode, useAI: boolean, language: string): string =>
   JSON.stringify({
     mode,
     useAI,
@@ -215,7 +217,7 @@ const buildCacheKey = (chart: ChartData, mode: KarmicJourneyMode, useAI: boolean
     planets: chart.planets,
   });
 
-const getCachedPrediction = (key: string) => {
+const getCachedPrediction = (key: string): PredictionResult | null => {
   const cached = predictionCache.get(key);
   if (!cached) {
     return null;
@@ -227,11 +229,11 @@ const getCachedPrediction = (key: string) => {
   return cached.result;
 };
 
-const setCachedPrediction = (key: string, result: PredictionResult, ttl: number) => {
+const setCachedPrediction = (key: string, result: PredictionResult, ttl: number): void => {
   predictionCache.set(key, { result, expiresAt: Date.now() + ttl });
 };
 
-const extractTags = (text: string) =>
+const extractTags = (text: string): string[] =>
   RULE_KEYWORDS.filter(keyword => text.toLowerCase().includes(keyword.replace('-', ' ')));
 
 const parseMarkdownRules = (text: string, source: string): KarmicRule[] => {
@@ -308,7 +310,7 @@ const parseNarrativeSentences = (text: string, source: string): KarmicRule[] => 
     }));
 };
 
-const buildCorpusSummary = (rules: KarmicRule[], sources: string[]) => {
+const buildCorpusSummary = (rules: KarmicRule[], sources: string[]): string => {
   const tagCounts = rules.reduce<Record<string, number>>((acc, rule) => {
     rule.tags.forEach(tag => {
       acc[tag] = (acc[tag] ?? 0) + 1;
@@ -420,14 +422,14 @@ const buildChartInsights = (chart: ChartData): ChartInsights => {
   };
 };
 
-const selectRules = (corpus: KarmicCorpus, tags: string[], limit: number) => {
+const selectRules = (corpus: KarmicCorpus, tags: string[], limit: number): KarmicRule[] => {
   const selected = corpus.rules
     .filter(rule => tags.some(tag => rule.tags.includes(tag)))
     .slice(0, limit);
   return selected.length ? selected : corpus.rules.slice(0, limit);
 };
 
-const describeHouseTheme = (house: number | null) =>
+const describeHouseTheme = (house: number | null): string =>
   house ? HOUSE_THEMES[house] ?? 'significant karmic focus' : 'karmic focus not yet aligned';
 
 const buildKarmicNarrative = (insights: ChartInsights, corpus: KarmicCorpus): KarmicJourneyNarrative => {
@@ -497,7 +499,7 @@ const buildKarmicNarrative = (insights: ChartInsights, corpus: KarmicCorpus): Ka
   };
 };
 
-const formatRuleRefs = (rules: KarmicRule[]) =>
+const formatRuleRefs = (rules: KarmicRule[]): string =>
   rules.length
     ? rules.map(rule => `- ${rule.id} (${rule.source}): ${rule.text}`).join('\n')
     : 'No explicit sutra references were matched.';

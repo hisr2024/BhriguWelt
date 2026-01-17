@@ -1,5 +1,10 @@
-import 'server-only';
+'use client';
 
+/**
+ * Life Events Prediction Engine
+ *
+ * Offline-first: deterministic calculations with optional AI refinement, no secrets required.
+ */
 import type {
   ChartData,
   LifeEvent,
@@ -153,11 +158,11 @@ const DEFAULT_RULES: LifeEventRule[] = [
   },
 ];
 
-const normalize = (value?: string) => value?.toLowerCase() ?? '';
+const normalize = (value?: string): string => value?.toLowerCase() ?? '';
 
-const isCacheValid = (entry?: CacheEntry<unknown>) => !!entry && Date.now() < entry.expiresAt;
+const isCacheValid = (entry?: CacheEntry<unknown>): boolean => !!entry && Date.now() < entry.expiresAt;
 
-const resolveHouseIndex = (houses: string[] | undefined, sign: string | undefined) => {
+const resolveHouseIndex = (houses: string[] | undefined, sign: string | undefined): number | null => {
   if (!houses || !sign) {
     return null;
   }
@@ -165,7 +170,7 @@ const resolveHouseIndex = (houses: string[] | undefined, sign: string | undefine
   return index >= 0 ? index + 1 : null;
 };
 
-const resolvePlanetHouses = (chart: ChartData) => {
+const resolvePlanetHouses = (chart: ChartData): Record<string, number | null> => {
   const planetHouses: Record<string, number | null> = {};
   if (!chart.planets || !chart.houses) {
     return planetHouses;
@@ -176,7 +181,7 @@ const resolvePlanetHouses = (chart: ChartData) => {
   return planetHouses;
 };
 
-const buildCacheKey = (chart: ChartData, mode: LifeEventsMode, aiEnabled: boolean) =>
+const buildCacheKey = (chart: ChartData, mode: LifeEventsMode, aiEnabled: boolean): string =>
   JSON.stringify({
     mode,
     aiEnabled,
@@ -188,7 +193,7 @@ const buildCacheKey = (chart: ChartData, mode: LifeEventsMode, aiEnabled: boolea
     nakshatra: chart.nakshatra,
   });
 
-const isServer = () => typeof window === 'undefined';
+const isServer = (): boolean => typeof window === 'undefined';
 
 const loadTextFile = async (path: string): Promise<string | null> => {
   if (!isServer()) {
@@ -392,12 +397,12 @@ const loadLifeEventCorpus = async (mode: LifeEventsMode, logger: LifeEventsLogge
   return corpus;
 };
 
-const selectRules = (rules: LifeEventRule[], category: string, limit = 3) => {
+const selectRules = (rules: LifeEventRule[], category: string, limit = 3): LifeEventRule[] => {
   const matches = rules.filter(rule => rule.tags.includes(category));
   return matches.slice(0, limit);
 };
 
-const calculateProbabilityLabel = (score: number) => {
+const calculateProbabilityLabel = (score: number): 'High' | 'Moderate' | 'Low' => {
   if (score >= 2.5) {
     return 'High';
   }
@@ -407,7 +412,7 @@ const calculateProbabilityLabel = (score: number) => {
   return 'Low';
 };
 
-const buildAgeRange = (baseStart: number, baseEnd: number, offset: number) => {
+const buildAgeRange = (baseStart: number, baseEnd: number, offset: number): string => {
   const start = baseStart + offset;
   const end = baseEnd + offset;
   return `Ages ${start}-${end}`;
@@ -685,7 +690,7 @@ const runPrecisionCheck = (chart: ChartData, events: LifeEventDetail[], rules: L
   return { confirmed: confirmations, issues, adjustedEvents, panchangMatches };
 };
 
-const buildTimelineContent = (events: LifeEventDetail[]) =>
+const buildTimelineContent = (events: LifeEventDetail[]): string =>
   events
     .map(
       event =>
@@ -693,7 +698,7 @@ const buildTimelineContent = (events: LifeEventDetail[]) =>
     )
     .join('\n');
 
-const buildPrecisionContent = (precision: PrecisionCheckResult) => {
+const buildPrecisionContent = (precision: PrecisionCheckResult): string => {
   const confirmations = precision.confirmed.map(item => `• ${item}`).join('\n');
   const issues = precision.issues.length ? precision.issues.map(item => `• ${item}`).join('\n') : '• None';
   const panchang = precision.panchangMatches.length
@@ -739,7 +744,7 @@ const composeAISection = async (
   logger: LifeEventsLogger,
   language: string,
   aiMode: string
-) => {
+): Promise<string | null> => {
   try {
     const response = await fetch('/api/ai/compose', {
       method: 'POST',
@@ -841,7 +846,7 @@ export const sampleLifeEventsChart: ChartData = {
   houses: ['Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces', 'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo'],
 };
 
-export const generateLifeEventsSample = () =>
+export const generateLifeEventsSample = (): Promise<PredictionResult> =>
   generateLifeEventsPrediction(sampleLifeEventsChart, { mode: 'offline' });
 
 export type { LifeEventsMode };

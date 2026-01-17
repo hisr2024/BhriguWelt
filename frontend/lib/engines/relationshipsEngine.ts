@@ -1,5 +1,10 @@
-import 'server-only';
+'use client';
 
+/**
+ * Relationships Prediction Engine
+ *
+ * Offline-first: deterministic relationship insights with optional AI enrichment.
+ */
 import type { ChartData, PredictionMetadata, PredictionResult, Subcategory } from '@/lib/api/predictions';
 import { getAIMode } from '@/lib/ai-preferences';
 import { isSectionContentValid } from '@/lib/sectionParserConfig';
@@ -161,13 +166,13 @@ const REMOTE_SOURCES = [
   'https://raw.githubusercontent.com/hisr2024/BhriguWelt/main/core_wisdom/bhrigu_samhita_rules.md',
 ];
 
-const isServer = () => typeof window === 'undefined';
+const isServer = (): boolean => typeof window === 'undefined';
 
-const normalizeText = (value: string) => value.toLowerCase();
+const normalizeText = (value: string): string => value.toLowerCase();
 
-const getSignIndex = (sign?: string) => (sign ? SIGN_ORDER.indexOf(sign) : -1);
+const getSignIndex = (sign?: string): number => (sign ? SIGN_ORDER.indexOf(sign) : -1);
 
-const getOppositeSign = (sign?: string) => {
+const getOppositeSign = (sign?: string): string | null => {
   const index = getSignIndex(sign);
   if (index < 0) {
     return null;
@@ -184,7 +189,7 @@ const getHouseNumber = (ascendant?: string, planetSign?: string): number | null 
   return ((planetIndex - ascIndex + 12) % 12) + 1;
 };
 
-const buildCacheKey = (chart: ChartData, mode: RelationshipsMode, useAI: boolean) =>
+const buildCacheKey = (chart: ChartData, mode: RelationshipsMode, useAI: boolean): string =>
   JSON.stringify({
     mode,
     useAI,
@@ -281,7 +286,11 @@ const hydrateRemoteSources = async (): Promise<string[]> => {
     .map(result => (result as PromiseFulfilledResult<string>).value);
 };
 
-const loadRelationshipCorpus = async (mode: RelationshipsMode, cacheTtlMs: number, logger: typeof DEFAULT_LOGGER) => {
+const loadRelationshipCorpus = async (
+  mode: RelationshipsMode,
+  cacheTtlMs: number,
+  logger: typeof DEFAULT_LOGGER
+): Promise<RelationshipCorpus> => {
   const cacheKey = `relationships-corpus-${mode}`;
   const cached = corpusCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
@@ -329,7 +338,10 @@ const loadRelationshipCorpus = async (mode: RelationshipsMode, cacheTtlMs: numbe
   return corpus;
 };
 
-const buildPlanetPlacement = (chart: ChartData, planet: string) => {
+const buildPlanetPlacement = (
+  chart: ChartData,
+  planet: string
+): { sign: string; house: number | null } | null => {
   const placement = chart.planets?.[planet];
   if (!placement) {
     return null;
@@ -340,7 +352,7 @@ const buildPlanetPlacement = (chart: ChartData, planet: string) => {
   };
 };
 
-const buildCompatibilityNote = (seventhSign?: string | null) => {
+const buildCompatibilityNote = (seventhSign?: string | null): string => {
   if (!seventhSign) {
     return 'Compatibility patterns require the ascendant to calculate the 7th house sign.';
   }
