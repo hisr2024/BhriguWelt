@@ -340,7 +340,7 @@ export function useTranslation(lang?: Language) {
   const storeLang = useSyncExternalStore(
     subscribeToLanguage,
     getClientLanguage,
-    () => 'en'
+    () => 'en' as Language
   );
   const defaultLang: Language = lang || storeLang;
   const translator = useCallback((key: string) => t(key, defaultLang), [defaultLang]);
