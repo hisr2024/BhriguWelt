@@ -242,13 +242,13 @@ export class MonitoringService {
 
     // Send to Datadog (if available)
     if (this.config.enableDatadog && typeof window !== 'undefined') {
-      try {
-        // TODO: Uncomment when @datadog/browser-rum is installed
-        // const { datadogRum } = await import('@datadog/browser-rum');
-        // datadogRum.addError(error, enrichedContext);
-      } catch (e) {
-        // Silently fail
-      }
+      import('@datadog/browser-rum')
+        .then(({ datadogRum }) => {
+          datadogRum.addError(error, enrichedContext);
+        })
+        .catch(() => {
+          // Silently fail if Datadog is unavailable
+        });
     }
 
     // Send to Sentry
@@ -296,13 +296,13 @@ export class MonitoringService {
 
     // Send to Datadog (if available)
     if (this.config.enableDatadog && typeof window !== 'undefined') {
-      try {
-        // TODO: Uncomment when @datadog/browser-rum is installed
-        // const { datadogRum } = await import('@datadog/browser-rum');
-        // datadogRum.addTiming(metric.name, metric.value);
-      } catch (error) {
-        // Silently fail
-      }
+      import('@datadog/browser-rum')
+        .then(({ datadogRum }) => {
+          datadogRum.addTiming(metric.name, metric.value);
+        })
+        .catch(() => {
+          // Silently fail if Datadog is unavailable
+        });
     }
 
     // Track as custom event
