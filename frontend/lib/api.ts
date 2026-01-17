@@ -474,6 +474,11 @@ export const lifeEventsAPI = {
     return extractPredictionPayload(response);
   },
 
+  getVarshaphal: async (data: BirthDetails & { year?: number }) => {
+    const response = await api.post('/api/life-events/varshaphal', data);
+    return extractPredictionPayload(response);
+  },
+
   getCareerMilestones: async (data: BirthDetails) => {
     const response = await bhriguPredictionsAPI.getLifeEvents(data);
     const prediction = extractPredictionPayload<any>(response);
