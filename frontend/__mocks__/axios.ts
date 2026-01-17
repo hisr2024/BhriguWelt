@@ -1,4 +1,4 @@
-const create = jest.fn((config: Record<string, any> = {}) => ({
+const create = jest.fn((config: Record<string, unknown> = {}) => ({
   defaults: {
     baseURL: config.baseURL,
     headers: config.headers ?? {},
@@ -15,5 +15,7 @@ const create = jest.fn((config: Record<string, any> = {}) => ({
   delete: jest.fn(),
 }));
 
-export default { create };
+const axiosMock = { create };
+
+export default axiosMock;
 export { create };

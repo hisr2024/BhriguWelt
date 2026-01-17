@@ -831,7 +831,7 @@ export default function BhriguPredictionView({
   // Helper function to simplify content for fallback summaries
   const simplifyContent = (text: string): string => {
     // Remove markdown formatting
-    let simplified = text
+    const simplified = text
       .replace(/\*\*(.*?)\*\*/g, '$1')  // Remove bold
       .replace(/\*(.*?)\*/g, '$1')       // Remove italic
       .replace(/#{1,6}\s/g, '')          // Remove headers

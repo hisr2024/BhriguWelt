@@ -9,6 +9,7 @@ import {
   clearCurrentProfileId,
   getCurrentProfileId,
 } from '@/lib/profileHelpers';
+import * as storage from '@/lib/storage';
 
 // Mock storage module
 jest.mock('@/lib/storage', () => ({
@@ -50,13 +51,13 @@ Object.defineProperty(global, 'localStorage', {
 
 describe('Profile Helpers', () => {
   let getItemMock: jest.Mock;
+  const storageMock = storage as jest.Mocked<typeof storage>;
 
   beforeEach(() => {
     jest.clearAllMocks();
     localStorageMock.clear();
 
-    const storage = require('@/lib/storage');
-    getItemMock = storage.getItem as jest.Mock;
+    getItemMock = storageMock.getItem as jest.Mock;
   });
 
   describe('setCurrentProfileId', () => {
@@ -202,8 +203,7 @@ describe('Profile Helpers', () => {
         transaction: jest.fn(() => mockTransaction),
       };
 
-      const storage = require('@/lib/storage');
-      storage.initDB.mockResolvedValueOnce(mockDatabase);
+      storageMock.initDB.mockResolvedValueOnce(mockDatabase);
 
       localStorageMock.setItem('current_profile_id', '888');
       getItemMock
@@ -258,8 +258,7 @@ describe('Profile Helpers', () => {
         })),
       };
 
-      const storage = require('@/lib/storage');
-      storage.initDB.mockResolvedValueOnce(mockDatabase);
+      storageMock.initDB.mockResolvedValueOnce(mockDatabase);
 
       const loadPromise = loadCurrentProfile();
 
@@ -364,8 +363,7 @@ describe('Profile Helpers', () => {
         transaction: jest.fn(() => mockTransaction),
       };
 
-      const storage = require('@/lib/storage');
-      storage.initDB.mockResolvedValueOnce(mockDatabase);
+      storageMock.initDB.mockResolvedValueOnce(mockDatabase);
 
       getItemMock.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
 

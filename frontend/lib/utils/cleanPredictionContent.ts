@@ -185,8 +185,8 @@ export function parsePrediction(
     confidence,
     generatedAt: new Date().toISOString(),
     metadata: {
-      model: String((data.metadata as any)?.model || 'unknown'),
-      version: String((data.metadata as any)?.version || '1.0'),
+      model: String((data.metadata as Record<string, unknown> | undefined)?.model ?? 'unknown'),
+      version: String((data.metadata as Record<string, unknown> | undefined)?.version ?? '1.0'),
     },
   };
 }
@@ -316,9 +316,11 @@ export function validatePredictionContent(prediction: ParsedPrediction): {
 // EXPORT
 // ============================================================================
 
-export default {
+const predictionContentUtils = {
   cleanPredictionContent,
   parsePrediction,
   formatSectionTitle,
   validatePredictionContent,
 };
+
+export default predictionContentUtils;

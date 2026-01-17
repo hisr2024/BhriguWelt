@@ -117,7 +117,7 @@ export class NFTCertificateService {
   /**
    * Upload chart image to IPFS (placeholder - requires backend integration)
    */
-  async uploadToIPFS(imageBlob: Blob): Promise<string> {
+  async uploadToIPFS(_imageBlob: Blob): Promise<string> {
     // This would integrate with IPFS service (Pinata, NFT.Storage, etc.)
     // For now, return a placeholder
     console.warn('IPFS upload not implemented - requires backend service');
@@ -162,7 +162,7 @@ export class NFTCertificateService {
   /**
    * Get NFT certificate by token ID
    */
-  async getCertificate(tokenId: string): Promise<NFTCertificate | null> {
+  async getCertificate(_tokenId: string): Promise<NFTCertificate | null> {
     // This would query the blockchain
     console.warn('NFT retrieval not implemented - requires blockchain integration');
     return null;
@@ -171,7 +171,7 @@ export class NFTCertificateService {
   /**
    * Check if address owns a birth chart NFT
    */
-  async hasNFTCertificate(address: string): Promise<boolean> {
+  async hasNFTCertificate(_address: string): Promise<boolean> {
     // This would check token ownership
     console.warn('NFT ownership check not implemented - requires blockchain integration');
     return false;

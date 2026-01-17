@@ -1,14 +1,24 @@
 {
   "name": "bhriguwelt-monorepo",
   "private": true,
+  "workspaces": [
+    "frontend"
+  ],
   "scripts": {
-    "dev": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build",
-    "start": "cd frontend && npm run start"
+    "dev": "npm --prefix ./frontend run dev",
+    "build": "npm --prefix ./frontend run build",
+    "start": "npm --prefix ./frontend run start",
+    "lint": "npm --prefix ./frontend run lint",
+    "typecheck": "npm --prefix ./frontend run typecheck",
+    "test": "npm --prefix ./frontend run test",
+    "prepare": "husky install"
   },
   "packageManager": "npm@10.9.2",
   "engines": {
     "node": "22",
     "npm": "10"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
   }
 }
