@@ -3,11 +3,9 @@
  * Provides traditional Vedic wisdom based on chart features
  */
 
+import { useState, useEffect, useCallback } from 'react';
 import { WisdomCard } from './types';
 import { initDB, setItem, getItem, getAllItems, STORES } from './storage';
-
-// Cache for wisdom card matching results
-const wisdomCache = new Map<string, WisdomCard[]>();
 
 // Cache TTL (time to live) in milliseconds - 5 minutes
 const CACHE_TTL = 5 * 60 * 1000;
@@ -426,24 +424,12 @@ export async function needsSeeding(encryptionKey?: CryptoKey): Promise<boolean> 
 /**
  * React hook for wisdom cards
  */
-import { useState, useEffect, useCallback } from 'react';
-
 export function useWisdomCards(encryptionKey: CryptoKey | null) {
   const [cards, setCards] = useState<WisdomCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [needsSeed, setNeedsSeed] = useState(false);
 
-  useEffect(() => {
-    if (!encryptionKey) {
-      setCards([]);
-      setIsLoading(false);
-      return;
-    }
-
-    loadCards();
-  }, [encryptionKey]);
-
-  const loadCards = async () => {
+  const loadCards = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -464,7 +450,17 @@ export function useWisdomCards(encryptionKey: CryptoKey | null) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [encryptionKey]);
+
+  useEffect(() => {
+    if (!encryptionKey) {
+      setCards([]);
+      setIsLoading(false);
+      return;
+    }
+
+    loadCards();
+  }, [encryptionKey, loadCards]);
 
   const seed = async () => {
     try {

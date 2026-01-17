@@ -15,7 +15,7 @@
 export interface WalletConnection {
   address: string;
   chainId: number;
-  provider: any;
+  provider: EthereumProvider;
   connected: boolean;
 }
 
@@ -24,11 +24,29 @@ export interface WalletError {
   message: string;
 }
 
+interface EthereumRequest {
+  method: string;
+  params?: unknown[];
+}
+
+interface EthereumProvider {
+  request: (args: EthereumRequest) => Promise<unknown>;
+  on: (event: string, handler: (...args: unknown[]) => void) => void;
+  removeAllListeners: (event: string) => void;
+  isMetaMask?: boolean;
+}
+
+type WalletEventCallback = (data: unknown) => void;
+
+type EthereumWindow = Window & {
+  ethereum?: EthereumProvider;
+};
+
 export class Web3WalletConnector {
   private static instance: Web3WalletConnector;
-  private provider: any = null;
+  private provider: EthereumProvider | null = null;
   private connection: WalletConnection | null = null;
-  private listeners: Map<string, Set<Function>> = new Map();
+  private listeners: Map<string, Set<WalletEventCallback>> = new Map();
 
   private constructor() {
     // Initialize listeners
@@ -50,7 +68,7 @@ export class Web3WalletConnector {
    */
   isMetaMaskInstalled(): boolean {
     if (typeof window === 'undefined') return false;
-    return !!(window as any).ethereum?.isMetaMask;
+    return !!(window as EthereumWindow).ethereum?.isMetaMask;
   }
 
   /**
@@ -65,12 +83,18 @@ export class Web3WalletConnector {
     }
 
     try {
-      const ethereum = (window as any).ethereum;
+      const ethereum = (window as EthereumWindow).ethereum;
+      if (!ethereum) {
+        throw {
+          code: 'NO_PROVIDER',
+          message: 'No Ethereum provider detected.',
+        } as WalletError;
+      }
 
       // Request account access
       const accounts = await ethereum.request({
         method: 'eth_requestAccounts',
-      });
+      }) as string[];
 
       if (!accounts || accounts.length === 0) {
         throw {
@@ -80,7 +104,7 @@ export class Web3WalletConnector {
       }
 
       // Get chain ID
-      const chainId = await ethereum.request({ method: 'eth_chainId' });
+      const chainId = await ethereum.request({ method: 'eth_chainId' }) as string;
 
       this.provider = ethereum;
       this.connection = {
@@ -97,8 +121,9 @@ export class Web3WalletConnector {
       this.emit('connect', this.connection);
 
       return this.connection;
-    } catch (error: any) {
-      if (error.code === 4001) {
+    } catch (error: unknown) {
+      const normalizedError = error as { code?: number; message?: string };
+      if (normalizedError.code === 4001) {
         throw {
           code: 'USER_REJECTED',
           message: 'User rejected the connection request.',
@@ -106,7 +131,7 @@ export class Web3WalletConnector {
       }
       throw {
         code: 'CONNECTION_FAILED',
-        message: error.message || 'Failed to connect to MetaMask.',
+        message: normalizedError.message || 'Failed to connect to MetaMask.',
       } as WalletError;
     }
   }
@@ -153,8 +178,9 @@ export class Web3WalletConnector {
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: `0x${chainId.toString(16)}` }],
       });
-    } catch (error: any) {
-      if (error.code === 4902) {
+    } catch (error: unknown) {
+      const normalizedError = error as { code?: number; message?: string };
+      if (normalizedError.code === 4902) {
         throw {
           code: 'NETWORK_NOT_ADDED',
           message: 'This network is not added to MetaMask.',
@@ -162,7 +188,7 @@ export class Web3WalletConnector {
       }
       throw {
         code: 'NETWORK_SWITCH_FAILED',
-        message: error.message || 'Failed to switch network.',
+        message: normalizedError.message || 'Failed to switch network.',
       } as WalletError;
     }
   }
@@ -177,16 +203,23 @@ export class Web3WalletConnector {
         message: 'Wallet not connected.',
       } as WalletError;
     }
+    if (!this.provider) {
+      throw {
+        code: 'NO_PROVIDER',
+        message: 'Wallet provider not available.',
+      } as WalletError;
+    }
 
     try {
       const signature = await this.provider.request({
         method: 'personal_sign',
         params: [message, this.connection.address],
-      });
+      }) as string;
 
       return signature;
-    } catch (error: any) {
-      if (error.code === 4001) {
+    } catch (error: unknown) {
+      const normalizedError = error as { code?: number; message?: string };
+      if (normalizedError.code === 4001) {
         throw {
           code: 'USER_REJECTED_SIGNATURE',
           message: 'User rejected the signature request.',
@@ -194,7 +227,7 @@ export class Web3WalletConnector {
       }
       throw {
         code: 'SIGNATURE_FAILED',
-        message: error.message || 'Failed to sign message.',
+        message: normalizedError.message || 'Failed to sign message.',
       } as WalletError;
     }
   }
@@ -209,20 +242,27 @@ export class Web3WalletConnector {
         message: 'Wallet not connected.',
       } as WalletError;
     }
+    if (!this.provider) {
+      throw {
+        code: 'NO_PROVIDER',
+        message: 'Wallet provider not available.',
+      } as WalletError;
+    }
 
     try {
       const balance = await this.provider.request({
         method: 'eth_getBalance',
         params: [this.connection.address, 'latest'],
-      });
+      }) as string;
 
       // Convert from Wei to ETH
       const ethBalance = parseInt(balance, 16) / 1e18;
       return ethBalance.toFixed(4);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const normalizedError = error as { message?: string };
       throw {
         code: 'BALANCE_FETCH_FAILED',
-        message: error.message || 'Failed to fetch balance.',
+        message: normalizedError.message || 'Failed to fetch balance.',
       } as WalletError;
     }
   }
@@ -230,7 +270,7 @@ export class Web3WalletConnector {
   /**
    * Subscribe to wallet events
    */
-  on(event: string, callback: Function): void {
+  on(event: string, callback: WalletEventCallback): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
@@ -240,7 +280,7 @@ export class Web3WalletConnector {
   /**
    * Unsubscribe from wallet events
    */
-  off(event: string, callback: Function): void {
+  off(event: string, callback: WalletEventCallback): void {
     if (this.listeners.has(event)) {
       this.listeners.get(event)!.delete(callback);
     }
@@ -249,7 +289,7 @@ export class Web3WalletConnector {
   /**
    * Emit event to all listeners
    */
-  private emit(event: string, data: any): void {
+  private emit(event: string, data: unknown): void {
     if (this.listeners.has(event)) {
       this.listeners.get(event)!.forEach((callback) => {
         try {
@@ -268,7 +308,8 @@ export class Web3WalletConnector {
     if (!this.provider) return;
 
     // Account changes
-    this.provider.on('accountsChanged', (accounts: string[]) => {
+    this.provider.on('accountsChanged', (...args: unknown[]) => {
+      const accounts = Array.isArray(args[0]) ? (args[0] as string[]) : [];
       if (accounts.length === 0) {
         this.disconnect();
       } else if (this.connection) {
@@ -278,8 +319,9 @@ export class Web3WalletConnector {
     });
 
     // Chain changes
-    this.provider.on('chainChanged', (chainId: string) => {
-      if (this.connection) {
+    this.provider.on('chainChanged', (...args: unknown[]) => {
+      const chainId = typeof args[0] === 'string' ? args[0] : null;
+      if (this.connection && chainId) {
         this.connection.chainId = parseInt(chainId, 16);
         this.emit('chainChanged', this.connection.chainId);
       }

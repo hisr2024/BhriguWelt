@@ -26,7 +26,7 @@ export interface BirthChartAPI {
   ascendant: string;
   nakshatra: string;
   element: string;
-  planets: Record<string, any>;
+  planets: Record<string, unknown>;
   houses: string[];
   karmic_number: number;
   soul_number: number;
@@ -48,7 +48,7 @@ export interface AIBirthData {
   nakshatra?: string;
   moon_sign?: string;
   ascendant?: string;
-  planetary_positions?: Record<string, any>;
+  planetary_positions?: Record<string, unknown>;
   houses?: string[];
   dasha_period?: string;
   yogas?: string[];
@@ -149,7 +149,7 @@ export interface Report {
   profileId: number;
   type: ReportType;
   title: string;
-  data: any; // Report-specific data
+  data: unknown; // Report-specific data
   generatedAt: string;
   aiMode?: 'offline' | 'hybrid' | 'chatbot';
   createdAt: string;
@@ -189,7 +189,7 @@ export interface BirthChart {
   ascendant: string;
   nakshatra: string;
   element: string;
-  planets: Record<string, any>;
+  planets: Record<string, unknown>;
   houses: string[];
   karmicNumber: number;
   soulNumber: number;
@@ -282,7 +282,7 @@ export interface EncryptionMetadata {
 
 export interface AppMetadata {
   key: string;
-  value: any;
+  value: unknown;
   createdAt: string;
   updatedAt: string;
 }

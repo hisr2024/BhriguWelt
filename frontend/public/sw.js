@@ -34,7 +34,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[SW] Caching app shell and essential assets');
-      return cache.addAll(APP_SHELL).catch((error) => {
+      return cache.addAll([...APP_SHELL, ...ASSETS_TO_CACHE]).catch((error) => {
         console.error('[SW] Failed to cache some resources:', error);
         // Don't fail installation if some resources fail to cache
       });

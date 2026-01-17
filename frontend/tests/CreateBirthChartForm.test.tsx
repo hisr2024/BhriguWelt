@@ -80,7 +80,7 @@ describe('getItemSafe', () => {
 
     await new Promise<void>((resolve, reject) => {
       jest.isolateModules(() => {
-        const { getItemSafe } = require('@/lib/storage-safe');
+        const { getItemSafe } = jest.requireActual('@/lib/storage-safe');
         getItemSafe('reports', 'missing')
           .then((result: unknown) => {
             expect(result).toBeNull();

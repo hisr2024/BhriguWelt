@@ -4,6 +4,7 @@
  */
 
 import { initDB, setItem, getItem, STORES } from '@/lib/storage';
+import * as crypto from '@/lib/crypto';
 
 // Mock crypto functions for testing
 jest.mock('@/lib/crypto', () => ({
@@ -413,8 +414,8 @@ describe('Storage Fallback Tests', () => {
     });
 
     it('should handle decryption failures in cursor fallback', async () => {
-      const { decryptFromStorage } = require('@/lib/crypto');
-      decryptFromStorage.mockRejectedValueOnce(new Error('Decryption failed'));
+      const cryptoMock = crypto as jest.Mocked<typeof crypto>;
+      cryptoMock.decryptFromStorage.mockRejectedValueOnce(new Error('Decryption failed'));
 
       await initDB();
 

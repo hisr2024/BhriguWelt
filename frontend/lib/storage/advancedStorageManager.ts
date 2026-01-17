@@ -14,6 +14,20 @@ export interface StorageConfig {
   enableFallbacks: boolean;
 }
 
+interface StorageRecord<T> {
+  id: string;
+  data: T;
+  createdAt: string;
+  updatedAt: string;
+  version: string;
+}
+
+type MemoryStorage = Map<string, Map<string, unknown>>;
+
+type WindowWithMemoryStorage = Window & {
+  memoryStorage?: MemoryStorage;
+};
+
 export class AdvancedStorageManager {
   private static instance: AdvancedStorageManager;
   private db: IDBDatabase | null = null;
@@ -142,10 +156,10 @@ export class AdvancedStorageManager {
 
   private initializeMemoryFallback(): void {
     console.log('🔄 Initializing memory fallback storage');
-    (window as any).memoryStorage = new Map();
+    (window as WindowWithMemoryStorage).memoryStorage = new Map();
   }
 
-  async setItem(storeName: string, key: string, value: any): Promise<void> {
+  async setItem<T>(storeName: string, key: string, value: T): Promise<void> {
     await this.ensureInitialized();
 
     for (let attempt = 0; attempt <= this.config.maxRetries; attempt++) {
@@ -153,7 +167,7 @@ export class AdvancedStorageManager {
         const transaction = this.db!.transaction([storeName], 'readwrite');
         const store = transaction.objectStore(storeName);
 
-        const data = {
+        const data: StorageRecord<T> = {
           id: key,
           data: value,
           createdAt: new Date().toISOString(),
@@ -184,7 +198,7 @@ export class AdvancedStorageManager {
     }
   }
 
-  async getItem(storeName: string, key: string): Promise<any> {
+  async getItem<T>(storeName: string, key: string): Promise<T | null> {
     await this.ensureInitialized();
 
     for (let attempt = 0; attempt <= this.config.maxRetries; attempt++) {
@@ -192,10 +206,10 @@ export class AdvancedStorageManager {
         const transaction = this.db!.transaction([storeName], 'readonly');
         const store = transaction.objectStore(storeName);
 
-        return new Promise((resolve, reject) => {
+        return new Promise<T | null>((resolve, reject) => {
           const request = store.get(key);
           request.onsuccess = () => {
-            const result = request.result;
+            const result = request.result as StorageRecord<T> | undefined;
             resolve(result ? result.data : null);
           };
           request.onerror = () => reject(new Error(`Failed to retrieve item: ${request.error?.message}`));
@@ -212,6 +226,8 @@ export class AdvancedStorageManager {
         await new Promise(resolve => setTimeout(resolve, this.config.retryDelay * Math.pow(2, attempt)));
       }
     }
+
+    return null;
   }
 
   private async ensureInitialized(): Promise<void> {
@@ -224,16 +240,16 @@ export class AdvancedStorageManager {
     }
   }
 
-  private memoryGetItem(store: string, key: string): any {
-    const storeData = (window as any).memoryStorage?.get(store);
-    return storeData?.get(key);
+  private memoryGetItem<T>(store: string, key: string): T | null {
+    const storeData = (window as WindowWithMemoryStorage).memoryStorage?.get(store);
+    return (storeData?.get(key) as T | null) ?? null;
   }
 
-  private memorySetItem(store: string, key: string, value: any): void {
-    let storeData = (window as any).memoryStorage?.get(store);
+  private memorySetItem<T>(store: string, key: string, value: T): void {
+    let storeData = (window as WindowWithMemoryStorage).memoryStorage?.get(store);
     if (!storeData) {
       storeData = new Map();
-      (window as any).memoryStorage.set(store, storeData);
+      (window as WindowWithMemoryStorage).memoryStorage?.set(store, storeData);
     }
     storeData.set(key, value);
   }
@@ -242,15 +258,15 @@ export class AdvancedStorageManager {
 // Export convenience functions
 export const storageManager = AdvancedStorageManager.getInstance();
 
-export const setItem = (store: string, key: string, value: any) =>
-  storageManager.setItem(store, key, value);
+export const setItem = <T>(store: string, key: string, value: T) =>
+  storageManager.setItem<T>(store, key, value);
 
-export const getItem = (store: string, key: string) =>
-  storageManager.getItem(store, key);
+export const getItem = <T>(store: string, key: string) =>
+  storageManager.getItem<T>(store, key);
 
-export const getItemSafe = async (store: string, key: string): Promise<any | null> => {
+export const getItemSafe = async <T>(store: string, key: string): Promise<T | null> => {
   try {
-    return await storageManager.getItem(store, key);
+    return await storageManager.getItem<T>(store, key);
   } catch {
     return null;
   }
