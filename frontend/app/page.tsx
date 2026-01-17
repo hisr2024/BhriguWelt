@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import Link from 'next/link';
 import {
@@ -11,14 +11,28 @@ import {
   Users, Clock, Globe, Award, ChevronRight,
   CheckCircle, ArrowRight, Play, Quote, Menu, X
 } from 'lucide-react';
-import AnimatedBackground, { FloatingElements } from './components/AnimatedBackground';
 import GenZButton from './components/GenZButton';
 import GenZCard, { GenZCardGradient } from './components/GenZCard';
 import GenZBadge, { StatusBadge } from './components/GenZBadge';
 import BottomNav from './components/BottomNav';
 import HoroscopeBricks from './components/HoroscopeBricks';
-import OnboardingTutorial from '../components/OnboardingTutorial';
 import useFeatureFlags from '../hooks/useFeatureFlags';
+
+const AnimatedBackground = dynamic(() => import('./components/AnimatedBackground'), {
+  ssr: false,
+  loading: () => null,
+});
+const FloatingElements = dynamic(
+  () => import('./components/AnimatedBackground').then((mod) => mod.FloatingElements),
+  {
+    ssr: false,
+    loading: () => null,
+  }
+);
+const OnboardingTutorial = dynamic(() => import('../components/OnboardingTutorial'), {
+  ssr: false,
+  loading: () => null,
+});
 
 export default function HomePage() {
   const [activeFeature, setActiveFeature] = useState(0);
@@ -40,7 +54,7 @@ export default function HomePage() {
     }
   }, []);
 
-  const features = [
+  const features = useMemo(() => [
     {
       icon: <Sparkles className="w-8 h-8" />,
       title: 'Karmic Journey',
@@ -100,16 +114,16 @@ export default function HomePage() {
       link: '/predictions',
       color: 'from-teal-500 to-cyan-500'
     },
-  ];
+  ], []);
 
-  const stats = [
+  const stats = useMemo(() => [
     { value: '100K+', label: 'Soul Journeys', icon: <Users className="w-6 h-6" /> },
     { value: '95%', label: 'Accuracy Rate', icon: <Award className="w-6 h-6" /> },
     { value: '24/7', label: 'AI Support', icon: <Clock className="w-6 h-6" /> },
     { value: '50+', label: 'Countries', icon: <Globe className="w-6 h-6" /> },
-  ];
+  ], []);
 
-  const testimonials = [
+  const testimonials = useMemo(() => [
     {
       name: 'Priya Sharma',
       role: 'Spiritual Seeker',
@@ -131,9 +145,9 @@ export default function HomePage() {
       rating: 5,
       avatar: '✨'
     },
-  ];
+  ], []);
 
-  const advancedFeatures = [
+  const advancedFeatures = useMemo(() => [
     {
       icon: <Zap className="w-6 h-6" />,
       title: 'AI-Powered Insights',
@@ -154,7 +168,7 @@ export default function HomePage() {
       title: 'Real-Time Updates',
       description: 'Daily insights based on planetary transits'
     },
-  ];
+  ], []);
 
   useEffect(() => {
     const interval = setInterval(() => {

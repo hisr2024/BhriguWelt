@@ -3,6 +3,8 @@
  * Supports English, Hindi, and RTL-ready Arabic structure
  */
 
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
+
 const enCopy = {
     common: {
       appName: 'BhriguWelt',
@@ -271,6 +273,26 @@ export const copy = {
 
 export type Language = 'en' | 'hi' | 'ar';
 
+const LANGUAGE_STORAGE_KEY = 'language';
+const LANGUAGE_EVENT = 'bhriguwelt:language';
+
+const subscribeToLanguage = (callback: () => void) => {
+  if (typeof window === 'undefined') {
+    return () => {};
+  }
+
+  const handler = () => callback();
+  window.addEventListener('storage', handler);
+  window.addEventListener(LANGUAGE_EVENT, handler as EventListener);
+
+  return () => {
+    window.removeEventListener('storage', handler);
+    window.removeEventListener(LANGUAGE_EVENT, handler as EventListener);
+  };
+};
+
+const getClientLanguage = (): Language => getCurrentLanguage();
+
 /**
  * Resolve nested key in object
  */
@@ -315,12 +337,19 @@ export function t(key: string, lang: Language = 'en'): string {
  * @returns Translation function
  */
 export function useTranslation(lang?: Language) {
-  const defaultLang: Language = lang || 'en';
+  const storeLang = useSyncExternalStore(
+    subscribeToLanguage,
+    getClientLanguage,
+    () => 'en'
+  );
+  const defaultLang: Language = lang || storeLang;
+  const translator = useCallback((key: string) => t(key, defaultLang), [defaultLang]);
+  const dictionary = useMemo(() => copy[defaultLang], [defaultLang]);
 
   return {
-    t: (key: string) => t(key, defaultLang),
+    t: translator,
     lang: defaultLang,
-    copy: copy[defaultLang],
+    copy: dictionary,
   };
 }
 
@@ -332,7 +361,7 @@ export function getCurrentLanguage(): Language {
     return 'en';
   }
 
-  const stored = localStorage.getItem('language') as Language;
+  const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY) as Language;
   if (stored === 'en' || stored === 'hi' || stored === 'ar') {
     return stored;
   }
@@ -354,6 +383,7 @@ export function getCurrentLanguage(): Language {
  */
 export function setLanguage(lang: Language): void {
   if (typeof window !== 'undefined') {
-    localStorage.setItem('language', lang);
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+    window.dispatchEvent(new Event(LANGUAGE_EVENT));
   }
 }
