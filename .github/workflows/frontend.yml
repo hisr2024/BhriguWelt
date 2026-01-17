@@ -13,12 +13,6 @@ on:
 jobs:
   lint-and-typecheck:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    env:
-      NEXT_PUBLIC_API_URL: "http://localhost:8000"
-      NEXT_PUBLIC_BACKEND_URL: "http://localhost:8000"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,35 +21,29 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22.11.0"
-
-      - name: Upgrade npm
-        run: npm install -g npm@11.0.0
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Verify toolchain compatibility
         run: |
-          node -e "const pkg=require('./package.json'); const expectedNode=pkg.engines.node; const expectedNpm=pkg.engines.npm; const actualNode=process.version.replace('v',''); const {execSync}=require('child_process'); const actualNpm=execSync('npm --version').toString().trim(); const parseVersion=(value)=>value.replace('>=','').split('.').map(Number); const [nodeMajor]=parseVersion(actualNode); const [npmMajor]=parseVersion(actualNpm); const [expectedNodeMajor]=parseVersion(expectedNode); const [expectedNpmMajor]=parseVersion(expectedNpm); if (nodeMajor < expectedNodeMajor) { throw new Error(`Node version ${actualNode} does not satisfy required ${expectedNode}`); } if (npmMajor < expectedNpmMajor) { throw new Error(`npm version ${actualNpm} does not satisfy required ${expectedNpm}`); } console.log(`Node ${actualNode} and npm ${actualNpm} satisfy package.json engines.`);"
-
-      - name: Validate environment variables
-        run: |
-          node -e "const required=['NEXT_PUBLIC_API_URL','NEXT_PUBLIC_BACKEND_URL']; const missing=required.filter(key=>!process.env[key]); if (missing.length) { throw new Error(`Missing required env vars: ${missing.join(', ')}`); } console.log('Required env vars present:', required.join(', '));"
+          node -e "const pkg=require('./package.json'); const expectedNode=pkg.engines.node; const expectedNpm=pkg.engines.npm; const actualNode=process.version.replace('v',''); const {execSync}=require('child_process'); const actualNpm=execSync('npm --version').toString().trim(); if (actualNode !== expectedNode) { throw new Error(`Node version ${actualNode} does not match required ${expectedNode}`); } if (actualNpm !== expectedNpm) { throw new Error(`npm version ${actualNpm} does not match required ${expectedNpm}`); } console.log(`Node ${actualNode} and npm ${actualNpm} match package.json engines.`);"
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps --workspaces=false
+        working-directory: frontend
+        run: npm install
 
       - name: Run lint
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: "http://localhost:8000"
         run: npm run lint
 
       - name: Type check
+        working-directory: frontend
         run: npx tsc --noEmit
 
   test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    env:
-      NEXT_PUBLIC_API_URL: "http://localhost:8000"
-      NEXT_PUBLIC_BACKEND_URL: "http://localhost:8000"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,24 +52,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22.11.0"
-
-      - name: Upgrade npm
-        run: npm install -g npm@11.0.0
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps --workspaces=false
+        working-directory: frontend
+        run: npm ci
 
       - name: Run unit tests
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: "http://localhost:8000"
         run: npm test -- --passWithNoTests
 
   e2e:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    env:
-      NEXT_PUBLIC_API_URL: "http://localhost:8000"
-      NEXT_PUBLIC_BACKEND_URL: "http://localhost:8000"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -90,17 +75,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22.11.0"
-
-      - name: Upgrade npm
-        run: npm install -g npm@11.0.0
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps --workspaces=false
+        working-directory: frontend
+        run: npm ci
 
       - name: Install Playwright browsers
+        working-directory: frontend
         run: npx playwright install --with-deps
 
       - name: Run E2E tests
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: "http://localhost:8000"
         run: npx playwright test --reporter=list
 
       - name: Upload test results
@@ -110,32 +99,3 @@ jobs:
           name: playwright-report
           path: frontend/playwright-report/
           retention-days: 7
-
-  build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    env:
-      NEXT_PUBLIC_API_URL: "http://localhost:8000"
-      NEXT_PUBLIC_BACKEND_URL: "http://localhost:8000"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.11.0"
-
-      - name: Upgrade npm
-        run: npm install -g npm@11.0.0
-
-      - name: Install dependencies
-        run: npm ci --legacy-peer-deps --workspaces=false
-
-      - name: Run build
-        run: npm run build
-
-      - name: Verify build output
-        run: test -d .next

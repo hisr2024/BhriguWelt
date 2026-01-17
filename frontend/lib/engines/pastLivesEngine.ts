@@ -1,10 +1,5 @@
-'use client';
+import 'server-only';
 
-/**
- * Past Lives Prediction Engine
- *
- * Offline-first: pure computation with optional online enrichment, no secrets required.
- */
 import type { ChartData, PredictionMetadata, PredictionResult, Subcategory } from '../api/predictions';
 
 export type PastLivesMode = 'offline' | 'online' | 'auto';
@@ -134,9 +129,9 @@ const TEXT_FILES = [
   'backend/data/nadi_jyotisha_principles.yml',
 ];
 
-const safeLower = (value?: string): string => value?.toLowerCase() ?? '';
+const safeLower = (value?: string) => value?.toLowerCase() ?? '';
 
-const titleCase = (value?: string): string =>
+const titleCase = (value?: string) =>
   value ? value.charAt(0).toUpperCase() + value.slice(1).toLowerCase() : 'Unknown';
 
 const getCachedResult = (cacheKey: string): PredictionResult | null => {
@@ -151,11 +146,11 @@ const getCachedResult = (cacheKey: string): PredictionResult | null => {
   return cached.result;
 };
 
-const setCachedResult = (cacheKey: string, result: PredictionResult, ttl: number): void => {
+const setCachedResult = (cacheKey: string, result: PredictionResult, ttl: number) => {
   cache.set(cacheKey, { expiresAt: Date.now() + ttl, result });
 };
 
-const buildCacheKey = (chart: ChartData, mode: PastLivesMode, aiEnabled: boolean): string =>
+const buildCacheKey = (chart: ChartData, mode: PastLivesMode, aiEnabled: boolean) =>
   JSON.stringify({
     mode,
     aiEnabled,
@@ -167,7 +162,7 @@ const buildCacheKey = (chart: ChartData, mode: PastLivesMode, aiEnabled: boolean
     nakshatra: chart.nakshatra,
   });
 
-const isServer = (): boolean => typeof window === 'undefined';
+const isServer = () => typeof window === 'undefined';
 
 const loadTextFile = async (path: string): Promise<string | null> => {
   if (!isServer()) {
@@ -232,7 +227,7 @@ const parseYamlDescriptions = (text: string, source: string): PastLivesRule[] =>
   return rules;
 };
 
-const buildCorpusSummary = (rules: PastLivesRule[]): { summary: string; sources: string[] } => {
+const buildCorpusSummary = (rules: PastLivesRule[]) => {
   const uniqueSources = Array.from(new Set(rules.map(rule => rule.source)));
   const tagCounts = rules.reduce<Record<string, number>>((acc, rule) => {
     rule.tags.forEach(tag => {
@@ -285,7 +280,7 @@ const loadOfflineCorpus = async (logger: PastLivesLogger): Promise<PastLivesCorp
   };
 };
 
-const getSignElement = (sign?: string): keyof typeof ELEMENTAL_TONES => {
+const getSignElement = (sign?: string) => {
   const normalized = titleCase(sign);
   return SIGN_ELEMENTS[normalized] ?? 'air';
 };
