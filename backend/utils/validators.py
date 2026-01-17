@@ -12,6 +12,75 @@ class ValidationError(Exception):
     """Custom validation error"""
     pass
 
+SQL_INJECTION_PATTERNS = [
+    r"(--|\#|/\*|\*/)",
+    r"\b(select|insert|update|delete|drop|create|alter|truncate|exec)\b\s+",
+    r"\bunion\b\s+\bselect\b",
+    r"(\bor\b\s+\d+\s*=\s*\d+)",
+    r"(\band\b\s+\d+\s*=\s*\d+)",
+    r"(;\s*(drop|delete|update|insert|alter|truncate))",
+]
+
+XSS_PATTERNS = [
+    r"<script[^>]*>.*?</script>",
+    r"javascript:",
+    r"on\w+\s*=",
+    r"<iframe",
+    r"<object",
+    r"<embed",
+]
+
+SQL_INJECTION_REGEX = re.compile("|".join(SQL_INJECTION_PATTERNS), flags=re.IGNORECASE | re.DOTALL)
+XSS_REGEX = re.compile("|".join(XSS_PATTERNS), flags=re.IGNORECASE | re.DOTALL)
+
+
+def contains_sql_injection(value: str) -> bool:
+    """Detect SQL injection patterns in input."""
+    if not value:
+        return False
+    return bool(SQL_INJECTION_REGEX.search(value))
+
+
+def contains_xss(value: str) -> bool:
+    """Detect XSS patterns in input."""
+    if not value:
+        return False
+    return bool(XSS_REGEX.search(value))
+
+
+def sanitize_text(value: str, max_length: int = 500, strip_html: bool = True) -> str:
+    """
+    Sanitize user input for common injection/XSS vectors.
+
+    Args:
+        value: Input string
+        max_length: Maximum allowed length
+        strip_html: Remove HTML tags and dangerous attributes
+
+    Returns:
+        Sanitized string
+    """
+    if not isinstance(value, str):
+        value = str(value)
+
+    sanitized = value.strip()
+
+    if strip_html:
+        sanitized = re.sub(r'<script[^>]*>.*?</script>', '', sanitized, flags=re.DOTALL | re.IGNORECASE)
+        sanitized = re.sub(r'\son\w+\s*=\s*["\'][^"\']*["\']', '', sanitized, flags=re.IGNORECASE)
+        sanitized = re.sub(r'javascript:', '', sanitized, flags=re.IGNORECASE)
+        sanitized = re.sub(r'<[^>]+>', '', sanitized)
+        sanitized = html.unescape(sanitized)
+
+    sanitized = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', sanitized)
+    sanitized = re.sub(r'(--|/\*|\*/)', '', sanitized)
+    sanitized = sanitized.strip()
+
+    if len(sanitized) > max_length:
+        sanitized = sanitized[:max_length]
+
+    return sanitized
+
 
 def validate_date(date_str: str, field_name: str = "date") -> Tuple[bool, Optional[str]]:
     """
@@ -73,6 +142,9 @@ def validate_place(place_str: str, field_name: str = "place") -> Tuple[bool, Opt
 
     if len(place_str) > 200:
         return False, f"{field_name} must be less than 200 characters"
+
+    if contains_xss(place_str) or contains_sql_injection(place_str):
+        return False, f"{field_name} contains invalid characters"
 
     return True, None
 
@@ -159,17 +231,7 @@ def sanitize_input(value: str, max_length: int = 500) -> str:
     Returns:
         Sanitized string
     """
-    if not isinstance(value, str):
-        return str(value)
-
-    # Remove potentially dangerous characters
-    sanitized = value.strip()
-
-    # Limit length
-    if len(sanitized) > max_length:
-        sanitized = sanitized[:max_length]
-
-    return sanitized
+    return sanitize_text(value, max_length=max_length, strip_html=True)
 
 
 def sanitizeQuestion(value: str, max_length: int = 500) -> str:
@@ -183,26 +245,7 @@ def sanitizeQuestion(value: str, max_length: int = 500) -> str:
     Returns:
         Sanitized question string
     """
-    if not isinstance(value, str):
-        value = str(value)
-
-    sanitized = value.strip()
-
-    # Remove script tags and inline event handlers
-    sanitized = re.sub(r'<script[^>]*>.*?</script>', '', sanitized, flags=re.DOTALL | re.IGNORECASE)
-    sanitized = re.sub(r'\son\w+\s*=\s*["\'][^"\']*["\']', '', sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r'javascript:', '', sanitized, flags=re.IGNORECASE)
-
-    # Strip remaining HTML tags
-    sanitized = re.sub(r'<[^>]+>', '', sanitized)
-    sanitized = html.unescape(sanitized)
-
-    # Remove control characters
-    sanitized = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', sanitized)
-
-    if len(sanitized) > max_length:
-        sanitized = sanitized[:max_length]
-
+    sanitized = sanitize_text(value, max_length=max_length, strip_html=True)
     return sanitized
 
 

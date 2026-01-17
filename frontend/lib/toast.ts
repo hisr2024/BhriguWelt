@@ -11,6 +11,35 @@ export interface ToastPayload {
 
 const TOAST_EVENT = 'bhriguwelt:toast';
 
+const ERROR_TITLE_MAP: Record<string, string> = {
+  VALIDATION_ERROR: 'Validation error',
+  UNAUTHORIZED: 'Authentication required',
+  FORBIDDEN: 'Access denied',
+  NOT_FOUND: 'Not found',
+  PAYLOAD_TOO_LARGE: 'Request too large',
+  RATE_LIMIT_EXCEEDED: 'Too many requests',
+  INVALID_GZIP: 'Invalid request payload',
+  CSRF_TOKEN_MISSING: 'Security check failed',
+  CSRF_VALIDATION_FAILED: 'Security check failed',
+  INTERNAL_ERROR: 'Server error',
+};
+
+export function resolveToastTitle(payload: ToastPayload): string {
+  if (payload.title) {
+    return payload.title;
+  }
+
+  if (payload.errorCode && payload.errorCode in ERROR_TITLE_MAP) {
+    return ERROR_TITLE_MAP[payload.errorCode];
+  }
+
+  if (payload.type === 'error') {
+    return 'Something went wrong';
+  }
+
+  return 'Notice';
+}
+
 export function emitToast(payload: ToastPayload): void {
   if (typeof window === 'undefined') {
     return;

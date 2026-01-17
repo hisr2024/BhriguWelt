@@ -240,7 +240,6 @@ api.interceptors.response.use(
 
     emitToast({
       type: 'error',
-      title: 'Request failed',
       message,
       errorCode,
       details: responseData?.details,

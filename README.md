@@ -429,6 +429,17 @@ All endpoints return consistent error format:
 }
 ```
 
+### Deprecated Routes (Legacy Cloud)
+
+The legacy cloud API endpoints from the archived backend are **deprecated** and should not be used in new integrations. They are retained only for data migration tooling and backward-compatibility testing.
+
+- `POST /api/bhrigu-predictions/career` → Use `/api/predictions/career`
+- `POST /api/bhrigu-predictions/marriage` → Use `/api/predictions/relationships`
+- `POST /api/bhrigu-predictions/financial` → Use `/api/predictions/finance`
+- `POST /api/bhrigu-predictions/health` → Use `/api/predictions/health`
+
+If you still depend on these deprecated routes, migrate to the unified prediction endpoints to ensure continued support.
+
 ### Caching
 
 - **Database cache**: AI-generated predictions cached by birth data hash (SHA-256)
