@@ -590,10 +590,15 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
 
         # ==================== END QUOTA CHECKS ====================
 
-        # Try to use JSON mode if model supports it (GPT-4 Turbo and later)
+        # Try to use JSON mode if model supports it (GPT-4 Turbo, GPT-4o, and later models)
         model = payload['model']
-        if use_json_format and ('gpt-4-turbo' in model.lower() or 'gpt-4o' in model.lower()):
-            payload['response_format'] = {'type': 'json_object'}
+        if use_json_format:
+            # Try to enable JSON mode for supported models
+            if any(term in model.lower() for term in ['gpt-4-turbo', 'gpt-4o', 'gpt-4.5', 'gpt-5']):
+                payload['response_format'] = {'type': 'json_object'}
+                logger.debug(f"Enabled JSON response format for model: {model}")
+            else:
+                logger.debug(f"JSON response format not explicitly enabled for model: {model} (relies on prompt)")
 
         try:
             response = self._post_with_model_fallbacks(payload)
