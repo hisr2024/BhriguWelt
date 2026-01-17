@@ -6,7 +6,7 @@ Performance-optimized with connection pooling, circuit breaker, and monitoring
 import os
 import json
 import hashlib
-from typing import Any, Optional, Callable
+from typing import Any, Optional, Callable, Mapping, Sequence
 from datetime import timedelta
 from functools import wraps
 from utils.logger import setup_logger
@@ -230,6 +230,109 @@ class RedisCache:
             logger.warning(f"Cache delete error: {str(e)}")
             return False
 
+    def get_many(self, namespace: str, keys: Sequence[str], default=None) -> dict:
+        """
+        Fetch multiple cached values in a single pipeline call.
+
+        Args:
+            namespace: Cache namespace
+            keys: Cache keys to retrieve
+            default: Default value for missing keys
+        """
+        if not self.enabled or not self.client or not keys:
+            self.stats['misses'] += len(keys)
+            return {key: default for key in keys}
+
+        cache_keys = [self._make_key(namespace, key) for key in keys]
+
+        try:
+            def _get_many():
+                pipeline = self.client.pipeline(transaction=False)
+                for cache_key in cache_keys:
+                    pipeline.get(cache_key)
+                return pipeline.execute()
+
+            values = self.circuit_breaker.call(_get_many)
+
+            results = {}
+            for key, value in zip(keys, values):
+                if value is None:
+                    self.stats['misses'] += 1
+                    results[key] = default
+                    continue
+
+                self.stats['hits'] += 1
+                try:
+                    results[key] = json.loads(value)
+                except json.JSONDecodeError:
+                    results[key] = value
+
+            return results
+
+        except Exception as e:
+            self.stats['errors'] += 1
+            logger.warning(f"Cache get_many error: {str(e)}")
+            self.stats['misses'] += len(keys)
+            return {key: default for key in keys}
+
+    def set_many(self, namespace: str, items: Mapping[str, Any], ttl: Optional[int] = None) -> bool:
+        """
+        Set multiple cache entries in a single pipeline call.
+
+        Args:
+            namespace: Cache namespace
+            items: Mapping of cache keys to values
+            ttl: Time-to-live in seconds
+        """
+        if not self.enabled or not self.client or not items:
+            return False
+
+        ttl = ttl or int(os.getenv('REDIS_DEFAULT_TTL', 3600))
+
+        try:
+            def _set_many():
+                pipeline = self.client.pipeline(transaction=False)
+                for key, value in items.items():
+                    cache_key = self._make_key(namespace, key)
+                    if not isinstance(value, str):
+                        value = json.dumps(value)
+                    pipeline.setex(cache_key, ttl, value)
+                return pipeline.execute()
+
+            self.circuit_breaker.call(_set_many)
+            self.stats['sets'] += len(items)
+            logger.debug(f"Cache set_many: {namespace} ({len(items)} keys, TTL: {ttl}s)")
+            return True
+
+        except Exception as e:
+            self.stats['errors'] += 1
+            logger.warning(f"Cache set_many error: {str(e)}")
+            return False
+
+    def delete_many(self, namespace: str, keys: Sequence[str]) -> int:
+        """Delete multiple cache keys in a single pipeline call."""
+        if not self.enabled or not self.client or not keys:
+            return 0
+
+        cache_keys = [self._make_key(namespace, key) for key in keys]
+
+        try:
+            def _delete_many():
+                pipeline = self.client.pipeline(transaction=False)
+                for cache_key in cache_keys:
+                    pipeline.delete(cache_key)
+                return pipeline.execute()
+
+            results = self.circuit_breaker.call(_delete_many)
+            deleted = sum(int(result) for result in results if isinstance(result, int))
+            self.stats['deletes'] += deleted
+            return deleted
+
+        except Exception as e:
+            self.stats['errors'] += 1
+            logger.warning(f"Cache delete_many error: {str(e)}")
+            return 0
+
     def delete_pattern(self, namespace: str, pattern: str) -> int:
         """Delete all keys matching pattern"""
         if not self.enabled or not self.client:
@@ -391,9 +494,7 @@ def warm_cache(namespace: str, data: dict, ttl: Optional[int] = None):
     if not cache.enabled:
         return
 
-    count = 0
-    for key, value in data.items():
-        if cache.set(namespace, key, value, ttl):
-            count += 1
-
-    logger.info(f"Cache warmed: {namespace} ({count}/{len(data)} keys)")
+    if cache.set_many(namespace, data, ttl):
+        logger.info(f"Cache warmed: {namespace} ({len(data)}/{len(data)} keys)")
+    else:
+        logger.info(f"Cache warmed: {namespace} (0/{len(data)} keys)")
