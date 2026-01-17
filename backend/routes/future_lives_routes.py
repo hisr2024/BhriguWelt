@@ -3,14 +3,17 @@ Future Lives API Routes
 Future incarnation predictions and soul evolution
 """
 from flask import Blueprint, request
-from services.astrology_calculator import astrology_calculator
+from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.prediction_orchestrator import get_prediction_orchestrator
 from utils.client_status import parse_client_online
+from utils.astrology_helpers import dependency_error_response, get_cached_birth_data, handle_birth_chart_error
 from utils.response_formatter import prediction_response, prediction_error_response
 from utils.validators import sanitize_input
+from utils.logger import setup_logger, log_exception
 
 bp = Blueprint('future_lives', __name__, url_prefix='/api/future-lives')
 orchestrator = get_prediction_orchestrator()
+logger = setup_logger(__name__)
 
 @bp.route('/prediction', methods=['POST'])
 def future_lives_prediction():
@@ -228,13 +231,9 @@ def soul_advancement():
     """Assess soul advancement opportunities"""
     try:
         data = request.get_json()
-        birth_chart = astrology_calculator.calculate_birth_chart(
-            date_of_birth=data['date_of_birth'],
-            time_of_birth=data['time_of_birth'],
-            place=data['place_of_birth'],
-            timezone_override=sanitize_input(data['timezone'], max_length=64)
-            if data.get('timezone') else None
-        )
+        birth_chart, error = _get_birth_chart(data)
+        if error:
+            return error
 
         prompt = f"""
         Assess soul advancement potential:
@@ -280,3 +279,46 @@ def soul_advancement():
             "Failed to generate soul advancement. Please try again later.",
             500
         )
+
+
+def _get_birth_chart(data):
+    if not isinstance(data, dict):
+        return None, prediction_error_response("Invalid request payload.", 400)
+
+    required_fields = ['date_of_birth', 'time_of_birth', 'place_of_birth']
+    for field in required_fields:
+        if not data.get(field):
+            return None, prediction_error_response(
+                f"Missing required field: {field}",
+                400
+            )
+
+    calculator = get_astrology_calculator()
+    cached_birth_data = get_cached_birth_data(data)
+    if not calculator and not cached_birth_data:
+        return None, dependency_error_response(get_astrology_dependency_error())
+
+    if calculator:
+        try:
+            birth_chart = calculator.calculate_birth_chart(
+                date_of_birth=data['date_of_birth'],
+                time_of_birth=data['time_of_birth'],
+                place=data['place_of_birth'],
+                latitude=data.get('latitude'),
+                longitude=data.get('longitude'),
+                timezone_override=sanitize_input(data['timezone'], max_length=64)
+                if data.get('timezone') else None
+            )
+        except Exception as exc:
+            log_exception(logger, exc, context="future_lives.birth_chart")
+            return None, prediction_error_response(
+                "Failed to calculate birth chart.",
+                500
+            )
+
+        error_response_tuple = handle_birth_chart_error(birth_chart)
+        if error_response_tuple:
+            return None, error_response_tuple
+        return birth_chart, None
+
+    return cached_birth_data, None
