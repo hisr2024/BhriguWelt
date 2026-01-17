@@ -14,7 +14,7 @@ import {
 
 // Database configuration
 const DB_NAME = 'BhriguWeltDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const METADATA_KEYS = {
   LEGACY_SALT: 'encryptionSalt',
   USER_ID: 'encryptionUserId',
@@ -29,7 +29,10 @@ export const STORES = {
   WISDOM_CARDS: 'wisdomCards',
   SETTINGS: 'settings',
   METADATA: 'metadata',
+  ANALYTICS: 'analytics',
 } as const;
+
+const DEFAULT_ANALYTICS_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
 /**
  * Check if debug mode is enabled
@@ -161,6 +164,12 @@ export async function initDB(): Promise<IDBDatabase> {
 
       if (!database.objectStoreNames.contains(STORES.METADATA)) {
         database.createObjectStore(STORES.METADATA, { keyPath: 'key' });
+      }
+
+      if (!database.objectStoreNames.contains(STORES.ANALYTICS)) {
+        const analyticsStore = database.createObjectStore(STORES.ANALYTICS, { keyPath: 'key' });
+        analyticsStore.createIndex('profileId', 'profileId', { unique: false });
+        analyticsStore.createIndex('updatedAt', 'updatedAt', { unique: false });
       }
     };
   });
@@ -421,6 +430,57 @@ export async function getItem(
       resolve(null);
     }
   });
+}
+
+export interface AnalyticsCacheEntry {
+  analytics: any;
+  chartData?: any;
+  profileId?: string | number;
+  cachedAt: string;
+  source?: 'api' | 'cache' | 'fallback';
+}
+
+export async function setAnalyticsCache(
+  cacheKey: string,
+  entry: Omit<AnalyticsCacheEntry, 'cachedAt'>,
+  encryptionKey?: CryptoKey
+): Promise<IDBValidKey> {
+  const payload: AnalyticsCacheEntry = {
+    ...entry,
+    cachedAt: new Date().toISOString(),
+  };
+
+  return withPerformanceTracking('setAnalyticsCache', () =>
+    setItem(STORES.ANALYTICS, cacheKey, payload, encryptionKey)
+  );
+}
+
+export async function getAnalyticsCache(
+  cacheKey: string,
+  encryptionKey?: CryptoKey,
+  maxAgeMs: number = DEFAULT_ANALYTICS_CACHE_TTL_MS
+): Promise<AnalyticsCacheEntry | null> {
+  return withPerformanceTracking('getAnalyticsCache', async () => {
+    const cached = await getItem(STORES.ANALYTICS, cacheKey, encryptionKey);
+    if (!cached) {
+      return null;
+    }
+
+    const cachedAt = cached.cachedAt ?? cached.updatedAt;
+    if (cachedAt) {
+      const ageMs = Date.now() - new Date(cachedAt).getTime();
+      if (Number.isFinite(ageMs) && ageMs > maxAgeMs) {
+        await deleteItem(STORES.ANALYTICS, cacheKey);
+        return null;
+      }
+    }
+
+    return cached;
+  });
+}
+
+export async function clearAnalyticsCache(cacheKey: string): Promise<void> {
+  await deleteItem(STORES.ANALYTICS, cacheKey);
 }
 
 async function getRawItems(storeName: string): Promise<any[]> {
