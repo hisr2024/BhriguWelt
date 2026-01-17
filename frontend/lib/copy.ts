@@ -132,7 +132,6 @@ const enCopy = {
       unauthorized: 'Unauthorized access.',
       generic: 'An error occurred. Please try again.',
     },
-  },
 };
 
 export const copy = {
