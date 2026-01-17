@@ -855,8 +855,24 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
         **Reference the authentic corpus trajectories above and cite specific sutras/folios.**
         """
 
-        prediction_result = self.generate_prediction(prompt, birth_data, return_metadata=True)
-        prediction = prediction_result['text']
+        try:
+            prediction_result = self.generate_prediction(prompt, birth_data, return_metadata=True)
+        except Exception as exc:
+            log_exception(logger, exc, context="openai_service.future_lives_prediction")
+            raise
+
+        prediction = prediction_result.get('text')
+        if not prediction:
+            logger.error(
+                "Future lives prediction empty",
+                extra={
+                    "context": "openai_service.future_lives_prediction",
+                    "partial": prediction_result.get('partial'),
+                    "has_corpus_context": bool(corpus_context),
+                    "zodiac_sign": birth_data.get('zodiac_sign'),
+                    "nakshatra": birth_data.get('nakshatra'),
+                }
+            )
 
         return {
             'future_prediction': prediction,

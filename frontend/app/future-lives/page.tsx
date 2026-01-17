@@ -10,6 +10,7 @@ import GenZButton from '../components/GenZButton';
 import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
 import CardSkeleton from '../components/CardSkeleton';
+import FutureOutlookComponent from '../components/FutureOutlookComponent';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { loadCurrentProfile } from '@/lib/profileHelpers';
 import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
@@ -17,6 +18,56 @@ import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import { useOfflineWisdomCards } from '@/lib/wisdom';
 import type { WisdomCard } from '@/lib/types';
 import Link from 'next/link';
+
+const normalizeContent = (value: unknown) => {
+  if (Array.isArray(value)) {
+    const filtered = value
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter((item) => item.length > 0);
+    return filtered.length > 0 ? filtered : null;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+  return value ?? null;
+};
+
+const buildFutureOutlookData = (prediction: any) => ({
+  predictions: normalizeContent(
+    prediction?.next_incarnation ?? prediction?.future_scenarios ?? prediction?.full_analysis
+  ),
+  evolution_path: normalizeContent(
+    prediction?.evolution_trajectory ?? prediction?.ultimate_destiny ?? prediction?.evolution_path
+  ),
+  moksha_timeline: normalizeContent(prediction?.moksha_timeline),
+  future_missions: normalizeContent(
+    prediction?.bodhisattva_path ?? prediction?.higher_realms ?? prediction?.future_missions
+  ),
+});
+
+const validateBirthDetails = (profile: any) => {
+  if (!profile?.dateOfBirth || !profile?.timeOfBirth || !profile?.placeOfBirth) {
+    return 'Please update your profile with your birth date, time, and place.';
+  }
+
+  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+  const timePattern = /^\d{2}:\d{2}$/;
+
+  if (!datePattern.test(profile.dateOfBirth)) {
+    return 'Birth date must be in YYYY-MM-DD format.';
+  }
+
+  if (!timePattern.test(profile.timeOfBirth)) {
+    return 'Birth time must be in HH:MM format.';
+  }
+
+  if (profile.placeOfBirth.trim().length === 0) {
+    return 'Birth place cannot be empty.';
+  }
+
+  return null;
+};
 
 export default function FutureLivesPage() {
   const [data, setData] = useState<any>(null);
@@ -69,23 +120,28 @@ export default function FutureLivesPage() {
         return;
       }
 
+      const validationError = validateBirthDetails(profile);
+      if (validationError) {
+        setError(validationError);
+        setLoading(false);
+        return;
+      }
+
       const birthDetails: BirthDetails = {
-        date_of_birth: profile.dateOfBirth,
-        time_of_birth: profile.timeOfBirth,
-        place_of_birth: profile.placeOfBirth,
+        date_of_birth: profile.dateOfBirth.trim(),
+        time_of_birth: profile.timeOfBirth.trim(),
+        place_of_birth: profile.placeOfBirth.trim(),
         latitude: profile.latitude,
         longitude: profile.longitude,
       };
 
       try {
         const response = await bhriguPredictionsAPI.getFutureLives(birthDetails);
-        const prediction = normalizePredictionResponse<any>(response).prediction;
+        const prediction = normalizePredictionResponse<any>(response).prediction ?? {};
+        const viewData = buildFutureOutlookData(prediction);
         setData({
           ...prediction,
-          predictions: prediction?.next_incarnation ?? prediction?.future_scenarios ?? prediction?.full_analysis,
-          evolution_path: prediction?.evolution_trajectory ?? prediction?.ultimate_destiny,
-          moksha_timeline: prediction?.moksha_timeline,
-          future_missions: prediction?.bodhisattva_path ?? prediction?.higher_realms
+          ...viewData,
         });
       } catch (apiError) {
         console.error('API error, using offline mode:', apiError);
@@ -204,26 +260,12 @@ export default function FutureLivesPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <GenZCard variant="neon" className="h-full">
-                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${section.color} flex items-center justify-center mb-4`}>
-                  {section.icon}
-                </div>
-                <h3 className="text-2xl font-display font-bold mb-4 text-white">
-                  {section.title}
-                </h3>
-                {Array.isArray(section.content) ? (
-                  <ul className="space-y-2">
-                    {section.content.map((item: string, i: number) => (
-                      <li key={i} className="text-white/80 flex items-start gap-2">
-                        <span className="text-genz-electric-blue mt-1">•</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-white/80">{section.content}</p>
-                )}
-              </GenZCard>
+              <FutureOutlookComponent
+                title={section.title}
+                icon={section.icon}
+                content={section.content}
+                color={section.color}
+              />
             </motion.div>
           ))}
         </div>
