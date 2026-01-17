@@ -17,7 +17,7 @@ class TestSecurityHeaders:
         SecurityMiddleware(app)
 
         with app.test_client() as client:
-            with patch.dict(os.environ, {'DISABLE_CSP': 'false'}):
+            with patch.dict(os.environ, {'DISABLE_CSP': 'false', 'FLASK_ENV': 'development'}):
                 response = client.get('/')
                 assert 'Content-Security-Policy' in response.headers
 
@@ -31,7 +31,7 @@ class TestSecurityHeaders:
             return 'test'
 
         with app.test_client() as client:
-            with patch.dict(os.environ, {'DISABLE_CSP': 'true'}):
+            with patch.dict(os.environ, {'DISABLE_CSP': 'true', 'FLASK_ENV': 'development'}):
                 response = client.get('/test')
                 assert 'Content-Security-Policy' not in response.headers
 
@@ -47,7 +47,7 @@ class TestSecurityHeaders:
         with app.test_client() as client:
             # Test various cases
             for value in ['True', 'TRUE', 'tRuE']:
-                with patch.dict(os.environ, {'DISABLE_CSP': value}):
+                with patch.dict(os.environ, {'DISABLE_CSP': value, 'FLASK_ENV': 'development'}):
                     response = client.get('/test')
                     assert 'Content-Security-Policy' not in response.headers, \
                         f"CSP should be disabled with DISABLE_CSP={value}"
@@ -62,7 +62,7 @@ class TestSecurityHeaders:
             return 'test'
 
         with app.test_client() as client:
-            with patch.dict(os.environ, {'DISABLE_CSP': 'true'}):
+            with patch.dict(os.environ, {'DISABLE_CSP': 'true', 'FLASK_ENV': 'development'}):
                 response = client.get('/test')
 
                 # These should always be present
@@ -90,6 +90,7 @@ class TestSecurityHeaders:
         with app.test_client() as client:
             with patch.dict(os.environ, {
                 'DISABLE_CSP': 'false',
+                'FLASK_ENV': 'development',
                 'FRONTEND_URL': 'https://example.com'
             }):
                 response = client.get('/test')
@@ -106,7 +107,7 @@ class TestSecurityHeaders:
             return 'test'
 
         with app.test_client() as client:
-            with patch.dict(os.environ, {'DISABLE_CSP': 'false'}, clear=False):
+            with patch.dict(os.environ, {'DISABLE_CSP': 'false', 'FLASK_ENV': 'development'}, clear=False):
                 # Remove FRONTEND_URL if present
                 if 'FRONTEND_URL' in os.environ:
                     del os.environ['FRONTEND_URL']
@@ -147,6 +148,20 @@ class TestSecurityHeaders:
             # So this mainly tests that the middleware is set up
             response = client.get('/test')
             # In actual production with HTTPS, this would redirect
+
+    def test_csp_not_disabled_in_production(self):
+        """Test that CSP is enforced in production even if DISABLE_CSP=true"""
+        app = Flask(__name__)
+        SecurityMiddleware(app)
+
+        @app.route('/test')
+        def test_route():
+            return 'test'
+
+        with app.test_client() as client:
+            with patch.dict(os.environ, {'DISABLE_CSP': 'true', 'FLASK_ENV': 'production'}):
+                response = client.get('/test')
+                assert 'Content-Security-Policy' in response.headers
 
 
 class TestSecurityMiddlewareInit:
