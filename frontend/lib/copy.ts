@@ -1,6 +1,6 @@
 /**
  * Internationalization strings for BhriguWelt
- * Supports English and Hindi with RTL-ready structure
+ * Supports English, Hindi, and RTL-ready Arabic structure
  */
 
 export const copy = {
@@ -266,7 +266,7 @@ export const copy = {
   },
 };
 
-export type Language = 'en' | 'hi';
+export type Language = 'en' | 'hi' | 'ar';
 
 /**
  * Resolve nested key in object
@@ -293,7 +293,8 @@ export function t(key: string, lang: Language = 'en'): string {
   const keys = key.split('.');
   
   // Try to get translation in requested language
-  let value = resolveKey(copy[lang], keys);
+  const dictionary = copy[lang as keyof typeof copy] ?? copy.en;
+  let value = resolveKey(dictionary, keys);
   
   // Fallback to English if not found and not already English
   if (value === null && lang !== 'en') {
@@ -329,12 +330,15 @@ export function getCurrentLanguage(): Language {
   }
 
   const stored = localStorage.getItem('language') as Language;
-  if (stored === 'en' || stored === 'hi') {
+  if (stored === 'en' || stored === 'hi' || stored === 'ar') {
     return stored;
   }
 
   // Detect from browser
   const browserLang = navigator.language.toLowerCase();
+  if (browserLang.startsWith('ar')) {
+    return 'ar';
+  }
   if (browserLang.startsWith('hi')) {
     return 'hi';
   }

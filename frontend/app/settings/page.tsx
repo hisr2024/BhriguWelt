@@ -95,7 +95,7 @@ export default function SettingsPage() {
             ...prev,
             ...parsedSettings,
           }));
-          if (parsedSettings.language === 'en' || parsedSettings.language === 'hi') {
+          if (parsedSettings.language === 'en' || parsedSettings.language === 'hi' || parsedSettings.language === 'ar') {
             setLanguage(parsedSettings.language);
           }
           if (parsedSettings.aiLanguage === 'en' || parsedSettings.aiLanguage === 'hi' || parsedSettings.aiLanguage === 'sa') {
@@ -177,7 +177,7 @@ export default function SettingsPage() {
       [key]: value,
     }));
 
-    if (key === 'language' && (value === 'en' || value === 'hi')) {
+    if (key === 'language' && (value === 'en' || value === 'hi' || value === 'ar')) {
       setLanguage(value);
     }
 
@@ -213,6 +213,7 @@ export default function SettingsPage() {
           options: [
             { value: 'en', label: t('settings.languageOptions.en') },
             { value: 'hi', label: t('settings.languageOptions.hi') },
+            { value: 'ar', label: t('settings.languageOptions.ar') },
           ],
         },
       ],

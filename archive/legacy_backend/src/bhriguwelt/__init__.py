@@ -11,7 +11,6 @@ from .past_life_memory import build_past_life_memory_reconstruction
 from .rule_dsl import compile_to_dataset, parse_dsl
 from .ml_weighting import apply_reweighting
 from .implementation_core import ImplementationCoreResponse, build_implementation_core_response
-from .horoscope_engine import HoroscopeEngine, generate_horoscope_payload
 from .taxonomy import expected_ids, missing_ids_in_dataset, validate_id
 from .horoscope import (
     FutureReport,
@@ -73,8 +72,6 @@ __all__ = [
     "build_past_life_memory_reconstruction",
     "ImplementationCoreResponse",
     "build_implementation_core_response",
-    "HoroscopeEngine",
-    "generate_horoscope_payload",
     "WisdomBotResponse",
     "WisdomBotDownload",
     "build_wisdom_bot_response",

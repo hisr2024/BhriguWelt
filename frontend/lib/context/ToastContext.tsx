@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { onToast, ToastPayload } from '@/lib/toast';
+import { onToast, resolveToastTitle, ToastPayload } from '@/lib/toast';
 
 interface ToastItem extends ToastPayload {
   id: string;
@@ -55,9 +55,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold">
-                  {toast.title ?? (toast.type === 'error' ? 'Something went wrong' : 'Notice')}
-                </p>
+                <p className="text-sm font-semibold">{resolveToastTitle(toast)}</p>
                 <p className="mt-1 text-sm text-white/90">{toast.message}</p>
                 {toast.errorCode ? (
                   <p className="mt-2 text-xs text-white/70">Error Code: {toast.errorCode}</p>

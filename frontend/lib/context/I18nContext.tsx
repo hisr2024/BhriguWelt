@@ -16,6 +16,7 @@ interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | undefined>(undefined);
 const AI_LANGUAGE_STORAGE_KEY = 'ai_language';
+const RTL_LANGUAGES = new Set<Language>(['ar']);
 
 const resolveAiLanguage = (): AiLanguage => {
   if (typeof window === 'undefined') {
@@ -45,6 +46,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.documentElement.lang = language;
+      document.documentElement.dir = RTL_LANGUAGES.has(language) ? 'rtl' : 'ltr';
     }
   }, [language]);
 

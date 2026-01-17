@@ -6,7 +6,7 @@ The BhriguWelt API provides comprehensive Vedic astrology predictions, birth cha
 
 **Base URL:** `https://api.bhriguwelt.com` (Production)
 **Version:** v1
-**Authentication:** API Key (Optional for public endpoints)
+**Authentication:** API Key (Required for authenticated endpoints; optional for public health/prediction endpoints)
 
 ---
 
@@ -27,13 +27,13 @@ The BhriguWelt API provides comprehensive Vedic astrology predictions, birth cha
 
 ## Authentication
 
-Most endpoints require authentication via API key in the request header:
+Authenticated endpoints require an API key in the request header:
 
 ```
 Authorization: Bearer YOUR_API_KEY
 ```
 
-Public endpoints (health check, basic predictions) do not require authentication.
+Public endpoints include `/health` and `/api/predictions/*` (unless your deployment config requires auth).
 
 ---
 
@@ -45,9 +45,9 @@ All API responses follow a consistent format:
 
 ```json
 {
-  "success": true,
-  "data": { ... },
+  "status": "success",
   "message": "Operation successful",
+  "data": { ... },
   "timestamp": "2026-01-16T12:00:00Z"
 }
 ```
@@ -56,10 +56,11 @@ All API responses follow a consistent format:
 
 ```json
 {
-  "success": false,
-  "error": "Error description",
+  "error_code": "VALIDATION_ERROR",
   "message": "User-friendly error message",
-  "details": "Additional error details (development only)",
+  "details": { "field": "date_of_birth" },
+  "retryable": false,
+  "correlation_id": "uuid-v4",
   "timestamp": "2026-01-16T12:00:00Z"
 }
 ```
@@ -82,11 +83,11 @@ All API responses follow a consistent format:
 
 ## Rate Limiting
 
-API requests are rate-limited to ensure fair usage:
+Default rate limits (configured in the backend) are:
 
-- **Free tier:** 100 requests/hour per IP
-- **Authenticated:** 1000 requests/hour per API key
-- **Premium:** 10,000 requests/hour per API key
+- **General API:** 200 requests/day and 50 requests/hour per IP
+- **Prediction endpoints:** 10 requests/minute per IP
+- **AI endpoints:** 10 requests/minute per user (when enabled)
 
 Rate limit headers are included in all responses:
 
@@ -104,7 +105,8 @@ X-RateLimit-Reset: 1642329600
 
 Check API health and status.
 
-**Endpoint:** `GET /health`
+**Endpoint:** `GET /health` (root health)
+**Endpoint:** `GET /api/predictions/health` (predictions feature health)
 **Authentication:** Not required
 
 #### Response
@@ -128,7 +130,7 @@ Check API health and status.
 
 Calculate and retrieve a detailed Vedic birth chart.
 
-**Endpoint:** `POST /api/birth-chart`
+**Endpoint:** `POST /api/astrology/birth-chart`
 **Authentication:** Optional
 
 #### Request Body
@@ -197,17 +199,25 @@ Calculate and retrieve a detailed Vedic birth chart.
 
 Generate personalized astrology predictions.
 
-**Endpoint:** `POST /api/predictions/:category`
+**Endpoint:** `POST /api/predictions/<category>`
 **Authentication:** Optional
 
 #### Categories
 
-- `career` - Career and professional life
-- `finance` - Financial prospects and wealth
-- `health` - Health and well-being
-- `relationships` - Love, marriage, and relationships
-- `education` - Education and learning
-- `spiritual` - Spiritual growth and dharma
+- `karmic_journey`
+- `past_lives`
+- `future_lives`
+- `present_life`
+- `life_events`
+- `karmic_remedies`
+- `relationships`
+- `predictions`
+- `cosmic_blueprint_overview`
+- `soul_purpose`
+- `karmic_debts`
+- `dharmic_path`
+- `spiritual_evolution`
+- `moksha_indicators`
 
 #### Request Body
 
@@ -262,16 +272,21 @@ Generate personalized astrology predictions.
 
 Advanced predictions based on the Bhrigu Samhita tradition.
 
-**Endpoint:** `POST /api/bhrigu-predictions/:category`
+**Endpoint:** `POST /api/bhrigu-predictions/<category>`
 **Authentication:** Required
 
 #### Categories
 
-All categories from regular predictions, plus:
-- `karma` - Karmic patterns and lessons
-- `past-life` - Past life analysis
-- `life-purpose` - Life mission and dharma
-- `timing` - Timing of life events
+Examples include:
+- `karmic-journey`
+- `past-lives`
+- `future-lives`
+- `present-life`
+- `life-events`
+- `karmic-remedies`
+- `relationships`
+- `predictions`
+- `comprehensive`
 
 #### Request Body
 
@@ -382,7 +397,8 @@ All inputs are validated and sanitized:
 
 ### Data Privacy
 
-- All predictions are encrypted at rest
+- Data in transit is protected with HTTPS/TLS
+- Store user-sensitive data with database-level encryption (e.g., SQLCipher or managed DB encryption at rest)
 - Personal data is not shared with third parties
 - Users can request data deletion via `/api/users/delete`
 
@@ -393,6 +409,10 @@ All API requests must use HTTPS. HTTP requests are redirected.
 ### CORS Policy
 
 CORS is enabled for whitelisted domains only. Contact support to whitelist your domain.
+
+### Content Security Policy (CSP)
+
+The backend applies a CSP header by default to reduce XSS risks and restrict allowed origins.
 
 ---
 

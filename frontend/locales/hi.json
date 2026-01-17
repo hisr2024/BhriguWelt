@@ -150,7 +150,8 @@
     },
     "languageOptions": {
       "en": "English",
-      "hi": "हिंदी (Hindi)"
+      "hi": "हिंदी (Hindi)",
+      "ar": "العربية (Arabic)"
     },
     "aiLanguageOptions": {
       "en": "English",
