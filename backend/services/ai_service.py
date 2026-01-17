@@ -113,7 +113,16 @@ class AIService:
             
             # Sanitize response
             sanitized_response = RequestSanitizer.sanitize_ai_response(response)
-            
+            if not sanitized_response or not sanitized_response.strip():
+                raise ValueError("Empty AI response")
+
+            if "actionable" not in sanitized_response.lower():
+                category = self._detect_chat_category(user_message)
+                zodiac = astrological_data.get('zodiac_sign', 'your sign')
+                moon_sign = astrological_data.get('moon_sign', 'your Moon sign')
+                steps = "\n".join(self._actionable_next_steps(category, zodiac, moon_sign))
+                sanitized_response = f"{sanitized_response.strip()}\n\nActionable Next Steps\n{steps}"
+
             return sanitized_response
             
         except Exception as e:
@@ -268,6 +277,7 @@ class AIService:
         prompt = f"""
         You are a compassionate Vedic astrology expert helping someone understand their birth chart.
         Ground every answer in Bhrigu Samhita and Nadi Jyotisha principles, using the core wisdom rules below.
+        Use clear, readable language and end with an "Actionable Next Steps" list of 2-3 bullet points.
         
         Birth chart summary:
         - Zodiac Sign: {data.get('zodiac_sign', 'Unknown')}
@@ -316,8 +326,11 @@ class AIService:
         category = self._detect_chat_category(user_message)
 
         if not self.core_wisdom:
+            fallback_steps = "\n".join(self._actionable_next_steps(category))
             return (
                 "The Bhrigu core wisdom database is unavailable right now. "
+                "Here is a gentle, practical outline you can use while we reconnect:\n\n"
+                f"Actionable Next Steps:\n{fallback_steps}\n\n"
                 "Please try again later for a detailed Bhrigu/Nadi reading."
             )
 
@@ -353,6 +366,7 @@ class AIService:
         citation_text = ", ".join(citations) if citations else "Bhrigu Samhita & Nadi Jyotisa core rules"
         nakshatra_focus = nakshatra_info.get('characteristics') or nakshatra_info.get('career') or 'unique spiritual gifts'
 
+        actionable_steps = "\n".join(self._actionable_next_steps(category, zodiac, moon_sign))
         return f"""## Bhrigu-Nadi Guidance (Offline Wisdom)
 
 **Chart Snapshot:** Sun/Zodiac {zodiac}, Moon {moon_sign}, Ascendant {ascendant}, Nakshatra {nakshatra}.
@@ -367,8 +381,57 @@ Your inquiry points toward **{category.replace('_', ' ')}** themes. In Bhrigu Sa
 ### Remedies & Practices
 {chr(10).join(remedy_lines) if remedy_lines else "- Daily mantra, mindful routines, and disciplined action are advised."}
 
+### Actionable Next Steps
+{actionable_steps}
+
 **References:** {citation_text}
 """
+
+    def _actionable_next_steps(
+        self,
+        category: str,
+        zodiac: str = "your sign",
+        moon_sign: str = "your Moon sign"
+    ) -> List[str]:
+        steps_by_category = {
+            'past_lives': [
+                "Journal recurring life patterns and note how they mirror current choices.",
+                "Spend 10 minutes in quiet reflection to release past-life fears.",
+                "Choose one habit that closes a lingering karmic loop and act on it this week."
+            ],
+            'future_lives': [
+                "Clarify one long-term intention and align this week's actions with it.",
+                "Practice a grounding ritual each morning to stabilize future-focused energy.",
+                "Select a service-oriented goal that strengthens your dharma."
+            ],
+            'relationships': [
+                "Name one relationship boundary that supports emotional steadiness.",
+                "Schedule a meaningful conversation to clarify expectations.",
+                "Offer a small act of service to strengthen trust."
+            ],
+            'karmic_remedies': [
+                "Begin a 7-day mantra or meditation routine at a consistent time.",
+                "Limit one draining habit and replace it with a supportive ritual.",
+                "Choose a charity or seva practice aligned with your values."
+            ],
+            'present_life': [
+                "Prioritize one career or life goal and outline three next actions.",
+                "Balance {zodiac} initiative with {moon_sign} emotional pacing.",
+                "Review your weekly schedule to protect time for spiritual practices."
+            ],
+            'predictions': [
+                "Set a weekly intention and review it every evening.",
+                "Track one mood or energy pattern to sync with planetary rhythms.",
+                "Make one practical adjustment that supports stability."
+            ],
+            'karmic_journey': [
+                "Write a short statement of your soul purpose and read it daily.",
+                "Commit to one spiritual practice that keeps you aligned with dharma.",
+                "Identify a mentor or guide who supports your growth."
+            ],
+        }
+        steps = steps_by_category.get(category, steps_by_category['karmic_journey'])
+        return [f"- {step.format(zodiac=zodiac, moon_sign=moon_sign)}" for step in steps]
     
     def _build_summary_prompt(
         self,
