@@ -37,7 +37,9 @@ class SecurityMiddleware:
         # Content Security Policy - Allow connections from Vercel frontend
         # Get allowed origins from environment or use defaults
         # Can be disabled in dev via DISABLE_CSP=true
-        if os.getenv('DISABLE_CSP', 'false').lower() != 'true':
+        disable_csp = os.getenv('DISABLE_CSP', 'false').lower() == 'true'
+        is_production = os.getenv('FLASK_ENV') == 'production'
+        if not disable_csp or is_production:
             frontend_url = os.getenv('FRONTEND_URL', 'https://bhrigu-welt.vercel.app')
             response.headers['Content-Security-Policy'] = (
                 "default-src 'self'; "
