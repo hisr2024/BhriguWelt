@@ -322,6 +322,13 @@ describe('Profile Creation Service', () => {
 });
 
 describe('Performance', () => {
+  const validProfileData: ProfileData = {
+    name: 'Test User',
+    date_of_birth: '1990-01-01',
+    time_of_birth: '12:00',
+    place_of_birth: 'Mumbai, India',
+  };
+
   it('should complete within reasonable time', async () => {
     const mockEncryptionKey = {} as CryptoKey;
 

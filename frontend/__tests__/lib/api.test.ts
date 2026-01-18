@@ -20,7 +20,7 @@ describe('API Client', () => {
     });
 
     it('should have correct timeout', () => {
-      expect(api.defaults.timeout).toBe(120000);
+      expect(api.defaults.timeout).toBe(300000); // 5 minutes for AI-powered predictions
     });
 
     it('should have correct headers', () => {

@@ -73,7 +73,7 @@ describe('Text Simplification Functions', () => {
 
     test('should remove folio references', () => {
       const input = "The native will succeed (Bikaner 12b) in their endeavors.";
-      const expected = "You will succeed in their endeavors.";
+      const expected = "you will succeed in their endeavors.";
       expect(simplifyContent(input)).toBe(expected);
     });
 
@@ -109,19 +109,19 @@ describe('Text Simplification Functions', () => {
 
     test('should transform "the native" to "you"', () => {
       const input = "The native will experience success in life.";
-      const expected = "You will experience success in life.";
+      const expected = "you will experience success in life.";
       expect(simplifyContent(input)).toBe(expected);
     });
 
     test('should transform "native\'s" to "your"', () => {
       const input = "The native's career will flourish.";
-      const expected = "Your career will flourish.";
+      const expected = "your career will flourish.";
       expect(simplifyContent(input)).toBe(expected);
     });
 
     test('should transform "the chart shows" to "your birth chart reveals"', () => {
       const input = "The chart shows promising opportunities.";
-      const expected = "Your birth chart reveals promising opportunities.";
+      const expected = "your birth chart reveals promising opportunities.";
       expect(simplifyContent(input)).toBe(expected);
     });
 

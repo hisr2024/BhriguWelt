@@ -76,15 +76,7 @@ export function normalizePredictionResponse(response: RawPredictionResponse): No
     return normalizeFromSections(predictionData.sections, response);
   }
 
-  // Scenario 3: Has full_analysis text only
-  if (predictionData.full_analysis || typeof predictionData === 'string') {
-    return synthesizeFromFullText(
-      predictionData.full_analysis || predictionData,
-      response
-    );
-  }
-
-  // Scenario 4: Try JSON parsing if string
+  // Scenario 3: Try JSON parsing if string (before treating as plain text)
   if (typeof predictionData === 'string') {
     try {
       const parsed = JSON.parse(predictionData);
@@ -98,8 +90,16 @@ export function normalizePredictionResponse(response: RawPredictionResponse): No
         };
       }
     } catch (e) {
-      // Not JSON, treat as text
+      // Not JSON, treat as text below
     }
+  }
+
+  // Scenario 4: Has full_analysis text only
+  if (predictionData.full_analysis || typeof predictionData === 'string') {
+    return synthesizeFromFullText(
+      predictionData.full_analysis || predictionData,
+      response
+    );
   }
 
   // Fallback
