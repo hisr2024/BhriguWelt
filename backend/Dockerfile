@@ -10,7 +10,8 @@ FROM python:3.11.9-slim as builder
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_ROOT_USER_ACTION=ignore
 
 WORKDIR /build
 
@@ -26,7 +27,7 @@ RUN apt-get update \
 # Copy and install Python dependencies
 # Copy requirements first for better Docker layer caching
 COPY requirements.txt .
-RUN pip install --user --no-cache-dir -r requirements.txt
+RUN pip install --user --no-cache-dir --no-warn-script-location -r requirements.txt
 
 # ===========================================
 # Stage 2: Runtime - Minimal production image
