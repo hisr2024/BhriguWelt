@@ -400,6 +400,14 @@ try:
     )
     print("✓ Core route modules imported successfully")
 
+    # Import daily insights and horoscope routes
+    try:
+        from routes import daily_insights_routes
+        logger.info("✓ Daily insights and horoscope routes imported successfully")
+    except Exception as e:
+        log_exception(logger, e, context="Failed to import daily insights routes")
+        daily_insights_routes = None
+
     # Import new unified predictions routes
     try:
         from routes import predictions_unified
@@ -449,6 +457,11 @@ if health_routes:
 if api_birthchart:
     app.register_blueprint(api_birthchart.bp)
     logger.info("✓ Birth chart blueprint registered")
+
+# Register daily insights and horoscope blueprint
+if daily_insights_routes:
+    app.register_blueprint(daily_insights_routes.bp)
+    logger.info("✓ Daily insights and horoscope blueprint registered")
 
 logger.info("✓ All blueprints registered")
 
