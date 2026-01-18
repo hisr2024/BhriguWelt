@@ -1,6 +1,5 @@
 {
   "framework": "nextjs",
-  "nodeVersion": "22",
   "installCommand": "cd frontend && npm ci --legacy-peer-deps --workspaces=false",
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/.next",

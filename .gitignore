@@ -25,6 +25,7 @@ backend/.env
 backend/.env.local
 backend/backups/
 backend/instance/
+instance/
 backend/*.db
 .env
 .env.local
