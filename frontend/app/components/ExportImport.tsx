@@ -6,7 +6,7 @@
  * Supports encrypted and unencrypted exports
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Download, Upload, FileJson, Lock, Unlock, Check, X } from 'lucide-react';
 import { exportDatabase, importDatabase } from '@/lib/storage';
 import { ExportData } from '@/lib/types';
@@ -21,6 +21,20 @@ export default function ExportImport({ encryptionKey, onComplete }: ExportImport
   const [importing, setImporting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [exportFormat, setExportFormat] = useState<'encrypted' | 'plain'>('encrypted');
+  const exportTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const importTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (exportTimeoutRef.current) {
+        clearTimeout(exportTimeoutRef.current);
+      }
+      if (importTimeoutRef.current) {
+        clearTimeout(importTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleExport = async () => {
     try {
@@ -52,7 +66,17 @@ export default function ExportImport({ encryptionKey, onComplete }: ExportImport
       URL.revokeObjectURL(url);
 
       setMessage({ type: 'success', text: 'Data exported successfully!' });
-      setTimeout(() => setMessage(null), 3000);
+
+      // Clear previous timeout if exists
+      if (exportTimeoutRef.current) {
+        clearTimeout(exportTimeoutRef.current);
+      }
+
+      // Set new timeout with cleanup
+      exportTimeoutRef.current = setTimeout(() => {
+        setMessage(null);
+        exportTimeoutRef.current = null;
+      }, 3000);
     } catch (error) {
       console.error('Export error:', error);
       setMessage({ type: 'error', text: 'Failed to export data. Please try again.' });
@@ -81,9 +105,17 @@ export default function ExportImport({ encryptionKey, onComplete }: ExportImport
       await importDatabase(text, key);
 
       setMessage({ type: 'success', text: 'Data imported successfully!' });
-      setTimeout(() => {
+
+      // Clear previous timeout if exists
+      if (importTimeoutRef.current) {
+        clearTimeout(importTimeoutRef.current);
+      }
+
+      // Set new timeout with cleanup
+      importTimeoutRef.current = setTimeout(() => {
         setMessage(null);
         onComplete?.();
+        importTimeoutRef.current = null;
       }, 2000);
     } catch (error) {
       console.error('Import error:', error);

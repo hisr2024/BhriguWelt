@@ -43,11 +43,26 @@ export default function AIChatInterface({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Cleanup speech synthesis and timeouts on unmount
+  useEffect(() => {
+    return () => {
+      // Cancel any ongoing speech synthesis
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      // Clear copy timeout if exists
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Focus input on mount
   useEffect(() => {
@@ -126,7 +141,17 @@ export default function AIChatInterface({
     try {
       await navigator.clipboard.writeText(content);
       setCopiedMessageId(messageId);
-      setTimeout(() => setCopiedMessageId(null), 2000);
+
+      // Clear previous timeout if exists
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+
+      // Set new timeout with cleanup
+      copyTimeoutRef.current = setTimeout(() => {
+        setCopiedMessageId(null);
+        copyTimeoutRef.current = null;
+      }, 2000);
     } catch (error) {
       console.error('Failed to copy:', error);
     }

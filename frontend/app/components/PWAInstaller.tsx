@@ -8,16 +8,18 @@ export function PWAInstaller() {
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
 
   useEffect(() => {
+    let updateInterval: NodeJS.Timeout | null = null;
+
     // Register service worker
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
+      const handleLoad = () => {
         navigator.serviceWorker
           .register('/sw.js')
           .then((registration) => {
             console.log('[PWA] Service Worker registered:', registration.scope);
 
             // Check for updates periodically
-            setInterval(() => {
+            updateInterval = setInterval(() => {
               registration.update();
             }, 60000); // Check every minute
 
@@ -37,7 +39,9 @@ export function PWAInstaller() {
           .catch((error) => {
             console.error('[PWA] Service Worker registration failed:', error);
           });
-      });
+      };
+
+      window.addEventListener('load', handleLoad);
     }
 
     const handleServiceWorkerMessage = (event: MessageEvent) => {
@@ -52,7 +56,7 @@ export function PWAInstaller() {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      
+
       // Check if user has already dismissed the prompt
       const dismissed = localStorage.getItem('pwa-install-dismissed');
       if (!dismissed) {
@@ -63,14 +67,21 @@ export function PWAInstaller() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     // Handle successful installation
-    window.addEventListener('appinstalled', () => {
+    const handleAppInstalled = () => {
       console.log('[PWA] App installed successfully');
       setShowInstallPrompt(false);
       setDeferredPrompt(null);
-    });
+    };
 
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    // Cleanup function: clear all intervals and event listeners
     return () => {
+      if (updateInterval) {
+        clearInterval(updateInterval);
+      }
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
       navigator.serviceWorker?.removeEventListener('message', handleServiceWorkerMessage);
     };
   }, []);

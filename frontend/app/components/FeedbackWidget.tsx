@@ -5,7 +5,7 @@
  * Collects user feedback and ratings
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Star, ThumbsUp, ThumbsDown, Smile, Meh, Frown } from 'lucide-react';
 
 interface Feedback {
@@ -28,8 +28,18 @@ export default function FeedbackWidget() {
   const [rating, setRating] = useState<number>(0);
   const [sentiment, setSentiment] = useState<Feedback['sentiment']>();
   const [message, setMessage] = useState('');
+  const resetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (resetTimeoutRef.current) {
+        clearTimeout(resetTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,13 +72,21 @@ export default function FeedbackWidget() {
       }
 
       setSubmitted(true);
-      setTimeout(() => {
+
+      // Clear previous timeout if exists
+      if (resetTimeoutRef.current) {
+        clearTimeout(resetTimeoutRef.current);
+      }
+
+      // Set new timeout with cleanup
+      resetTimeoutRef.current = setTimeout(() => {
         setIsOpen(false);
         setSubmitted(false);
         setMessage('');
         setRating(0);
         setSentiment(undefined);
         setFeedbackType('general');
+        resetTimeoutRef.current = null;
       }, 2000);
     } catch (error) {
       console.error('Failed to submit feedback:', error);

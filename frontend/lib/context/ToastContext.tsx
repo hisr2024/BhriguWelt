@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { onToast, resolveToastTitle, ToastPayload } from '@/lib/toast';
 
 interface ToastItem extends ToastPayload {
@@ -22,18 +22,44 @@ const generateId = () => {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+  const removeToastById = (id: string) => {
+    setToasts((prev) => prev.filter((item) => item.id !== id));
+    timeoutsRef.current.delete(id);
+  };
 
   useEffect(() => {
-    return onToast((payload) => {
+    const unsubscribe = onToast((payload) => {
       const id = generateId();
       const toast: ToastItem = { ...payload, id };
       setToasts((prev) => [...prev, toast]);
 
       const timeout = window.setTimeout(() => {
-        setToasts((prev) => prev.filter((item) => item.id !== id));
+        removeToastById(id);
       }, TOAST_DURATIONS[payload.type]);
+
+      timeoutsRef.current.set(id, timeout);
     });
+
+    // Cleanup function: clear all timeouts on unmount
+    return () => {
+      unsubscribe();
+      timeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
+      timeoutsRef.current.clear();
+    };
   }, []);
+
+  const removeToast = (id: string) => {
+    // Clear timeout if it exists
+    const timeout = timeoutsRef.current.get(id);
+    if (timeout) {
+      clearTimeout(timeout);
+      timeoutsRef.current.delete(id);
+    }
+    // Remove toast from state
+    setToasts((prev) => prev.filter((item) => item.id !== id));
+  };
 
   const colorClasses = useMemo(
     () => ({
@@ -63,7 +89,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               </div>
               <button
                 type="button"
-                onClick={() => setToasts((prev) => prev.filter((item) => item.id !== toast.id))}
+                onClick={() => removeToast(toast.id)}
                 className="rounded-full border border-white/30 px-2 py-1 text-xs text-white/80 transition hover:bg-white/10"
               >
                 Close
