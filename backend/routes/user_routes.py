@@ -11,11 +11,23 @@ from middleware.passcode_rate_limiter import (
     reset_failed_attempts,
     get_lockout_info
 )
-import hashlib
+import bcrypt
 import os
 
 bp = Blueprint('users', __name__, url_prefix='/api/users')
 logger = setup_logger(__name__)
+
+# Cache for bcrypt hashed passcode (generated once per server restart)
+_cached_passcode_hash = None
+
+def get_expected_passcode_hash():
+    """Get or generate the bcrypt hash of the expected passcode"""
+    global _cached_passcode_hash
+    if _cached_passcode_hash is None:
+        expected_passcode = os.getenv('DEFAULT_PASSCODE', '1234')
+        _cached_passcode_hash = bcrypt.hashpw(expected_passcode.encode('utf-8'), bcrypt.gensalt())
+        logger.info("Generated bcrypt hash for default passcode")
+    return _cached_passcode_hash
 
 @bp.route('/profiles', methods=['POST'])
 def create_profile():
@@ -148,15 +160,14 @@ def verify_passcode():
                 }
             )
 
-        # In production, verify against stored hash
-        # For demo purposes, accept "1234" or check against env var
-        expected_passcode = os.getenv('DEFAULT_PASSCODE', '1234')
+        # In production, verify against stored hash from database
+        # For demo purposes, use cached bcrypt hash of env var
+        expected_hash = get_expected_passcode_hash()
 
-        # Hash passcodes for comparison (in production, use bcrypt/argon2)
-        passcode_hash = hashlib.sha256(passcode.encode()).hexdigest()
-        expected_hash = hashlib.sha256(expected_passcode.encode()).hexdigest()
+        # Verify passcode using bcrypt (secure constant-time comparison)
+        passcode_matches = bcrypt.checkpw(passcode.encode('utf-8'), expected_hash)
 
-        if passcode_hash == expected_hash:
+        if passcode_matches:
             # Successful verification - reset attempts
             reset_failed_attempts(device_id)
 
