@@ -2,6 +2,8 @@
 AI Quota and Cost Management Service
 Provides Redis-backed daily per-user token quota tracking and cost estimation
 with security-focused logging and conservative token estimation.
+
+Falls back to in-memory tracking when Redis is unavailable to prevent quota bypass.
 """
 
 import os
@@ -9,9 +11,16 @@ import re
 import hashlib
 from datetime import datetime, timezone
 from typing import Tuple, Optional, Dict, Any
+from collections import defaultdict
+from threading import Lock
 from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
+
+# In-memory fallback for quota tracking when Redis is unavailable
+_memory_quota_store = defaultdict(int)
+_memory_quota_lock = Lock()
+_memory_fallback_active = False
 
 # Try to import redis - gracefully handle if not available
 try:
@@ -19,7 +28,7 @@ try:
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
-    logger.warning("redis package not installed - quota management disabled")
+    logger.warning("redis package not installed - using in-memory quota tracking")
 
 
 # Custom exceptions
@@ -171,6 +180,64 @@ def _get_quota_key(user_id: str) -> str:
     return f"ai_usage:{user_id}:{date_str}"
 
 
+def _check_memory_quota(user_id: str, tokens_needed: int, daily_limit: int) -> Tuple[bool, int]:
+    """
+    In-memory fallback quota tracking when Redis is unavailable.
+
+    WARNING: This is a fallback mechanism that doesn't persist across restarts.
+    Data is lost on server restart, which resets all quotas.
+
+    Args:
+        user_id: Unique user identifier
+        tokens_needed: Number of tokens to reserve
+        daily_limit: Daily token limit
+
+    Returns:
+        Tuple of (allowed: bool, remaining: int)
+
+    Note:
+        This fallback prevents quota bypass attacks when Redis is down,
+        but quotas reset on server restart. Use Redis for production.
+    """
+    global _memory_fallback_active
+
+    # Log warning on first use of fallback
+    if not _memory_fallback_active:
+        _memory_fallback_active = True
+        logger.error(
+            "QUOTA FALLBACK ACTIVE: Redis unavailable, using in-memory tracking. "
+            "Quotas will reset on server restart! This should only happen in development."
+        )
+
+    quota_key = _get_quota_key(user_id)
+
+    with _memory_quota_lock:
+        current_usage = _memory_quota_store[quota_key]
+        new_usage = current_usage + tokens_needed
+
+        if new_usage > daily_limit:
+            remaining = daily_limit - current_usage
+            logger.warning(
+                f"[MEMORY FALLBACK] Quota exceeded for user {sanitize_log(user_id)}: "
+                f"needed={tokens_needed}, remaining={remaining}, limit={daily_limit}"
+            )
+            raise QuotaExceededError(
+                f"Daily token quota exceeded. Used: {current_usage}/{daily_limit} tokens. "
+                f"Needed: {tokens_needed}, Available: {remaining}"
+            )
+
+        # Reserve tokens
+        _memory_quota_store[quota_key] = new_usage
+        remaining = daily_limit - new_usage
+
+        logger.info(
+            f"[MEMORY FALLBACK] Quota reserved for user {sanitize_log(user_id)}: "
+            f"reserved={tokens_needed}, remaining={remaining}/{daily_limit}"
+        )
+
+        return True, remaining
+
+
 def check_daily_quota_and_reserve(user_id: str, tokens_needed: int) -> Tuple[bool, int]:
     """
     Check if user has sufficient quota and atomically reserve tokens.
@@ -208,16 +275,9 @@ def check_daily_quota_and_reserve(user_id: str, tokens_needed: int) -> Tuple[boo
     # Get Redis client
     client = _get_redis_client()
 
-    # If Redis unavailable, allow but log appropriately based on configuration
+    # If Redis unavailable, use in-memory fallback instead of bypassing
     if not client:
-        redis_enabled = os.getenv('REDIS_ENABLED', 'true').lower() == 'true'
-        if redis_enabled:
-            # Only log warning if Redis is supposed to be enabled
-            logger.warning(f"Redis unavailable - bypassing quota check for user {sanitize_log(user_id)}")
-        else:
-            # Info level if Redis is intentionally disabled
-            logger.debug(f"Redis disabled - bypassing quota check for user {sanitize_log(user_id)}")
-        return True, daily_limit
+        return _check_memory_quota(user_id, tokens_needed, daily_limit)
 
     quota_key = _get_quota_key(user_id)
 

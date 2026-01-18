@@ -133,6 +133,16 @@ app.config['SECRET_KEY'] = SECRET_KEY
 app.config['JWT_SECRET_KEY'] = JWT_SECRET_KEY
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///bhriguwelt.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Database connection pool configuration
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_size': int(os.getenv('DB_POOL_SIZE', '10')),  # Number of connections to maintain
+    'pool_recycle': int(os.getenv('DB_POOL_RECYCLE', '3600')),  # Recycle connections after 1 hour
+    'pool_pre_ping': True,  # Test connections before using them
+    'max_overflow': int(os.getenv('DB_MAX_OVERFLOW', '20')),  # Max connections beyond pool_size
+    'pool_timeout': int(os.getenv('DB_POOL_TIMEOUT', '30')),  # Timeout waiting for connection
+}
+
 MAX_REQUEST_BYTES = int(os.getenv('MAX_REQUEST_BYTES', str(1024 * 1024)))
 app.config['MAX_CONTENT_LENGTH'] = MAX_REQUEST_BYTES
 logger = setup_logger(__name__)
