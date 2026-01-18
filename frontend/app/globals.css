@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import mobile optimization styles */
+@import '../styles/mobile-optimization.css';
+
 :root {
   /* Legacy colors */
   --cosmic-cyan: #4DEEEA;
@@ -28,10 +31,49 @@
   --dark-elevated: #1A1A24;
   --dark-card: #1F1F2E;
 
+  /* Font size adjustments */
   --font-size-adjust-sans: 0.52;
   --font-size-adjust-display: 0.53;
   --font-size-adjust-serif: 0.46;
   --font-size-adjust-mono: 0.53;
+
+  /* Mobile-first spacing scale */
+  --spacing-mobile-xs: 0.25rem;   /* 4px */
+  --spacing-mobile-sm: 0.5rem;    /* 8px */
+  --spacing-mobile-md: 1rem;      /* 16px */
+  --spacing-mobile-lg: 1.5rem;    /* 24px */
+  --spacing-mobile-xl: 2rem;      /* 32px */
+  --spacing-mobile-2xl: 3rem;     /* 48px */
+
+  /* Mobile-first border radius */
+  --radius-mobile-sm: 0.5rem;     /* 8px */
+  --radius-mobile-md: 0.75rem;    /* 12px */
+  --radius-mobile-lg: 1rem;       /* 16px */
+  --radius-mobile-xl: 1.25rem;    /* 20px */
+  --radius-mobile-2xl: 1.5rem;    /* 24px */
+
+  /* Mobile touch target sizes */
+  --touch-target-min: 44px;
+  --touch-target-comfortable: 48px;
+  --touch-target-large: 56px;
+
+  /* Safe area insets */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+
+  /* Mobile header/nav heights */
+  --mobile-header-height: 56px;
+  --mobile-nav-height: 72px;
+
+  /* Animation timing for mobile */
+  --duration-instant: 50ms;
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 350ms;
+  --ease-mobile: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 @layer base {
@@ -573,4 +615,397 @@ html {
 
 .prose-prediction blockquote {
   @apply border-l-4 border-purple-500 pl-4 italic text-gray-600 my-4;
+}
+
+/* ============================================================================
+   MOBILE-FIRST BASE STYLES
+   ============================================================================ */
+
+/* Ensure proper mobile viewport behavior */
+html {
+  /* Prevent text size adjustment on orientation change */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+
+  /* Smooth scrolling */
+  scroll-behavior: smooth;
+
+  /* Prevent overscroll bounce on iOS */
+  overscroll-behavior-y: none;
+}
+
+/* Mobile body optimizations */
+body {
+  /* Prevent horizontal scroll */
+  overflow-x: hidden;
+
+  /* Improve text rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Disable pull-to-refresh in PWA */
+  overscroll-behavior-y: contain;
+}
+
+/* Touch action for the whole app */
+#__next,
+main {
+  touch-action: pan-x pan-y;
+}
+
+/* ============================================================================
+   MOBILE-FIRST TYPOGRAPHY
+   ============================================================================ */
+
+/* Responsive heading sizes */
+h1 {
+  font-size: clamp(1.75rem, 5vw, 3rem);
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  line-height: 1.25;
+}
+
+h3 {
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  line-height: 1.3;
+}
+
+/* Optimal line length for readability */
+p, li, blockquote {
+  max-width: 65ch;
+}
+
+/* ============================================================================
+   MOBILE-FIRST INTERACTIVE ELEMENTS
+   ============================================================================ */
+
+/* All interactive elements get proper touch targets */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+[tabindex]:not([tabindex="-1"]) {
+  /* Disable iOS tap highlight */
+  -webkit-tap-highlight-color: transparent;
+
+  /* Touch optimization */
+  touch-action: manipulation;
+}
+
+/* Links in content areas */
+main a:not(.btn):not([class*="button"]) {
+  /* Ensure adequate spacing for touch */
+  padding: 2px 4px;
+  margin: -2px -4px;
+}
+
+/* ============================================================================
+   MOBILE-FIRST FORMS
+   ============================================================================ */
+
+/* Prevent iOS zoom on input focus */
+input,
+select,
+textarea {
+  font-size: 16px !important;
+}
+
+@media (min-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: inherit !important;
+  }
+}
+
+/* Custom focus styles for mobile */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--genz-electric-blue);
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   MOBILE-FIRST SCROLLING
+   ============================================================================ */
+
+/* Momentum scrolling for iOS */
+.scroll-container,
+[class*="overflow-"] {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbars on mobile but keep functionality */
+@media (max-width: 767px) {
+  .scrollbar-mobile-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-mobile-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   MOBILE-FIRST LAYOUT UTILITIES
+   ============================================================================ */
+
+/* Safe area padding for bottom navigation */
+.pb-nav-safe {
+  padding-bottom: calc(var(--mobile-nav-height) + var(--safe-area-bottom));
+}
+
+/* Safe area padding for header */
+.pt-header-safe {
+  padding-top: calc(var(--mobile-header-height) + var(--safe-area-top));
+}
+
+/* Full height accounting for mobile UI */
+.h-screen-mobile {
+  height: 100dvh;
+  height: -webkit-fill-available;
+}
+
+.min-h-screen-mobile {
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+}
+
+/* ============================================================================
+   MOBILE-FIRST ANIMATION PREFERENCES
+   ============================================================================ */
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Simpler animations on mobile for performance */
+@media (max-width: 767px) {
+  .motion-reduce-mobile {
+    animation: none !important;
+    transition-duration: 0.15s !important;
+  }
+
+  /* Reduce complex shadows on mobile */
+  .shadow-reduce-mobile {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  }
+}
+
+/* ============================================================================
+   MOBILE-FIRST DARK MODE ENHANCEMENTS
+   ============================================================================ */
+
+/* Better contrast for OLED screens */
+@media (prefers-color-scheme: dark) {
+  .oled-black {
+    background-color: #000000;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .genz-card,
+  .cosmic-card {
+    border-width: 2px;
+  }
+
+  button,
+  a {
+    text-decoration-thickness: 2px;
+  }
+}
+
+/* ============================================================================
+   MOBILE-FIRST IMAGES
+   ============================================================================ */
+
+/* Responsive images */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Lazy loading optimization */
+img[loading="lazy"] {
+  /* Prevent layout shift */
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* ============================================================================
+   MOBILE-FIRST BOTTOM SHEET STYLES
+   ============================================================================ */
+
+/* Bottom sheet backdrop */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 70;
+}
+
+/* Bottom sheet container */
+.sheet-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 90vh;
+  background: var(--dark-elevated);
+  border-radius: var(--radius-mobile-2xl) var(--radius-mobile-2xl) 0 0;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+  z-index: 71;
+  padding-bottom: var(--safe-area-bottom);
+}
+
+/* Bottom sheet handle */
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  margin: 12px auto;
+}
+
+/* ============================================================================
+   MOBILE-FIRST PULL TO REFRESH
+   ============================================================================ */
+
+.pull-refresh-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.pull-refresh-indicator {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100%);
+  padding: 12px;
+  transition: transform 0.2s ease-out;
+}
+
+.pull-refresh-indicator.pulling {
+  transform: translateX(-50%) translateY(0);
+}
+
+.pull-refresh-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(0, 217, 255, 0.2);
+  border-top-color: var(--genz-electric-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================================
+   MOBILE-FIRST SKELETON LOADING
+   ============================================================================ */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-mobile-md);
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-text {
+  height: 1em;
+  margin-bottom: 0.5em;
+}
+
+.skeleton-heading {
+  height: 1.5em;
+  width: 60%;
+  margin-bottom: 1em;
+}
+
+.skeleton-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+}
+
+.skeleton-card {
+  height: 120px;
+  border-radius: var(--radius-mobile-xl);
+}
+
+/* ============================================================================
+   MOBILE-FIRST TOAST NOTIFICATIONS
+   ============================================================================ */
+
+.toast-container {
+  position: fixed;
+  top: calc(var(--mobile-header-height) + var(--safe-area-top) + 8px);
+  left: 16px;
+  right: 16px;
+  z-index: 80;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--dark-elevated);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-mobile-lg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  margin-bottom: 8px;
+}
+
+.toast-success {
+  border-left: 3px solid var(--genz-neon-green);
+}
+
+.toast-error {
+  border-left: 3px solid var(--genz-hot-pink);
+}
+
+.toast-warning {
+  border-left: 3px solid var(--genz-cyber-yellow);
+}
+
+.toast-info {
+  border-left: 3px solid var(--genz-electric-blue);
 }
