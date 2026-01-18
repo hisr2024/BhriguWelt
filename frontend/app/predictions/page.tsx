@@ -1,9 +1,25 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Compass, Sun, Calendar, TrendingUp, ArrowLeft, Loader2 } from 'lucide-react';
+import {
+  Sun,
+  Moon,
+  Calendar,
+  Star,
+  Sparkles,
+  ArrowLeft,
+  Loader2,
+  Heart,
+  Briefcase,
+  Activity,
+  Wallet,
+  RefreshCw,
+  Clock,
+  Compass,
+  Zap,
+} from 'lucide-react';
 import AnimatedBackground, { FloatingElements } from '../components/AnimatedBackground';
 import GenZCard from '../components/GenZCard';
 import GenZButton from '../components/GenZButton';
@@ -13,26 +29,112 @@ import CardSkeleton from '../components/CardSkeleton';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, setItem, STORES } from '@/lib/storage';
 import { loadCurrentProfile } from '@/lib/profileHelpers';
-import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
-import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import { useOfflineWisdomCards } from '@/lib/wisdom';
 import type { WisdomCard } from '@/lib/types';
+import type { PredictionViewData, PredictionTimeframe, CategoryRating } from '@/lib/types/predictions';
+import { parsePredictionToViewData } from '@/lib/utils/cleanPredictionContent';
+import {
+  getBhriguWisdom,
+  getZodiacLuckyNumber,
+  getZodiacLuckyColor,
+  getZodiacDirection,
+  getZodiacEmoji,
+} from '@/lib/data/bhriguWisdom';
 import Link from 'next/link';
 import { useOnlineStatus } from '@/lib/hooks/useOnlineStatus';
 
+// API base URL
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+
+// Star Rating Component
+function StarRating({ rating, size = 'md' }: { rating: number; size?: 'sm' | 'md' | 'lg' }) {
+  const sizes = { sm: 'w-3 h-3', md: 'w-4 h-4', lg: 'w-5 h-5' };
+  const maxStars = 5;
+
+  return (
+    <div className="flex gap-0.5">
+      {Array.from({ length: maxStars }).map((_, i) => (
+        <Star
+          key={i}
+          className={`${sizes[size]} ${
+            i < rating
+              ? 'text-genz-cyber-yellow fill-genz-cyber-yellow'
+              : 'text-white/20'
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+// Category Card Component
+function CategoryCard({
+  icon,
+  title,
+  rating,
+  message,
+  color,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  rating: CategoryRating;
+  color: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <GenZCard variant="glass" className="h-full">
+        <div className="flex items-start justify-between mb-3">
+          <div className={`w-10 h-10 rounded-xl bg-gradient-to-r ${color} flex items-center justify-center`}>
+            {icon}
+          </div>
+          <StarRating rating={rating.rating} size="sm" />
+        </div>
+        <h4 className="text-lg font-display font-bold text-white mb-2">{title}</h4>
+        <p className="text-white/70 text-sm leading-relaxed">{rating.message}</p>
+        {rating.advice && (
+          <p className="text-genz-electric-blue/80 text-xs mt-2 italic">{rating.advice}</p>
+        )}
+      </GenZCard>
+    </motion.div>
+  );
+}
+
+// Lucky Element Card
+function LuckyElementCard({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+}) {
+  return (
+    <div className="flex flex-col items-center p-3 bg-white/5 rounded-xl border border-white/10">
+      <div className="text-genz-electric-blue mb-1">{icon}</div>
+      <span className="text-white font-bold text-lg">{value}</span>
+      <span className="text-white/50 text-xs">{label}</span>
+    </div>
+  );
+}
+
 export default function PredictionsPage() {
-  const [data, setData] = useState<any>(null);
+  const [viewData, setViewData] = useState<PredictionViewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
-  const [isOffline, setIsOffline] = useState(false);
+  const [activeTab, setActiveTab] = useState<PredictionTimeframe>('daily');
+  const [refreshing, setRefreshing] = useState(false);
   const [syncWhenOnline, setSyncWhenOnline] = useState(true);
   const [cacheTimestamp, setCacheTimestamp] = useState<string | null>(null);
-  const [usingCache, setUsingCache] = useState(false);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
   const isOnline = useOnlineStatus();
 
+  // Wisdom cards for offline mode
   const filterWisdomCards = useCallback(
     (card: WisdomCard) =>
       card.category === 'astrology' ||
@@ -42,8 +144,11 @@ export default function PredictionsPage() {
     []
   );
 
-  const { cards: wisdomCards, isLoading: wisdomLoading } = useOfflineWisdomCards({ filter: filterWisdomCards });
+  const { cards: wisdomCards, isLoading: wisdomLoading } = useOfflineWisdomCards({
+    filter: filterWisdomCards,
+  });
 
+  // Auth redirects
   useEffect(() => {
     if (!encryptionLoading && !isSetup) {
       router.push('/setup-passcode');
@@ -56,6 +161,7 @@ export default function PredictionsPage() {
     }
   }, [encryptionLoading, isSetup, isUnlocked, router]);
 
+  // Load sync preference
   useEffect(() => {
     if (!encryptionKey) return;
     const loadSyncPreference = async () => {
@@ -67,7 +173,8 @@ export default function PredictionsPage() {
     loadSyncPreference();
   }, [encryptionKey]);
 
-  const loadData = useCallback(async () => {
+  // Fetch predictions from the appropriate API endpoint
+  const fetchPredictions = useCallback(async (forceRefresh = false) => {
     if (!encryptionKey) return;
 
     try {
@@ -81,247 +188,197 @@ export default function PredictionsPage() {
         return;
       }
 
-      const birthDetails: BirthDetails = {
-        date_of_birth: profile.dateOfBirth,
-        time_of_birth: profile.timeOfBirth,
-        place_of_birth: profile.placeOfBirth,
-        latitude: profile.latitude,
-        longitude: profile.longitude,
-      };
-
       const cacheKey = `predictions_cache_${activeTab}`;
-      const offlineMode = !isOnline;
-      setIsOffline(offlineMode);
+      const isOffline = !isOnline;
 
-      if (offlineMode) {
+      // Try to load from cache first if offline or not forcing refresh
+      if (!forceRefresh) {
         const cached = await getItem(STORES.SETTINGS, cacheKey, encryptionKey);
         if (cached?.data) {
-          setData({ ...cached.data, offline: true });
+          const parsedData = parsePredictionToViewData(
+            cached.data,
+            activeTab,
+            profile.zodiacSign || 'Aries'
+          );
+          setViewData({ ...parsedData, cached: true, cachedAt: cached.fetchedAt, offline: isOffline });
           setCacheTimestamp(cached.fetchedAt);
-          setUsingCache(true);
-        } else {
-          setData({
-            offline: true,
-            overall: getOfflinePrediction(activeTab),
-            career: getOfflineCareerPrediction(activeTab),
-            love: getOfflineLovePrediction(activeTab),
-            health: getOfflineHealthPrediction(activeTab),
-            finance: getOfflineFinancePrediction(activeTab),
-            lucky_color: getLuckyColor(),
-            lucky_number: Math.floor(Math.random() * 9) + 1,
-            advice: getOfflineAdvice(activeTab)
-          });
-          setCacheTimestamp(null);
-          setUsingCache(false);
+
+          // If online and we have cache, still try to refresh in background
+          if (!isOffline) {
+            setLoading(false);
+            fetchFromAPI(profile, cacheKey, false);
+            return;
+          } else {
+            setLoading(false);
+            return;
+          }
         }
+      }
+
+      // If offline and no cache, use offline fallback
+      if (isOffline) {
+        const offlineData = generateOfflinePrediction(activeTab, profile.zodiacSign || 'Aries');
+        setViewData(offlineData);
+        setCacheTimestamp(null);
+        setLoading(false);
         return;
       }
 
-      try {
-        const response = await bhriguPredictionsAPI.getPredictions(birthDetails);
-        const prediction = normalizePredictionResponse<any>(response).prediction;
-        const viewData = buildPredictionView(prediction, activeTab);
-        setData(viewData);
-        setCacheTimestamp(null);
-        setUsingCache(false);
-        setIsOffline(false);
-        await setItem(
-          STORES.SETTINGS,
-          cacheKey,
-          { data: viewData, fetchedAt: new Date().toISOString() },
-          encryptionKey
-        );
-      } catch (apiError) {
-        console.error('API error, using offline mode:', apiError);
-        const cached = await getItem(STORES.SETTINGS, cacheKey, encryptionKey);
-        if (cached?.data) {
-          setData({ ...cached.data, offline: true });
-          setCacheTimestamp(cached.fetchedAt);
-          setUsingCache(true);
-        } else {
-          setData({
-            offline: true,
-            overall: getOfflinePrediction(activeTab),
-            career: getOfflineCareerPrediction(activeTab),
-            love: getOfflineLovePrediction(activeTab),
-            health: getOfflineHealthPrediction(activeTab),
-            finance: getOfflineFinancePrediction(activeTab),
-            lucky_color: getLuckyColor(),
-            lucky_number: Math.floor(Math.random() * 9) + 1,
-            advice: getOfflineAdvice(activeTab)
-          });
-          setCacheTimestamp(null);
-          setUsingCache(false);
-        }
-        setIsOffline(true);
-      }
-    } catch (error) {
-      console.error('Error loading predictions:', error);
+      // Fetch from API
+      await fetchFromAPI(profile, cacheKey, true);
+    } catch (err) {
+      console.error('Error loading predictions:', err);
       setError('Failed to load predictions');
     } finally {
       setLoading(false);
     }
   }, [activeTab, encryptionKey, isOnline]);
 
+  // API fetch helper
+  const fetchFromAPI = async (
+    profile: { dateOfBirth: string; timeOfBirth: string; placeOfBirth: string; latitude?: number; longitude?: number; zodiacSign?: string },
+    cacheKey: string,
+    showLoading: boolean
+  ) => {
+    if (showLoading) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
+
+    try {
+      const endpoint = `${API_BASE}/api/insights/${activeTab}`;
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Client-Online': isOnline ? 'true' : 'false',
+        },
+        body: JSON.stringify({
+          date_of_birth: profile.dateOfBirth,
+          time_of_birth: profile.timeOfBirth,
+          place_of_birth: profile.placeOfBirth,
+          latitude: profile.latitude,
+          longitude: profile.longitude,
+          mode: 'online', // Use OpenAI when online
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      // Parse the response into view data
+      const parsedData = parsePredictionToViewData(
+        data.prediction || data.data || data,
+        activeTab,
+        profile.zodiacSign || 'Aries'
+      );
+
+      setViewData({ ...parsedData, offline: false, cached: false });
+      setCacheTimestamp(null);
+
+      // Cache the result
+      if (encryptionKey) {
+        await setItem(
+          STORES.SETTINGS,
+          cacheKey,
+          { data: data.prediction || data.data || data, fetchedAt: new Date().toISOString() },
+          encryptionKey
+        );
+      }
+    } catch (err) {
+      console.error('API fetch error:', err);
+
+      // If API fails, try to use cached data or generate offline
+      const cached = encryptionKey
+        ? await getItem(STORES.SETTINGS, cacheKey, encryptionKey)
+        : null;
+
+      if (cached?.data) {
+        const parsedData = parsePredictionToViewData(
+          cached.data,
+          activeTab,
+          profile.zodiacSign || 'Aries'
+        );
+        setViewData({ ...parsedData, cached: true, cachedAt: cached.fetchedAt, offline: true });
+        setCacheTimestamp(cached.fetchedAt);
+      } else {
+        const offlineData = generateOfflinePrediction(activeTab, profile.zodiacSign || 'Aries');
+        setViewData(offlineData);
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Generate offline prediction based on Bhrigu wisdom
+  const generateOfflinePrediction = (
+    timeframe: PredictionTimeframe,
+    zodiacSign: string
+  ): PredictionViewData => {
+    const wisdom = getBhriguWisdom(zodiacSign, timeframe);
+
+    return {
+      timeframe,
+      zodiacSign,
+      energy: 'Positive',
+      energyScore: 75,
+      overall: wisdom.overall,
+      categories: {
+        love: { rating: 4, message: wisdom.love },
+        career: { rating: 4, message: wisdom.career },
+        health: { rating: 4, message: wisdom.health },
+        finance: { rating: 4, message: wisdom.finance },
+      },
+      luckyElements: {
+        number: getZodiacLuckyNumber(zodiacSign),
+        color: getZodiacLuckyColor(zodiacSign),
+        direction: getZodiacDirection(zodiacSign),
+        time: '7:00 AM',
+      },
+      dos: wisdom.dos,
+      donts: wisdom.donts,
+      metadata: {
+        tradition: 'Bhrigu Samhita & Nadi Jyotisha',
+        generatedAt: new Date().toISOString(),
+      },
+      offline: true,
+    };
+  };
+
+  // Load predictions when tab changes
   useEffect(() => {
     if (encryptionKey) {
-      loadData();
+      fetchPredictions();
     }
-  }, [encryptionKey, activeTab, loadData]);
+  }, [encryptionKey, activeTab, fetchPredictions]);
 
+  // Sync when coming online
   useEffect(() => {
-    setIsOffline(!isOnline);
-    if (isOnline && syncWhenOnline && encryptionKey) {
-      loadData();
+    if (isOnline && syncWhenOnline && encryptionKey && viewData?.offline) {
+      fetchPredictions(true);
     }
-  }, [isOnline, syncWhenOnline, encryptionKey, loadData]);
+  }, [isOnline, syncWhenOnline, encryptionKey, fetchPredictions, viewData?.offline]);
 
-  const getOfflinePrediction = (period: string) => {
-    const predictions: Record<string, string> = {
-      daily: 'Today brings opportunities for growth and new beginnings. Stay open to unexpected possibilities.',
-      weekly: 'This week focuses on personal development and relationships. Balance work with self-care.',
-      monthly: 'This month offers significant progress in career and personal goals. Stay focused and persistent.',
-      yearly: 'This year is transformative, bringing major life changes and spiritual growth. Embrace the journey.'
-    };
-    return predictions[period];
-  };
-
-  const getOfflineCareerPrediction = (period: string) => {
-    const predictions: Record<string, string> = {
-      daily: 'Good day for professional networking and showcasing your skills.',
-      weekly: 'Career advancement opportunities may arise. Be prepared to take initiative.',
-      monthly: 'Significant professional growth expected. New projects or responsibilities likely.',
-      yearly: 'Career transformation year. Major achievements and recognition possible.'
-    };
-    return predictions[period];
-  };
-
-  const getOfflineLovePrediction = (period: string) => {
-    const predictions: Record<string, string> = {
-      daily: 'Romantic energy is high. Good time for heart-to-heart conversations.',
-      weekly: 'Relationships deepen. Singles may meet someone interesting.',
-      monthly: 'Love life flourishes. Existing relationships strengthen significantly.',
-      yearly: 'Transformative year for relationships. Major commitments possible.'
-    };
-    return predictions[period];
-  };
-
-  const getOfflineHealthPrediction = (period: string) => {
-    const predictions: Record<string, string> = {
-      daily: 'Energy levels are good. Focus on hydration and rest.',
-      weekly: 'Overall wellness is positive. Good time to start new fitness routines.',
-      monthly: 'Health remains stable. Regular exercise enhances vitality.',
-      yearly: 'Year of improved health and wellness. Focus on preventive care.'
-    };
-    return predictions[period];
-  };
-
-  const getOfflineFinancePrediction = (period: string) => {
-    const predictions: Record<string, string> = {
-      daily: 'Financially stable day. Avoid impulse purchases.',
-      weekly: 'Financial opportunities may arise. Stay alert to possibilities.',
-      monthly: 'Income growth potential. Good time for financial planning.',
-      yearly: 'Financial improvements expected. Wise investments pay off.'
-    };
-    return predictions[period];
-  };
-
-  const getLuckyColor = () => {
-    const colors = ['Blue', 'Green', 'Yellow', 'Red', 'Purple', 'White', 'Orange'];
-    return colors[Math.floor(Math.random() * colors.length)];
-  };
-
-  const extractSection = (text: string, keywords: string[]): string | null => {
-    if (!text) return null;
-    const lines = text.split('\n');
-    for (const keyword of keywords) {
-      for (let i = 0; i < lines.length; i += 1) {
-        if (lines[i].toLowerCase().includes(keyword)) {
-          const section = lines.slice(i, Math.min(i + 3, lines.length)).join(' ');
-          if (section.length > 20) {
-            return section.substring(0, 200);
-          }
-        }
-      }
-    }
-    return null;
-  };
-
-  const extractLuckyColor = (text: string): string | null => {
-    const match = text.match(/lucky color[:\s-]*([a-z\s]+)/i);
-    return match?.[1]?.trim() ?? null;
-  };
-
-  const extractLuckyNumber = (text: string): number | null => {
-    const match = text.match(/lucky number[:\s-]*([0-9]+)/i);
-    return match ? Number(match[1]) : null;
-  };
-
-  const extractAdvice = (text: string): string[] | null => {
-    const lines = text
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
-    const adviceLines = lines.filter((line) =>
-      ['advice', 'guidance', 'avoid', 'focus'].some((keyword) =>
-        line.toLowerCase().includes(keyword)
-      )
-    );
-    return adviceLines.length > 0 ? adviceLines.slice(0, 3) : null;
-  };
-
-  const buildPredictionView = (prediction: any, period: string) => {
-    const text = prediction?.[period] ?? '';
-    return {
-      overall: text || getOfflinePrediction(period),
-      career: extractSection(text, ['career', 'professional', 'work']) || getOfflineCareerPrediction(period),
-      love: extractSection(text, ['love', 'relationship']) || getOfflineLovePrediction(period),
-      health: extractSection(text, ['health', 'wellness', 'energy']) || getOfflineHealthPrediction(period),
-      finance: extractSection(text, ['finance', 'money', 'financial']) || getOfflineFinancePrediction(period),
-      lucky_color: extractLuckyColor(text) || getLuckyColor(),
-      lucky_number: extractLuckyNumber(text) || Math.floor(Math.random() * 9) + 1,
-      advice: extractAdvice(text) || getOfflineAdvice(period)
-    };
-  };
-
-  const getOfflineAdvice = (period: string) => {
-    const advice: Record<string, string[]> = {
-      daily: [
-        'Start your day with meditation',
-        'Practice gratitude',
-        'Stay positive and focused'
-      ],
-      weekly: [
-        'Set clear intentions',
-        'Balance work and personal life',
-        'Connect with loved ones'
-      ],
-      monthly: [
-        'Review and adjust your goals',
-        'Invest in self-development',
-        'Build meaningful relationships'
-      ],
-      yearly: [
-        'Embrace change and transformation',
-        'Focus on long-term goals',
-        'Cultivate spiritual practices'
-      ]
-    };
-    return advice[period];
-  };
-
+  // Loading state
   if (encryptionLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <AnimatedBackground />
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-12 h-12 text-genz-electric-blue animate-spin" />
-          <div className="text-white text-xl">Loading predictions...</div>
+          <div className="text-white text-xl">Loading your {activeTab} predictions...</div>
         </div>
       </div>
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="min-h-screen relative overflow-hidden pb-24 md:pb-8">
@@ -341,17 +398,10 @@ export default function PredictionsPage() {
   }
 
   const tabs = [
-    { id: 'daily', label: 'Daily', icon: <Sun className="w-4 h-4" /> },
-    { id: 'weekly', label: 'Weekly', icon: <Calendar className="w-4 h-4" /> },
-    { id: 'monthly', label: 'Monthly', icon: <TrendingUp className="w-4 h-4" /> },
-    { id: 'yearly', label: 'Yearly', icon: <Compass className="w-4 h-4" /> },
-  ];
-
-  const sections = [
-    { title: 'Career', content: data?.career, color: 'from-genz-electric-blue to-genz-mint-fresh' },
-    { title: 'Love', content: data?.love, color: 'from-genz-hot-pink to-genz-coral-pop' },
-    { title: 'Health', content: data?.health, color: 'from-genz-neon-green to-genz-lime-zest' },
-    { title: 'Finance', content: data?.finance, color: 'from-genz-cyber-yellow to-genz-sunset-orange' },
+    { id: 'daily' as const, label: 'Today', icon: <Sun className="w-4 h-4" /> },
+    { id: 'weekly' as const, label: 'This Week', icon: <Moon className="w-4 h-4" /> },
+    { id: 'monthly' as const, label: 'This Month', icon: <Calendar className="w-4 h-4" /> },
+    { id: 'yearly' as const, label: 'This Year', icon: <Sparkles className="w-4 h-4" /> },
   ];
 
   return (
@@ -360,10 +410,11 @@ export default function PredictionsPage() {
       <FloatingElements />
 
       <div className="genz-container py-8 relative z-10">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-6"
         >
           <Link href="/dashboard">
             <GenZButton variant="ghost" size="sm" className="mb-4">
@@ -372,71 +423,58 @@ export default function PredictionsPage() {
             </GenZButton>
           </Link>
 
-          <div className="flex items-center gap-4 mb-4">
-            <GenZBadge variant="neon">
-              {data?.offline ? 'Offline Mode' : 'Live'}
-            </GenZBadge>
-            <h1 className="genz-title">Predictions 🔮</h1>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <h1 className="text-4xl md:text-5xl font-display font-bold bg-gradient-to-r from-genz-hot-pink via-genz-electric-blue to-genz-cyber-yellow bg-clip-text text-transparent">
+                Your Predictions
+              </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <GenZBadge variant={viewData?.offline ? 'default' : 'neon'}>
+                {viewData?.offline ? 'Offline' : 'Live'}
+              </GenZBadge>
+              {refreshing && (
+                <RefreshCw className="w-4 h-4 text-genz-electric-blue animate-spin" />
+              )}
+            </div>
           </div>
-          <p className="text-xl text-white/80">
-            Forecasts with actionable insights
-          </p>
+          <p className="text-white/60">Cosmic guidance for your journey</p>
         </motion.div>
 
-        {usingCache && cacheTimestamp && (
-          <GenZCard variant="glass" className="mb-6 border border-genz-electric-blue/40">
-            <div className="flex flex-col gap-2 text-white/90">
-              <span className="font-semibold">Offline cache in use</span>
-              <span className="text-sm text-white/70">
-                Showing your last saved prediction from {new Date(cacheTimestamp).toLocaleString()}.
-              </span>
+        {/* Cache indicator */}
+        {viewData?.cached && cacheTimestamp && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="mb-4"
+          >
+            <div className="bg-genz-electric-blue/10 border border-genz-electric-blue/30 rounded-xl p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-white/70 text-sm">
+                <Clock className="w-4 h-4" />
+                <span>Showing cached predictions from {new Date(cacheTimestamp).toLocaleString()}</span>
+              </div>
+              <GenZButton
+                variant="ghost"
+                size="sm"
+                onClick={() => fetchPredictions(true)}
+                disabled={!isOnline}
+              >
+                <RefreshCw className="w-4 h-4 mr-1" />
+                Refresh
+              </GenZButton>
             </div>
-          </GenZCard>
+          </motion.div>
         )}
 
-        <GenZCard variant="glass" className="mb-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-white font-semibold">Sync when online</p>
-              <p className="text-white/70 text-sm">
-                Automatically refresh cached predictions when you regain connectivity.
-              </p>
-            </div>
-            <label className="flex items-center gap-2 text-white">
-              <span className="text-sm">{syncWhenOnline ? 'On' : 'Off'}</span>
-              <input
-                type="checkbox"
-                checked={syncWhenOnline}
-                onChange={async (event) => {
-                  const nextValue = event.target.checked;
-                  setSyncWhenOnline(nextValue);
-                  if (encryptionKey) {
-                    await setItem(
-                      STORES.SETTINGS,
-                      'predictions_sync_when_online',
-                      nextValue,
-                      encryptionKey
-                    );
-                  }
-                  if (nextValue && isOffline === false) {
-                    loadData();
-                  }
-                }}
-                className="h-5 w-5 accent-genz-electric-blue"
-              />
-            </label>
-          </div>
-        </GenZCard>
-
-        {/* Tabs */}
-        <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
+        {/* Tab Navigation */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
           {tabs.map((tab) => (
             <GenZButton
               key={tab.id}
               variant={activeTab === tab.id ? 'primary' : 'outline'}
               size="sm"
-              onClick={() => setActiveTab(tab.id as any)}
-              className="flex items-center gap-2 whitespace-nowrap"
+              onClick={() => setActiveTab(tab.id)}
+              className="flex items-center gap-2 whitespace-nowrap min-w-fit"
             >
               {tab.icon}
               {tab.label}
@@ -444,121 +482,324 @@ export default function PredictionsPage() {
           ))}
         </div>
 
-        {/* Overall Prediction */}
-        {data?.overall && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <GenZCard variant="gradient" className="bg-gradient-to-br from-genz-purple-haze/20 to-genz-electric-blue/20">
-              <h3 className="text-2xl font-display font-bold mb-4 text-white">
-                Overall Prediction
-              </h3>
-              <p className="text-white/80 text-lg">{data.overall}</p>
-            </GenZCard>
-          </motion.div>
-        )}
-
-        {/* Detailed Sections */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {sections.map((section, index) => (
+        <AnimatePresence mode="wait">
+          {viewData && (
             <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              key={activeTab}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
             >
-              <GenZCard variant="neon">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${section.color} flex items-center justify-center mb-3`}>
-                  <span className="text-2xl">{['💼', '💖', '🏃', '💰'][index]}</span>
+              {/* Zodiac & Energy Header */}
+              <GenZCard variant="gradient" className="mb-6 bg-gradient-to-br from-genz-purple-haze/30 to-genz-electric-blue/20">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-genz-hot-pink to-genz-cyber-yellow flex items-center justify-center">
+                      <span className="text-2xl">{getZodiacEmoji(viewData.zodiacSign)}</span>
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-display font-bold text-white">{viewData.zodiacSign}</h2>
+                      <p className="text-white/60 text-sm">Energy: {viewData.energy}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <StarRating rating={Math.round((viewData.energyScore || 75) / 20)} size="lg" />
+                    <p className="text-white/50 text-xs mt-1">{viewData.energyScore || 75}% cosmic alignment</p>
+                  </div>
                 </div>
-                <h3 className="text-xl font-display font-bold mb-3 text-white">
-                  {section.title}
-                </h3>
-                <p className="text-white/80">{section.content}</p>
+
+                {/* Overall Prediction */}
+                <div className="bg-black/20 rounded-xl p-4">
+                  <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-genz-cyber-yellow" />
+                    {activeTab === 'daily' && 'Today\'s Cosmic Message'}
+                    {activeTab === 'weekly' && 'This Week\'s Theme'}
+                    {activeTab === 'monthly' && 'Monthly Overview'}
+                    {activeTab === 'yearly' && 'Year Ahead'}
+                  </h3>
+                  <p className="text-white/80 leading-relaxed">{viewData.overall}</p>
+                </div>
               </GenZCard>
-            </motion.div>
-          ))}
-        </div>
 
-        {/* Lucky Elements */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="mb-8"
-        >
-          <div className="grid grid-cols-2 gap-4">
-            <GenZCard variant="glass" className="text-center">
-              <h4 className="text-lg font-bold mb-2 text-white">Lucky Color</h4>
-              <p className="text-3xl font-display font-bold bg-gradient-to-r from-genz-electric-blue to-genz-hot-pink bg-clip-text text-transparent">
-                {data?.lucky_color}
-              </p>
-            </GenZCard>
-            <GenZCard variant="glass" className="text-center">
-              <h4 className="text-lg font-bold mb-2 text-white">Lucky Number</h4>
-              <p className="text-3xl font-display font-bold bg-gradient-to-r from-genz-cyber-yellow to-genz-sunset-orange bg-clip-text text-transparent">
-                {data?.lucky_number}
-              </p>
-            </GenZCard>
-          </div>
-        </motion.div>
+              {/* Category Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <CategoryCard
+                  icon={<Heart className="w-5 h-5 text-white" />}
+                  title="Love"
+                  rating={viewData.categories.love}
+                  color="from-genz-hot-pink to-genz-coral-pop"
+                />
+                <CategoryCard
+                  icon={<Briefcase className="w-5 h-5 text-white" />}
+                  title="Career"
+                  rating={viewData.categories.career}
+                  color="from-genz-electric-blue to-genz-mint-fresh"
+                />
+                <CategoryCard
+                  icon={<Activity className="w-5 h-5 text-white" />}
+                  title="Health"
+                  rating={viewData.categories.health}
+                  color="from-genz-neon-green to-genz-lime-zest"
+                />
+                <CategoryCard
+                  icon={<Wallet className="w-5 h-5 text-white" />}
+                  title="Finance"
+                  rating={viewData.categories.finance}
+                  color="from-genz-cyber-yellow to-genz-sunset-orange"
+                />
+              </div>
 
-        {/* Advice */}
-        {data?.advice && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mb-8"
-          >
-            <GenZCard variant="neon">
-              <h3 className="text-2xl font-display font-bold mb-4 text-white">
-                Guidance
-              </h3>
-              <ul className="space-y-2">
-                {data.advice.map((item: string, i: number) => (
-                  <li key={i} className="text-white/80 flex items-start gap-2">
-                    <span className="text-genz-electric-blue mt-1">✨</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </GenZCard>
-          </motion.div>
-        )}
+              {/* Lucky Elements */}
+              <GenZCard variant="neon" className="mb-6">
+                <h3 className="text-xl font-display font-bold text-white mb-4 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-genz-cyber-yellow" />
+                  Lucky Elements
+                </h3>
+                <div className="grid grid-cols-4 gap-3">
+                  <LuckyElementCard
+                    icon={<span className="text-lg font-bold">#</span>}
+                    label="Lucky Number"
+                    value={viewData.luckyElements.number}
+                  />
+                  <LuckyElementCard
+                    icon={<div className="w-4 h-4 rounded-full" style={{ backgroundColor: getLuckyColorHex(viewData.luckyElements.color) }} />}
+                    label={viewData.luckyElements.color}
+                    value=""
+                  />
+                  <LuckyElementCard
+                    icon={<Clock className="w-4 h-4" />}
+                    label="Auspicious Time"
+                    value={viewData.luckyElements.time || '7:00 AM'}
+                  />
+                  <LuckyElementCard
+                    icon={<Compass className="w-4 h-4" />}
+                    label="Direction"
+                    value={viewData.luckyElements.direction || 'East'}
+                  />
+                </div>
+              </GenZCard>
 
-        {/* Wisdom Cards */}
-        {data?.offline && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
-            <h2 className="text-3xl font-display font-bold mb-6 text-white">
-              Astrological Wisdom
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {wisdomLoading
-                ? Array.from({ length: 4 }).map((_, index) => (
-                    <CardSkeleton key={index} />
-                  ))
-                : wisdomCards.slice(0, 4).map((card, index) => (
-                    <GenZCard key={index} variant="glass">
-                      <GenZBadge variant="default" size="sm" className="mb-3">
-                        {card.tradition}
-                      </GenZBadge>
-                      <h4 className="text-xl font-bold mb-2 text-white">{card.title}</h4>
-                      <p className="text-white/70 text-sm">{card.content}</p>
+              {/* Do's and Don'ts */}
+              {(viewData.dos?.length || viewData.donts?.length) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  {viewData.dos && viewData.dos.length > 0 && (
+                    <GenZCard variant="glass" className="border-l-4 border-genz-neon-green">
+                      <h4 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                        <span className="text-genz-neon-green">✓</span> Do's
+                      </h4>
+                      <ul className="space-y-2">
+                        {viewData.dos.map((item, i) => (
+                          <li key={i} className="text-white/70 text-sm flex items-start gap-2">
+                            <span className="text-genz-neon-green mt-1">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </GenZCard>
-                  ))}
-            </div>
-          </motion.div>
-        )}
+                  )}
+                  {viewData.donts && viewData.donts.length > 0 && (
+                    <GenZCard variant="glass" className="border-l-4 border-genz-hot-pink">
+                      <h4 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                        <span className="text-genz-hot-pink">✕</span> Don'ts
+                      </h4>
+                      <ul className="space-y-2">
+                        {viewData.donts.map((item, i) => (
+                          <li key={i} className="text-white/70 text-sm flex items-start gap-2">
+                            <span className="text-genz-hot-pink mt-1">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </GenZCard>
+                  )}
+                </div>
+              )}
+
+              {/* Weekly Details */}
+              {activeTab === 'weekly' && viewData.weeklyDetails && (
+                <GenZCard variant="glass" className="mb-6">
+                  <h3 className="text-xl font-display font-bold text-white mb-4">Week at a Glance</h3>
+                  <div className="flex gap-2 mb-4 flex-wrap">
+                    {viewData.weeklyDetails.bestDays?.length > 0 && (
+                      <GenZBadge variant="neon" size="sm">
+                        Best Days: {viewData.weeklyDetails.bestDays.join(', ')}
+                      </GenZBadge>
+                    )}
+                    {viewData.weeklyDetails.challengingDays?.length > 0 && (
+                      <GenZBadge variant="default" size="sm">
+                        Take Care: {viewData.weeklyDetails.challengingDays.join(', ')}
+                      </GenZBadge>
+                    )}
+                  </div>
+                  {viewData.weeklyDetails.dailyForecasts?.length > 0 && (
+                    <div className="space-y-2">
+                      {viewData.weeklyDetails.dailyForecasts.slice(0, 7).map((day, i) => (
+                        <div key={i} className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
+                          <span className="text-white font-medium">{day.dayName}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white/60 text-sm truncate max-w-[150px]">{day.summary}</span>
+                            <StarRating rating={Math.round(day.energyScore / 20)} size="sm" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </GenZCard>
+              )}
+
+              {/* Monthly Details */}
+              {activeTab === 'monthly' && viewData.monthlyDetails && (
+                <GenZCard variant="glass" className="mb-6">
+                  <h3 className="text-xl font-display font-bold text-white mb-4">
+                    {viewData.monthlyDetails.monthName} {viewData.monthlyDetails.year}
+                  </h3>
+                  {viewData.monthlyDetails.mantra && (
+                    <div className="bg-genz-purple-haze/20 rounded-xl p-4 mb-4">
+                      <p className="text-white/60 text-xs mb-1">Monthly Mantra</p>
+                      <p className="text-white font-medium italic">{viewData.monthlyDetails.mantra}</p>
+                    </div>
+                  )}
+                  {viewData.monthlyDetails.powerDays?.length > 0 && (
+                    <div>
+                      <p className="text-white/60 text-sm mb-2">Power Days</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {viewData.monthlyDetails.powerDays.map((day, i) => (
+                          <GenZBadge key={i} variant="neon" size="sm">
+                            {new Date(day).getDate()}
+                          </GenZBadge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </GenZCard>
+              )}
+
+              {/* Yearly Details */}
+              {activeTab === 'yearly' && viewData.yearlyDetails && (
+                <GenZCard variant="glass" className="mb-6">
+                  <h3 className="text-xl font-display font-bold text-white mb-4">
+                    {viewData.yearlyDetails.year} - {viewData.yearlyDetails.themeTitle}
+                  </h3>
+                  {viewData.yearlyDetails.keywords?.length > 0 && (
+                    <div className="flex gap-2 mb-4 flex-wrap">
+                      {viewData.yearlyDetails.keywords.map((keyword, i) => (
+                        <GenZBadge key={i} variant="default" size="sm">
+                          {keyword}
+                        </GenZBadge>
+                      ))}
+                    </div>
+                  )}
+                  {viewData.yearlyDetails.quarters?.length > 0 && (
+                    <div className="space-y-3">
+                      {viewData.yearlyDetails.quarters.map((quarter, i) => (
+                        <div key={i} className="bg-white/5 rounded-xl p-3">
+                          <h4 className="text-white font-semibold mb-1">{quarter.name}</h4>
+                          <p className="text-white/60 text-sm">{quarter.theme}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {viewData.yearlyDetails.annualGuidance && (
+                    <div className="mt-4 p-4 bg-gradient-to-r from-genz-purple-haze/20 to-genz-electric-blue/20 rounded-xl">
+                      <p className="text-white/80 italic">{viewData.yearlyDetails.annualGuidance}</p>
+                    </div>
+                  )}
+                </GenZCard>
+              )}
+
+              {/* Sync Settings */}
+              <GenZCard variant="glass" className="mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white font-semibold">Auto-sync when online</p>
+                    <p className="text-white/50 text-sm">Refresh predictions when connectivity returns</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={syncWhenOnline}
+                      onChange={async (e) => {
+                        const newValue = e.target.checked;
+                        setSyncWhenOnline(newValue);
+                        if (encryptionKey) {
+                          await setItem(STORES.SETTINGS, 'predictions_sync_when_online', newValue, encryptionKey);
+                        }
+                      }}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-genz-electric-blue"></div>
+                  </label>
+                </div>
+              </GenZCard>
+
+              {/* Wisdom Cards (Offline Mode) */}
+              {viewData.offline && !wisdomLoading && wisdomCards.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <h3 className="text-2xl font-display font-bold text-white mb-4">
+                    Vedic Wisdom
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {wisdomCards.slice(0, 4).map((card, index) => (
+                      <GenZCard key={index} variant="glass">
+                        <GenZBadge variant="default" size="sm" className="mb-2">
+                          {card.tradition}
+                        </GenZBadge>
+                        <h4 className="text-lg font-bold text-white mb-2">{card.title}</h4>
+                        <p className="text-white/70 text-sm">{card.content}</p>
+                      </GenZCard>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Tradition Attribution */}
+              <div className="text-center mt-8 text-white/40 text-sm">
+                <p>Based on {viewData.metadata.tradition}</p>
+                {viewData.metadata.generatedAt && (
+                  <p className="text-xs mt-1">Generated: {new Date(viewData.metadata.generatedAt).toLocaleString()}</p>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <BottomNav />
     </div>
   );
+}
+
+// ============================================================================
+// HELPER FUNCTION - Lucky Color Hex Mapping
+// ============================================================================
+
+function getLuckyColorHex(color: string): string {
+  const colors: Record<string, string> = {
+    'Electric Blue': '#00D4FF',
+    'Golden Yellow': '#FFD700',
+    'Royal Purple': '#7B68EE',
+    'Emerald Green': '#50C878',
+    'Ruby Red': '#E0115F',
+    'Silver White': '#C0C0C0',
+    'Deep Crimson': '#DC143C',
+    'Royal Gold': '#FFD700',
+    'Forest Green': '#228B22',
+    'Rose Pink': '#FF69B4',
+    'Midnight Blue': '#191970',
+    'Sea Green': '#2E8B57',
+    Orange: '#FF8C00',
+    Gold: '#FFD700',
+    Silver: '#C0C0C0',
+    Red: '#FF0000',
+    Green: '#00FF00',
+    Yellow: '#FFFF00',
+    Pink: '#FF69B4',
+    Blue: '#0000FF',
+    White: '#FFFFFF',
+  };
+  return colors[color] || '#FFFFFF';
 }
