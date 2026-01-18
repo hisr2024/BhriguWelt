@@ -4,7 +4,6 @@
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/.next",
   "devCommand": "cd frontend && npm run dev",
-  "errorOnCommandFailure": true,
   "env": {
     "NEXT_PUBLIC_API_URL": "https://your-api.example.com",
     "NEXT_PUBLIC_BACKEND_URL": "https://your-backend.example.com"
