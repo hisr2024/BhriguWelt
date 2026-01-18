@@ -38,8 +38,8 @@ class BhriguPredictionCache(db.Model):
     # Metadata
     zodiac_sign = db.Column(db.String(20), index=True)
     nakshatra = db.Column(db.String(30), index=True)
-    moon_sign = db.Column(db.String(20))
-    ascendant = db.Column(db.String(20))
+    moon_sign = db.Column(db.String(20), index=True)
+    ascendant = db.Column(db.String(20), index=True)
 
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
@@ -112,25 +112,55 @@ class BhriguPredictionCache(db.Model):
     @classmethod
     def cache_prediction(cls, birth_data: dict, category: str, prediction: dict,
                         question: str = None, metadata: dict = None):
-        """Cache a new prediction"""
+        """Cache a new prediction with proper transaction isolation
+
+        Uses transaction isolation to prevent concurrent inserts of duplicate entries.
+        """
+        from sqlalchemy import exc
+
         try:
-            prediction_payload = dict(prediction)
-            complete_analysis = prediction_payload.pop('complete_analysis', None)
-            cache_entry = cls(
-                birth_data_hash=cls.create_hash(birth_data, category, question),
-                category=category,
-                question=question,
-                prediction_data=json.dumps(prediction_payload),
-                complete_analysis=complete_analysis,
-                zodiac_sign=metadata.get('zodiac_sign') if metadata else None,
-                nakshatra=metadata.get('nakshatra') if metadata else None,
-                moon_sign=metadata.get('moon_sign') if metadata else None,
-                ascendant=metadata.get('ascendant') if metadata else None,
-                ai_model=metadata.get('ai_model', 'gpt-4') if metadata else 'gpt-4'
-            )
-            db.session.add(cache_entry)
+            # Begin explicit transaction with isolation
+            with db.session.begin_nested():
+                # Check if already exists to prevent duplicates
+                birth_hash = cls.create_hash(birth_data, category, question)
+                existing = cls.query.filter_by(
+                    birth_data_hash=birth_hash,
+                    category=category,
+                    question=question
+                ).first()
+
+                if existing:
+                    logger.debug(f"Prediction already cached for hash {birth_hash}")
+                    return existing
+
+                prediction_payload = dict(prediction)
+                complete_analysis = prediction_payload.pop('complete_analysis', None)
+                cache_entry = cls(
+                    birth_data_hash=birth_hash,
+                    category=category,
+                    question=question,
+                    prediction_data=json.dumps(prediction_payload),
+                    complete_analysis=complete_analysis,
+                    zodiac_sign=metadata.get('zodiac_sign') if metadata else None,
+                    nakshatra=metadata.get('nakshatra') if metadata else None,
+                    moon_sign=metadata.get('moon_sign') if metadata else None,
+                    ascendant=metadata.get('ascendant') if metadata else None,
+                    ai_model=metadata.get('ai_model', 'gpt-4') if metadata else 'gpt-4'
+                )
+                db.session.add(cache_entry)
+
             db.session.commit()
             return cache_entry
+        except exc.IntegrityError as e:
+            db.session.rollback()
+            logger.warning(f"Integrity error caching prediction (likely duplicate): {e}")
+            # Try to fetch the existing entry
+            birth_hash = cls.create_hash(birth_data, category, question)
+            return cls.query.filter_by(
+                birth_data_hash=birth_hash,
+                category=category,
+                question=question
+            ).first()
         except Exception as e:
             db.session.rollback()
             logger.error(f"Failed to cache prediction: {e}")
@@ -140,6 +170,7 @@ class BhriguPredictionCache(db.Model):
     def get_cached_prediction(cls, birth_data: dict, category: str, question: str = None):
         """Retrieve cached prediction if available"""
         cached = None
+        cached_id = None
         versions = (cls.HASH_VERSION_CURRENT, *cls.HASH_VERSION_FALLBACKS)
         for version in versions:
             birth_hash = cls.create_hash(birth_data, category, question, version=version)
@@ -150,14 +181,25 @@ class BhriguPredictionCache(db.Model):
 
             cached = query.order_by(cls.created_at.desc()).first()
             if cached:
+                cached_id = cached.id
                 break
 
-        if cached:
+        if cached and cached_id:
             try:
-                # Update access metadata
-                cached.accessed_at = datetime.utcnow()
-                cached.access_count += 1
+                # Atomic update using SQL to avoid race conditions
+                # This ensures concurrent requests don't lose increments
+                db.session.execute(
+                    db.text(
+                        "UPDATE bhrigu_prediction_cache "
+                        "SET accessed_at = :accessed_at, access_count = access_count + 1 "
+                        "WHERE id = :id"
+                    ),
+                    {'accessed_at': datetime.utcnow(), 'id': cached_id}
+                )
                 db.session.commit()
+
+                # Refresh the cached object to get updated values
+                db.session.refresh(cached)
             except Exception as e:
                 db.session.rollback()
                 logger.warning(f"Failed to update cache access metadata: {e}")
@@ -167,8 +209,18 @@ class BhriguPredictionCache(db.Model):
     @classmethod
     def get_similar_predictions(cls, category: str, zodiac_sign: str = None,
                                nakshatra: str = None, limit: int = 10):
-        """Get similar predictions for building wisdom database"""
-        query = cls.query.filter_by(category=category)
+        """Get similar predictions for building wisdom database
+
+        Uses defer to avoid loading large text fields unless explicitly accessed,
+        preventing unnecessary data transfer and improving query performance.
+        """
+        from sqlalchemy.orm import defer
+
+        # Defer loading large text fields to prevent N+1 issues and reduce memory
+        query = cls.query.options(
+            defer(cls.prediction_data),
+            defer(cls.complete_analysis)
+        ).filter_by(category=category)
 
         if zodiac_sign:
             query = query.filter_by(zodiac_sign=zodiac_sign)
@@ -238,7 +290,10 @@ class BhriguWisdomEntry(db.Model):
     @classmethod
     def get_wisdom_for_context(cls, category: str, zodiac_sign: str = None,
                                nakshatra: str = None, limit: int = 5):
-        """Get relevant wisdom entries for a given context"""
+        """Get relevant wisdom entries for a given context
+
+        Uses batch SQL update to avoid N+1 query issues when updating access counts.
+        """
         query = cls.query.filter_by(category=category)
 
         if zodiac_sign:
@@ -256,14 +311,26 @@ class BhriguWisdomEntry(db.Model):
             cls.access_count.desc()
         ).limit(limit).all()
 
-        try:
-            # Update access counts
-            for entry in wisdom_entries:
-                entry.access_count += 1
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            logger.warning(f"Failed to update wisdom access counts: {e}")
+        if wisdom_entries:
+            try:
+                # Batch update access counts using single SQL query to prevent N+1
+                entry_ids = [entry.id for entry in wisdom_entries]
+                db.session.execute(
+                    db.text(
+                        "UPDATE bhrigu_wisdom "
+                        "SET access_count = access_count + 1 "
+                        "WHERE id IN :ids"
+                    ),
+                    {'ids': tuple(entry_ids)}
+                )
+                db.session.commit()
+
+                # Refresh entries to get updated access_count values
+                for entry in wisdom_entries:
+                    db.session.refresh(entry)
+            except Exception as e:
+                db.session.rollback()
+                logger.warning(f"Failed to update wisdom access counts: {e}")
 
         return wisdom_entries
 
