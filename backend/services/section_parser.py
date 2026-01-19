@@ -38,19 +38,99 @@ def _read_ratio_env(name: str, default: float) -> float:
 
 
 def _get_default_section_headers() -> Dict[str, List[str]]:
-    """Return default section header patterns for various prediction categories"""
+    """Return CATEGORY-SPECIFIC section header patterns - each category has unique sections"""
     return {
-        'karmic_journey': ['karmic journey', 'soul purpose', 'life mission'],
-        'past_lives': ['past lives', 'previous incarnations', 'karmic patterns'],
-        'future_lives': ['future lives', 'next incarnation', 'evolution trajectory'],
-        'present_life': ['present life', 'current phase', 'life now'],
-        'life_events': ['life events', 'major events', 'milestones'],
-        'predictions': ['predictions', 'forecast', 'outlook'],
-        'karmic_remedies': ['remedies', 'karmic remedies', 'solutions'],
-        'relationships': ['relationships', 'connections', 'partnerships'],
-        'career': ['career', 'profession', 'work'],
-        'health': ['health', 'well-being', 'vitality'],
-        'finances': ['finances', 'wealth', 'prosperity'],
+        # KARMIC JOURNEY specific headers
+        'soul_purpose': ["soul's primary purpose", 'soul purpose', 'primary purpose', 'cosmic mission'],
+        'karmic_blueprint': ['karmic blueprint', 'karmic patterns', 'past-life imprints', 'destiny patterns'],
+        'evolution_stage': ['soul evolution stage', 'evolution stage', 'spiritual development', 'soul maturity'],
+        'life_mission': ['life mission', 'dharma', 'dharmic path', 'life purpose alignment'],
+        'karmic_lessons': ['karmic lessons', 'lessons in this lifetime', 'core lessons', 'spiritual lessons'],
+        'soul_connections': ['soul connections', 'soul group', 'karmic bonds', 'soulmate indicators'],
+        'timing': ['timing of karmic events', 'karmic timing', 'activation periods', 'key timing'],
+        'spiritual_gifts': ['spiritual gifts', 'abilities', 'innate talents', 'past-life skills'],
+
+        # PAST LIVES specific headers
+        'recent_life': ['most recent past life', 'recent life', 'previous incarnation', 'last life'],
+        'significant_lives': ['significant past lives', 'major incarnations', '3-5 lives', 'important lives'],
+        'karmic_patterns': ['recurring karmic patterns', 'karmic patterns', 'repeating patterns'],
+        'past_skills': ['past life skills', 'talents carried forward', 'natural abilities'],
+        'traumas_healing': ['past life traumas', 'traumas needing healing', 'fears and blocks'],
+        'past_relationships': ['past life relationships', 'karmic connections', 'soulmate recognition'],
+        'karmic_debts': ['karmic debts', 'debts from past lives', 'unfulfilled promises'],
+        'spiritual_progress': ['past life spiritual progress', 'spiritual development', 'enlightenment level'],
+
+        # FUTURE LIVES specific headers
+        'next_incarnation': ['next immediate incarnation', 'next incarnation', 'next life'],
+        'evolution_trajectory': ['soul evolution trajectory', 'next 3-5 lives', 'projected development'],
+        'final_birth_conditions': ['conditions for final birth', 'final birth', 'karmic completion'],
+        'future_scenarios': ['future life scenarios', 'future scenarios', 'possible trajectories'],
+        'moksha_timeline': ['moksha timeline', 'liberation timeline', 'estimated lifetimes'],
+        'higher_realms': ['higher realms', 'deva realms', 'realm accessibility'],
+        'bodhisattva_path': ['bodhisattva path', 'service incarnations', 'return as guide'],
+        'ultimate_destiny': ["soul's ultimate destiny", 'ultimate destiny', 'final destination'],
+
+        # PRESENT LIFE specific headers
+        'current_phase': ['current life phase', 'current phase', 'life now', 'present circumstances'],
+        'career': ['career', 'professional path', 'vocation', 'work'],
+        'relationships': ['relationships', 'partnerships', 'romantic dynamics'],
+        'health': ['health', 'wellbeing', 'vitality', 'health tendencies'],
+        'finances': ['financial prospects', 'finances', 'wealth', 'money patterns'],
+        'spiritual_growth': ['spiritual growth', 'inner development', 'spiritual opportunities'],
+        'education': ['education', 'skill development', 'learning', 'study'],
+        'life_purpose': ['life purpose alignment', 'purpose', 'daily alignment'],
+        'challenges': ['challenges', 'lessons', 'obstacles', 'karmic roots'],
+
+        # LIFE EVENTS specific headers
+        'yearly_forecast': ['year-by-year forecast', 'yearly forecast', 'annual forecast'],
+        'marriage_timing': ['marriage', 'partnerships', 'marriage timing', 'commitment'],
+        'career_milestones': ['career milestones', 'career peaks', 'promotions'],
+        'children_family': ['children', 'family', 'family growth', 'family expansion'],
+        'financial_events': ['financial breakthroughs', 'financial events', 'wealth timing'],
+        'health_alerts': ['health alerts', 'health windows', 'health sensitive'],
+        'spiritual_milestones': ['spiritual milestones', 'spiritual breakthroughs'],
+        'relocations': ['relocations', 'travel', 'move timing'],
+        'favorable_periods': ['favorable periods', 'favorable dasha', 'growth periods'],
+        'challenging_periods': ['challenging periods', 'difficult periods', 'testing phases'],
+        'transits': ['critical transits', 'transit events', 'major transits'],
+        'age_milestones': ['age milestones', 'specific ages', 'key ages'],
+
+        # KARMIC REMEDIES specific headers
+        'mantras': ['mantras', 'sacred sounds', 'chanting'],
+        'gemstones': ['gemstones', 'gem therapy', 'stones'],
+        'yantras': ['yantras', 'sacred geometry', 'yantra worship'],
+        'charitable_activities': ['charitable activities', 'dana', 'donations', 'charity'],
+        'fasting': ['fasting', 'austerities', 'vrata'],
+        'deity_worship': ['deity worship', 'prayers', 'puja'],
+        'pilgrimage': ['pilgrimage', 'sacred sites', 'tirth yatra'],
+        'lifestyle': ['lifestyle', 'daily routine', 'behavioral practices'],
+        'planetary_rituals': ['planetary rituals', 'graha shanti', 'homa'],
+        'karmic_cleansing': ['karmic cleansing', 'purification', 'forgiveness'],
+        'service': ['seva', 'service', 'community service'],
+        'meditation': ['meditation', 'inner practices', 'contemplation'],
+
+        # RELATIONSHIPS specific headers
+        'romantic_marriage': ['romantic relationships', 'marriage', 'romantic'],
+        'family': ['family dynamics', 'family', 'parent-child'],
+        'soul_connections': ['soul connections', 'soulmate', 'soul group'],
+        'friendships': ['friendships', 'community', 'friends'],
+        'professional': ['professional relationships', 'workplace', 'colleagues'],
+        'communication': ['communication', 'conflict resolution', 'expression'],
+        'healing': ['relationship healing', 'forgiveness', 'trust building'],
+        'healthy_practices': ['healthy relationship practices', 'harmony', 'nurturing'],
+
+        # PREDICTIONS specific headers
+        'daily': ['daily forecast', 'daily', "today's forecast"],
+        'weekly': ['weekly forecast', 'weekly', 'this week'],
+        'monthly': ['monthly forecast', 'monthly', 'this month'],
+        'yearly': ['yearly forecast', 'yearly', 'this year', 'annual'],
+
+        # KARMA RESET specific headers
+        'reset_overview': ['karma reset overview', 'reset overview', 'release patterns'],
+        'release_practices': ['release practices', 'letting go', 'closure'],
+        'daily_reset': ['daily reset ritual', 'daily reset', 'grounding'],
+        'affirmations': ['affirmations', 'anchor affirmations', 'mantras'],
+        'integration': ['integration guidance', 'integration', 'sustainability'],
     }
 
 
