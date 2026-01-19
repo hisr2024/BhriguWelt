@@ -2,13 +2,31 @@
 Bhrigu Core Wisdom Connector
 Loads and indexes all rules from core_wisdom/ directory
 Provides context for each prediction category with trilingual support
+Integrates Bhrigu Samhita and Nadi Jyotisha knowledge databases
 """
 import os
+import sys
 import json
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Add core_wisdom to path for importing knowledge modules
+CORE_WISDOM_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'core_wisdom')
+if CORE_WISDOM_PATH not in sys.path:
+    sys.path.insert(0, CORE_WISDOM_PATH)
+
+# Import knowledge modules
+try:
+    from bhrigu_samhita_knowledge import get_bhrigu_samhita_knowledge
+    from nadi_jyotisha_knowledge import get_nadi_jyotisha_knowledge
+    from ai_astrology_guide_engine import get_ai_astrology_guide_engine
+    KNOWLEDGE_MODULES_AVAILABLE = True
+    logger.info("✓ Bhrigu Samhita and Nadi Jyotisha knowledge modules loaded")
+except ImportError as e:
+    KNOWLEDGE_MODULES_AVAILABLE = False
+    logger.warning(f"Knowledge modules not available: {e}")
 
 
 class BhriguCoreWisdom:
@@ -25,8 +43,14 @@ class BhriguCoreWisdom:
         self.nakshatra_data = {}
         self.remedies = {}
         self.glossary = {}
-        
+
+        # Initialize knowledge module connections
+        self.bhrigu_samhita = None
+        self.nadi_jyotisha = None
+        self.ai_guide_engine = None
+
         self._load_wisdom_database()
+        self._load_knowledge_modules()
 
     def _load_wisdom_database(self):
         """Load all wisdom data from core_wisdom directory"""
@@ -87,13 +111,37 @@ class BhriguCoreWisdom:
     def _load_glossary(self):
         """Load trilingual glossary"""
         glossary_dir = os.path.join(self.core_wisdom_dir, 'glossary')
-        
+
         for lang in ['sa', 'hi', 'en']:
             glossary_path = os.path.join(glossary_dir, f'terms_{lang}.json')
             if os.path.exists(glossary_path):
                 with open(glossary_path, 'r', encoding='utf-8') as f:
                     self.glossary[lang] = json.load(f)
                 logger.info(f"✓ Loaded {lang} glossary")
+
+    def _load_knowledge_modules(self):
+        """Load Python knowledge modules for Bhrigu Samhita and Nadi Jyotisha"""
+        if not KNOWLEDGE_MODULES_AVAILABLE:
+            logger.warning("Knowledge modules not available - using JSON rules only")
+            return
+
+        try:
+            self.bhrigu_samhita = get_bhrigu_samhita_knowledge()
+            logger.info("✓ Bhrigu Samhita knowledge database loaded")
+        except Exception as e:
+            logger.error(f"Failed to load Bhrigu Samhita knowledge: {e}")
+
+        try:
+            self.nadi_jyotisha = get_nadi_jyotisha_knowledge()
+            logger.info("✓ Nadi Jyotisha knowledge database loaded")
+        except Exception as e:
+            logger.error(f"Failed to load Nadi Jyotisha knowledge: {e}")
+
+        try:
+            self.ai_guide_engine = get_ai_astrology_guide_engine()
+            logger.info("✓ AI Astrology Guide Engine loaded")
+        except Exception as e:
+            logger.error(f"Failed to load AI Guide Engine: {e}")
 
     def get_rules_for_category(self, category: str, limit: int = 10) -> List[Dict[str, Any]]:
         """
@@ -289,6 +337,133 @@ class BhriguCoreWisdom:
             {'id': 'spiritual_evolution', 'name': 'Spiritual Evolution', 'description': 'Spiritual development stage'},
             {'id': 'moksha_indicators', 'name': 'Moksha Indicators', 'description': 'Liberation potential'}
         ]
+
+    # =========================================================================
+    # NEW METHODS FOR AI ASTROLOGY GUIDE INTEGRATION
+    # =========================================================================
+
+    def get_ai_chat_context(self, user_message: str, birth_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Get comprehensive context for AI chat response using Bhrigu & Nadi wisdom
+
+        Args:
+            user_message: The user's question
+            birth_data: User's birth chart data
+
+        Returns:
+            Dictionary with system prompt and wisdom context
+        """
+        if self.ai_guide_engine:
+            return self.ai_guide_engine.generate_response_context(user_message, birth_data)
+
+        # Fallback if engine not available
+        return self._build_fallback_context(user_message, birth_data)
+
+    def _build_fallback_context(self, user_message: str, birth_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Build fallback context when AI guide engine is not available"""
+        zodiac = birth_data.get('zodiac_sign', 'Unknown')
+        nakshatra = birth_data.get('nakshatra', 'Unknown')
+        moon_sign = birth_data.get('moon_sign', zodiac)
+
+        system_prompt = f"""You are a Vedic Astrology expert versed in Bhrigu Samhita and Nadi Jyotisha.
+
+USER'S CHART DATA:
+- Zodiac Sign: {zodiac}
+- Nakshatra: {nakshatra}
+- Moon Sign: {moon_sign}
+
+GUIDELINES:
+1. Draw from authentic Vedic astrological principles
+2. Reference Bhrigu Samhita and Nadi Jyotisha traditions
+3. Provide practical, actionable guidance
+4. Be compassionate and empowering
+5. Suggest remedies when appropriate
+
+Provide a helpful response based on Vedic wisdom."""
+
+        return {
+            "system_prompt": system_prompt,
+            "query_category": "general",
+            "category_confidence": 0.5,
+            "wisdom_confidence": 0.5,
+            "has_nakshatra_data": bool(nakshatra and nakshatra != 'Unknown'),
+            "has_planetary_data": False,
+            "citations": ["Bhrigu Samhita", "Nadi Jyotisha"],
+            "remedies_available": True
+        }
+
+    def get_planetary_wisdom(self, planet: str) -> Dict[str, Any]:
+        """Get comprehensive wisdom for a planet from Bhrigu Samhita"""
+        if self.bhrigu_samhita:
+            return self.bhrigu_samhita.get_planetary_wisdom(planet)
+        return {}
+
+    def get_nakshatra_wisdom(self, nakshatra: str) -> Dict[str, Any]:
+        """Get comprehensive wisdom for a nakshatra from Nadi Jyotisha"""
+        if self.nadi_jyotisha:
+            return self.nadi_jyotisha.get_nakshatra_by_name(nakshatra)
+        return self.get_nakshatra_info(nakshatra)
+
+    def get_planet_in_house_wisdom(self, planet: str, house: int) -> str:
+        """Get interpretation for planet in house from Bhrigu Samhita"""
+        if self.bhrigu_samhita:
+            return self.bhrigu_samhita.get_planet_in_house_interpretation(planet, house)
+        return f"{planet} in house {house} brings unique influences."
+
+    def get_comprehensive_remedies(self, planet: str) -> Dict[str, Any]:
+        """Get comprehensive remedies for a planet"""
+        if self.bhrigu_samhita:
+            return self.bhrigu_samhita.get_remedies_for_planet(planet)
+        return {}
+
+    def get_nakshatra_compatibility(self, nakshatra1: str, nakshatra2: str) -> Dict[str, Any]:
+        """Get compatibility between two nakshatras from Nadi Jyotisha"""
+        if self.nadi_jyotisha:
+            return self.nadi_jyotisha.get_compatibility_analysis(nakshatra1, nakshatra2)
+        return {"error": "Nadi Jyotisha knowledge not available"}
+
+    def get_quick_insight(self, birth_data: Dict[str, Any]) -> str:
+        """Get a quick insight without full AI processing"""
+        if self.ai_guide_engine:
+            return self.ai_guide_engine.get_quick_insight(birth_data)
+
+        # Fallback
+        nakshatra = birth_data.get('nakshatra', '')
+        zodiac = birth_data.get('zodiac_sign', '')
+
+        if nakshatra:
+            return f"Your birth nakshatra {nakshatra} reveals unique karmic patterns. As a {zodiac}, you have specific dharmic lessons in this lifetime."
+        return "The stars hold wisdom for your journey. Share your birth details for personalized insights."
+
+    def get_karmic_lessons(self, planet: str) -> List[str]:
+        """Get karmic lessons for a planet"""
+        if self.bhrigu_samhita:
+            return self.bhrigu_samhita.get_karmic_lessons(planet)
+        return []
+
+    def get_dasha_interpretation(self, planet: str) -> Dict[str, Any]:
+        """Get Dasha period interpretation for a planet"""
+        if self.bhrigu_samhita:
+            return self.bhrigu_samhita.get_dasha_interpretation(planet)
+        return {}
+
+    def is_knowledge_available(self) -> bool:
+        """Check if knowledge modules are available"""
+        return KNOWLEDGE_MODULES_AVAILABLE and (
+            self.bhrigu_samhita is not None or
+            self.nadi_jyotisha is not None
+        )
+
+    def get_knowledge_status(self) -> Dict[str, Any]:
+        """Get status of knowledge modules"""
+        return {
+            "modules_available": KNOWLEDGE_MODULES_AVAILABLE,
+            "bhrigu_samhita_loaded": self.bhrigu_samhita is not None,
+            "nadi_jyotisha_loaded": self.nadi_jyotisha is not None,
+            "ai_guide_engine_loaded": self.ai_guide_engine is not None,
+            "json_rules_loaded": bool(self.rules_index),
+            "total_rules": len(self.rules_index.get('rules', []))
+        }
 
 
 # Singleton instance

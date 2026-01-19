@@ -1,6 +1,7 @@
 """
 AI-powered features routes
 Provides secure AI integration with consent and privacy controls
+Integrates Bhrigu Samhita and Nadi Jyotisha wisdom for authentic Vedic guidance
 """
 from flask import Blueprint, request, jsonify
 from functools import wraps
@@ -9,13 +10,19 @@ import os
 from middleware.sanitizer import RequestSanitizer
 from middleware.ai_constants import PII_FIELDS
 from services.ai_service import AIService
+from services.bhrigu_core_wisdom import get_bhrigu_core_wisdom
 from utils.logger import setup_logger, log_exception
 
 bp = Blueprint('ai', __name__, url_prefix='/api/ai')
 logger = setup_logger(__name__)
 
-# Initialize AI service
+# Initialize AI service and core wisdom
 ai_service = AIService()
+try:
+    core_wisdom = get_bhrigu_core_wisdom()
+except Exception as e:
+    logger.warning(f"Core wisdom initialization failed: {e}")
+    core_wisdom = None
 
 
 def require_ai_consent(f):
@@ -142,7 +149,8 @@ def compose_report():
 def chat_about_report():
     """
     Conversational Q&A about existing reports
-    
+    Uses Bhrigu Samhita and Nadi Jyotisha wisdom for authentic Vedic guidance
+
     Requires explicit user consent and AI mode
     """
     try:
@@ -150,37 +158,56 @@ def chat_about_report():
         message = data['message']
         birth_data = data['birth_data']
         conversation_history = data.get('conversation_history', [])
-        
+
         # Sanitize user message
         message = RequestSanitizer.sanitize_string(message, max_length=1000)
-        
+
         # Sanitize birth data
         sanitized_data = RequestSanitizer.sanitize_for_ai(birth_data)
-        
+
         # Validate message is not empty
         if not message or len(message.strip()) == 0:
             return jsonify({
                 'error': 'Empty message',
                 'message': 'Please provide a question or message'
             }), 400
-        
+
+        # Get wisdom context for response metadata
+        wisdom_metadata = {}
+        if core_wisdom:
+            try:
+                wisdom_context = core_wisdom.get_ai_chat_context(message, sanitized_data)
+                wisdom_metadata = {
+                    'query_category': wisdom_context.get('query_category', 'general'),
+                    'wisdom_confidence': wisdom_context.get('wisdom_confidence', 0.5),
+                    'has_nakshatra_data': wisdom_context.get('has_nakshatra_data', False),
+                    'has_planetary_data': wisdom_context.get('has_planetary_data', False),
+                    'citations': wisdom_context.get('citations', []),
+                    'remedies_available': wisdom_context.get('remedies_available', False)
+                }
+            except Exception as e:
+                logger.warning(f"Wisdom context error: {e}")
+                wisdom_metadata = {'query_category': 'general'}
+
         # Generate AI response
         response = ai_service.chat_response(
             user_message=message,
             astrological_data=sanitized_data,
             history=conversation_history
         )
-        
+
         return jsonify({
             'status': 'success',
             'data': {
                 'response': response,
                 'ai_enhanced': True,
                 'mode': 'conversational',
+                'wisdom_source': 'Bhrigu Samhita & Nadi Jyotisha',
+                'wisdom_metadata': wisdom_metadata,
                 'privacy_note': 'No personal information was transmitted'
             }
         }), 200
-        
+
     except ValueError as e:
         log_exception(logger, e, context="ai.chat.validation")
         return jsonify({
@@ -301,21 +328,92 @@ def get_consent_info():
 @bp.route('/status', methods=['GET'])
 def ai_status():
     """
-    Check AI service status
+    Check AI service status and wisdom database availability
     No authentication required
     """
     ai_configured = bool(os.getenv('OPENAI_API_KEY'))
-    
+
+    # Get wisdom database status
+    wisdom_status = {}
+    if core_wisdom:
+        try:
+            wisdom_status = core_wisdom.get_knowledge_status()
+        except Exception as e:
+            logger.warning(f"Failed to get wisdom status: {e}")
+            wisdom_status = {'available': False, 'error': str(e)}
+    else:
+        wisdom_status = {'available': False, 'reason': 'Core wisdom not initialized'}
+
     return jsonify({
         'status': 'success',
         'data': {
             'ai_available': ai_configured,
-            'service_operational': ai_configured,
+            'service_operational': ai_configured or wisdom_status.get('modules_available', False),
+            'wisdom_database': {
+                'available': wisdom_status.get('modules_available', False),
+                'bhrigu_samhita_loaded': wisdom_status.get('bhrigu_samhita_loaded', False),
+                'nadi_jyotisha_loaded': wisdom_status.get('nadi_jyotisha_loaded', False),
+                'ai_guide_engine_loaded': wisdom_status.get('ai_guide_engine_loaded', False),
+                'total_rules': wisdom_status.get('total_rules', 0)
+            },
             'endpoints': {
                 'compose': '/api/ai/compose',
                 'chat': '/api/ai/chat',
                 'summarize': '/api/ai/summarize',
-                'consent': '/api/ai/consent'
+                'consent': '/api/ai/consent',
+                'wisdom_status': '/api/ai/wisdom-status'
             }
         }
     }), 200
+
+
+@bp.route('/wisdom-status', methods=['GET'])
+def wisdom_status():
+    """
+    Get detailed status of Bhrigu Core Wisdom database
+    No authentication required
+    """
+    if not core_wisdom:
+        return jsonify({
+            'status': 'error',
+            'message': 'Bhrigu Core Wisdom not initialized'
+        }), 503
+
+    try:
+        status = core_wisdom.get_knowledge_status()
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'bhrigu_samhita': {
+                    'loaded': status.get('bhrigu_samhita_loaded', False),
+                    'description': 'Comprehensive planetary wisdom, house interpretations, yogas, and remedies'
+                },
+                'nadi_jyotisha': {
+                    'loaded': status.get('nadi_jyotisha_loaded', False),
+                    'description': 'Complete 27 nakshatra database with compatibility and prediction techniques'
+                },
+                'ai_guide_engine': {
+                    'loaded': status.get('ai_guide_engine_loaded', False),
+                    'description': 'Unified engine combining Bhrigu and Nadi wisdom for AI responses'
+                },
+                'json_rules': {
+                    'loaded': status.get('json_rules_loaded', False),
+                    'total_rules': status.get('total_rules', 0)
+                },
+                'capabilities': [
+                    'Planetary wisdom and house interpretations',
+                    'Nakshatra-based personality analysis',
+                    'Compatibility matching (Nadi Kuta)',
+                    'Karmic insights and past life indicators',
+                    'Comprehensive remedial measures',
+                    'Dasha period interpretations',
+                    'Yoga identification and effects'
+                ]
+            }
+        }), 200
+    except Exception as e:
+        log_exception(logger, e, context="ai.wisdom_status")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to retrieve wisdom status'
+        }), 500
