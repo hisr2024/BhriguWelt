@@ -3,34 +3,143 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Calendar, TrendingUp, Heart, DollarSign, Activity, Sparkles, ArrowLeft, Loader2 } from 'lucide-react';
+import {
+  Calendar,
+  TrendingUp,
+  Heart,
+  DollarSign,
+  Activity,
+  Sparkles,
+  ArrowLeft,
+  Loader2,
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  ChevronRight
+} from 'lucide-react';
 import AnimatedBackground, { FloatingElements } from '../components/AnimatedBackground';
 import GenZCard from '../components/GenZCard';
 import GenZButton from '../components/GenZButton';
 import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
-import CardSkeleton from '../components/CardSkeleton';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { loadCurrentProfile } from '@/lib/profileHelpers';
 import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
 import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
-import { useOfflineWisdomCards } from '@/lib/wisdom';
-import type { WisdomCard } from '@/lib/types';
 import Link from 'next/link';
 
+interface LifeEventItem {
+  period: string;
+  description: string;
+  probability?: string;
+  timing?: string;
+}
+
+interface LifeEventsData {
+  offline: boolean;
+  career_milestones: LifeEventItem[];
+  relationship_events: LifeEventItem[];
+  health_alerts: LifeEventItem[];
+  financial_events: LifeEventItem[];
+}
+
+const EventCard = ({
+  event,
+  index,
+  color
+}: {
+  event: LifeEventItem;
+  index: number;
+  color: string;
+}) => {
+  const probabilityColors: Record<string, string> = {
+    'High': 'text-genz-neon-green bg-genz-neon-green/10',
+    'Medium': 'text-genz-cyber-yellow bg-genz-cyber-yellow/10',
+    'Moderate': 'text-genz-cyber-yellow bg-genz-cyber-yellow/10',
+    'Low': 'text-white/50 bg-white/5'
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.1 }}
+      className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all"
+    >
+      <div className="flex items-start gap-3">
+        <div className={`w-2 h-2 rounded-full mt-2 ${color}`} />
+        <div className="flex-1">
+          {event.period && (
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="w-3 h-3 text-white/40" />
+              <span className="text-xs text-white/50">{event.period}</span>
+              {event.probability && (
+                <span className={`text-xs px-2 py-0.5 rounded-full ${probabilityColors[event.probability] || 'text-white/50 bg-white/5'}`}>
+                  {event.probability}
+                </span>
+              )}
+            </div>
+          )}
+          <p className="text-sm text-white/80 leading-relaxed">{event.description}</p>
+          {event.timing && (
+            <p className="text-xs text-white/50 mt-2 italic">{event.timing}</p>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const SectionCard = ({
+  title,
+  icon,
+  events,
+  color,
+  gradient,
+  delay = 0
+}: {
+  title: string;
+  icon: React.ReactNode;
+  events: LifeEventItem[];
+  color: string;
+  gradient: string;
+  delay?: number;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay }}
+  >
+    <GenZCard variant="neon" className="h-full">
+      <div className="flex items-center gap-4 mb-5">
+        <div className={`w-14 h-14 rounded-2xl bg-gradient-to-r ${gradient} flex items-center justify-center shadow-lg`}>
+          {icon}
+        </div>
+        <div>
+          <h3 className="text-xl font-display font-bold text-white">{title}</h3>
+          <p className="text-sm text-white/50">{events.length} predicted events</p>
+        </div>
+      </div>
+      <div className="space-y-3">
+        {events.map((event, i) => (
+          <EventCard
+            key={i}
+            event={event}
+            index={i}
+            color={color}
+          />
+        ))}
+      </div>
+    </GenZCard>
+  </motion.div>
+);
+
 export default function LifeEventsPage() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<LifeEventsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
-
-  const filterWisdomCards = useCallback(
-    (card: WisdomCard) => card.tradition === 'Bhrigu Samhita' || card.category === 'astrology',
-    []
-  );
-
-  const { cards: wisdomCards, isLoading: wisdomLoading } = useOfflineWisdomCards({ filter: filterWisdomCards });
 
   useEffect(() => {
     if (!encryptionLoading && !isSetup) {
@@ -49,6 +158,31 @@ export default function LifeEventsPage() {
       loadData();
     }
   }, [encryptionKey]);
+
+  const parseEventItem = (item: string | any, defaultPeriod: string = ''): LifeEventItem => {
+    if (typeof item === 'string') {
+      // Try to extract period from the string
+      const periodMatch = item.match(/^(\d{4}[-–]\d{4}|\d{4}|[A-Za-z]+ \d{4}|Ages? \d+[-–]\d+|\d+[-–]\d+ years?)/i);
+      if (periodMatch) {
+        return {
+          period: periodMatch[0],
+          description: item.replace(periodMatch[0], '').replace(/^[:\s-]+/, '').trim(),
+          probability: 'Medium'
+        };
+      }
+      return {
+        period: defaultPeriod,
+        description: item,
+        probability: 'Medium'
+      };
+    }
+    return {
+      period: item.period || item.timing || defaultPeriod,
+      description: item.description || item.event || item.content || String(item),
+      probability: item.probability || 'Medium',
+      timing: item.remedy || item.advice
+    };
+  };
 
   const loadData = async () => {
     if (!encryptionKey) return;
@@ -75,59 +209,19 @@ export default function LifeEventsPage() {
       try {
         const response = await bhriguPredictionsAPI.getLifeEvents(birthDetails);
         const prediction = normalizePredictionResponse<any>(response).prediction;
-        
-        // Parse the API response correctly
-        const parsedData = {
+
+        const parsedData: LifeEventsData = {
           offline: false,
-          career_milestones: parseLifeEventSection(prediction, 'career') || [
-            'Career opportunities in the coming years',
-            'Professional growth and advancement ahead'
-          ],
-          relationship_events: parseLifeEventSection(prediction, 'relationship') || [
-            'Important relationships developing',
-            'Deepening connections with loved ones'
-          ],
-          health_alerts: parseLifeEventSection(prediction, 'health') || [
-            'Maintain balance in wellness',
-            'Focus on preventive care'
-          ],
-          financial_events: parseLifeEventSection(prediction, 'financial') || [
-            'Financial opportunities ahead',
-            'Growing prosperity'
-          ]
+          career_milestones: parseEventSection(prediction, 'career'),
+          relationship_events: parseEventSection(prediction, 'relationship'),
+          health_alerts: parseEventSection(prediction, 'health'),
+          financial_events: parseEventSection(prediction, 'financial')
         };
-        
+
         setData(parsedData);
       } catch (apiError) {
         console.error('API error, using offline mode:', apiError);
-        // Fallback to offline wisdom
-        setData({
-          offline: true,
-          career_milestones: [
-            'Major career advancement in 2-3 years according to planetary transits',
-            'Leadership opportunity emerging in your current dasha period',
-            'Career transition possible around significant planetary alignment',
-            'Recognition and awards likely in favorable dasha'
-          ],
-          relationship_events: [
-            'Significant relationship potential in upcoming Venus period',
-            'Important decisions about commitment during Jupiter transit',
-            'Family expansion possible in favorable dasha combinations',
-            'Deep soul connections manifesting throughout life journey'
-          ],
-          health_alerts: [
-            'Monitor energy levels during planetary transitions',
-            'Focus on preventive care and wellness practices',
-            'Energy peaks during favorable planetary periods',
-            'Regular exercise enhances vitality and strength'
-          ],
-          financial_events: [
-            'Income increase indicated in next favorable dasha',
-            'Investment opportunities during Jupiter transits',
-            'Property acquisition timing favorable',
-            'Financial stability strengthens with spiritual practice'
-          ]
-        });
+        setData(getOfflineData());
       }
     } catch (error) {
       console.error('Error loading life events:', error);
@@ -137,97 +231,62 @@ export default function LifeEventsPage() {
     }
   };
 
-  const parseLifeEventSection = (prediction: any, section: string): string[] | null => {
-    // Try to extract section from structured response
+  const parseEventSection = (prediction: any, section: string): LifeEventItem[] => {
     const data = prediction?.data || prediction;
-    
-    // Check for direct section data
-    const milestones = normalizeList(data[`${section}_milestones`]);
-    if (milestones) {
-      return milestones;
-    }
-    const events = normalizeList(data[`${section}_events`]);
-    if (events) {
-      return events;
-    }
-    if (section === 'relationship') {
-      const relationshipDetails = data?.marriage_timing ?? data?.children_family;
-      const normalizedRelationship = normalizeList(relationshipDetails);
-      if (normalizedRelationship) {
-        return normalizedRelationship;
-      }
-    }
-    if (section === 'career') {
-      const normalizedCareer = normalizeList(data?.career_milestones);
-      if (normalizedCareer) {
-        return normalizedCareer;
-      }
-    }
-    if (section === 'financial') {
-      const normalizedFinance = normalizeList(data?.financial_events);
-      if (normalizedFinance) {
-        return normalizedFinance;
-      }
-    }
-    if (section === 'health') {
-      const normalizedHealth = normalizeList(data?.health_alerts);
-      if (normalizedHealth) {
-        return normalizedHealth;
-      }
-    }
-    
-    // Try to parse from life_events text
-    const lifeEventsText = data?.life_events || data?.full_analysis || '';
-    if (typeof lifeEventsText === 'string') {
-      return parseTextSection(lifeEventsText, section);
-    }
-    
-    return null;
-  };
 
-  // Constants for text parsing
-  const MAX_MATCHED_LINES = 4;
-  const MAX_SUBSTRING_LENGTH = 200;
-
-  const parseTextSection = (text: string, section: string): string[] => {
-    const sectionKeywords = {
-      'career': ['career', 'professional', 'work', 'job'],
-      'relationship': ['relationship', 'love', 'marriage', 'family'],
-      'health': ['health', 'wellness', 'energy', 'fitness'],
-      'financial': ['financial', 'money', 'wealth', 'income', 'finance']
+    const sectionKeys = {
+      'career': ['career_milestones', 'career_events', 'career'],
+      'relationship': ['relationship_events', 'marriage_timing', 'relationships', 'children_family'],
+      'health': ['health_alerts', 'health_events', 'health'],
+      'financial': ['financial_events', 'finance_events', 'finance', 'wealth']
     };
-    
-    const keywords = sectionKeywords[section as keyof typeof sectionKeywords] || [];
-    const lines = text.split('\n').filter(line => line.trim().length > 0);
-    const matchedLines: string[] = [];
-    
-    for (const line of lines) {
-      const lowerLine = line.toLowerCase();
-      if (keywords.some(keyword => lowerLine.includes(keyword))) {
-        matchedLines.push(line.trim());
-        if (matchedLines.length >= MAX_MATCHED_LINES) break;
+
+    const keys = sectionKeys[section as keyof typeof sectionKeys] || [];
+
+    for (const key of keys) {
+      if (data?.[key]) {
+        const items = Array.isArray(data[key]) ? data[key] : [data[key]];
+        return items.map((item: any, i: number) => parseEventItem(item, `Period ${i + 1}`));
       }
     }
-    
-    return matchedLines.length > 0 ? matchedLines : [];
+
+    return getDefaultEvents(section);
   };
 
-  const normalizeList = (value: unknown): string[] | null => {
-    if (Array.isArray(value)) {
-      return value.filter((item) => typeof item === 'string' && item.trim().length > 0);
-    }
-    if (typeof value === 'string') {
-      const lines = value
-        .split('\n')
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0);
-      if (lines.length > 1) {
-        return lines;
-      }
-      return [value];
-    }
-    return null;
+  const getDefaultEvents = (section: string): LifeEventItem[] => {
+    const defaults: Record<string, LifeEventItem[]> = {
+      career: [
+        { period: 'Ages 28-32', description: 'Major career advancement and leadership opportunities emerge during favorable planetary transits.', probability: 'High' },
+        { period: 'Ages 35-40', description: 'Peak professional recognition. Saturn returns bring maturity and authority in your field.', probability: 'High' },
+        { period: 'Ages 42-48', description: 'Career transition or expansion into new domains. Jupiter transit supports growth.', probability: 'Medium' }
+      ],
+      relationship: [
+        { period: 'Venus Mahadasha', description: 'Significant relationship developments. Favorable period for commitment and partnership.', probability: 'High' },
+        { period: 'Jupiter Transit', description: 'Family expansion possibilities. Deepening of existing bonds and new connections.', probability: 'Medium' },
+        { period: 'Ongoing', description: 'Soul connections manifest throughout your karmic journey. Stay open to meaningful encounters.', probability: 'Medium' }
+      ],
+      health: [
+        { period: 'Seasonal Changes', description: 'Monitor energy levels during planetary transitions. Prevention is key.', probability: 'Medium', timing: 'Maintain consistent wellness routines' },
+        { period: 'Favorable Dashas', description: 'Vitality peaks during supportive planetary periods. Good time for health investments.', probability: 'High' },
+        { period: 'Ongoing', description: 'Regular exercise and spiritual practice enhance overall wellbeing and longevity.', probability: 'High' }
+      ],
+      financial: [
+        { period: 'Jupiter Transit', description: 'Income increase and investment opportunities indicated during favorable Jupiter periods.', probability: 'High' },
+        { period: 'Ages 30-45', description: 'Prime wealth-building years. Strategic planning yields long-term prosperity.', probability: 'High' },
+        { period: 'Saturn Mahadasha', description: 'Property acquisition timing favorable. Real estate investments show stability.', probability: 'Medium' }
+      ]
+    };
+
+    return defaults[section] || [];
   };
+
+  const getOfflineData = (): LifeEventsData => ({
+    offline: true,
+    career_milestones: getDefaultEvents('career'),
+    relationship_events: getDefaultEvents('relationship'),
+    health_alerts: getDefaultEvents('health'),
+    financial_events: getDefaultEvents('financial')
+  });
 
   if (encryptionLoading || loading) {
     return (
@@ -235,7 +294,7 @@ export default function LifeEventsPage() {
         <AnimatedBackground />
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-12 h-12 text-genz-electric-blue animate-spin" />
-          <div className="text-white text-xl">Predicting life events...</div>
+          <div className="text-white text-xl">Analyzing your life events...</div>
         </div>
       </div>
     );
@@ -248,6 +307,7 @@ export default function LifeEventsPage() {
         <FloatingElements />
         <div className="genz-container py-8 relative z-10">
           <GenZCard variant="glass" className="text-center">
+            <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
             <p className="text-red-400 mb-4">{error}</p>
             <Link href="/profile">
               <GenZButton variant="primary">Complete Profile</GenZButton>
@@ -262,27 +322,31 @@ export default function LifeEventsPage() {
   const sections = [
     {
       title: 'Career Milestones',
-      icon: <TrendingUp className="w-6 h-6" />,
-      content: data?.career_milestones,
-      color: 'from-genz-electric-blue to-genz-mint-fresh',
+      icon: <TrendingUp className="w-7 h-7 text-white" />,
+      events: data?.career_milestones || [],
+      color: 'bg-genz-electric-blue',
+      gradient: 'from-genz-electric-blue to-genz-mint-fresh',
     },
     {
       title: 'Relationship Events',
-      icon: <Heart className="w-6 h-6" />,
-      content: data?.relationship_events,
-      color: 'from-genz-hot-pink to-genz-coral-pop',
+      icon: <Heart className="w-7 h-7 text-white" />,
+      events: data?.relationship_events || [],
+      color: 'bg-genz-hot-pink',
+      gradient: 'from-genz-hot-pink to-genz-coral-pop',
     },
     {
-      title: 'Health Alerts',
-      icon: <Activity className="w-6 h-6" />,
-      content: data?.health_alerts,
-      color: 'from-genz-neon-green to-genz-lime-zest',
+      title: 'Health Guidance',
+      icon: <Activity className="w-7 h-7 text-white" />,
+      events: data?.health_alerts || [],
+      color: 'bg-genz-neon-green',
+      gradient: 'from-genz-neon-green to-genz-lime-zest',
     },
     {
       title: 'Financial Events',
-      icon: <DollarSign className="w-6 h-6" />,
-      content: data?.financial_events,
-      color: 'from-genz-cyber-yellow to-genz-sunset-orange',
+      icon: <DollarSign className="w-7 h-7 text-white" />,
+      events: data?.financial_events || [],
+      color: 'bg-genz-cyber-yellow',
+      gradient: 'from-genz-cyber-yellow to-genz-sunset-orange',
     },
   ];
 
@@ -292,6 +356,7 @@ export default function LifeEventsPage() {
       <FloatingElements />
 
       <div className="genz-container py-8 relative z-10">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -303,76 +368,81 @@ export default function LifeEventsPage() {
               Back to Dashboard
             </GenZButton>
           </Link>
-          
+
           <div className="flex items-center gap-4 mb-4">
-            <GenZBadge variant="neon">
-              {data?.offline ? 'Offline Mode' : 'Live'}
+            <GenZBadge variant={data?.offline ? 'default' : 'neon'} pulse={!data?.offline}>
+              {data?.offline ? 'Offline Mode' : 'Live Predictions'}
             </GenZBadge>
-            <h1 className="genz-title">Life Events 📅</h1>
           </div>
-          <p className="text-xl text-white/80">
-            Important milestones and transitions with precision timing
+
+          <h1 className="genz-title mb-3">Life Events Timeline</h1>
+          <p className="text-lg text-white/70">
+            Important milestones and transitions predicted using Dasha timing
           </p>
         </motion.div>
 
+        {/* Summary Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8"
+        >
+          <GenZCard variant="gradient" className="p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
+                <Calendar className="w-6 h-6 text-genz-cyber-yellow" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white">Predictive Timeline</h2>
+                <p className="text-sm text-white/60">Based on Bhrigu Samhita & Nadi Jyotisha</p>
+              </div>
+            </div>
+            <p className="text-white/80 leading-relaxed">
+              Your life events are analyzed through the lens of planetary Dashas and transits.
+              These predictions highlight significant periods for career growth, relationships,
+              health awareness, and financial opportunities.
+            </p>
+          </GenZCard>
+        </motion.div>
+
+        {/* Event Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {sections.map((section, index) => (
-            <motion.div
+            <SectionCard
               key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <GenZCard variant="neon" className="h-full">
-                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${section.color} flex items-center justify-center mb-4`}>
-                  {section.icon}
-                </div>
-                <h3 className="text-2xl font-display font-bold mb-4 text-white">
-                  {section.title}
-                </h3>
-                {Array.isArray(section.content) ? (
-                  <ul className="space-y-2">
-                    {section.content.map((item: string, i: number) => (
-                      <li key={i} className="text-white/80 flex items-start gap-2">
-                        <span className="text-genz-electric-blue mt-1">•</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-white/80">{section.content}</p>
-                )}
-              </GenZCard>
-            </motion.div>
+              title={section.title}
+              icon={section.icon}
+              events={section.events}
+              color={section.color}
+              gradient={section.gradient}
+              delay={index * 0.1 + 0.2}
+            />
           ))}
         </div>
 
-        {data?.offline && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <h2 className="text-3xl font-display font-bold mb-6 text-white">
-              Timeline Wisdom
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {wisdomLoading
-                ? Array.from({ length: 4 }).map((_, index) => (
-                    <CardSkeleton key={index} />
-                  ))
-                : wisdomCards.slice(0, 4).map((card, index) => (
-                    <GenZCard key={index} variant="glass">
-                      <GenZBadge variant="default" size="sm" className="mb-3">
-                        {card.tradition}
-                      </GenZBadge>
-                      <h4 className="text-xl font-bold mb-2 text-white">{card.title}</h4>
-                      <p className="text-white/70 text-sm">{card.content}</p>
-                    </GenZCard>
-                  ))}
-            </div>
-          </motion.div>
-        )}
+        {/* Explore More */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <Link href="/karmic-journey">
+            <GenZCard variant="glass" className="group cursor-pointer">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-white group-hover:text-genz-electric-blue transition-colors">
+                    Explore Your Karmic Journey
+                  </h3>
+                  <p className="text-sm text-white/60">
+                    Understand the deeper patterns behind these events
+                  </p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-white/40 group-hover:text-genz-electric-blue group-hover:translate-x-1 transition-all" />
+              </div>
+            </GenZCard>
+          </Link>
+        </motion.div>
       </div>
 
       <BottomNav />

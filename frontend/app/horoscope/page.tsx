@@ -16,7 +16,10 @@ import {
   Clock,
   Compass,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Calendar,
+  Target,
+  Flame
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -27,14 +30,15 @@ import GenZButton from '../components/GenZButton';
 import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { loadCurrentProfile } from '@/lib/profileHelpers';
-import { bhriguPredictionsAPI, BirthDetails } from '@/lib/api';
-import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
+import { predictionsAPI, ChartData, HoroscopeResult } from '@/lib/api/predictions';
 
 type TimeframeType = 'today' | 'week' | 'month' | 'year';
 
 interface CategoryData {
   rating: number;
   message: string;
+  summary?: string;
+  key_day?: string;
 }
 
 interface HoroscopeData {
@@ -44,6 +48,12 @@ interface HoroscopeData {
     energy: string;
     message: string;
     rating: number;
+  };
+  theme?: {
+    title: string;
+    summary: string;
+    focus?: string;
+    keywords?: string[];
   };
   categories: {
     love: CategoryData;
@@ -59,6 +69,49 @@ interface HoroscopeData {
   };
   mantra: string;
   guidance: string;
+  // Weekly specific
+  dailySummaries?: Array<{
+    date: string;
+    day: string;
+    energy: string;
+    focus: string;
+  }>;
+  bestDay?: string;
+  challengingDay?: string;
+  // Monthly specific
+  importantDates?: Array<{
+    date: string;
+    event: string;
+    type: string;
+  }>;
+  powerDays?: string[];
+  cautionDays?: string[];
+  monthlyRitual?: {
+    name: string;
+    timing: string;
+    mantra: string;
+    benefit: string;
+  };
+  // Yearly specific
+  quarters?: Array<{
+    quarter: number;
+    name: string;
+    theme: string;
+    summary: string;
+    focusAreas: string[];
+    energy: string;
+  }>;
+  keyMonths?: Array<{
+    month: string;
+    theme: string;
+    energy: string;
+  }>;
+  annualRitual?: {
+    name: string;
+    bestTime: string;
+    mantra: string;
+    benefit: string;
+  };
 }
 
 const TimeframeButton = ({
@@ -151,9 +204,112 @@ const CategoryCard = ({
         </div>
         <RatingStars rating={rating} />
       </div>
-      <p className="text-white/75 text-sm leading-relaxed line-clamp-3">{message}</p>
+      <p className="text-white/80 text-sm leading-relaxed">{message}</p>
     </div>
   </motion.div>
+);
+
+const ThemeCard = ({
+  title,
+  summary,
+  keywords,
+  focus
+}: {
+  title: string;
+  summary: string;
+  keywords?: string[];
+  focus?: string;
+}) => (
+  <GenZCard variant="gradient" className="mb-6">
+    <div className="flex items-center gap-3 mb-3">
+      <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
+        <Target className="w-6 h-6 text-genz-electric-blue" />
+      </div>
+      <div>
+        <h3 className="text-lg font-bold text-white">{title}</h3>
+        {focus && <p className="text-sm text-white/60">Focus: {focus}</p>}
+      </div>
+    </div>
+    <p className="text-white/85 leading-relaxed mb-3">{summary}</p>
+    {keywords && keywords.length > 0 && (
+      <div className="flex flex-wrap gap-2">
+        {keywords.map((keyword, i) => (
+          <span
+            key={i}
+            className="px-3 py-1 rounded-full bg-white/10 text-sm text-white/80"
+          >
+            {keyword}
+          </span>
+        ))}
+      </div>
+    )}
+  </GenZCard>
+);
+
+const WeekDayCard = ({
+  day,
+  date,
+  energy,
+  focus
+}: {
+  day: string;
+  date: string;
+  energy: string;
+  focus: string;
+}) => {
+  const energyColors: Record<string, string> = {
+    'Excellent': 'text-genz-neon-green',
+    'High': 'text-genz-electric-blue',
+    'Good': 'text-genz-cyber-yellow',
+    'Moderate': 'text-genz-sunset-orange',
+    'Low': 'text-white/50'
+  };
+
+  return (
+    <div className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+      <div className="flex items-center gap-3">
+        <div className="w-10 text-center">
+          <span className="text-xs text-white/50 block">{day.slice(0, 3)}</span>
+          <span className="text-sm font-medium text-white">{date.split('-')[2]}</span>
+        </div>
+        <span className="text-sm text-white/80">{focus}</span>
+      </div>
+      <span className={`text-sm font-medium ${energyColors[energy] || 'text-white/70'}`}>
+        {energy}
+      </span>
+    </div>
+  );
+};
+
+const QuarterCard = ({
+  name,
+  theme,
+  summary,
+  focusAreas,
+  energy
+}: {
+  name: string;
+  theme: string;
+  summary: string;
+  focusAreas: string[];
+  energy: string;
+}) => (
+  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+    <div className="flex items-center justify-between mb-2">
+      <span className="font-semibold text-white">{name}</span>
+      <span className="text-xs px-2 py-1 rounded-full bg-genz-electric-blue/20 text-genz-electric-blue">
+        {theme}
+      </span>
+    </div>
+    <p className="text-sm text-white/70 mb-2">{summary}</p>
+    <div className="flex flex-wrap gap-1">
+      {focusAreas.map((area, i) => (
+        <span key={i} className="text-xs text-white/50">
+          {area}{i < focusAreas.length - 1 ? ' • ' : ''}
+        </span>
+      ))}
+    </div>
+  </div>
 );
 
 export default function HoroscopePage() {
@@ -196,21 +352,25 @@ export default function HoroscopePage() {
         return;
       }
 
-      const birthDetails: BirthDetails = {
+      const chartData: ChartData = {
         date_of_birth: profile.dateOfBirth,
         time_of_birth: profile.timeOfBirth,
         place_of_birth: profile.placeOfBirth,
         latitude: profile.latitude,
         longitude: profile.longitude,
+        zodiac_sign: profile.zodiacSign,
+        moon_sign: profile.moonSign,
+        nakshatra: profile.nakshatra,
+        ascendant: profile.ascendant,
+        dasha_period: profile.dashaPeriod,
       };
 
       try {
-        const response = await bhriguPredictionsAPI.getPredictions(birthDetails);
-        const prediction = normalizePredictionResponse<any>(response).prediction;
-        setHoroscope(parseHoroscope(prediction, profile.zodiacSign || 'Aries'));
+        const response = await predictionsAPI.getHoroscope(chartData, timeframe);
+        setHoroscope(parseHoroscopeResponse(response, profile.zodiacSign || 'Aries', timeframe));
       } catch (apiError) {
         console.warn('API error, using offline fallback:', apiError);
-        setHoroscope(getOfflineHoroscope(profile.zodiacSign || 'Aries'));
+        setHoroscope(getOfflineHoroscope(profile.zodiacSign || 'Aries', timeframe));
       }
     } catch (err) {
       console.error('Error loading horoscope:', err);
@@ -220,77 +380,260 @@ export default function HoroscopePage() {
     }
   };
 
-  const parseHoroscope = (prediction: any, zodiacSign: string): HoroscopeData => {
-    const text = prediction?.[timeframe] || prediction?.daily || prediction?.prediction || '';
+  const parseHoroscopeResponse = (
+    response: HoroscopeResult,
+    zodiacSign: string,
+    tf: TimeframeType
+  ): HoroscopeData => {
+    const data = response?.data || {};
+    const wisdom = getZodiacWisdom(zodiacSign);
+
+    // Get the prediction text based on timeframe
+    const predictionText = data.prediction ||
+      data.daily_prediction ||
+      data.weekly_prediction ||
+      data.monthly_prediction ||
+      data.yearly_prediction || '';
+
+    // Parse sections from response
+    const sections = data.sections || {};
 
     return {
-      zodiacSign,
-      timeframe,
-      overall: {
+      zodiacSign: data.zodiac_sign || zodiacSign,
+      timeframe: tf,
+      overall: data.overall || {
         energy: 'Positive',
-        message: text || getDefaultMessage(timeframe, zodiacSign),
-        rating: 4
+        message: predictionText || getTimeframeMessage(tf, zodiacSign),
+        rating: data.ratings?.overall || 4
       },
+      theme: tf === 'week' ? data.weekly_theme :
+             tf === 'month' ? data.monthly_theme :
+             tf === 'year' ? data.yearly_theme : undefined,
       categories: {
-        love: { rating: 4, message: extractCategory(text, 'love') },
-        career: { rating: 4, message: extractCategory(text, 'career') },
-        health: { rating: 4, message: extractCategory(text, 'health') },
-        finance: { rating: 4, message: extractCategory(text, 'finance') }
+        love: sections.love || {
+          rating: data.ratings?.love || 4,
+          message: getDefaultCategoryMessage('love', tf)
+        },
+        career: sections.career || {
+          rating: data.ratings?.career || 4,
+          message: getDefaultCategoryMessage('career', tf)
+        },
+        health: sections.health || {
+          rating: data.ratings?.health || 4,
+          message: getDefaultCategoryMessage('health', tf)
+        },
+        finance: sections.finance || {
+          rating: data.ratings?.finance || 4,
+          message: getDefaultCategoryMessage('finance', tf)
+        }
       },
-      luckyElements: {
-        number: (new Date().getDate() % 9) + 1,
-        color: 'Electric Blue',
+      luckyElements: data.lucky_elements || {
+        number: wisdom.luckyNumbers[0],
+        color: wisdom.colors[0],
         time: '7:00 AM',
         direction: 'East'
       },
-      mantra: 'Om Namah Shivaya',
-      guidance: `Based on Bhrigu Samhita principles, ${zodiacSign} experiences cosmic alignment favoring growth and clarity.`
+      mantra: data.daily_mantra || wisdom.mantra,
+      guidance: data.bhrigu_guidance || `Based on Bhrigu Samhita principles, ${zodiacSign} experiences cosmic alignment favoring growth.`,
+      dailySummaries: data.daily_summaries?.map((d: any) => ({
+        date: d.date,
+        day: d.day,
+        energy: d.energy,
+        focus: d.focus
+      })),
+      bestDay: data.best_day,
+      challengingDay: data.challenging_day,
+      importantDates: data.important_dates?.map((d: any) => ({
+        date: d.date,
+        event: d.event,
+        type: d.type
+      })),
+      powerDays: data.power_days,
+      cautionDays: data.caution_days,
+      monthlyRitual: data.monthly_ritual ? {
+        name: data.monthly_ritual.name,
+        timing: data.monthly_ritual.timing,
+        mantra: data.monthly_ritual.mantra,
+        benefit: data.monthly_ritual.benefit
+      } : undefined,
+      quarters: data.quarters?.map((q: any) => ({
+        quarter: q.quarter,
+        name: q.name,
+        theme: q.theme,
+        summary: q.summary,
+        focusAreas: q.focus_areas || [],
+        energy: q.energy
+      })),
+      keyMonths: data.key_months?.map((m: any) => ({
+        month: m.month,
+        theme: m.theme,
+        energy: m.energy
+      })),
+      annualRitual: data.annual_ritual ? {
+        name: data.annual_ritual.name,
+        bestTime: data.annual_ritual.best_time,
+        mantra: data.annual_ritual.mantra,
+        benefit: data.annual_ritual.benefit
+      } : undefined
     };
   };
 
-  const extractCategory = (text: string, category: string): string => {
-    const defaults: Record<string, string> = {
-      love: 'Romantic energies are favorable. Express your feelings with confidence.',
-      career: 'Professional opportunities arise. Stay focused on your goals.',
-      health: 'Physical vitality supports your activities. Maintain balance.',
-      finance: 'Financial stability indicated. Plan wisely for growth.'
+  const getZodiacWisdom = (sign: string) => {
+    const wisdom: Record<string, any> = {
+      'Aries': { luckyNumbers: [1, 9], colors: ['Red', 'Orange'], mantra: 'Om Mangalaya Namaha' },
+      'Taurus': { luckyNumbers: [2, 6], colors: ['Green', 'Pink'], mantra: 'Om Shukraya Namaha' },
+      'Gemini': { luckyNumbers: [3, 5], colors: ['Yellow', 'Green'], mantra: 'Om Budhaya Namaha' },
+      'Cancer': { luckyNumbers: [2, 7], colors: ['White', 'Silver'], mantra: 'Om Chandraya Namaha' },
+      'Leo': { luckyNumbers: [1, 4], colors: ['Gold', 'Orange'], mantra: 'Om Suryaya Namaha' },
+      'Virgo': { luckyNumbers: [5, 6], colors: ['Green', 'Brown'], mantra: 'Om Budhaya Namaha' },
+      'Libra': { luckyNumbers: [6, 7], colors: ['Pink', 'Light Blue'], mantra: 'Om Shukraya Namaha' },
+      'Scorpio': { luckyNumbers: [8, 9], colors: ['Deep Red', 'Black'], mantra: 'Om Mangalaya Namaha' },
+      'Sagittarius': { luckyNumbers: [3, 9], colors: ['Purple', 'Blue'], mantra: 'Om Gurave Namaha' },
+      'Capricorn': { luckyNumbers: [4, 8], colors: ['Brown', 'Black'], mantra: 'Om Shanaischaraya Namaha' },
+      'Aquarius': { luckyNumbers: [4, 7], colors: ['Electric Blue', 'Violet'], mantra: 'Om Shanaischaraya Namaha' },
+      'Pisces': { luckyNumbers: [3, 7], colors: ['Sea Green', 'Lavender'], mantra: 'Om Gurave Namaha' }
     };
-    return defaults[category];
+    return wisdom[sign] || wisdom['Aries'];
   };
 
-  const getDefaultMessage = (tf: TimeframeType, sign: string): string => {
+  const getTimeframeMessage = (tf: TimeframeType, sign: string): string => {
     const messages: Record<TimeframeType, string> = {
-      today: `Today brings balanced cosmic energy for ${sign}. Focus on your core strengths and remain open to opportunities.`,
-      week: `This week emphasizes growth and connection for ${sign}. Build on momentum early in the week.`,
-      month: `This month offers expansion opportunities for ${sign}. Set clear intentions and follow through.`,
-      year: `This year marks significant transformation for ${sign}. Embrace change with confidence.`
+      today: `Today brings balanced cosmic energy for ${sign}. Focus on your core strengths and remain open to opportunities that align with your purpose.`,
+      week: `This week emphasizes growth and connection for ${sign}. Build on momentum early in the week and allow time for reflection as the week closes.`,
+      month: `This month offers expansion opportunities for ${sign}. Set clear intentions at the start and maintain focus through any challenges that arise.`,
+      year: `This year marks significant transformation for ${sign}. Embrace change with confidence and trust your inner guidance through major transitions.`
     };
     return messages[tf];
   };
 
-  const getOfflineHoroscope = (zodiacSign: string): HoroscopeData => ({
-    zodiacSign,
-    timeframe,
-    overall: {
-      energy: 'Positive',
-      message: getDefaultMessage(timeframe, zodiacSign),
-      rating: 4
-    },
-    categories: {
-      love: { rating: 4, message: 'Express your heart openly. Connections deepen through honest communication.' },
-      career: { rating: 4, message: 'Professional momentum builds. Take initiative on key projects.' },
-      health: { rating: 4, message: 'Vitality is good. Balance activity with adequate rest.' },
-      finance: { rating: 4, message: 'Financial awareness guides wise decisions. Plan for stability.' }
-    },
-    luckyElements: {
-      number: (new Date().getDate() % 9) + 1,
-      color: 'Electric Blue',
-      time: '7:00 AM',
-      direction: 'East'
-    },
-    mantra: 'Om Namah Shivaya',
-    guidance: `According to Bhrigu Samhita, ${zodiacSign} natives should honor cosmic energies through mindful action and regular meditation.`
-  });
+  const getDefaultCategoryMessage = (category: string, tf: TimeframeType): string => {
+    const messages: Record<string, Record<TimeframeType, string>> = {
+      love: {
+        today: 'Express your heart openly today. Authentic communication strengthens bonds.',
+        week: 'Relationship energy builds through the week. Quality time deepens connections.',
+        month: 'Love opportunities expand this month. Stay open to meaningful encounters.',
+        year: 'Significant relationship growth awaits. Commitment and depth characterize this year.'
+      },
+      career: {
+        today: 'Professional momentum supports your efforts. Take initiative on key tasks.',
+        week: 'Career progress accelerates mid-week. Strategic networking yields results.',
+        month: 'Professional advancement indicated. Leadership opportunities emerge.',
+        year: 'Career transformation unfolds. Major growth and recognition possible.'
+      },
+      health: {
+        today: 'Vitality supports your activities. Balance energy with mindful rest.',
+        week: 'Physical energy peaks mid-week. Establish sustainable wellness routines.',
+        month: 'Overall health stable with focus on prevention. Mind-body balance essential.',
+        year: 'Health journey requires consistent attention. Long-term wellness investments pay off.'
+      },
+      finance: {
+        today: 'Financial awareness guides decisions. Avoid impulsive purchases.',
+        week: 'Money matters improve through careful planning. Opportunities mid-week.',
+        month: 'Financial stability indicated. Strategic investments favored.',
+        year: 'Wealth building potential strong. Long-term planning yields prosperity.'
+      }
+    };
+    return messages[category]?.[tf] || 'Positive energy supports your endeavors.';
+  };
+
+  const getOfflineHoroscope = (zodiacSign: string, tf: TimeframeType): HoroscopeData => {
+    const wisdom = getZodiacWisdom(zodiacSign);
+    const now = new Date();
+
+    const base: HoroscopeData = {
+      zodiacSign,
+      timeframe: tf,
+      overall: {
+        energy: tf === 'today' ? 'Positive' : tf === 'week' ? 'Growing' : tf === 'month' ? 'Transformative' : 'Dynamic',
+        message: getTimeframeMessage(tf, zodiacSign),
+        rating: 4
+      },
+      categories: {
+        love: { rating: 4, message: getDefaultCategoryMessage('love', tf) },
+        career: { rating: 4, message: getDefaultCategoryMessage('career', tf) },
+        health: { rating: 4, message: getDefaultCategoryMessage('health', tf) },
+        finance: { rating: 4, message: getDefaultCategoryMessage('finance', tf) }
+      },
+      luckyElements: {
+        number: wisdom.luckyNumbers[0],
+        color: wisdom.colors[0],
+        time: '7:00 AM',
+        direction: 'East'
+      },
+      mantra: wisdom.mantra,
+      guidance: `According to Bhrigu Samhita, ${zodiacSign} natives should honor cosmic energies through mindful action and regular spiritual practice.`
+    };
+
+    // Add timeframe-specific data
+    if (tf === 'week') {
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      const focuses = ['Emotional Balance', 'Action & Energy', 'Communication', 'Expansion', 'Love & Harmony', 'Discipline', 'Self-Expression'];
+      const energies = ['Good', 'High', 'Good', 'Excellent', 'High', 'Good', 'High'];
+
+      base.theme = {
+        title: 'Week of Growth',
+        summary: `This week emphasizes personal development for ${zodiacSign}. Balance ambition with self-care.`,
+        focus: 'Personal Development'
+      };
+      base.dailySummaries = days.map((day, i) => ({
+        date: new Date(now.getTime() + (i - now.getDay() + 1) * 86400000).toISOString().split('T')[0],
+        day,
+        energy: energies[i],
+        focus: focuses[i]
+      }));
+      base.bestDay = 'Friday';
+      base.challengingDay = 'Saturday';
+    }
+
+    if (tf === 'month') {
+      base.theme = {
+        title: 'Month of Transformation',
+        summary: `${now.toLocaleString('default', { month: 'long' })} brings opportunities for growth and change.`,
+        keywords: ['Growth', 'Opportunity', 'Balance']
+      };
+      base.importantDates = [
+        { date: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`, event: 'New Month Intentions', type: 'auspicious' },
+        { date: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-15`, event: 'Full Moon Energy Peak', type: 'powerful' },
+        { date: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-28`, event: 'Month End Reflection', type: 'completion' }
+      ];
+      base.powerDays = ['1', '8', '15', '22'];
+      base.cautionDays = ['5', '19'];
+      base.monthlyRitual = {
+        name: 'Monthly Planetary Worship',
+        timing: 'Every Friday morning',
+        mantra: wisdom.mantra,
+        benefit: 'Enhances positive planetary influences'
+      };
+    }
+
+    if (tf === 'year') {
+      base.theme = {
+        title: `Year of ${now.getFullYear()} - Transformation`,
+        summary: `${now.getFullYear()} brings significant opportunities for personal evolution and achievement.`,
+        keywords: ['Transformation', 'Achievement', 'Growth', 'Wisdom']
+      };
+      base.quarters = [
+        { quarter: 1, name: 'Q1 (Jan-Mar)', theme: 'Foundation', summary: 'Build strong foundations.', focusAreas: ['Planning', 'Structure'], energy: 'Building' },
+        { quarter: 2, name: 'Q2 (Apr-Jun)', theme: 'Growth', summary: 'Expand your horizons.', focusAreas: ['Action', 'Expansion'], energy: 'Rising' },
+        { quarter: 3, name: 'Q3 (Jul-Sep)', theme: 'Harvest', summary: 'Reap what you have sown.', focusAreas: ['Achievement', 'Recognition'], energy: 'Peak' },
+        { quarter: 4, name: 'Q4 (Oct-Dec)', theme: 'Reflection', summary: 'Integrate lessons learned.', focusAreas: ['Wisdom', 'Preparation'], energy: 'Settling' }
+      ];
+      base.keyMonths = [
+        { month: 'March', theme: 'New Beginnings', energy: 'High' },
+        { month: 'June', theme: 'Peak Activity', energy: 'Excellent' },
+        { month: 'September', theme: 'Harvest', energy: 'High' },
+        { month: 'December', theme: 'Completion', energy: 'Reflective' }
+      ];
+      base.annualRitual = {
+        name: 'Annual Planetary Alignment',
+        bestTime: 'On your birthday',
+        mantra: wisdom.mantra,
+        benefit: 'Strengthens yearly protection and guidance'
+      };
+    }
+
+    return base;
+  };
 
   if (encryptionLoading || loading) {
     return (
@@ -329,6 +672,13 @@ export default function HoroscopePage() {
     { id: 'year' as TimeframeType, icon: <Zap className="w-5 h-5" />, label: 'This Year', gradient: 'from-genz-hot-pink to-genz-coral-pop' }
   ];
 
+  const timeframeTitles: Record<TimeframeType, string> = {
+    today: "Today's Horoscope",
+    week: "Weekly Forecast",
+    month: "Monthly Outlook",
+    year: "Yearly Overview"
+  };
+
   return (
     <div className="min-h-screen relative overflow-hidden pb-24 md:pb-8">
       <AnimatedBackground />
@@ -355,8 +705,8 @@ export default function HoroscopePage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <h1 className="genz-title mb-2">Your Predictions</h1>
-          <p className="text-white/70">Cosmic guidance for your journey</p>
+          <h1 className="genz-title mb-2">{timeframeTitles[timeframe]}</h1>
+          <p className="text-white/70">Cosmic guidance based on Bhrigu Samhita</p>
         </motion.div>
 
         {/* Timeframe Selector */}
@@ -386,7 +736,7 @@ export default function HoroscopePage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              {/* Overall Energy */}
+              {/* Sign and Overall Energy */}
               <GenZCard variant="gradient" className="mb-6 p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -402,6 +752,65 @@ export default function HoroscopePage() {
                 </div>
                 <p className="text-white/90 leading-relaxed">{horoscope.overall.message}</p>
               </GenZCard>
+
+              {/* Theme Card (for week/month/year) */}
+              {horoscope.theme && (
+                <ThemeCard
+                  title={horoscope.theme.title}
+                  summary={horoscope.theme.summary}
+                  keywords={horoscope.theme.keywords}
+                  focus={horoscope.theme.focus}
+                />
+              )}
+
+              {/* Weekly Daily Summaries */}
+              {timeframe === 'week' && horoscope.dailySummaries && (
+                <GenZCard variant="glass" className="mb-6">
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-genz-purple-haze" />
+                    Day-by-Day Overview
+                  </h3>
+                  <div className="space-y-0">
+                    {horoscope.dailySummaries.map((day, i) => (
+                      <WeekDayCard
+                        key={i}
+                        day={day.day}
+                        date={day.date}
+                        energy={day.energy}
+                        focus={day.focus}
+                      />
+                    ))}
+                  </div>
+                  {horoscope.bestDay && horoscope.challengingDay && (
+                    <div className="mt-4 pt-4 border-t border-white/10 flex justify-between text-sm">
+                      <span className="text-genz-neon-green">Best: {horoscope.bestDay}</span>
+                      <span className="text-genz-sunset-orange">Caution: {horoscope.challengingDay}</span>
+                    </div>
+                  )}
+                </GenZCard>
+              )}
+
+              {/* Yearly Quarters */}
+              {timeframe === 'year' && horoscope.quarters && (
+                <GenZCard variant="glass" className="mb-6">
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-genz-hot-pink" />
+                    Quarterly Outlook
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {horoscope.quarters.map((q, i) => (
+                      <QuarterCard
+                        key={i}
+                        name={q.name}
+                        theme={q.theme}
+                        summary={q.summary}
+                        focusAreas={q.focusAreas}
+                        energy={q.energy}
+                      />
+                    ))}
+                  </div>
+                </GenZCard>
+              )}
 
               {/* Category Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -439,6 +848,56 @@ export default function HoroscopePage() {
                 />
               </div>
 
+              {/* Monthly Important Dates */}
+              {timeframe === 'month' && horoscope.importantDates && (
+                <GenZCard variant="glass" className="mb-6">
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-genz-electric-blue" />
+                    Key Dates This Month
+                  </h3>
+                  <div className="space-y-3">
+                    {horoscope.importantDates.map((date, i) => (
+                      <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium text-white/80">{date.date.split('-')[2]}</span>
+                          <span className="text-sm text-white/70">{date.event}</span>
+                        </div>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          date.type === 'powerful' ? 'bg-genz-cyber-yellow/20 text-genz-cyber-yellow' :
+                          date.type === 'auspicious' ? 'bg-genz-neon-green/20 text-genz-neon-green' :
+                          'bg-white/10 text-white/60'
+                        }`}>
+                          {date.type}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </GenZCard>
+              )}
+
+              {/* Yearly Key Months */}
+              {timeframe === 'year' && horoscope.keyMonths && (
+                <GenZCard variant="glass" className="mb-6">
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Flame className="w-5 h-5 text-genz-sunset-orange" />
+                    Key Months
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {horoscope.keyMonths.map((m, i) => (
+                      <div key={i} className="text-center p-3 rounded-xl bg-white/5">
+                        <span className="block text-sm font-medium text-white">{m.month}</span>
+                        <span className="block text-xs text-white/60">{m.theme}</span>
+                        <span className={`block text-xs mt-1 ${
+                          m.energy === 'Excellent' ? 'text-genz-neon-green' :
+                          m.energy === 'High' ? 'text-genz-electric-blue' :
+                          'text-white/50'
+                        }`}>{m.energy}</span>
+                      </div>
+                    ))}
+                  </div>
+                </GenZCard>
+              )}
+
               {/* Lucky Elements */}
               <GenZCard variant="neon" className="mb-6">
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
@@ -475,10 +934,38 @@ export default function HoroscopePage() {
                 </h3>
                 <p className="text-white/80 leading-relaxed mb-4">{horoscope.guidance}</p>
                 <div className="bg-white/5 rounded-xl p-4 text-center">
-                  <p className="text-xs text-white/50 uppercase tracking-wider mb-1">Daily Mantra</p>
+                  <p className="text-xs text-white/50 uppercase tracking-wider mb-1">
+                    {timeframe === 'today' ? 'Daily' : timeframe === 'week' ? 'Weekly' : timeframe === 'month' ? 'Monthly' : 'Annual'} Mantra
+                  </p>
                   <p className="text-lg font-medium text-genz-electric-blue">{horoscope.mantra}</p>
                 </div>
               </GenZCard>
+
+              {/* Monthly/Yearly Rituals */}
+              {(horoscope.monthlyRitual || horoscope.annualRitual) && (
+                <GenZCard variant="glass" className="mb-6">
+                  <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                    <Star className="w-5 h-5 text-genz-cyber-yellow" />
+                    {horoscope.monthlyRitual ? 'Monthly Ritual' : 'Annual Ritual'}
+                  </h3>
+                  {horoscope.monthlyRitual && (
+                    <div className="space-y-2 text-sm">
+                      <p className="text-white/80"><strong>Practice:</strong> {horoscope.monthlyRitual.name}</p>
+                      <p className="text-white/80"><strong>Timing:</strong> {horoscope.monthlyRitual.timing}</p>
+                      <p className="text-white/80"><strong>Mantra:</strong> {horoscope.monthlyRitual.mantra}</p>
+                      <p className="text-white/60 italic">{horoscope.monthlyRitual.benefit}</p>
+                    </div>
+                  )}
+                  {horoscope.annualRitual && (
+                    <div className="space-y-2 text-sm">
+                      <p className="text-white/80"><strong>Practice:</strong> {horoscope.annualRitual.name}</p>
+                      <p className="text-white/80"><strong>Best Time:</strong> {horoscope.annualRitual.bestTime}</p>
+                      <p className="text-white/80"><strong>Mantra:</strong> {horoscope.annualRitual.mantra}</p>
+                      <p className="text-white/60 italic">{horoscope.annualRitual.benefit}</p>
+                    </div>
+                  )}
+                </GenZCard>
+              )}
 
               {/* Explore More */}
               <Link href="/bhrigu-predictions">
