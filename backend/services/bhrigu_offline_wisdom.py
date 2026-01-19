@@ -1163,6 +1163,686 @@ class BhriguOfflineWisdomGenerator:
 """
         return report
 
+    # ==========================================================================
+    # VIMSHOTTARI DASHA SYSTEM (120-YEAR CYCLE)
+    # ==========================================================================
+
+    def _get_dasha_sequence(self) -> List[str]:
+        """Get the Vimshottari Dasha sequence"""
+        return ['Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury']
+
+    def _get_dasha_years(self) -> Dict[str, int]:
+        """Get years for each Dasha lord"""
+        if WISDOM_LOADED and DASHA_WISDOM:
+            vimshottari = DASHA_WISDOM.get('vimshottari', {})
+            planets = vimshottari.get('planets', {})
+            return {p: data.get('years', 0) for p, data in planets.items()}
+        return {
+            'Ketu': 7, 'Venus': 20, 'Sun': 6, 'Moon': 10, 'Mars': 7,
+            'Rahu': 18, 'Jupiter': 16, 'Saturn': 19, 'Mercury': 17
+        }
+
+    def _get_dasha_keywords(self, planet: str) -> List[str]:
+        """Get keywords for a Dasha period"""
+        if WISDOM_LOADED and DASHA_WISDOM:
+            vimshottari = DASHA_WISDOM.get('vimshottari', {})
+            planets = vimshottari.get('planets', {})
+            planet_data = planets.get(planet, {})
+            return planet_data.get('keywords', [])
+
+        default_keywords = {
+            'Ketu': ['Detachment', 'Spiritual insights', 'Past life patterns'],
+            'Venus': ['Relationships', 'Luxury', 'Artistic expression'],
+            'Sun': ['Authority', 'Father', 'Government', 'Health'],
+            'Moon': ['Emotions', 'Mother', 'Public life', 'Mental growth'],
+            'Mars': ['Energy', 'Property', 'Courage', 'Conflicts'],
+            'Rahu': ['Worldly desires', 'Foreign connections', 'Unconventional'],
+            'Jupiter': ['Wisdom', 'Expansion', 'Children', 'Spiritual growth'],
+            'Saturn': ['Karma', 'Discipline', 'Hardship', 'Achievement'],
+            'Mercury': ['Intellect', 'Business', 'Communication', 'Learning']
+        }
+        return default_keywords.get(planet, ['Life experiences'])
+
+    def _get_nakshatra_dasha_lord(self, nakshatra: str) -> str:
+        """Get the starting Dasha lord based on birth nakshatra"""
+        nakshatra_dasha_lords = {
+            'Ashwini': 'Ketu', 'Magha': 'Ketu', 'Moola': 'Ketu',
+            'Bharani': 'Venus', 'Purva Phalguni': 'Venus', 'Purva Ashadha': 'Venus',
+            'Krittika': 'Sun', 'Uttara Phalguni': 'Sun', 'Uttara Ashadha': 'Sun',
+            'Rohini': 'Moon', 'Hasta': 'Moon', 'Shravana': 'Moon',
+            'Mrigashira': 'Mars', 'Chitra': 'Mars', 'Dhanishta': 'Mars',
+            'Ardra': 'Rahu', 'Swati': 'Rahu', 'Shatabhisha': 'Rahu',
+            'Punarvasu': 'Jupiter', 'Vishakha': 'Jupiter', 'Purva Bhadrapada': 'Jupiter',
+            'Pushya': 'Saturn', 'Anuradha': 'Saturn', 'Uttara Bhadrapada': 'Saturn',
+            'Ashlesha': 'Mercury', 'Jyeshtha': 'Mercury', 'Revati': 'Mercury'
+        }
+        for nak, lord in nakshatra_dasha_lords.items():
+            if nak.lower() in nakshatra.lower() or nakshatra.lower() in nak.lower():
+                return lord
+        return 'Ketu'  # Default
+
+    def _calculate_dasha_balance(self, nakshatra: str, birth_year: int = 1990) -> Dict[str, Any]:
+        """Calculate remaining Dasha balance at birth and current Dasha"""
+        from datetime import datetime
+
+        current_year = datetime.now().year
+        age = current_year - birth_year
+
+        dasha_lord = self._get_nakshatra_dasha_lord(nakshatra)
+        dasha_years = self._get_dasha_years()
+        dasha_sequence = self._get_dasha_sequence()
+
+        # Find position of birth dasha lord
+        start_idx = dasha_sequence.index(dasha_lord)
+
+        # Estimate balance at birth (assume 50% remaining for simplicity)
+        balance_at_birth = dasha_years[dasha_lord] * 0.5
+
+        # Calculate elapsed years
+        years_elapsed = age
+
+        # Find current dasha
+        current_dasha = dasha_lord
+        remaining_balance = balance_at_birth
+
+        idx = start_idx
+        while years_elapsed > 0:
+            if years_elapsed < remaining_balance:
+                break
+            years_elapsed -= remaining_balance
+            idx = (idx + 1) % 9
+            current_dasha = dasha_sequence[idx]
+            remaining_balance = dasha_years[current_dasha]
+
+        years_in_current = remaining_balance - years_elapsed
+
+        # Calculate upcoming dashas
+        upcoming = []
+        future_idx = idx
+        cumulative_years = years_in_current
+        for i in range(4):
+            future_idx = (future_idx + 1) % 9
+            next_dasha = dasha_sequence[future_idx]
+            upcoming.append({
+                'planet': next_dasha,
+                'starts_in': round(cumulative_years, 1),
+                'years': dasha_years[next_dasha],
+                'keywords': self._get_dasha_keywords(next_dasha)
+            })
+            cumulative_years += dasha_years[next_dasha]
+
+        return {
+            'birth_dasha': dasha_lord,
+            'current_dasha': current_dasha,
+            'years_in_current': round(years_in_current, 1),
+            'years_remaining': round(years_in_current, 1),
+            'total_years': dasha_years[current_dasha],
+            'keywords': self._get_dasha_keywords(current_dasha),
+            'upcoming_dashas': upcoming,
+            'age': age
+        }
+
+    def _calculate_antardasha(self, mahadasha: str, years_in_dasha: float) -> Dict[str, Any]:
+        """Calculate current Antardasha (sub-period) within Mahadasha"""
+        dasha_years = self._get_dasha_years()
+        dasha_sequence = self._get_dasha_sequence()
+        total_maha_years = dasha_years[mahadasha]
+
+        # Find starting index for antardasha (same as mahadasha lord)
+        start_idx = dasha_sequence.index(mahadasha)
+
+        # Calculate time elapsed in mahadasha
+        elapsed = total_maha_years - years_in_dasha
+
+        # Find current antardasha
+        cumulative = 0
+        current_antar = mahadasha
+        for i in range(9):
+            idx = (start_idx + i) % 9
+            antar_lord = dasha_sequence[idx]
+            # Antardasha length = (Mahadasha years * Antardasha years) / 120
+            antar_length = (total_maha_years * dasha_years[antar_lord]) / 120
+
+            if cumulative + antar_length > elapsed:
+                current_antar = antar_lord
+                antar_remaining = antar_length - (elapsed - cumulative)
+                break
+            cumulative += antar_length
+        else:
+            antar_remaining = 0
+
+        return {
+            'mahadasha': mahadasha,
+            'antardasha': current_antar,
+            'antar_remaining_months': round(antar_remaining * 12, 1),
+            'combination': f'{mahadasha}-{current_antar}',
+            'interpretation': self._interpret_dasha_combination(mahadasha, current_antar)
+        }
+
+    def _interpret_dasha_combination(self, maha: str, antar: str) -> str:
+        """Interpret Mahadasha-Antardasha combination"""
+        benefics = ['Jupiter', 'Venus', 'Mercury', 'Moon']
+        malefics = ['Saturn', 'Mars', 'Rahu', 'Ketu']
+
+        maha_keywords = self._get_dasha_keywords(maha)
+        antar_keywords = self._get_dasha_keywords(antar)
+
+        if maha in benefics and antar in benefics:
+            quality = "Highly favorable period for growth and prosperity"
+        elif maha in benefics and antar in malefics:
+            quality = "Mixed period - opportunities with obstacles"
+        elif maha in malefics and antar in benefics:
+            quality = "Challenging with relief - perseverance rewarded"
+        else:
+            quality = "Period of karmic lessons and transformation"
+
+        return f"{quality}. Focus: {', '.join(maha_keywords[:2])} + {', '.join(antar_keywords[:2])}"
+
+    def _generate_dasha_analysis(self, chart_data: Dict[str, Any]) -> str:
+        """Generate comprehensive Dasha analysis"""
+        nakshatra = chart_data.get('nakshatra', 'Ashwini')
+        birth_year = chart_data.get('birth_year', 1990)
+
+        dasha_info = self._calculate_dasha_balance(nakshatra, birth_year)
+        antar_info = self._calculate_antardasha(
+            dasha_info['current_dasha'],
+            dasha_info['years_remaining']
+        )
+
+        analysis = f"""## Vimshottari Dasha Analysis (120-Year Cycle)
+
+### Current Planetary Period
+
+**Mahadasha (Major Period):** {dasha_info['current_dasha']}
+- Duration: {dasha_info['total_years']} years total
+- Remaining: ~{dasha_info['years_remaining']} years
+- Keywords: {', '.join(dasha_info['keywords'])}
+
+**Antardasha (Sub-Period):** {antar_info['antardasha']}
+- Combination: {antar_info['combination']}
+- Remaining: ~{antar_info['antar_remaining_months']} months
+- Interpretation: {antar_info['interpretation']}
+
+### Upcoming Dasha Periods
+
+| Period | Starts In | Duration | Key Themes |
+|--------|-----------|----------|------------|
+"""
+        for ud in dasha_info['upcoming_dashas'][:4]:
+            keywords_str = ', '.join(ud['keywords'][:2])
+            analysis += f"| {ud['planet']} | ~{ud['starts_in']} years | {ud['years']} years | {keywords_str} |\n"
+
+        analysis += f"""
+### Dasha Interpretation Principles
+
+1. **Current {dasha_info['current_dasha']} Period:** {', '.join(dasha_info['keywords'][:3])}
+2. The Dasha lord's natal position determines quality of results
+3. Transit of Dasha lord during its period is especially important
+4. Antardasha modifies the main Dasha effects
+
+*Birth Nakshatra: {nakshatra} → Starting Dasha: {dasha_info['birth_dasha']}*
+"""
+        return analysis
+
+    # ==========================================================================
+    # JUPITER & MOON TRANSIT EFFECTS
+    # ==========================================================================
+
+    def _get_jupiter_transit_effects(self, from_moon_sign: int) -> Dict[str, Any]:
+        """Get Jupiter transit effects based on position from Moon sign"""
+        effects = {
+            1: {'quality': 'Challenging', 'effects': 'Expenses, health concerns, need for caution', 'score': 2},
+            2: {'quality': 'Excellent', 'effects': 'Wealth gains, family happiness, good speech', 'score': 5},
+            3: {'quality': 'Challenging', 'effects': 'Obstacles, separation from loved ones', 'score': 2},
+            4: {'quality': 'Mixed', 'effects': 'Mental stress, property matters, vehicle issues', 'score': 3},
+            5: {'quality': 'Excellent', 'effects': 'Children, creativity, romance, intelligence', 'score': 5},
+            6: {'quality': 'Challenging', 'effects': 'Enemies, debts, health issues', 'score': 2},
+            7: {'quality': 'Excellent', 'effects': 'Marriage, partnerships, travel, success', 'score': 5},
+            8: {'quality': 'Challenging', 'effects': 'Obstacles, delays, transformation', 'score': 1},
+            9: {'quality': 'Most Auspicious', 'effects': 'Fortune, spirituality, father, long journeys', 'score': 5},
+            10: {'quality': 'Mixed', 'effects': 'Career changes, status fluctuations', 'score': 3},
+            11: {'quality': 'Excellent', 'effects': 'Gains, fulfilled desires, friendships', 'score': 5},
+            12: {'quality': 'Challenging', 'effects': 'Expenses, foreign connections, spirituality', 'score': 2}
+        }
+        return effects.get(from_moon_sign, effects[1])
+
+    def _get_moon_transit_effects(self, nakshatra: str) -> Dict[str, Any]:
+        """Get Moon transit effects through natal nakshatra"""
+        nak_data = self._get_full_nakshatra_wisdom(nakshatra)
+        gana = nak_data.get('gana', 'MANUSHYA')
+        gana_str = gana.name if hasattr(gana, 'name') else str(gana).split('.')[-1]
+
+        # Moon transit effects based on Gana
+        gana_effects = {
+            'DEVA': {
+                'favorable_days': [2, 4, 6, 9, 11, 13],
+                'avoid_days': [8, 14, 23],
+                'best_activities': 'Spiritual practices, auspicious ceremonies, charitable acts'
+            },
+            'MANUSHYA': {
+                'favorable_days': [1, 3, 5, 10, 12, 15],
+                'avoid_days': [7, 17, 22],
+                'best_activities': 'Business, negotiations, social activities'
+            },
+            'RAKSHASA': {
+                'favorable_days': [3, 6, 9, 13, 18, 21],
+                'avoid_days': [4, 11, 25],
+                'best_activities': 'Competitive activities, overcoming obstacles, bold actions'
+            }
+        }
+
+        return gana_effects.get(gana_str, gana_effects['MANUSHYA'])
+
+    def _calculate_transit_effects(self, chart_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Calculate comprehensive transit effects"""
+        nakshatra = chart_data.get('nakshatra', 'Ashwini')
+        zodiac = chart_data.get('zodiac_sign', 'Aries')
+
+        # Get zodiac number for calculations
+        zodiac_numbers = {
+            'Aries': 1, 'Taurus': 2, 'Gemini': 3, 'Cancer': 4,
+            'Leo': 5, 'Virgo': 6, 'Libra': 7, 'Scorpio': 8,
+            'Sagittarius': 9, 'Capricorn': 10, 'Aquarius': 11, 'Pisces': 12
+        }
+        moon_sign_num = zodiac_numbers.get(zodiac, 1)
+
+        # Simulate current Jupiter position (for demonstration)
+        # In real implementation, this would use actual ephemeris
+        import datetime
+        current_year = datetime.datetime.now().year
+        # Jupiter takes ~12 years for full cycle, estimate current position
+        jupiter_sign = ((current_year - 2020) % 12) + 1
+        jupiter_from_moon = ((jupiter_sign - moon_sign_num) % 12) + 1
+
+        jupiter_effects = self._get_jupiter_transit_effects(jupiter_from_moon)
+        moon_effects = self._get_moon_transit_effects(nakshatra)
+
+        # Saturn Sade Sati check
+        sade_sati = self._check_sade_sati(moon_sign_num)
+
+        return {
+            'jupiter': {
+                'current_position': jupiter_sign,
+                'from_moon': jupiter_from_moon,
+                'effects': jupiter_effects
+            },
+            'moon': moon_effects,
+            'sade_sati': sade_sati
+        }
+
+    def _check_sade_sati(self, moon_sign: int) -> Dict[str, Any]:
+        """Check if currently in Sade Sati period"""
+        import datetime
+        current_year = datetime.datetime.now().year
+
+        # Saturn's approximate position (2.5 years per sign)
+        # Saturn was in Capricorn in 2020
+        years_since_2020 = current_year - 2020
+        saturn_sign = ((years_since_2020 // 2.5) % 12) + 10  # Started in Capricorn (10)
+        saturn_sign = int(((saturn_sign - 1) % 12) + 1)
+
+        # Check Sade Sati phases
+        twelfth_from_moon = ((moon_sign - 2) % 12) + 1
+        second_from_moon = (moon_sign % 12) + 1
+
+        if saturn_sign == twelfth_from_moon:
+            return {'active': True, 'phase': 'Rising (12th)', 'effects': 'Expenses, worry, mental stress'}
+        elif saturn_sign == moon_sign:
+            return {'active': True, 'phase': 'Peak (1st)', 'effects': 'Maximum challenges, transformation'}
+        elif saturn_sign == second_from_moon:
+            return {'active': True, 'phase': 'Setting (2nd)', 'effects': 'Family/financial issues'}
+        else:
+            return {'active': False, 'phase': 'Not in Sade Sati', 'effects': 'Normal Saturn influence'}
+
+    def _generate_transit_analysis(self, chart_data: Dict[str, Any]) -> str:
+        """Generate comprehensive transit analysis"""
+        transit_data = self._calculate_transit_effects(chart_data)
+        jupiter = transit_data['jupiter']
+        moon = transit_data['moon']
+        sade_sati = transit_data['sade_sati']
+
+        zodiac_names = ['', 'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+                        'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
+
+        analysis = f"""## Transit Analysis (Gochara)
+
+### Jupiter Transit (Guru Gochara)
+
+**Current Position:** {zodiac_names[jupiter['current_position']]} ({jupiter['from_moon']}th from Moon)
+**Quality:** {jupiter['effects']['quality']}
+**Effects:** {jupiter['effects']['effects']}
+**Favorability Score:** {jupiter['effects']['score']}/5
+
+**Jupiter Transit Guidance:**
+"""
+        if jupiter['effects']['score'] >= 4:
+            analysis += "- Excellent period for expansion, learning, and spiritual growth\n"
+            analysis += "- Good time for major decisions, investments, and new ventures\n"
+        elif jupiter['effects']['score'] >= 3:
+            analysis += "- Mixed period requiring balanced approach\n"
+            analysis += "- Focus on maintaining stability while seeking opportunities\n"
+        else:
+            analysis += "- Challenging period requiring patience and caution\n"
+            analysis += "- Avoid major risks, focus on consolidation\n"
+
+        analysis += f"""
+### Saturn Transit & Sade Sati
+
+**Sade Sati Status:** {'⚠️ ACTIVE - ' + sade_sati['phase'] if sade_sati['active'] else '✓ Not Active'}
+**Effects:** {sade_sati['effects']}
+
+"""
+        if sade_sati['active']:
+            analysis += """**Sade Sati Remedies:**
+- Recite Shani mantras: "Om Sham Shanicharaya Namah"
+- Wear Blue Sapphire (only if suitable after analysis)
+- Service to elderly and underprivileged
+- Saturday fasting
+- Hanuman Chalisa recitation
+
+"""
+
+        analysis += f"""### Moon Transit Guidance
+
+**Favorable Lunar Days:** {', '.join(map(str, moon['favorable_days']))}
+**Days to Avoid:** {', '.join(map(str, moon['avoid_days']))}
+**Best Activities:** {moon['best_activities']}
+
+### Transit-Based Recommendations
+
+1. **For Important Decisions:** Check Jupiter's position and avoid challenging transits
+2. **For Daily Activities:** Follow Moon transit favorable days
+3. **For Long-term Planning:** Consider Dasha period + major transits
+"""
+        return analysis
+
+    # ==========================================================================
+    # JAIMINI CHARA DASHA SYSTEM
+    # ==========================================================================
+
+    def _get_jaimini_karakas(self, chart_data: Dict[str, Any]) -> Dict[str, str]:
+        """Get Jaimini Chara Karakas based on planetary degrees"""
+        # In a real implementation, this would use actual planetary positions
+        # For now, we'll use zodiac/nakshatra to estimate
+        zodiac = chart_data.get('zodiac_sign', 'Aries')
+
+        # Simplified karaka assignment based on zodiac ruler
+        zodiac_info = self._get_zodiac_info(zodiac)
+        ruler = zodiac_info.get('ruler', 'Sun')
+
+        # Default karaka assignments (would be calculated from actual degrees)
+        karakas = {
+            'Atmakaraka': ruler,  # Soul significator
+            'Amatyakaraka': 'Mercury',  # Career/minister
+            'Bhratrukaraka': 'Mars',  # Siblings
+            'Matrukaraka': 'Moon',  # Mother
+            'Putrakaraka': 'Jupiter',  # Children
+            'Gnatikaraka': 'Saturn',  # Relatives/enemies
+            'Darakaraka': 'Venus'  # Spouse
+        }
+
+        return karakas
+
+    def _calculate_chara_dasha(self, chart_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Calculate Jaimini Chara Dasha periods"""
+        zodiac = chart_data.get('zodiac_sign', 'Aries')
+        birth_year = chart_data.get('birth_year', 1990)
+
+        from datetime import datetime
+        current_year = datetime.now().year
+        age = current_year - birth_year
+
+        # Zodiac signs in order
+        signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+                 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
+
+        # Get starting sign (Lagna)
+        start_idx = signs.index(zodiac) if zodiac in signs else 0
+
+        # Chara Dasha calculation (simplified)
+        # Odd signs count forward, even signs count backward
+        # Duration = distance from Lagna lord to sign
+
+        dasha_periods = []
+        cumulative = 0
+        current_dasha_sign = zodiac
+
+        for i in range(12):
+            if start_idx % 2 == 0:  # Even sign - count forward
+                sign_idx = (start_idx + i) % 12
+            else:  # Odd sign - count backward
+                sign_idx = (start_idx - i) % 12
+
+            sign = signs[sign_idx]
+            # Duration based on sign characteristics (simplified)
+            duration = (sign_idx % 12) + 1  # 1-12 years per sign
+
+            if cumulative <= age < cumulative + duration:
+                current_dasha_sign = sign
+                years_remaining = duration - (age - cumulative)
+
+            dasha_periods.append({
+                'sign': sign,
+                'duration': duration,
+                'starts_at_age': cumulative
+            })
+            cumulative += duration
+
+        # Get karakas
+        karakas = self._get_jaimini_karakas(chart_data)
+
+        return {
+            'current_rashi_dasha': current_dasha_sign,
+            'atmakaraka': karakas['Atmakaraka'],
+            'darakaraka': karakas['Darakaraka'],
+            'all_karakas': karakas,
+            'periods': dasha_periods[:6]  # Next 6 periods
+        }
+
+    def _generate_jaimini_analysis(self, chart_data: Dict[str, Any]) -> str:
+        """Generate Jaimini Chara Dasha analysis"""
+        jaimini_data = self._calculate_chara_dasha(chart_data)
+
+        analysis = f"""## Jaimini Chara Dasha Analysis
+
+### Current Rashi Dasha
+
+**Active Sign Period:** {jaimini_data['current_rashi_dasha']}
+
+The Jaimini system uses rashi (sign) based periods rather than planetary periods.
+Each sign rules a period based on its position from the Lagna.
+
+### Chara Karakas (Variable Significators)
+
+| Karaka | Planet | Signification |
+|--------|--------|---------------|
+| Atmakaraka | {jaimini_data['atmakaraka']} | Soul purpose, main life direction |
+| Darakaraka | {jaimini_data['darakaraka']} | Spouse, partnerships |
+| Amatyakaraka | {jaimini_data['all_karakas']['Amatyakaraka']} | Career, profession |
+| Putrakaraka | {jaimini_data['all_karakas']['Putrakaraka']} | Children, creativity |
+| Matrukaraka | {jaimini_data['all_karakas']['Matrukaraka']} | Mother, nurturing |
+| Bhratrukaraka | {jaimini_data['all_karakas']['Bhratrukaraka']} | Siblings, courage |
+| Gnatikaraka | {jaimini_data['all_karakas']['Gnatikaraka']} | Relatives, obstacles |
+
+### Atmakaraka Analysis
+
+**Your Atmakaraka:** {jaimini_data['atmakaraka']}
+
+The Atmakaraka is the planet with the highest degree in your chart and represents:
+- Your soul's deepest desires
+- The primary lesson of this incarnation
+- The key to spiritual evolution
+
+"""
+        # Add Atmakaraka interpretation
+        ak_interp = {
+            'Sun': 'Soul seeks recognition, leadership, and self-expression. Lesson: Humility.',
+            'Moon': 'Soul seeks emotional fulfillment and nurturing. Lesson: Detachment.',
+            'Mars': 'Soul seeks achievement and victory. Lesson: Patience and non-violence.',
+            'Mercury': 'Soul seeks knowledge and communication. Lesson: Truthfulness.',
+            'Jupiter': 'Soul seeks wisdom and expansion. Lesson: Letting go of pride.',
+            'Venus': 'Soul seeks love and beauty. Lesson: Non-attachment to pleasure.',
+            'Saturn': 'Soul seeks perfection and discipline. Lesson: Acceptance.'
+        }
+        analysis += f"**Interpretation:** {ak_interp.get(jaimini_data['atmakaraka'], 'Spiritual evolution through dharmic living.')}\n\n"
+
+        analysis += """### Jaimini Timing Principles
+
+1. **Rashi Dasha:** Signs rule periods based on their odd/even nature
+2. **Karakamsha:** Atmakaraka's navamsha position reveals life purpose
+3. **Arudha Lagna:** Shows how the world perceives you
+4. **Upapada:** Reveals spouse characteristics
+
+*Note: Full Jaimini analysis requires complete chart with planetary degrees.*
+"""
+        return analysis
+
+    # ==========================================================================
+    # NAADI AMSHA SYSTEM (150-PART DIVISION)
+    # ==========================================================================
+
+    def _calculate_naadi_amsha(self, chart_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Calculate Naadi Amsha for precise predictions"""
+        nakshatra = chart_data.get('nakshatra', 'Ashwini')
+        zodiac = chart_data.get('zodiac_sign', 'Aries')
+
+        # Nakshatra number (1-27)
+        nak_num = self._get_nakshatra_number(nakshatra)
+
+        # Each nakshatra has 4 padas, each pada = 3°20'
+        # Naadi Amsha divides each sign into 150 parts (12 minutes each)
+        # 30° / 150 = 0.2° or 12 arc-minutes per Naadi Amsha
+
+        # Estimate Naadi Amsha based on nakshatra (simplified)
+        # In real implementation, exact degree would be used
+        pada = ((nak_num - 1) % 4) + 1  # Which pada (1-4)
+
+        # Each pada spans ~37.5 Naadi Amshas (150/4)
+        base_amsha = (pada - 1) * 37 + 1
+
+        # Get interpretation based on Naadi Amsha range
+        amsha_range = self._get_naadi_amsha_interpretation(base_amsha)
+
+        return {
+            'nakshatra': nakshatra,
+            'pada': pada,
+            'estimated_amsha': base_amsha,
+            'amsha_range': f"{base_amsha}-{base_amsha + 36}",
+            'interpretation': amsha_range,
+            'precision_note': 'Exact birth time required for precise Naadi Amsha'
+        }
+
+    def _get_naadi_amsha_interpretation(self, amsha: int) -> Dict[str, Any]:
+        """Get interpretation for Naadi Amsha range"""
+        # Naadi Amsha interpretations based on position in sign
+        if amsha <= 30:
+            return {
+                'phase': 'Initial (1-30)',
+                'nature': 'Beginning energy of the sign',
+                'life_theme': 'Foundation building, new beginnings',
+                'timing_quality': 'Events manifest quickly'
+            }
+        elif amsha <= 60:
+            return {
+                'phase': 'Early (31-60)',
+                'nature': 'Growing energy',
+                'life_theme': 'Development and growth',
+                'timing_quality': 'Gradual progress'
+            }
+        elif amsha <= 90:
+            return {
+                'phase': 'Middle (61-90)',
+                'nature': 'Peak energy of the sign',
+                'life_theme': 'Achievement and fruition',
+                'timing_quality': 'Results manifest'
+            }
+        elif amsha <= 120:
+            return {
+                'phase': 'Late (91-120)',
+                'nature': 'Maturing energy',
+                'life_theme': 'Consolidation and wisdom',
+                'timing_quality': 'Delayed but lasting results'
+            }
+        else:
+            return {
+                'phase': 'Final (121-150)',
+                'nature': 'Transitional energy',
+                'life_theme': 'Completion and preparation',
+                'timing_quality': 'Culmination of cycles'
+            }
+
+    def _generate_naadi_amsha_analysis(self, chart_data: Dict[str, Any]) -> str:
+        """Generate Naadi Amsha analysis for precise predictions"""
+        naadi_data = self._calculate_naadi_amsha(chart_data)
+        interp = naadi_data['interpretation']
+
+        analysis = f"""## Naadi Amsha Analysis (150-Part Division)
+
+### Your Naadi Amsha Position
+
+**Nakshatra:** {naadi_data['nakshatra']} (Pada {naadi_data['pada']})
+**Estimated Amsha Range:** {naadi_data['amsha_range']} of 150
+**Phase:** {interp['phase']}
+
+### Naadi Amsha Interpretation
+
+**Energy Nature:** {interp['nature']}
+**Life Theme:** {interp['life_theme']}
+**Timing Quality:** {interp['timing_quality']}
+
+### The 150-Part System
+
+The Naadi Amsha divides each zodiac sign into 150 equal parts:
+- Each part spans 12 arc-minutes (0.2 degrees)
+- Total span: 30° ÷ 150 = 12' per Naadi Amsha
+- Used by Nadi astrologers for extremely precise predictions
+
+### How Naadi Amshas Affect Timing
+
+| Amsha Range | Phase | Event Timing |
+|-------------|-------|--------------|
+| 1-30 | Initial | Events manifest quickly, new cycles |
+| 31-60 | Early | Gradual development, growing momentum |
+| 61-90 | Middle | Peak activity, results manifest |
+| 91-120 | Late | Maturation, consolidation |
+| 121-150 | Final | Completion, transition to next cycle |
+
+### Precision Prediction Principles
+
+1. **Exact Birth Time:** Naadi Amsha changes every 48 seconds of birth time
+2. **Event Timing:** Transits activating your Naadi Amsha trigger specific events
+3. **Life Chapters:** Each Naadi Amsha corresponds to specific life chapters
+4. **Cross-Reference:** Used with Dasha for pinpoint accuracy
+
+*Note: {naadi_data['precision_note']}*
+
+### Your Timing Profile
+
+Based on your **{interp['phase']}** phase:
+- {interp['life_theme']}
+- Expect: {interp['timing_quality']}
+- Focus on: Aligning actions with your natural timing rhythm
+
+*The Naadi Rishis used this system to make remarkably precise predictions about
+individuals' lives, often accurate to specific months or even days.*
+"""
+        return analysis
+
+    def _generate_complete_timing_analysis(self, chart_data: Dict[str, Any]) -> str:
+        """Generate complete timing analysis combining all systems"""
+        analysis = "# Complete Timing Analysis\n\n"
+        analysis += "*Integrating Vimshottari Dasha, Transits, Jaimini, and Naadi Amsha*\n\n"
+
+        analysis += self._generate_dasha_analysis(chart_data)
+        analysis += "\n---\n\n"
+        analysis += self._generate_transit_analysis(chart_data)
+        analysis += "\n---\n\n"
+        analysis += self._generate_jaimini_analysis(chart_data)
+        analysis += "\n---\n\n"
+        analysis += self._generate_naadi_amsha_analysis(chart_data)
+
+        return analysis
+
     def _format_career_guidance(self, nakshatra: str, zodiac: str) -> str:
         """Format comprehensive career guidance using nakshatra and zodiac"""
         careers = self._get_nakshatra_careers(nakshatra)
@@ -2457,6 +3137,10 @@ Based on Nadi Jyotisha timing principles for {zodiac} ({element}, ruled by {rule
 - 42: Uranus opposition - mid-life awakening
 - 54: Second Jupiter return
 - 58-60: Second Saturn return - elder wisdom
+
+""" + self._generate_dasha_analysis(context) + """
+
+""" + self._generate_transit_analysis(context) + """
 
 *This reading provides timing frameworks based on classical Jyotisha. For AI-enhanced precise date predictions, ensure OpenAI API is configured.*"""
 
