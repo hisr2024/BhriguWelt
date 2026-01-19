@@ -164,9 +164,15 @@ def generate_category_prediction(category):
             relationship_type=relationship_type
         )
 
-        return prediction_response(
-            result.get('prediction', result),
-            metadata={
+        # Build structured prediction response with subcategories
+        prediction_data = {
+            'engine': category,
+            'title': result.get('title', category.replace('_', ' ').title()),
+            'success': True,
+            'full_analysis': result.get('full_analysis', result.get('prediction', '')),
+            'subcategories': result.get('subcategories', {}),
+            'metadata': {
+                **result.get('metadata', {}),
                 'category': category,
                 'mode': result.get('mode', mode),
                 'language': language,
@@ -176,8 +182,14 @@ def generate_category_prediction(category):
                 'matched_rules': result.get('matched_rules', []),
                 'citations': result.get('citations', []),
                 'source': result.get('source', 'Unknown'),
+                'tradition': 'Bhrigu Samhita & Nadi Jyotisha',
                 'timestamp': datetime.utcnow().isoformat()
             }
+        }
+
+        return prediction_response(
+            prediction_data,
+            metadata=prediction_data['metadata']
         )
 
     except Exception as e:
