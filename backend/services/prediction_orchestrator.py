@@ -392,17 +392,10 @@ class PredictionOrchestrator:
                                    language: str, time_period: str = "daily",
                                    view_mode: str = "simple",
                                    relationship_type: str = "all") -> str:
-        """Call appropriate offline generator based on category"""
-        # Map categories to offline methods
-        category_methods = {
-            'karmic_journey': self.offline_wisdom.generate_karmic_journey,
-            'past_lives': self.offline_wisdom.generate_past_lives,
-            'future_lives': self.offline_wisdom.generate_future_lives,
-            'present_life': self.offline_wisdom.generate_present_life,
-            'life_events': self.offline_wisdom.generate_life_events,
-            'karmic_remedies': self.offline_wisdom.generate_karmic_remedies,
-        }
+        """Call appropriate offline generator based on category
 
+        All category methods now support view_mode for differentiated Simple/Astrologer views
+        """
         # Special handling for predictions category with time_period and view_mode
         if category == 'predictions':
             return self.offline_wisdom.generate_general_predictions(chart_data, time_period=time_period, view_mode=view_mode)
@@ -411,10 +404,19 @@ class PredictionOrchestrator:
         if category == 'relationships':
             return self.offline_wisdom.generate_relationships(chart_data, relationship_type=relationship_type, time_period=time_period, view_mode=view_mode)
 
-        # Get method for category
-        method = category_methods.get(category)
-        if method:
-            return method(chart_data)
+        # All other categories now support view_mode for differentiated content
+        if category == 'karmic_journey':
+            return self.offline_wisdom.generate_karmic_journey(chart_data, view_mode=view_mode)
+        elif category == 'past_lives':
+            return self.offline_wisdom.generate_past_lives(chart_data, view_mode=view_mode)
+        elif category == 'future_lives':
+            return self.offline_wisdom.generate_future_lives(chart_data, view_mode=view_mode)
+        elif category == 'present_life':
+            return self.offline_wisdom.generate_present_life(chart_data, view_mode=view_mode)
+        elif category == 'life_events':
+            return self.offline_wisdom.generate_life_events(chart_data, view_mode=view_mode)
+        elif category == 'karmic_remedies':
+            return self.offline_wisdom.generate_karmic_remedies(chart_data, view_mode=view_mode)
 
         # For new categories, generate using generic method
         return self._generate_generic_offline(category, chart_data, language)
