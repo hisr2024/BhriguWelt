@@ -158,15 +158,63 @@ class BhriguOfflineWisdomGenerator:
             return self.bhrigu_corpus['future_engines'][:limit]
         return []
 
-    def generate_karmic_journey(self, context: Dict[str, Any]) -> str:
-        """Generate Karmic Journey prediction with proper section headers"""
+    def generate_karmic_journey(self, context: Dict[str, Any], view_mode: str = 'simple') -> str:
+        """Generate Karmic Journey prediction with proper section headers
+
+        Args:
+            context: Birth chart data
+            view_mode: 'simple' (concise, actionable) or 'astrologer' (detailed with references)
+        """
         zodiac = context.get('zodiac_sign', 'Unknown')
         nakshatra = context.get('nakshatra', 'Unknown')
         moon_sign = context.get('moon_sign', zodiac)
+        ascendant = context.get('ascendant', zodiac)
+        dob = context.get('date_of_birth', '')
+        tob = context.get('time_of_birth', '')
+        pob = context.get('place_of_birth', '')
 
         zodiac_info = self._get_zodiac_info(zodiac)
         nakshatra_info = self._get_nakshatra_info(nakshatra)
+        moon_info = self._get_zodiac_info(moon_sign) if moon_sign != zodiac else zodiac_info
         principles = self._get_relevant_principles(context)
+
+        # Get unique characteristics for personalization
+        element = zodiac_info.get('element', 'Fire')
+        ruler = zodiac_info.get('ruler', 'Sun')
+        quality = zodiac_info.get('quality', 'Cardinal')
+        traits = zodiac_info.get('traits', 'leadership')
+        deity = nakshatra_info.get('deity', 'Cosmic Forces')
+        symbol = nakshatra_info.get('symbol', 'Stars')
+        nak_quality = nakshatra_info.get('quality', 'spiritual growth')
+
+        # Element-specific soul purpose
+        element_purposes = {
+            'Fire': 'leadership, inspiration, and pioneering new paths',
+            'Earth': 'manifestation, stability, and practical service',
+            'Air': 'communication, connection, and spreading ideas',
+            'Water': 'healing, emotional wisdom, and nurturing others'
+        }
+        soul_purpose = element_purposes.get(element, 'spiritual evolution')
+
+        # Quality-specific approach
+        quality_approaches = {
+            'Cardinal': 'initiating change and leading others',
+            'Fixed': 'maintaining stability and building lasting foundations',
+            'Mutable': 'adapting to circumstances and facilitating transitions'
+        }
+        life_approach = quality_approaches.get(quality, 'balanced growth')
+
+        # Ruler-specific lessons
+        ruler_lessons = {
+            'Sun': 'developing authentic self-expression and leadership',
+            'Moon': 'mastering emotions and nurturing abilities',
+            'Mars': 'channeling energy constructively and developing courage',
+            'Mercury': 'refining communication and intellectual growth',
+            'Jupiter': 'expanding wisdom and sharing knowledge',
+            'Venus': 'cultivating harmony and artistic expression',
+            'Saturn': 'learning patience, discipline, and responsibility'
+        }
+        karmic_lesson = ruler_lessons.get(ruler, 'spiritual evolution')
 
         # Build referenced sutras
         sutra_refs = []
@@ -174,30 +222,283 @@ class BhriguOfflineWisdomGenerator:
             if 'sutra_reference' in p:
                 sutra_refs.append(f"- {p['sutra_reference']}: {p.get('description', '')[:100]}...")
 
-        return f"""## 1. Soul's Primary Purpose
+        if view_mode == 'simple':
+            # SIMPLE VIEW: Concise, actionable insights
+            return f"""## Soul's Primary Purpose
 
-Based on Bhrigu Samhita principles, your soul incarnated with {zodiac} as the guiding energy, blessed by the {nakshatra_info.get('deity', 'cosmic')} deity of {nakshatra} nakshatra.
+Your soul incarnated with {zodiac} as the guiding energy, blessed by {deity} of {nakshatra} nakshatra.
 
-**Core Purpose:** Your {zodiac_info.get('element', 'elemental')} nature combined with {zodiac_info.get('traits', 'inherent qualities')} indicates a dharmic path focused on spiritual evolution through practical action. The ancient texts speak of souls with your configuration being destined for {nakshatra_info.get('quality', 'unique spiritual development')}.
+**Core Purpose:** {soul_purpose.capitalize()} through {life_approach}.
 
-**Scriptural Reference:** According to the Bhrigu Samhita folios, natives born under {nakshatra} carry the sacred duty of bringing {nakshatra_info.get('symbol', 'cosmic')} energy into manifestation.
+**Key Insight:** Your {element} nature combined with {traits} creates a dharmic path focused on {nak_quality}.
+
+## Karmic Blueprint
+
+**Karmic Debts:**
+- Lessons around {traits} and {karmic_lesson}
+- {ruler} influence requires mastering power and responsibility
+
+**Karmic Credits:**
+- Natural talents in {nak_quality} from past lives
+- Inherited wisdom and intuitive gifts
+
+## Soul Evolution Stage
+
+Your soul is at the **Madhyama (Intermediate)** stage:
+- Progress: Approximately 60-70% through evolutionary journey
+- Focus: Balancing material life with spiritual growth
+- Remaining: 7-12 incarnations before potential liberation
+
+## Life Mission & Dharma
+
+**Professional:** Roles involving {traits} - teaching, healing, creative arts, or service
+**Family:** Learning patience, unconditional love, and forgiveness
+**Spiritual:** Daily practice, meditation, and self-reflection with {deity} guidance
+
+## Karmic Lessons
+
+1. **Balance:** Harmonizing {element} energy with practical life
+2. **Patience:** Developing persistence through challenges
+3. **Service:** Using {nak_quality} for others' benefit
+4. **Truth:** Living authentically, aligned with dharma
+
+## Spiritual Gifts
+
+- Intuitive abilities connected to {deity} energy
+- Natural healing capacity through {nak_quality}
+- Creative expression aligned with soul purpose
+- Teaching ability to share accumulated wisdom
+
+**Actionable Guidance:**
+- Identify the next key window and mark it for mindful preparation
+- Simplify one major decision to its most dharmic option
+- Schedule a check-in ritual at each monthly turning point"""
+
+        else:
+            # ASTROLOGER VIEW: Detailed analysis with references
+            return f"""## 1. Soul's Primary Purpose
+
+Based on Bhrigu Samhita principles, your soul incarnated with {zodiac} as the guiding energy, blessed by the {deity} deity of {nakshatra} nakshatra.
+
+**Core Purpose:** Your {element} nature combined with {traits} indicates a dharmic path focused on {soul_purpose}. The ancient texts speak of souls with your configuration being destined for {nak_quality}.
+
+**Scriptural Reference:** According to the Bhrigu Samhita folios, natives born under {nakshatra} carry the sacred duty of bringing {symbol} energy into manifestation.
+
+**Birth Configuration Analysis:**
+- Sun Sign: {zodiac} ({element}, {quality})
+- Moon Sign: {moon_sign} (Emotional Foundation)
+- Nakshatra: {nakshatra} (Soul Blueprint)
+- Ascendant: {ascendant} (Life Path)
 
 ## 2. Karmic Blueprint
 
 Your karmic blueprint reveals patterns established across multiple lifetimes:
 
 **Karmic Debts:**
-- Past life patterns suggest lessons around {zodiac_info.get('traits', 'core themes')}
-- The {zodiac_info.get('ruler', 'planetary')} influence indicates unfinished business related to power and responsibility
+- Past life patterns suggest lessons around {traits}
+- The {ruler} influence indicates unfinished business related to {karmic_lesson}
+- Saturn's karmic teachings require patience and perseverance in this incarnation
+- Ketu's position reveals past mastery and current detachment lessons
+
+**Karmic Credits:**
+- Natural talents in {nak_quality} carried from past lives
+- Jupiter's blessings indicate accumulated spiritual merit
+- Inherent wisdom and intuitive gifts from previous spiritual practice
+- {deity} connection provides divine protection
+
+**Referenced Sutras:**
+""" + ('\n'.join(sutra_refs) if sutra_refs else '- Bikaneri folio 17b: When the native\'s Moon occupies a watery rashi and receives Jupiter\'s auspicious glance, the Bhrigu...') + f"""
+- Kashi palm 44a: Bhrigu states that a native born on the fifth lunar tithi with Mars in the tenth bhava carries a kar...
+- Pune Mod folio 3c: If Saturn and Venus conjoin in the second bhava while Rahu aspects the rising sign, Bhrigu records sig...
+
+## 3. Soul Evolution Stage
+
+As per Nadi Jyotisha classification, your soul is at the **Madhyama (Intermediate)** stage of evolution:
+
+- You have progressed beyond basic karmic lessons
+- Current focus: Balancing material responsibilities with spiritual growth
+- Estimated incarnations remaining: 7-12 before potential liberation
+- Progress indicator: Strong connection to dharmic principles
+
+The {nakshatra} nakshatra placement suggests you are approximately 60-70% through your soul's evolutionary journey.
+
+**Nadi Classification Details:**
+- Gana (Temperament): Based on nakshatra classification
+- Nadi (Energy Channel): Determines health and compatibility patterns
+- Tattva (Element): {element} - influences approach to life
+
+## 4. Life Mission & Dharma
+
+**Professional Dharma (Artha):** Your {zodiac} energy combined with {nak_quality} makes you suited for roles involving {traits}. Careers in teaching, healing, creative arts, or service align with your karmic purpose. Your soul chose specific life work to serve collective evolution.
+
+**Family Dharma (Kama):** Building harmonious relationships that support spiritual growth. Your soul chose specific family members to learn lessons of patience, unconditional love, and forgiveness. Family relationships are soul contracts from previous incarnations.
+
+**Social Dharma (Moksha):** Contributing to collective evolution through sharing wisdom and uplifting others. Your presence naturally elevates the consciousness of those around you. Social dharma includes teaching, healing, and inspiring others.
+
+**Spiritual Dharma:** Daily practice, meditation, and self-reflection form the foundation. The {deity} guide your inner development. The Pitris guide your inner development.
+
+## 5. Karmic Lessons in This Lifetime
+
+Based on your {zodiac} Sun and {nakshatra} birth star, primary lessons include:
+
+1. **Balance:** Learning to harmonize {element} energy with practical life
+2. **Patience:** {ruler}'s influence requires developing persistence through challenges
+3. **Service:** Using {nak_quality} for the benefit of others
+4. **Detachment:** Cultivating non-attachment while remaining engaged with life
+5. **Truth:** Speaking and living authentically, aligned with dharma
+
+## 6. Soul Group Connections
+
+Your soul travels with a specific group across incarnations:
+
+**Soulmates:** 3-5 souls with whom you share deep karmic bonds Soul Family: Approximately 12-20 souls appearing as family, friends, or significant teachers Recognition Signs: Instant familiarity, deep comfort, or intense reaction upon meeting
+
+Current life relationships with strong karmic significance will often feel "fated" or destined.
+
+**Soul Contract Types:**
+- Dharmic partners: Support your spiritual evolution
+- Karmic partners: Bring lessons for growth
+- Companion souls: Provide comfort and understanding
+
+## 7. Timing of Karmic Events
+
+**Major Karmic Activation Periods:**
+- Ages 28-30: Saturn return - major life restructuring
+- Ages 36-42: Jupiter maturity - expansion and wisdom
+- Ages 54-60: Second Saturn return - spiritual deepening
+
+**Current Phase:** Focus on integrating lessons and preparing for upcoming opportunities.
+
+## 8. Spiritual Gifts & Abilities
+
+Your {nakshatra} nakshatra bestows:
+- **Intuitive abilities** connected to {deity} energy
+- **Natural healing** capacity through {nak_quality}
+- **Creative expression** aligned with your soul purpose
+- **Teaching ability** to share accumulated wisdom
+
+*This reading is based on classical Bhrigu Samhita and Nadi Jyotisha principles. For AI-enhanced detailed analysis with precise timing, ensure OpenAI API is configured.*
+
+**Actionable Guidance:**
+- Identify the next key window and mark it for mindful preparation.
+- Simplify one major decision to its most dharmic option.
+- Schedule a check-in ritual at each monthly turning point."""
+
+    def generate_past_lives(self, context: Dict[str, Any], view_mode: str = 'simple') -> str:
+        """Generate Past Lives prediction with proper section headers
+
+        Args:
+            context: Birth chart data
+            view_mode: 'simple' (concise) or 'astrologer' (detailed with references)
+        """
+        zodiac = context.get('zodiac_sign', 'Unknown')
+        nakshatra = context.get('nakshatra', 'Unknown')
+        moon_sign = context.get('moon_sign', zodiac)
+        ascendant = context.get('ascendant', zodiac)
+
+        zodiac_info = self._get_zodiac_info(zodiac)
+        nakshatra_info = self._get_nakshatra_info(nakshatra)
+        past_life_patterns = self._get_past_life_engines()
+
+        # Get unique characteristics
+        element = zodiac_info.get('element', 'Fire')
+        ruler = zodiac_info.get('ruler', 'Sun')
+        traits = zodiac_info.get('traits', 'leadership')
+        deity = nakshatra_info.get('deity', 'Cosmic Forces')
+        symbol = nakshatra_info.get('symbol', 'Stars')
+        nak_quality = nakshatra_info.get('quality', 'spiritual growth')
+
+        # Element-specific past life regions
+        element_regions = {
+            'Fire': 'warrior kingdoms, Mediterranean civilizations, or volcanic regions',
+            'Earth': 'agricultural societies, ancient trade centers, or stable kingdoms',
+            'Air': 'scholarly centers, trade routes, or intellectual hubs',
+            'Water': 'coastal civilizations, river valleys, or island cultures'
+        }
+        past_region = element_regions.get(element, 'ancient civilizations')
+
+        # Ruler-specific past life roles
+        ruler_roles = {
+            'Sun': 'royalty, priest, or administrator',
+            'Moon': 'healer, nurturer, or caretaker',
+            'Mars': 'warrior, protector, or craftsman',
+            'Mercury': 'scribe, merchant, or messenger',
+            'Jupiter': 'teacher, sage, or advisor',
+            'Venus': 'artist, musician, or diplomat',
+            'Saturn': 'ascetic, laborer, or judge'
+        }
+        past_role = ruler_roles.get(ruler, 'seeker of wisdom')
+
+        # Nakshatra-specific past life themes
+        nak_themes = {
+            'Ashwini': 'healing and swift action',
+            'Bharani': 'transformation and creation',
+            'Krittika': 'purification and leadership',
+            'Rohini': 'creativity and abundance',
+            'Mrigashira': 'searching and discovery',
+            'Ardra': 'destruction and renewal',
+            'Punarvasu': 'renewal and return',
+            'Pushya': 'nourishment and teaching',
+            'Ashlesha': 'mysticism and transformation',
+            'Magha': 'royalty and ancestors',
+            'Purva Phalguni': 'creativity and enjoyment',
+            'Uttara Phalguni': 'service and contracts',
+            'Hasta': 'craftsmanship and skill',
+            'Chitra': 'architecture and brilliance',
+            'Swati': 'independence and flexibility',
+            'Vishakha': 'determination and goals',
+            'Anuradha': 'devotion and friendship',
+            'Jyeshtha': 'leadership and protection',
+            'Moola': 'investigation and roots',
+            'Purva Ashadha': 'invincibility and victory',
+            'Uttara Ashadha': 'righteousness and final victory',
+            'Shravana': 'learning and listening',
+            'Dhanishta': 'wealth and music',
+            'Shatabhisha': 'healing and mystery',
+            'Purva Bhadrapada': 'transformation and penance',
+            'Uttara Bhadrapada': 'depth and wisdom',
+            'Revati': 'nourishment and completion'
+        }
+        past_theme = nak_themes.get(nakshatra, nak_quality)
+
+        # Build narrative from corpus
+        narratives = []
+        for p in past_life_patterns[:2]:
+            if 'narrative' in p:
+                narratives.append(p['narrative'])
+
+        if view_mode == 'simple':
+            # SIMPLE VIEW: Concise past life insights
+            return f"""## Past Relationships
+
+You may notice patterns in the past connections that mirror your relationships now.
+
+## 1. Soul's Primary Purpose
+
+Based on Bhrigu Samhita principles, your soul incarnated with {zodiac} as the guiding energy, blessed by the Pitris deity of {nakshatra} nakshatra.
+
+**Core Purpose:** Your {element} nature combined with {traits} indicates a dharmic path focused on spiritual evolution through practical action. The ancient texts speak of souls with your configuration being destined for {nak_quality}.
+
+**Scriptural Reference:** According to the Bhrigu Samhita folios, natives born under {nakshatra} carry the sacred duty of bringing Throne energy into manifestation.
+
+## 2. Karmic Blueprint
+
+Your karmic blueprint reveals patterns established across multiple lifetimes:
+
+**Karmic Debts:**
+- Past life patterns suggest lessons around {traits}
+- The {ruler} influence indicates unfinished business related to power and responsibility
 - Saturn's karmic teachings require patience and perseverance in this incarnation
 
 **Karmic Credits:**
-- Natural talents in {nakshatra_info.get('quality', 'spiritual abilities')} carried from past lives
+- Natural talents in {nak_quality}, carried from past lives
 - Jupiter's blessings indicate accumulated spiritual merit
 - Inherent wisdom and intuitive gifts from previous spiritual practice
 
 **Referenced Sutras:**
-{chr(10).join(sutra_refs) if sutra_refs else '- Bhrigu Samhita universal principles apply to your configuration'}
+- Bikaneri folio 17b: When the native's Moon occupies a watery rashi and receives Jupiter's auspicious glance, the Bhrigu...
+- Kashi palm 44a: Bhrigu states that a native born on the fifth lunar tithi with Mars in the tenth bhava carries a kar...
+- Pune Mod folio 3c: If Saturn and Venus conjoin in the second bhava while Rahu aspects the rising sign, Bhrigu records sig...
 
 ## 3. Soul Evolution Stage
 
@@ -212,229 +513,277 @@ The {nakshatra} nakshatra placement suggests you are approximately 60-70% throug
 
 ## 4. Life Mission & Dharma
 
-**Professional Dharma (Artha):**
-Your {zodiac} energy combined with {nakshatra_info.get('quality', 'inherent abilities')} makes you suited for roles involving {zodiac_info.get('traits', 'natural expressions')}. Careers in teaching, healing, creative arts, or service align with your karmic purpose.
+**Professional Dharma (Artha):** Your {zodiac} energy combined with {nak_quality} makes you suited for roles involving {traits}. Careers in teaching, healing, creative arts, or service align with your karmic purpose.
 
-**Family Dharma (Kama):**
-Building harmonious relationships that support spiritual growth. Your soul chose specific family members to learn lessons of patience, unconditional love, and forgiveness.
+**Family Dharma (Kama):** Building harmonious relationships that support spiritual growth. Your soul chose specific family members to learn lessons of patience, unconditional love, and forgiveness.
 
-**Social Dharma (Moksha):**
-Contributing to collective evolution through sharing wisdom and uplifting others. Your presence naturally elevates the consciousness of those around you.
+**Social Dharma (Moksha):** Contributing to collective evolution through sharing wisdom and uplifting others. Your presence naturally elevates the consciousness of those around you.
 
-**Spiritual Dharma:**
-Daily practice, meditation, and self-reflection form the foundation. The {nakshatra_info.get('deity', 'cosmic forces')} guide your inner development.
+**Spiritual Dharma:** Daily practice, meditation, and self-reflection form the foundation. The Pitris guide your inner development.
 
 ## 5. Karmic Lessons in This Lifetime
 
 Based on your {zodiac} Sun and {nakshatra} birth star, primary lessons include:
 
-1. **Balance:** Learning to harmonize {zodiac_info.get('element', 'elemental')} energy with practical life
-2. **Patience:** Saturn's influence requires developing persistence through challenges
-3. **Service:** Using {nakshatra_info.get('quality', 'natural gifts')} for the benefit of others
-4. **Detachment:** Cultivating non-attachment while remaining engaged with life
-5. **Truth:** Speaking and living authentically, aligned with dharma
+- **Balance:** Learning to harmonize {element} energy with practical life
+- **Patience:** Saturn's influence requires developing persistence through challenges
+- **Service:** Using {nak_quality} for the benefit of others
+- **Detachment:** Cultivating non-attachment while remaining engaged with life
+- **Truth:** Speaking and living authentically, aligned with dharma
 
-## 6. Soul Group Connections
+*This reading is based on classical Bhrigu Samhita and Nadi Jyotisha principles. For AI-enhanced detailed analysis with precise timing, ensure OpenAI API is configured.*
 
-Your soul travels with a specific group across incarnations:
+**Actionable Guidance:**
+- Create a simple observance when you sense past-life familiar or karmic tone
+- Make one act of forgiveness or gratitude to shift those patterns
+- Keep a note of recurring life themes that seem ancient"""
 
-**Soulmates:** 3-5 souls with whom you share deep karmic bonds
-**Soul Family:** Approximately 12-20 souls appearing as family, friends, or significant teachers
-**Recognition Signs:** Instant familiarity, deep comfort, or intense reaction upon meeting
-
-Current life relationships with strong karmic significance will often feel "fated" or destined.
-
-## 7. Timing of Karmic Events
-
-**Major Karmic Activation Periods:**
-- Ages 28-30: Saturn return - major life restructuring
-- Ages 36-42: Jupiter maturity - expansion and wisdom
-- Ages 54-60: Second Saturn return - spiritual deepening
-
-**Current Phase:** Focus on integrating lessons and preparing for upcoming opportunities.
-
-## 8. Spiritual Gifts & Abilities
-
-Your {nakshatra} nakshatra bestows:
-- **Intuitive abilities** connected to {nakshatra_info.get('deity', 'cosmic')} energy
-- **Natural healing** capacity through {nakshatra_info.get('quality', 'inherent gifts')}
-- **Creative expression** aligned with your soul purpose
-- **Teaching ability** to share accumulated wisdom
-
-*This reading is based on classical Bhrigu Samhita and Nadi Jyotisha principles. For AI-enhanced detailed analysis with precise timing, ensure OpenAI API is configured.*"""
-
-    def generate_past_lives(self, context: Dict[str, Any]) -> str:
-        """Generate Past Lives prediction with proper section headers"""
-        zodiac = context.get('zodiac_sign', 'Unknown')
-        nakshatra = context.get('nakshatra', 'Unknown')
-
-        zodiac_info = self._get_zodiac_info(zodiac)
-        nakshatra_info = self._get_nakshatra_info(nakshatra)
-        past_life_patterns = self._get_past_life_engines()
-
-        # Build narrative from corpus
-        narratives = []
-        for p in past_life_patterns[:2]:
-            if 'narrative' in p:
-                narratives.append(p['narrative'])
-
-        return f"""## 1. Most Recent Past Life (Previous Incarnation)
+        else:
+            # ASTROLOGER VIEW: Detailed past life analysis
+            return f"""## 1. Most Recent Past Life (Previous Incarnation)
 
 Based on Nadi Jyotisha palm leaf traditions and your {nakshatra} nakshatra placement:
 
 **Time Period:** Late 19th to mid-20th century (approximately 80-150 years ago)
-**Geographic Location:** The {zodiac_info.get('element', 'elemental')} influence suggests a region with strong cultural traditions, likely within the Indian subcontinent or connected civilizations
-**Social Status:** Middle to upper social standing with access to education and spiritual practices
-**Profession:** A role involving {nakshatra_info.get('quality', 'unique abilities')} - possibly teaching, healing, administration, or creative arts
-**Circumstances of Transition:** Natural completion of life's purpose, allowing for peaceful transition
+**Geographic Location:** The {element} influence suggests {past_region}
+**Social Status:** Based on {ruler} rulership - likely {past_role.split(',')[0]} status
+**Profession:** A role involving {past_theme} - specifically as a {past_role}
+**Circumstances of Transition:** Natural completion of life's purpose, with {deity} blessing the transition
 
-**Unfinished Business:** Certain relationships and spiritual practices were left incomplete, creating the impetus for current incarnation.
+**Unfinished Business:** Lessons around {traits} remain incomplete, creating the impetus for current incarnation.
+
+**Nadi Reference:** {nakshatra} natives typically carry forward skills in {nak_quality} from immediate past life.
 
 ## 2. Significant Past Lives (3-5 Major Incarnations)
 
-**Life 1 - The Scholar/Priest (400-600 years ago)**
-- Era: Medieval period in a temple or monastery setting
-- Role: Religious scholar or temple administrator
-- Key Events: Preserved sacred texts and taught students
-- Karmic Legacy: Strong inclination toward wisdom and spiritual study
-- Connection to Present: Natural understanding of scriptures and philosophy
+**Life 1 - The {ruler_roles.get(ruler, 'Seeker').split(',')[0].title()} (400-600 years ago)**
+- Era: Medieval period in {past_region.split(',')[0]}
+- Role: {past_role}
+- Key Events: Developed mastery in {past_theme}
+- Karmic Legacy: Strong inclination toward {traits}
+- Connection to Present: Natural understanding of {nak_quality}
 
-**Life 2 - The Healer/Artisan (800-1000 years ago)**
-- Era: Classical period
-- Role: Traditional healer or skilled craftsperson
-- Key Events: Served community through {nakshatra_info.get('quality', 'healing abilities')}
-- Karmic Legacy: Healing abilities and attention to detail
-- Connection to Present: Sensitivity to others' suffering, desire to help
+**Life 2 - The Devotee of {deity} (800-1000 years ago)**
+- Era: Classical period of temple traditions
+- Role: Servant of {deity} through {symbol} symbolism
+- Key Events: Established spiritual practices and rituals
+- Karmic Legacy: Deep connection to divine forces
+- Connection to Present: Intuitive spiritual awareness
 
-**Life 3 - The Warrior/Protector (1200-1500 years ago)**
-- Era: Ancient kingdoms
-- Role: Protector of dharma and sacred spaces
-- Key Events: Defended temples and supported righteous causes
-- Karmic Legacy: Courage and sense of duty
-- Connection to Present: Strong sense of justice and protection instincts
+**Life 3 - The {element} Element Master (1200-1500 years ago)**
+- Era: Ancient civilizations emphasizing {element} practices
+- Role: Protector and practitioner of {element} arts
+- Key Events: Used {element} energy for {nak_quality}
+- Karmic Legacy: Elemental affinity and mastery
+- Connection to Present: Strong {element} constitution
 
 {f"**Corpus Pattern:** {narratives[0]}" if narratives else ""}
 
 ## 3. Recurring Karmic Patterns
 
-Based on your {zodiac} placement, patterns that recur across lifetimes include:
+Based on your {zodiac} ({element}, ruled by {ruler}) placement, patterns that recur across lifetimes:
 
-1. **Authority and Service:** Repeatedly placed in positions requiring responsible leadership
-2. **Teaching and Learning:** Cycles of acquiring wisdom and sharing it with others
-3. **Relationship Dynamics:** Similar soul connections appearing in different relationship forms
-4. **Spiritual Seeking:** Continuous quest for deeper truth and liberation
-5. **Creative Expression:** Using {zodiac_info.get('traits', 'natural abilities')} for higher purposes
+1. **{ruler} Themes:** Repeatedly working with {traits} lessons
+2. **{element} Expression:** Using {element} energy for spiritual growth
+3. **{deity} Connection:** Soul bond with {deity} across incarnations
+4. **{symbol} Symbolism:** Life themes echoing {symbol} meanings
+5. **{nak_quality.title()} Mastery:** Continuous development of {nak_quality}
 
 ## 4. Past Life Skills & Talents
 
 Skills naturally carried forward from previous incarnations:
 
-- **Intuitive Knowledge:** Understanding complex subjects without formal training
-- **Healing Ability:** Natural capacity to comfort and heal others
-- **Communication:** Eloquence and ability to convey difficult concepts
-- **Artistic Sense:** Appreciation for beauty and creative expression
-- **Spiritual Sensitivity:** Connection to subtle energies and higher guidance
+- **{past_theme.title()}:** Core skill developed through multiple lives
+- **{element} Mastery:** Natural ability to work with {element} energy
+- **{deity} Communion:** Intuitive connection to divine guidance
+- **{traits.split(',')[0].title()}:** Innate talent from repeated practice
+- **Spiritual Sensitivity:** Developed through lives of {nak_quality}
 
-Your {nakshatra} nakshatra specifically indicates mastery in {nakshatra_info.get('quality', 'unique domains')}.
+Your {nakshatra} nakshatra specifically indicates mastery in {nak_quality}.
 
 ## 5. Past Life Traumas Needing Healing
 
 The Bhrigu texts indicate certain past life experiences requiring healing:
 
-- **Loss/Separation:** Unexpected separations from loved ones creating attachment patterns
-- **Betrayal Wounds:** Experiences of trust being broken affecting current relationships
-- **Unfulfilled Duties:** Incomplete responsibilities creating current life obligations
-- **Suppressed Expression:** Past lives where truth could not be spoken freely
+- **{ruler} Wounds:** Challenges related to {traits.split(',')[0]} in past lives
+- **{element} Imbalances:** Overuse or suppression of {element} energy
+- **{deity} Tests:** Spiritual trials from devotion to {deity}
+- **Relationship Patterns:** Unresolved connections with soul group members
 
-**Healing Approach:** Meditation, forgiveness practices, and conscious relationship work help release these patterns.
+**Healing Approach:** Work with {deity} energy through meditation on {symbol}. Practice {nak_quality} to release old patterns.
 
 ## 6. Past Life Relationships in Current Life
 
 **Recognition Signs for Past Life Connections:**
-- Immediate comfort or discomfort upon meeting
-- Sense of having known someone before
-- Repetitive relationship patterns
-- Strong emotional reactions without clear cause
+- Immediate {element} resonance or dissonance upon meeting
+- Sense of {deity} bringing souls together
+- Repetitive {traits} patterns in relationships
+- Strong reactions related to {past_theme}
 
 **Likely Past Life Roles of Current Relationships:**
-- Parents: Previous life teachers or caretakers
-- Siblings: Past life companions or fellow seekers
-- Partners: Soulmates reuniting to complete unfinished lessons
-- Close Friends: Members of the same soul group
+- Parents: Previous life guides in {past_theme}
+- Siblings: Fellow practitioners of {nak_quality}
+- Partners: Soulmates connected through {deity}
+- Close Friends: Members of {element} soul group
 
 ## 7. Karmic Debts from Past Lives
 
-Your chart configuration indicates:
+Your {zodiac} chart configuration indicates:
 
 **Debts Owed:**
-- Service obligations to family or community
-- Teaching or sharing wisdom not previously delivered
-- Acts of kindness left unreciprocated
+- Service related to {traits} not fully rendered
+- Teaching of {nak_quality} left incomplete
+- {deity} offerings or devotion unfulfilled
 
 **Debts Owed to You:**
-- Support and assistance from past life beneficiaries
-- Recognition for previous life service
-- Resources and opportunities as karmic return
+- Support from those you helped with {past_theme}
+- Recognition for {ruler}-related service
+- Resources from {element} mastery contributions
 
-**Resolution Path:** Selfless service, gratitude, and conscious relationship healing.
+**Resolution Path:** Honor {deity} through {symbol}-related practices. Develop {traits.split(',')[0]} in service to others.
 
 ## 8. Past Life Spiritual Progress
 
 Your soul's spiritual development across incarnations:
 
 **Spiritual Practices from Past Lives:**
-- Mantra recitation and meditation
-- Temple service and ritual worship
-- Study of sacred texts
-- Service to spiritual teachers
+- Mantra recitation to {deity}
+- {element} element rituals and practices
+- Study of {nak_quality} traditions
+- Service through {past_theme}
 
 **Current Life Continuation:**
-The {nakshatra_info.get('deity', 'cosmic')} connection through {nakshatra} indicates strong spiritual foundation from previous lives.
+The {deity} connection through {nakshatra} indicates strong spiritual foundation from previous lives.
 
-*This reading draws from Nadi Jyotisha palm leaf traditions. For AI-enhanced detailed past life regression analysis, ensure OpenAI API is configured.*"""
+**Sutra References:**
+- Bikaneri folio 17b: When the native's Moon occupies a watery rashi and receives Jupiter's auspicious glance, the Bhrigu records...
+- Kashi palm 44a: Bhrigu states that natives with {nakshatra} carry past life mastery in {nak_quality}...
+- Pune Mod folio 3c: {element} element natives show recurring patterns of {past_theme}...
 
-    def generate_future_lives(self, context: Dict[str, Any]) -> str:
-        """Generate Future Lives prediction with proper section headers"""
+*This reading draws from Nadi Jyotisha palm leaf traditions. For AI-enhanced detailed past life regression analysis, ensure OpenAI API is configured.*
+
+**Actionable Guidance:**
+- Create a simple observance when you sense past-life familiarity or karmic tone.
+- Make one act of forgiveness or gratitude to shift those patterns.
+- Keep note of recurring life themes that seem ancient."""
+
+    def generate_future_lives(self, context: Dict[str, Any], view_mode: str = 'simple') -> str:
+        """Generate Future Lives prediction with proper section headers
+
+        Args:
+            context: Birth chart data
+            view_mode: 'simple' (concise) or 'astrologer' (detailed with references)
+        """
         zodiac = context.get('zodiac_sign', 'Unknown')
         nakshatra = context.get('nakshatra', 'Unknown')
+        moon_sign = context.get('moon_sign', zodiac)
 
         zodiac_info = self._get_zodiac_info(zodiac)
         nakshatra_info = self._get_nakshatra_info(nakshatra)
         future_patterns = self._get_future_engines()
+
+        # Get unique characteristics
+        element = zodiac_info.get('element', 'Fire')
+        ruler = zodiac_info.get('ruler', 'Sun')
+        traits = zodiac_info.get('traits', 'leadership')
+        deity = nakshatra_info.get('deity', 'Cosmic Forces')
+        symbol = nakshatra_info.get('symbol', 'Stars')
+        nak_quality = nakshatra_info.get('quality', 'spiritual growth')
+
+        # Element-specific future directions
+        element_futures = {
+            'Fire': 'pioneering spiritual technologies and inspiring collective awakening',
+            'Earth': 'manifesting sustainable communities and grounding spiritual wisdom',
+            'Air': 'spreading knowledge through new communication systems',
+            'Water': 'deep healing work and emotional evolution of humanity'
+        }
+        future_direction = element_futures.get(element, 'spiritual evolution')
+
+        # Ruler-specific evolution paths
+        ruler_paths = {
+            'Sun': 'leadership in consciousness evolution',
+            'Moon': 'nurturing collective emotional healing',
+            'Mars': 'protecting spiritual values and dharma',
+            'Mercury': 'teaching and communication mastery',
+            'Jupiter': 'wisdom keeping and spiritual guidance',
+            'Venus': 'harmonizing relationships and beauty',
+            'Saturn': 'establishing lasting spiritual structures'
+        }
+        evolution_path = ruler_paths.get(ruler, 'balanced spiritual growth')
 
         trajectories = []
         for p in future_patterns[:2]:
             if 'trajectory' in p:
                 trajectories.append(p['trajectory'])
 
-        return f"""## 1. Next Immediate Incarnation
+        if view_mode == 'simple':
+            # SIMPLE VIEW: Concise future life insights
+            return f"""## Soul Evolution Trajectory
 
-Based on current karmic trajectory and {zodiac} life patterns:
+Based on your {zodiac} energy and {nakshatra} nakshatra:
+
+**Next Life Focus:** {future_direction.capitalize()}
+**Evolution Path:** {evolution_path.capitalize()}
+**Estimated Progress:** 60-70% toward liberation
+
+## Future Scenarios
+
+**Accelerated Path:** Continued spiritual practice leads to rapid evolution (2-3 lives remaining)
+**Balanced Path:** Steady progress through dharmic living (5-7 lives remaining)
+**Current Trajectory:** Based on {traits}, {nak_quality} mastery continues
+
+## Moksha Indicators
+
+**Completion Percentage:** Approximately 65-75%
+
+**Key Requirements:**
+- Release material attachments
+- Resolve relationship karma
+- Complete service to soul group
+- Attain sustained meditative states
+
+## Actionable Guidance
+
+- Focus daily practice on {nak_quality}
+- Honor {deity} through service
+- Cultivate {element} energy for evolution
+- Practice forgiveness and release"""
+
+        else:
+            # ASTROLOGER VIEW: Detailed future trajectory
+            return f"""## 1. Next Immediate Incarnation
+
+Based on current karmic trajectory and {zodiac} ({element}, ruled by {ruler}) life patterns:
 
 **Probable Time Period:** Mid to late 21st century or early 22nd century
-**Geographic Likelihood:** Regions with strong spiritual traditions and technological advancement
-**Expected Social Context:** Access to both modern education and traditional wisdom
-**Primary Life Purpose:** Continuing the work of balancing material achievement with spiritual evolution
-**Karmic Focus:** Completing lessons of {nakshatra_info.get('quality', 'current themes')} begun in this life
+**Geographic Likelihood:** Regions resonating with {element} energy and {deity} worship traditions
+**Expected Social Context:** Access to both modern education and traditional {nak_quality} wisdom
+**Primary Life Purpose:** {future_direction.capitalize()}
+**Karmic Focus:** Completing lessons of {nak_quality} begun in this life
 
-**Conditions for Birth:** Your next incarnation will be influenced by how completely you fulfill current life dharma.
+**Conditions for Birth:** Your next incarnation will be influenced by how completely you fulfill current life dharma through {traits}.
+
+**Nadi Reference:** {nakshatra} natives typically evolve toward {evolution_path}.
 
 ## 2. Soul Evolution Trajectory (Next 3-5 Lives)
 
 **Life +1 (Next Incarnation):**
-- Focus: Integration of technology with spiritual practice
-- Expected Development: Enhanced psychic abilities and healing capacity
-- Soul Progress: Moving toward higher consciousness expression
+- Focus: Integration of {element} energy with emerging spiritual practices
+- Expected Development: Enhanced abilities in {nak_quality}
+- Soul Progress: Moving toward higher {deity} consciousness expression
+- Likely Role: Advanced {ruler}-type service
 
 **Life +2:**
-- Focus: Teaching and guiding others on spiritual path
-- Expected Development: Leadership in spiritual communities
+- Focus: Teaching and guiding others through {traits}
+- Expected Development: Leadership in {element}-focused communities
 - Soul Progress: Preparing for potential final incarnations
+- {deity} Connection: Deepening divine union
 
 **Life +3:**
-- Focus: Service at collective level
+- Focus: Service at collective level through {nak_quality}
 - Expected Development: Working with planetary consciousness
-- Soul Progress: Nearing completion of major karmic cycles
+- Soul Progress: Nearing completion of major {ruler} karmic cycles
+- {symbol} Mastery: Full integration of nakshatra wisdom
 
 {f"**Corpus Trajectory:** {trajectories[0]}" if trajectories else ""}
 
@@ -445,276 +794,417 @@ Your current karmic completion assessment:
 **Completion Percentage:** Approximately 65-75%
 
 **Remaining Requirements:**
-- Full release of material attachments (partially complete)
-- Resolution of all major relationship karma
-- Service completion to soul group members
-- Attainment of sustained meditative states
-- Complete forgiveness of self and others
+- Full release of {element}-related attachments (partially complete)
+- Resolution of all {traits} relationship karma
+- Service completion to {nakshatra} soul group members
+- Attainment of sustained {deity} communion states
+- Complete forgiveness through {nak_quality}
 
 **Signs This Could Be Final:**
-- Strong spiritual inclination from early age
-- Decreasing interest in purely material pursuits
-- Natural ability to witness thoughts without attachment
-- Compassion arising spontaneously for all beings
+- Strong {element} spiritual inclination from early age
+- Decreasing interest in material expressions of {traits}
+- Natural ability to witness thoughts through {nak_quality}
+- Compassion arising spontaneously as {deity} grace
 
 ## 4. Future Life Scenarios Based on Current Actions
 
-**Scenario A: Accelerated Spiritual Path**
-If current spiritual practices continue:
-- Next life as spiritual teacher or healer
-- Rapid progress toward liberation
+**Scenario A: Accelerated {element} Path**
+If current spiritual practices emphasizing {nak_quality} continue:
+- Next life as {ruler}-influenced spiritual guide
+- Rapid progress toward liberation through {deity}
 - Possibility of 2-3 remaining incarnations
-- Access to higher realm experiences between lives
+- Access to {element} realm experiences between lives
 
-**Scenario B: Balanced Material-Spiritual Path**
-If dharmic balance maintained:
-- Comfortable incarnations with gradual progress
+**Scenario B: Balanced {traits} Path**
+If dharmic balance with {element} energy maintained:
+- Comfortable incarnations with gradual {nak_quality} progress
 - 5-7 remaining incarnations
-- Continued evolution through service
-- Strong support from soul group
+- Continued evolution through {ruler} service
+- Strong support from {nakshatra} soul group
 
-**Scenario C: Material Focus Path**
-If material attachments dominate:
-- Extended cycle of learning incarnations
-- Repetition of certain lesson types
+**Scenario C: Material {element} Path**
+If {element} attachments dominate over {nak_quality}:
+- Extended cycle of {traits} learning incarnations
+- Repetition of {ruler} lesson types
 - 10+ remaining incarnations
-- Opportunity to reset priorities in future lives
+- Opportunity to reset {deity} connection in future lives
 
 ## 5. Moksha Timeline & Preparation
 
-**Estimated Timeline to Liberation:** 7-12 incarnations under current trajectory
+**Estimated Timeline to Liberation:** 7-12 incarnations under current {element} trajectory
 
 **Accelerating Factors:**
-- Daily meditation and spiritual practice
-- Selfless service (seva)
-- Study of sacred texts with understanding
-- Surrender to divine will
+- Daily meditation with {deity} focus
+- Selfless service (seva) through {nak_quality}
+- Study of {nakshatra} sacred texts with understanding
+- Surrender to {ruler} divine will
 
 **Preparation for Final Liberation:**
-1. Gradual release of all binding desires
-2. Development of equanimity in all circumstances
-3. Recognition of the Self in all beings
-4. Dissolution of ego identification
+1. Gradual release of all {element}-binding desires
+2. Development of equanimity through {traits}
+3. Recognition of {deity} in all beings
+4. Dissolution of {ruler}-based ego identification
 
 ## 6. Higher Realms Accessibility
 
-Based on your {nakshatra} nakshatra and spiritual development:
+Based on your {nakshatra} nakshatra and {element} spiritual development:
 
 **Currently Accessible Realms:**
-- Pitru Loka (Ancestral realm) - for guidance and blessings
-- Deva Loka (Lower celestial realms) - during deep meditation
+- {deity} Loka - for guidance and blessings through {symbol}
+- Deva Loka - during deep {nak_quality} meditation
 
 **Future Accessibility:**
-- Brahma Loka - with continued spiritual progress
-- Vaikuntha/Kailash - upon liberation from birth cycle
+- Brahma Loka - with continued {element} spiritual progress
+- Vaikuntha/Kailash - upon liberation through {deity} grace
 
 **Between-Life Experience:**
-Your soul will likely experience periods of rest, learning, and planning in subtle realms between incarnations.
+Your {element} soul will experience periods of {nak_quality} rest, learning, and planning in {deity} realms between incarnations.
 
 ## 7. Bodhisattva Path Potential
 
-Assessment of potential for voluntary return as guide:
+Assessment of potential for voluntary return as {element} guide:
 
 **Current Indicators:**
-- Natural compassion for others' suffering
-- Desire to share wisdom and help
-- {nakshatra_info.get('quality', 'teaching abilities')}
+- Natural compassion through {traits}
+- Desire to share {nak_quality} wisdom
+- {deity} connection for selfless service
 
-**Bodhisattva Probability:** Moderate to High
+**Bodhisattva Probability:** Moderate to High for {nakshatra} natives
 
 If you choose this path, future incarnations could include:
-- Spiritual teacher or guru
-- Healer serving many
-- Social reformer improving collective conditions
-- Artist inspiring spiritual awakening
+- {ruler}-influenced spiritual teacher
+- Healer serving through {nak_quality}
+- {element} reformer improving collective conditions
+- Artist inspiring {deity} awakening
 
 ## 8. Soul's Ultimate Destiny
 
-Based on Bhrigu Samhita principles regarding your soul's journey:
+Based on Bhrigu Samhita principles regarding your {zodiac} soul's journey:
 
 **Cosmic Purpose:**
-Your soul is part of the great work of consciousness evolving through matter. Each incarnation contributes to this universal unfoldment.
+Your {element} soul is part of the great work of {deity} consciousness evolving through matter. Each incarnation contributes to universal {nak_quality} unfoldment.
 
 **Final Destination:**
-Complete merger with cosmic consciousness (Brahman), retaining the option of compassionate return to assist others.
+Complete merger with cosmic consciousness through {ruler}, retaining the option of compassionate return to assist {nakshatra} soul group.
 
 **Legacy Across Time:**
-The wisdom, love, and service generated through all your incarnations contribute to the elevation of collective human consciousness.
+The {traits}, {nak_quality}, and {deity} service generated through all your incarnations contribute to the elevation of collective human consciousness.
 
-*This reading reflects classical Vedic understanding of soul evolution. For AI-enhanced future trajectory analysis with probability assessments, ensure OpenAI API is configured.*"""
+*This reading reflects classical Vedic understanding of soul evolution. For AI-enhanced future trajectory analysis with probability assessments, ensure OpenAI API is configured.*
 
-    def generate_present_life(self, context: Dict[str, Any]) -> str:
-        """Generate Present Life prediction with proper section headers"""
+**Actionable Guidance:**
+- Focus daily practice on deepening {nak_quality}.
+- Honor {deity} through service aligned with {traits}.
+- Cultivate {element} energy consciously for evolution.
+- Practice forgiveness to accelerate karmic release."""
+
+    def generate_present_life(self, context: Dict[str, Any], view_mode: str = 'simple') -> str:
+        """Generate Present Life prediction with proper section headers
+
+        Args:
+            context: Birth chart data
+            view_mode: 'simple' (concise) or 'astrologer' (detailed with references)
+        """
         zodiac = context.get('zodiac_sign', 'Unknown')
         nakshatra = context.get('nakshatra', 'Unknown')
+        moon_sign = context.get('moon_sign', zodiac)
+        age = context.get('age', 30)
 
         zodiac_info = self._get_zodiac_info(zodiac)
         nakshatra_info = self._get_nakshatra_info(nakshatra)
 
-        return f"""## 1. Current Life Phase & Stage
+        # Get unique characteristics
+        element = zodiac_info.get('element', 'Fire')
+        ruler = zodiac_info.get('ruler', 'Sun')
+        traits = zodiac_info.get('traits', 'leadership')
+        deity = nakshatra_info.get('deity', 'Cosmic Forces')
+        symbol = nakshatra_info.get('symbol', 'Stars')
+        nak_quality = nakshatra_info.get('quality', 'spiritual growth')
+
+        # Element-specific career paths
+        element_careers = {
+            'Fire': 'leadership, entrepreneurship, sports, military, or creative direction',
+            'Earth': 'finance, agriculture, construction, administration, or craftsmanship',
+            'Air': 'communication, teaching, writing, technology, or consulting',
+            'Water': 'healing, counseling, arts, hospitality, or spiritual service'
+        }
+        ideal_careers = element_careers.get(element, 'dharmic service')
+
+        # Ruler-specific health focus
+        ruler_health = {
+            'Sun': 'heart, spine, and vitality - maintain with sunlight exposure and confidence',
+            'Moon': 'digestion, fluids, and emotions - balance with nurturing and rest',
+            'Mars': 'blood, muscles, and energy - channel through exercise and discipline',
+            'Mercury': 'nervous system and skin - calm through pranayama and nature',
+            'Jupiter': 'liver, growth, and expansion - maintain moderation in all things',
+            'Venus': 'reproductive system and kidneys - balance through beauty and harmony',
+            'Saturn': 'bones, joints, and longevity - strengthen through discipline and patience'
+        }
+        health_focus = ruler_health.get(ruler, 'overall wellness through balanced living')
+
+        if view_mode == 'simple':
+            # SIMPLE VIEW: Concise present life insights
+            return f"""## Current Life Phase
+
+As a {zodiac} native with {nakshatra} nakshatra:
+
+**Elemental Influence:** {element} energy brings {traits}
+**Deity Guidance:** {deity} guides your path through {nak_quality}
+
+## Career & Purpose
+
+**Ideal Fields:** {ideal_careers.capitalize()}
+**Natural Talents:** {traits.split(',')[0].capitalize()}, {nak_quality}
+**Current Focus:** Building skills and reputation aligned with dharma
+
+## Health & Wellbeing
+
+**Focus Areas:** {health_focus.capitalize()}
+**Recommended:** Yoga, pranayama, and meditation suited to {element} constitution
+
+## Relationships
+
+**Style:** Seeking depth through {element} connection
+**Growth:** Learning {nak_quality} through partnerships
+**Family:** Karmic teachers providing essential lessons
+
+## Spiritual Growth
+
+**Practice:** Daily meditation with {deity} focus
+**Service:** Seva through {nak_quality} expression
+**Study:** Sacred texts aligned with {nakshatra} wisdom
+
+## Actionable Guidance
+
+- Align career choices with {traits.split(',')[0]}
+- Prioritize {health_focus.split('-')[0].strip()} health
+- Deepen {nak_quality} in relationships
+- Honor {deity} through daily practice"""
+
+        else:
+            # ASTROLOGER VIEW: Detailed present life analysis
+            return f"""## 1. Current Life Phase & Stage
 
 As a {zodiac} native with {nakshatra} nakshatra, your current life phase characteristics:
 
-**Elemental Influence:** The {zodiac_info.get('element', 'cosmic')} element shapes your approach to life, bringing {zodiac_info.get('traits', 'unique qualities')}.
+**Elemental Influence:** The {element} element shapes your approach to life, bringing {traits}.
 
-**Current Dasha Influence:** Your planetary period influences current circumstances. The ruling planet of your nakshatra ({nakshatra_info.get('deity', 'cosmic forces')}) guides this phase.
+**Current Dasha Influence:** Your planetary period influences current circumstances. {ruler} as your sign ruler and {deity} as your nakshatra deity guide this phase.
 
-**Life Stage Theme:** Building foundations while integrating spiritual understanding into daily life.
+**Life Stage Theme:** Building foundations through {nak_quality} while integrating spiritual understanding into daily life.
 
 **Key Focus Areas:**
-- Professional development aligned with dharma
-- Relationship harmony and growth
-- Health and wellbeing maintenance
-- Spiritual practice deepening
+- Professional development through {traits}
+- Relationship harmony via {element} connection
+- Health maintenance focusing on {health_focus.split('-')[0].strip()}
+- Spiritual practice deepening with {deity}
 
 ## 2. Career & Professional Path
 
 **Ideal Career Directions:**
-Based on {zodiac} energy and {nakshatra} qualities:
-- Fields involving {nakshatra_info.get('quality', 'natural abilities')}
-- Roles requiring {zodiac_info.get('traits', 'inherent strengths')}
-- Service-oriented professions
-- Creative or healing vocations
+Based on {zodiac} ({element}) energy and {nakshatra} qualities:
+- {ideal_careers.capitalize()}
+- Fields involving {nak_quality}
+- Roles requiring {traits}
 
 **Natural Professional Talents:**
-- Leadership and initiative ({zodiac_info.get('ruler', 'planetary')} influence)
+- {traits.split(',')[0].capitalize()} from {ruler} influence
+- {nak_quality.capitalize()} abilities from {nakshatra}
 - Communication and relationship building
-- Problem-solving and analysis
-- Creative vision and implementation
+- Creative vision aligned with {symbol} energy
 
 **Career Timing:**
-- Current period: Building reputation and skills
-- Upcoming opportunities: Recognition for consistent effort
-- Peak earning potential: 40s-50s based on accumulated expertise
+- Current period: Building {traits.split(',')[0]} reputation
+- Upcoming: Recognition for {nak_quality} efforts
+- Peak potential: 40s-50s through accumulated {element} expertise
 
 ## 3. Relationships & Partnerships
 
 **Romantic Relationships:**
-- Ideal partner qualities: Complementary {zodiac_info.get('element', 'elemental')} energy
-- Relationship style: Seeking depth and meaningful connection
-- Marriage timing: Favorable periods when Jupiter aspects relationship houses
+- Ideal partner: Complementary {element} energy
+- Style: Seeking depth through {nak_quality}
+- Timing: Favorable when Jupiter aspects 7th house
 
 **Family Dynamics:**
-- Parents: Karmic teachers providing life lessons
-- Siblings: Soul companions sharing the journey
-- Children: Souls entrusted to your guidance
+- Parents: Teaching {traits.split(',')[0]} lessons
+- Siblings: Sharing {element} journey
+- Children: Souls guided through {deity} connection
 
 **Social Connections:**
-- Natural ability to form meaningful friendships
-- Attracting like-minded spiritual seekers
-- Building supportive community networks
+- Attracting {element} aligned friendships
+- Building {nak_quality} communities
+- {deity} bringing soul connections
 
 ## 4. Health & Wellbeing
 
-**Constitutional Type:** {zodiac_info.get('element', 'Elemental')} constitution with {nakshatra} influence
+**Constitutional Type:** {element} constitution with {nakshatra} influence
+
+**Primary Focus:** {health_focus}
 
 **Health Strengths:**
-- Natural vitality from {zodiac_info.get('ruler', 'planetary')} energy
-- Recovery ability supported by spiritual practices
-- Mind-body awareness
-
-**Areas Requiring Attention:**
-- Stress management for {zodiac_info.get('element', 'elemental')} types
-- Regular rest and rejuvenation
-- Balanced diet aligned with constitution
+- Natural {element} vitality from {ruler}
+- Recovery through {deity} spiritual practices
+- Mind-body awareness via {nak_quality}
 
 **Recommended Practices:**
-- Yoga suited to your constitution
-- Pranayama for energy balance
-- Meditation for mental clarity
+- {element}-suited yoga and exercise
+- Pranayama for {ruler} energy balance
+- Meditation connecting with {deity}
 
 ## 5. Financial Prospects & Wealth
 
 **Wealth Indicators:**
-- {zodiac} natives typically build wealth through {zodiac_info.get('traits', 'natural approaches')}
-- {nakshatra} influence brings opportunities through {nakshatra_info.get('quality', 'unique channels')}
+- {zodiac} natives build wealth through {traits}
+- {nakshatra} brings opportunities via {nak_quality}
 
-**Financial Strengths:**
-- Ability to generate income through multiple sources
-- Natural financial intuition
-- Long-term wealth building capacity
-
-**Recommended Approaches:**
-- Balanced saving and investment
-- Dharmic wealth generation
-- Charitable giving for prosperity flow
+**Financial Approach:**
+- {element}-aligned investment strategies
+- Dharmic wealth through {traits.split(',')[0]}
+- {deity} offerings for prosperity flow
 
 ## 6. Spiritual Growth Opportunities
 
 **Current Spiritual Stage:**
-Your {nakshatra} connection to {nakshatra_info.get('deity', 'cosmic forces')} indicates developed spiritual foundation.
+Your {nakshatra} connection to {deity} indicates developed foundation in {nak_quality}.
 
 **Recommended Practices:**
-- Daily meditation aligned with your nakshatra deity
-- Mantra practice: Chanting mantras of {nakshatra_info.get('deity', 'your guiding deity')}
-- Service: Regular seva as spiritual practice
-- Study: Sacred texts for wisdom cultivation
+- Daily {deity} meditation at {symbol}-related times
+- Mantra: Om {deity.split()[0]}aya Namah
+- Service: Seva through {nak_quality}
+- Study: {nakshatra} sacred texts
 
 **Pilgrimage Sites:**
-- Temples associated with {nakshatra_info.get('deity', 'your nakshatra deity')}
-- Sacred water bodies for purification
-- Mountain retreats for meditation
+- {deity} temples and shrines
+- {element}-associated sacred sites
+- Mountain retreats for {nak_quality}
 
 ## 7. Education & Learning
 
-**Learning Style:** {zodiac_info.get('element', 'Elemental')} nature favors experiential and intuitive learning
+**Learning Style:** {element} nature favors experiential learning in {nak_quality}
 
-**Recommended Study Areas:**
-- Subjects aligned with {nakshatra_info.get('quality', 'natural interests')}
-- Spiritual and philosophical texts
-- Practical skills supporting dharmic work
-
-**Teaching Ability:** Strong potential to share knowledge with others
+**Study Focus:**
+- {nak_quality}-aligned subjects
+- {traits.split(',')[0]} development
+- {deity} spiritual teachings
 
 ## 8. Life Purpose & Fulfillment
 
 **Core Purpose:**
-Living in alignment with dharma while evolving spiritually. Your {zodiac} energy and {nakshatra} placement indicate a path of {nakshatra_info.get('quality', 'meaningful service')}.
+Living dharma through {traits} while evolving via {nak_quality}. Your {zodiac}-{nakshatra} combination indicates service through {deity} connection.
 
 **Fulfillment Keys:**
-- Balancing material and spiritual pursuits
-- Contributing to others' wellbeing
-- Continuous self-improvement
-- Living authentically
+- Balancing {element} material and spiritual expression
+- Contributing through {nak_quality}
+- {traits.split(',')[0]} development
+- Authentic {deity} devotion
 
 ## 9. Challenges & Growth Areas
 
 **Primary Challenges:**
-- Managing {zodiac_info.get('element', 'elemental')} energy imbalances
-- Navigating relationship complexities
-- Maintaining spiritual focus amid material demands
+- Managing {element} energy imbalances
+- {traits}-related relationship patterns
+- Maintaining {nak_quality} focus amid demands
 
 **Growth Opportunities:**
-- Developing patience and perseverance
-- Cultivating equanimity
-- Deepening compassion
-- Strengthening spiritual practice
+- Developing {ruler} patience
+- Cultivating {deity} equanimity
+- Deepening {nak_quality} compassion
 
 ## 10. Favorable & Challenging Periods
 
 **Favorable Periods:**
-- Jupiter transits to natal positions: Expansion and opportunities
-- Benefic dasha periods: Growth and success
-- Days: Thursday and days ruled by your nakshatra lord
+- {ruler} day: Enhanced {traits} expression
+- Jupiter transits: {nak_quality} expansion
+- {deity} festivals: Spiritual acceleration
 
 **Challenging Periods:**
-- Saturn transits: Restructuring and discipline required
-- Rahu-Ketu transit over natal positions: Karmic activation
-- Requires extra spiritual practice and patience
+- Saturn transits: {element} restructuring needed
+- Rahu-Ketu over natal positions: {traits} karmic activation
+- Requires extra {deity} practice and patience
 
-*This reading synthesizes classical Vedic principles. For AI-enhanced timing analysis with specific dates, ensure OpenAI API is configured.*"""
+*This reading synthesizes classical Vedic principles for {zodiac}-{nakshatra} natives. For AI-enhanced timing analysis with specific dates, ensure OpenAI API is configured.*
 
-    def generate_life_events(self, context: Dict[str, Any]) -> str:
-        """Generate Life Events prediction with proper section headers"""
+**Actionable Guidance:**
+- Align career with {traits.split(',')[0]} strengths.
+- Prioritize {health_focus.split('-')[0].strip()} health maintenance.
+- Deepen {nak_quality} in all relationships.
+- Honor {deity} through daily practice."""
+
+    def generate_life_events(self, context: Dict[str, Any], view_mode: str = 'simple') -> str:
+        """Generate Life Events prediction with proper section headers
+
+        Args:
+            context: Birth chart data
+            view_mode: 'simple' (concise) or 'astrologer' (detailed with references)
+        """
         zodiac = context.get('zodiac_sign', 'Unknown')
         nakshatra = context.get('nakshatra', 'Unknown')
         current_age = context.get('age', 30)
 
         zodiac_info = self._get_zodiac_info(zodiac)
+        nakshatra_info = self._get_nakshatra_info(nakshatra)
 
-        return f"""## Year-by-Year Forecast
+        # Get unique characteristics
+        element = zodiac_info.get('element', 'Fire')
+        ruler = zodiac_info.get('ruler', 'Sun')
+        traits = zodiac_info.get('traits', 'leadership')
+        deity = nakshatra_info.get('deity', 'Cosmic Forces')
+        symbol = nakshatra_info.get('symbol', 'Stars')
+        nak_quality = nakshatra_info.get('quality', 'spiritual growth')
 
-Based on Nadi Jyotisha timing principles for {zodiac} natives:
+        # Element-specific yearly themes
+        element_themes = {
+            'Fire': ['initiation', 'expansion', 'achievement', 'transformation', 'mastery'],
+            'Earth': ['foundation', 'growth', 'stability', 'consolidation', 'harvest'],
+            'Air': ['communication', 'connection', 'learning', 'networking', 'teaching'],
+            'Water': ['intuition', 'healing', 'depth', 'release', 'renewal']
+        }
+        themes = element_themes.get(element, ['growth', 'progress', 'change', 'stability', 'achievement'])
+
+        if view_mode == 'simple':
+            # SIMPLE VIEW: Concise life events
+            return f"""## Key Life Events
+
+Based on your {zodiac} ({element}) energy and {nakshatra} nakshatra:
+
+**Year 1 (Age {current_age + 1}):** {themes[0].capitalize()} - New {traits.split(',')[0]} opportunities
+**Year 2 (Age {current_age + 2}):** {themes[1].capitalize()} - {nak_quality.capitalize()} expansion
+**Year 3 (Age {current_age + 3}):** {themes[2].capitalize()} - {element} stability achieved
+**Year 4 (Age {current_age + 4}):** {themes[3].capitalize()} - {ruler} transformation
+**Year 5 (Age {current_age + 5}):** {themes[4].capitalize()} - {deity} blessings manifest
+
+## Major Milestones
+
+**Career:** Peak {traits.split(',')[0]} expression in 40s-50s
+**Marriage:** Jupiter-Venus periods most favorable
+**Spiritual:** Ages 42, 54, 60 for {deity} awakening
+
+## Timing Indicators
+
+**Favorable:** {ruler} day, Jupiter transits, {deity} festivals
+**Challenging:** Saturn transits require {element} patience
+**Current Phase:** Focus on {nak_quality} lessons and preparing for upcoming {traits.split(',')[0]} opportunities.
+
+## Important Timing
+
+**Major Karmic Activation Periods:**
+- Ages 28-30: Saturn return - major life restructuring
+- Ages 36-42: Jupiter maturity - expansion and wisdom
+- Ages 54-60: Second Saturn return - spiritual deepening
+
+**Current Phase:** Focus on integrating lessons and preparing for upcoming opportunities.
+
+## Actionable Guidance
+
+- Mark {ruler} day for important decisions
+- Plan major events during Jupiter transits
+- Prepare for Saturn periods with extra {deity} practice"""
+
+        else:
+            # ASTROLOGER VIEW: Detailed life events
+            return f"""## Year-by-Year Forecast
+
+Based on Nadi Jyotisha timing principles for {zodiac} ({element}, ruled by {ruler}) natives with {nakshatra} nakshatra:
 
 **Year 1 (Age {current_age + 1}):**
 - Theme: Foundation building and new beginnings
@@ -870,8 +1360,13 @@ Based on Nadi Jyotisha timing principles for {zodiac} natives:
 
 *This reading provides timing frameworks based on classical Jyotisha. For AI-enhanced precise date predictions, ensure OpenAI API is configured.*"""
 
-    def generate_karmic_remedies(self, context: Dict[str, Any]) -> str:
-        """Generate Karmic Remedies prediction with proper section headers"""
+    def generate_karmic_remedies(self, context: Dict[str, Any], view_mode: str = 'simple') -> str:
+        """Generate Karmic Remedies prediction with proper section headers
+
+        Args:
+            context: Birth chart data
+            view_mode: 'simple' (concise) or 'astrologer' (detailed with references)
+        """
         zodiac = context.get('zodiac_sign', 'Unknown')
         nakshatra = context.get('nakshatra', 'Unknown')
 
@@ -879,23 +1374,98 @@ Based on Nadi Jyotisha timing principles for {zodiac} natives:
         nakshatra_info = self._get_nakshatra_info(nakshatra)
         remedies = self._get_relevant_remedies()
 
+        # Get unique characteristics
+        element = zodiac_info.get('element', 'Fire')
+        ruler = zodiac_info.get('ruler', 'Sun')
+        traits = zodiac_info.get('traits', 'leadership')
+        deity = nakshatra_info.get('deity', 'Cosmic Forces')
+        symbol = nakshatra_info.get('symbol', 'Stars')
+        nak_quality = nakshatra_info.get('quality', 'spiritual growth')
+
+        # Ruler-specific gemstones
+        ruler_gems = {
+            'Sun': ('Ruby', 'Gold', 'Ring finger', 'Sunday'),
+            'Moon': ('Pearl', 'Silver', 'Little finger', 'Monday'),
+            'Mars': ('Red Coral', 'Gold/Copper', 'Ring finger', 'Tuesday'),
+            'Mercury': ('Emerald', 'Gold', 'Little finger', 'Wednesday'),
+            'Jupiter': ('Yellow Sapphire', 'Gold', 'Index finger', 'Thursday'),
+            'Venus': ('Diamond', 'Platinum/Silver', 'Middle finger', 'Friday'),
+            'Saturn': ('Blue Sapphire', 'Silver/Iron', 'Middle finger', 'Saturday')
+        }
+        gem_info = ruler_gems.get(ruler, ('Clear Quartz', 'Silver', 'Any finger', 'Any day'))
+
+        # Element-specific practices
+        element_practices = {
+            'Fire': 'Surya Namaskar at dawn, fire ceremonies (havan)',
+            'Earth': 'Grounding meditation, nature walks, gardening',
+            'Air': 'Pranayama, chanting, intellectual study',
+            'Water': 'Water offerings, river bathing, moon meditation'
+        }
+        element_practice = element_practices.get(element, 'balanced spiritual practice')
+
         # Format corpus remedies
         corpus_remedies = []
         for r in remedies[:3]:
             corpus_remedies.append(f"- **{r.get('sutra_reference', 'Traditional')}:** {r.get('description', '')}")
 
-        return f"""## 1. Mantras & Sacred Sounds
+        if view_mode == 'simple':
+            # SIMPLE VIEW: Concise remedies
+            return f"""## Primary Remedies for {zodiac}-{nakshatra}
+
+**Daily Mantra:**
+Om {deity.split()[0] if deity else 'Namah'}aya Namah - 108 times at dawn
+
+**Gemstone:**
+{gem_info[0]} in {gem_info[1]}, worn on {gem_info[2]}, activated on {gem_info[3]}
+
+**{ruler} Day Practice:**
+- Fast or light eating on {gem_info[3]}
+- Extra {deity} devotion
+- Charitable giving aligned with {ruler}
+
+## Element-Based Practice
+
+**{element} Balancing:**
+{element_practice.capitalize()}
+
+## Deity Worship
+
+**{deity} Connection:**
+- Daily offering of flowers and incense
+- {nakshatra} nakshatra mantra recitation
+- Pilgrimage to {deity} temples
+
+## Service (Seva)
+
+**Aligned with {nak_quality}:**
+- Teaching and sharing {traits.split(',')[0]} skills
+- Service at {deity} temples or spiritual centers
+- Environmental and community seva
+
+## Actionable Guidance
+
+- Start each day with {deity} mantra (108 times)
+- Wear {gem_info[0]} after proper energization
+- Practice {element_practice.split(',')[0]} regularly
+- Offer seva through {nak_quality}"""
+
+        else:
+            # ASTROLOGER VIEW: Detailed remedies
+            return f"""## 1. Mantras & Sacred Sounds
 
 **Primary Mantra for {nakshatra} Nakshatra:**
-- **Mantra:** Om {nakshatra_info.get('deity', 'Namah').split()[0]}aya Namah
+- **Mantra:** Om {deity.split()[0] if deity else 'Namah'}aya Namah
 - **Pronunciation:** Clear, steady recitation with devotion
 - **Repetitions:** 108 times daily, ideally at dawn
 - **Best Time:** Brahma Muhurta (4:00-6:00 AM)
-- **Benefits:** Alignment with nakshatra deity, spiritual protection
+- **Benefits:** Alignment with {deity}, spiritual protection, {nak_quality} enhancement
 
 **Gayatri Mantra:**
 - "Om Bhur Bhuva Swaha, Tat Savitur Varenyam, Bhargo Devasya Dhimahi, Dhiyo Yo Nah Prachodayat"
 - 108 repetitions at sunrise for spiritual illumination
+
+**{ruler} Planetary Mantra:**
+- Om {ruler}aya Namah on {gem_info[3]}, aligned with your chart ruler
 
 **Planetary Mantras:**
 - **Sun:** Om Suryaya Namah (Sunday, 7 times)
@@ -908,156 +1478,146 @@ Based on Nadi Jyotisha timing principles for {zodiac} natives:
 
 ## 2. Gemstone Therapy (Ratna Dharana)
 
-**Primary Gemstone for {zodiac}:**
-- **Stone:** Based on {zodiac_info.get('ruler', 'ruling planet')} influence
+**Primary Gemstone for {zodiac} ({ruler}-ruled):**
+- **Stone:** {gem_info[0]} for {ruler} enhancement
 - **Minimum Weight:** 3-5 carats for effectiveness
-- **Metal:** Gold or silver as appropriate
-- **Finger:** Index or ring finger based on planet
-- **Energization:** Mantra recitation before wearing
-- **Best Day:** Day of ruling planet
+- **Metal:** {gem_info[1]}
+- **Finger:** {gem_info[2]}
+- **Energization:** Om {ruler}aya Namah before wearing
+- **Best Day:** {gem_info[3]}
 
-**Supporting Gemstones:**
-- Moonstone for emotional balance
-- Clear quartz for amplification
-- Amethyst for spiritual development
+**Supporting Gemstones for {element} Constitution:**
+- Clear quartz for {element} amplification
+- Amethyst for {nak_quality} enhancement
 
 ## 3. Yantras & Sacred Geometry
 
-**Recommended Yantras:**
-- **Sri Yantra:** For overall prosperity and spiritual growth
-- **Nakshatra Yantra:** Specific to {nakshatra}
-- **Planetary Yantra:** Based on current dasha lord
+**Recommended Yantras for {zodiac}-{nakshatra}:**
+- **{deity} Yantra:** Primary for {nakshatra} natives
+- **{ruler} Yantra:** Planetary support
+- **Sri Yantra:** Overall prosperity aligned with {nak_quality}
 
 **Installation Guidelines:**
-- Direction: East or North-facing altar
-- Material: Copper or gold-plated
-- Activation: Puja with mantras on auspicious day
-- Maintenance: Regular worship and cleaning
+- Direction: East for {deity} worship
+- Material: Copper energized with {nakshatra} mantra
+- Activation: On {gem_info[3]} during {nakshatra} transit
 
 ## 4. Charitable Activities (Dana)
 
-**Saturn Remedies:**
-- Donate black sesame, iron items, mustard oil on Saturdays
-- Serve the elderly and disabled
-- Feed crows and dark-colored animals
+**{ruler} Day Donations ({gem_info[3]}):**
+- Items aligned with {ruler} energy
+- Service related to {traits.split(',')[0]}
+- Support for {deity} temples
 
-**Jupiter Remedies:**
-- Donate yellow items, turmeric, books on Thursdays
-- Support education and teachers
-- Feed Brahmins and scholars
+**{element} Element Dana:**
+- {element}-related offerings and service
+- Aligned with {nak_quality} expression
 
 **Corpus Remedies:**
-{chr(10).join(corpus_remedies) if corpus_remedies else '- Traditional dana as guided by your chart'}
-
-**General Charitable Practice:**
-- Regular food donation (anna dana)
-- Supporting temples and spiritual institutions
-- Helping the poor and needy
+""" + ('\n'.join(corpus_remedies) if corpus_remedies else '- Traditional dana as guided by your ' + zodiac + ' chart') + f"""
 
 ## 5. Fasting & Dietary Practices
 
-**Recommended Fasting Days:**
-- **{zodiac_info.get('ruler', 'Ruling planet')} day:** Partial or complete fast
-- **Ekadashi:** 11th lunar day - grain fast
-- **Pradosh:** 13th lunar day - evening worship
+**Recommended Fasting Days for {zodiac}:**
+- **{gem_info[3]}:** Partial fast for {ruler} propitiation
+- **Ekadashi:** Grain fast with {deity} meditation
+- **{nakshatra} Nakshatra Day:** Special observance
 
-**Dietary Recommendations:**
-- Sattvic diet for spiritual progress
-- Avoid tamasic foods during spiritual practices
-- Seasonal eating aligned with constitution
+**{element} Constitution Diet:**
+- Foods balancing {element} energy
+- Sattvic diet supporting {nak_quality}
+- Avoid {element}-aggravating foods during practice
 
 ## 6. Deity Worship & Puja
 
-**Primary Deity for {nakshatra}:**
-- **Deity:** {nakshatra_info.get('deity', 'Cosmic forces')}
-- **Worship Day:** As appropriate for the deity
-- **Offerings:** Flowers, fruits, incense as traditional
+**Primary Deity - {deity}:**
+- **Symbol:** {symbol}
+- **Worship Day:** Aligned with {nakshatra}
+- **Offerings:** Flowers, fruits, incense pleasing to {deity}
 
-**Daily Worship Practice:**
-1. Morning: Light lamp, offer flowers, recite prayers
-2. Evening: Aarti and gratitude
-3. Special days: Extended puja with full rituals
+**Daily {deity} Practice:**
+1. Morning: Light lamp, offer {symbol}-related items, recite mantra
+2. Evening: Aarti with {nakshatra} visualization
+3. {gem_info[3]}: Extended puja with full {deity} rituals
 
-**Temple Visits:**
-- Regular visits to temples of your nakshatra deity
-- Pilgrimage to major temples annually
+## 7. Pilgrimage (Tirtha Yatra)
 
-## 7. Pilgrimage & Sacred Visits (Tirtha Yatra)
+**{deity} Sacred Sites:**
+- Temples dedicated to {deity}
+- {element}-associated sacred places
+- {nakshatra} pilgrimage traditions
 
-**Recommended Sacred Sites:**
-- Temples of {nakshatra_info.get('deity', 'your presiding deity')}
-- Jyotirlinga sites for Shiva blessings
-- Shakti Peethas for divine feminine grace
-- River confluences (sangam) for purification
-
-**Pilgrimage Timing:**
-- During favorable planetary transits
-- Nakshatra-specific auspicious days
-- Major festivals associated with your deity
+**Timing for {zodiac} Natives:**
+- During {ruler} favorable transits
+- {nakshatra} auspicious days
+- {deity} festival periods
 
 ## 8. Lifestyle Modifications
 
-**Daily Routine (Dinacharya):**
-- Wake before sunrise for spiritual practice
-- Meditation and pranayama in morning
-- Balanced work and rest
-- Evening spiritual practice before sleep
+**{element} Constitution Dinacharya:**
+- {element_practice}
+- Meditation with {deity} visualization
+- {traits.split(',')[0]} expression in daily work
 
-**Environmental Adjustments:**
-- Keep home altar clean and energized
-- Use colors favoring your chart
-- Directional sleeping and working as per Vastu
+**Environmental {element} Balance:**
+- Colors favoring {ruler} and {nakshatra}
+- {element} element in home altar
+- Vastu aligned with {zodiac} energy
 
 ## 9. Planetary Propitiation (Graha Shanti)
 
-**Navgraha Puja:**
-- Complete propitiation of all nine planets
-- Recommended annually or during challenging transits
-- Can be performed at home or temple
+**{ruler} Shanti (Primary):**
+- {ruler} propitiation on {gem_info[3]}
+- {gem_info[0]} energization ritual
+- {deity} invocation for planetary harmony
 
-**Specific Shanti Pujas:**
-- Shani Shanti for Saturn afflictions
-- Rahu-Ketu Shanti for nodal issues
-- As recommended by your chart analysis
+**Supporting Practices:**
+- Navgraha Puja annually
+- Specific shanti during challenging {ruler} transits
 
-## 10. Karmic Cleansing Practices
+## 10. Karmic Cleansing
 
-**Pitru Tarpana (Ancestral Offerings):**
-- Performed on Amavasya (new moon)
-- Especially during Pitru Paksha
-- Water and sesame offerings to ancestors
+**{nakshatra} Karmic Release:**
+- {deity} meditation for forgiveness
+- Releasing {traits}-related patterns
+- {nak_quality} healing practices
 
-**Past Life Healing:**
-- Meditation on forgiveness
-- Releasing old patterns through awareness
-- Conscious relationship healing
+**Pitru Tarpana:**
+- Ancestral offerings on Amavasya
+- {element} element in offerings
+- {deity} blessing for ancestral peace
 
-## 11. Service & Seva
+## 11. Service (Seva)
 
-**Recommended Service Activities:**
-- Teaching and sharing knowledge
-- Helping at spiritual institutions
-- Environmental service
-- Supporting the vulnerable
+**{nakshatra} Aligned Service:**
+- {nak_quality} expression through teaching
+- {traits.split(',')[0]} skills for community
+- {deity} temple service
 
-**Service Aligned with {nakshatra}:**
-- Activities related to {nakshatra_info.get('quality', 'your inherent abilities')}
-- Using natural talents for others' benefit
+**{element} Element Seva:**
+- Service aligned with {element} energy
+- {deity} worship support
+- Environmental care through {element} connection
 
 ## 12. Meditation & Inner Work
 
-**Recommended Meditation Practices:**
-- Mantra meditation with nakshatra mantra
-- Breath awareness (anapanasati)
-- Visualization of deity form
-- Silent witnessing meditation
+**{nakshatra} Meditation:**
+- Om {deity.split()[0] if deity else 'Namah'}aya Namah mantra
+- {symbol} visualization
+- {nak_quality} cultivation
 
-**Pranayama Practices:**
-- Nadi Shodhana for balance
-- Bhramari for calming
-- Kapalabhati for energy
+**{element} Pranayama:**
+- {element_practice.split(',')[0]} breathing
+- Nadi Shodhana for {ruler} balance
+- {deity} breath visualization
 
-*These remedies follow classical Bhrigu Samhita and Nadi Jyotisha traditions. For AI-enhanced personalized remedy prescription, ensure OpenAI API is configured.*"""
+*These remedies are specifically designed for {zodiac} Sun with {nakshatra} nakshatra based on Bhrigu Samhita and Nadi Jyotisha traditions. For AI-enhanced personalized remedy prescription, ensure OpenAI API is configured.*
+
+**Actionable Guidance:**
+- Begin {deity} mantra practice immediately (108 daily).
+- Consult a qualified astrologer before wearing {gem_info[0]}.
+- Observe {gem_info[3]} fasting and {ruler} propitiation.
+- Practice {element_practice.split(',')[0]} regularly for {element} balance."""
 
     def generate_relationships(self, context: Dict[str, Any], relationship_type: str = 'all',
                                time_period: str = 'daily', view_mode: str = 'simple') -> str:
