@@ -5,6 +5,7 @@ Supports three modes: online, offline, hybrid
 Ensures guaranteed fallback to offline wisdom when OpenAI API fails
 Enhanced with Nadi Jyotisha integration across all prediction modes
 FORTIFIED: Thread-safe with locks for concurrent request handling
+ENHANCED: Category-specific offline predictions for precise, non-repetitive content
 """
 import logging
 import threading
@@ -20,6 +21,14 @@ try:
 except ImportError:
     NADI_AVAILABLE = False
     logger.warning("Nadi integration not available")
+
+# Import Category-Specific Offline Predictor
+try:
+    from services.category_specific_offline_predictions import get_category_specific_predictor
+    CATEGORY_SPECIFIC_AVAILABLE = True
+except ImportError:
+    CATEGORY_SPECIFIC_AVAILABLE = False
+    logger.warning("Category-specific predictor not available, using fallback")
 
 
 class PredictionMode(Enum):
@@ -396,6 +405,23 @@ class PredictionOrchestrator:
 
         All category methods now support view_mode for differentiated Simple/Astrologer views
         """
+        # Use Category-Specific Offline Predictor for precise, non-repetitive predictions
+        if CATEGORY_SPECIFIC_AVAILABLE:
+            try:
+                category_predictor = get_category_specific_predictor()
+                result = category_predictor.generate(category, chart_data)
+
+                # Add metadata and ensure proper structure
+                if isinstance(result, dict) and result.get('full_analysis'):
+                    result['source'] = 'category_specific_offline'
+                    result['bhrigu_wisdom'] = True
+                    logger.info(f"✓ Generated category-specific prediction for: {category}")
+                    return result['full_analysis']
+
+            except Exception as e:
+                logger.warning(f"Category-specific predictor failed for {category}: {e}, using fallback")
+
+        # Fallback to original offline wisdom generator
         # Special handling for predictions category with time_period and view_mode
         if category == 'predictions':
             return self.offline_wisdom.generate_general_predictions(chart_data, time_period=time_period, view_mode=view_mode)
