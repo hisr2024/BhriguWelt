@@ -1200,8 +1200,22 @@ export default function BhriguPredictionView({
     const sections = filterSectionsByViewMode(allSections, viewMode);
     const shouldShowPartialBanner = false;
 
-    // First, try to get sections from the API response (direct properties)
+    // First, try to get sections from subcategories in API response (new structured format)
+    // Then fall back to direct properties on prediction object
     let availableSections = sections.filter(section => {
+      // Check subcategories first (new API format)
+      const subcategories = predictionData.subcategories;
+      if (subcategories && typeof subcategories === 'object') {
+        const subcategoryData = subcategories[section.key];
+        if (subcategoryData && typeof subcategoryData === 'object' && subcategoryData.content) {
+          const content = subcategoryData.content;
+          if (typeof content === 'string' && content.trim().length > 50) {
+            return !containsWrongCategoryContent(content, section.key);
+          }
+        }
+      }
+
+      // Fall back to direct property
       const content = predictionData[section.key];
       if (!content || typeof content !== 'string' || content.trim() === '') {
         return false;
@@ -1213,7 +1227,7 @@ export default function BhriguPredictionView({
          trimmedContent.toLowerCase().includes('see complete') ||
          trimmedContent.toLowerCase().includes('refer to'))
       );
-      return !isRedirectOnly;
+      return !isRedirectOnly && !containsWrongCategoryContent(trimmedContent, section.key);
     });
 
     // FALLBACK: If no sections found but full_analysis exists, use worker/regex results
@@ -1291,26 +1305,44 @@ export default function BhriguPredictionView({
 
     // Helper function to get section content from either source with validation
     const getSectionContent = (key: string): string => {
-      const directContent = predictionData[key];
-      let rawContent: string;
+      let rawContent: string = '';
 
-      if (typeof directContent === 'string' && directContent.trim().length > 0) {
-        // Validate that direct content doesn't contain wrong category markers
-        if (!containsWrongCategoryContent(directContent, key)) {
-          rawContent = directContent;
-        } else {
-          // Content has wrong category markers, use placeholder
-          rawContent = getCategorySpecificPlaceholder(key);
+      // PRIORITY 1: Check subcategories from API response (new structured format)
+      const subcategories = predictionData.subcategories;
+      if (subcategories && typeof subcategories === 'object') {
+        const subcategoryContent = subcategories[key];
+        if (subcategoryContent && typeof subcategoryContent === 'object' && subcategoryContent.content) {
+          const content = subcategoryContent.content;
+          if (typeof content === 'string' && content.trim().length > 0) {
+            if (!containsWrongCategoryContent(content, key)) {
+              rawContent = content;
+            }
+          }
         }
-      } else {
-        // Try fallback content
+      }
+
+      // PRIORITY 2: Check direct content on prediction object
+      if (!rawContent) {
+        const directContent = predictionData[key];
+        if (typeof directContent === 'string' && directContent.trim().length > 0) {
+          // Validate that direct content doesn't contain wrong category markers
+          if (!containsWrongCategoryContent(directContent, key)) {
+            rawContent = directContent;
+          }
+        }
+      }
+
+      // PRIORITY 3: Try fallback content from full_analysis parsing
+      if (!rawContent) {
         const fallbackContent = parsedFromFullAnalysis[key] || '';
         if (fallbackContent && !containsWrongCategoryContent(fallbackContent, key)) {
           rawContent = fallbackContent;
-        } else {
-          // Use category-specific placeholder
-          rawContent = getCategorySpecificPlaceholder(key);
         }
+      }
+
+      // PRIORITY 4: Use category-specific placeholder as last resort
+      if (!rawContent || rawContent.trim().length < 10) {
+        rawContent = getCategorySpecificPlaceholder(key);
       }
 
       // Apply simplification based on view mode

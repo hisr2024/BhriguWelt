@@ -112,9 +112,10 @@ function extractFirstParagraph(text: string): string {
 /**
  * Extract sections from prediction response
  * Handles multiple response formats:
- * 1. Nested sections object with markdown headers
- * 2. Direct properties on the response object
- * 3. Full_analysis that needs parsing
+ * 1. NEW: Subcategories object with title/content structure
+ * 2. Nested sections object with markdown headers
+ * 3. Direct properties on the response object
+ * 4. Full_analysis that needs parsing
  */
 export function extractSections(
   response: any,
@@ -122,7 +123,38 @@ export function extractSections(
 ): PredictionSection[] {
   const sections: PredictionSection[] = [];
 
-  // Format 1: Check for nested sections object
+  // Format 1 (NEW): Check for subcategories object (new API format)
+  if (response.subcategories && typeof response.subcategories === 'object') {
+    const subcategories = response.subcategories;
+
+    Object.entries(subcategories).forEach(([key, value], index) => {
+      if (value && typeof value === 'object') {
+        const subcatData = value as { title?: string; content?: string };
+        const content = subcatData.content;
+        const title = subcatData.title || formatSectionTitle(key);
+
+        if (content && typeof content === 'string' && content.trim().length > 20) {
+          const filteredContent = filterContentByViewMode(content, viewMode);
+
+          if (filteredContent.trim().length > 0) {
+            sections.push({
+              key: cleanSectionKey(key),
+              title: cleanSectionTitle(title),
+              content: filteredContent,
+              priority: index,
+            });
+          }
+        }
+      }
+    });
+
+    // If we found subcategories, return them
+    if (sections.length > 0) {
+      return sections;
+    }
+  }
+
+  // Format 2: Check for nested sections object
   if (response.sections && typeof response.sections === 'object') {
     // Handle string that looks like JSON
     let sectionsObj = response.sections;
@@ -156,28 +188,22 @@ export function extractSections(
     }
   }
 
-  // Format 2: Direct properties (existing format)
+  // Format 3: Direct properties (existing format)
   if (sections.length === 0) {
     const knownSectionKeys = [
-      'soul_purpose',
-      'karmic_lessons',
-      'past_relationships',
-      'recent_life',
-      'career',
-      'health',
-      'finances',
-      'spiritual_growth',
-      'relationships',
-      'family',
-      'education',
-      'timing',
-      'remedies',
-      'mantras',
-      'gemstones',
-      'daily',
-      'weekly',
-      'monthly',
-      'yearly',
+      // Life events
+      'yearly_forecast', 'marriage_timing', 'career_milestones', 'children_family',
+      'financial_events', 'health_alerts', 'spiritual_milestones', 'relocations',
+      'education', 'favorable_periods', 'challenging_periods', 'transits', 'age_milestones',
+      // Relationships
+      'romantic_marriage', 'family', 'soul_connections', 'friendships', 'professional',
+      'karmic_patterns', 'communication', 'timing', 'healing', 'healthy_practices',
+      // Predictions
+      'daily', 'weekly', 'monthly', 'yearly', 'overall', 'love', 'career', 'health', 'finance',
+      // General
+      'soul_purpose', 'karmic_lessons', 'past_relationships', 'recent_life',
+      'finances', 'spiritual_growth', 'relationships',
+      'remedies', 'mantras', 'gemstones',
     ];
 
     knownSectionKeys.forEach((key, index) => {
@@ -196,7 +222,7 @@ export function extractSections(
     });
   }
 
-  // Format 3: Parse from full_analysis if no sections found
+  // Format 4: Parse from full_analysis if no sections found
   if (sections.length === 0 && response.full_analysis) {
     return parseSectionsFromMarkdown(response.full_analysis, viewMode);
   }

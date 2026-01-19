@@ -5,6 +5,10 @@ export type PredictionEnvelope<T = unknown> = {
   message?: string;
 };
 
+/**
+ * Normalize prediction API response to a consistent envelope format
+ * Handles various response structures and ensures subcategories are preserved
+ */
 export const normalizePredictionResponse = <T = unknown>(response: any): PredictionEnvelope<T> => {
   if (!response) {
     return {
@@ -25,6 +29,11 @@ export const normalizePredictionResponse = <T = unknown>(response: any): Predict
 
   if (response.prediction !== undefined) {
     prediction = response.prediction;
+    // If prediction is an object with subcategories, preserve the structure
+    if (prediction && typeof prediction === 'object' && prediction.subcategories) {
+      // Ensure subcategories are preserved in the prediction object
+      metadata = metadata ?? prediction.metadata ?? null;
+    }
   } else if (response.data?.prediction !== undefined) {
     prediction = response.data.prediction;
     metadata = metadata ?? response.data.metadata ?? null;
@@ -33,6 +42,20 @@ export const normalizePredictionResponse = <T = unknown>(response: any): Predict
     metadata = metadata ?? response.data.metadata ?? null;
   } else {
     prediction = response;
+  }
+
+  // If prediction is a structured object with subcategories, ensure it's properly formatted
+  if (prediction && typeof prediction === 'object') {
+    // Ensure full_analysis is at top level if available
+    if (prediction.full_analysis && !prediction.prediction) {
+      prediction.prediction = prediction.full_analysis;
+    }
+    // Merge metadata if both exist
+    if (prediction.metadata && metadata) {
+      metadata = { ...metadata, ...prediction.metadata };
+    } else if (prediction.metadata) {
+      metadata = prediction.metadata;
+    }
   }
 
   return {

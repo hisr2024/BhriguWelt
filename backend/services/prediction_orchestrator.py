@@ -272,13 +272,17 @@ class PredictionOrchestrator:
                          language: str, time_period: str = "daily",
                          view_mode: str = "simple",
                          relationship_type: str = "all") -> Dict[str, Any]:
-        """Generate prediction using only offline wisdom database - NEVER FAILS"""
+        """Generate prediction using only offline wisdom database - NEVER FAILS
+
+        Returns structured response with subcategories for proper frontend display
+        """
         try:
             # First try offline wisdom service if available
             if self.offline_wisdom:
                 try:
                     # Route to category-specific offline generator
-                    prediction_text = self._call_offline_for_category(category, chart_data, language, time_period=time_period, view_mode=view_mode, relationship_type=relationship_type)
+                    # This now returns a dict with full_analysis AND subcategories
+                    prediction_result = self._call_offline_for_category(category, chart_data, language, time_period=time_period, view_mode=view_mode, relationship_type=relationship_type)
 
                     # Get matched rules
                     matched_rules = []
@@ -289,14 +293,38 @@ class PredictionOrchestrator:
                         except Exception as rule_err:
                             logger.warning(f"Rule evaluation failed: {rule_err}")
 
+                    # Extract components from the structured result
+                    if isinstance(prediction_result, dict):
+                        full_analysis = prediction_result.get('full_analysis', '')
+                        subcategories = prediction_result.get('subcategories', {})
+                        title = prediction_result.get('title', category.replace('_', ' ').title())
+                        metadata = prediction_result.get('metadata', {})
+                    else:
+                        # Fallback for string responses
+                        full_analysis = str(prediction_result)
+                        subcategories = {}
+                        title = category.replace('_', ' ').title()
+                        metadata = {}
+
                     result = {
                         'status': 'success',
                         'mode': 'offline',
                         'category': category,
+                        'engine': category,
+                        'title': title,
                         'language': language,
-                        'prediction': prediction_text,
+                        'prediction': full_analysis,
+                        'full_analysis': full_analysis,
+                        'subcategories': subcategories,
                         'matched_rules': matched_rules,
-                        'source': 'Bhrigu Samhita & Nadi Jyotisha (Offline Database)'
+                        'source': 'Bhrigu Samhita & Nadi Jyotisha (Offline Database)',
+                        'metadata': {
+                            **metadata,
+                            'zodiac_sign': chart_data.get('zodiac_sign', 'Unknown'),
+                            'nakshatra': chart_data.get('nakshatra', 'Unknown'),
+                            'moon_sign': chart_data.get('moon_sign', chart_data.get('zodiac_sign', 'Unknown')),
+                            'tradition': 'Bhrigu Samhita & Nadi Jyotisha'
+                        }
                     }
 
                     # Enrich with Nadi insights
@@ -325,8 +353,11 @@ class PredictionOrchestrator:
                 'status': 'success',
                 'mode': 'emergency_offline',
                 'category': category,
+                'engine': category,
                 'language': language,
                 'prediction': self._emergency_fallback_text(category, chart_data),
+                'full_analysis': self._emergency_fallback_text(category, chart_data),
+                'subcategories': {},
                 'source': 'Emergency Offline Generator',
                 'note': 'This is a basic prediction. Services are temporarily unavailable.'
             }
@@ -400,10 +431,11 @@ class PredictionOrchestrator:
     def _call_offline_for_category(self, category: str, chart_data: Dict[str, Any],
                                    language: str, time_period: str = "daily",
                                    view_mode: str = "simple",
-                                   relationship_type: str = "all") -> str:
+                                   relationship_type: str = "all") -> Dict[str, Any]:
         """Call appropriate offline generator based on category
 
         All category methods now support view_mode for differentiated Simple/Astrologer views
+        Returns a dict with full_analysis AND subcategories for proper section display
         """
         # Use Category-Specific Offline Predictor for precise, non-repetitive predictions
         if CATEGORY_SPECIFIC_AVAILABLE:
@@ -411,41 +443,343 @@ class PredictionOrchestrator:
                 category_predictor = get_category_specific_predictor()
                 result = category_predictor.generate(category, chart_data)
 
-                # Add metadata and ensure proper structure
+                # Return full structured result with sections, not just full_analysis
                 if isinstance(result, dict) and result.get('full_analysis'):
                     result['source'] = 'category_specific_offline'
                     result['bhrigu_wisdom'] = True
-                    logger.info(f"✓ Generated category-specific prediction for: {category}")
-                    return result['full_analysis']
+
+                    # Build subcategories from the result sections
+                    subcategories = {}
+                    section_keys = self._get_category_section_keys(category)
+                    for key in section_keys:
+                        if key in result and result[key]:
+                            subcategories[key] = {
+                                'title': key.replace('_', ' ').title(),
+                                'content': result[key]
+                            }
+
+                    result['subcategories'] = subcategories
+                    logger.info(f"✓ Generated category-specific prediction for: {category} with {len(subcategories)} sections")
+                    return result
 
             except Exception as e:
                 logger.warning(f"Category-specific predictor failed for {category}: {e}, using fallback")
 
-        # Fallback to original offline wisdom generator
+        # Fallback to original offline wisdom generator with structured response
+        # These methods return strings, so we wrap them in a dict with subcategories
+        fallback_text = None
+
         # Special handling for predictions category with time_period and view_mode
         if category == 'predictions':
-            return self.offline_wisdom.generate_general_predictions(chart_data, time_period=time_period, view_mode=view_mode)
-
-        # Special handling for relationships category with relationship_type, time_period, and view_mode
-        if category == 'relationships':
-            return self.offline_wisdom.generate_relationships(chart_data, relationship_type=relationship_type, time_period=time_period, view_mode=view_mode)
-
-        # All other categories now support view_mode for differentiated content
-        if category == 'karmic_journey':
-            return self.offline_wisdom.generate_karmic_journey(chart_data, view_mode=view_mode)
+            fallback_text = self.offline_wisdom.generate_general_predictions(chart_data, time_period=time_period, view_mode=view_mode)
+        elif category == 'relationships':
+            fallback_text = self.offline_wisdom.generate_relationships(chart_data, relationship_type=relationship_type, time_period=time_period, view_mode=view_mode)
+        elif category == 'karmic_journey':
+            fallback_text = self.offline_wisdom.generate_karmic_journey(chart_data, view_mode=view_mode)
         elif category == 'past_lives':
-            return self.offline_wisdom.generate_past_lives(chart_data, view_mode=view_mode)
+            fallback_text = self.offline_wisdom.generate_past_lives(chart_data, view_mode=view_mode)
         elif category == 'future_lives':
-            return self.offline_wisdom.generate_future_lives(chart_data, view_mode=view_mode)
+            fallback_text = self.offline_wisdom.generate_future_lives(chart_data, view_mode=view_mode)
         elif category == 'present_life':
-            return self.offline_wisdom.generate_present_life(chart_data, view_mode=view_mode)
+            fallback_text = self.offline_wisdom.generate_present_life(chart_data, view_mode=view_mode)
         elif category == 'life_events':
-            return self.offline_wisdom.generate_life_events(chart_data, view_mode=view_mode)
+            fallback_text = self.offline_wisdom.generate_life_events(chart_data, view_mode=view_mode)
         elif category == 'karmic_remedies':
-            return self.offline_wisdom.generate_karmic_remedies(chart_data, view_mode=view_mode)
+            fallback_text = self.offline_wisdom.generate_karmic_remedies(chart_data, view_mode=view_mode)
+        else:
+            # For new categories, generate using generic method
+            fallback_text = self._generate_generic_offline(category, chart_data, language)
 
-        # For new categories, generate using generic method
-        return self._generate_generic_offline(category, chart_data, language)
+        # Parse the fallback text into sections and wrap in structured response
+        return self._parse_fallback_to_sections(category, fallback_text, chart_data)
+
+    def _get_category_section_keys(self, category: str) -> List[str]:
+        """Return the expected section keys for each category"""
+        section_keys = {
+            'life_events': [
+                'yearly_forecast', 'marriage_timing', 'career_milestones', 'children_family',
+                'financial_events', 'health_alerts', 'spiritual_milestones', 'relocations',
+                'education', 'favorable_periods', 'challenging_periods', 'transits', 'age_milestones'
+            ],
+            'relationships': [
+                'romantic_marriage', 'family', 'soul_connections', 'friendships', 'professional',
+                'karmic_patterns', 'communication', 'timing', 'healing', 'healthy_practices'
+            ],
+            'predictions': [
+                'daily', 'weekly', 'monthly', 'yearly', 'overall', 'love', 'career', 'health', 'finance'
+            ],
+            'karmic_journey': [
+                'soul_purpose', 'karmic_blueprint', 'evolution_stage', 'life_mission',
+                'karmic_lessons', 'soul_connections', 'timing', 'spiritual_gifts'
+            ],
+            'past_lives': [
+                'recent_life', 'significant_lives', 'karmic_patterns', 'past_skills',
+                'traumas_healing', 'past_relationships', 'karmic_debts', 'spiritual_progress'
+            ],
+            'future_lives': [
+                'next_incarnation', 'evolution_trajectory', 'final_birth_conditions', 'future_scenarios',
+                'moksha_timeline', 'higher_realms', 'bodhisattva_path', 'ultimate_destiny'
+            ],
+            'present_life': [
+                'current_phase', 'career', 'relationships', 'health', 'finances',
+                'spiritual_growth', 'education', 'life_purpose', 'challenges', 'timing'
+            ],
+            'karmic_remedies': [
+                'mantras', 'gemstones', 'yantras', 'charitable_activities', 'fasting',
+                'deity_worship', 'pilgrimage', 'lifestyle', 'planetary_rituals',
+                'karmic_cleansing', 'service', 'meditation'
+            ]
+        }
+        return section_keys.get(category, [])
+
+    def _parse_fallback_to_sections(self, category: str, text: str, chart_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Parse fallback text into sections for structured response"""
+        if not text:
+            text = self._emergency_fallback_text(category, chart_data)
+
+        # Try to extract sections from the text using headers
+        subcategories = {}
+        section_keys = self._get_category_section_keys(category)
+
+        # Parse text to find sections
+        current_section = None
+        current_content = []
+        lines = text.split('\n')
+
+        for line in lines:
+            # Check if this line is a section header
+            stripped = line.strip()
+            if stripped.startswith('##') or stripped.startswith('**') or stripped.endswith(':'):
+                # Save previous section
+                if current_section and current_content:
+                    content = '\n'.join(current_content).strip()
+                    if content:
+                        subcategories[current_section] = {
+                            'title': current_section.replace('_', ' ').title(),
+                            'content': content
+                        }
+
+                # Identify new section
+                section_title = stripped.strip('#* :').lower().replace(' ', '_')
+                current_section = None
+                for key in section_keys:
+                    if key in section_title or section_title in key:
+                        current_section = key
+                        break
+                current_content = []
+            elif current_section:
+                current_content.append(line)
+
+        # Save last section
+        if current_section and current_content:
+            content = '\n'.join(current_content).strip()
+            if content:
+                subcategories[current_section] = {
+                    'title': current_section.replace('_', ' ').title(),
+                    'content': content
+                }
+
+        # If no sections were extracted, create a default section structure
+        if not subcategories:
+            subcategories = self._create_default_subcategories(category, text, chart_data)
+
+        return {
+            'category': category,
+            'title': category.replace('_', ' ').title(),
+            'full_analysis': text,
+            'subcategories': subcategories,
+            'metadata': {
+                'zodiac_sign': chart_data.get('zodiac_sign', 'Unknown'),
+                'nakshatra': chart_data.get('nakshatra', 'Unknown'),
+                'tradition': 'Bhrigu Samhita & Nadi Jyotisha'
+            }
+        }
+
+    def _create_default_subcategories(self, category: str, text: str, chart_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create default subcategories when text parsing fails"""
+        zodiac = chart_data.get('zodiac_sign', 'Unknown')
+        nakshatra = chart_data.get('nakshatra', 'Unknown')
+        element = self._get_zodiac_element(zodiac)
+        ruler = self._get_zodiac_ruler(zodiac)
+
+        # Category-specific default content
+        if category == 'life_events':
+            return self._create_life_events_subcategories(zodiac, nakshatra, element, ruler)
+        elif category == 'relationships':
+            return self._create_relationships_subcategories(zodiac, nakshatra, element, ruler)
+        elif category == 'predictions':
+            return self._create_predictions_subcategories(zodiac, nakshatra, element, ruler)
+        else:
+            # Generic subcategories
+            return {
+                'overview': {
+                    'title': 'Overview',
+                    'content': text if text else f'Your {zodiac} energy with {nakshatra} nakshatra creates a unique karmic path.'
+                }
+            }
+
+    def _create_life_events_subcategories(self, zodiac: str, nakshatra: str, element: str, ruler: str) -> Dict[str, Any]:
+        """Create Life Events specific subcategories"""
+        return {
+            'yearly_forecast': {
+                'title': 'Yearly Forecast',
+                'content': f"""Your {zodiac} Sun sign influenced by {nakshatra} nakshatra indicates significant developments this year.
+
+**Key Themes:** The {element} energy combined with {ruler}'s influence suggests a period of transformation and growth.
+
+**Major Events:** Important career and personal milestones are indicated during the current planetary cycles."""
+            },
+            'marriage_timing': {
+                'title': 'Marriage & Partnerships',
+                'content': f"""**Favorable Periods:** Based on your {zodiac} chart, relationship developments are indicated when Venus aspects your 7th house.
+
+**Compatibility:** {element} signs and complementary nakshatras offer best partnership potential.
+
+**Guidance:** Focus on emotional authenticity and spiritual connection in relationships."""
+            },
+            'career_milestones': {
+                'title': 'Career Milestones',
+                'content': f"""**Professional Growth:** Your {ruler}-ruled chart indicates opportunities for advancement through dedication and skill development.
+
+**Key Periods:** Career shifts often align with Jupiter and Saturn transits to career houses.
+
+**Path:** Leadership and creative expression aligned with your {zodiac} nature bring success."""
+            },
+            'financial_events': {
+                'title': 'Financial Events',
+                'content': f"""**Wealth Indicators:** Your {zodiac} chart shows potential for prosperity through disciplined effort.
+
+**Timing:** Financial gains often manifest during favorable dasha periods and planetary transits.
+
+**Guidance:** Save during abundant periods, invest wisely during stable phases."""
+            },
+            'health_alerts': {
+                'title': 'Health Considerations',
+                'content': f"""**Constitutional Type:** As a {zodiac} native, pay attention to {element}-related health matters.
+
+**Preventive Care:** Regular exercise, balanced diet, and stress management support wellbeing.
+
+**Alert Periods:** Extra care needed during challenging planetary transits."""
+            },
+            'education': {
+                'title': 'Education & Learning',
+                'content': f"""**Learning Style:** Your {nakshatra} influence supports specific learning approaches.
+
+**Areas of Excellence:** Studies aligned with {ruler}'s domain bring natural aptitude.
+
+**Timing:** Educational pursuits flourish during Mercury and Jupiter favorable periods."""
+            }
+        }
+
+    def _create_relationships_subcategories(self, zodiac: str, nakshatra: str, element: str, ruler: str) -> Dict[str, Any]:
+        """Create Relationships specific subcategories"""
+        return {
+            'romantic_marriage': {
+                'title': 'Romantic & Marriage',
+                'content': f"""**Soul's Primary Purpose:** Your {zodiac} soul incarnated seeking deep, transformative connections that support spiritual growth.
+
+**Key Insight:** {element} nature combined with {nakshatra} energy creates a need for partners who understand your depth and intensity.
+
+**Guidance:** Authentic emotional expression and spiritual alignment lead to lasting bonds."""
+            },
+            'family': {
+                'title': 'Family Dynamics',
+                'content': f"""**Family Role:** As a {zodiac} native, you serve as a source of {element} energy within your family structure.
+
+**Ancestral Patterns:** {nakshatra} influence connects you to specific ancestral karma requiring resolution.
+
+**Healing:** Compassion and understanding transform family challenges into growth opportunities."""
+            },
+            'soul_connections': {
+                'title': 'Soul Connections',
+                'content': f"""**Karmic Bonds:** Your chart indicates significant soul group members incarnated alongside you.
+
+**Recognition:** Soul connections often feel immediately familiar and carry a sense of destiny.
+
+**Purpose:** These relationships serve specific karmic lessons and mutual evolution."""
+            },
+            'friendships': {
+                'title': 'Friendships',
+                'content': f"""**Friend Circle:** {zodiac} natives attract friends who appreciate authenticity and depth.
+
+**Best Companions:** {element} and compatible signs form lasting friendship bonds.
+
+**Growth:** True friendships support your spiritual journey and personal development."""
+            },
+            'karmic_patterns': {
+                'title': 'Karmic Patterns',
+                'content': f"""**Relationship Karma:** Past life connections influence current relationship dynamics.
+
+**Patterns to Transform:** Recurring themes indicate areas requiring conscious healing.
+
+**Resolution:** Awareness and compassionate action dissolve limiting karmic patterns."""
+            },
+            'timing': {
+                'title': 'Relationship Timing',
+                'content': f"""**Favorable Periods:** Venus and Jupiter transits activate relationship potential.
+
+**Current Cycle:** Your present dasha period influences relationship manifestation.
+
+**Guidance:** Divine timing brings the right connections when you're spiritually prepared."""
+            }
+        }
+
+    def _create_predictions_subcategories(self, zodiac: str, nakshatra: str, element: str, ruler: str) -> Dict[str, Any]:
+        """Create Predictions specific subcategories"""
+        return {
+            'daily': {
+                'title': 'Daily Forecast',
+                'content': f"""**Today's Energy:** Your {zodiac} energy receives supportive planetary influences.
+
+**Focus Areas:** {element} activities and {ruler}-aligned pursuits bring positive results.
+
+**Guidance:** Balance action with reflection for optimal outcomes today."""
+            },
+            'weekly': {
+                'title': 'Weekly Overview',
+                'content': f"""**Week Ahead:** Multiple planetary aspects shape your experience this week.
+
+**Best Days:** Mid-week typically favors {zodiac} initiatives and creative endeavors.
+
+**Challenges:** Patience required when navigating obstacles; they serve your growth."""
+            },
+            'monthly': {
+                'title': 'Monthly Trends',
+                'content': f"""**Monthly Theme:** This month emphasizes {element} qualities in your life.
+
+**Opportunities:** Career and personal projects gain momentum during favorable transits.
+
+**Growth Areas:** Spiritual practices deepen your connection to higher guidance."""
+            },
+            'yearly': {
+                'title': 'Yearly Forecast',
+                'content': f"""**Year Overview:** Your {zodiac} journey this year features significant evolutionary themes.
+
+**Major Transits:** Saturn and Jupiter movements create foundational shifts.
+
+**Soul Growth:** This year offers profound opportunities for karmic resolution and spiritual advancement."""
+            }
+        }
+
+    def _get_zodiac_element(self, zodiac: str) -> str:
+        """Get element for a zodiac sign"""
+        elements = {
+            'Aries': 'Fire', 'Leo': 'Fire', 'Sagittarius': 'Fire',
+            'Taurus': 'Earth', 'Virgo': 'Earth', 'Capricorn': 'Earth',
+            'Gemini': 'Air', 'Libra': 'Air', 'Aquarius': 'Air',
+            'Cancer': 'Water', 'Scorpio': 'Water', 'Pisces': 'Water'
+        }
+        return elements.get(zodiac, 'Fire')
+
+    def _get_zodiac_ruler(self, zodiac: str) -> str:
+        """Get planetary ruler for a zodiac sign"""
+        rulers = {
+            'Aries': 'Mars', 'Taurus': 'Venus', 'Gemini': 'Mercury',
+            'Cancer': 'Moon', 'Leo': 'Sun', 'Virgo': 'Mercury',
+            'Libra': 'Venus', 'Scorpio': 'Mars', 'Sagittarius': 'Jupiter',
+            'Capricorn': 'Saturn', 'Aquarius': 'Saturn', 'Pisces': 'Jupiter'
+        }
+        return rulers.get(zodiac, 'Sun')
 
     def _build_category_prompt(self, category: str, chart_data: Dict[str, Any],
                                wisdom_context: Optional[Dict[str, Any]], 
