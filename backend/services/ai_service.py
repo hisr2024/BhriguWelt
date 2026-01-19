@@ -251,8 +251,8 @@ class AIService:
         data: Dict[str, Any],
         history: List[Dict[str, str]]
     ) -> str:
-        """Build prompt for conversational AI"""
-        
+        """Build prompt for conversational AI using Bhrigu Core Wisdom"""
+
         # Build context from history
         context = ""
         if history:
@@ -261,9 +261,37 @@ class AIService:
                 role = msg.get('role', 'user')
                 content = msg.get('content', '')
                 context += f"{role}: {content}\n"
-        
+
+        # Use enhanced AI Guide engine if available
         wisdom_context = ""
+        query_category = "general"
+
         if self.core_wisdom:
+            try:
+                # Use the new AI chat context method
+                ai_context = self.core_wisdom.get_ai_chat_context(message, data)
+                wisdom_context = ai_context.get('system_prompt', '')
+                query_category = ai_context.get('query_category', 'general')
+
+                # If we got a full system prompt, use it directly
+                if wisdom_context and len(wisdom_context) > 100:
+                    # Append conversation history and user message
+                    prompt = f"""{wisdom_context}
+
+{context}
+
+User question: {message}
+
+Provide a helpful, compassionate response grounded in Bhrigu Samhita and Nadi Jyotisha wisdom.
+End with 2-3 actionable next steps."""
+                    return prompt
+
+            except Exception as e:
+                logger.warning(f"AI guide engine error: {e}")
+                # Fall back to legacy method
+                pass
+
+            # Fallback to legacy wisdom context building
             category = self._detect_chat_category(message)
             wisdom_payload = self.core_wisdom.get_wisdom_context_for_prediction(category, data)
             wisdom_context = self.core_wisdom.format_rules_for_prompt(wisdom_payload.get('rules', []))
@@ -274,26 +302,47 @@ class AIService:
                     f"Deity: {nakshatra_info.get('deity', '')}."
                 )
 
-        prompt = f"""
-        You are a compassionate Vedic astrology expert helping someone understand their birth chart.
-        Ground every answer in Bhrigu Samhita and Nadi Jyotisha principles, using the core wisdom rules below.
-        Use clear, readable language and end with an "Actionable Next Steps" list of 2-3 bullet points.
-        
-        Birth chart summary:
-        - Zodiac Sign: {data.get('zodiac_sign', 'Unknown')}
-        - Nakshatra: {data.get('nakshatra', 'Unknown')}
-        - Moon Sign: {data.get('moon_sign', 'Unknown')}
-        - Ascendant: {data.get('ascendant', 'Unknown')}
+            # Get additional planetary wisdom if available
+            zodiac = data.get('zodiac_sign', '')
+            if zodiac and hasattr(self.core_wisdom, 'get_planetary_wisdom'):
+                # Map zodiac to ruling planet
+                zodiac_rulers = {
+                    'Aries': 'Mars', 'Taurus': 'Venus', 'Gemini': 'Mercury',
+                    'Cancer': 'Moon', 'Leo': 'Sun', 'Virgo': 'Mercury',
+                    'Libra': 'Venus', 'Scorpio': 'Mars', 'Sagittarius': 'Jupiter',
+                    'Capricorn': 'Saturn', 'Aquarius': 'Saturn', 'Pisces': 'Jupiter'
+                }
+                ruler = zodiac_rulers.get(zodiac.title())
+                if ruler:
+                    planet_wisdom = self.core_wisdom.get_planetary_wisdom(ruler)
+                    if planet_wisdom:
+                        karmic = planet_wisdom.get('karmic_lessons', [])[:2]
+                        if karmic:
+                            wisdom_context += f"\n\nKarmic Lessons ({ruler}): {', '.join(karmic)}"
 
-        {wisdom_context}
+        prompt = f"""You are a master Vedic astrologer deeply versed in Bhrigu Samhita and Nadi Jyotisha traditions.
 
-        {context}
-        
-        User question: {message}
-        
-        Provide a helpful, compassionate response focused on their astrological insights.
-        """
-        
+IMPORTANT GUIDELINES:
+1. Ground every answer in authentic Vedic astrological principles
+2. Reference specific Bhrigu Samhita or Nadi Jyotisha concepts when applicable
+3. Be compassionate, empowering, and never fatalistic
+4. Provide practical, actionable guidance
+5. End with 2-3 "Actionable Next Steps"
+
+Birth chart summary:
+- Zodiac Sign: {data.get('zodiac_sign', 'Unknown')}
+- Nakshatra: {data.get('nakshatra', 'Unknown')}
+- Moon Sign: {data.get('moon_sign', 'Unknown')}
+- Ascendant: {data.get('ascendant', 'Unknown')}
+
+{wisdom_context}
+
+{context}
+
+User question: {message}
+
+Provide a helpful, insightful response drawing from Bhrigu Samhita and Nadi Jyotisha wisdom."""
+
         return prompt
 
     def _detect_chat_category(self, message: str) -> str:
