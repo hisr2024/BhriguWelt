@@ -94,6 +94,9 @@ class PredictionOrchestrator:
                           mode: str = "hybrid", language: str = "en",
                           client_online: Optional[bool] = None,
                           prompt: Optional[str] = None,
+                          time_period: str = "daily",
+                          view_mode: str = "simple",
+                          relationship_type: str = "all",
                           **options: Any) -> Dict[str, Any]:
         """
         Generate prediction for any category with guaranteed results
@@ -104,6 +107,8 @@ class PredictionOrchestrator:
             chart_data: Birth chart data
             mode: Generation mode (online/offline/hybrid)
             language: Output language (en/hi/sa)
+            time_period: For predictions category - 'daily', 'weekly', 'monthly', 'yearly'
+            view_mode: 'simple' (crisp, precise) or 'astrologer' (detailed with references)
 
         Returns:
             Dictionary with prediction and metadata
@@ -133,16 +138,42 @@ class PredictionOrchestrator:
                     'dharmic_path',
                     'spiritual_evolution',
                     'moksha_indicators',
+                    'daily',
+                    'weekly',
+                    'monthly',
+                    'yearly',
                 }
                 normalized_category = category.lower().strip()
                 if normalized_category not in valid_categories:
                     logger.warning(f"Unknown category '{category}', proceeding with caution")
+
+                # Map time-period categories to predictions
+                if normalized_category in ['daily', 'weekly', 'monthly', 'yearly']:
+                    time_period = normalized_category
+                    normalized_category = 'predictions'
+
+                # Validate time_period
+                if time_period not in ['daily', 'weekly', 'monthly', 'yearly']:
+                    time_period = 'daily'
+
+                # Validate view_mode
+                if view_mode not in ['simple', 'astrologer']:
+                    view_mode = 'simple'
 
                 # Validate essential chart data fields
                 required_fields = ['zodiac_sign']
                 missing_fields = [f for f in required_fields if f not in chart_data]
                 if missing_fields:
                     logger.warning(f"Missing recommended fields in chart_data: {missing_fields}")
+
+                # Validate relationship_type
+                if relationship_type not in ['family', 'romantic', 'karmic', 'timing', 'all']:
+                    relationship_type = 'all'
+
+                # Store parameters in options for downstream use
+                options['time_period'] = time_period
+                options['view_mode'] = view_mode
+                options['relationship_type'] = relationship_type
 
                 # Normalize mode
                 try:
@@ -156,25 +187,27 @@ class PredictionOrchestrator:
 
                 # Route to appropriate generation method
                 if pred_mode == PredictionMode.OFFLINE:
-                    return self._generate_offline(category, chart_data, language)
+                    return self._generate_offline(normalized_category, chart_data, language, time_period=time_period, view_mode=view_mode, relationship_type=relationship_type)
                 elif pred_mode == PredictionMode.ONLINE:
-                    return self._generate_online(category, chart_data, language, prompt=prompt, **options)
+                    return self._generate_online(normalized_category, chart_data, language, prompt=prompt, time_period=time_period, view_mode=view_mode, relationship_type=relationship_type, **options)
                 else:  # HYBRID
-                    return self._generate_hybrid(category, chart_data, language, prompt=prompt, **options)
+                    return self._generate_hybrid(normalized_category, chart_data, language, prompt=prompt, time_period=time_period, view_mode=view_mode, relationship_type=relationship_type, **options)
 
             except Exception as e:
                 logger.error(f"Prediction generation failed: {e}")
                 # GUARANTEED fallback - never fail
                 return self._emergency_fallback(category, chart_data, language)
 
-    def _generate_online(self, category: str, chart_data: Dict[str, Any], 
+    def _generate_online(self, category: str, chart_data: Dict[str, Any],
                         language: str, prompt: Optional[str] = None,
+                        time_period: str = "daily", view_mode: str = "simple",
+                        relationship_type: str = "all",
                         **options: Any) -> Dict[str, Any]:
         """Generate prediction using OpenAI with corpus context"""
         if not self.openai_service or not self.openai_service.enabled:
             # Fallback to offline if OpenAI not available
             logger.info("OpenAI not available, falling back to offline")
-            return self._generate_offline(category, chart_data, language)
+            return self._generate_offline(category, chart_data, language, time_period=time_period, view_mode=view_mode, relationship_type=relationship_type)
         
         try:
             # Get wisdom context from core wisdom database
@@ -223,18 +256,20 @@ class PredictionOrchestrator:
             
         except Exception as e:
             logger.error(f"Online generation failed: {e}")
-            # Fallback to offline
-            return self._generate_offline(category, chart_data, language)
+            # Fallback to offline with time_period, view_mode, and relationship_type
+            return self._generate_offline(category, chart_data, language, time_period=time_period, view_mode=view_mode, relationship_type=relationship_type)
 
     def _generate_offline(self, category: str, chart_data: Dict[str, Any],
-                         language: str) -> Dict[str, Any]:
+                         language: str, time_period: str = "daily",
+                         view_mode: str = "simple",
+                         relationship_type: str = "all") -> Dict[str, Any]:
         """Generate prediction using only offline wisdom database - NEVER FAILS"""
         try:
             # First try offline wisdom service if available
             if self.offline_wisdom:
                 try:
                     # Route to category-specific offline generator
-                    prediction_text = self._call_offline_for_category(category, chart_data, language)
+                    prediction_text = self._call_offline_for_category(category, chart_data, language, time_period=time_period, view_mode=view_mode, relationship_type=relationship_type)
 
                     # Get matched rules
                     matched_rules = []
@@ -287,25 +322,29 @@ class PredictionOrchestrator:
                 'note': 'This is a basic prediction. Services are temporarily unavailable.'
             }
 
-    def _generate_hybrid(self, category: str, chart_data: Dict[str, Any], 
+    def _generate_hybrid(self, category: str, chart_data: Dict[str, Any],
                         language: str, prompt: Optional[str] = None,
+                        time_period: str = "daily", view_mode: str = "simple",
+                        relationship_type: str = "all",
                         **options: Any) -> Dict[str, Any]:
         """Try online first, fallback to offline if it fails"""
         try:
             # Attempt online generation
-            result = self._generate_online(category, chart_data, language, prompt=prompt, **options)
-            
+            result = self._generate_online(category, chart_data, language, prompt=prompt,
+                                          time_period=time_period, view_mode=view_mode,
+                                          relationship_type=relationship_type, **options)
+
             # Check if it actually used online mode
             if result.get('mode') == 'online':
                 return result
-            
+
             # If online wasn't available, result is already offline
             return result
-            
+
         except Exception as e:
             logger.error(f"Hybrid generation error: {e}")
-            # Fallback to offline
-            return self._generate_offline(category, chart_data, language)
+            # Fallback to offline with time_period, view_mode, and relationship_type
+            return self._generate_offline(category, chart_data, language, time_period=time_period, view_mode=view_mode, relationship_type=relationship_type)
 
     def _online_dependencies_ready(self) -> bool:
         """Check if online dependencies are available for prediction generation."""
@@ -349,8 +388,10 @@ class PredictionOrchestrator:
         prompt = self._build_category_prompt(category, chart_data, wisdom_context, language)
         return self.openai_service.generate_prediction(prompt, chart_data)
 
-    def _call_offline_for_category(self, category: str, chart_data: Dict[str, Any], 
-                                   language: str) -> str:
+    def _call_offline_for_category(self, category: str, chart_data: Dict[str, Any],
+                                   language: str, time_period: str = "daily",
+                                   view_mode: str = "simple",
+                                   relationship_type: str = "all") -> str:
         """Call appropriate offline generator based on category"""
         # Map categories to offline methods
         category_methods = {
@@ -360,15 +401,21 @@ class PredictionOrchestrator:
             'present_life': self.offline_wisdom.generate_present_life,
             'life_events': self.offline_wisdom.generate_life_events,
             'karmic_remedies': self.offline_wisdom.generate_karmic_remedies,
-            'relationships': self.offline_wisdom.generate_relationships,
-            'predictions': self.offline_wisdom.generate_general_predictions,
         }
-        
+
+        # Special handling for predictions category with time_period and view_mode
+        if category == 'predictions':
+            return self.offline_wisdom.generate_general_predictions(chart_data, time_period=time_period, view_mode=view_mode)
+
+        # Special handling for relationships category with relationship_type, time_period, and view_mode
+        if category == 'relationships':
+            return self.offline_wisdom.generate_relationships(chart_data, relationship_type=relationship_type, time_period=time_period, view_mode=view_mode)
+
         # Get method for category
         method = category_methods.get(category)
         if method:
             return method(chart_data)
-        
+
         # For new categories, generate using generic method
         return self._generate_generic_offline(category, chart_data, language)
 
