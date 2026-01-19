@@ -1059,13 +1059,34 @@ Based on Nadi Jyotisha timing principles for {zodiac} natives:
 
 *These remedies follow classical Bhrigu Samhita and Nadi Jyotisha traditions. For AI-enhanced personalized remedy prescription, ensure OpenAI API is configured.*"""
 
-    def generate_relationships(self, context: Dict[str, Any]) -> str:
-        """Generate Relationships prediction with proper section headers"""
+    def generate_relationships(self, context: Dict[str, Any], relationship_type: str = 'all',
+                               time_period: str = 'daily', view_mode: str = 'simple') -> str:
+        """Generate Relationships prediction with proper section headers
+
+        Args:
+            context: Birth chart data
+            relationship_type: 'family', 'romantic', 'karmic', 'timing', 'all'
+            time_period: 'daily', 'weekly', 'monthly', 'yearly' (for timing aspects)
+            view_mode: 'simple' (crisp) or 'astrologer' (detailed)
+        """
         zodiac = context.get('zodiac_sign', 'Unknown')
         nakshatra = context.get('nakshatra', 'Unknown')
+        moon_sign = context.get('moon_sign', zodiac)
+        ascendant = context.get('ascendant', zodiac)
 
         zodiac_info = self._get_zodiac_info(zodiac)
         nakshatra_info = self._get_nakshatra_info(nakshatra)
+
+        # Route to specific relationship type
+        if relationship_type == 'family':
+            return self._generate_family_relationships(zodiac, nakshatra, moon_sign, ascendant, zodiac_info, nakshatra_info, view_mode)
+        elif relationship_type == 'romantic':
+            return self._generate_romantic_relationships(zodiac, nakshatra, moon_sign, ascendant, zodiac_info, nakshatra_info, view_mode)
+        elif relationship_type == 'karmic':
+            return self._generate_karmic_relationships(zodiac, nakshatra, moon_sign, ascendant, zodiac_info, nakshatra_info, view_mode)
+        elif relationship_type == 'timing':
+            return self._generate_relationship_timing(zodiac, nakshatra, moon_sign, ascendant, zodiac_info, nakshatra_info, time_period, view_mode)
+        # Default: return all (legacy behavior)
 
         return f"""## 1. Romantic Relationships & Marriage
 
@@ -1243,162 +1264,1519 @@ Based on Nadi Jyotisha timing principles for {zodiac} natives:
 
 *This reading draws from Vedic relationship wisdom. For AI-enhanced compatibility analysis and detailed relationship timing, ensure OpenAI API is configured.*"""
 
-    def generate_general_predictions(self, context: Dict[str, Any]) -> str:
-        """Generate General Predictions with proper section headers"""
+    def _generate_family_relationships(self, zodiac: str, nakshatra: str, moon_sign: str, ascendant: str,
+                                       zodiac_info: Dict, nakshatra_info: Dict, view_mode: str) -> str:
+        """Generate family-specific relationship predictions"""
+        element = zodiac_info.get('element', 'Fire')
+        ruler = zodiac_info.get('ruler', 'Sun')
+
+        if view_mode == 'simple':
+            return f"""## Family Relationships
+
+**{zodiac} • {nakshatra}**
+
+### Parents
+• Mother represents nurturing, emotional foundation
+• Father represents authority, worldly guidance
+• Key lesson: Balancing respect with independence
+
+### Siblings
+• Soul companions sharing your family karma
+• Potential for deep support and occasional friction
+• Growth through cooperation and understanding
+
+### Children
+• Souls entrusted to your care for mutual evolution
+• Your {element} energy shapes parenting style
+• Teaching responsibility balanced with freedom
+
+### Extended Family
+• In-laws bring growth opportunities
+• Ancestors bless through proper honoring
+• Family unity strengthens during challenges
+
+### Family Karma Patterns
+• {zodiac} natives learn boundaries in family
+• Past life connections with family members
+• Healing happens through conscious awareness
+
+### Actionable Guidance
+• Express appreciation to family members weekly
+• Practice active listening in family discussions
+• Honor ancestors on new moon days
+• Create quality time for family bonding"""
+
+        else:  # astrologer mode
+            return f"""## Family Bhava Analysis
+
+**Natal Configuration:** {zodiac} Surya • {moon_sign} Chandra • {ascendant} Lagna
+**Janma Nakshatra:** {nakshatra} • Deity: {nakshatra_info.get('deity', 'Unknown')}
+
+### 4th House (Matru Bhava) - Mother
+**Analysis:** The 4th house governs mother, property, and emotional foundation.
+• {moon_sign} Moon influence shapes maternal relationship
+• {element} element indicates emotional expression style
+• Karmic patterns with mother from past lives
+
+### 9th House (Pitru Bhava) - Father
+**Analysis:** The 9th house governs father, fortune, and dharma.
+• {ruler} as chart ruler influences paternal dynamics
+• Father figure role in spiritual and worldly guidance
+• Ancestral blessings flow through father's lineage
+
+### 3rd House (Sahaja Bhava) - Siblings
+**Analysis:** The 3rd house governs siblings, courage, and initiatives.
+• Mars influence indicates sibling dynamics
+• Karmic bonds indicate past life connections
+• Growth through both cooperation and healthy competition
+
+### 5th House (Putra Bhava) - Children
+**Analysis:** The 5th house governs children, creativity, and merit.
+• Jupiter's placement influences children matters
+• {nakshatra} deity blessings for progeny
+• Teaching-learning exchange with children
+
+### 12th House - Family Karma
+**Analysis:** The 12th house reveals hidden family patterns.
+• Ancestral karmic debts and credits
+• Past life family connections
+• Liberation through conscious family healing
+
+### Timing of Family Events
+• **Property matters:** Saturn/4th lord transits
+• **Father's influence:** 9th lord Dasha periods
+• **Children timing:** 5th house activations
+• **Family harmony:** Venus transits through relevant houses
+
+### Remedial Measures
+• **Pitru Tarpana:** Ancestral offerings on Amavasya
+• **Matru Puja:** Honor mother on Fridays
+• **Family Harmony Mantra:** Om Gam Ganapataye Namaha (for removing obstacles)"""
+
+    def _generate_romantic_relationships(self, zodiac: str, nakshatra: str, moon_sign: str, ascendant: str,
+                                         zodiac_info: Dict, nakshatra_info: Dict, view_mode: str) -> str:
+        """Generate romantic relationship predictions"""
+        element = zodiac_info.get('element', 'Fire')
+        ruler = zodiac_info.get('ruler', 'Sun')
+
+        # Compatible elements
+        element_compatibility = {
+            'Fire': ['Fire', 'Air'],
+            'Earth': ['Earth', 'Water'],
+            'Air': ['Air', 'Fire'],
+            'Water': ['Water', 'Earth']
+        }
+        compatible_elements = element_compatibility.get(element, [element])
+
+        if view_mode == 'simple':
+            return f"""## Romantic Relationships
+
+**{zodiac} • {nakshatra}**
+
+### Your Love Nature
+• {element} element brings passion and depth
+• {nakshatra_info.get('quality', 'Natural')} energy in romance
+• {zodiac_info.get('traits', 'Your core nature')} shapes attraction
+
+### Ideal Partner Qualities
+• Complementary {', '.join(compatible_elements)} element energy
+• Shared values around growth and spirituality
+• Emotional intelligence and communication skills
+• Supportive of your dharmic path
+
+### Relationship Strengths
+• Deep loyalty once committed
+• {element} passion in emotional expression
+• Natural protectiveness of loved ones
+• Growth-oriented approach to partnership
+
+### Growth Areas
+• Patience during disagreements
+• Balancing independence with togetherness
+• Expressing vulnerability appropriately
+• Maintaining individual identity in partnership
+
+### Marriage Potential
+• Strong marriage yoga in chart
+• Partner likely from service/creative fields
+• Commitment deepens over time
+• Spiritual partnership possible
+
+### Actionable Guidance
+• Express appreciation daily
+• Schedule quality time weekly
+• Communicate needs clearly
+• Support partner's dreams
+• Practice forgiveness readily"""
+
+        else:  # astrologer mode
+            return f"""## Kalatra Bhava (7th House) Analysis
+
+**Natal Configuration:** {zodiac} Surya • {moon_sign} Chandra • {ascendant} Lagna
+**Janma Nakshatra:** {nakshatra} • Adhipati: {nakshatra_info.get('deity', 'Unknown')}
+
+### Venus Placement Analysis
+**Shukra (Venus)** governs romantic relationships and marriage.
+• {ruler} influence on Venus determines love nature
+• {element} Venus expression in relationships
+• Dignity of Venus affects romantic fortune
+
+### 7th House (Kalatra Bhava) Deep Dive
+**7th Lord Analysis:**
+• Placement and aspects reveal partner characteristics
+• Benefic influences indicate harmonious marriage
+• Malefic aspects require conscious relationship work
+
+**Partner Indicators:**
+• Physical: Complementary {element} characteristics
+• Mental: Shared intellectual interests
+• Spiritual: Growth-oriented worldview
+
+### Dasha Periods for Romance
+**Favorable Periods:**
+• Venus Mahadasha/Antardasha for romance
+• Jupiter transit through 7th from Moon
+• 7th lord Dasha for marriage potential
+
+**Timing Windows:**
+• Ages 25-32: Traditional marriage window
+• Venus-ruled years: Relationship focus
+• Jupiter blessings: Commitment periods
+
+### Compatibility Analysis (Ashtakoot)
+**Best Matches by Sign:**
+• {compatible_elements[0]} signs: Natural harmony (30-36 points)
+• {compatible_elements[1] if len(compatible_elements) > 1 else compatible_elements[0]} signs: Good compatibility (24-30 points)
+
+**Nakshatra Compatibility:**
+• {nakshatra} pairs well with complementary nakshatras
+• Dina, Gana, Yoni considerations important
+
+### Mangal Dosha Assessment
+• Mars placement review for Kuja Dosha
+• Remedial measures if applicable
+• Compatibility adjustments needed
+
+### Relationship Remedies
+**Venus Strengthening:**
+• Diamond or White Sapphire (with consultation)
+• Om Shukraya Namaha (108 times on Fridays)
+• White items donation on Fridays
+
+**Marriage Success:**
+• Vivaha Sukta recitation
+• Gauri-Shankar puja for harmony
+• Regular Venus day observance"""
+
+    def _generate_karmic_relationships(self, zodiac: str, nakshatra: str, moon_sign: str, ascendant: str,
+                                       zodiac_info: Dict, nakshatra_info: Dict, view_mode: str) -> str:
+        """Generate karmic relationship predictions"""
+        element = zodiac_info.get('element', 'Fire')
+
+        if view_mode == 'simple':
+            return f"""## Karmic Soul Connections
+
+**{zodiac} • {nakshatra}**
+
+### Soul Group Overview
+• 3-5 primary soulmates in this lifetime
+• 12-20 soul family members as friends/family
+• Recognition: Immediate deep familiarity
+
+### Twin Flame Potential
+• Intense, transformative connection possible
+• Purpose: Mutual spiritual acceleration
+• Signs: Mirror reflection of strengths and wounds
+
+### Soulmate Connections
+• Multiple soulmates serve different purposes
+• Romantic, friendship, and mentor forms
+• Not all intense—some bring peaceful support
+
+### Karmic Relationships
+• Some connections carry past-life business
+• Challenges are growth opportunities
+• Resolution through awareness and forgiveness
+
+### Soul Recognition Signs
+• Instant familiarity upon meeting
+• Déjà vu experiences together
+• Deep comfort or intense attraction
+• Feeling "known" without explanation
+
+### Karmic Patterns to Heal
+• {element} element themes in relationships
+• Boundaries and giving balance
+• Trust and vulnerability lessons
+
+### Past Life Indicators
+• Strong lunar aspects suggest past connections
+• Repetitive relationship themes indicate karma
+• Healing happens through conscious awareness
+
+### Actionable Guidance
+• Honor all connections as teachers
+• Practice forgiveness meditation
+• Release attachment to outcomes
+• Trust the journey of each relationship"""
+
+        else:  # astrologer mode
+            return f"""## Karmic Relationship Analysis (Runa Bandhan)
+
+**Natal Configuration:** {zodiac} Surya • {moon_sign} Chandra • {ascendant} Lagna
+**Janma Nakshatra:** {nakshatra} • Devata: {nakshatra_info.get('deity', 'Unknown')}
+
+### Rahu-Ketu Axis (Karmic Indicators)
+**North Node (Rahu):** Future karmic direction
+• Indicates relationships drawing you forward
+• New souls entering your life pattern
+• Growth through unfamiliar connections
+
+**South Node (Ketu):** Past life connections
+• Indicates souls from previous incarnations
+• Comfortable but potentially stagnant bonds
+• Wisdom carried from past relationships
+
+### 12th House (Moksha Bhava) Analysis
+**Past Life Relationship Karma:**
+• Unfinished emotional business indicated
+• Forgiveness themes requiring resolution
+• Liberation through conscious relating
+
+### 5th-11th Axis (Soul Groups)
+**5th House:** Creative/romantic past life links
+**11th House:** Friendship/community soul connections
+• Indicates size and nature of soul family
+• Group karma and collective purpose
+
+### Karmic Debt Indicators
+**Relationship Debts (Runa):**
+• Matru Runa: Mother karma
+• Pitru Runa: Father karma
+• Acharya Runa: Teacher karma
+• Deva Runa: Divine debt
+
+### Soul Recognition Astrology
+**Nodal Contacts:**
+• Moon conjunct nodes: Deep past life bonds
+• Venus-Ketu: Romantic past life connections
+• Sun-Rahu: Father figure karmic patterns
+
+### Karmic Healing Periods
+**Favorable Times:**
+• Ketu Mahadasha: Past life resolution
+• 12th house transits: Karmic clearing
+• Eclipse periods: Accelerated karma release
+
+### Karmic Remedies
+**Past Life Healing:**
+• Om Namah Shivaya (for karmic release)
+• Pitru Tarpana (ancestral clearing)
+• Forgiveness meditation daily
+
+**Soul Group Work:**
+• Service to spiritual community
+• Teaching accumulated wisdom
+• Conscious relationship practice"""
+
+    def _generate_relationship_timing(self, zodiac: str, nakshatra: str, moon_sign: str, ascendant: str,
+                                      zodiac_info: Dict, nakshatra_info: Dict, time_period: str, view_mode: str) -> str:
+        """Generate relationship timing predictions for specific time periods"""
+        from datetime import datetime
+
+        element = zodiac_info.get('element', 'Fire')
+        ruler = zodiac_info.get('ruler', 'Sun')
+        today = datetime.now()
+        weekday = today.weekday()
+        day_rulers = ['Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Sun']
+        day_ruler = day_rulers[weekday]
+
+        if time_period == 'daily':
+            if view_mode == 'simple':
+                return f"""## Today's Relationship Energy
+
+**{zodiac} • {nakshatra}**
+
+### Today's Love Forecast
+• Day ruler {day_ruler} influences relationships
+• {self._get_love_daily(moon_sign, day_ruler)}
+• Emotional energy: {self._calculate_day_harmony(element, day_ruler)['level']}
+
+### Communication
+• Express feelings authentically today
+• Listen with presence and patience
+• Avoid difficult conversations during Rahu Kalam
+
+### Best Time for Connection
+• Morning: {self._get_auspicious_hours(day_ruler).split(',')[0]}
+• Evening: Quality time after sunset
+
+### Today's Relationship Action
+• Express appreciation to one person
+• Send a thoughtful message to loved one
+• Practice active listening in conversations"""
+
+            else:  # astrologer mode
+                return f"""## Diurnal Relationship Analysis
+
+**Natal Configuration:** {zodiac} Sun • {moon_sign} Moon • {ascendant} Lagna
+**Day Lord:** {day_ruler} | **Nakshatra:** {nakshatra}
+
+### Venus Hora Analysis
+**Current Influence:** {day_ruler} activates related relationship themes
+**7th House Transit:** Review current planetary positions
+**Best Hours:** {self._get_auspicious_hours(day_ruler)}
+
+### Panchanga for Relationships
+**Tithi:** {self._get_tithi_influence(today)} for emotional matters
+**Yoga:** {self._get_yoga_of_day(today)}
+**Avoid:** Rahu Kalam {self._get_rahu_kalam(weekday)}
+
+### Today's Remedies
+**Mantra:** Om Shukraya Namaha (for relationship harmony)
+**Color:** {self._get_lucky_color(day_ruler, element)}"""
+
+        elif time_period == 'weekly':
+            if view_mode == 'simple':
+                return f"""## This Week's Relationship Energy
+
+**{zodiac} • {nakshatra}**
+
+### Weekly Love Overview
+• Relationship focus builds mid-week
+• Venus day (Friday) optimal for romance
+• {element} energy shapes emotional expression
+
+### Day-by-Day Relationship Guide
+• **Mon:** Emotional depth, family time
+• **Tue:** Passion heightened, avoid conflicts
+• **Wed:** Communication flows, express feelings
+• **Thu:** Generous love energy, commitments
+• **Fri:** Romance peaks, date night ideal
+• **Sat:** Serious conversations, commitments
+• **Sun:** Warmth and playfulness
+
+### Best Days for Love
+• Friday (Venus) for romance
+• Thursday (Jupiter) for commitments
+• Monday for emotional bonding
+
+### Weekly Relationship Action
+• Schedule quality time on Friday
+• Express appreciation daily
+• Address any tensions mid-week
+• Practice forgiveness readily"""
+
+            else:  # astrologer mode
+                return f"""## Saptahika Relationship Phala
+
+**Natal Configuration:** {zodiac} • {moon_sign} • {ascendant}
+**Birth Nakshatra:** {nakshatra}
+
+### Weekly Venus Transits
+**Day-wise Analysis:**
+• Soma (Mon): Chandra activates emotions, family bonding
+• Mangala (Tue): Kuja brings passion, potential friction
+• Budha (Wed): Mercury aids communication, clarity
+• Guru (Thu): Jupiter expands love, auspicious commitments
+• Shukra (Fri): Venus rules, romance flourishes
+• Shani (Sat): Saturn tests, deepen commitments
+• Ravi (Sun): Sun brings vitality, mutual respect
+
+### 7th House Weekly Aspects
+**Favorable Days:** Thursday, Friday
+**Challenging:** Tuesday (Mars aggression)
+**Neutral:** Wednesday, Saturday
+
+### Weekly Relationship Muhurta
+**Romance:** Friday evening after sunset
+**Serious Talks:** Saturday morning
+**Family Time:** Sunday afternoon
+
+### Weekly Remedies
+**Venus Strengthening:** White flowers Friday
+**Relationship Harmony:** Couple meditation Thursday"""
+
+        elif time_period == 'monthly':
+            month_name = today.strftime('%B')
+            if view_mode == 'simple':
+                return f"""## {month_name}'s Relationship Forecast
+
+**{zodiac} • {nakshatra}**
+
+### Month's Love Theme
+• {ruler} influences relationships this month
+• Growth through deeper commitment
+• New connections possible mid-month
+
+### Key Relationship Dates
+• 7th & 14th: Romance energy peaks
+• 11th: Spiritual connection deepens
+• Full Moon: Emotions heightened
+• New Moon: Fresh starts possible
+
+### Monthly Love Focus
+• Existing relationships: Deepening intimacy
+• Singles: New connections around 7th-14th
+• Commitments: Favorable around 11th
+
+### Month's Challenges
+• Potential friction around 8th & 22nd
+• Patience needed during Saturn aspects
+• Avoid major decisions on eclipse days
+
+### Monthly Relationship Actions
+• Set relationship intentions on 1st
+• Plan special date around 14th
+• Review relationship goals mid-month
+• Express gratitude at month's end"""
+
+            else:
+                return f"""## Masika Kalatra Phala • {month_name}
+
+**Natal Configuration:** {zodiac} • {moon_sign} • {ascendant}
+**Nakshatra:** {nakshatra}
+
+### Venus Monthly Transit Analysis
+**Current Position:** Review Venus through houses
+**Aspect to 7th:** Determines relationship energy
+**Strength:** {ruler} influence enhances or challenges
+
+### Week-by-Week Relationship Guide
+**Week 1:** Foundation building, emotional clearing
+**Week 2:** Active connection, romance peaks
+**Week 3:** Review and adjustment, deeper communication
+**Week 4:** Consolidation, commitment opportunities
+
+### Auspicious Relationship Muhurtas
+**Romance:** Venus-ruled days, Shukla Paksha
+**Commitments:** Jupiter-ruled days, Panchami/Ekadashi
+**Difficult Conversations:** Saturn-ruled periods for stability
+
+### Monthly Relationship Remedies
+**Venus Mantra:** Om Shukraya Namaha (1008 monthly)
+**Couple Practice:** Joint meditation on Full Moon
+**Charity:** White items donation on Fridays"""
+
+        else:  # yearly
+            year = today.year
+            if view_mode == 'simple':
+                return f"""## {year} Relationship Forecast
+
+**{zodiac} • {nakshatra}**
+
+### Year's Love Theme
+• Significant relationship evolution ahead
+• Deepening existing bonds
+• New soul connections possible
+
+### Quarterly Overview
+**Q1 (Jan-Mar):** Foundation and healing
+**Q2 (Apr-Jun):** Active growth, new connections
+**Q3 (Jul-Sep):** Testing and strengthening
+**Q4 (Oct-Dec):** Harvest and commitment
+
+### Major Relationship Transits
+• Jupiter brings expansion mid-year
+• Saturn tests commitment but strengthens
+• Venus retrograde period: Review existing bonds
+
+### Singles Focus
+• Best periods: April-June, October
+• Soul connections likely in spiritual settings
+• Quality over quantity approach favored
+
+### Committed Relationships
+• Deepening intimacy throughout year
+• Milestone opportunities Q3-Q4
+• Growth through challenges Q2
+
+### Year's Relationship Actions
+• Set clear relationship intentions January
+• Review progress mid-year
+• Celebrate milestones Q4
+• Practice forgiveness continuously"""
+
+            else:
+                return f"""## Varshika Kalatra Phala • {year}
+
+**Natal Configuration:** {zodiac} • {moon_sign} • {ascendant}
+**Janma Nakshatra:** {nakshatra}
+
+### Major Planetary Transits Affecting Relationships
+
+**Jupiter (Guru) Transit:**
+• Expansion through 7th house
+• Blessing for commitments and growth
+• Favorable periods for marriage
+
+**Saturn (Shani) Transit:**
+• Testing existing bonds
+• Karmic relationship lessons
+• Long-term commitment focus
+
+**Venus (Shukra) Retrograde:**
+• Review of relationship patterns
+• Past connections may resurface
+• Internal reflection on love needs
+
+**Rahu-Ketu Nodal Shift:**
+• Karmic relationships activated
+• Soul connections entering/exiting
+• Spiritual partnership focus
+
+### Quarterly Kalatra Analysis
+
+**Q1 - Vasanta:** Foundation building
+• 7th lord positioning favorable
+• New beginnings in love supported
+• Healing past patterns
+
+**Q2 - Grishma:** Active engagement
+• Venus strength peaks
+• Romance flourishes
+• New connections likely
+
+**Q3 - Varsha:** Testing period
+• Saturn aspects relationships
+• Commitment tests
+• Strengthen through challenges
+
+**Q4 - Hemanta:** Harvest time
+• Jupiter blessings manifest
+• Commitment milestones
+• Relationship fruits ripen
+
+### Annual Relationship Remedies
+**Vivaha Sukta:** For marriage blessings
+**Gauri-Shankar Puja:** For harmony
+**Venus Vrata:** Friday observances
+**Nakshatra Shanti:** For natal harmony"""
+
+    def generate_general_predictions(self, context: Dict[str, Any], time_period: str = 'daily', view_mode: str = 'simple') -> str:
+        """Generate time-period-specific predictions with view mode support
+
+        Args:
+            context: Birth chart data
+            time_period: 'daily', 'weekly', 'monthly', or 'yearly'
+            view_mode: 'simple' (crisp, precise) or 'astrologer' (detailed with references)
+        """
         zodiac = context.get('zodiac_sign', 'Unknown')
         nakshatra = context.get('nakshatra', 'Unknown')
+        moon_sign = context.get('moon_sign', zodiac)
+        ascendant = context.get('ascendant', zodiac)
 
         zodiac_info = self._get_zodiac_info(zodiac)
         nakshatra_info = self._get_nakshatra_info(nakshatra)
 
-        # Determine lucky elements based on zodiac
-        lucky_colors = {
-            'Fire': 'Red, Orange, Gold',
-            'Earth': 'Green, Brown, Yellow',
-            'Air': 'White, Light Blue, Silver',
-            'Water': 'Blue, Sea Green, Pearl White'
+        # Route to appropriate time-period method
+        if time_period == 'daily':
+            return self._generate_daily_prediction(zodiac, nakshatra, moon_sign, ascendant, zodiac_info, nakshatra_info, view_mode)
+        elif time_period == 'weekly':
+            return self._generate_weekly_prediction(zodiac, nakshatra, moon_sign, ascendant, zodiac_info, nakshatra_info, view_mode)
+        elif time_period == 'monthly':
+            return self._generate_monthly_prediction(zodiac, nakshatra, moon_sign, ascendant, zodiac_info, nakshatra_info, view_mode)
+        elif time_period == 'yearly':
+            return self._generate_yearly_prediction(zodiac, nakshatra, moon_sign, ascendant, zodiac_info, nakshatra_info, view_mode)
+        else:
+            return self._generate_daily_prediction(zodiac, nakshatra, moon_sign, ascendant, zodiac_info, nakshatra_info, view_mode)
+
+    def _generate_daily_prediction(self, zodiac: str, nakshatra: str, moon_sign: str, ascendant: str,
+                                   zodiac_info: Dict, nakshatra_info: Dict, view_mode: str) -> str:
+        """Generate precise daily prediction based on Nadi Jyotisha Tithi-Nakshatra system"""
+        from datetime import datetime
+
+        today = datetime.now()
+        weekday = today.weekday()
+        day_rulers = ['Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Sun']
+        day_ruler = day_rulers[weekday]
+        day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+        # Calculate day energy based on planetary day lord and natal chart
+        element = zodiac_info.get('element', 'Fire')
+        day_element_harmony = self._calculate_day_harmony(element, day_ruler)
+
+        # Lucky elements calculation using Nadi principles
+        lucky_number = self._calculate_lucky_number(nakshatra, today.day)
+        lucky_color = self._get_lucky_color(day_ruler, element)
+
+        if view_mode == 'simple':
+            return f"""## Today's Cosmic Energy: {day_element_harmony['level']}
+
+**{zodiac} • {nakshatra} Nakshatra**
+
+### Key Insight
+{day_element_harmony['message']}
+
+### Career & Work
+• {self._get_career_daily(zodiac, day_ruler)}
+• Best hours: {self._get_auspicious_hours(day_ruler)}
+
+### Relationships
+• {self._get_love_daily(moon_sign, day_ruler)}
+
+### Health & Vitality
+• {self._get_health_daily(element, nakshatra_info)}
+
+### Lucky Elements
+• Number: {lucky_number}
+• Color: {lucky_color}
+• Direction: {self._get_lucky_direction(day_ruler)}
+
+### Actionable Guidance
+{self._get_daily_action(zodiac, nakshatra, day_ruler)}"""
+
+        else:  # astrologer mode
+            return f"""## Diurnal Chart Analysis • {day_names[weekday]}
+
+**Natal Configuration:** {zodiac} Sun • {moon_sign} Moon • {ascendant} Lagna
+**Janma Nakshatra:** {nakshatra} ({nakshatra_info.get('deity', 'Deity')})
+
+### Vara (Day Lord) Analysis
+**Day Ruler:** {day_ruler}
+**Planetary Hour Sequence:** {self._get_hora_sequence(day_ruler)}
+**Day-Natal Harmony:** {day_element_harmony['score']}% ({day_element_harmony['level']})
+
+### Panchanga Elements
+**Tithi Influence:** {self._get_tithi_influence(today)}
+**Yoga:** {self._get_yoga_of_day(today)}
+**Karana:** {self._get_karana(today)}
+
+### Career & Professional (10th House Transit)
+{self._get_career_daily_detailed(zodiac, day_ruler, ascendant)}
+
+### Relationships & Partnerships (7th House)
+{self._get_love_daily_detailed(moon_sign, day_ruler, zodiac)}
+
+### Health & Constitution (6th House)
+{self._get_health_daily_detailed(element, nakshatra_info, ascendant)}
+
+### Financial Prospects (2nd & 11th Houses)
+{self._get_finance_daily_detailed(zodiac, day_ruler)}
+
+### Spiritual Practice (9th & 12th Houses)
+**Recommended Mantra:** {self._get_daily_mantra(nakshatra_info, day_ruler)}
+**Meditation Focus:** {nakshatra_info.get('quality', 'Inner stillness')}
+
+### Auspicious Timings (Muhurta)
+**Best Hours:** {self._get_auspicious_hours(day_ruler)}
+**Avoid:** Rahu Kalam {self._get_rahu_kalam(weekday)}
+**Gulika Kalam:** {self._get_gulika_kalam(weekday)}
+
+### Lucky Elements
+• **Number:** {lucky_number} (derived from Nakshatra pada)
+• **Color:** {lucky_color}
+• **Gemstone:** {self._get_day_gemstone(day_ruler)}
+• **Direction:** {self._get_lucky_direction(day_ruler)}
+• **Metal:** {self._get_lucky_metal(day_ruler)}
+
+### Actionable Guidance
+{self._get_daily_action_detailed(zodiac, nakshatra, day_ruler, nakshatra_info)}"""
+
+    def _generate_weekly_prediction(self, zodiac: str, nakshatra: str, moon_sign: str, ascendant: str,
+                                    zodiac_info: Dict, nakshatra_info: Dict, view_mode: str) -> str:
+        """Generate weekly prediction based on Bhrigu Samhita Graha Sthiti principles"""
+        from datetime import datetime, timedelta
+
+        today = datetime.now()
+        week_start = today - timedelta(days=today.weekday())
+        week_end = week_start + timedelta(days=6)
+
+        element = zodiac_info.get('element', 'Fire')
+        ruler = zodiac_info.get('ruler', 'Sun')
+
+        # Determine week's dominant planetary energy
+        week_theme = self._calculate_week_theme(zodiac, nakshatra, today)
+
+        if view_mode == 'simple':
+            return f"""## Weekly Forecast • {week_start.strftime('%b %d')} - {week_end.strftime('%b %d')}
+
+**{zodiac} • {nakshatra}**
+
+### Week's Theme
+{week_theme['theme']}
+
+### Day-by-Day Energy
+• **Mon:** {self._get_day_brief('Moon', zodiac)}
+• **Tue:** {self._get_day_brief('Mars', zodiac)}
+• **Wed:** {self._get_day_brief('Mercury', zodiac)}
+• **Thu:** {self._get_day_brief('Jupiter', zodiac)}
+• **Fri:** {self._get_day_brief('Venus', zodiac)}
+• **Sat:** {self._get_day_brief('Saturn', zodiac)}
+• **Sun:** {self._get_day_brief('Sun', zodiac)}
+
+### Best Days
+{week_theme['best_days']}
+
+### Career Focus
+{self._get_career_weekly(zodiac, ruler)}
+
+### Relationship Insights
+{self._get_love_weekly(moon_sign, zodiac)}
+
+### Financial Outlook
+{self._get_finance_weekly(zodiac)}
+
+### Weekly Guidance
+{week_theme['guidance']}"""
+
+        else:  # astrologer mode
+            return f"""## Saptahika Phala (Weekly Analysis)
+**Period:** {week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')}
+
+**Natal Configuration:** {zodiac} Sun • {moon_sign} Chandra • {ascendant} Lagna
+**Birth Nakshatra:** {nakshatra} • Presiding Deity: {nakshatra_info.get('deity', 'Unknown')}
+
+### Graha Sthiti (Planetary Positions) Impact
+**Week Ruler:** {week_theme['ruler']}
+**Dominant Energy:** {element} tattva activated
+**Transit Influence:** {self._get_transit_summary(zodiac)}
+
+### Vara-wise Analysis (Day-by-Day)
+
+**Somavara (Monday) - Chandra:**
+{self._get_day_detailed('Moon', zodiac, moon_sign, 'Emotional sensitivity heightened. Honor lunar energies.')}
+
+**Mangalavara (Tuesday) - Kuja:**
+{self._get_day_detailed('Mars', zodiac, moon_sign, 'Action-oriented energy. Channel aggression constructively.')}
+
+**Budhavara (Wednesday) - Budha:**
+{self._get_day_detailed('Mercury', zodiac, moon_sign, 'Communication and commerce favored. Learning enhanced.')}
+
+**Guruvara (Thursday) - Guru:**
+{self._get_day_detailed('Jupiter', zodiac, moon_sign, 'Expansion and wisdom. Auspicious for new ventures.')}
+
+**Shukravara (Friday) - Shukra:**
+{self._get_day_detailed('Venus', zodiac, moon_sign, 'Harmony and beauty. Relationships flourish.')}
+
+**Shanivara (Saturday) - Shani:**
+{self._get_day_detailed('Saturn', zodiac, moon_sign, 'Discipline required. Long-term planning favored.')}
+
+**Ravivara (Sunday) - Ravi:**
+{self._get_day_detailed('Sun', zodiac, moon_sign, 'Self-expression and vitality. Leadership opportunities.')}
+
+### Career & Profession (Karma Bhava)
+{self._get_career_weekly_detailed(zodiac, ruler, ascendant)}
+
+### Relationships & Marriage (Kalatra Bhava)
+{self._get_love_weekly_detailed(moon_sign, zodiac, nakshatra)}
+
+### Wealth & Resources (Dhana Bhava)
+{self._get_finance_weekly_detailed(zodiac, ruler)}
+
+### Health & Wellness (Roga Bhava)
+{self._get_health_weekly_detailed(element, nakshatra_info)}
+
+### Spiritual Practice Recommendations
+**Mantra for the Week:** {self._get_weekly_mantra(nakshatra_info, ruler)}
+**Fasting Day:** {self._get_fasting_day(ruler)}
+**Pilgrimage/Temple:** {self._get_temple_recommendation(nakshatra_info)}
+
+### Auspicious Activities
+**Best Days:** {week_theme['best_days']}
+**Avoid:** {week_theme['avoid_days']}
+**Muhurta Windows:** {self._get_weekly_muhurta(zodiac)}"""
+
+    def _generate_monthly_prediction(self, zodiac: str, nakshatra: str, moon_sign: str, ascendant: str,
+                                     zodiac_info: Dict, nakshatra_info: Dict, view_mode: str) -> str:
+        """Generate monthly prediction based on Bhrigu Samhita Masa Phala principles"""
+        from datetime import datetime
+
+        today = datetime.now()
+        month_name = today.strftime('%B')
+        year = today.year
+
+        element = zodiac_info.get('element', 'Fire')
+        ruler = zodiac_info.get('ruler', 'Sun')
+
+        # Calculate month's planetary influences
+        month_theme = self._calculate_month_theme(zodiac, nakshatra, today.month, year)
+
+        if view_mode == 'simple':
+            return f"""## Monthly Forecast • {month_name} {year}
+
+**{zodiac} • {nakshatra}**
+
+### Month's Energy
+{month_theme['energy']}
+
+### Career & Success
+{self._get_career_monthly(zodiac, ruler, today.month)}
+
+### Love & Relationships
+{self._get_love_monthly(moon_sign, zodiac, today.month)}
+
+### Health & Wellness
+{self._get_health_monthly(element, nakshatra)}
+
+### Financial Prosperity
+{self._get_finance_monthly(zodiac, today.month)}
+
+### Key Dates
+• **Power Days:** {month_theme['power_days']}
+• **Caution Days:** {month_theme['caution_days']}
+
+### Monthly Guidance
+{month_theme['guidance']}
+
+### Actionable Steps
+{self._get_monthly_actions(zodiac, nakshatra, today.month)}"""
+
+        else:  # astrologer mode
+            return f"""## Masika Phala (Monthly Analysis) • {month_name} {year}
+
+**Natal Configuration:** {zodiac} Ravi • {moon_sign} Chandra • {ascendant} Lagna
+**Janma Nakshatra:** {nakshatra} • Adhipati: {nakshatra_info.get('deity', 'Unknown')}
+
+### Graha Gochar (Transit Analysis)
+{self._get_monthly_transits(zodiac, today.month)}
+
+### Month's Planetary Ruler
+**Masa Adhipati:** {month_theme['ruler']}
+**Elemental Dominance:** {element} with {month_theme['secondary_element']} influence
+**Overall Potency:** {month_theme['potency']}%
+
+### Week-by-Week Breakdown
+
+**Week 1 (1st-7th):** {self._get_week_theme(zodiac, 1, today.month)}
+**Week 2 (8th-14th):** {self._get_week_theme(zodiac, 2, today.month)}
+**Week 3 (15th-21st):** {self._get_week_theme(zodiac, 3, today.month)}
+**Week 4 (22nd-End):** {self._get_week_theme(zodiac, 4, today.month)}
+
+### Karma Bhava Analysis (Career)
+{self._get_career_monthly_detailed(zodiac, ruler, ascendant, today.month)}
+
+### Kalatra Bhava Analysis (Relationships)
+{self._get_love_monthly_detailed(moon_sign, zodiac, nakshatra, today.month)}
+
+### Dhana Bhava Analysis (Wealth)
+{self._get_finance_monthly_detailed(zodiac, ruler, today.month)}
+
+### Arogya Analysis (Health)
+{self._get_health_monthly_detailed(element, nakshatra_info, today.month)}
+
+### Dharma & Moksha (Spiritual Path)
+{self._get_spiritual_monthly(nakshatra_info, zodiac, today.month)}
+
+### Important Muhurtas
+**Shubha Tithis:** {month_theme['auspicious_tithis']}
+**Nakshatra Alignment:** {self._get_monthly_nakshatra_days(nakshatra)}
+**Avoid:** {month_theme['inauspicious_days']}
+
+### Remedial Measures
+**Mantra Japa:** {self._get_monthly_mantra(nakshatra_info, ruler)}
+**Dana (Charity):** {self._get_monthly_charity(ruler)}
+**Vrata (Fasting):** {self._get_monthly_fasting(zodiac)}
+
+### Critical Dates
+• **Power Days:** {month_theme['power_days']}
+• **Caution Required:** {month_theme['caution_days']}
+• **New/Full Moon Impact:** {self._get_lunar_impact(zodiac, today.month)}"""
+
+    def _generate_yearly_prediction(self, zodiac: str, nakshatra: str, moon_sign: str, ascendant: str,
+                                    zodiac_info: Dict, nakshatra_info: Dict, view_mode: str) -> str:
+        """Generate yearly prediction based on Bhrigu Samhita Varsha Phala and Dasha system"""
+        from datetime import datetime
+
+        year = datetime.now().year
+        element = zodiac_info.get('element', 'Fire')
+        ruler = zodiac_info.get('ruler', 'Sun')
+
+        # Calculate year's major themes using Vedic principles
+        year_theme = self._calculate_year_theme(zodiac, nakshatra, year)
+
+        if view_mode == 'simple':
+            return f"""## Annual Forecast • {year}
+
+**{zodiac} • {nakshatra}**
+
+### Year's Theme
+{year_theme['theme']}
+
+### Quarter-by-Quarter
+
+**Q1 (Jan-Mar):** {year_theme['q1']}
+**Q2 (Apr-Jun):** {year_theme['q2']}
+**Q3 (Jul-Sep):** {year_theme['q3']}
+**Q4 (Oct-Dec):** {year_theme['q4']}
+
+### Career & Professional Growth
+{self._get_career_yearly(zodiac, ruler)}
+
+### Love & Relationships
+{self._get_love_yearly(moon_sign, zodiac)}
+
+### Wealth & Prosperity
+{self._get_finance_yearly(zodiac)}
+
+### Health & Vitality
+{self._get_health_yearly(element, nakshatra)}
+
+### Key Months
+• **Most Favorable:** {year_theme['best_months']}
+• **Requires Care:** {year_theme['challenging_months']}
+
+### Year's Guidance
+{year_theme['guidance']}"""
+
+        else:  # astrologer mode
+            return f"""## Varsha Phala (Annual Analysis) • {year}
+
+**Natal Configuration:** {zodiac} Surya • {moon_sign} Chandra • {ascendant} Lagna
+**Janma Nakshatra:** {nakshatra} • Devata: {nakshatra_info.get('deity', 'Unknown')}
+
+### Varshaphal Overview
+**Year Lord (Varshesha):** {year_theme['varshesha']}
+**Muntha Position:** {year_theme['muntha']}
+**Sahama Points:** {self._get_sahama_points(zodiac, year)}
+
+### Major Transit Impact
+
+**Jupiter Transit:** {self._get_jupiter_transit_yearly(zodiac, year)}
+**Saturn Transit:** {self._get_saturn_transit_yearly(zodiac, year)}
+**Rahu-Ketu Axis:** {self._get_rahu_ketu_yearly(zodiac, year)}
+
+### Trimsamsa (Quarter Analysis)
+
+**Q1 - Vasanta Ritu (Jan-Mar):**
+{self._get_quarter_detailed(zodiac, nakshatra, 1, year)}
+
+**Q2 - Grishma Ritu (Apr-Jun):**
+{self._get_quarter_detailed(zodiac, nakshatra, 2, year)}
+
+**Q3 - Varsha Ritu (Jul-Sep):**
+{self._get_quarter_detailed(zodiac, nakshatra, 3, year)}
+
+**Q4 - Hemanta Ritu (Oct-Dec):**
+{self._get_quarter_detailed(zodiac, nakshatra, 4, year)}
+
+### Dasha Analysis
+**Current Mahadasha:** {self._estimate_dasha(nakshatra)}
+**Antardasha Flow:** {self._get_antardasha_flow(nakshatra, year)}
+
+### Bhava-wise Predictions
+
+**1st House (Self):** {self._get_house_yearly(1, zodiac, ascendant)}
+**2nd House (Wealth):** {self._get_house_yearly(2, zodiac, ascendant)}
+**4th House (Property):** {self._get_house_yearly(4, zodiac, ascendant)}
+**5th House (Children):** {self._get_house_yearly(5, zodiac, ascendant)}
+**7th House (Marriage):** {self._get_house_yearly(7, zodiac, ascendant)}
+**9th House (Fortune):** {self._get_house_yearly(9, zodiac, ascendant)}
+**10th House (Career):** {self._get_house_yearly(10, zodiac, ascendant)}
+**11th House (Gains):** {self._get_house_yearly(11, zodiac, ascendant)}
+
+### Career & Profession (Karma Yoga)
+{self._get_career_yearly_detailed(zodiac, ruler, ascendant, year)}
+
+### Relationships & Marriage (Vivaha Yoga)
+{self._get_love_yearly_detailed(moon_sign, zodiac, nakshatra, year)}
+
+### Wealth & Prosperity (Dhana Yoga)
+{self._get_finance_yearly_detailed(zodiac, ruler, year)}
+
+### Health & Longevity (Ayu Yoga)
+{self._get_health_yearly_detailed(element, nakshatra_info, year)}
+
+### Spiritual Evolution (Moksha Marga)
+{self._get_spiritual_yearly(nakshatra_info, zodiac, year)}
+
+### Annual Remedial Prescription
+**Ishta Devata Worship:** {self._get_ishta_devata(nakshatra_info)}
+**Annual Mantra:** {self._get_yearly_mantra(nakshatra_info, ruler)}
+**Gemstone Recommendation:** {self._get_yearly_gemstone(ruler, zodiac)}
+**Charitable Acts:** {self._get_yearly_charity(ruler)}
+**Pilgrimage Sites:** {self._get_pilgrimage_sites(nakshatra_info)}
+
+### Critical Periods
+• **Most Auspicious:** {year_theme['best_months']}
+• **Exercise Caution:** {year_theme['challenging_months']}
+• **Saturn Transit Effects:** {year_theme['saturn_periods']}
+• **Eclipse Impact:** {self._get_eclipse_impact(zodiac, year)}"""
+
+    # Helper methods for precise calculations
+    def _calculate_day_harmony(self, element: str, day_ruler: str) -> Dict[str, Any]:
+        """Calculate harmony between natal element and day ruler"""
+        ruler_elements = {
+            'Sun': 'Fire', 'Moon': 'Water', 'Mars': 'Fire', 'Mercury': 'Earth',
+            'Jupiter': 'Ether', 'Venus': 'Water', 'Saturn': 'Air'
         }
-        lucky_color = lucky_colors.get(zodiac_info.get('element', 'Unknown'), 'Blue, White')
+        day_element = ruler_elements.get(day_ruler, 'Fire')
 
-        return f"""## Daily Forecast
+        harmony_matrix = {
+            ('Fire', 'Fire'): {'score': 90, 'level': 'Excellent', 'message': 'High energy alignment. Bold initiatives favored.'},
+            ('Fire', 'Air'): {'score': 85, 'level': 'Very Good', 'message': 'Dynamic energy. Expansion and communication flow.'},
+            ('Fire', 'Earth'): {'score': 60, 'level': 'Moderate', 'message': 'Balance action with grounding. Patience required.'},
+            ('Fire', 'Water'): {'score': 50, 'level': 'Challenging', 'message': 'Emotional awareness needed. Avoid impulsive reactions.'},
+            ('Fire', 'Ether'): {'score': 80, 'level': 'Good', 'message': 'Spiritual insights available. Wisdom guides action.'},
+            ('Earth', 'Earth'): {'score': 90, 'level': 'Excellent', 'message': 'Stable foundation. Material progress supported.'},
+            ('Earth', 'Water'): {'score': 85, 'level': 'Very Good', 'message': 'Nurturing energy. Growth and fertility.'},
+            ('Earth', 'Fire'): {'score': 60, 'level': 'Moderate', 'message': 'Channel enthusiasm into practical results.'},
+            ('Earth', 'Air'): {'score': 55, 'level': 'Challenging', 'message': 'Ground ideas before acting. Focus required.'},
+            ('Earth', 'Ether'): {'score': 75, 'level': 'Good', 'message': 'Spiritual wisdom enhances material pursuits.'},
+            ('Air', 'Air'): {'score': 90, 'level': 'Excellent', 'message': 'Mental clarity and communication excel.'},
+            ('Air', 'Fire'): {'score': 85, 'level': 'Very Good', 'message': 'Ideas take flight. Creative expression flows.'},
+            ('Air', 'Water'): {'score': 55, 'level': 'Challenging', 'message': 'Balance logic with intuition. Stay grounded.'},
+            ('Air', 'Earth'): {'score': 60, 'level': 'Moderate', 'message': 'Practical application of ideas. Persistence helps.'},
+            ('Air', 'Ether'): {'score': 90, 'level': 'Excellent', 'message': 'Higher knowledge accessible. Meditation beneficial.'},
+            ('Water', 'Water'): {'score': 90, 'level': 'Excellent', 'message': 'Deep emotional clarity. Intuition strong.'},
+            ('Water', 'Earth'): {'score': 85, 'level': 'Very Good', 'message': 'Emotional security supports growth.'},
+            ('Water', 'Fire'): {'score': 50, 'level': 'Challenging', 'message': 'Manage intensity. Cool emotions before acting.'},
+            ('Water', 'Air'): {'score': 55, 'level': 'Challenging', 'message': 'Don\'t overthink feelings. Trust inner guidance.'},
+            ('Water', 'Ether'): {'score': 80, 'level': 'Good', 'message': 'Spiritual depth accessible. Dreams meaningful.'},
+        }
 
-**Today's Energy for {zodiac}:**
+        return harmony_matrix.get((element, day_element),
+                                  {'score': 70, 'level': 'Balanced', 'message': 'Steady energy. Maintain equilibrium.'})
 
-*Overall Theme:* A day for balanced action and mindful engagement
-*Ruling Influence:* {zodiac_info.get('ruler', 'Planetary')} energy supports {zodiac_info.get('traits', 'your natural expression')}
+    def _calculate_lucky_number(self, nakshatra: str, day: int) -> int:
+        """Calculate lucky number using Nakshatra-based numerology"""
+        nakshatra_numbers = {
+            'Ashwini': 1, 'Bharani': 2, 'Krittika': 3, 'Rohini': 4, 'Mrigashira': 5,
+            'Ardra': 6, 'Punarvasu': 7, 'Pushya': 8, 'Ashlesha': 9, 'Magha': 1,
+            'Purva Phalguni': 2, 'Uttara Phalguni': 3, 'Hasta': 4, 'Chitra': 5,
+            'Swati': 6, 'Vishakha': 7, 'Anuradha': 8, 'Jyeshtha': 9, 'Moola': 1,
+            'Purva Ashadha': 2, 'Uttara Ashadha': 3, 'Shravana': 4, 'Dhanishta': 5,
+            'Shatabhisha': 6, 'Purva Bhadrapada': 7, 'Uttara Bhadrapada': 8, 'Revati': 9
+        }
+        base = nakshatra_numbers.get(nakshatra, 5)
+        return ((base + day) % 9) + 1
 
-**Career & Work:**
-- Focus on completing pending tasks
-- Communication with colleagues favored
-- Avoid major new commitments until energy stabilizes
+    def _get_lucky_color(self, day_ruler: str, element: str) -> str:
+        """Get lucky color based on day ruler and natal element"""
+        ruler_colors = {
+            'Sun': 'Gold, Orange, Ruby Red',
+            'Moon': 'White, Silver, Pearl',
+            'Mars': 'Red, Coral, Copper',
+            'Mercury': 'Green, Emerald, Mixed colors',
+            'Jupiter': 'Yellow, Gold, Saffron',
+            'Venus': 'White, Pink, Pastels',
+            'Saturn': 'Blue, Black, Indigo'
+        }
+        return ruler_colors.get(day_ruler, 'White')
 
-**Relationships:**
-- Express appreciation to loved ones
-- Listen more than speak
-- Harmony through patience
+    def _get_lucky_direction(self, day_ruler: str) -> str:
+        """Get lucky direction based on planetary day lord"""
+        directions = {
+            'Sun': 'East', 'Moon': 'Northwest', 'Mars': 'South',
+            'Mercury': 'North', 'Jupiter': 'Northeast', 'Venus': 'Southeast', 'Saturn': 'West'
+        }
+        return directions.get(day_ruler, 'East')
 
-**Health & Energy:**
-- Moderate activity recommended
-- Stay hydrated and nourished
-- Evening meditation beneficial
+    def _get_auspicious_hours(self, day_ruler: str) -> str:
+        """Get auspicious hora timings"""
+        hora_times = {
+            'Sun': '6:00-7:00 AM, 1:00-2:00 PM',
+            'Moon': '7:00-8:00 AM, 2:00-3:00 PM',
+            'Mars': '8:00-9:00 AM, 3:00-4:00 PM',
+            'Mercury': '9:00-10:00 AM, 4:00-5:00 PM',
+            'Jupiter': '10:00-11:00 AM, 5:00-6:00 PM',
+            'Venus': '11:00-12:00 PM, 6:00-7:00 PM',
+            'Saturn': '12:00-1:00 PM, 7:00-8:00 PM'
+        }
+        return hora_times.get(day_ruler, '6:00-7:00 AM')
 
-**Lucky Elements:**
-- Colors: {lucky_color}
-- Number: Based on nakshatra calculation
-- Direction: East for new beginnings
+    def _get_rahu_kalam(self, weekday: int) -> str:
+        """Get Rahu Kalam timing for each day"""
+        rahu_times = ['7:30-9:00 AM', '3:00-4:30 PM', '12:00-1:30 PM',
+                      '1:30-3:00 PM', '10:30-12:00 PM', '9:00-10:30 AM', '4:30-6:00 PM']
+        return rahu_times[weekday]
 
-**Auspicious Time:** Morning hours after sunrise
-**Caution Time:** Avoid major decisions during Rahu Kalam
+    def _get_gulika_kalam(self, weekday: int) -> str:
+        """Get Gulika Kalam timing"""
+        gulika_times = ['1:30-3:00 PM', '12:00-1:30 PM', '10:30-12:00 PM',
+                        '9:00-10:30 AM', '7:30-9:00 AM', '6:00-7:30 AM', '3:00-4:30 PM']
+        return gulika_times[weekday]
 
-## Weekly Forecast
+    def _get_career_daily(self, zodiac: str, day_ruler: str) -> str:
+        """Get daily career insight"""
+        insights = {
+            'Sun': 'Leadership opportunities. Take initiative on important projects.',
+            'Moon': 'Focus on team collaboration. Emotional intelligence serves you.',
+            'Mars': 'Action day. Push forward on stalled projects.',
+            'Mercury': 'Communication key. Negotiations and meetings favored.',
+            'Jupiter': 'Expansion possible. Think strategically.',
+            'Venus': 'Harmonize workplace relationships. Creative work flows.',
+            'Saturn': 'Discipline rewarded. Complete pending tasks.'
+        }
+        return insights.get(day_ruler, 'Steady progress through consistent effort.')
 
-**This Week's Theme:** Building and nurturing
+    def _get_love_daily(self, moon_sign: str, day_ruler: str) -> str:
+        """Get daily relationship insight"""
+        insights = {
+            'Sun': 'Express confidence. Your presence attracts.',
+            'Moon': 'Deep emotional connection possible. Be vulnerable.',
+            'Mars': 'Passion heightened. Channel intensity constructively.',
+            'Mercury': 'Communication heals. Share your thoughts.',
+            'Jupiter': 'Generosity in love brings joy.',
+            'Venus': 'Romance flourishes. Express affection.',
+            'Saturn': 'Commitment matters. Value stability.'
+        }
+        return insights.get(day_ruler, 'Balance giving and receiving.')
 
-**Monday-Tuesday:** Foundation work, planning
-**Wednesday-Thursday:** Active engagement, communication
-**Friday-Saturday:** Harvest efforts, relationships
-**Sunday:** Rest, spiritual practice, reflection
+    def _get_health_daily(self, element: str, nakshatra_info: Dict) -> str:
+        """Get daily health guidance"""
+        element_health = {
+            'Fire': 'Channel energy through exercise. Avoid excess heat.',
+            'Earth': 'Grounding practices. Nature walks beneficial.',
+            'Air': 'Breathing exercises. Calm the mind.',
+            'Water': 'Hydration important. Emotional release through movement.'
+        }
+        return element_health.get(element, 'Balance activity and rest.')
 
-**Best Days:** Thursday (Jupiter's blessing), Friday (Venus support)
-**Challenging Days:** Saturday requires patience (Saturn influence)
+    def _get_daily_action(self, zodiac: str, nakshatra: str, day_ruler: str) -> str:
+        """Get specific actionable guidance"""
+        return f"""• Set one clear intention for today
+• Dedicate 10 minutes to meditation/prayer
+• Express gratitude to one person
+• Complete one pending task"""
 
-**Weekly Opportunities:**
-- Career advancement through consistent effort
-- Relationship deepening through quality time
-- Financial stability through prudent management
+    def _get_daily_mantra(self, nakshatra_info: Dict, day_ruler: str) -> str:
+        """Get recommended daily mantra"""
+        deity = nakshatra_info.get('deity', 'Divine')
+        return f"Om {deity.split()[0] if deity else 'Namah'}aya Namaha (108 times)"
 
-**Weekly Challenges:**
-- Managing energy levels
-- Balancing multiple priorities
-- Patience with slow progress
+    # Placeholder methods for detailed astrologer mode - these provide the framework
+    def _get_hora_sequence(self, day_ruler: str) -> str:
+        return f"{day_ruler} → next in sequence"
 
-## Monthly Forecast
+    def _get_tithi_influence(self, date) -> str:
+        tithi = (date.day % 15) + 1
+        tithi_names = ['Pratipada', 'Dwitiya', 'Tritiya', 'Chaturthi', 'Panchami',
+                      'Shashthi', 'Saptami', 'Ashtami', 'Navami', 'Dashami',
+                      'Ekadashi', 'Dwadashi', 'Trayodashi', 'Chaturdashi', 'Purnima/Amavasya']
+        return f"{tithi_names[tithi-1]} - {'Auspicious' if tithi in [2,3,5,7,10,11,13] else 'Moderate'}"
 
-**Month's Primary Theme:** Growth through dedication
+    def _get_yoga_of_day(self, date) -> str:
+        yogas = ['Vishkumbha', 'Priti', 'Ayushman', 'Saubhagya', 'Shobhana', 'Atiganda',
+                'Sukarma', 'Dhriti', 'Shula', 'Ganda', 'Vriddhi', 'Dhruva', 'Vyaghata',
+                'Harshana', 'Vajra', 'Siddhi', 'Vyatipata', 'Variyan', 'Parigha', 'Shiva',
+                'Siddha', 'Sadhya', 'Shubha', 'Shukla', 'Brahma', 'Indra', 'Vaidhriti']
+        return yogas[date.day % 27]
 
-**Career Developments:**
-- Steady progress in professional matters
-- Recognition for past efforts possible
-- Avoid hasty career changes
+    def _get_karana(self, date) -> str:
+        karanas = ['Bava', 'Balava', 'Kaulava', 'Taitila', 'Gara', 'Vanija', 'Vishti']
+        return karanas[date.day % 7]
 
-**Relationship Evolution:**
-- Deepening bonds with loved ones
-- New connections possible mid-month
-- Focus on communication quality
+    def _get_career_daily_detailed(self, zodiac: str, day_ruler: str, ascendant: str) -> str:
+        return f"10th house lord influenced by {day_ruler}. Professional activities supported in {zodiac} style."
 
-**Financial Outlook:**
-- Stable with potential for modest gains
-- Avoid speculative investments
-- Good time for financial planning
+    def _get_love_daily_detailed(self, moon_sign: str, day_ruler: str, zodiac: str) -> str:
+        return f"7th house matters activated. {moon_sign} Moon enhances emotional connectivity."
 
-**Health Focus:**
-- Maintain regular routines
-- Address any lingering health concerns
-- Preventive care recommended
+    def _get_health_daily_detailed(self, element: str, nakshatra_info: Dict, ascendant: str) -> str:
+        return f"{element} constitution requires balanced activity. {nakshatra_info.get('quality', 'Energy')} governs vitality."
 
-**Spiritual Growth:**
-- Deepen meditation practice
-- Consider pilgrimage or retreat
-- Study sacred texts
+    def _get_finance_daily_detailed(self, zodiac: str, day_ruler: str) -> str:
+        return f"2nd and 11th houses under {day_ruler} influence. {'Favorable' if day_ruler in ['Jupiter', 'Venus'] else 'Moderate'} for financial decisions."
 
-**Best Periods:**
-- First and third weeks: Active engagement
-- Second and fourth weeks: Consolidation
+    def _get_daily_action_detailed(self, zodiac: str, nakshatra: str, day_ruler: str, nakshatra_info: Dict) -> str:
+        return f"""1. Honor {day_ruler} with morning prayer
+2. Wear {self._get_lucky_color(day_ruler, 'Fire')} for enhanced energy
+3. Chant {nakshatra_info.get('deity', 'your nakshatra deity')} mantra 27 times
+4. Perform one act of kindness aligned with your dharma"""
 
-## Yearly Forecast
+    def _get_day_gemstone(self, day_ruler: str) -> str:
+        gemstones = {
+            'Sun': 'Ruby', 'Moon': 'Pearl', 'Mars': 'Red Coral',
+            'Mercury': 'Emerald', 'Jupiter': 'Yellow Sapphire',
+            'Venus': 'Diamond', 'Saturn': 'Blue Sapphire'
+        }
+        return gemstones.get(day_ruler, 'Clear Quartz')
 
-**Year's Central Theme:** Evolution and establishment
+    def _get_lucky_metal(self, day_ruler: str) -> str:
+        metals = {
+            'Sun': 'Gold', 'Moon': 'Silver', 'Mars': 'Copper',
+            'Mercury': 'Bronze', 'Jupiter': 'Gold', 'Venus': 'Silver', 'Saturn': 'Iron'
+        }
+        return metals.get(day_ruler, 'Silver')
 
-**Overall Energy:** The year supports growth through consistent effort, aligned with your {zodiac} nature and {nakshatra} blessings.
+    # Weekly helper methods
+    def _calculate_week_theme(self, zodiac: str, nakshatra: str, date) -> Dict[str, str]:
+        themes = {
+            'Fire': {'theme': 'Dynamic action and leadership', 'guidance': 'Channel energy into meaningful projects'},
+            'Earth': {'theme': 'Building and consolidation', 'guidance': 'Focus on practical achievements'},
+            'Air': {'theme': 'Communication and networking', 'guidance': 'Share ideas and connect with others'},
+            'Water': {'theme': 'Emotional depth and intuition', 'guidance': 'Trust your inner guidance'}
+        }
+        element = self._get_zodiac_info(zodiac).get('element', 'Fire')
+        base = themes.get(element, themes['Fire'])
+        return {
+            **base,
+            'ruler': self._get_zodiac_info(zodiac).get('ruler', 'Sun'),
+            'best_days': 'Thursday (Jupiter) and Friday (Venus)',
+            'avoid_days': 'Tuesday (Mars aggression) if {zodiac} is Water sign'
+        }
 
-**Quarterly Overview:**
+    def _get_day_brief(self, day_ruler: str, zodiac: str) -> str:
+        briefs = {
+            'Moon': 'Emotional clarity, family matters',
+            'Mars': 'Action, competitive energy',
+            'Mercury': 'Communication, learning',
+            'Jupiter': 'Expansion, wisdom, luck',
+            'Venus': 'Harmony, relationships, beauty',
+            'Saturn': 'Discipline, responsibility',
+            'Sun': 'Self-expression, vitality'
+        }
+        return briefs.get(day_ruler, 'Balanced energy')
 
-*Q1 (January-March):* Foundation and planning
-- Set intentions for the year
-- Begin new practices
-- Plant seeds for future growth
+    def _get_career_weekly(self, zodiac: str, ruler: str) -> str:
+        return f"Professional momentum builds mid-week. {ruler} energy supports your natural {zodiac} approach to work."
 
-*Q2 (April-June):* Active growth
-- Implement plans
-- Build relationships
-- Expand professional reach
+    def _get_love_weekly(self, moon_sign: str, zodiac: str) -> str:
+        return f"Relationship harmony peaks on Venus day (Friday). {moon_sign} Moon deepens emotional bonds."
 
-*Q3 (July-September):* Assessment and adjustment
-- Review progress
-- Make necessary corrections
-- Deepen commitments
+    def _get_finance_weekly(self, zodiac: str) -> str:
+        return "Steady financial flow. Avoid impulsive purchases early week. Thursday favorable for investments."
 
-*Q4 (October-December):* Harvest and preparation
-- Reap rewards of effort
-- Prepare for new cycle
-- Spiritual deepening
+    def _get_day_detailed(self, day_ruler: str, zodiac: str, moon_sign: str, guidance: str) -> str:
+        return f"• {guidance}\n• {day_ruler} activates related house matters\n• Best activities: {self._get_day_activities(day_ruler)}"
 
-**Career Trajectory:**
-- Opportunities for advancement through merit
-- Skill development enhances prospects
-- Leadership opportunities possible
+    def _get_day_activities(self, day_ruler: str) -> str:
+        activities = {
+            'Sun': 'Leadership tasks, father/authority matters, health initiatives',
+            'Moon': 'Mother/women matters, emotional work, travel',
+            'Mars': 'Physical activity, property matters, competition',
+            'Mercury': 'Studies, business, communication, travel',
+            'Jupiter': 'Teaching, religious activities, children matters',
+            'Venus': 'Romance, arts, luxury purchases, women matters',
+            'Saturn': 'Long-term planning, elderly care, discipline'
+        }
+        return activities.get(day_ruler, 'General activities')
 
-**Relationship Milestones:**
-- Existing relationships deepen
-- New significant connections possible
-- Family harmony increases
+    def _get_career_weekly_detailed(self, zodiac: str, ruler: str, ascendant: str) -> str:
+        return f"10th lord from {ascendant} lagna receives support. Best days for career: Thursday, Sunday. Avoid major decisions on Tuesday unless Mars is strong natally."
 
-**Financial Overview:**
-- Steady growth through prudent management
-- Major purchases favored in strong periods
-- Long-term investments supported
+    def _get_love_weekly_detailed(self, moon_sign: str, zodiac: str, nakshatra: str) -> str:
+        return f"7th house matters activated through {moon_sign} Moon. Venus day optimal for relationship discussions. {nakshatra} natives benefit from expressing devotion."
 
-**Health & Vitality:**
-- Generally favorable with proper care
-- Address any chronic issues proactively
-- Mental health through spiritual practice
+    def _get_finance_weekly_detailed(self, zodiac: str, ruler: str) -> str:
+        return f"2nd and 11th houses influenced by weekly planetary movements. Thursday (Jupiter) excellent for expansion. Saturday for long-term planning."
 
-**Spiritual Development:**
-- Significant growth possible this year
-- Teachers or guides may appear
-- Deepen daily practice for best results
+    def _get_health_weekly_detailed(self, element: str, nakshatra_info: Dict) -> str:
+        return f"{element} constitution requires attention to related body systems. {nakshatra_info.get('quality', 'Natural')} energy governs vitality cycles."
 
-*This forecast provides general guidance based on your {zodiac} Sun and {nakshatra} birth star. For AI-enhanced detailed predictions with precise timing, ensure OpenAI API is configured.*"""
+    def _get_weekly_mantra(self, nakshatra_info: Dict, ruler: str) -> str:
+        return f"Daily: Om {nakshatra_info.get('deity', 'Namah').split()[0]}aya Namaha\n{ruler} day: Om {ruler}aya Namaha (108 times)"
+
+    def _get_fasting_day(self, ruler: str) -> str:
+        fasting = {
+            'Sun': 'Sunday (Surya)', 'Moon': 'Monday (Chandra)', 'Mars': 'Tuesday (Hanuman)',
+            'Mercury': 'Wednesday (Vishnu)', 'Jupiter': 'Thursday (Dakshinamurthy)',
+            'Venus': 'Friday (Lakshmi)', 'Saturn': 'Saturday (Shani)'
+        }
+        return fasting.get(ruler, 'Ekadashi')
+
+    def _get_temple_recommendation(self, nakshatra_info: Dict) -> str:
+        return f"Temple of {nakshatra_info.get('deity', 'Nakshatra Lord')} or Navagraha temple"
+
+    def _get_weekly_muhurta(self, zodiac: str) -> str:
+        return "Brahma Muhurta (4:30-6:00 AM) daily, especially Thursday and Friday"
+
+    def _get_transit_summary(self, zodiac: str) -> str:
+        return f"Current transits support {zodiac} in relationship and career matters"
+
+    # Monthly helper methods
+    def _calculate_month_theme(self, zodiac: str, nakshatra: str, month: int, year: int) -> Dict[str, str]:
+        month_rulers = ['Saturn', 'Saturn', 'Jupiter', 'Mars', 'Venus', 'Mercury',
+                       'Moon', 'Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter']
+        ruler = month_rulers[month - 1]
+
+        return {
+            'ruler': ruler,
+            'energy': f'{ruler} dominates this month, bringing focus on related matters',
+            'secondary_element': 'Fire' if month in [1,5,9] else 'Earth' if month in [2,6,10] else 'Air' if month in [3,7,11] else 'Water',
+            'potency': 75 + (month % 4) * 5,
+            'power_days': f'{month}/5, {month}/14, {month}/23',
+            'caution_days': f'{month}/8, {month}/22',
+            'auspicious_tithis': 'Dwitiya, Panchami, Dashami, Ekadashi',
+            'inauspicious_days': 'Ashtami, Chaturdashi',
+            'guidance': f'Focus on {ruler}-related activities for maximum success'
+        }
+
+    def _get_career_monthly(self, zodiac: str, ruler: str, month: int) -> str:
+        return f"Professional advancement indicated mid-month. {ruler} supports your {zodiac} work style. Key opportunities around {month}/10-15."
+
+    def _get_love_monthly(self, moon_sign: str, zodiac: str, month: int) -> str:
+        return f"Relationship energy peaks around {month}/14. {moon_sign} Moon enhances emotional depth. Singles: new connections possible {month}/7-12."
+
+    def _get_health_monthly(self, element: str, nakshatra: str) -> str:
+        return f"Overall vitality good. {element} constitution needs attention to related systems. Regular routine maintains energy."
+
+    def _get_finance_monthly(self, zodiac: str, month: int) -> str:
+        return f"Financial stability indicated. Best investment window: {month}/10-20. Avoid speculative risks early month."
+
+    def _get_monthly_actions(self, zodiac: str, nakshatra: str, month: int) -> str:
+        return f"""1. Set monthly intentions on {month}/1
+2. Review progress mid-month ({month}/15)
+3. Perform nakshatra-specific puja on your birth star day
+4. Practice gratitude journaling daily"""
+
+    def _get_monthly_transits(self, zodiac: str, month: int) -> str:
+        return f"Major planets supporting {zodiac} this month. Pay attention to house transits."
+
+    def _get_week_theme(self, zodiac: str, week: int, month: int) -> str:
+        themes = ['Foundation and planning', 'Active implementation', 'Review and adjustment', 'Completion and harvest']
+        return themes[week - 1]
+
+    def _get_career_monthly_detailed(self, zodiac: str, ruler: str, ascendant: str, month: int) -> str:
+        return f"10th house from {ascendant} receives {ruler} aspect. Professional recognition possible around {month}/10-18. Leadership opportunities mid-month."
+
+    def _get_love_monthly_detailed(self, moon_sign: str, zodiac: str, nakshatra: str, month: int) -> str:
+        return f"7th lord activation around {month}/7-14. {nakshatra} natives experience deep connections. Existing relationships deepen."
+
+    def _get_finance_monthly_detailed(self, zodiac: str, ruler: str, month: int) -> str:
+        return f"2nd house receives {ruler} influence. Wealth accumulation favorable {month}/10-20. Avoid major expenses {month}/22-25."
+
+    def _get_health_monthly_detailed(self, element: str, nakshatra_info: Dict, month: int) -> str:
+        return f"{element} element requires balance. {nakshatra_info.get('quality', 'Natural')} energy guides healing. Rest period needed around {month}/20-25."
+
+    def _get_spiritual_monthly(self, nakshatra_info: Dict, zodiac: str, month: int) -> str:
+        return f"Spiritual practices especially potent on {nakshatra_info.get('deity', 'nakshatra deity')} worship days. Meditation depth increases around {month}/11 (Ekadashi)."
+
+    def _get_monthly_nakshatra_days(self, nakshatra: str) -> str:
+        return f"Your nakshatra days this month are powerful for spiritual practices"
+
+    def _get_monthly_mantra(self, nakshatra_info: Dict, ruler: str) -> str:
+        return f"Primary: Om {nakshatra_info.get('deity', 'Namah').split()[0]}aya Namaha (1008 times monthly)\nSupport: Om {ruler}aya Namaha daily"
+
+    def _get_monthly_charity(self, ruler: str) -> str:
+        charity = {
+            'Sun': 'Donate wheat, jaggery on Sundays',
+            'Moon': 'Donate rice, white items on Mondays',
+            'Mars': 'Donate red lentils, red cloth on Tuesdays',
+            'Mercury': 'Donate green moong, green items on Wednesdays',
+            'Jupiter': 'Donate yellow items, turmeric on Thursdays',
+            'Venus': 'Donate white items, sugar on Fridays',
+            'Saturn': 'Donate black sesame, oil on Saturdays'
+        }
+        return charity.get(ruler, 'Regular anna dana (food donation)')
+
+    def _get_monthly_fasting(self, zodiac: str) -> str:
+        return "Ekadashi fasting (11th lunar day) twice monthly, plus ruler-day fasting"
+
+    def _get_lunar_impact(self, zodiac: str, month: int) -> str:
+        return "Full Moon brings emotional clarity. New Moon good for new beginnings."
+
+    # Yearly helper methods
+    def _calculate_year_theme(self, zodiac: str, nakshatra: str, year: int) -> Dict[str, str]:
+        # Simplified Varshaphal calculation
+        varshesha = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'][year % 7]
+
+        return {
+            'varshesha': varshesha,
+            'muntha': f'Moves through houses bringing focus to related matters',
+            'theme': f'Year of {varshesha} influence - growth through {varshesha.lower()}-related activities',
+            'q1': 'Foundation building. Set intentions and begin new practices.',
+            'q2': 'Active growth. Implement plans and build relationships.',
+            'q3': 'Review and adjust. Make corrections and deepen commitments.',
+            'q4': 'Harvest achievements. Prepare for next cycle.',
+            'best_months': 'April, July, October',
+            'challenging_months': 'February, August',
+            'saturn_periods': 'Requires discipline and patience when Saturn transits sensitive points',
+            'guidance': f'Embrace {varshesha} energy for optimal growth this year'
+        }
+
+    def _get_sahama_points(self, zodiac: str, year: int) -> str:
+        return "Punya Sahama (fortune), Vidya Sahama (education), Vivaha Sahama (marriage) calculated"
+
+    def _get_jupiter_transit_yearly(self, zodiac: str, year: int) -> str:
+        return f"Jupiter's annual transit brings expansion to specific houses for {zodiac}"
+
+    def _get_saturn_transit_yearly(self, zodiac: str, year: int) -> str:
+        return f"Saturn's 2.5 year transit requires attention to discipline and long-term planning"
+
+    def _get_rahu_ketu_yearly(self, zodiac: str, year: int) -> str:
+        return f"Nodal axis influences karmic lessons throughout the year for {zodiac}"
+
+    def _get_quarter_detailed(self, zodiac: str, nakshatra: str, quarter: int, year: int) -> str:
+        quarters = {
+            1: "New beginnings and foundation. Set yearly intentions. Plant seeds for growth.",
+            2: "Active implementation. Build momentum. Relationship expansion.",
+            3: "Mid-year review. Adjust course. Deepen existing commitments.",
+            4: "Harvest results. Complete projects. Prepare for new cycle."
+        }
+        return quarters.get(quarter, "Balanced growth and development")
+
+    def _estimate_dasha(self, nakshatra: str) -> str:
+        dasha_lords = {
+            'Ashwini': 'Ketu', 'Magha': 'Ketu', 'Moola': 'Ketu',
+            'Bharani': 'Venus', 'Purva Phalguni': 'Venus', 'Purva Ashadha': 'Venus',
+            'Krittika': 'Sun', 'Uttara Phalguni': 'Sun', 'Uttara Ashadha': 'Sun',
+            'Rohini': 'Moon', 'Hasta': 'Moon', 'Shravana': 'Moon',
+            'Mrigashira': 'Mars', 'Chitra': 'Mars', 'Dhanishta': 'Mars',
+            'Ardra': 'Rahu', 'Swati': 'Rahu', 'Shatabhisha': 'Rahu',
+            'Punarvasu': 'Jupiter', 'Vishakha': 'Jupiter', 'Purva Bhadrapada': 'Jupiter',
+            'Pushya': 'Saturn', 'Anuradha': 'Saturn', 'Uttara Bhadrapada': 'Saturn',
+            'Ashlesha': 'Mercury', 'Jyeshtha': 'Mercury', 'Revati': 'Mercury'
+        }
+        return f"{dasha_lords.get(nakshatra, 'Unknown')} Mahadasha influence"
+
+    def _get_antardasha_flow(self, nakshatra: str, year: int) -> str:
+        return "Antardasha lords bring specific sub-period influences"
+
+    def _get_house_yearly(self, house: int, zodiac: str, ascendant: str) -> str:
+        house_themes = {
+            1: "Self-development, health, new initiatives",
+            2: "Wealth accumulation, family matters, speech",
+            4: "Property, vehicles, mother, education",
+            5: "Children, creativity, romance, speculation",
+            7: "Marriage, partnerships, business relationships",
+            9: "Fortune, father, long journeys, higher learning",
+            10: "Career advancement, reputation, authority",
+            11: "Gains, income, fulfillment of desires"
+        }
+        return house_themes.get(house, "Related matters developing")
+
+    def _get_career_yearly(self, zodiac: str, ruler: str) -> str:
+        return f"Professional growth through consistent effort. Major opportunities Q2-Q3. Leadership potential increases."
+
+    def _get_love_yearly(self, moon_sign: str, zodiac: str) -> str:
+        return f"Relationship deepening. New connections possible Q1-Q2. Commitment milestones Q4."
+
+    def _get_finance_yearly(self, zodiac: str) -> str:
+        return "Wealth accumulation favored. Best investment periods: April-June, October-November."
+
+    def _get_health_yearly(self, element: str, nakshatra: str) -> str:
+        return f"Overall vitality good with proper care. {element} constitution needs seasonal attention."
+
+    def _get_career_yearly_detailed(self, zodiac: str, ruler: str, ascendant: str, year: int) -> str:
+        return f"10th lord from {ascendant} receives support. Major career shifts possible when Saturn aspects. Recognition Q2-Q3."
+
+    def _get_love_yearly_detailed(self, moon_sign: str, zodiac: str, nakshatra: str, year: int) -> str:
+        return f"7th house activated throughout year. {nakshatra} natives experience significant relationship developments. Marriage yoga if applicable."
+
+    def _get_finance_yearly_detailed(self, zodiac: str, ruler: str, year: int) -> str:
+        return f"Dhana yoga activation based on 2nd and 11th lords. Wealth accumulation steady. Investment timing: Jupiter transits."
+
+    def _get_health_yearly_detailed(self, element: str, nakshatra_info: Dict, year: int) -> str:
+        return f"Ayu yoga indicates overall longevity. {element} constitution requires seasonal attention. {nakshatra_info.get('quality', 'Natural')} energy supports healing."
+
+    def _get_spiritual_yearly(self, nakshatra_info: Dict, zodiac: str, year: int) -> str:
+        return f"Moksha indicators active. {nakshatra_info.get('deity', 'Nakshatra deity')} worship accelerates spiritual progress. Pilgrimage recommended."
+
+    def _get_ishta_devata(self, nakshatra_info: Dict) -> str:
+        return f"{nakshatra_info.get('deity', 'Your nakshatra deity')} - daily worship recommended"
+
+    def _get_yearly_mantra(self, nakshatra_info: Dict, ruler: str) -> str:
+        return f"Nakshatra Mantra: Om {nakshatra_info.get('deity', 'Namah').split()[0]}aya Namaha (10,000 times annually)\nPlanetary: Om {ruler}aya Namaha (108 daily)"
+
+    def _get_yearly_gemstone(self, ruler: str, zodiac: str) -> str:
+        gemstones = {
+            'Sun': 'Ruby (3+ carats)', 'Moon': 'Pearl/Moonstone (5+ carats)',
+            'Mars': 'Red Coral (5+ carats)', 'Mercury': 'Emerald (3+ carats)',
+            'Jupiter': 'Yellow Sapphire (3+ carats)', 'Venus': 'Diamond/White Sapphire',
+            'Saturn': 'Blue Sapphire (3+ carats) - with caution'
+        }
+        return gemstones.get(ruler, 'Consult for specific recommendation')
+
+    def _get_yearly_charity(self, ruler: str) -> str:
+        return f"Regular dana on {ruler} day. Annual charity: Food, education, medical assistance."
+
+    def _get_pilgrimage_sites(self, nakshatra_info: Dict) -> str:
+        return f"Temple of {nakshatra_info.get('deity', 'nakshatra deity')}, Jyotirlinga, Shakti Peetha"
+
+    def _get_eclipse_impact(self, zodiac: str, year: int) -> str:
+        return "Solar/Lunar eclipses require fasting and spiritual practices. Avoid major decisions."
 
 
 # Singleton instance

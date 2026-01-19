@@ -68,7 +68,7 @@ def get_categories():
 def generate_category_prediction(category):
     """
     Generate prediction for any category
-    
+
     Supported categories:
     - karmic_journey
     - past_lives
@@ -77,26 +77,29 @@ def generate_category_prediction(category):
     - life_events
     - karmic_remedies
     - relationships
-    - predictions
+    - predictions (with time_period: daily/weekly/monthly/yearly)
+    - daily, weekly, monthly, yearly (shortcuts for predictions)
     - cosmic_blueprint_overview
     - soul_purpose
     - karmic_debts
     - dharmic_path
     - spiritual_evolution
     - moksha_indicators
-    
+
     Request body:
     {
         "date_of_birth": "YYYY-MM-DD",
         "time_of_birth": "HH:MM",
         "place_of_birth": "City, Country",
         "mode": "online|offline|hybrid" (optional, default: hybrid),
-        "language": "en|hi|sa" (optional, default: en)
+        "language": "en|hi|sa" (optional, default: en),
+        "time_period": "daily|weekly|monthly|yearly" (optional, default: daily),
+        "view_mode": "simple|astrologer" (optional, default: simple)
     }
     """
     try:
         data = request.get_json()
-        
+
         # Validate required fields
         required_fields = ['date_of_birth', 'time_of_birth', 'place_of_birth']
         for field in required_fields:
@@ -106,12 +109,27 @@ def generate_category_prediction(category):
                     400,
                     metadata={'category': category}
                 )
-        
-        # Get mode and language
+
+        # Get mode, language, time_period, view_mode, and relationship_type
         mode = data.get('mode', 'hybrid')
         language = data.get('language', 'en')
+        time_period = data.get('time_period', 'daily')
+        view_mode = data.get('view_mode', 'simple')
+        relationship_type = data.get('relationship_type', 'all')
         client_online = parse_client_online(request.headers.get('X-Client-Online'))
-        
+
+        # Validate time_period
+        if time_period not in ['daily', 'weekly', 'monthly', 'yearly']:
+            time_period = 'daily'
+
+        # Validate view_mode
+        if view_mode not in ['simple', 'astrologer']:
+            view_mode = 'simple'
+
+        # Validate relationship_type
+        if relationship_type not in ['family', 'romantic', 'karmic', 'timing', 'all']:
+            relationship_type = 'all'
+
         # Calculate birth chart
         try:
             birth_chart = astrology_calculator.calculate_birth_chart(
@@ -133,29 +151,35 @@ def generate_category_prediction(category):
         error_response_tuple = handle_birth_chart_error(birth_chart)
         if error_response_tuple:
             return error_response_tuple
-        
-        # Generate prediction
+
+        # Generate prediction with time_period, view_mode, and relationship_type
         result = orchestrator.generate_prediction(
             category=category,
             chart_data=birth_chart,
             mode=mode,
             client_online=client_online,
-            language=language
+            language=language,
+            time_period=time_period,
+            view_mode=view_mode,
+            relationship_type=relationship_type
         )
-        
+
         return prediction_response(
             result.get('prediction', result),
             metadata={
                 'category': category,
                 'mode': result.get('mode', mode),
                 'language': language,
+                'time_period': time_period,
+                'view_mode': view_mode,
+                'relationship_type': relationship_type,
                 'matched_rules': result.get('matched_rules', []),
                 'citations': result.get('citations', []),
                 'source': result.get('source', 'Unknown'),
                 'timestamp': datetime.utcnow().isoformat()
             }
         )
-        
+
     except Exception as e:
         log_exception(logger, e, context=f"predictions_unified.generate_prediction.{category}")
         return prediction_error_response(

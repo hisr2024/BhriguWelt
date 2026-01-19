@@ -95,6 +95,19 @@ export interface PredictionMetadata {
 
 export type PredictionLanguage = 'en' | 'hi' | 'sa';
 
+export type TimePeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
+
+export type ViewMode = 'simple' | 'astrologer';
+
+export interface TimePeriodPredictionRequest {
+  useAI?: boolean;
+  aiMode?: AIMode;
+  language?: PredictionLanguage;
+  time_period: TimePeriod;
+  view_mode: ViewMode;
+  mode?: 'online' | 'offline' | 'hybrid';
+}
+
 export interface GeneralPredictionRequest extends GeneralPredictionOptions {
   useAI?: boolean;
   aiMode?: AIMode;
@@ -646,6 +659,145 @@ export class PredictionsAPI {
         error: baseResult.error ?? 'AI refinement unavailable; offline result provided.',
       };
     }
+  }
+
+  /**
+   * Generate time-period-specific prediction (daily, weekly, monthly, yearly)
+   * with view mode support (simple or astrologer)
+   */
+  async generateTimePeriodPrediction(
+    birthData: ChartData,
+    options: TimePeriodPredictionRequest
+  ): Promise<PredictionResult> {
+    try {
+      const response = await this.requestPrediction<{
+        status: string;
+        data: {
+          prediction: string;
+          metadata: Record<string, unknown>;
+        };
+      }>(`${this.baseURL}/predictions/predictions`, {
+        date_of_birth: birthData.date_of_birth,
+        time_of_birth: birthData.time_of_birth || '12:00',
+        place_of_birth: birthData.place_of_birth || 'Unknown',
+        timezone: birthData.timezone,
+        time_period: options.time_period,
+        view_mode: options.view_mode,
+        mode: options.mode ?? 'hybrid',
+        language: options.language ?? 'en',
+      });
+
+      // Transform backend response to PredictionResult format
+      const prediction = response?.data?.prediction || '';
+      const metadata = response?.data?.metadata || {};
+
+      return {
+        engine: 'predictions',
+        title: `${options.time_period.charAt(0).toUpperCase() + options.time_period.slice(1)} Forecast`,
+        success: true,
+        subcategories: {
+          [options.time_period]: {
+            title: `${options.time_period.charAt(0).toUpperCase() + options.time_period.slice(1)} Forecast`,
+            content: prediction,
+          },
+        },
+        metadata: {
+          engine: 'predictions',
+          zodiac_sign: birthData.zodiac_sign || (metadata.zodiac_sign as string) || 'Unknown',
+          moon_sign: birthData.moon_sign || (metadata.moon_sign as string) || 'Unknown',
+          ascendant: birthData.ascendant || (metadata.ascendant as string) || 'Unknown',
+          nakshatra: birthData.nakshatra || (metadata.nakshatra as string) || 'Unknown',
+          ai_enhanced: (metadata.mode as string) === 'online',
+          tradition: 'Bhrigu Samhita & Nadi Jyotisha',
+          calculation_method: (metadata.source as string) || 'hybrid',
+        },
+        mode: (metadata.mode as string) || 'hybrid',
+        generated_at: (metadata.timestamp as string) || new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error(`Time-period prediction (${options.time_period}) failed:`, error);
+
+      // Return fallback response
+      return {
+        engine: 'predictions',
+        title: `${options.time_period.charAt(0).toUpperCase() + options.time_period.slice(1)} Forecast`,
+        success: false,
+        error: error instanceof Error ? error.message : 'Prediction service temporarily unavailable',
+        subcategories: {},
+        metadata: {
+          engine: 'predictions',
+          zodiac_sign: birthData.zodiac_sign || 'Unknown',
+          moon_sign: birthData.moon_sign || 'Unknown',
+          ascendant: birthData.ascendant || 'Unknown',
+          nakshatra: birthData.nakshatra || 'Unknown',
+          ai_enhanced: false,
+          tradition: 'Bhrigu Samhita & Nadi Jyotisha',
+          calculation_method: 'emergency_fallback',
+        },
+        mode: 'offline',
+        generated_at: new Date().toISOString(),
+      };
+    }
+  }
+
+  /**
+   * Generate Daily prediction
+   */
+  async getDailyPrediction(
+    birthData: ChartData,
+    viewMode: ViewMode = 'simple',
+    language: PredictionLanguage = 'en'
+  ): Promise<PredictionResult> {
+    return this.generateTimePeriodPrediction(birthData, {
+      time_period: 'daily',
+      view_mode: viewMode,
+      language,
+    });
+  }
+
+  /**
+   * Generate Weekly prediction
+   */
+  async getWeeklyPrediction(
+    birthData: ChartData,
+    viewMode: ViewMode = 'simple',
+    language: PredictionLanguage = 'en'
+  ): Promise<PredictionResult> {
+    return this.generateTimePeriodPrediction(birthData, {
+      time_period: 'weekly',
+      view_mode: viewMode,
+      language,
+    });
+  }
+
+  /**
+   * Generate Monthly prediction
+   */
+  async getMonthlyPrediction(
+    birthData: ChartData,
+    viewMode: ViewMode = 'simple',
+    language: PredictionLanguage = 'en'
+  ): Promise<PredictionResult> {
+    return this.generateTimePeriodPrediction(birthData, {
+      time_period: 'monthly',
+      view_mode: viewMode,
+      language,
+    });
+  }
+
+  /**
+   * Generate Yearly prediction
+   */
+  async getYearlyPrediction(
+    birthData: ChartData,
+    viewMode: ViewMode = 'simple',
+    language: PredictionLanguage = 'en'
+  ): Promise<PredictionResult> {
+    return this.generateTimePeriodPrediction(birthData, {
+      time_period: 'yearly',
+      view_mode: viewMode,
+      language,
+    });
   }
 
   /**
