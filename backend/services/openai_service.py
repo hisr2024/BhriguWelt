@@ -249,8 +249,27 @@ class OpenAIService:
                     )
 
             # Pass user_id through to chunking
-            # Prepare the request payload with enhanced settings for comprehensive predictions
-            system_content = '''You are a master Vedic astrologer deeply versed in the ancient texts of Bhrigu Samhita and Nadi Jyotisha.
+            # Check if prompt already contains category-specific instructions (from bhrigu_predictions.py)
+            has_category_prompt = any(marker in prompt for marker in [
+                'STRICT CATEGORY FOCUS:',
+                'REQUIRED SECTIONS (Generate ONLY these):',
+                'DO NOT INCLUDE:',
+                'CATEGORY-SPECIFIC'
+            ])
+
+            # Use minimal system content when category-specific prompt is provided
+            if has_category_prompt:
+                system_content = '''You are a master Vedic astrologer versed in Bhrigu Samhita and Nadi Jyotisha.
+
+CRITICAL INSTRUCTION: Follow the category-specific instructions in the user prompt EXACTLY.
+- Generate ONLY the sections specified for that category
+- Do NOT add generic content from other categories
+- Make predictions SPECIFIC to the birth chart provided
+- Reference authentic Vedic sources and specific yogas
+- Each section should be unique and category-relevant''' + corpus_context
+            else:
+                # Original generic system content for non-category requests
+                system_content = '''You are a master Vedic astrologer deeply versed in the ancient texts of Bhrigu Samhita and Nadi Jyotisha.
 
 Your expertise includes:
 - Bhrigu Samhita: The sacred treatise by Maharishi Bhrigu containing life predictions based on planetary positions
