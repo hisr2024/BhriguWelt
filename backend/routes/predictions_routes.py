@@ -1,11 +1,12 @@
 """
 Predictions API Routes
-General prediction endpoints
+General prediction endpoints with structured horoscope data
 """
 from flask import Blueprint, request, jsonify
 from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.prediction_orchestrator import get_prediction_orchestrator
 from services.section_parser import get_section_parser
+from services.horoscope_engine import get_horoscope_engine
 from utils.client_status import parse_client_online
 from utils.astrology_helpers import dependency_error_response, get_cached_birth_data, handle_birth_chart_error
 from datetime import datetime
@@ -19,6 +20,7 @@ logger = setup_logger(__name__)
 
 bp = Blueprint('predictions', __name__, url_prefix='/api/predictions')
 orchestrator = get_prediction_orchestrator()
+horoscope_engine = get_horoscope_engine()
 
 # Import limiter from app (will be set when app.py loads this module)
 limiter = None
@@ -29,7 +31,7 @@ except ImportError:
 
 @bp.route('/daily', methods=['POST'])
 def daily_prediction():
-    """Get daily horoscope prediction"""
+    """Get daily horoscope prediction with structured sections"""
     try:
         data = request.get_json()
         calculator = get_astrology_calculator()
@@ -54,45 +56,28 @@ def daily_prediction():
             logger.warning("Astrology calculator unavailable; using cached birth data.")
             birth_chart = cached_birth_data
 
-        today = datetime.now().strftime("%Y-%m-%d")
-        prompt = f"""
-        Provide daily horoscope for {today}:
-        - Zodiac: {birth_chart['zodiac_sign']}
-        - Moon Sign: {birth_chart['moon_sign']}
-        - Current Dasha: {birth_chart['dasha_period']['maha_dasha']}
-
-        Include:
-        1. Overall day energy
-        2. Career and finances
-        3. Relationships and love
-        4. Health and wellness
-        5. Lucky color and number
-        6. Auspicious timing
-        """
-
-        client_online = parse_client_online(request.headers.get('X-Client-Online'))
-        mode = data.get('mode', 'hybrid')
-        result = orchestrator.generate_prediction(
-            category='predictions',
-            chart_data=birth_chart,
-            mode=mode,
-            client_online=client_online,
-            prompt=prompt
-        )
-        prediction = result.get('prediction', result)
+        # Generate structured daily horoscope
+        horoscope = horoscope_engine.generate_daily_horoscope(birth_chart)
 
         return prediction_response(
             {
-                'date': today,
-                'zodiac_sign': birth_chart['zodiac_sign'],
-                'prediction': prediction
+                'date': horoscope['date'],
+                'day': horoscope['day'],
+                'zodiac_sign': horoscope['zodiac_sign'],
+                'overall': horoscope['overall'],
+                'sections': horoscope['sections'],
+                'ratings': horoscope['ratings'],
+                'lucky_elements': horoscope['lucky_elements'],
+                'daily_mantra': horoscope['daily_mantra'],
+                'bhrigu_guidance': horoscope['bhrigu_guidance']
             },
             metadata={
                 'timeframe': 'daily',
-                'zodiac_sign': birth_chart['zodiac_sign'],
-                'moon_sign': birth_chart['moon_sign'],
-                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha'),
-                'mode': result.get('mode', mode)
+                'zodiac_sign': horoscope['zodiac_sign'],
+                'moon_sign': horoscope['metadata'].get('moon_sign'),
+                'nakshatra': horoscope['metadata'].get('nakshatra'),
+                'dasha': horoscope['metadata'].get('dasha'),
+                'mode': 'structured'
             }
         )
 
@@ -123,7 +108,7 @@ def daily_prediction():
 
 @bp.route('/weekly', methods=['POST'])
 def weekly_prediction():
-    """Get weekly horoscope prediction"""
+    """Get weekly horoscope prediction with day-by-day breakdown"""
     try:
         data = request.get_json()
         calculator = get_astrology_calculator()
@@ -148,40 +133,27 @@ def weekly_prediction():
             logger.warning("Astrology calculator unavailable; using cached birth data.")
             birth_chart = cached_birth_data
 
-        prompt = f"""
-        Provide weekly horoscope:
-        - Zodiac: {birth_chart['zodiac_sign']}
-        - Nakshatra: {birth_chart['nakshatra']}
-
-        Weekly forecast for:
-        1. Career and professional life
-        2. Love and relationships
-        3. Financial matters
-        4. Health and energy
-        5. Key dates and timing
-        """
-
-        client_online = parse_client_online(request.headers.get('X-Client-Online'))
-        mode = data.get('mode', 'hybrid')
-        result = orchestrator.generate_prediction(
-            category='predictions',
-            chart_data=birth_chart,
-            mode=mode,
-            client_online=client_online,
-            prompt=prompt
-        )
-        prediction = result.get('prediction', result)
+        # Generate structured weekly horoscope
+        horoscope = horoscope_engine.generate_weekly_horoscope(birth_chart)
 
         return prediction_response(
             {
-                'zodiac_sign': birth_chart['zodiac_sign'],
-                'weekly_prediction': prediction
+                'week_start': horoscope['week_start'],
+                'week_end': horoscope['week_end'],
+                'zodiac_sign': horoscope['zodiac_sign'],
+                'weekly_theme': horoscope['weekly_theme'],
+                'sections': horoscope['sections'],
+                'daily_summaries': horoscope['daily_summaries'],
+                'best_day': horoscope['best_day'],
+                'challenging_day': horoscope['challenging_day'],
+                'weekly_mantra': horoscope['weekly_mantra'],
+                'bhrigu_guidance': horoscope['bhrigu_guidance']
             },
             metadata={
                 'timeframe': 'weekly',
-                'zodiac_sign': birth_chart['zodiac_sign'],
-                'nakshatra': birth_chart['nakshatra'],
-                'mode': result.get('mode', mode)
+                'zodiac_sign': horoscope['zodiac_sign'],
+                'moon_sign': horoscope['metadata'].get('moon_sign'),
+                'mode': 'structured'
             }
         )
 
@@ -212,7 +184,7 @@ def weekly_prediction():
 
 @bp.route('/monthly', methods=['POST'])
 def monthly_prediction():
-    """Get monthly horoscope prediction"""
+    """Get monthly horoscope prediction with key dates and rituals"""
     try:
         data = request.get_json()
         calculator = get_astrology_calculator()
@@ -237,43 +209,30 @@ def monthly_prediction():
             logger.warning("Astrology calculator unavailable; using cached birth data.")
             birth_chart = cached_birth_data
 
-        current_month = datetime.now().strftime("%B %Y")
-        prompt = f"""
-        Provide monthly horoscope for {current_month}:
-        - Zodiac: {birth_chart['zodiac_sign']}
-        - Current Dasha: {birth_chart['dasha_period']['maha_dasha']}
-
-        Monthly themes:
-        1. Overall month energy
-        2. Career opportunities
-        3. Relationship dynamics
-        4. Financial prospects
-        5. Important dates
-        6. Challenges and solutions
-        """
-
-        client_online = parse_client_online(request.headers.get('X-Client-Online'))
-        mode = data.get('mode', 'hybrid')
-        result = orchestrator.generate_prediction(
-            category='predictions',
-            chart_data=birth_chart,
-            mode=mode,
-            client_online=client_online,
-            prompt=prompt
-        )
-        prediction = result.get('prediction', result)
+        # Generate structured monthly horoscope
+        horoscope = horoscope_engine.generate_monthly_horoscope(birth_chart)
 
         return prediction_response(
             {
-                'month': current_month,
-                'zodiac_sign': birth_chart['zodiac_sign'],
-                'monthly_prediction': prediction
+                'month': horoscope['month'],
+                'year': horoscope['year'],
+                'month_name': horoscope['month_name'],
+                'zodiac_sign': horoscope['zodiac_sign'],
+                'monthly_theme': horoscope['monthly_theme'],
+                'sections': horoscope['sections'],
+                'important_dates': horoscope['important_dates'],
+                'power_days': horoscope['power_days'],
+                'caution_days': horoscope['caution_days'],
+                'monthly_mantra': horoscope['monthly_mantra'],
+                'monthly_ritual': horoscope['monthly_ritual'],
+                'bhrigu_guidance': horoscope['bhrigu_guidance']
             },
             metadata={
                 'timeframe': 'monthly',
-                'zodiac_sign': birth_chart['zodiac_sign'],
-                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha'),
-                'mode': result.get('mode', mode)
+                'zodiac_sign': horoscope['zodiac_sign'],
+                'moon_sign': horoscope['metadata'].get('moon_sign'),
+                'nakshatra': horoscope['metadata'].get('nakshatra'),
+                'mode': 'structured'
             }
         )
 
@@ -304,7 +263,7 @@ def monthly_prediction():
 
 @bp.route('/yearly', methods=['POST'])
 def yearly_prediction():
-    """Get yearly horoscope prediction"""
+    """Get yearly horoscope prediction with quarterly breakdown and key months"""
     try:
         data = request.get_json()
         calculator = get_astrology_calculator()
@@ -329,44 +288,28 @@ def yearly_prediction():
             logger.warning("Astrology calculator unavailable; using cached birth data.")
             birth_chart = cached_birth_data
 
-        current_year = datetime.now().year
-        prompt = f"""
-        Provide comprehensive yearly forecast for {current_year}:
-        - Zodiac: {birth_chart['zodiac_sign']}
-        - Current Dasha: {birth_chart['dasha_period']['maha_dasha']}
-
-        Annual themes:
-        1. Year overview and major themes
-        2. Career and professional growth
-        3. Love, relationships, marriage
-        4. Financial prosperity
-        5. Health and wellness
-        6. Spiritual development
-        7. Quarter-by-quarter breakdown
-        """
-
-        client_online = parse_client_online(request.headers.get('X-Client-Online'))
-        mode = data.get('mode', 'hybrid')
-        result = orchestrator.generate_prediction(
-            category='predictions',
-            chart_data=birth_chart,
-            mode=mode,
-            client_online=client_online,
-            prompt=prompt
-        )
-        prediction = result.get('prediction', result)
+        # Generate structured yearly horoscope
+        horoscope = horoscope_engine.generate_yearly_horoscope(birth_chart)
 
         return prediction_response(
             {
-                'year': current_year,
-                'zodiac_sign': birth_chart['zodiac_sign'],
-                'yearly_prediction': prediction
+                'year': horoscope['year'],
+                'zodiac_sign': horoscope['zodiac_sign'],
+                'yearly_theme': horoscope['yearly_theme'],
+                'sections': horoscope['sections'],
+                'quarters': horoscope['quarters'],
+                'key_months': horoscope['key_months'],
+                'yearly_mantra': horoscope['yearly_mantra'],
+                'annual_ritual': horoscope['annual_ritual'],
+                'bhrigu_guidance': horoscope['bhrigu_guidance']
             },
             metadata={
                 'timeframe': 'yearly',
-                'zodiac_sign': birth_chart['zodiac_sign'],
-                'dasha': birth_chart.get('dasha_period', {}).get('maha_dasha'),
-                'mode': result.get('mode', mode)
+                'zodiac_sign': horoscope['zodiac_sign'],
+                'moon_sign': horoscope['metadata'].get('moon_sign'),
+                'nakshatra': horoscope['metadata'].get('nakshatra'),
+                'dasha': horoscope['metadata'].get('dasha'),
+                'mode': 'structured'
             }
         )
 

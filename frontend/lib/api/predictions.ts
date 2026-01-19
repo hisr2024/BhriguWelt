@@ -93,6 +93,127 @@ export interface PredictionMetadata {
   calculation_method: string;
 }
 
+export interface HoroscopeCategoryData {
+  rating: number;
+  message: string;
+  summary?: string;
+  key_day?: string;
+}
+
+export interface HoroscopeLuckyElements {
+  number: number;
+  color: string;
+  time: string;
+  direction: string;
+}
+
+export interface HoroscopeResult {
+  success: boolean;
+  data: {
+    date?: string;
+    week_start?: string;
+    week_end?: string;
+    month?: string;
+    year?: number;
+    zodiac_sign: string;
+    prediction?: string;
+    daily_prediction?: string;
+    weekly_prediction?: string;
+    monthly_prediction?: string;
+    yearly_prediction?: string;
+    overall?: {
+      energy: string;
+      message: string;
+      rating: number;
+    };
+    sections?: {
+      love?: HoroscopeCategoryData;
+      career?: HoroscopeCategoryData;
+      health?: HoroscopeCategoryData;
+      finance?: HoroscopeCategoryData;
+      spiritual?: HoroscopeCategoryData;
+    };
+    ratings?: {
+      overall: number;
+      love: number;
+      career: number;
+      health: number;
+      finance: number;
+    };
+    lucky_elements?: HoroscopeLuckyElements;
+    daily_mantra?: string;
+    bhrigu_guidance?: string;
+    weekly_theme?: {
+      title: string;
+      summary: string;
+      focus: string;
+    };
+    monthly_theme?: {
+      title: string;
+      summary: string;
+      keywords: string[];
+    };
+    yearly_theme?: {
+      title: string;
+      summary: string;
+      keywords: string[];
+      ruling_energy: string;
+    };
+    quarters?: Array<{
+      quarter: number;
+      name: string;
+      theme: string;
+      summary: string;
+      focus_areas: string[];
+      growth_opportunity: string;
+      energy: string;
+    }>;
+    daily_summaries?: Array<{
+      date: string;
+      day: string;
+      energy: string;
+      focus: string;
+    }>;
+    best_day?: string;
+    challenging_day?: string;
+    important_dates?: Array<{
+      date: string;
+      event: string;
+      type: string;
+    }>;
+    power_days?: string[];
+    caution_days?: string[];
+    key_months?: Array<{
+      month: string;
+      theme: string;
+      energy: string;
+    }>;
+    monthly_ritual?: {
+      name: string;
+      timing: string;
+      mantra: string;
+      offering: string;
+      benefit: string;
+    };
+    annual_ritual?: {
+      name: string;
+      best_time: string;
+      mantra: string;
+      ritual: string;
+      benefit: string;
+    };
+  };
+  metadata?: {
+    timeframe: string;
+    zodiac_sign: string;
+    moon_sign?: string;
+    nakshatra?: string;
+    dasha?: string;
+    mode: string;
+  };
+  error?: string;
+}
+
 export type PredictionLanguage = 'en' | 'hi' | 'sa';
 
 export type TimePeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
@@ -595,6 +716,134 @@ export class PredictionsAPI {
    */
   async getPredictions(birthData: ChartData, useAI: boolean = true): Promise<PredictionResult> {
     return this.generatePrediction('predictions', birthData, useAI);
+  }
+
+  /**
+   * Generate Daily Horoscope - timeframe-specific endpoint
+   */
+  async getDailyHoroscope(
+    birthData: ChartData,
+    options: { mode?: 'offline' | 'online' | 'hybrid' } = {}
+  ): Promise<HoroscopeResult> {
+    try {
+      return await this.requestPrediction(`${this.baseURL}/predictions/daily`, {
+        date_of_birth: birthData.date_of_birth,
+        time_of_birth: birthData.time_of_birth,
+        place_of_birth: birthData.place_of_birth,
+        latitude: birthData.latitude,
+        longitude: birthData.longitude,
+        timezone: birthData.timezone,
+        mode: options.mode ?? 'hybrid',
+        zodiac_sign: birthData.zodiac_sign,
+        moon_sign: birthData.moon_sign,
+        nakshatra: birthData.nakshatra,
+        ascendant: birthData.ascendant,
+      });
+    } catch (error) {
+      console.error('Daily horoscope API failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate Weekly Horoscope - timeframe-specific endpoint
+   */
+  async getWeeklyHoroscope(
+    birthData: ChartData,
+    options: { mode?: 'offline' | 'online' | 'hybrid' } = {}
+  ): Promise<HoroscopeResult> {
+    try {
+      return await this.requestPrediction(`${this.baseURL}/predictions/weekly`, {
+        date_of_birth: birthData.date_of_birth,
+        time_of_birth: birthData.time_of_birth,
+        place_of_birth: birthData.place_of_birth,
+        latitude: birthData.latitude,
+        longitude: birthData.longitude,
+        timezone: birthData.timezone,
+        mode: options.mode ?? 'hybrid',
+        zodiac_sign: birthData.zodiac_sign,
+        moon_sign: birthData.moon_sign,
+        nakshatra: birthData.nakshatra,
+      });
+    } catch (error) {
+      console.error('Weekly horoscope API failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate Monthly Horoscope - timeframe-specific endpoint
+   */
+  async getMonthlyHoroscope(
+    birthData: ChartData,
+    options: { mode?: 'offline' | 'online' | 'hybrid' } = {}
+  ): Promise<HoroscopeResult> {
+    try {
+      return await this.requestPrediction(`${this.baseURL}/predictions/monthly`, {
+        date_of_birth: birthData.date_of_birth,
+        time_of_birth: birthData.time_of_birth,
+        place_of_birth: birthData.place_of_birth,
+        latitude: birthData.latitude,
+        longitude: birthData.longitude,
+        timezone: birthData.timezone,
+        mode: options.mode ?? 'hybrid',
+        zodiac_sign: birthData.zodiac_sign,
+        moon_sign: birthData.moon_sign,
+        nakshatra: birthData.nakshatra,
+      });
+    } catch (error) {
+      console.error('Monthly horoscope API failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate Yearly Horoscope - timeframe-specific endpoint
+   */
+  async getYearlyHoroscope(
+    birthData: ChartData,
+    options: { mode?: 'offline' | 'online' | 'hybrid' } = {}
+  ): Promise<HoroscopeResult> {
+    try {
+      return await this.requestPrediction(`${this.baseURL}/predictions/yearly`, {
+        date_of_birth: birthData.date_of_birth,
+        time_of_birth: birthData.time_of_birth,
+        place_of_birth: birthData.place_of_birth,
+        latitude: birthData.latitude,
+        longitude: birthData.longitude,
+        timezone: birthData.timezone,
+        mode: options.mode ?? 'hybrid',
+        zodiac_sign: birthData.zodiac_sign,
+        moon_sign: birthData.moon_sign,
+        nakshatra: birthData.nakshatra,
+        dasha_period: birthData.dasha_period,
+      });
+    } catch (error) {
+      console.error('Yearly horoscope API failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get horoscope for any timeframe
+   */
+  async getHoroscope(
+    birthData: ChartData,
+    timeframe: 'today' | 'week' | 'month' | 'year',
+    options: { mode?: 'offline' | 'online' | 'hybrid' } = {}
+  ): Promise<HoroscopeResult> {
+    switch (timeframe) {
+      case 'today':
+        return this.getDailyHoroscope(birthData, options);
+      case 'week':
+        return this.getWeeklyHoroscope(birthData, options);
+      case 'month':
+        return this.getMonthlyHoroscope(birthData, options);
+      case 'year':
+        return this.getYearlyHoroscope(birthData, options);
+      default:
+        return this.getDailyHoroscope(birthData, options);
+    }
   }
 
   /**
