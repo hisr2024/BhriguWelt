@@ -1,14 +1,36 @@
 """
 Bhrigu Offline Wisdom Generator
 Generates category-specific predictions using local corpus data when OpenAI is unavailable
+Now fully integrated with Bhrigu Samhita and Nadi Jyotisha knowledge databases
 """
 import os
+import sys
 import json
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from utils.logger import setup_logger, log_exception
 
 logger = setup_logger(__name__)
+
+# Import core wisdom databases
+try:
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'core_wisdom'))
+    from bhrigu_samhita_knowledge import PLANETARY_CORE_WISDOM, HOUSE_WISDOM, YOGA_DATABASE, DASHA_WISDOM, REMEDIAL_WISDOM
+    from nadi_jyotisha_knowledge import NAKSHATRA_WISDOM, NADI_COMPATIBILITY, NADI_PREDICTION_TECHNIQUES, TRANSIT_WISDOM
+    WISDOM_LOADED = True
+    logger.info("Successfully loaded Bhrigu Samhita and Nadi Jyotisha knowledge databases")
+except ImportError as e:
+    WISDOM_LOADED = False
+    PLANETARY_CORE_WISDOM = {}
+    NAKSHATRA_WISDOM = {}
+    HOUSE_WISDOM = {}
+    YOGA_DATABASE = {}
+    DASHA_WISDOM = {}
+    REMEDIAL_WISDOM = {}
+    NADI_COMPATIBILITY = {}
+    NADI_PREDICTION_TECHNIQUES = {}
+    TRANSIT_WISDOM = {}
+    logger.warning(f"Could not import core wisdom databases: {e}. Using basic traits.")
 
 class BhriguOfflineWisdomGenerator:
     """
@@ -157,6 +179,249 @@ class BhriguOfflineWisdomGenerator:
         if self.bhrigu_corpus and 'future_engines' in self.bhrigu_corpus:
             return self.bhrigu_corpus['future_engines'][:limit]
         return []
+
+    # ==========================================================================
+    # COMPREHENSIVE WISDOM DATABASE ACCESS METHODS
+    # ==========================================================================
+
+    def _get_full_nakshatra_wisdom(self, nakshatra: str) -> Dict[str, Any]:
+        """Get complete nakshatra wisdom from Nadi Jyotisha database"""
+        if not WISDOM_LOADED or not NAKSHATRA_WISDOM:
+            return self._get_nakshatra_info(nakshatra)
+
+        # Find nakshatra by name (handle partial matches)
+        for num, data in NAKSHATRA_WISDOM.items():
+            if data.get('name', '').lower() == nakshatra.lower() or \
+               nakshatra.lower() in data.get('name', '').lower():
+                return data
+
+        # Fallback to basic traits
+        return self._get_nakshatra_info(nakshatra)
+
+    def _get_planetary_wisdom(self, planet: str) -> Dict[str, Any]:
+        """Get complete planetary wisdom from Bhrigu Samhita database"""
+        if not WISDOM_LOADED or not PLANETARY_CORE_WISDOM:
+            return {}
+        return PLANETARY_CORE_WISDOM.get(planet, {})
+
+    def _get_nakshatra_careers(self, nakshatra: str) -> List[str]:
+        """Get career indications for nakshatra"""
+        nak_data = self._get_full_nakshatra_wisdom(nakshatra)
+        return nak_data.get('career_indications', [])
+
+    def _get_nakshatra_health_vulnerabilities(self, nakshatra: str) -> List[str]:
+        """Get health vulnerabilities for nakshatra"""
+        nak_data = self._get_full_nakshatra_wisdom(nakshatra)
+        return nak_data.get('health_vulnerabilities', [])
+
+    def _get_nakshatra_compatibility(self, nakshatra: str) -> Dict[str, List[str]]:
+        """Get relationship compatibility for nakshatra"""
+        nak_data = self._get_full_nakshatra_wisdom(nakshatra)
+        return nak_data.get('relationship_compatibility', {'best_match': [], 'avoid': []})
+
+    def _get_nakshatra_spiritual_path(self, nakshatra: str) -> str:
+        """Get spiritual path guidance for nakshatra"""
+        nak_data = self._get_full_nakshatra_wisdom(nakshatra)
+        return nak_data.get('spiritual_path', 'Spiritual evolution through dharmic practice')
+
+    def _get_nakshatra_past_life(self, nakshatra: str) -> str:
+        """Get past life indicators for nakshatra"""
+        nak_data = self._get_full_nakshatra_wisdom(nakshatra)
+        return nak_data.get('past_life_indicators', 'Soul carried forward spiritual wisdom')
+
+    def _get_nakshatra_remedies(self, nakshatra: str) -> Dict[str, str]:
+        """Get specific remedies for nakshatra"""
+        nak_data = self._get_full_nakshatra_wisdom(nakshatra)
+        return nak_data.get('remedies', {
+            'deity_worship': 'Cosmic forces',
+            'mantra': 'Om Namah Shivaya',
+            'fasting': 'Monday',
+            'charity': 'Help the needy'
+        })
+
+    def _get_nakshatra_gana(self, nakshatra: str) -> str:
+        """Get nakshatra gana (temperament)"""
+        nak_data = self._get_full_nakshatra_wisdom(nakshatra)
+        gana = nak_data.get('gana')
+        if gana:
+            return gana.value if hasattr(gana, 'value') else str(gana)
+        return 'Manushya (Human)'
+
+    def _get_nakshatra_tattva(self, nakshatra: str) -> str:
+        """Get nakshatra tattva (element)"""
+        nak_data = self._get_full_nakshatra_wisdom(nakshatra)
+        tattva = nak_data.get('tattva')
+        if tattva:
+            return tattva.value if hasattr(tattva, 'value') else str(tattva)
+        return 'Earth'
+
+    def _get_planetary_house_effects(self, planet: str, house: int) -> str:
+        """Get planetary effects for specific house"""
+        planet_data = self._get_planetary_wisdom(planet)
+        house_effects = planet_data.get('house_effects', {})
+        return house_effects.get(house, f'{planet} influences house {house}')
+
+    def _get_planetary_karmic_lessons(self, planet: str) -> List[str]:
+        """Get karmic lessons for planet"""
+        planet_data = self._get_planetary_wisdom(planet)
+        return planet_data.get('karmic_lessons', [])
+
+    def _get_planetary_past_life_indicators(self, planet: str, strength: str = 'strong') -> str:
+        """Get past life indicators based on planetary strength"""
+        planet_data = self._get_planetary_wisdom(planet)
+        past_life = planet_data.get('past_life_indicators', {})
+        key = f'{strength}_{planet.lower()}'
+        return past_life.get(key, past_life.get(f'{strength}_sun', ''))
+
+    def _get_detailed_gemstone(self, planet: str) -> Dict[str, str]:
+        """Get detailed gemstone prescription for planet"""
+        planet_data = self._get_planetary_wisdom(planet)
+        return planet_data.get('gemstone', {
+            'name': 'Clear Quartz',
+            'weight': '3-5 carats',
+            'metal': 'Silver',
+            'finger': 'Any finger',
+            'day': 'Any day'
+        })
+
+    def _get_detailed_mantra(self, planet: str) -> Dict[str, Any]:
+        """Get detailed mantra prescription for planet"""
+        planet_data = self._get_planetary_wisdom(planet)
+        return planet_data.get('mantra', {
+            'vedic': f'Om {planet}aya Namah',
+            'tantric': f'Om {planet}aya Namah',
+            'count': 108,
+            'day': 'Any day'
+        })
+
+    def _get_charitable_acts(self, planet: str) -> List[str]:
+        """Get charitable acts for planetary propitiation"""
+        planet_data = self._get_planetary_wisdom(planet)
+        return planet_data.get('charitable_acts', ['Donate to charity', 'Help the needy'])
+
+    def _get_mangal_dosha_info(self) -> Dict[str, Any]:
+        """Get Mangal Dosha information"""
+        mars_data = self._get_planetary_wisdom('Mars')
+        return mars_data.get('mangal_dosha', {})
+
+    def _calculate_nadi_compatibility_score(self, nakshatra1: str, nakshatra2: str) -> Dict[str, Any]:
+        """Calculate Nadi compatibility between two nakshatras"""
+        if not WISDOM_LOADED or not NADI_COMPATIBILITY:
+            return {'score': 0, 'max_score': 36, 'percentage': 0, 'details': {}}
+
+        nak1_data = self._get_full_nakshatra_wisdom(nakshatra1)
+        nak2_data = self._get_full_nakshatra_wisdom(nakshatra2)
+
+        score = 0
+        details = {}
+
+        # Nadi matching (8 points)
+        nadi1 = nak1_data.get('nadi')
+        nadi2 = nak2_data.get('nadi')
+        if nadi1 and nadi2:
+            if nadi1 != nadi2:
+                score += 8
+                details['nadi'] = {'score': 8, 'status': 'Compatible - Different Nadis'}
+            else:
+                details['nadi'] = {'score': 0, 'status': 'Nadi Dosha - Same Nadi (avoid)'}
+
+        # Gana matching (6 points)
+        gana1 = nak1_data.get('gana')
+        gana2 = nak2_data.get('gana')
+        if gana1 and gana2:
+            gana_score = self._calculate_gana_score(gana1, gana2)
+            score += gana_score
+            details['gana'] = {'score': gana_score, 'status': f'{gana1} + {gana2}'}
+
+        return {
+            'score': score,
+            'max_score': 36,
+            'percentage': round((score / 36) * 100, 1),
+            'details': details
+        }
+
+    def _calculate_gana_score(self, gana1, gana2) -> int:
+        """Calculate Gana compatibility score"""
+        gana_map = {
+            ('DEVA', 'DEVA'): 6,
+            ('DEVA', 'MANUSHYA'): 5,
+            ('MANUSHYA', 'DEVA'): 5,
+            ('MANUSHYA', 'MANUSHYA'): 6,
+            ('DEVA', 'RAKSHASA'): 1,
+            ('RAKSHASA', 'DEVA'): 1,
+            ('MANUSHYA', 'RAKSHASA'): 3,
+            ('RAKSHASA', 'MANUSHYA'): 3,
+            ('RAKSHASA', 'RAKSHASA'): 6
+        }
+        g1 = gana1.name if hasattr(gana1, 'name') else str(gana1).split('.')[-1].upper()
+        g2 = gana2.name if hasattr(gana2, 'name') else str(gana2).split('.')[-1].upper()
+        return gana_map.get((g1, g2), 3)
+
+    def _get_transit_wisdom(self, planet: str) -> Dict[str, Any]:
+        """Get transit wisdom for planet"""
+        if not WISDOM_LOADED or not TRANSIT_WISDOM:
+            return {}
+        return TRANSIT_WISDOM.get(planet.lower(), TRANSIT_WISDOM.get(planet, {}))
+
+    def _get_sade_sati_info(self) -> Dict[str, Any]:
+        """Get Saturn Sade Sati information"""
+        saturn_transit = self._get_transit_wisdom('saturn')
+        return saturn_transit.get('sade_sati', {})
+
+    def _get_yoga_info(self, yoga_type: str) -> List[Dict]:
+        """Get yoga information by type"""
+        if not WISDOM_LOADED or not YOGA_DATABASE:
+            return []
+        return YOGA_DATABASE.get(yoga_type, [])
+
+    def _format_career_guidance(self, nakshatra: str, zodiac: str) -> str:
+        """Format comprehensive career guidance using nakshatra and zodiac"""
+        careers = self._get_nakshatra_careers(nakshatra)
+        zodiac_info = self._get_zodiac_info(zodiac)
+        element = zodiac_info.get('element', 'Fire')
+        ruler = zodiac_info.get('ruler', 'Sun')
+
+        if not careers:
+            # Fallback career suggestions based on element
+            element_careers = {
+                'Fire': ['Leadership roles', 'Entrepreneurship', 'Sports', 'Military', 'Creative direction'],
+                'Earth': ['Finance', 'Agriculture', 'Construction', 'Administration', 'Craftsmanship'],
+                'Air': ['Communication', 'Teaching', 'Writing', 'Technology', 'Consulting'],
+                'Water': ['Healing', 'Counseling', 'Arts', 'Hospitality', 'Spiritual service']
+            }
+            careers = element_careers.get(element, ['Dharmic service'])
+
+        career_list = '\n'.join([f'- {c}' for c in careers[:7]])
+        return f"""**Nakshatra-Based Career Paths ({nakshatra}):**
+{career_list}
+
+**{element} Element Enhancement:**
+- {ruler}-ruled careers bring natural success
+- Leadership roles aligned with {element} energy"""
+
+    def _format_health_guidance(self, nakshatra: str, zodiac: str) -> str:
+        """Format comprehensive health guidance using nakshatra and zodiac"""
+        vulnerabilities = self._get_nakshatra_health_vulnerabilities(nakshatra)
+        zodiac_info = self._get_zodiac_info(zodiac)
+        ruler = zodiac_info.get('ruler', 'Sun')
+
+        planetary_health = self._get_planetary_wisdom(ruler)
+        ruler_health = planetary_health.get('health_focus', '')
+
+        if not vulnerabilities:
+            vulnerabilities = ['General constitutional imbalances', 'Stress-related issues']
+
+        vuln_list = '\n'.join([f'- {v}' for v in vulnerabilities[:5]])
+        return f"""**Health Vulnerabilities ({nakshatra}):**
+{vuln_list}
+
+**{ruler} Ruler Health Focus:**
+- {ruler_health if ruler_health else f'Monitor {ruler}-related organs and systems'}
+
+**Preventive Measures:**
+- Regular yoga and pranayama suited to constitution
+- Dietary adjustments per Ayurvedic guidelines
+- Spiritual practice for mental wellness"""
 
     def generate_karmic_journey(self, context: Dict[str, Any], view_mode: str = 'simple') -> str:
         """Generate Karmic Journey prediction with proper section headers
@@ -921,63 +1186,101 @@ The {traits}, {nak_quality}, and {deity} service generated through all your inca
         symbol = nakshatra_info.get('symbol', 'Stars')
         nak_quality = nakshatra_info.get('quality', 'spiritual growth')
 
-        # Element-specific career paths
-        element_careers = {
-            'Fire': 'leadership, entrepreneurship, sports, military, or creative direction',
-            'Earth': 'finance, agriculture, construction, administration, or craftsmanship',
-            'Air': 'communication, teaching, writing, technology, or consulting',
-            'Water': 'healing, counseling, arts, hospitality, or spiritual service'
-        }
-        ideal_careers = element_careers.get(element, 'dharmic service')
+        # Get FULL nakshatra wisdom from database
+        nak_careers = self._get_nakshatra_careers(nakshatra)
+        nak_health = self._get_nakshatra_health_vulnerabilities(nakshatra)
+        nak_compatibility = self._get_nakshatra_compatibility(nakshatra)
+        nak_spiritual = self._get_nakshatra_spiritual_path(nakshatra)
+        nak_gana = self._get_nakshatra_gana(nakshatra)
+        nak_tattva = self._get_nakshatra_tattva(nakshatra)
+        nak_remedies = self._get_nakshatra_remedies(nakshatra)
+
+        # Get FULL planetary wisdom from database
+        ruler_wisdom = self._get_planetary_wisdom(ruler)
+        ruler_karmic = self._get_planetary_karmic_lessons(ruler)
+        ruler_gemstone = self._get_detailed_gemstone(ruler)
+        ruler_mantra = self._get_detailed_mantra(ruler)
+        ruler_dana = self._get_charitable_acts(ruler)
+
+        # Format career list from database
+        if nak_careers:
+            career_list = ', '.join(nak_careers[:5])
+        else:
+            element_careers = {
+                'Fire': 'leadership, entrepreneurship, sports, military, creative direction',
+                'Earth': 'finance, agriculture, construction, administration, craftsmanship',
+                'Air': 'communication, teaching, writing, technology, consulting',
+                'Water': 'healing, counseling, arts, hospitality, spiritual service'
+            }
+            career_list = element_careers.get(element, 'dharmic service')
+
+        # Format health vulnerabilities from database
+        if nak_health:
+            health_list = ', '.join(nak_health[:4])
+        else:
+            health_list = 'general constitutional care'
 
         # Ruler-specific health focus
-        ruler_health = {
-            'Sun': 'heart, spine, and vitality - maintain with sunlight exposure and confidence',
-            'Moon': 'digestion, fluids, and emotions - balance with nurturing and rest',
-            'Mars': 'blood, muscles, and energy - channel through exercise and discipline',
-            'Mercury': 'nervous system and skin - calm through pranayama and nature',
-            'Jupiter': 'liver, growth, and expansion - maintain moderation in all things',
-            'Venus': 'reproductive system and kidneys - balance through beauty and harmony',
-            'Saturn': 'bones, joints, and longevity - strengthen through discipline and patience'
+        ruler_health_map = {
+            'Sun': 'heart, spine, and vitality',
+            'Moon': 'digestion, fluids, and emotions',
+            'Mars': 'blood, muscles, and energy',
+            'Mercury': 'nervous system and skin',
+            'Jupiter': 'liver, growth, and expansion',
+            'Venus': 'reproductive system and kidneys',
+            'Saturn': 'bones, joints, and longevity'
         }
-        health_focus = ruler_health.get(ruler, 'overall wellness through balanced living')
+        ruler_health_focus = ruler_health_map.get(ruler, 'overall wellness')
 
         if view_mode == 'simple':
-            # SIMPLE VIEW: Concise present life insights
+            # SIMPLE VIEW: Concise present life insights with FULL wisdom
             return f"""## Current Life Phase
 
 As a {zodiac} native with {nakshatra} nakshatra:
 
 **Elemental Influence:** {element} energy brings {traits}
-**Deity Guidance:** {deity} guides your path through {nak_quality}
+**Nakshatra Gana:** {nak_gana} temperament
+**Nakshatra Tattva:** {nak_tattva} element
+**Deity Guidance:** {deity} guides your path
 
-## Career & Purpose
+## Career & Purpose (Nakshatra-Based)
 
-**Ideal Fields:** {ideal_careers.capitalize()}
+**Best Career Paths for {nakshatra}:**
+{career_list}
+
 **Natural Talents:** {traits.split(',')[0].capitalize()}, {nak_quality}
-**Current Focus:** Building skills and reputation aligned with dharma
+**{ruler} Ruler Enhancement:** {ruler}-influenced roles bring success
 
 ## Health & Wellbeing
 
-**Focus Areas:** {health_focus.capitalize()}
-**Recommended:** Yoga, pranayama, and meditation suited to {element} constitution
+**{nakshatra} Health Vulnerabilities:**
+{health_list}
+
+**{ruler} Ruler Focus:** Monitor {ruler_health_focus}
+**Recommended:** Yoga, pranayama suited to {nak_tattva} constitution
 
 ## Relationships
 
-**Style:** Seeking depth through {element} connection
+**Compatible Nakshatras:** {', '.join(nak_compatibility.get('best_match', [])[:3]) if nak_compatibility.get('best_match') else 'Complementary signs'}
+**Avoid:** {', '.join(nak_compatibility.get('avoid', [])[:2]) if nak_compatibility.get('avoid') else 'Challenging combinations'}
 **Growth:** Learning {nak_quality} through partnerships
-**Family:** Karmic teachers providing essential lessons
 
 ## Spiritual Growth
 
+**{nakshatra} Spiritual Path:**
+{nak_spiritual}
+
 **Practice:** Daily meditation with {deity} focus
-**Service:** Seva through {nak_quality} expression
-**Study:** Sacred texts aligned with {nakshatra} wisdom
+**Mantra:** {nak_remedies.get('mantra', f'Om {deity.split()[0]}aya Namah')}
+**Fasting Day:** {nak_remedies.get('fasting', 'As per nakshatra')}
 
 ## Actionable Guidance
 
-- Align career choices with {traits.split(',')[0]}
-- Prioritize {health_focus.split('-')[0].strip()} health
+- Pursue careers in: {', '.join(nak_careers[:3]) if nak_careers else career_list.split(',')[0]}
+- Monitor health: {health_list.split(',')[0] if nak_health else ruler_health_focus}
+- Practice {nak_remedies.get('mantra', 'nakshatra mantra')} daily
+- {nak_remedies.get('charity', 'Serve others')} for karmic balance
+- Prioritize {ruler_health_focus} health
 - Deepen {nak_quality} in relationships
 - Honor {deity} through daily practice"""
 
@@ -996,14 +1299,14 @@ As a {zodiac} native with {nakshatra} nakshatra, your current life phase charact
 **Key Focus Areas:**
 - Professional development through {traits}
 - Relationship harmony via {element} connection
-- Health maintenance focusing on {health_focus.split('-')[0].strip()}
+- Health maintenance focusing on {ruler_health_focus}
 - Spiritual practice deepening with {deity}
 
 ## 2. Career & Professional Path
 
 **Ideal Career Directions:**
 Based on {zodiac} ({element}) energy and {nakshatra} qualities:
-- {ideal_careers.capitalize()}
+- {career_list}
 - Fields involving {nak_quality}
 - Roles requiring {traits}
 
@@ -1039,7 +1342,7 @@ Based on {zodiac} ({element}) energy and {nakshatra} qualities:
 
 **Constitutional Type:** {element} constitution with {nakshatra} influence
 
-**Primary Focus:** {health_focus}
+**Primary Focus:** {ruler_health_focus}
 
 **Health Strengths:**
 - Natural {element} vitality from {ruler}
@@ -1126,7 +1429,7 @@ Living dharma through {traits} while evolving via {nak_quality}. Your {zodiac}-{
 
 **Actionable Guidance:**
 - Align career with {traits.split(',')[0]} strengths.
-- Prioritize {health_focus.split('-')[0].strip()} health maintenance.
+- Prioritize {ruler_health_focus} health maintenance.
 - Deepen {nak_quality} in all relationships.
 - Honor {deity} through daily practice."""
 
@@ -1382,17 +1685,38 @@ Based on Nadi Jyotisha timing principles for {zodiac} ({element}, ruled by {rule
         symbol = nakshatra_info.get('symbol', 'Stars')
         nak_quality = nakshatra_info.get('quality', 'spiritual growth')
 
-        # Ruler-specific gemstones
-        ruler_gems = {
-            'Sun': ('Ruby', 'Gold', 'Ring finger', 'Sunday'),
-            'Moon': ('Pearl', 'Silver', 'Little finger', 'Monday'),
-            'Mars': ('Red Coral', 'Gold/Copper', 'Ring finger', 'Tuesday'),
-            'Mercury': ('Emerald', 'Gold', 'Little finger', 'Wednesday'),
-            'Jupiter': ('Yellow Sapphire', 'Gold', 'Index finger', 'Thursday'),
-            'Venus': ('Diamond', 'Platinum/Silver', 'Middle finger', 'Friday'),
-            'Saturn': ('Blue Sapphire', 'Silver/Iron', 'Middle finger', 'Saturday')
-        }
-        gem_info = ruler_gems.get(ruler, ('Clear Quartz', 'Silver', 'Any finger', 'Any day'))
+        # Get FULL remedy wisdom from database
+        gemstone_data = self._get_detailed_gemstone(ruler)
+        mantra_data = self._get_detailed_mantra(ruler)
+        dana_list = self._get_charitable_acts(ruler)
+        nak_remedies = self._get_nakshatra_remedies(nakshatra)
+
+        # Extract gemstone details
+        gem_name = gemstone_data.get('stone', 'Ruby')
+        gem_weight = gemstone_data.get('weight', '3-5 carats')
+        gem_metal = gemstone_data.get('metal', 'Gold')
+        gem_finger = gemstone_data.get('finger', 'Ring finger')
+        gem_day = gemstone_data.get('day', 'Sunday')
+
+        # Extract mantra details
+        vedic_mantra = mantra_data.get('vedic', f'Om {ruler}aya Namah')
+        tantric_mantra = mantra_data.get('tantric', '')
+        mantra_count = mantra_data.get('count', 108)
+        mantra_day = mantra_data.get('day', 'Sunday')
+
+        # Format charitable acts
+        if dana_list:
+            dana_items = ', '.join(dana_list[:3])
+        else:
+            dana_items = 'food, clothing, spiritual texts'
+
+        # Nakshatra-specific remedies
+        nak_mantra = nak_remedies.get('mantra', f'Om {deity.split()[0] if deity else "Namah"}aya Namah')
+        nak_fasting = nak_remedies.get('fasting', f'{gem_day}')
+        nak_charity = nak_remedies.get('charity', 'Serve those in need')
+
+        # Fallback gem_info for backwards compatibility
+        gem_info = (gem_name, gem_metal, gem_finger, gem_day)
 
         # Element-specific practices
         element_practices = {
@@ -1409,65 +1733,73 @@ Based on Nadi Jyotisha timing principles for {zodiac} ({element}, ruled by {rule
             corpus_remedies.append(f"- **{r.get('sutra_reference', 'Traditional')}:** {r.get('description', '')}")
 
         if view_mode == 'simple':
-            # SIMPLE VIEW: Concise remedies
+            # SIMPLE VIEW: Concise remedies with FULL wisdom
             return f"""## Primary Remedies for {zodiac}-{nakshatra}
 
-**Daily Mantra:**
-Om {deity.split()[0] if deity else 'Namah'}aya Namah - 108 times at dawn
+**Daily Mantra (Vedic):**
+{vedic_mantra} - {mantra_count} times at dawn
 
-**Gemstone:**
-{gem_info[0]} in {gem_info[1]}, worn on {gem_info[2]}, activated on {gem_info[3]}
+**Nakshatra Mantra:**
+{nak_mantra}
+
+**Primary Gemstone:**
+{gem_name} ({gem_weight}) in {gem_metal}, worn on {gem_finger}, activated on {gem_day}
 
 **{ruler} Day Practice:**
-- Fast or light eating on {gem_info[3]}
+- Fast on {nak_fasting}
+- Charitable acts: {dana_items}
 - Extra {deity} devotion
-- Charitable giving aligned with {ruler}
 
 ## Element-Based Practice
 
 **{element} Balancing:**
 {element_practice.capitalize()}
 
+## Charitable Service (Dana)
+
+**{ruler} Aligned Giving:**
+{dana_items}
+
+**{nakshatra} Service:**
+{nak_charity}
+
 ## Deity Worship
 
 **{deity} Connection:**
 - Daily offering of flowers and incense
-- {nakshatra} nakshatra mantra recitation
+- {nakshatra} nakshatra mantra: {nak_mantra}
 - Pilgrimage to {deity} temples
-
-## Service (Seva)
-
-**Aligned with {nak_quality}:**
-- Teaching and sharing {traits.split(',')[0]} skills
-- Service at {deity} temples or spiritual centers
-- Environmental and community seva
 
 ## Actionable Guidance
 
-- Start each day with {deity} mantra (108 times)
-- Wear {gem_info[0]} after proper energization
+- Start each day with {vedic_mantra} ({mantra_count} times)
+- Wear {gem_name} after proper energization on {gem_day}
 - Practice {element_practice.split(',')[0]} regularly
-- Offer seva through {nak_quality}"""
+- {nak_charity}"""
 
         else:
-            # ASTROLOGER VIEW: Detailed remedies
+            # ASTROLOGER VIEW: Detailed remedies with FULL wisdom database
             return f"""## 1. Mantras & Sacred Sounds
 
-**Primary Mantra for {nakshatra} Nakshatra:**
-- **Mantra:** Om {deity.split()[0] if deity else 'Namah'}aya Namah
+**Primary Vedic Mantra for {ruler} (Chart Ruler):**
+- **Mantra:** {vedic_mantra}
 - **Pronunciation:** Clear, steady recitation with devotion
-- **Repetitions:** 108 times daily, ideally at dawn
+- **Repetitions:** {mantra_count} times daily, ideally at dawn
 - **Best Time:** Brahma Muhurta (4:00-6:00 AM)
+- **Best Day:** {mantra_day}
+
+**{nakshatra} Nakshatra Mantra:**
+- **Mantra:** {nak_mantra}
 - **Benefits:** Alignment with {deity}, spiritual protection, {nak_quality} enhancement
+
+**Tantric Mantra (Advanced Practice):**
+- {tantric_mantra if tantric_mantra else f'Om {ruler}aya Namah (Tantric variation)'}
 
 **Gayatri Mantra:**
 - "Om Bhur Bhuva Swaha, Tat Savitur Varenyam, Bhargo Devasya Dhimahi, Dhiyo Yo Nah Prachodayat"
 - 108 repetitions at sunrise for spiritual illumination
 
-**{ruler} Planetary Mantra:**
-- Om {ruler}aya Namah on {gem_info[3]}, aligned with your chart ruler
-
-**Planetary Mantras:**
+**All Planetary Mantras (Navagraha):**
 - **Sun:** Om Suryaya Namah (Sunday, 7 times)
 - **Moon:** Om Chandraya Namah (Monday, 11 times)
 - **Mars:** Om Mangalaya Namah (Tuesday, 7 times)
@@ -1479,12 +1811,12 @@ Om {deity.split()[0] if deity else 'Namah'}aya Namah - 108 times at dawn
 ## 2. Gemstone Therapy (Ratna Dharana)
 
 **Primary Gemstone for {zodiac} ({ruler}-ruled):**
-- **Stone:** {gem_info[0]} for {ruler} enhancement
-- **Minimum Weight:** 3-5 carats for effectiveness
-- **Metal:** {gem_info[1]}
-- **Finger:** {gem_info[2]}
-- **Energization:** Om {ruler}aya Namah before wearing
-- **Best Day:** {gem_info[3]}
+- **Stone:** {gem_name} for {ruler} enhancement
+- **Minimum Weight:** {gem_weight}
+- **Metal:** {gem_metal}
+- **Finger:** {gem_finger}
+- **Energization:** {vedic_mantra} before wearing
+- **Best Day:** {gem_day}
 
 **Supporting Gemstones for {element} Constitution:**
 - Clear quartz for {element} amplification
@@ -1499,29 +1831,31 @@ Om {deity.split()[0] if deity else 'Namah'}aya Namah - 108 times at dawn
 
 **Installation Guidelines:**
 - Direction: East for {deity} worship
-- Material: Copper energized with {nakshatra} mantra
-- Activation: On {gem_info[3]} during {nakshatra} transit
+- Material: Copper energized with {nak_mantra}
+- Activation: On {gem_day} during {nakshatra} transit
 
 ## 4. Charitable Activities (Dana)
 
-**{ruler} Day Donations ({gem_info[3]}):**
+**{ruler} Aligned Charitable Acts:**
+{dana_items}
+
+**{ruler} Day Donations ({gem_day}):**
 - Items aligned with {ruler} energy
 - Service related to {traits.split(',')[0]}
 - Support for {deity} temples
 
-**{element} Element Dana:**
-- {element}-related offerings and service
-- Aligned with {nak_quality} expression
+**{nakshatra} Service (Seva):**
+{nak_charity}
 
 **Corpus Remedies:**
 """ + ('\n'.join(corpus_remedies) if corpus_remedies else '- Traditional dana as guided by your ' + zodiac + ' chart') + f"""
 
 ## 5. Fasting & Dietary Practices
 
-**Recommended Fasting Days for {zodiac}:**
-- **{gem_info[3]}:** Partial fast for {ruler} propitiation
+**Recommended Fasting Days for {zodiac}-{nakshatra}:**
+- **{nak_fasting}:** Primary fasting day for {nakshatra}
+- **{gem_day}:** Partial fast for {ruler} propitiation
 - **Ekadashi:** Grain fast with {deity} meditation
-- **{nakshatra} Nakshatra Day:** Special observance
 
 **{element} Constitution Diet:**
 - Foods balancing {element} energy
@@ -1534,11 +1868,12 @@ Om {deity.split()[0] if deity else 'Namah'}aya Namah - 108 times at dawn
 - **Symbol:** {symbol}
 - **Worship Day:** Aligned with {nakshatra}
 - **Offerings:** Flowers, fruits, incense pleasing to {deity}
+- **Mantra:** {nak_mantra}
 
 **Daily {deity} Practice:**
-1. Morning: Light lamp, offer {symbol}-related items, recite mantra
+1. Morning: Light lamp, offer {symbol}-related items, recite {vedic_mantra}
 2. Evening: Aarti with {nakshatra} visualization
-3. {gem_info[3]}: Extended puja with full {deity} rituals
+3. {gem_day}: Extended puja with full {deity} rituals
 
 ## 7. Pilgrimage (Tirtha Yatra)
 
@@ -1646,9 +1981,65 @@ Om {deity.split()[0] if deity else 'Namah'}aya Namah - 108 times at dawn
             return self._generate_karmic_relationships(zodiac, nakshatra, moon_sign, ascendant, zodiac_info, nakshatra_info, view_mode)
         elif relationship_type == 'timing':
             return self._generate_relationship_timing(zodiac, nakshatra, moon_sign, ascendant, zodiac_info, nakshatra_info, time_period, view_mode)
-        # Default: return all (legacy behavior)
 
-        return f"""## 1. Romantic Relationships & Marriage
+        # Default: return all with view_mode differentiation
+        # Get unique characteristics for personalization
+        element = zodiac_info.get('element', 'Fire')
+        ruler = zodiac_info.get('ruler', 'Sun')
+        traits = zodiac_info.get('traits', 'leadership')
+        deity = nakshatra_info.get('deity', 'Cosmic Forces')
+        nak_quality = nakshatra_info.get('quality', 'spiritual growth')
+
+        # Get full nakshatra compatibility from wisdom database
+        nak_compatibility = self._get_nakshatra_compatibility(nakshatra)
+        compatible_naks = ', '.join(nak_compatibility.get('best_match', [])[:3]) if nak_compatibility.get('best_match') else 'Compatible nakshatras'
+        avoid_naks = ', '.join(nak_compatibility.get('avoid', [])[:2]) if nak_compatibility.get('avoid') else 'Challenging combinations'
+
+        if view_mode == 'simple':
+            # SIMPLE VIEW: Concise relationships overview
+            return f"""## Romantic Relationships
+
+**{zodiac} • {nakshatra}**
+
+**Partner Profile:**
+- Attracted to complementary {element} energy
+- Values: {traits.split(',')[0]} and growth
+- Best compatibility: {compatible_naks}
+- Challenging matches: {avoid_naks}
+
+**Marriage Timing:**
+- Favorable when Jupiter transits relationship houses
+- Age 25-32 traditionally favorable
+
+## Family Relationships
+
+**Parents:** Teachers of {traits.split(',')[0]} lessons
+**Siblings:** Soul companions on family journey
+**Children:** Souls entrusted for mutual growth
+
+## Soul Connections
+
+**Soulmate Signs:**
+- Immediate deep familiarity
+- Natural ease and understanding
+- Mutual spiritual evolution
+
+## Friendships
+
+**Your Style:** Quality over quantity
+**Best friends:** Those supporting {nak_quality}
+**Social:** Community through shared {element} interests
+
+## Relationship Guidance
+
+- Express gratitude to loved ones daily
+- Practice active listening
+- Honor {deity} for relationship blessings
+- Cultivate patience in all bonds"""
+
+        else:
+            # ASTROLOGER VIEW: Detailed relationships analysis
+            return f"""## 1. Romantic Relationships & Marriage
 
 **Life Partner Profile for {zodiac} Native:**
 
