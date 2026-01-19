@@ -374,6 +374,795 @@ class BhriguOfflineWisdomGenerator:
             return []
         return YOGA_DATABASE.get(yoga_type, [])
 
+    # ==========================================================================
+    # HOUSE WISDOM INTEGRATION
+    # ==========================================================================
+
+    def _get_house_wisdom(self, house: int) -> Dict[str, Any]:
+        """Get complete wisdom for a house from Bhrigu Samhita database"""
+        if not WISDOM_LOADED or not HOUSE_WISDOM:
+            return self._get_basic_house_info(house)
+        return HOUSE_WISDOM.get(house, self._get_basic_house_info(house))
+
+    def _get_basic_house_info(self, house: int) -> Dict[str, Any]:
+        """Fallback basic house information"""
+        basic_houses = {
+            1: {'name': 'Lagna', 'signifies': ['Self', 'Body', 'Personality'], 'karaka': 'Sun'},
+            2: {'name': 'Dhana', 'signifies': ['Wealth', 'Family', 'Speech'], 'karaka': 'Jupiter'},
+            3: {'name': 'Sahaja', 'signifies': ['Courage', 'Siblings', 'Communication'], 'karaka': 'Mars'},
+            4: {'name': 'Sukha', 'signifies': ['Mother', 'Home', 'Happiness'], 'karaka': 'Moon'},
+            5: {'name': 'Putra', 'signifies': ['Children', 'Creativity', 'Intelligence'], 'karaka': 'Jupiter'},
+            6: {'name': 'Ripu', 'signifies': ['Enemies', 'Disease', 'Service'], 'karaka': 'Mars'},
+            7: {'name': 'Kalatra', 'signifies': ['Spouse', 'Partnerships', 'Business'], 'karaka': 'Venus'},
+            8: {'name': 'Ayur', 'signifies': ['Longevity', 'Transformation', 'Occult'], 'karaka': 'Saturn'},
+            9: {'name': 'Dharma', 'signifies': ['Fortune', 'Father', 'Religion'], 'karaka': 'Jupiter'},
+            10: {'name': 'Karma', 'signifies': ['Career', 'Status', 'Authority'], 'karaka': 'Saturn'},
+            11: {'name': 'Labha', 'signifies': ['Gains', 'Friends', 'Desires'], 'karaka': 'Jupiter'},
+            12: {'name': 'Vyaya', 'signifies': ['Loss', 'Liberation', 'Foreign'], 'karaka': 'Saturn'}
+        }
+        return basic_houses.get(house, {'name': f'House {house}', 'signifies': [], 'karaka': 'Unknown'})
+
+    def _get_house_bhrigu_principles(self, house: int) -> List[str]:
+        """Get Bhrigu Samhita principles for a house"""
+        house_data = self._get_house_wisdom(house)
+        return house_data.get('bhrigu_principles', [])
+
+    def _get_house_past_life_connection(self, house: int) -> str:
+        """Get past life connection for a house"""
+        house_data = self._get_house_wisdom(house)
+        return house_data.get('past_life_connection', 'Karmic patterns manifest through this house')
+
+    def _get_house_body_parts(self, house: int) -> List[str]:
+        """Get body parts ruled by a house"""
+        house_data = self._get_house_wisdom(house)
+        return house_data.get('body_parts', [])
+
+    def _analyze_planet_in_house(self, planet: str, house: int) -> Dict[str, Any]:
+        """Comprehensive analysis of planet placed in a house"""
+        planet_data = self._get_planetary_wisdom(planet)
+        house_data = self._get_house_wisdom(house)
+
+        # Get planet's effect in this house
+        house_effects = planet_data.get('house_effects', {})
+        effect = house_effects.get(house, f'{planet} influences the {house}th house themes')
+
+        # Get Bhrigu principles
+        bhrigu_principles = house_data.get('bhrigu_principles', [])
+
+        # Determine if this is a beneficial or challenging placement
+        benefics = ['Jupiter', 'Venus', 'Moon', 'Mercury']
+        malefics = ['Saturn', 'Mars', 'Rahu', 'Ketu', 'Sun']
+
+        is_benefic = planet in benefics
+        good_houses = [1, 2, 4, 5, 7, 9, 10, 11]
+        challenging_houses = [6, 8, 12]
+
+        if is_benefic and house in challenging_houses:
+            strength = 'Weakened benefic - challenges in this area'
+        elif not is_benefic and house in [3, 6, 10, 11]:
+            strength = 'Malefic in upachaya - grows stronger over time'
+        elif is_benefic and house in good_houses:
+            strength = 'Well-placed benefic - auspicious results'
+        else:
+            strength = 'Mixed results - depends on other factors'
+
+        return {
+            'planet': planet,
+            'house': house,
+            'house_name': house_data.get('name', f'House {house}'),
+            'effect': effect,
+            'strength': strength,
+            'bhrigu_principles': bhrigu_principles,
+            'karaka': house_data.get('karaka', 'Unknown'),
+            'significations': house_data.get('signifies', [])
+        }
+
+    def _generate_house_analysis(self, chart_data: Dict[str, Any]) -> str:
+        """Generate comprehensive house-by-house analysis"""
+        zodiac = chart_data.get('zodiac_sign', 'Aries')
+        nakshatra = chart_data.get('nakshatra', 'Ashwini')
+        zodiac_info = self._get_zodiac_info(zodiac)
+        ruler = zodiac_info.get('ruler', 'Sun')
+
+        analysis = f"""## House-by-House Analysis ({zodiac} Lagna)
+
+**Lagna Lord:** {ruler}
+**Nakshatra Influence:** {nakshatra}
+
+"""
+        # Analyze key houses
+        key_houses = [1, 5, 7, 9, 10]
+        for house in key_houses:
+            house_data = self._get_house_wisdom(house)
+            principles = self._get_house_bhrigu_principles(house)
+            past_life = self._get_house_past_life_connection(house)
+
+            analysis += f"""### {house}. {house_data.get('name', f'House {house}')} ({house_data.get('sanskrit', '')})
+
+**Significations:** {', '.join(house_data.get('signifies', [])[:4])}
+**Natural Karaka:** {house_data.get('karaka', 'Unknown')}
+
+**Bhrigu Principles:**
+"""
+            for p in principles[:2]:
+                analysis += f"- {p}\n"
+
+            analysis += f"""
+**Past Life Connection:** {past_life}
+
+"""
+        return analysis
+
+    # ==========================================================================
+    # YOGA DETECTION SYSTEM
+    # ==========================================================================
+
+    def _detect_mahapurusha_yogas(self, chart_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Detect Mahapurusha Yogas in the chart"""
+        detected_yogas = []
+        zodiac = chart_data.get('zodiac_sign', 'Aries')
+
+        if not WISDOM_LOADED or not YOGA_DATABASE:
+            return detected_yogas
+
+        mahapurusha = YOGA_DATABASE.get('mahapurusha_yogas', {})
+
+        # Check for each Mahapurusha Yoga based on zodiac sign
+        zodiac_planet_map = {
+            'Sagittarius': 'Jupiter', 'Pisces': 'Jupiter', 'Cancer': 'Jupiter',  # Hamsa
+            'Taurus': 'Venus', 'Libra': 'Venus',  # Malavya (also Pisces for exaltation)
+            'Aries': 'Mars', 'Scorpio': 'Mars', 'Capricorn': 'Mars',  # Ruchaka
+            'Gemini': 'Mercury', 'Virgo': 'Mercury',  # Bhadra
+            'Aquarius': 'Saturn', 'Capricorn': 'Saturn',  # Sasa (also Libra for exaltation)
+        }
+
+        # Simple detection based on Lagna sign
+        if zodiac in ['Cancer', 'Sagittarius', 'Pisces']:
+            yoga_data = mahapurusha.get('Hamsa_Yoga', {})
+            detected_yogas.append({
+                'name': 'Hamsa Yoga (Potential)',
+                'planet': 'Jupiter',
+                'effects': yoga_data.get('effects', 'Wisdom, wealth, spiritual authority'),
+                'past_life': yoga_data.get('past_life', 'Past life as spiritual guide'),
+                'strength': 'Lagna supports Jupiter strength'
+            })
+
+        if zodiac in ['Taurus', 'Libra']:
+            yoga_data = mahapurusha.get('Malavya_Yoga', {})
+            detected_yogas.append({
+                'name': 'Malavya Yoga (Potential)',
+                'planet': 'Venus',
+                'effects': yoga_data.get('effects', 'Beauty, luxury, artistic success'),
+                'past_life': yoga_data.get('past_life', 'Past life as artist'),
+                'strength': 'Lagna supports Venus strength'
+            })
+
+        if zodiac in ['Aries', 'Scorpio', 'Capricorn']:
+            yoga_data = mahapurusha.get('Ruchaka_Yoga', {})
+            detected_yogas.append({
+                'name': 'Ruchaka Yoga (Potential)',
+                'planet': 'Mars',
+                'effects': yoga_data.get('effects', 'Courage, leadership, military success'),
+                'past_life': yoga_data.get('past_life', 'Past life as warrior'),
+                'strength': 'Lagna supports Mars strength'
+            })
+
+        if zodiac in ['Gemini', 'Virgo']:
+            yoga_data = mahapurusha.get('Bhadra_Yoga', {})
+            detected_yogas.append({
+                'name': 'Bhadra Yoga (Potential)',
+                'planet': 'Mercury',
+                'effects': yoga_data.get('effects', 'Intelligence, eloquence, business success'),
+                'past_life': yoga_data.get('past_life', 'Past life as scholar'),
+                'strength': 'Lagna supports Mercury strength'
+            })
+
+        if zodiac in ['Capricorn', 'Aquarius', 'Libra']:
+            yoga_data = mahapurusha.get('Sasa_Yoga', {})
+            detected_yogas.append({
+                'name': 'Sasa Yoga (Potential)',
+                'planet': 'Saturn',
+                'effects': yoga_data.get('effects', 'Authority, discipline, political success'),
+                'past_life': yoga_data.get('past_life', 'Past life of discipline and service'),
+                'strength': 'Lagna supports Saturn strength'
+            })
+
+        return detected_yogas
+
+    def _detect_raja_yogas(self, chart_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Detect Raja Yogas based on chart data"""
+        detected_yogas = []
+        zodiac = chart_data.get('zodiac_sign', 'Aries')
+        nakshatra = chart_data.get('nakshatra', 'Ashwini')
+
+        if not WISDOM_LOADED or not YOGA_DATABASE:
+            return detected_yogas
+
+        raja_yogas = YOGA_DATABASE.get('raja_yogas', {})
+
+        # Gajakesari Yoga detection (Moon-Jupiter in kendras)
+        moon_strong_nakshatras = ['Rohini', 'Hasta', 'Shravana', 'Pushya', 'Punarvasu']
+        if nakshatra in moon_strong_nakshatras:
+            yoga_data = raja_yogas.get('Gajakesari_Yoga', {})
+            detected_yogas.append({
+                'name': 'Gajakesari Yoga (Potential)',
+                'condition': yoga_data.get('condition', 'Jupiter and Moon in mutual Kendras'),
+                'effects': yoga_data.get('effects', 'Fame, wisdom, wealth, eloquence'),
+                'strength': yoga_data.get('strength', 'Very auspicious')
+            })
+
+        # Dharma Karmadhipati potential based on zodiac
+        strong_dharma_signs = ['Leo', 'Sagittarius', 'Aries', 'Scorpio']
+        if zodiac in strong_dharma_signs:
+            yoga_data = raja_yogas.get('Dharma_Karmadhipati_Yoga', {})
+            detected_yogas.append({
+                'name': 'Dharma Karmadhipati Yoga (Potential)',
+                'condition': yoga_data.get('condition', '9th and 10th lords connected'),
+                'effects': yoga_data.get('effects', 'High status, authority, fortune'),
+                'strength': yoga_data.get('strength', 'Strongest Raja Yoga')
+            })
+
+        return detected_yogas
+
+    def _detect_dhana_yogas(self, chart_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Detect Dhana (Wealth) Yogas"""
+        detected_yogas = []
+        zodiac = chart_data.get('zodiac_sign', 'Aries')
+
+        if not WISDOM_LOADED or not YOGA_DATABASE:
+            return detected_yogas
+
+        dhana_yogas = YOGA_DATABASE.get('dhana_yogas', {})
+
+        # Earth and Venus signs are favorable for wealth
+        wealth_signs = ['Taurus', 'Virgo', 'Capricorn', 'Libra', 'Cancer']
+        if zodiac in wealth_signs:
+            yoga_data = dhana_yogas.get('Basic_Dhana_Yoga', {})
+            detected_yogas.append({
+                'name': 'Dhana Yoga Potential',
+                'condition': yoga_data.get('condition', '2nd and 11th lords connected'),
+                'effects': yoga_data.get('effects', 'Wealth accumulation from multiple sources'),
+                'strength': 'Favorable lagna for wealth'
+            })
+
+        return detected_yogas
+
+    def _detect_dosha_yogas(self, chart_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Detect Dosha Yogas (challenging combinations)"""
+        detected_doshas = []
+        zodiac = chart_data.get('zodiac_sign', 'Aries')
+        nakshatra = chart_data.get('nakshatra', 'Ashwini')
+
+        if not WISDOM_LOADED or not YOGA_DATABASE:
+            return detected_doshas
+
+        dosha_yogas = YOGA_DATABASE.get('dosha_yogas', {})
+
+        # Check for Mars-related signs for Kuja Dosha potential
+        mars_signs = ['Aries', 'Scorpio']
+        if zodiac in mars_signs:
+            dosha_data = dosha_yogas.get('Kuja_Dosha', {})
+            detected_doshas.append({
+                'name': 'Mangal/Kuja Dosha (Check Required)',
+                'condition': dosha_data.get('condition', 'Mars in 1, 2, 4, 7, 8, or 12'),
+                'effects': dosha_data.get('effects', 'Marriage delays, relationship challenges'),
+                'remedies': dosha_data.get('remedies', ['Mangal Shanti', 'Hanuman worship']),
+                'note': 'Requires full chart analysis to confirm'
+            })
+
+        # Check for Rahu-influenced nakshatras for Kala Sarpa potential
+        rahu_nakshatras = ['Ardra', 'Swati', 'Shatabhisha']
+        if nakshatra in rahu_nakshatras:
+            dosha_data = dosha_yogas.get('Kala_Sarpa_Dosha', {})
+            detected_doshas.append({
+                'name': 'Kala Sarpa Dosha (Check Required)',
+                'condition': dosha_data.get('condition', 'All planets between Rahu-Ketu'),
+                'effects': dosha_data.get('effects', 'Life struggles, then spiritual growth'),
+                'remedies': dosha_data.get('remedies', ['Kala Sarpa Shanti', 'Naga Puja']),
+                'note': 'Requires full chart analysis to confirm'
+            })
+
+        return detected_doshas
+
+    def _detect_spiritual_yogas(self, chart_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Detect Spiritual Yogas"""
+        detected_yogas = []
+        nakshatra = chart_data.get('nakshatra', 'Ashwini')
+
+        if not WISDOM_LOADED or not YOGA_DATABASE:
+            return detected_yogas
+
+        spiritual_yogas = YOGA_DATABASE.get('spiritual_yogas', {})
+
+        # Spiritual nakshatras indicate moksha potential
+        spiritual_nakshatras = ['Ashwini', 'Pushya', 'Hasta', 'Moola', 'Revati', 'Uttara Bhadrapada']
+        if nakshatra in spiritual_nakshatras:
+            yoga_data = spiritual_yogas.get('Moksha_Yoga', {})
+            detected_yogas.append({
+                'name': 'Moksha Yoga Potential',
+                'condition': yoga_data.get('condition', 'Strong 12th house with spiritual influences'),
+                'effects': yoga_data.get('effects', 'Liberation potential, spiritual wisdom'),
+                'significance': yoga_data.get('significance', 'Soul approaching final incarnations')
+            })
+
+        # Saraswati Yoga for intellectual/artistic nakshatras
+        saraswati_nakshatras = ['Rohini', 'Mrigashira', 'Hasta', 'Chitra', 'Revati']
+        if nakshatra in saraswati_nakshatras:
+            yoga_data = spiritual_yogas.get('Saraswati_Yoga', {})
+            detected_yogas.append({
+                'name': 'Saraswati Yoga Potential',
+                'condition': yoga_data.get('condition', 'Jupiter, Venus, Mercury in Kendras/Trikonas'),
+                'effects': yoga_data.get('effects', 'Wisdom, learning, artistic excellence'),
+                'significance': yoga_data.get('significance', 'Blessed with divine knowledge')
+            })
+
+        return detected_yogas
+
+    def _generate_yoga_analysis(self, chart_data: Dict[str, Any]) -> str:
+        """Generate comprehensive yoga analysis for the chart"""
+        mahapurusha = self._detect_mahapurusha_yogas(chart_data)
+        raja = self._detect_raja_yogas(chart_data)
+        dhana = self._detect_dhana_yogas(chart_data)
+        spiritual = self._detect_spiritual_yogas(chart_data)
+        doshas = self._detect_dosha_yogas(chart_data)
+
+        analysis = "## Yoga Analysis (Planetary Combinations)\n\n"
+
+        if mahapurusha:
+            analysis += "### Mahapurusha Yogas (Great Personality)\n"
+            for yoga in mahapurusha:
+                analysis += f"""
+**{yoga['name']}**
+- Planet: {yoga['planet']}
+- Effects: {yoga['effects']}
+- Past Life: {yoga['past_life']}
+- Strength: {yoga['strength']}
+"""
+
+        if raja:
+            analysis += "\n### Raja Yogas (Royal Combinations)\n"
+            for yoga in raja:
+                analysis += f"""
+**{yoga['name']}**
+- Condition: {yoga['condition']}
+- Effects: {yoga['effects']}
+- Strength: {yoga['strength']}
+"""
+
+        if dhana:
+            analysis += "\n### Dhana Yogas (Wealth Combinations)\n"
+            for yoga in dhana:
+                analysis += f"""
+**{yoga['name']}**
+- Condition: {yoga['condition']}
+- Effects: {yoga['effects']}
+"""
+
+        if spiritual:
+            analysis += "\n### Spiritual Yogas\n"
+            for yoga in spiritual:
+                analysis += f"""
+**{yoga['name']}**
+- Condition: {yoga['condition']}
+- Effects: {yoga['effects']}
+- Significance: {yoga.get('significance', 'Spiritual advancement')}
+"""
+
+        if doshas:
+            analysis += "\n### Dosha Yogas (Challenging Combinations)\n"
+            for dosha in doshas:
+                analysis += f"""
+**{dosha['name']}**
+- Condition: {dosha['condition']}
+- Effects: {dosha['effects']}
+- Remedies: {', '.join(dosha.get('remedies', ['Consult astrologer'])[:3])}
+- Note: {dosha.get('note', 'Requires verification')}
+"""
+
+        if not any([mahapurusha, raja, dhana, spiritual, doshas]):
+            analysis += "No specific yogas detected from basic chart data. Full planetary positions needed for complete analysis.\n"
+
+        return analysis
+
+    # ==========================================================================
+    # COMPLETE 8-KUTA MATCHING SYSTEM (36 POINTS)
+    # ==========================================================================
+
+    def _get_nakshatra_number(self, nakshatra: str) -> int:
+        """Get nakshatra number (1-27)"""
+        nakshatra_order = [
+            'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra',
+            'Punarvasu', 'Pushya', 'Ashlesha', 'Magha', 'Purva Phalguni', 'Uttara Phalguni',
+            'Hasta', 'Chitra', 'Swati', 'Vishakha', 'Anuradha', 'Jyeshtha',
+            'Moola', 'Purva Ashadha', 'Uttara Ashadha', 'Shravana', 'Dhanishta', 'Shatabhisha',
+            'Purva Bhadrapada', 'Uttara Bhadrapada', 'Revati'
+        ]
+        for i, nak in enumerate(nakshatra_order):
+            if nak.lower() in nakshatra.lower() or nakshatra.lower() in nak.lower():
+                return i + 1
+        return 1
+
+    def _get_nakshatra_rashi(self, nakshatra_num: int) -> int:
+        """Get rashi (zodiac sign) number from nakshatra number"""
+        # Each rashi has 2.25 nakshatras
+        return ((nakshatra_num - 1) * 4 // 9) + 1
+
+    def _get_nakshatra_varna(self, nakshatra: str) -> str:
+        """Get Varna (spiritual class) of nakshatra"""
+        nak_data = self._get_full_nakshatra_wisdom(nakshatra)
+        # Default based on nakshatra characteristics
+        gana = nak_data.get('gana', 'MANUSHYA')
+        gana_str = gana.name if hasattr(gana, 'name') else str(gana).split('.')[-1].upper()
+
+        varna_map = {
+            'DEVA': 'Brahmin',
+            'MANUSHYA': 'Kshatriya',
+            'RAKSHASA': 'Vaishya'
+        }
+        return varna_map.get(gana_str, 'Shudra')
+
+    def _get_nakshatra_yoni(self, nakshatra: str) -> str:
+        """Get Yoni (animal symbol) of nakshatra"""
+        yoni_map = {
+            'Ashwini': 'Horse', 'Bharani': 'Elephant', 'Krittika': 'Goat',
+            'Rohini': 'Serpent', 'Mrigashira': 'Serpent', 'Ardra': 'Dog',
+            'Punarvasu': 'Cat', 'Pushya': 'Goat', 'Ashlesha': 'Cat',
+            'Magha': 'Rat', 'Purva Phalguni': 'Rat', 'Uttara Phalguni': 'Cow',
+            'Hasta': 'Buffalo', 'Chitra': 'Tiger', 'Swati': 'Buffalo',
+            'Vishakha': 'Tiger', 'Anuradha': 'Deer', 'Jyeshtha': 'Deer',
+            'Moola': 'Dog', 'Purva Ashadha': 'Monkey', 'Uttara Ashadha': 'Mongoose',
+            'Shravana': 'Monkey', 'Dhanishta': 'Lion', 'Shatabhisha': 'Horse',
+            'Purva Bhadrapada': 'Lion', 'Uttara Bhadrapada': 'Cow', 'Revati': 'Elephant'
+        }
+        for nak, yoni in yoni_map.items():
+            if nak.lower() in nakshatra.lower() or nakshatra.lower() in nak.lower():
+                return yoni
+        return 'Unknown'
+
+    def _calculate_varna_score(self, nak1: str, nak2: str) -> Dict[str, Any]:
+        """Calculate Varna Kuta (1 point max)"""
+        varna1 = self._get_nakshatra_varna(nak1)
+        varna2 = self._get_nakshatra_varna(nak2)
+
+        varna_order = ['Brahmin', 'Kshatriya', 'Vaishya', 'Shudra']
+        idx1 = varna_order.index(varna1) if varna1 in varna_order else 3
+        idx2 = varna_order.index(varna2) if varna2 in varna_order else 3
+
+        # Boy's varna should be equal or higher
+        if idx1 <= idx2:
+            score = 1
+            status = f'Compatible ({varna1} >= {varna2})'
+        else:
+            score = 0
+            status = f'Mismatch ({varna1} < {varna2})'
+
+        return {'score': score, 'max': 1, 'status': status, 'varna1': varna1, 'varna2': varna2}
+
+    def _calculate_vashya_score(self, nak1: str, nak2: str) -> Dict[str, Any]:
+        """Calculate Vashya Kuta (2 points max) - Mutual attraction"""
+        num1 = self._get_nakshatra_number(nak1)
+        num2 = self._get_nakshatra_number(nak2)
+        rashi1 = self._get_nakshatra_rashi(num1)
+        rashi2 = self._get_nakshatra_rashi(num2)
+
+        # Vashya groups
+        vashya_groups = {
+            'Chatushpada': [1, 2, 5, 9, 10],  # Aries, Taurus, Leo, Sag, Cap (later part)
+            'Manava': [3, 6, 7, 11],  # Gemini, Virgo, Libra, Aquarius
+            'Jalachara': [4, 12],  # Cancer, Pisces
+            'Vanachara': [5],  # Leo
+            'Keeta': [8]  # Scorpio
+        }
+
+        # Find groups for each
+        group1, group2 = None, None
+        for group, rashis in vashya_groups.items():
+            if rashi1 in rashis:
+                group1 = group
+            if rashi2 in rashis:
+                group2 = group
+
+        # Simplified scoring
+        if group1 == group2:
+            score = 2
+            status = f'Same group ({group1}) - Full compatibility'
+        elif (group1 == 'Manava' and group2 in ['Chatushpada', 'Vanachara']) or \
+             (group2 == 'Manava' and group1 in ['Chatushpada', 'Vanachara']):
+            score = 1
+            status = 'Partial compatibility'
+        else:
+            score = 0.5
+            status = 'Limited compatibility'
+
+        return {'score': score, 'max': 2, 'status': status}
+
+    def _calculate_tara_score(self, nak1: str, nak2: str) -> Dict[str, Any]:
+        """Calculate Tara Kuta (3 points max) - Birth star compatibility"""
+        num1 = self._get_nakshatra_number(nak1)
+        num2 = self._get_nakshatra_number(nak2)
+
+        # Calculate Tara from boy's nakshatra to girl's
+        diff = ((num2 - num1) % 27) + 1
+        tara_num = ((diff - 1) % 9) + 1
+
+        # Tara classification
+        tara_names = {
+            1: 'Janma', 2: 'Sampat', 3: 'Vipat',
+            4: 'Kshema', 5: 'Pratyak', 6: 'Sadhana',
+            7: 'Naidhana', 8: 'Mitra', 9: 'Parama Mitra'
+        }
+
+        good_taras = [2, 4, 6, 8, 9]  # Sampat, Kshema, Sadhana, Mitra, Parama Mitra
+
+        if tara_num in good_taras:
+            score = 3
+            status = f'{tara_names[tara_num]} Tara - Auspicious'
+        elif tara_num in [1, 5]:
+            score = 1.5
+            status = f'{tara_names[tara_num]} Tara - Neutral'
+        else:
+            score = 0
+            status = f'{tara_names[tara_num]} Tara - Inauspicious'
+
+        return {'score': score, 'max': 3, 'status': status, 'tara': tara_names[tara_num]}
+
+    def _calculate_yoni_score(self, nak1: str, nak2: str) -> Dict[str, Any]:
+        """Calculate Yoni Kuta (4 points max) - Sexual/physical compatibility"""
+        yoni1 = self._get_nakshatra_yoni(nak1)
+        yoni2 = self._get_nakshatra_yoni(nak2)
+
+        # Yoni enemies
+        yoni_enemies = {
+            'Horse': 'Buffalo', 'Buffalo': 'Horse',
+            'Elephant': 'Lion', 'Lion': 'Elephant',
+            'Dog': 'Deer', 'Deer': 'Dog',
+            'Cat': 'Rat', 'Rat': 'Cat',
+            'Serpent': 'Mongoose', 'Mongoose': 'Serpent',
+            'Monkey': 'Goat', 'Goat': 'Monkey',
+            'Tiger': 'Cow', 'Cow': 'Tiger'
+        }
+
+        if yoni1 == yoni2:
+            score = 4
+            status = f'Same Yoni ({yoni1}) - Excellent compatibility'
+        elif yoni_enemies.get(yoni1) == yoni2:
+            score = 0
+            status = f'Enemy Yonis ({yoni1} vs {yoni2}) - Avoid'
+        else:
+            score = 2
+            status = f'Neutral Yonis ({yoni1}, {yoni2})'
+
+        return {'score': score, 'max': 4, 'status': status, 'yoni1': yoni1, 'yoni2': yoni2}
+
+    def _calculate_graha_maitri_score(self, nak1: str, nak2: str) -> Dict[str, Any]:
+        """Calculate Graha Maitri Kuta (5 points max) - Planetary friendship"""
+        nak1_data = self._get_full_nakshatra_wisdom(nak1)
+        nak2_data = self._get_full_nakshatra_wisdom(nak2)
+
+        ruler1 = nak1_data.get('ruling_planet', 'Sun')
+        ruler2 = nak2_data.get('ruling_planet', 'Moon')
+
+        # Extract planet name if it's an enum
+        if hasattr(ruler1, 'name'):
+            ruler1 = ruler1.name
+        if hasattr(ruler2, 'name'):
+            ruler2 = ruler2.name
+
+        ruler1 = str(ruler1).split('.')[-1]
+        ruler2 = str(ruler2).split('.')[-1]
+
+        # Planetary friendships
+        friends = {
+            'Sun': ['Moon', 'Mars', 'Jupiter'],
+            'Moon': ['Sun', 'Mercury'],
+            'Mars': ['Sun', 'Moon', 'Jupiter'],
+            'Mercury': ['Sun', 'Venus'],
+            'Jupiter': ['Sun', 'Moon', 'Mars'],
+            'Venus': ['Mercury', 'Saturn'],
+            'Saturn': ['Mercury', 'Venus']
+        }
+
+        enemies = {
+            'Sun': ['Venus', 'Saturn'],
+            'Moon': [],
+            'Mars': ['Mercury'],
+            'Mercury': ['Moon'],
+            'Jupiter': ['Mercury', 'Venus'],
+            'Venus': ['Sun', 'Moon'],
+            'Saturn': ['Sun', 'Moon', 'Mars']
+        }
+
+        if ruler1 == ruler2:
+            score = 5
+            status = f'Same ruler ({ruler1}) - Excellent'
+        elif ruler2 in friends.get(ruler1, []) and ruler1 in friends.get(ruler2, []):
+            score = 5
+            status = f'Mutual friends ({ruler1} & {ruler2})'
+        elif ruler2 in friends.get(ruler1, []) or ruler1 in friends.get(ruler2, []):
+            score = 3
+            status = f'One-sided friendship ({ruler1} & {ruler2})'
+        elif ruler2 in enemies.get(ruler1, []) or ruler1 in enemies.get(ruler2, []):
+            score = 0
+            status = f'Enemy rulers ({ruler1} & {ruler2})'
+        else:
+            score = 2
+            status = f'Neutral ({ruler1} & {ruler2})'
+
+        return {'score': score, 'max': 5, 'status': status, 'ruler1': ruler1, 'ruler2': ruler2}
+
+    def _calculate_bhakoot_score(self, nak1: str, nak2: str) -> Dict[str, Any]:
+        """Calculate Bhakoot Kuta (7 points max) - Moon sign positions"""
+        num1 = self._get_nakshatra_number(nak1)
+        num2 = self._get_nakshatra_number(nak2)
+        rashi1 = self._get_nakshatra_rashi(num1)
+        rashi2 = self._get_nakshatra_rashi(num2)
+
+        diff = abs(rashi1 - rashi2)
+        if diff > 6:
+            diff = 12 - diff
+
+        # Inauspicious combinations: 6-8, 2-12, 5-9
+        bad_combinations = [(6, 8), (2, 12), (5, 9)]
+
+        for bad in bad_combinations:
+            if (diff == bad[0] or diff == bad[1]):
+                return {'score': 0, 'max': 7, 'status': f'Bhakoot Dosha (Rashi {rashi1}-{rashi2})', 'dosha': True}
+
+        return {'score': 7, 'max': 7, 'status': f'No Bhakoot Dosha (Rashi {rashi1}-{rashi2})', 'dosha': False}
+
+    def _calculate_full_kuta_score(self, nakshatra1: str, nakshatra2: str) -> Dict[str, Any]:
+        """Calculate complete 8-Kuta compatibility score (36 points)"""
+        nak1_data = self._get_full_nakshatra_wisdom(nakshatra1)
+        nak2_data = self._get_full_nakshatra_wisdom(nakshatra2)
+
+        # Calculate all 8 kutas
+        varna = self._calculate_varna_score(nakshatra1, nakshatra2)
+        vashya = self._calculate_vashya_score(nakshatra1, nakshatra2)
+        tara = self._calculate_tara_score(nakshatra1, nakshatra2)
+        yoni = self._calculate_yoni_score(nakshatra1, nakshatra2)
+        graha_maitri = self._calculate_graha_maitri_score(nakshatra1, nakshatra2)
+        gana = self._calculate_gana_kuta(nakshatra1, nakshatra2)
+        bhakoot = self._calculate_bhakoot_score(nakshatra1, nakshatra2)
+        nadi = self._calculate_nadi_kuta(nakshatra1, nakshatra2)
+
+        total_score = (varna['score'] + vashya['score'] + tara['score'] +
+                       yoni['score'] + graha_maitri['score'] + gana['score'] +
+                       bhakoot['score'] + nadi['score'])
+
+        # Interpretation
+        if total_score >= 28:
+            interpretation = 'Excellent Match - Highly Recommended'
+            rating = 'A+'
+        elif total_score >= 24:
+            interpretation = 'Very Good Match - Recommended'
+            rating = 'A'
+        elif total_score >= 18:
+            interpretation = 'Good Match - Acceptable'
+            rating = 'B'
+        elif total_score >= 14:
+            interpretation = 'Average Match - Consider carefully'
+            rating = 'C'
+        else:
+            interpretation = 'Below Average - Significant challenges'
+            rating = 'D'
+
+        return {
+            'total_score': round(total_score, 1),
+            'max_score': 36,
+            'percentage': round((total_score / 36) * 100, 1),
+            'interpretation': interpretation,
+            'rating': rating,
+            'details': {
+                'varna': varna,
+                'vashya': vashya,
+                'tara': tara,
+                'yoni': yoni,
+                'graha_maitri': graha_maitri,
+                'gana': gana,
+                'bhakoot': bhakoot,
+                'nadi': nadi
+            },
+            'warnings': self._get_kuta_warnings(varna, yoni, gana, bhakoot, nadi)
+        }
+
+    def _calculate_gana_kuta(self, nak1: str, nak2: str) -> Dict[str, Any]:
+        """Calculate Gana Kuta (6 points max)"""
+        nak1_data = self._get_full_nakshatra_wisdom(nak1)
+        nak2_data = self._get_full_nakshatra_wisdom(nak2)
+
+        gana1 = nak1_data.get('gana', 'MANUSHYA')
+        gana2 = nak2_data.get('gana', 'MANUSHYA')
+
+        g1 = gana1.name if hasattr(gana1, 'name') else str(gana1).split('.')[-1].upper()
+        g2 = gana2.name if hasattr(gana2, 'name') else str(gana2).split('.')[-1].upper()
+
+        score = self._calculate_gana_score(gana1, gana2)
+
+        if score >= 5:
+            status = f'{g1} + {g2} - Excellent compatibility'
+        elif score >= 3:
+            status = f'{g1} + {g2} - Good compatibility'
+        else:
+            status = f'{g1} + {g2} - Challenging'
+
+        return {'score': score, 'max': 6, 'status': status, 'gana1': g1, 'gana2': g2}
+
+    def _calculate_nadi_kuta(self, nak1: str, nak2: str) -> Dict[str, Any]:
+        """Calculate Nadi Kuta (8 points max) - Most important"""
+        nak1_data = self._get_full_nakshatra_wisdom(nak1)
+        nak2_data = self._get_full_nakshatra_wisdom(nak2)
+
+        nadi1 = nak1_data.get('nadi', 'PITTA')
+        nadi2 = nak2_data.get('nadi', 'KAPHA')
+
+        n1 = nadi1.name if hasattr(nadi1, 'name') else str(nadi1).split('.')[-1].upper()
+        n2 = nadi2.name if hasattr(nadi2, 'name') else str(nadi2).split('.')[-1].upper()
+
+        if n1 != n2:
+            score = 8
+            status = f'Different Nadis ({n1} + {n2}) - No Nadi Dosha'
+            dosha = False
+        else:
+            score = 0
+            status = f'Same Nadi ({n1}) - NADI DOSHA - Health concerns'
+            dosha = True
+
+        return {'score': score, 'max': 8, 'status': status, 'nadi1': n1, 'nadi2': n2, 'dosha': dosha}
+
+    def _get_kuta_warnings(self, varna: Dict, yoni: Dict, gana: Dict, bhakoot: Dict, nadi: Dict) -> List[str]:
+        """Get warnings for serious kuta issues"""
+        warnings = []
+
+        if nadi.get('dosha'):
+            warnings.append('⚠️ NADI DOSHA: Same Nadi detected. Health and progeny concerns. Remedies recommended.')
+
+        if bhakoot.get('dosha'):
+            warnings.append('⚠️ BHAKOOT DOSHA: Inauspicious moon sign combination. May affect harmony and prosperity.')
+
+        if yoni['score'] == 0:
+            warnings.append('⚠️ YONI INCOMPATIBILITY: Enemy yonis detected. Physical compatibility may be challenging.')
+
+        if gana['score'] <= 1:
+            warnings.append('⚠️ GANA MISMATCH: Temperament differences. Requires adjustment and understanding.')
+
+        return warnings
+
+    def _format_kuta_report(self, kuta_result: Dict[str, Any]) -> str:
+        """Format complete Kuta matching report"""
+        report = f"""## Ashtakoot (8-Kuta) Compatibility Analysis
+
+**Overall Score:** {kuta_result['total_score']}/36 ({kuta_result['percentage']}%)
+**Rating:** {kuta_result['rating']}
+**Interpretation:** {kuta_result['interpretation']}
+
+### Detailed Kuta Scores
+
+| Kuta | Score | Max | Status |
+|------|-------|-----|--------|
+| Varna (Spiritual) | {kuta_result['details']['varna']['score']} | 1 | {kuta_result['details']['varna']['status'][:40]} |
+| Vashya (Attraction) | {kuta_result['details']['vashya']['score']} | 2 | {kuta_result['details']['vashya']['status'][:40]} |
+| Tara (Destiny) | {kuta_result['details']['tara']['score']} | 3 | {kuta_result['details']['tara']['status'][:40]} |
+| Yoni (Physical) | {kuta_result['details']['yoni']['score']} | 4 | {kuta_result['details']['yoni']['status'][:40]} |
+| Graha Maitri (Mental) | {kuta_result['details']['graha_maitri']['score']} | 5 | {kuta_result['details']['graha_maitri']['status'][:40]} |
+| Gana (Temperament) | {kuta_result['details']['gana']['score']} | 6 | {kuta_result['details']['gana']['status'][:40]} |
+| Bhakoot (Love) | {kuta_result['details']['bhakoot']['score']} | 7 | {kuta_result['details']['bhakoot']['status'][:40]} |
+| Nadi (Health) | {kuta_result['details']['nadi']['score']} | 8 | {kuta_result['details']['nadi']['status'][:40]} |
+
+"""
+        if kuta_result['warnings']:
+            report += "### ⚠️ Important Warnings\n\n"
+            for warning in kuta_result['warnings']:
+                report += f"{warning}\n\n"
+
+        report += """### Minimum Requirements
+- **18+ points:** Generally acceptable for marriage
+- **24+ points:** Good compatibility
+- **28+ points:** Excellent compatibility
+
+*Note: Kuta matching is one aspect of compatibility. Full chart analysis recommended.*
+"""
+        return report
+
     def _format_career_guidance(self, nakshatra: str, zodiac: str) -> str:
         """Format comprehensive career guidance using nakshatra and zodiac"""
         careers = self._get_nakshatra_careers(nakshatra)
@@ -634,7 +1423,15 @@ Current life relationships with strong karmic significance will often feel "fate
 
 **Current Phase:** Focus on integrating lessons and preparing for upcoming opportunities.
 
-## 8. Spiritual Gifts & Abilities
+## 8. Yoga Analysis (Planetary Combinations)
+
+""" + self._generate_yoga_analysis(context) + f"""
+
+## 9. House Wisdom Integration
+
+""" + self._generate_house_analysis(context) + f"""
+
+## 10. Spiritual Gifts & Abilities
 
 Your {nakshatra} nakshatra bestows:
 - **Intuitive abilities** connected to {deity} energy
