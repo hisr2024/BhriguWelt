@@ -651,39 +651,45 @@ class SectionParser:
         return remaining or paragraph.strip()
     
     def generate_missing_section(
-        self, 
-        section_key: str, 
-        full_text: str, 
-        category: str, 
+        self,
+        section_key: str,
+        full_text: str,
+        category: str,
         birth_data: Dict,
-        request_id: Optional[str] = None
+        request_id: Optional[str] = None,
+        include_status: bool = False
     ) -> str:
         """
         Generate missing section using AI with specific prompts
-        
+
         Args:
             section_key: Key of missing section
             full_text: Full prediction text for context
             category: Category name
             birth_data: Birth chart data
-            
+            request_id: Optional request ID for tracking
+            include_status: If True, returns tuple (content, status, fallback_reason)
+
         Returns:
             Generated section content or fallback text. When include_status is True,
             returns a tuple of (content, status, fallback_reason).
         """
-        
+
         if not self.openai_service:
             self._track_fallback_usage("missing_section_fallback", section_key, category)
-            return self._get_fallback_section(section_key, birth_data)
-        
+            fallback_content = self._get_category_specific_fallback(section_key, category, birth_data)
+            if include_status:
+                return fallback_content, "fallback", "openai_unavailable"
+            return fallback_content
+
         # Create targeted prompt for missing section
         section_prompt = self._create_section_specific_prompt(
-            section_key, 
-            category, 
+            section_key,
+            category,
             birth_data,
             full_text
         )
-        
+
         # Generate just this section
         try:
             generated = self.openai_service.generate_prediction(
@@ -696,136 +702,186 @@ class SectionParser:
         except Exception as e:
             logger.error(f"Error generating section {section_key}: {e}")
             self._track_fallback_usage("missing_section_fallback", section_key, category)
-            return self._get_fallback_section(section_key, birth_data)
+            fallback_content = self._get_category_specific_fallback(section_key, category, birth_data)
+            if include_status:
+                return fallback_content, "fallback", str(e)
+            return fallback_content
     
+    def _get_category_specific_fallback(self, section_key: str, category: str, birth_data: Dict) -> str:
+        """
+        Get category-specific fallback content for a section.
+
+        Args:
+            section_key: Section key
+            category: Category name
+            birth_data: Birth data
+
+        Returns:
+            Category-specific fallback content
+        """
+        zodiac = birth_data.get('zodiac_sign', 'your zodiac sign')
+        nakshatra = birth_data.get('nakshatra', 'your nakshatra')
+
+        # Category-specific fallback content
+        fallbacks = {
+            'life_events': {
+                'yearly_forecast': f"Based on your {zodiac} zodiac and {nakshatra} nakshatra, the upcoming year brings significant opportunities for growth. Key periods to watch include Saturn and Jupiter transits that may affect your career and personal development.",
+                'marriage_timing': f"For {zodiac} natives, favorable marriage timing typically aligns with Venus and Jupiter dashas. Look for periods when benefic planets transit your 7th house for optimal partnership opportunities.",
+                'career_milestones': f"Career advancement for {zodiac} typically comes during Sun and Jupiter dasha periods. Focus on building skills and networking during Saturn transits for long-term success.",
+                'children_family': f"Family growth is favored during Jupiter's influence on your 5th house. For {nakshatra} natives, auspicious timing for children relates to your nakshatra lord's position.",
+                'financial_events': f"Financial breakthroughs for {zodiac} often occur during Jupiter and Venus dasha periods. Strategic investments during favorable transits can yield significant returns.",
+                'health_alerts': f"Health requires attention during Saturn transits for {zodiac} natives. Preventive care and healthy lifestyle choices are emphasized during challenging planetary periods.",
+                'spiritual_milestones': f"Spiritual breakthroughs occur during Ketu periods and when Jupiter aspects your 9th house. {nakshatra} natives have natural spiritual inclinations to develop.",
+                'relocations': f"Relocation opportunities arise during Rahu transits for {zodiac} natives. Consider moves during favorable dasha periods for career or personal growth.",
+                'education': f"Educational pursuits are favored during Mercury and Jupiter dashas for {zodiac}. Higher learning timing aligns with beneficial planetary combinations.",
+                'favorable_periods': f"Jupiter and Venus dashas bring overall favorable conditions for {zodiac} natives. These periods support growth, relationships, and prosperity.",
+                'challenging_periods': f"Saturn and Rahu dashas bring tests and lessons. For {nakshatra} natives, approach these periods with patience and spiritual practice.",
+                'transits': f"Major transits of Jupiter and Saturn significantly impact life direction for {zodiac}. Plan important decisions when benefic planets support your chart.",
+                'age_milestones': f"Key ages for {zodiac} include Saturn return cycles (28-30, 58-60) and Jupiter returns (every 12 years). These bring major life shifts and opportunities."
+            },
+            'relationships': {
+                'romantic_marriage': f"For {zodiac} natives, romantic connections thrive when Venus is well-placed. Your {nakshatra} influences attraction patterns and partner compatibility.",
+                'family': f"Family dynamics for {zodiac} involve karmic lessons in nurturing and boundaries. Your {nakshatra} shapes your approach to family responsibilities.",
+                'soul_connections': f"Soul connections for {nakshatra} natives are recognized through immediate familiarity and shared purpose. Trust your intuition when meeting karmic partners.",
+                'friendships': f"Friendships for {zodiac} are built on shared values and mutual growth. Your {nakshatra} influences your social circle and community alignment.",
+                'professional': f"Professional relationships for {zodiac} thrive with clear communication and respect. Build strategic alliances during favorable Mercury periods.",
+                'karmic_patterns': f"Relationship patterns for {nakshatra} natives often reflect past-life dynamics. Awareness of recurring themes helps break limiting cycles.",
+                'communication': f"Communication style for {zodiac} benefits from mindful expression. Active listening and compassionate speech strengthen all relationships.",
+                'timing': f"Relationship milestones align with Venus and Jupiter transits for {zodiac}. Use favorable periods for commitments and deepening connections.",
+                'healing': f"Relationship healing for {nakshatra} involves forgiveness and self-awareness. Energy work and conscious practices support emotional restoration.",
+                'healthy_practices': f"Daily practices for relationship harmony include gratitude, quality time, and maintaining individuality while partnering for {zodiac} natives."
+            },
+            'karmic_remedies': {
+                'mantras': f"For {zodiac} natives, mantra practice strengthens planetary energies. The Gayatri Mantra (108 repetitions daily) supports overall spiritual protection.",
+                'gemstones': f"Gemstone recommendations for {zodiac} depend on ascendant lord. Wear 3-5 carats in appropriate metal after proper energization ceremony.",
+                'yantras': f"Sri Yantra benefits all signs for prosperity and spiritual growth. For {nakshatra} natives, specific planetary yantras enhance remedial effects.",
+                'charitable_activities': f"Charitable activities for {zodiac} include Saturday donations for Saturn and Thursday offerings for Jupiter. Dana purifies karma effectively.",
+                'fasting': f"Fasting practices for {nakshatra} align with planetary days. Ekadashi fasting twice monthly supports spiritual purification.",
+                'deity_worship': f"Deity worship for {zodiac} connects with your ishta devata. Daily prayers and offerings deepen spiritual connection.",
+                'pilgrimage': f"Sacred sites aligned with {nakshatra} support karmic healing. Timing pilgrimages during favorable dashas enhances benefits.",
+                'lifestyle': f"Lifestyle modifications for {zodiac} include early rising, meditation, and sattvic diet. These practices support planetary balance.",
+                'planetary_rituals': f"Graha shanti rituals for {nakshatra} natives appease afflicted planets. Consult a qualified priest for proper procedure.",
+                'karmic_cleansing': f"Karmic cleansing for {zodiac} involves forgiveness practice and conscious release. Weekly meditation supports this process.",
+                'service': f"Seva activities for {nakshatra} balance karma through selfless service. Community contribution aligned with your skills is most effective.",
+                'meditation': f"Meditation practice for {zodiac} brings peace and clarity. 20-30 minutes daily, morning and evening, transforms consciousness."
+            },
+            'predictions': {
+                'daily': f"Today's energy for {zodiac} with {nakshatra} nakshatra favors focused work and mindful communication. Auspicious timing: morning and early evening.",
+                'weekly': f"This week brings opportunities for {zodiac} natives. Mid-week is most favorable for important meetings. Weekend supports rest and spiritual practice.",
+                'monthly': f"This month emphasizes growth for {nakshatra} natives. Financial matters improve in the second half. Schedule important activities during favorable lunar phases.",
+                'yearly': f"This year offers significant growth for {zodiac}. Stay focused on goals while maintaining balance. Major breakthroughs expected during Jupiter's favorable transits."
+            }
+        }
+
+        category_fallbacks = fallbacks.get(category, {})
+        if section_key in category_fallbacks:
+            return category_fallbacks[section_key]
+
+        # Generic fallback
+        return self._get_fallback_section(section_key, birth_data)
+
     def _create_section_specific_prompt(
-        self, 
-        section_key: str, 
-        category: str, 
+        self,
+        section_key: str,
+        category: str,
         birth_data: Dict,
         context: str
     ) -> str:
         """
         Create a targeted prompt for specific section
-        
+
         Args:
             section_key: Section to generate
             category: Category name
             birth_data: Birth data
             context: Context from full analysis
-            
+
         Returns:
             Specialized prompt for the section
         """
-        
-        section_prompts = {
-            'soul_purpose': f"""
-Based on the following birth details, provide a detailed analysis of the Soul's Primary Purpose:
 
-Birth Data:
-- Zodiac Sign: {birth_data.get('zodiac_sign', 'N/A')}
-- Nakshatra: {birth_data.get('nakshatra', 'N/A')}
-- Ascendant: {birth_data.get('ascendant', 'N/A')}
-- Moon Sign: {birth_data.get('moon_sign', 'N/A')}
-
-Context from full analysis:
-{context[:500] if context else 'No additional context'}...
-
-Provide 3-5 paragraphs specifically about:
-1. The fundamental reason this soul incarnated
-2. Unique dharmic path and cosmic mission
-3. Core spiritual lessons to master
-4. How this purpose manifests in daily life
-5. Signs they are aligned with their purpose
-
-Make this specific to the chart and actionable.
-""",
-            'karmic_blueprint': f"""
-Based on the birth chart, provide detailed Karmic Blueprint analysis:
-
-Birth Data:
-- Zodiac Sign: {birth_data.get('zodiac_sign', 'N/A')}
-- Nakshatra: {birth_data.get('nakshatra', 'N/A')}
-- Rahu/Ketu: {birth_data.get('rahu_position', 'N/A')}, {birth_data.get('ketu_position', 'N/A')}
-
-Analyze:
-1. Major karmic patterns from past lives
-2. Specific karmic debts (Rinanubandha)
-3. Karmic credits and blessings
-4. Planetary yogas indicating karmic destiny
-5. How past life actions affect current situations
-
-Provide specific, detailed analysis (minimum 200 words).
-""",
-            'yearly_forecast': f"""
-Provide a comprehensive yearly forecast for someone born with:
-- Zodiac: {birth_data.get('zodiac_sign', 'N/A')}
-- Nakshatra: {birth_data.get('nakshatra', 'N/A')}
-- Current Age: {birth_data.get('age', 'N/A')}
-
-Include month-by-month predictions for the coming year covering:
-- Career developments
-- Relationship events
-- Financial matters
-- Health considerations
-- Spiritual growth
-- Key timing for major decisions
-
-Be specific with months and actionable advice.
-""",
-            'daily': f"""
-Provide today's detailed forecast for:
-- Zodiac: {birth_data.get('zodiac_sign', 'N/A')}
-- Nakshatra: {birth_data.get('nakshatra', 'N/A')}
-
-Include:
-- Overall energy and mood
-- Career focus areas
-- Relationship guidance
-- Health tips
-- Lucky color and number
-- Auspicious timing
-- Things to avoid
-
-Be specific and actionable for today.
-""",
-            'weekly': f"""
-Provide this week's forecast for:
-- Zodiac: {birth_data.get('zodiac_sign', 'N/A')}
-- Nakshatra: {birth_data.get('nakshatra', 'N/A')}
-
-Cover:
-- Week's theme
-- Major opportunities
-- Challenges to navigate
-- Best days for activities
-- Relationship dynamics
-- Financial matters
-
-Provide day-by-day highlights.
-""",
-            'monthly': f"""
-Provide this month's comprehensive forecast for:
-- Zodiac: {birth_data.get('zodiac_sign', 'N/A')}
-- Nakshatra: {birth_data.get('nakshatra', 'N/A')}
-
-Include:
-- Month's theme
-- Career developments
-- Relationship evolution
-- Financial prospects
-- Health considerations
-- Spiritual growth
-- Best timing for decisions
-
-Break down by weeks with specific guidance.
-"""
+        # Category-specific prompts
+        category_prompts = {
+            'karmic_journey': {
+                'soul_purpose': f"""Generate ONLY the Soul's Primary Purpose section for KARMIC JOURNEY category.
+Birth Data: Zodiac: {birth_data.get('zodiac_sign', 'N/A')}, Nakshatra: {birth_data.get('nakshatra', 'N/A')}, Ascendant: {birth_data.get('ascendant', 'N/A')}
+Focus on: Why this soul incarnated, cosmic mission, core spiritual lessons.
+Minimum 200 words with actionable guidance.""",
+                'karmic_blueprint': f"""Generate ONLY the Karmic Blueprint section for KARMIC JOURNEY category.
+Birth Data: Zodiac: {birth_data.get('zodiac_sign', 'N/A')}, Nakshatra: {birth_data.get('nakshatra', 'N/A')}, Rahu: {birth_data.get('rahu_position', 'N/A')}, Ketu: {birth_data.get('ketu_position', 'N/A')}
+Focus on: Past-life imprints, karmic debts/credits, planetary yogas indicating destiny.
+Minimum 200 words with specific astrological references.""",
+                'evolution_stage': f"""Generate ONLY the Soul Evolution Stage section for KARMIC JOURNEY category.
+Birth Data: Zodiac: {birth_data.get('zodiac_sign', 'N/A')}, Nakshatra: {birth_data.get('nakshatra', 'N/A')}
+Focus on: Current stage of soul development, progress toward moksha, indicators of spiritual maturity.
+Minimum 200 words.""",
+            },
+            'life_events': {
+                'yearly_forecast': f"""Generate ONLY the Year-by-Year Forecast section for LIFE EVENTS category.
+Birth Data: Zodiac: {birth_data.get('zodiac_sign', 'N/A')}, Nakshatra: {birth_data.get('nakshatra', 'N/A')}, Age: {birth_data.get('age', 'N/A')}
+Focus on: Yearly themes, turning points, key focus areas based on dashas and transits.
+Include month-by-month highlights with specific timing. Minimum 250 words.""",
+                'marriage_timing': f"""Generate ONLY the Marriage & Partnerships section for LIFE EVENTS category.
+Birth Data: Zodiac: {birth_data.get('zodiac_sign', 'N/A')}, Nakshatra: {birth_data.get('nakshatra', 'N/A')}, Age: {birth_data.get('age', 'N/A')}
+Focus on: Timing windows for marriage/commitment, relationship event predictions, Venus/Jupiter influence.
+Provide specific timing with month-level accuracy. Minimum 200 words.""",
+                'career_milestones': f"""Generate ONLY the Career Milestones section for LIFE EVENTS category.
+Birth Data: Zodiac: {birth_data.get('zodiac_sign', 'N/A')}, Nakshatra: {birth_data.get('nakshatra', 'N/A')}, Age: {birth_data.get('age', 'N/A')}
+Focus on: Career peaks, promotions, job changes, best timing for professional moves.
+Minimum 200 words with specific dasha timing.""",
+            },
+            'relationships': {
+                'romantic_marriage': f"""Generate ONLY the Romantic Relationships & Marriage section for RELATIONSHIPS category.
+Birth Data: Zodiac: {birth_data.get('zodiac_sign', 'N/A')}, Nakshatra: {birth_data.get('nakshatra', 'N/A')}
+Focus on: Romantic patterns, partner qualities, marriage dynamics, compatibility factors.
+Minimum 200 words with practical relationship guidance.""",
+                'family': f"""Generate ONLY the Family Dynamics section for RELATIONSHIPS category.
+Birth Data: Zodiac: {birth_data.get('zodiac_sign', 'N/A')}, Nakshatra: {birth_data.get('nakshatra', 'N/A')}
+Focus on: Family karma, parent-child dynamics, healing family patterns, responsibilities.
+Minimum 200 words.""",
+                'soul_connections': f"""Generate ONLY the Soul Connections section for RELATIONSHIPS category.
+Birth Data: Zodiac: {birth_data.get('zodiac_sign', 'N/A')}, Nakshatra: {birth_data.get('nakshatra', 'N/A')}
+Focus on: Soulmate indicators, karmic bonds, recognition signs, soul group lessons.
+Minimum 200 words.""",
+            },
+            'karmic_remedies': {
+                'mantras': f"""Generate ONLY the Mantras section for KARMIC REMEDIES category.
+Birth Data: Zodiac: {birth_data.get('zodiac_sign', 'N/A')}, Nakshatra: {birth_data.get('nakshatra', 'N/A')}
+Focus on: Specific mantras with Sanskrit text, pronunciation, counts (108 times), best timing for chanting.
+Include at least 3 specific mantras for this chart. Minimum 200 words.""",
+                'gemstones': f"""Generate ONLY the Gemstones section for KARMIC REMEDIES category.
+Birth Data: Zodiac: {birth_data.get('zodiac_sign', 'N/A')}, Nakshatra: {birth_data.get('nakshatra', 'N/A')}, Ascendant: {birth_data.get('ascendant', 'N/A')}
+Focus on: Recommended stones with carats, metal, finger, energization process.
+Include primary and secondary stone recommendations. Minimum 200 words.""",
+                'yantras': f"""Generate ONLY the Yantras section for KARMIC REMEDIES category.
+Birth Data: Zodiac: {birth_data.get('zodiac_sign', 'N/A')}, Nakshatra: {birth_data.get('nakshatra', 'N/A')}
+Focus on: Specific yantras, activation methods, placement guidance, worship rituals.
+Minimum 200 words.""",
+            },
+            'predictions': {
+                'daily': f"""Generate ONLY the Daily Forecast section for PREDICTIONS category.
+Birth Data: Zodiac: {birth_data.get('zodiac_sign', 'N/A')}, Nakshatra: {birth_data.get('nakshatra', 'N/A')}
+Focus on: Today's energy, focus areas, auspicious timing, cautions.
+Include lucky color, number, and specific hourly guidance. Minimum 150 words.""",
+                'weekly': f"""Generate ONLY the Weekly Forecast section for PREDICTIONS category.
+Birth Data: Zodiac: {birth_data.get('zodiac_sign', 'N/A')}, Nakshatra: {birth_data.get('nakshatra', 'N/A')}
+Focus on: Week's themes, opportunities, challenges, best days for activities.
+Provide day-by-day highlights. Minimum 200 words.""",
+                'monthly': f"""Generate ONLY the Monthly Forecast section for PREDICTIONS category.
+Birth Data: Zodiac: {birth_data.get('zodiac_sign', 'N/A')}, Nakshatra: {birth_data.get('nakshatra', 'N/A')}
+Focus on: Monthly themes, important dates, progress checkpoints.
+Break down by weeks. Minimum 250 words.""",
+                'yearly': f"""Generate ONLY the Yearly Forecast section for PREDICTIONS category.
+Birth Data: Zodiac: {birth_data.get('zodiac_sign', 'N/A')}, Nakshatra: {birth_data.get('nakshatra', 'N/A')}, Age: {birth_data.get('age', 'N/A')}
+Focus on: Year-long themes, major milestones, growth areas.
+Include quarter-by-quarter guidance. Minimum 300 words.""",
+            }
         }
-        
-        # Return specific prompt or generic one
-        if section_key in section_prompts:
-            return section_prompts[section_key]
-        
+
+        # Check for category-specific prompt
+        if category in category_prompts and section_key in category_prompts[category]:
+            return category_prompts[category][section_key]
+
         return self._generic_section_prompt(section_key, birth_data, category)
     
     def _generic_section_prompt(self, section_key: str, birth_data: Dict, category: str) -> str:

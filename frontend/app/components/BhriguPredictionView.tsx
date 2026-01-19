@@ -1225,15 +1225,92 @@ export default function BhriguPredictionView({
     }
     const parsedFromFullAnalysisActive = Object.keys(parsedFromFullAnalysis).length > 0;
 
-    // Helper function to get section content from either source
+    // Karmic Journey section markers - used to detect wrong category content
+    const karmicJourneySectionMarkers = [
+      "soul's primary purpose",
+      'karmic blueprint',
+      'soul evolution stage',
+      'life mission & dharma',
+      'karmic lessons in this lifetime',
+      'spiritual gifts & abilities'
+    ];
+
+    // Check if content contains wrong category markers
+    const containsWrongCategoryContent = (content: string, sectionKey: string): boolean => {
+      if (!content) return false;
+      const lowerContent = content.toLowerCase();
+
+      // If we're NOT in karmic-journey category, check if content has karmic journey markers
+      if (normalizedCategory !== 'karmic-journey') {
+        const hasKarmicJourneyContent = karmicJourneySectionMarkers.some(marker =>
+          lowerContent.includes(marker)
+        );
+        if (hasKarmicJourneyContent) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    // Generate category-specific placeholder content
+    const getCategorySpecificPlaceholder = (sectionKey: string): string => {
+      const zodiac = predictionData?.metadata?.zodiac_sign || 'your zodiac sign';
+      const nakshatra = predictionData?.metadata?.nakshatra || 'your nakshatra';
+
+      const placeholders: Record<string, Record<string, string>> = {
+        'life-events': {
+          yearly_forecast: `Your yearly forecast based on ${zodiac} and ${nakshatra} will reveal significant growth opportunities and key timing windows for the year ahead.`,
+          marriage_timing: `Marriage and partnership timing for ${zodiac} natives follows Venus and Jupiter cycles. Favorable windows align with your 7th house transits.`,
+          career_milestones: `Career developments for ${zodiac} typically peak during Sun and Jupiter dasha periods. Watch for opportunities during favorable planetary alignments.`,
+          children_family: `Family growth timing relates to Jupiter's influence on your 5th house. ${nakshatra} natives have specific favorable periods for family expansion.`,
+          financial_events: `Financial breakthroughs for ${zodiac} often occur during Jupiter-Venus periods. Strategic timing can maximize wealth-building opportunities.`,
+          health_alerts: `Health awareness periods for ${zodiac} coincide with Saturn transits. Preventive care during these windows supports long-term wellbeing.`,
+        },
+        'relationships': {
+          romantic_marriage: `Romantic patterns for ${zodiac} with ${nakshatra} nakshatra show unique attraction dynamics and partner compatibility factors.`,
+          family: `Family dynamics for ${zodiac} involve specific karmic lessons. Your ${nakshatra} shapes nurturing patterns and familial responsibilities.`,
+          soul_connections: `Soul connections for ${nakshatra} natives manifest through immediate recognition and shared purpose. Trust your intuition in karmic meetings.`,
+          friendships: `Friendship patterns for ${zodiac} are built on shared values. Your ${nakshatra} influences social circles and community alignment.`,
+        },
+        'karmic-remedies': {
+          mantras: `Mantra practice for ${zodiac} strengthens planetary energies. Regular chanting (108 times) of appropriate mantras provides spiritual protection.`,
+          gemstones: `Gemstone recommendations for ${zodiac} depend on your ascendant lord. Proper stone selection and energization enhances beneficial planetary effects.`,
+          yantras: `Yantra practice benefits ${nakshatra} natives. Sacred geometry meditation and proper yantra placement support spiritual and material growth.`,
+        },
+        predictions: {
+          daily: `Today's energy for ${zodiac} with ${nakshatra} favors focused action. Morning and evening are auspicious times for important activities.`,
+          weekly: `This week brings opportunities for ${zodiac} natives. Mid-week is favorable for meetings; weekends support rest and spiritual practice.`,
+          monthly: `This month emphasizes growth for ${nakshatra} natives. Key themes unfold in phases; adjust priorities with lunar cycles.`,
+          yearly: `This year offers significant growth for ${zodiac}. Major themes develop through planetary transits; stay aligned with your dharmic path.`,
+        }
+      };
+
+      return placeholders[normalizedCategory]?.[sectionKey] ||
+        `Insights for this section are being generated based on your ${zodiac} zodiac and ${nakshatra} nakshatra. Check back for detailed analysis.`;
+    };
+
+    // Helper function to get section content from either source with validation
     const getSectionContent = (key: string): string => {
       const directContent = predictionData[key];
       let rawContent: string;
 
-      if (typeof directContent === 'string') {
-        rawContent = directContent;
+      if (typeof directContent === 'string' && directContent.trim().length > 0) {
+        // Validate that direct content doesn't contain wrong category markers
+        if (!containsWrongCategoryContent(directContent, key)) {
+          rawContent = directContent;
+        } else {
+          // Content has wrong category markers, use placeholder
+          rawContent = getCategorySpecificPlaceholder(key);
+        }
       } else {
-        rawContent = parsedFromFullAnalysis[key] || '';
+        // Try fallback content
+        const fallbackContent = parsedFromFullAnalysis[key] || '';
+        if (fallbackContent && !containsWrongCategoryContent(fallbackContent, key)) {
+          rawContent = fallbackContent;
+        } else {
+          // Use category-specific placeholder
+          rawContent = getCategorySpecificPlaceholder(key);
+        }
       }
 
       // Apply simplification based on view mode
