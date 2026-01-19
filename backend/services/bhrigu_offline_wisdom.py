@@ -2209,76 +2209,62 @@ Your {nakshatra} nakshatra bestows:
             if 'narrative' in p:
                 narratives.append(p['narrative'])
 
+        # Get past life indicators from planetary wisdom
+        ruler_past_life = self._get_planetary_past_life_indicators(ruler, 'strong')
+        nak_past_life = self._get_nakshatra_past_life(nakshatra)
+
         if view_mode == 'simple':
             # SIMPLE VIEW: Concise past life insights
-            return f"""## Past Relationships
+            return f"""## Most Significant Past Life
 
-You may notice patterns in the past connections that mirror your relationships now.
+**Era & Region:** {past_region.capitalize()}
+**Role:** {past_role.capitalize()}
+**Theme:** {past_theme.capitalize()}
 
-## 1. Soul's Primary Purpose
+Your {nakshatra} nakshatra under {deity} guidance suggests a past life focused on {past_theme}.
 
-Based on Bhrigu Samhita principles, your soul incarnated with {zodiac} as the guiding energy, blessed by the Pitris deity of {nakshatra} nakshatra.
+## Past Life Occupations
 
-**Core Purpose:** Your {element} nature combined with {traits} indicates a dharmic path focused on spiritual evolution through practical action. The ancient texts speak of souls with your configuration being destined for {nak_quality}.
+Based on {zodiac} ({element}) and {nakshatra}:
+- **Primary Role:** {past_role.capitalize()} in {past_region}
+- **Skills Carried:** {traits.split(',')[0].capitalize()}, {nak_quality}
+- **Spiritual Practice:** {deity} devotion and {element} mastery
 
-**Scriptural Reference:** According to the Bhrigu Samhita folios, natives born under {nakshatra} carry the sacred duty of bringing Throne energy into manifestation.
+## Karmic Patterns from Past Lives
 
-## 2. Karmic Blueprint
+**Talents Brought Forward:**
+- {nak_quality.capitalize()} abilities from past life mastery
+- {element} element skills refined over incarnations
+- {ruler} planetary gifts from previous development
 
-Your karmic blueprint reveals patterns established across multiple lifetimes:
+**Lessons Still Learning:**
+- Balancing {traits.split(',')[0]} with humility
+- Completing {past_theme} karma
+- {ruler} related growth areas
 
-**Karmic Debts:**
-- Past life patterns suggest lessons around {traits}
-- The {ruler} influence indicates unfinished business related to power and responsibility
-- Saturn's karmic teachings require patience and perseverance in this incarnation
+## Past Life Relationships
 
-**Karmic Credits:**
-- Natural talents in {nak_quality}, carried from past lives
-- Jupiter's blessings indicate accumulated spiritual merit
-- Inherent wisdom and intuitive gifts from previous spiritual practice
+**Soul Connections:** You likely knew current family/partners in past lives
+- Parents: Teachers of {traits.split(',')[0]} lessons from before
+- Siblings: Soul companions continuing their journey with you
+- Partners: Deep karmic bonds spanning multiple incarnations
 
-**Referenced Sutras:**
-- Bikaneri folio 17b: When the native's Moon occupies a watery rashi and receives Jupiter's auspicious glance, the Bhrigu...
-- Kashi palm 44a: Bhrigu states that a native born on the fifth lunar tithi with Mars in the tenth bhava carries a kar...
-- Pune Mod folio 3c: If Saturn and Venus conjoin in the second bhava while Rahu aspects the rising sign, Bhrigu records sig...
+## Geographic Past Life Origins
 
-## 3. Soul Evolution Stage
+**{element} Element Connection:** {past_region.capitalize()}
+- Your soul resonates with {element}-associated lands
+- Possible memories or attractions to these regions
+- Travel there may feel like "coming home"
 
-As per Nadi Jyotisha classification, your soul is at the **Madhyama (Intermediate)** stage of evolution:
+## Past Life Wisdom
 
-- You have progressed beyond basic karmic lessons
-- Current focus: Balancing material responsibilities with spiritual growth
-- Estimated incarnations remaining: 7-12 before potential liberation
-- Progress indicator: Strong connection to dharmic principles
-
-The {nakshatra} nakshatra placement suggests you are approximately 60-70% through your soul's evolutionary journey.
-
-## 4. Life Mission & Dharma
-
-**Professional Dharma (Artha):** Your {zodiac} energy combined with {nak_quality} makes you suited for roles involving {traits}. Careers in teaching, healing, creative arts, or service align with your karmic purpose.
-
-**Family Dharma (Kama):** Building harmonious relationships that support spiritual growth. Your soul chose specific family members to learn lessons of patience, unconditional love, and forgiveness.
-
-**Social Dharma (Moksha):** Contributing to collective evolution through sharing wisdom and uplifting others. Your presence naturally elevates the consciousness of those around you.
-
-**Spiritual Dharma:** Daily practice, meditation, and self-reflection form the foundation. The Pitris guide your inner development.
-
-## 5. Karmic Lessons in This Lifetime
-
-Based on your {zodiac} Sun and {nakshatra} birth star, primary lessons include:
-
-- **Balance:** Learning to harmonize {element} energy with practical life
-- **Patience:** Saturn's influence requires developing persistence through challenges
-- **Service:** Using {nak_quality} for the benefit of others
-- **Detachment:** Cultivating non-attachment while remaining engaged with life
-- **Truth:** Speaking and living authentically, aligned with dharma
-
-*This reading is based on classical Bhrigu Samhita and Nadi Jyotisha principles. For AI-enhanced detailed analysis with precise timing, ensure OpenAI API is configured.*
+**{nakshatra} Nakshatra Insight:** {nak_past_life}
+**{ruler} Planetary Indicator:** {ruler_past_life if ruler_past_life else f'Past mastery of {ruler} qualities'}
 
 **Actionable Guidance:**
-- Create a simple observance when you sense past-life familiar or karmic tone
-- Make one act of forgiveness or gratitude to shift those patterns
-- Keep a note of recurring life themes that seem ancient"""
+- Explore interests in {past_theme} - these are past life skills
+- Notice déjà vu experiences - they may be past life memories
+- Honor {deity} to strengthen past life spiritual connections"""
 
         else:
             # ASTROLOGER VIEW: Detailed past life analysis
