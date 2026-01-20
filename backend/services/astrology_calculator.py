@@ -18,6 +18,188 @@ logger = logging.getLogger(__name__)
 class AstrologyCalculator:
     """Core Vedic astrology calculation engine"""
 
+    # Built-in geocode database for common cities (fallback when API unavailable)
+    # Format: 'city_name_lowercase': {'latitude': float, 'longitude': float}
+    BUILTIN_GEOCODES = {
+        # India - Major Cities
+        'new delhi': {'latitude': 28.6139, 'longitude': 77.2090},
+        'delhi': {'latitude': 28.6139, 'longitude': 77.2090},
+        'mumbai': {'latitude': 19.0760, 'longitude': 72.8777},
+        'bombay': {'latitude': 19.0760, 'longitude': 72.8777},
+        'bangalore': {'latitude': 12.9716, 'longitude': 77.5946},
+        'bengaluru': {'latitude': 12.9716, 'longitude': 77.5946},
+        'chennai': {'latitude': 13.0827, 'longitude': 80.2707},
+        'madras': {'latitude': 13.0827, 'longitude': 80.2707},
+        'kolkata': {'latitude': 22.5726, 'longitude': 88.3639},
+        'calcutta': {'latitude': 22.5726, 'longitude': 88.3639},
+        'hyderabad': {'latitude': 17.3850, 'longitude': 78.4867},
+        'pune': {'latitude': 18.5204, 'longitude': 73.8567},
+        'ahmedabad': {'latitude': 23.0225, 'longitude': 72.5714},
+        'jaipur': {'latitude': 26.9124, 'longitude': 75.7873},
+        'lucknow': {'latitude': 26.8467, 'longitude': 80.9462},
+        'kanpur': {'latitude': 26.4499, 'longitude': 80.3319},
+        'nagpur': {'latitude': 21.1458, 'longitude': 79.0882},
+        'indore': {'latitude': 22.7196, 'longitude': 75.8577},
+        'thane': {'latitude': 19.2183, 'longitude': 72.9781},
+        'bhopal': {'latitude': 23.2599, 'longitude': 77.4126},
+        'visakhapatnam': {'latitude': 17.6868, 'longitude': 83.2185},
+        'patna': {'latitude': 25.5941, 'longitude': 85.1376},
+        'vadodara': {'latitude': 22.3072, 'longitude': 73.1812},
+        'ghaziabad': {'latitude': 28.6692, 'longitude': 77.4538},
+        'ludhiana': {'latitude': 30.9010, 'longitude': 75.8573},
+        'agra': {'latitude': 27.1767, 'longitude': 78.0081},
+        'nashik': {'latitude': 20.0063, 'longitude': 73.7907},
+        'faridabad': {'latitude': 28.4089, 'longitude': 77.3178},
+        'meerut': {'latitude': 28.9845, 'longitude': 77.7064},
+        'rajkot': {'latitude': 22.3039, 'longitude': 70.8022},
+        'varanasi': {'latitude': 25.3176, 'longitude': 82.9739},
+        'srinagar': {'latitude': 34.0837, 'longitude': 74.7973},
+        'aurangabad': {'latitude': 19.8762, 'longitude': 75.3433},
+        'dhanbad': {'latitude': 23.7957, 'longitude': 86.4304},
+        'amritsar': {'latitude': 31.6340, 'longitude': 74.8723},
+        'allahabad': {'latitude': 25.4358, 'longitude': 81.8463},
+        'prayagraj': {'latitude': 25.4358, 'longitude': 81.8463},
+        'ranchi': {'latitude': 23.3441, 'longitude': 85.3096},
+        'coimbatore': {'latitude': 11.0168, 'longitude': 76.9558},
+        'jabalpur': {'latitude': 23.1815, 'longitude': 79.9864},
+        'gwalior': {'latitude': 26.2183, 'longitude': 78.1828},
+        'vijayawada': {'latitude': 16.5062, 'longitude': 80.6480},
+        'jodhpur': {'latitude': 26.2389, 'longitude': 73.0243},
+        'madurai': {'latitude': 9.9252, 'longitude': 78.1198},
+        'raipur': {'latitude': 21.2514, 'longitude': 81.6296},
+        'kota': {'latitude': 25.2138, 'longitude': 75.8648},
+        'guwahati': {'latitude': 26.1445, 'longitude': 91.7362},
+        'chandigarh': {'latitude': 30.7333, 'longitude': 76.7794},
+        'solapur': {'latitude': 17.6599, 'longitude': 75.9064},
+        'hubli': {'latitude': 15.3647, 'longitude': 75.1240},
+        'mysore': {'latitude': 12.2958, 'longitude': 76.6394},
+        'mysuru': {'latitude': 12.2958, 'longitude': 76.6394},
+        'tiruchirappalli': {'latitude': 10.7905, 'longitude': 78.7047},
+        'trichy': {'latitude': 10.7905, 'longitude': 78.7047},
+        'bareilly': {'latitude': 28.3670, 'longitude': 79.4304},
+        'aligarh': {'latitude': 27.8974, 'longitude': 78.0880},
+        'tiruppur': {'latitude': 11.1085, 'longitude': 77.3411},
+        'moradabad': {'latitude': 28.8386, 'longitude': 78.7733},
+        'jalandhar': {'latitude': 31.3260, 'longitude': 75.5762},
+        'bhubaneswar': {'latitude': 20.2961, 'longitude': 85.8245},
+        'salem': {'latitude': 11.6643, 'longitude': 78.1460},
+        'warangal': {'latitude': 17.9784, 'longitude': 79.5941},
+        'guntur': {'latitude': 16.3067, 'longitude': 80.4365},
+        'bhiwandi': {'latitude': 19.2967, 'longitude': 73.0631},
+        'saharanpur': {'latitude': 29.9680, 'longitude': 77.5510},
+        'gorakhpur': {'latitude': 26.7606, 'longitude': 83.3732},
+        'bikaner': {'latitude': 28.0229, 'longitude': 73.3119},
+        'amravati': {'latitude': 20.9320, 'longitude': 77.7523},
+        'noida': {'latitude': 28.5355, 'longitude': 77.3910},
+        'jamshedpur': {'latitude': 22.8046, 'longitude': 86.2029},
+        'bhilai': {'latitude': 21.2094, 'longitude': 81.4285},
+        'cuttack': {'latitude': 20.4625, 'longitude': 85.8830},
+        'firozabad': {'latitude': 27.1591, 'longitude': 78.3957},
+        'kochi': {'latitude': 9.9312, 'longitude': 76.2673},
+        'cochin': {'latitude': 9.9312, 'longitude': 76.2673},
+        'nellore': {'latitude': 14.4426, 'longitude': 79.9865},
+        'dehradun': {'latitude': 30.3165, 'longitude': 78.0322},
+        'rourkela': {'latitude': 22.2604, 'longitude': 84.8536},
+        'jamnagar': {'latitude': 22.4707, 'longitude': 70.0577},
+        'ujjain': {'latitude': 23.1765, 'longitude': 75.7885},
+        'jammu': {'latitude': 32.7266, 'longitude': 74.8570},
+        'belgaum': {'latitude': 15.8497, 'longitude': 74.4977},
+        'mangalore': {'latitude': 12.9141, 'longitude': 74.8560},
+        'ambattur': {'latitude': 13.1143, 'longitude': 80.1548},
+        'tirunelveli': {'latitude': 8.7139, 'longitude': 77.7567},
+        'malegaon': {'latitude': 20.5579, 'longitude': 74.5089},
+        'gaya': {'latitude': 24.7914, 'longitude': 85.0002},
+        'udaipur': {'latitude': 24.5854, 'longitude': 73.7125},
+        'maheshtala': {'latitude': 22.5096, 'longitude': 88.2624},
+        'davanagere': {'latitude': 14.4644, 'longitude': 75.9218},
+        'kozhikode': {'latitude': 11.2588, 'longitude': 75.7804},
+        'calicut': {'latitude': 11.2588, 'longitude': 75.7804},
+        'akola': {'latitude': 20.7002, 'longitude': 77.0082},
+        'kurnool': {'latitude': 15.8281, 'longitude': 78.0373},
+        'bokaro': {'latitude': 23.6693, 'longitude': 86.1511},
+        'rajahmundry': {'latitude': 17.0005, 'longitude': 81.8040},
+        'ballari': {'latitude': 15.1394, 'longitude': 76.9214},
+        'bellary': {'latitude': 15.1394, 'longitude': 76.9214},
+        'agartala': {'latitude': 23.8315, 'longitude': 91.2868},
+        'bhagalpur': {'latitude': 25.2425, 'longitude': 87.0079},
+        'latur': {'latitude': 18.4088, 'longitude': 76.5604},
+        'dhule': {'latitude': 20.9042, 'longitude': 74.7749},
+        'korba': {'latitude': 22.3595, 'longitude': 82.7501},
+        'bhilwara': {'latitude': 25.3407, 'longitude': 74.6313},
+        'brahmapur': {'latitude': 19.3150, 'longitude': 84.7941},
+        'muzaffarpur': {'latitude': 26.1209, 'longitude': 85.3647},
+        'ahmednagar': {'latitude': 19.0948, 'longitude': 74.7480},
+        'mathura': {'latitude': 27.4924, 'longitude': 77.6737},
+        'kollam': {'latitude': 8.8932, 'longitude': 76.6141},
+        'avadi': {'latitude': 13.1067, 'longitude': 80.1099},
+        'kadapa': {'latitude': 14.4674, 'longitude': 78.8241},
+        'anantapur': {'latitude': 14.6819, 'longitude': 77.6006},
+        'kamarhati': {'latitude': 22.6745, 'longitude': 88.3744},
+        'bilaspur': {'latitude': 22.0797, 'longitude': 82.1409},
+        'sambalpur': {'latitude': 21.4669, 'longitude': 83.9812},
+        'siliguri': {'latitude': 26.7271, 'longitude': 88.3953},
+        'asansol': {'latitude': 23.6739, 'longitude': 86.9524},
+        'durgapur': {'latitude': 23.5204, 'longitude': 87.3119},
+        'ajmer': {'latitude': 26.4499, 'longitude': 74.6399},
+        'jhansi': {'latitude': 25.4484, 'longitude': 78.5685},
+        'ulhasnagar': {'latitude': 19.2215, 'longitude': 73.1645},
+        'sangli': {'latitude': 16.8524, 'longitude': 74.5815},
+        'parbhani': {'latitude': 19.2704, 'longitude': 76.7697},
+        'pondicherry': {'latitude': 11.9416, 'longitude': 79.8083},
+        'puducherry': {'latitude': 11.9416, 'longitude': 79.8083},
+        'shimla': {'latitude': 31.1048, 'longitude': 77.1734},
+        'imphal': {'latitude': 24.8170, 'longitude': 93.9368},
+        'shillong': {'latitude': 25.5788, 'longitude': 91.8933},
+        'aizawl': {'latitude': 23.7271, 'longitude': 92.7176},
+        'kohima': {'latitude': 25.6751, 'longitude': 94.1086},
+        'itanagar': {'latitude': 27.0844, 'longitude': 93.6053},
+        'gangtok': {'latitude': 27.3389, 'longitude': 88.6065},
+        'panaji': {'latitude': 15.4909, 'longitude': 73.8278},
+        'port blair': {'latitude': 11.6234, 'longitude': 92.7265},
+        'silvassa': {'latitude': 20.2766, 'longitude': 73.0169},
+        'daman': {'latitude': 20.4283, 'longitude': 72.8397},
+        'diu': {'latitude': 20.7141, 'longitude': 70.9874},
+        'leh': {'latitude': 34.1526, 'longitude': 77.5771},
+        'kavaratti': {'latitude': 10.5593, 'longitude': 72.6358},
+        # International - Major Cities
+        'new york': {'latitude': 40.7128, 'longitude': -74.0060},
+        'london': {'latitude': 51.5074, 'longitude': -0.1278},
+        'paris': {'latitude': 48.8566, 'longitude': 2.3522},
+        'tokyo': {'latitude': 35.6762, 'longitude': 139.6503},
+        'sydney': {'latitude': -33.8688, 'longitude': 151.2093},
+        'singapore': {'latitude': 1.3521, 'longitude': 103.8198},
+        'dubai': {'latitude': 25.2048, 'longitude': 55.2708},
+        'hong kong': {'latitude': 22.3193, 'longitude': 114.1694},
+        'toronto': {'latitude': 43.6532, 'longitude': -79.3832},
+        'los angeles': {'latitude': 34.0522, 'longitude': -118.2437},
+        'chicago': {'latitude': 41.8781, 'longitude': -87.6298},
+        'san francisco': {'latitude': 37.7749, 'longitude': -122.4194},
+        'seattle': {'latitude': 47.6062, 'longitude': -122.3321},
+        'boston': {'latitude': 42.3601, 'longitude': -71.0589},
+        'washington dc': {'latitude': 38.9072, 'longitude': -77.0369},
+        'berlin': {'latitude': 52.5200, 'longitude': 13.4050},
+        'amsterdam': {'latitude': 52.3676, 'longitude': 4.9041},
+        'melbourne': {'latitude': -37.8136, 'longitude': 144.9631},
+        'auckland': {'latitude': -36.8485, 'longitude': 174.7633},
+        'kuala lumpur': {'latitude': 3.1390, 'longitude': 101.6869},
+        'bangkok': {'latitude': 13.7563, 'longitude': 100.5018},
+        'jakarta': {'latitude': -6.2088, 'longitude': 106.8456},
+        'manila': {'latitude': 14.5995, 'longitude': 120.9842},
+        'dhaka': {'latitude': 23.8103, 'longitude': 90.4125},
+        'kathmandu': {'latitude': 27.7172, 'longitude': 85.3240},
+        'colombo': {'latitude': 6.9271, 'longitude': 79.8612},
+        'karachi': {'latitude': 24.8607, 'longitude': 67.0011},
+        'lahore': {'latitude': 31.5204, 'longitude': 74.3587},
+        'islamabad': {'latitude': 33.6844, 'longitude': 73.0479},
+        'cape town': {'latitude': -33.9249, 'longitude': 18.4241},
+        'johannesburg': {'latitude': -26.2041, 'longitude': 28.0473},
+        'cairo': {'latitude': 30.0444, 'longitude': 31.2357},
+        'moscow': {'latitude': 55.7558, 'longitude': 37.6173},
+        'beijing': {'latitude': 39.9042, 'longitude': 116.4074},
+        'shanghai': {'latitude': 31.2304, 'longitude': 121.4737},
+        'seoul': {'latitude': 37.5665, 'longitude': 126.9780},
+    }
+
     # Zodiac signs (Rashi)
     ZODIAC_SIGNS = [
         'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
@@ -194,7 +376,7 @@ class AstrologyCalculator:
         }
 
     def _geocode_location(self, place: str) -> Dict[str, float]:
-        """Geocode location to get latitude/longitude with retry logic"""
+        """Geocode location to get latitude/longitude with retry logic and built-in fallback"""
         place_key = place.strip().lower()
         if not place_key:
             return None
@@ -236,6 +418,41 @@ class AstrologyCalculator:
                         logger.debug("Mapbox geocode attempt %d failed for place=%s: %s", attempt + 1, place, exc)
                     else:
                         logger.warning("Mapbox geocode error for place=%s after 3 attempts: %s", place, exc)
+
+        # Final fallback: check built-in geocode database
+        builtin_coords = self._get_builtin_geocode(place_key)
+        if builtin_coords:
+            logger.info("Using built-in geocode for place=%s", place)
+            self._set_cached_geocode(place_key, builtin_coords)
+            return builtin_coords
+
+        return None
+
+    def _get_builtin_geocode(self, place_key: str) -> Dict[str, float]:
+        """
+        Look up coordinates from built-in database.
+        Tries exact match first, then partial matching for common variations.
+        """
+        # Exact match
+        if place_key in self.BUILTIN_GEOCODES:
+            return self.BUILTIN_GEOCODES[place_key].copy()
+
+        # Try without common suffixes/prefixes
+        normalized = place_key.replace(',', '').strip()
+        # Remove country suffixes like ", india" or ", usa"
+        for suffix in [', india', ', usa', ', uk', ', australia', ', canada', ', nepal', ', pakistan', ', bangladesh', ', sri lanka']:
+            if normalized.endswith(suffix):
+                normalized = normalized[:-len(suffix)].strip()
+                break
+
+        if normalized in self.BUILTIN_GEOCODES:
+            return self.BUILTIN_GEOCODES[normalized].copy()
+
+        # Try matching city name within the query (e.g., "New Delhi, India" -> "new delhi")
+        for city_name, coords in self.BUILTIN_GEOCODES.items():
+            if city_name in place_key or place_key in city_name:
+                return coords.copy()
+
         return None
 
     def _get_cached_geocode(self, place_key: str) -> Dict[str, float]:

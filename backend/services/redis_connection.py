@@ -200,11 +200,12 @@ class RedisConnectionManager:
             self.client = None
             self.pool = None
 
-    @CircuitBreaker.call
     def _test_connection_internal(self):
-        """Internal method to test connection (wrapped by circuit breaker)"""
+        """Internal method to test connection"""
         if self.client:
-            self.client.ping()
+            # Wrap the ping call with circuit breaker
+            wrapped_ping = self.circuit_breaker.call(lambda: self.client.ping())
+            return wrapped_ping()
 
     def get_client(self) -> Optional['redis.Redis']:
         """
