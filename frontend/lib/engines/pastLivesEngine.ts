@@ -50,7 +50,7 @@ interface PrecisionCheckResult {
   issues: string[];
 }
 
-const DEFAULT_CACHE_TTL = 1000 * 60 * 5;
+const DEFAULT_CACHE_TTL = 15 * 60 * 1000; // 15 minutes for better caching
 const cache = new Map<string, { expiresAt: number; result: PredictionResult }>();
 const fallbackSummary =
   'Offline corpus unavailable. Applying synthesized Bhrigu Samhita and Nadi Jyotisa principles based on lunar sign, ascendant, and nodal axis to infer past-life karmic patterns.';

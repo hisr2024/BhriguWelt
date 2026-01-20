@@ -159,7 +159,10 @@ function setCache<T>(key: string, data: T, cache: Map<string, CacheEntry<T>>) {
 
 async function fetchJson<T>(path: string): Promise<T | null> {
   try {
-    const response = await fetch(path);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
+    const response = await fetch(path, { signal: controller.signal });
+    clearTimeout(timeoutId);
     if (!response.ok) {
       return null;
     }

@@ -68,7 +68,7 @@ interface CacheEntry<T> {
   expiresAt: number;
 }
 
-const DEFAULT_CACHE_TTL = 10 * 60 * 1000;
+const DEFAULT_CACHE_TTL = 15 * 60 * 1000; // 15 minutes for better caching
 const RULE_CACHE = new Map<string, CacheEntry<LifeEventsCorpus>>();
 const RESULT_CACHE = new Map<string, CacheEntry<PredictionResult>>();
 
@@ -344,7 +344,10 @@ const fetchRemoteRules = async (logger: LifeEventsLogger): Promise<LifeEventRule
 
   for (const url of REMOTE_RULE_SOURCES) {
     try {
-      const response = await fetch(url);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
       if (!response.ok) {
         continue;
       }

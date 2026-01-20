@@ -28,8 +28,8 @@ async function retryWithBackoff<T>(
 ): Promise<T> {
   const {
     maxRetries = 2,
-    baseDelay = 2000, // 2 seconds
-    maxDelay = 10000, // 10 seconds max
+    baseDelay = 500, // 500ms - reduced for faster retries
+    maxDelay = 3000, // 3 seconds max - reduced for faster recovery
     shouldRetry = () => true,
     onRetry,
   } = options;
@@ -81,7 +81,7 @@ async function retryWithBackoff<T>(
 class RequestQueue {
   private queue: Array<() => Promise<any>> = [];
   private active = 0;
-  private maxConcurrent = 2; // Limit to 2 concurrent requests
+  private maxConcurrent = 4; // Increased to 4 for faster parallel predictions
 
   /**
    * Enqueue an operation to be executed when a slot is available
