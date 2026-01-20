@@ -59,7 +59,7 @@ interface CacheEntry<T> {
   expiresAt: number;
 }
 
-const DEFAULT_CACHE_TTL = 10 * 60 * 1000;
+const DEFAULT_CACHE_TTL = 15 * 60 * 1000; // 15 minutes for better caching
 const DEFAULT_MAX_PROJECTIONS = 3;
 const RULE_CACHE = new Map<string, CacheEntry<WisdomSources>>();
 const PREDICTION_CACHE = new Map<string, CacheEntry<PredictionResult>>();
@@ -223,11 +223,19 @@ async function loadWisdomSources(cacheTtlMs: number): Promise<WisdomSources> {
   if (!bhriguText || !nadiText) {
     const remoteResults = await Promise.allSettled(
       REMOTE_RULE_SOURCES.map(async (url) => {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch ${url}`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
+        try {
+          const response = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch ${url}`);
+          }
+          return response.text();
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
         }
-        return response.text();
       })
     );
 

@@ -75,7 +75,7 @@ interface CacheEntry {
   result: PredictionResult;
 }
 
-const DEFAULT_CACHE_TTL = 8 * 60 * 1000;
+const DEFAULT_CACHE_TTL = 15 * 60 * 1000; // 15 minutes for better caching
 
 const ruleCache = new Map<string, KarmicCorpus>();
 const predictionCache = new Map<string, CacheEntry>();

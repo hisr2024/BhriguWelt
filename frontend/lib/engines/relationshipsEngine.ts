@@ -42,7 +42,7 @@ interface CacheEntry<T> {
   expiresAt: number;
 }
 
-const DEFAULT_CACHE_TTL = 8 * 60 * 1000;
+const DEFAULT_CACHE_TTL = 15 * 60 * 1000; // 15 minutes for better caching
 const corpusCache = new Map<string, CacheEntry<RelationshipCorpus>>();
 const predictionCache = new Map<string, CacheEntry<PredictionResult>>();
 
@@ -273,11 +273,19 @@ const extractYamlRules = (text: string, source: string): RelationshipRule[] => {
 const hydrateRemoteSources = async (): Promise<string[]> => {
   const results = await Promise.allSettled(
     REMOTE_SOURCES.map(async (url) => {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch ${url}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch ${url}`);
+        }
+        return response.text();
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
       }
-      return response.text();
     })
   );
 
