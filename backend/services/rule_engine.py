@@ -161,19 +161,40 @@ class RuleEngine:
         houses = chart_data.get('houses', {})
         house_num = int(house_num)
         target_house = int(target_house)
-        
+
+        # Define zodiac lords for sign-based houses format
+        zodiac_lords = {
+            'Aries': 'Mars', 'Taurus': 'Venus', 'Gemini': 'Mercury',
+            'Cancer': 'Moon', 'Leo': 'Sun', 'Virgo': 'Mercury',
+            'Libra': 'Venus', 'Scorpio': 'Mars', 'Sagittarius': 'Jupiter',
+            'Capricorn': 'Saturn', 'Aquarius': 'Saturn', 'Pisces': 'Jupiter'
+        }
+
         # Get the lord of the specified house
-        house_info = houses.get(f'house_{house_num}', {})
-        lord = house_info.get('lord')
-        
+        lord = None
+
+        # Handle list format (houses as list of zodiac signs)
+        if isinstance(houses, list):
+            if 0 < house_num <= len(houses):
+                house_sign = houses[house_num - 1]
+                lord = zodiac_lords.get(house_sign)
+        # Handle dictionary format
+        elif isinstance(houses, dict):
+            house_info = houses.get(f'house_{house_num}', {})
+            if isinstance(house_info, dict):
+                lord = house_info.get('lord')
+            elif isinstance(house_info, str):
+                # House info is just the sign name
+                lord = zodiac_lords.get(house_info)
+
         if not lord:
             return False
-        
+
         # Check if lord is in target house
         planets = chart_data.get('planets', {})
         lord_info = planets.get(lord, {})
         lord_house = lord_info.get('house')
-        
+
         return lord_house == target_house
 
     def _eval_planet_in_house(self, chart_data: Dict[str, Any], planet: str, house_num: str) -> bool:
@@ -312,34 +333,70 @@ class RuleEngine:
         """Check if lord of house is in a kendra"""
         houses = chart_data.get('houses', {})
         house_num = int(house_num)
-        
-        house_info = houses.get(f'house_{house_num}', {})
-        lord = house_info.get('lord')
-        
+
+        # Define zodiac lords for sign-based houses format
+        zodiac_lords = {
+            'Aries': 'Mars', 'Taurus': 'Venus', 'Gemini': 'Mercury',
+            'Cancer': 'Moon', 'Leo': 'Sun', 'Virgo': 'Mercury',
+            'Libra': 'Venus', 'Scorpio': 'Mars', 'Sagittarius': 'Jupiter',
+            'Capricorn': 'Saturn', 'Aquarius': 'Saturn', 'Pisces': 'Jupiter'
+        }
+
+        lord = None
+        # Handle list format (houses as list of zodiac signs)
+        if isinstance(houses, list):
+            if 0 < house_num <= len(houses):
+                house_sign = houses[house_num - 1]
+                lord = zodiac_lords.get(house_sign)
+        elif isinstance(houses, dict):
+            house_info = houses.get(f'house_{house_num}', {})
+            if isinstance(house_info, dict):
+                lord = house_info.get('lord')
+            elif isinstance(house_info, str):
+                lord = zodiac_lords.get(house_info)
+
         if not lord:
             return False
-        
+
         planets = chart_data.get('planets', {})
         lord_info = planets.get(lord, {})
         lord_house = lord_info.get('house')
-        
+
         return lord_house in [1, 4, 7, 10]
 
     def _eval_lord_of_house_in_trikona(self, chart_data: Dict[str, Any], house_num: str) -> bool:
         """Check if lord of house is in a trikona (1, 5, 9)"""
         houses = chart_data.get('houses', {})
         house_num = int(house_num)
-        
-        house_info = houses.get(f'house_{house_num}', {})
-        lord = house_info.get('lord')
-        
+
+        # Define zodiac lords for sign-based houses format
+        zodiac_lords = {
+            'Aries': 'Mars', 'Taurus': 'Venus', 'Gemini': 'Mercury',
+            'Cancer': 'Moon', 'Leo': 'Sun', 'Virgo': 'Mercury',
+            'Libra': 'Venus', 'Scorpio': 'Mars', 'Sagittarius': 'Jupiter',
+            'Capricorn': 'Saturn', 'Aquarius': 'Saturn', 'Pisces': 'Jupiter'
+        }
+
+        lord = None
+        # Handle list format (houses as list of zodiac signs)
+        if isinstance(houses, list):
+            if 0 < house_num <= len(houses):
+                house_sign = houses[house_num - 1]
+                lord = zodiac_lords.get(house_sign)
+        elif isinstance(houses, dict):
+            house_info = houses.get(f'house_{house_num}', {})
+            if isinstance(house_info, dict):
+                lord = house_info.get('lord')
+            elif isinstance(house_info, str):
+                lord = zodiac_lords.get(house_info)
+
         if not lord:
             return False
-        
+
         planets = chart_data.get('planets', {})
         lord_info = planets.get(lord, {})
         lord_house = lord_info.get('house')
-        
+
         return lord_house in [1, 5, 9]
 
     def _eval_transit_hit(self, chart_data: Dict[str, Any], 
