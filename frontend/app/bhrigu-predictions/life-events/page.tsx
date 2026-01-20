@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Calendar } from 'lucide-react';
 import BhriguPredictionView from '@/app/components/BhriguPredictionView';
 import PredictionErrorBoundary from '@/app/components/PredictionErrorBoundary';
@@ -16,11 +16,7 @@ export default function LifeEventsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileReady, setProfileReady] = useState(false);
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       const profiles = await getAllProfiles();
       if (profiles.length > 0) {
@@ -31,7 +27,11 @@ export default function LifeEventsPage() {
     } finally {
       setProfileReady(true);
     }
-  };
+  }, [getAllProfiles]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
 
   if (!profileReady) {
     return <PredictionViewSkeleton />;

@@ -583,17 +583,12 @@ export default function BhriguPredictionView({
     e.preventDefault();
     e.stopPropagation();
 
-    // Console log for verification (as requested)
-    console.log('Section toggled:', key, { expanded: !expandedRef.current.has(key) });
-
     setExpandedSections(prev => {
       const newSet = new Set(prev);
       if (newSet.has(key)) {
         newSet.delete(key);
-        console.log('Section collapsed:', key);
       } else {
         newSet.add(key);
-        console.log('Section expanded:', key);
       }
       // Sync ref for immutable tracking (prevents memory leaks and stale closures)
       expandedRef.current = newSet;
@@ -644,9 +639,8 @@ export default function BhriguPredictionView({
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('predictionViewMode', viewMode);
-        console.log('💾 Saved view mode preference:', viewMode);
       } catch (error) {
-        console.warn('⚠️ Failed to save view mode preference:', error);
+        // Silently handle localStorage failures (quota exceeded, etc.)
       }
     }
   }, [viewMode]);
@@ -676,7 +670,6 @@ export default function BhriguPredictionView({
   useEffect(() => {
     return () => {
       expandedRef.current.clear();
-      console.log('🧹 Cleaned up expanded sections ref on unmount');
     };
   }, []);
 
@@ -721,11 +714,9 @@ export default function BhriguPredictionView({
   useEffect(() => {
     const handleOnline = () => {
       setIsOffline(false);
-      console.log('📡 Online: Connection restored');
     };
     const handleOffline = () => {
       setIsOffline(true);
-      console.log('📡 Offline: Using cached predictions if available');
     };
 
     if (typeof window !== 'undefined') {
@@ -754,9 +745,8 @@ export default function BhriguPredictionView({
         };
         localStorage.setItem(cacheKey, JSON.stringify(cacheData));
         setCacheTimestamp(cacheData.timestamp);
-        console.log('💾 Prediction cached for offline use:', cacheKey);
       } catch (error) {
-        console.warn('⚠️ Failed to cache prediction to localStorage:', error);
+        // Silently handle localStorage failures (quota exceeded, etc.)
       }
     }
   }, [prediction, category, profile?.id, language]);
@@ -766,11 +756,6 @@ export default function BhriguPredictionView({
     if (prediction) {
       const parsed = parsePredictionResponse(prediction, viewMode);
       setParsedPrediction(parsed);
-      console.log('📊 Parsed prediction:', {
-        summary: parsed.summary.substring(0, 100),
-        sectionCount: parsed.sections.length,
-        sections: parsed.sections.map(s => ({ key: s.key, title: s.title, contentLength: s.content.length }))
-      });
     } else {
       setParsedPrediction(null);
     }
@@ -1186,7 +1171,6 @@ export default function BhriguPredictionView({
     if (parsedPrediction && parsedPrediction.sections.length > 0) {
       useParsedSections = true;
       parsedSectionsToRender = parsedPrediction.sections;
-      console.log('✅ Using parsed sections from nested structure:', parsedSectionsToRender.length);
     }
 
     // Get the sections configuration for this category
