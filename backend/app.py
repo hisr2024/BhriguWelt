@@ -154,6 +154,9 @@ logger.info("Configuring CORS...")
 PRODUCTION_FRONTEND_URLS = [
     "https://bhrigu-welt.vercel.app",
     "https://bhriguwelt.vercel.app",
+    # Include variations for robustness
+    "https://www.bhrigu-welt.vercel.app",
+    "https://www.bhriguwelt.vercel.app",
 ]
 
 STANDARD_CORS_HEADERS = [
@@ -207,14 +210,19 @@ def _merge_cors_headers_case_insensitive(existing_headers, requested_headers):
 CORS(
     app,
     resources={
-        r"/api/*": {
+        r"/api/.*": {
             "origins": ALLOWED_ORIGINS,
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
             "allow_headers": STANDARD_CORS_HEADERS,
             "supports_credentials": True,
             "expose_headers": ["X-Correlation-ID"],
             "max_age": 86400,
-        }
+        },
+        r"/health": {
+            "origins": ALLOWED_ORIGINS,
+            "methods": ["GET", "OPTIONS"],
+            "supports_credentials": True,
+        },
     },
 )
 
@@ -252,7 +260,27 @@ def handle_preflight():
         response = app.make_default_options_response()
         origin = request.headers.get('Origin')
 
-        if origin and origin in ALLOWED_ORIGINS:
+        # Log the origin for debugging CORS issues
+        logger.debug(f"CORS preflight from origin: {origin}")
+        logger.debug(f"Allowed origins: {ALLOWED_ORIGINS}")
+
+        # Normalize origin (remove trailing slash if present)
+        normalized_origin = origin.rstrip('/') if origin else None
+
+        # Check if origin matches (with normalization)
+        origin_allowed = False
+        if normalized_origin:
+            # Check exact match first
+            if normalized_origin in ALLOWED_ORIGINS:
+                origin_allowed = True
+            else:
+                # Check with case-insensitive comparison
+                normalized_allowed = {o.lower().rstrip('/') for o in ALLOWED_ORIGINS}
+                if normalized_origin.lower() in normalized_allowed:
+                    origin_allowed = True
+                    logger.info(f"Origin matched via case-insensitive comparison: {origin}")
+
+        if origin_allowed:
             # Get all headers requested by the browser
             request_headers_str = request.headers.get('Access-Control-Request-Headers', '')
             requested_headers = [h.strip() for h in request_headers_str.split(',') if h.strip()]
@@ -267,12 +295,18 @@ def handle_preflight():
                     all_headers.append(header)
                     allowed_headers_lower.add(header.lower())
 
-            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Origin'] = normalized_origin
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
             response.headers['Access-Control-Allow-Headers'] = ', '.join(all_headers)
             response.headers['Access-Control-Allow-Credentials'] = 'true'
             response.headers['Access-Control-Max-Age'] = '86400'
             response.headers['Vary'] = 'Origin'
+        else:
+            # Log rejected origins for debugging
+            if origin:
+                logger.warning(f"CORS preflight rejected - origin not in allowed list: {origin}")
+            else:
+                logger.warning("CORS preflight received without Origin header")
 
         return response
 
@@ -329,16 +363,26 @@ def add_response_headers(response):
 
     # Ensure CORS headers are present on all responses
     origin = request.headers.get("Origin")
-    if origin and origin in ALLOWED_ORIGINS:
-        # Only set headers if not already set by Flask-CORS
-        if "Access-Control-Allow-Origin" not in response.headers:
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Vary"] = "Origin"
+    if origin:
+        # Normalize origin (remove trailing slash)
+        normalized_origin = origin.rstrip('/')
 
-        # Ensure all standard headers are allowed
-        if "Access-Control-Allow-Headers" not in response.headers:
-            response.headers["Access-Control-Allow-Headers"] = ", ".join(STANDARD_CORS_HEADERS)
+        # Check if origin is allowed (with normalization and case-insensitive matching)
+        origin_allowed = normalized_origin in ALLOWED_ORIGINS
+        if not origin_allowed:
+            normalized_allowed = {o.lower().rstrip('/') for o in ALLOWED_ORIGINS}
+            origin_allowed = normalized_origin.lower() in normalized_allowed
+
+        if origin_allowed:
+            # Only set headers if not already set by Flask-CORS
+            if "Access-Control-Allow-Origin" not in response.headers:
+                response.headers["Access-Control-Allow-Origin"] = normalized_origin
+                response.headers["Access-Control-Allow-Credentials"] = "true"
+                response.headers["Vary"] = "Origin"
+
+            # Ensure all standard headers are allowed
+            if "Access-Control-Allow-Headers" not in response.headers:
+                response.headers["Access-Control-Allow-Headers"] = ", ".join(STANDARD_CORS_HEADERS)
 
     return response
 
