@@ -573,9 +573,9 @@ Based on {nakshatra} placement, you are a mature soul with approximately 65-75% 
         sections = {}
 
         # Next Incarnation Projection
-        sections['next_incarnation'] = f"""**Next Incarnation Projection - Bhrigu Foresight**
+        sections['next_incarnation'] = f"""**Next Incarnation Projection - Bhrigu Foresight for {zodiac} ({nakshatra})**
 
-**If Current Lessons Remain Incomplete:**
+**Your Soul's Forward Path Based on {nakshatra} Trajectory:**
 
 **Projected Era:** 22nd-23rd Century
 **Location:** Advanced society aligned with {zodiac_data.get('element', 'Fire')} element consciousness
@@ -1100,11 +1100,11 @@ Exercise caution with: {', '.join(nak_data.get('relationship_compatibility', {})
         sections = {}
 
         # Marriage Timing
-        sections['marriage_timing'] = f"""**Marriage & Partnership Timing**
+        sections['marriage_timing'] = f"""**Marriage & Partnership Timing for {zodiac} ({nakshatra})**
 
-**Favorable Marriage Windows:**
+**Your {nakshatra} Marriage Indicators - Favorable Windows:**
 
-*Excellent Periods:*
+*Excellent Periods for {zodiac} Natives:*
 • Jupiter transit through 7th from Moon: Most auspicious
 • Venus Mahadasha/Antardasha: Strong relationship karma activates
 • Jupiter aspects natal Venus: Divine blessing on union
@@ -1958,10 +1958,10 @@ Based on {ruler} influence:
         today_planet = planetary_day.get(day_of_week, 'Sun')
         today_planet_data = self._get_planet_data(today_planet)
 
-        sections['daily'] = f"""**Daily Forecast - {today.strftime('%B %d, %Y')} ({day_of_week})**
+        sections['daily'] = f"""**Daily Forecast for {zodiac} ({nakshatra}) - {today.strftime('%B %d, %Y')} ({day_of_week})**
 
-**Planetary Ruler:** {today_planet}
-*{today_planet_data.get('nature', 'Influential energy')}*
+**Your {nakshatra} Day Ruler:** {today_planet}
+*{today_planet_data.get('nature', 'Influential energy')} combines with your {zodiac} nature*
 
 **{zodiac} Daily Guidance:**
 {zodiac_data.get('element', 'Fire')} energy interacts with {today_planet}:
