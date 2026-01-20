@@ -572,7 +572,7 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
                 }
             ],
             'temperature': float(os.getenv('OPENAI_TEMPERATURE', '0.7')),
-            'max_tokens': self._get_int_env('OPENAI_MAX_TOKENS', 512)
+            'max_tokens': self._get_int_env('OPENAI_MAX_TOKENS', 2048)  # Increased from 512 for comprehensive predictions
         }
 
         # ==================== QUOTA AND COST CHECKS ====================
@@ -580,7 +580,7 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
         # Estimate tokens for quota check
         prompt_text = f"{system_content}\n\n{prompt}"
         prompt_tokens_estimated = estimate_tokens(prompt_text)
-        response_tokens_estimated = self._get_int_env('OPENAI_MAX_TOKENS', 512)
+        response_tokens_estimated = self._get_int_env('OPENAI_MAX_TOKENS', 2048)
         total_tokens_estimated = prompt_tokens_estimated + response_tokens_estimated
 
         # Check cost limit BEFORE checking quota (fail fast)
@@ -683,9 +683,9 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
             raise
 
     def _post_with_retry(self, payload: Dict[str, Any]) -> requests.Response:
-        max_retries = self._get_int_env('OPENAI_MAX_RETRIES', 3)
-        backoff_base = float(os.getenv('OPENAI_BACKOFF_BASE', '1'))
-        timeout = self._get_int_env('OPENAI_TIMEOUT', 90)
+        max_retries = self._get_int_env('OPENAI_MAX_RETRIES', 2)  # Reduced from 3 for faster response
+        backoff_base = float(os.getenv('OPENAI_BACKOFF_BASE', '0.5'))  # Reduced from 1s for faster retries
+        timeout = self._get_int_env('OPENAI_TIMEOUT', 45)  # Reduced from 90s for faster failure detection
 
         for attempt in range(max_retries + 1):
             try:
@@ -719,8 +719,8 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
                     )
                     if attempt >= max_retries:
                         raise
-                    delay = backoff_base * (2 ** attempt)
-                    time.sleep(delay + random.uniform(0, 0.25))
+                    delay = backoff_base * (2 ** attempt)  # 0.5s, 1s with new defaults
+                    time.sleep(delay + random.uniform(0, 0.1))  # Reduced jitter from 0.25 to 0.1
                     continue
                 raise
             if response.status_code == 429 or response.status_code >= 500:
@@ -733,7 +733,7 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
                         delay = max(delay, float(retry_after))
                     except ValueError:
                         pass
-                time.sleep(delay + random.uniform(0, 0.25))
+                time.sleep(delay + random.uniform(0, 0.1))  # Reduced jitter for faster retries
                 continue
 
             response.raise_for_status()

@@ -6,9 +6,11 @@ Ensures guaranteed fallback to offline wisdom when OpenAI API fails
 Enhanced with Nadi Jyotisha integration across all prediction modes
 FORTIFIED: Thread-safe with locks for concurrent request handling
 ENHANCED: Category-specific offline predictions for precise, non-repetitive content
+OPTIMIZED: Parallel cosmic blueprint generation for faster predictions
 """
 import logging
 import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, Any, Optional, List
 from enum import Enum
 
@@ -109,7 +111,7 @@ class PredictionOrchestrator:
                           **options: Any) -> Dict[str, Any]:
         """
         Generate prediction for any category with guaranteed results
-        THREAD-SAFE: Uses lock to prevent race conditions in concurrent requests
+        OPTIMIZED: Removed global lock for better concurrency, services handle their own thread safety
 
         Args:
             category: Prediction category (karmic_journey, past_lives, etc.)
@@ -122,8 +124,9 @@ class PredictionOrchestrator:
         Returns:
             Dictionary with prediction and metadata
         """
-        # Use lock for thread-safe concurrent request handling
-        with self.lock:
+        # OPTIMIZED: Removed global lock - prediction generation is now concurrent
+        # Each underlying service (OpenAI, offline) handles its own thread safety
+        if True:  # Keeping indentation structure for minimal code change
             try:
                 # Validate inputs
                 if not category or not isinstance(category, str):
@@ -955,7 +958,8 @@ Based on Vedic astrology principles:
                                  client_online: Optional[bool] = None) -> Dict[str, Any]:
         """
         Generate complete cosmic blueprint with all subcategories
-        
+        OPTIMIZED: Uses parallel execution for faster generation
+
         Returns comprehensive analysis combining multiple categories
         """
         blueprint = {
@@ -964,13 +968,13 @@ Based on Vedic astrology principles:
             'language': language,
             'sections': {}
         }
-        
+
         # Key sections for cosmic blueprint
         sections = list(self.COSMIC_BLUEPRINT_SECTIONS)
         blueprint['sections'] = {section: "" for section in sections}
-        
-        # Generate each section
-        for section in sections:
+
+        def generate_section(section: str) -> tuple:
+            """Helper function to generate a single section"""
             try:
                 result = self.generate_prediction(
                     section,
@@ -979,14 +983,28 @@ Based on Vedic astrology principles:
                     language,
                     client_online=client_online,
                 )
-                blueprint['sections'][section] = result.get('prediction', '')
+                return (section, result.get('prediction', ''))
             except Exception as e:
                 logger.error(f"Failed to generate {section}: {e}")
-                blueprint['sections'][section] = f"Section temporarily unavailable"
-        
+                return (section, "Section temporarily unavailable")
+
+        # Generate all sections in PARALLEL using ThreadPoolExecutor
+        # This significantly reduces cosmic blueprint generation time
+        with ThreadPoolExecutor(max_workers=min(len(sections), 8)) as executor:
+            # Submit all section generation tasks
+            future_to_section = {
+                executor.submit(generate_section, section): section
+                for section in sections
+            }
+
+            # Collect results as they complete
+            for future in as_completed(future_to_section):
+                section_name, prediction_text = future.result()
+                blueprint['sections'][section_name] = prediction_text
+
         # Combine into comprehensive blueprint
         blueprint['complete_blueprint'] = self._format_cosmic_blueprint(blueprint['sections'])
-        
+
         return blueprint
 
     def _format_cosmic_blueprint(self, sections: Dict[str, str]) -> str:
