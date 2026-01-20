@@ -312,11 +312,6 @@ export const useBhriguPrediction = ({
             onRetry: (attempt, error) => {
               // Update UI to show retry progress
               setRetryAttempt(attempt);
-              console.log(`[Prediction] Retry attempt ${attempt}/2 for ${category}`, {
-                error: error.message,
-                category,
-                forceRegenerate,
-              });
 
               setErrorDetails({
                 message: `Retrying... (attempt ${attempt}/2)`,

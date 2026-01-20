@@ -66,8 +66,6 @@ export async function generateComprehensivePredictions(
 ): Promise<ComprehensivePredictions> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
-  console.log('[OfflinePredictionCoordinator] Generating comprehensive predictions...');
-
   try {
     // Map coordinator mode to engine-specific modes
     // PastLivesEngine uses 'auto' instead of 'hybrid'
@@ -112,8 +110,6 @@ export async function generateComprehensivePredictions(
           general,
         })
       : getDefaultAnalytics();
-
-    console.log('[OfflinePredictionCoordinator] All predictions generated successfully');
 
     return {
       karmicJourney,
