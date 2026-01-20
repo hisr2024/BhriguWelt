@@ -345,9 +345,14 @@ Actionable Guidance:
         log_exception(logger, exception, context=f"Initialization of {component}")
 
     def _is_healthy(self) -> bool:
-        """Check if critical services are operational"""
-        return bool(
+        """Check if critical services are operational AND enabled"""
+        # Check if OpenAI service exists AND is enabled (has API key)
+        openai_enabled = (
             self.openai_service and
+            getattr(self.openai_service, 'enabled', False)
+        )
+        return bool(
+            openai_enabled and
             self.section_parser and
             not self.init_errors
         )
