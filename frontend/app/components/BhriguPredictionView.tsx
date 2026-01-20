@@ -1200,6 +1200,35 @@ export default function BhriguPredictionView({
     const sections = filterSectionsByViewMode(allSections, viewMode);
     const shouldShowPartialBanner = false;
 
+    // Karmic Journey section markers - used to detect wrong category content
+    // IMPORTANT: These must be defined BEFORE they are used in the filter below
+    const karmicJourneySectionMarkers = [
+      "soul's primary purpose",
+      'karmic blueprint',
+      'soul evolution stage',
+      'life mission & dharma',
+      'karmic lessons in this lifetime',
+      'spiritual gifts & abilities'
+    ];
+
+    // Check if content contains wrong category markers
+    // IMPORTANT: This function must be defined BEFORE the filter that uses it
+    const containsWrongCategoryContent = (content: string, sectionKey: string): boolean => {
+      if (!content) return false;
+      const lowerContent = content.toLowerCase();
+
+      // If we're NOT in karmic-journey category, check if content has karmic journey markers
+      if (normalizedCategory !== 'karmic-journey') {
+        const hasKarmicJourneyContent = karmicJourneySectionMarkers.some(marker =>
+          lowerContent.includes(marker)
+        );
+        if (hasKarmicJourneyContent) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     // First, try to get sections from subcategories in API response (new structured format)
     // Then fall back to direct properties on prediction object
     let availableSections = sections.filter(section => {
@@ -1238,33 +1267,6 @@ export default function BhriguPredictionView({
       });
     }
     const parsedFromFullAnalysisActive = Object.keys(parsedFromFullAnalysis).length > 0;
-
-    // Karmic Journey section markers - used to detect wrong category content
-    const karmicJourneySectionMarkers = [
-      "soul's primary purpose",
-      'karmic blueprint',
-      'soul evolution stage',
-      'life mission & dharma',
-      'karmic lessons in this lifetime',
-      'spiritual gifts & abilities'
-    ];
-
-    // Check if content contains wrong category markers
-    const containsWrongCategoryContent = (content: string, sectionKey: string): boolean => {
-      if (!content) return false;
-      const lowerContent = content.toLowerCase();
-
-      // If we're NOT in karmic-journey category, check if content has karmic journey markers
-      if (normalizedCategory !== 'karmic-journey') {
-        const hasKarmicJourneyContent = karmicJourneySectionMarkers.some(marker =>
-          lowerContent.includes(marker)
-        );
-        if (hasKarmicJourneyContent) {
-          return true;
-        }
-      }
-      return false;
-    };
 
     // Generate category-specific placeholder content
     const getCategorySpecificPlaceholder = (sectionKey: string): string => {
