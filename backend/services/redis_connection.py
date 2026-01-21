@@ -110,6 +110,7 @@ class RedisConnectionManager:
     - Graceful degradation
     - Health checks
     - Thread-safe operations
+    - Lazy reconnection when initial connection fails
     """
 
     _instance: Optional['RedisConnectionManager'] = None
@@ -142,6 +143,13 @@ class RedisConnectionManager:
         self.connection_failures = 0
         self.connection_successes = 0
         self.last_connection_time: Optional[datetime] = None
+
+        # Reconnection settings for lazy initialization
+        self._last_reconnect_attempt: Optional[datetime] = None
+        self._reconnect_backoff_seconds = int(os.getenv('REDIS_RECONNECT_BACKOFF', '30'))
+        self._reconnect_attempts = 0
+        self._max_reconnect_attempts = int(os.getenv('REDIS_MAX_RECONNECT_ATTEMPTS', '10'))
+        self._initialization_logged = False
 
         # Log initial configuration
         if not REDIS_AVAILABLE:
@@ -207,9 +215,66 @@ class RedisConnectionManager:
             wrapped_ping = self.circuit_breaker.call(lambda: self.client.ping())
             return wrapped_ping()
 
+    def _should_attempt_reconnect(self) -> bool:
+        """
+        Check if enough time has passed to attempt reconnection.
+        Uses exponential backoff to avoid hammering a dead service.
+        """
+        if self._last_reconnect_attempt is None:
+            return True
+
+        # Calculate backoff with exponential increase (capped at 5 minutes)
+        backoff = min(
+            self._reconnect_backoff_seconds * (2 ** min(self._reconnect_attempts, 5)),
+            300  # Max 5 minutes between attempts
+        )
+        elapsed = (datetime.now() - self._last_reconnect_attempt).total_seconds()
+        return elapsed >= backoff
+
+    def _attempt_lazy_reconnect(self) -> bool:
+        """
+        Attempt to reconnect to Redis lazily when the client is None.
+        Returns True if reconnection succeeded, False otherwise.
+        """
+        if not self._should_attempt_reconnect():
+            return False
+
+        # Check if we've exceeded max reconnect attempts
+        if self._reconnect_attempts >= self._max_reconnect_attempts:
+            # Only log once every 10 minutes when max attempts exceeded
+            if (self._last_reconnect_attempt is None or
+                (datetime.now() - self._last_reconnect_attempt).total_seconds() > 600):
+                logger.info(
+                    f"Redis reconnection paused after {self._reconnect_attempts} attempts. "
+                    f"Will retry in 10 minutes."
+                )
+                self._last_reconnect_attempt = datetime.now()
+            return False
+
+        self._last_reconnect_attempt = datetime.now()
+        self._reconnect_attempts += 1
+
+        logger.info(
+            f"Attempting lazy Redis reconnection (attempt {self._reconnect_attempts}/{self._max_reconnect_attempts})"
+        )
+
+        try:
+            self._initialize_connection()
+            if self.client is not None:
+                logger.info("Redis lazy reconnection successful!")
+                self._reconnect_attempts = 0  # Reset on success
+                return True
+        except Exception as e:
+            logger.debug(f"Redis lazy reconnection failed: {str(e)}")
+
+        return False
+
     def get_client(self) -> Optional['redis.Redis']:
         """
-        Get Redis client with retry logic
+        Get Redis client with retry logic and lazy reconnection.
+
+        If the initial connection failed, this method will periodically
+        attempt to reconnect using exponential backoff.
 
         Returns:
             Redis client or None if unavailable
@@ -217,9 +282,17 @@ class RedisConnectionManager:
         if not REDIS_AVAILABLE or not self.enabled:
             return None
 
+        # If client is None, attempt lazy reconnection
         if self.client is None:
-            logger.warning("Redis client not initialized")
-            return None
+            # Attempt reconnection with backoff
+            if not self._attempt_lazy_reconnect():
+                # Log only once to avoid log spam
+                if not self._initialization_logged:
+                    logger.warning(
+                        "Redis client not initialized - will retry with exponential backoff"
+                    )
+                    self._initialization_logged = True
+                return None
 
         # Check circuit breaker state
         if self.circuit_breaker.state == "OPEN":
@@ -232,11 +305,15 @@ class RedisConnectionManager:
             self.client.ping()
             self.connection_successes += 1
             self.last_connection_time = datetime.now()
+            self._initialization_logged = False  # Reset for next failure cycle
             return self.client
 
         except Exception as e:
             self.connection_failures += 1
             logger.warning(f"Redis connection check failed: {str(e)}")
+            # Mark client as needing reconnection on next call
+            self.client = None
+            self.pool = None
             return None
 
     def execute_with_retry(
@@ -332,7 +409,10 @@ class RedisConnectionManager:
             'connection_failures': self.connection_failures,
             'last_connection_time': self.last_connection_time.isoformat() if self.last_connection_time else None,
             'failure_count': self.circuit_breaker.failure_count,
-            'last_failure_time': self.circuit_breaker.last_failure_time.isoformat() if self.circuit_breaker.last_failure_time else None
+            'last_failure_time': self.circuit_breaker.last_failure_time.isoformat() if self.circuit_breaker.last_failure_time else None,
+            'reconnect_attempts': self._reconnect_attempts,
+            'max_reconnect_attempts': self._max_reconnect_attempts,
+            'last_reconnect_attempt': self._last_reconnect_attempt.isoformat() if self._last_reconnect_attempt else None
         }
 
     def close(self):
