@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Heart, Shield, BookOpen, Sparkles } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 
 // Intro slide data with Krishna theme
 const slides = [
@@ -66,11 +66,34 @@ export function DivineIntroSlides({ onComplete, isOpen }: DivineIntroSlidesProps
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  // Reset slide on open
+  // Reset slide on open and lock body scroll
   useEffect(() => {
     if (isOpen) {
       setCurrentSlide(0);
+      // Lock body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.top = `-${window.scrollY}px`;
+    } else {
+      // Restore scroll position when modal closes
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0', 10) * -1);
+      }
     }
+
+    return () => {
+      // Cleanup on unmount
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+    };
   }, [isOpen]);
 
   const goToSlide = useCallback((index: number) => {
@@ -110,23 +133,39 @@ export function DivineIntroSlides({ onComplete, isOpen }: DivineIntroSlidesProps
   const slide = slides[currentSlide];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-hidden"
+      style={{
+        transform: 'translateZ(0)',
+        backfaceVisibility: 'hidden',
+        WebkitBackfaceVisibility: 'hidden',
+        isolation: 'isolate',
+      }}
+    >
+      {/* Backdrop - covers everything including nav elements */}
       <motion.div
-        className="absolute inset-0 bg-black/80 backdrop-blur-md"
+        className="absolute inset-0 bg-black/90 backdrop-blur-xl"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        transition={{ duration: 0.25 }}
         onClick={onComplete}
+        style={{ willChange: 'opacity' }}
       />
 
       {/* Modal */}
       <motion.div
-        className="relative w-full max-w-lg bg-gradient-to-br from-amber-900/95 via-amber-800/95 to-yellow-900/95 rounded-3xl overflow-hidden shadow-2xl border border-amber-600/30"
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        className="relative w-full max-w-lg bg-gradient-to-br from-amber-900/98 via-amber-800/98 to-yellow-900/98 rounded-3xl shadow-2xl border border-amber-600/40 overflow-hidden"
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        transition={{ type: 'spring', damping: 30, stiffness: 350 }}
+        style={{
+          transform: 'translateZ(0)',
+          willChange: 'transform, opacity',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+        }}
       >
         {/* Close button */}
         <button
@@ -137,85 +176,77 @@ export function DivineIntroSlides({ onComplete, isOpen }: DivineIntroSlidesProps
           <X className="w-5 h-5" />
         </button>
 
-        {/* Decorative flute icon */}
-        <div className="absolute top-4 right-16 text-amber-600/50">
-          <svg className="w-8 h-8 rotate-45" viewBox="0 0 24 24" fill="currentColor">
+        {/* Decorative flute icon - positioned to avoid overlap */}
+        <div className="absolute top-4 right-16 text-amber-600/30 pointer-events-none select-none">
+          <svg className="w-6 h-6 rotate-45" viewBox="0 0 24 24" fill="currentColor">
             <rect x="2" y="10" width="20" height="4" rx="2" />
-            <circle cx="6" cy="12" r="1" fill="white" />
-            <circle cx="10" cy="12" r="1" fill="white" />
-            <circle cx="14" cy="12" r="1" fill="white" />
-            <circle cx="18" cy="12" r="1" fill="white" />
+            <circle cx="6" cy="12" r="1" fill="white" fillOpacity="0.5" />
+            <circle cx="10" cy="12" r="1" fill="white" fillOpacity="0.5" />
+            <circle cx="14" cy="12" r="1" fill="white" fillOpacity="0.5" />
+            <circle cx="18" cy="12" r="1" fill="white" fillOpacity="0.5" />
           </svg>
         </div>
 
-        {/* Tree decoration */}
-        <div className="absolute bottom-4 left-4 text-2xl opacity-60">
+        {/* Tree decoration - subtle and non-intrusive */}
+        <div className="absolute bottom-4 left-4 text-xl opacity-30 pointer-events-none select-none">
           🌳
         </div>
 
         {/* Content */}
-        <div className="relative p-8 pt-12">
-          <AnimatePresence mode="wait">
+        <div className="relative p-6 sm:p-8 pt-10 sm:pt-12">
+          <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={currentSlide}
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 15 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
+              exit={{ opacity: 0, x: -15 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
               className="flex flex-col items-center text-center"
+              style={{ willChange: 'transform, opacity' }}
             >
-              {/* Icon with glow effect */}
-              <div className="relative mb-6">
-                {/* Glow ring */}
-                <motion.div
-                  className="absolute inset-0 rounded-full bg-amber-500/30 blur-xl"
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    opacity: [0.5, 0.8, 0.5],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
+              {/* Icon with subtle glow effect */}
+              <div className="relative mb-5 flex items-center justify-center">
+                {/* Glow ring - subtle to avoid flickering */}
+                <div
+                  className="absolute w-28 h-28 rounded-full bg-amber-500/20 blur-2xl"
+                  style={{ transform: 'translateZ(0)' }}
                 />
-                {/* Icon container */}
+                {/* Icon container with subtle breathing animation */}
                 <motion.div
-                  className={`relative w-24 h-24 ${slide.iconBg} rounded-full flex items-center justify-center shadow-lg`}
-                  animate={{
-                    scale: [1, 1.05, 1],
-                  }}
+                  className={`relative w-20 h-20 sm:w-24 sm:h-24 ${slide.iconBg} rounded-full flex items-center justify-center shadow-xl`}
+                  animate={{ scale: [1, 1.03, 1] }}
                   transition={{
-                    duration: 3,
+                    duration: 4,
                     repeat: Infinity,
                     ease: 'easeInOut',
                   }}
+                  style={{ willChange: 'transform' }}
                 >
-                  <span className="text-5xl">{slide.icon}</span>
+                  <span className="text-4xl sm:text-5xl">{slide.icon}</span>
                 </motion.div>
               </div>
 
               {/* Title */}
-              <h2 className="text-2xl md:text-3xl font-bold text-amber-100 mb-4">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-amber-100 mb-3 leading-tight">
                 {slide.title}
               </h2>
 
               {/* Subtitle/Quote */}
-              <p className={`text-amber-200/90 mb-6 max-w-md leading-relaxed ${slide.affirmation ? 'italic' : ''}`}>
+              <p className={`text-amber-200/90 mb-5 max-w-sm sm:max-w-md leading-relaxed text-sm sm:text-base px-2 ${slide.affirmation ? 'italic' : ''}`}>
                 {slide.subtitle}
               </p>
 
               {/* Affirmation quote if present */}
               {slide.quote && (
-                <div className="mb-6 px-4 py-3 bg-black/20 rounded-xl border border-amber-500/20">
+                <div className="mb-5 px-3 sm:px-4 py-3 bg-black/25 rounded-xl border border-amber-500/20 max-w-sm sm:max-w-md mx-auto">
                   <p className="text-xs text-amber-300/60 uppercase tracking-wider mb-1">
                     {slide.affirmation ? "Today's Affirmation" : 'Divine Message'}
                   </p>
-                  <p className="text-amber-100 font-medium italic">
+                  <p className="text-amber-100 font-medium italic text-sm sm:text-base">
                     {slide.quote}
                   </p>
                   {!slide.affirmation && (
-                    <p className="text-xs text-amber-300/60 mt-2 flex items-center justify-center gap-1">
+                    <p className="text-xs text-amber-300/50 mt-2 flex items-center justify-center gap-1">
                       <Sparkles className="w-3 h-3" />
                       Your soul knows the way - trust it.
                     </p>
@@ -226,9 +257,10 @@ export function DivineIntroSlides({ onComplete, isOpen }: DivineIntroSlidesProps
               {/* Action button */}
               <motion.button
                 onClick={handleButtonClick}
-                className="w-full max-w-xs px-8 py-4 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-bold rounded-xl shadow-lg transition-all"
+                className="w-full max-w-[280px] sm:max-w-xs px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-bold rounded-xl shadow-lg transition-colors text-sm sm:text-base"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                style={{ willChange: 'transform' }}
               >
                 {slide.buttonText}
               </motion.button>
@@ -236,15 +268,15 @@ export function DivineIntroSlides({ onComplete, isOpen }: DivineIntroSlidesProps
           </AnimatePresence>
 
           {/* Dot navigation */}
-          <div className="flex justify-center gap-2 mt-8">
+          <div className="flex justify-center items-center gap-2 mt-6 pb-2">
             {slides.map((_, index) => (
               <button
                 key={index}
                 onClick={() => goToSlide(index)}
-                className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                className={`h-2.5 rounded-full transition-all duration-300 ${
                   index === currentSlide
                     ? 'bg-amber-400 w-6'
-                    : 'bg-amber-600/50 hover:bg-amber-500/70'
+                    : 'bg-amber-600/40 hover:bg-amber-500/60 w-2.5'
                 }`}
                 aria-label={`Go to slide ${index + 1}`}
               />
@@ -252,23 +284,23 @@ export function DivineIntroSlides({ onComplete, isOpen }: DivineIntroSlidesProps
           </div>
         </div>
 
-        {/* Navigation arrows */}
+        {/* Navigation arrows - hidden on mobile for cleaner look */}
         {currentSlide > 0 && (
           <button
             onClick={prevSlide}
-            className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/20 hover:bg-black/30 text-white/70 hover:text-white transition-colors"
+            className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 rounded-full bg-black/30 hover:bg-black/40 text-white/80 hover:text-white transition-colors hidden sm:flex items-center justify-center"
             aria-label="Previous slide"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         )}
         {currentSlide < slides.length - 1 && (
           <button
             onClick={nextSlide}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/20 hover:bg-black/30 text-white/70 hover:text-white transition-colors"
+            className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 rounded-full bg-black/30 hover:bg-black/40 text-white/80 hover:text-white transition-colors hidden sm:flex items-center justify-center"
             aria-label="Next slide"
           >
-            <ChevronRight className="w-6 h-6" />
+            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         )}
       </motion.div>
