@@ -1,11 +1,12 @@
 // frontend/components/OnboardingTutorial.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useMemo, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
 
-const steps = [
+// Move steps outside component to prevent recreation on each render
+const TUTORIAL_STEPS = [
   {
     title: 'Welcome to BhriguWelt',
     content: 'Discover your soul journey with ancient Vedic astrology enhanced by AI.',
@@ -30,7 +31,52 @@ const steps = [
     emoji: '✨',
     gradient: 'from-lime-500 to-green-500',
   },
-];
+] as const;
+
+// Memoized step indicator component
+const StepIndicator = memo(({ index, isActive, onClick, title }: {
+  index: number;
+  isActive: boolean;
+  onClick: () => void;
+  title: string;
+}) => (
+  <button
+    onClick={onClick}
+    className="group flex items-center justify-center min-w-[44px] rounded-full transition-all"
+    aria-label={`Go to step ${index + 1}: ${title}`}
+  >
+    <span
+      className={`h-2 rounded-full transition-all ${
+        isActive
+          ? 'w-8 bg-gradient-to-r from-genz-electric-blue to-genz-purple-haze'
+          : 'w-2 bg-white/20 group-hover:bg-white/30'
+      }`}
+    />
+  </button>
+));
+
+StepIndicator.displayName = 'StepIndicator';
+
+// Memoized emoji icon component with stable animation
+const AnimatedEmojiIcon = memo(({ emoji, gradient }: { emoji: string; gradient: string }) => (
+  <motion.div
+    className={`w-32 h-32 mx-auto mb-6 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center shadow-genz-glow will-change-transform`}
+    animate={{
+      scale: [1, 1.05, 1],
+    }}
+    transition={{
+      duration: 2,
+      repeat: Infinity,
+      ease: 'easeInOut',
+      // Use consistent timing to prevent flickering
+      repeatType: 'loop',
+    }}
+  >
+    <span className="text-6xl">{emoji}</span>
+  </motion.div>
+));
+
+AnimatedEmojiIcon.displayName = 'AnimatedEmojiIcon';
 
 interface OnboardingTutorialProps {
   onComplete: () => void;
@@ -39,23 +85,31 @@ interface OnboardingTutorialProps {
 export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
   const [step, setStep] = useState(0);
 
-  const next = () => {
-    if (step < steps.length - 1) {
+  // Memoize current step data
+  const currentStep = useMemo(() => TUTORIAL_STEPS[step], [step]);
+
+  // Use callbacks to prevent function recreation
+  const next = useCallback(() => {
+    if (step < TUTORIAL_STEPS.length - 1) {
       setStep(step + 1);
     } else {
       onComplete();
     }
-  };
+  }, [step, onComplete]);
 
-  const prev = () => {
+  const prev = useCallback(() => {
     if (step > 0) {
       setStep(step - 1);
     }
-  };
+  }, [step]);
 
-  const skip = () => {
+  const skip = useCallback(() => {
     onComplete();
-  };
+  }, [onComplete]);
+
+  const goToStep = useCallback((index: number) => {
+    setStep(index);
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
@@ -63,6 +117,7 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ duration: 0.3 }}
         className="bg-dark-elevated border border-genz-electric-blue/30 rounded-2xl max-w-2xl w-full overflow-hidden shadow-genz-glow"
       >
         {/* Header */}
@@ -91,50 +146,31 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
               transition={{ duration: 0.3 }}
               className="text-center"
             >
-              {/* Emoji with gradient background */}
-              <motion.div
-                className={`w-32 h-32 mx-auto mb-6 rounded-full bg-gradient-to-br ${steps[step].gradient} flex items-center justify-center shadow-genz-glow`}
-                animate={{
-                  scale: [1, 1.05, 1],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                }}
-              >
-                <span className="text-6xl">{steps[step].emoji}</span>
-              </motion.div>
+              {/* Emoji with gradient background - using memoized component */}
+              <AnimatedEmojiIcon emoji={currentStep.emoji} gradient={currentStep.gradient} />
 
               {/* Title */}
               <h3 className="text-3xl font-display font-bold mb-4 bg-gradient-to-r from-genz-electric-blue via-white to-genz-hot-pink bg-clip-text text-transparent">
-                {steps[step].title}
+                {currentStep.title}
               </h3>
 
               {/* Content */}
               <p className="text-lg text-white/80 mb-8 leading-relaxed max-w-lg mx-auto">
-                {steps[step].content}
+                {currentStep.content}
               </p>
             </motion.div>
           </AnimatePresence>
 
-          {/* Progress indicators */}
+          {/* Progress indicators - using memoized components */}
           <div className="flex justify-center gap-2 mb-8">
-            {steps.map((_, index) => (
-              <button
+            {TUTORIAL_STEPS.map((s, index) => (
+              <StepIndicator
                 key={index}
-                onClick={() => setStep(index)}
-                className="group flex items-center justify-center min-w-[44px] rounded-full transition-all"
-                aria-label={`Go to step ${index + 1}: ${steps[index].title}`}
-              >
-                <span
-                  className={`h-2 rounded-full transition-all ${
-                    index === step
-                      ? 'w-8 bg-gradient-to-r from-genz-electric-blue to-genz-purple-haze'
-                      : 'w-2 bg-white/20 group-hover:bg-white/30'
-                  }`}
-                />
-              </button>
+                index={index}
+                isActive={index === step}
+                onClick={() => goToStep(index)}
+                title={s.title}
+              />
             ))}
           </div>
 
@@ -164,7 +200,7 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
               onClick={next}
               className="flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-genz-electric-blue to-genz-purple-haze font-bold text-white hover:shadow-genz-glow transition-all"
             >
-              {step === steps.length - 1 ? 'Get Started' : 'Next'}
+              {step === TUTORIAL_STEPS.length - 1 ? 'Get Started' : 'Next'}
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
