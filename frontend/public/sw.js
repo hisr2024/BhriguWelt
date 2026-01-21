@@ -1,9 +1,9 @@
 // BhriguWelt Service Worker - Offline-First PWA
-// Version 1.1.0
+// Version 1.2.0 - Fixed cache.addAll error with graceful individual caching
 
-const CACHE_NAME = 'bhriguwelt-v1.1';
-const RUNTIME_CACHE = 'bhriguwelt-runtime-v1.1';
-const DATA_CACHE = 'bhriguwelt-data-v1.1';
+const CACHE_NAME = 'bhriguwelt-v1.2';
+const RUNTIME_CACHE = 'bhriguwelt-runtime-v1.2';
+const DATA_CACHE = 'bhriguwelt-data-v1.2';
 
 // Core app shell - cache immediately for offline-first experience
 const APP_SHELL = [
@@ -28,18 +28,49 @@ const API_ROUTES = ['/api/'];
 // Data routes that should use cache-first strategy
 const DATA_ROUTES = ['/data/'];
 
+// Helper function to cache resources individually (graceful fallback)
+async function cacheResourcesIndividually(cache, resources) {
+  const results = await Promise.allSettled(
+    resources.map(async (resource) => {
+      try {
+        const response = await fetch(resource, { cache: 'no-cache' });
+        if (response.ok) {
+          await cache.put(resource, response);
+          return { resource, status: 'cached' };
+        }
+        return { resource, status: 'skipped', reason: `HTTP ${response.status}` };
+      } catch (error) {
+        return { resource, status: 'failed', reason: error.message };
+      }
+    })
+  );
+
+  const failed = results.filter(r => r.value?.status === 'failed');
+  const skipped = results.filter(r => r.value?.status === 'skipped');
+  const cached = results.filter(r => r.value?.status === 'cached');
+
+  console.log(`[SW] Cached: ${cached.length}, Skipped: ${skipped.length}, Failed: ${failed.length}`);
+  if (failed.length > 0) {
+    console.warn('[SW] Failed resources:', failed.map(r => r.value?.resource));
+  }
+
+  return { cached: cached.length, failed: failed.length, skipped: skipped.length };
+}
+
 // Install event - cache app shell
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker v1.1...');
+  console.log('[SW] Installing service worker v1.2...');
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
+    caches.open(CACHE_NAME).then(async (cache) => {
       console.log('[SW] Caching app shell and essential assets');
-      return cache.addAll([...APP_SHELL, ...ASSETS_TO_CACHE]).catch((error) => {
-        console.error('[SW] Failed to cache some resources:', error);
-        // Don't fail installation if some resources fail to cache
-      });
+      // Cache resources individually to prevent one failure from stopping others
+      await cacheResourcesIndividually(cache, [...APP_SHELL, ...ASSETS_TO_CACHE]);
     }).then(() => {
       console.log('[SW] Installation complete');
+      return self.skipWaiting();
+    }).catch((error) => {
+      console.error('[SW] Installation error:', error);
+      // Still skip waiting even if caching partially failed
       return self.skipWaiting();
     })
   );
@@ -47,7 +78,7 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker v1.1...');
+  console.log('[SW] Activating service worker v1.2...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
