@@ -21,6 +21,7 @@ logger = setup_logger(__name__)
 _memory_quota_store = defaultdict(int)
 _memory_quota_lock = Lock()
 _memory_fallback_active = False
+_redis_unavailable_logged = False  # Track if we've already logged Redis unavailability
 
 # Try to import redis - gracefully handle if not available
 try:
@@ -355,10 +356,12 @@ def update_usage_after_call(user_id: str, tokens_used: int) -> bool:
     client = _get_redis_client()
 
     if not client:
+        global _redis_unavailable_logged
         redis_enabled = os.getenv('REDIS_ENABLED', 'true').lower() == 'true'
-        if redis_enabled:
-            logger.warning("Redis unavailable - cannot update usage counter")
-        else:
+        if redis_enabled and not _redis_unavailable_logged:
+            logger.warning("Redis unavailable - cannot update usage counter (further warnings suppressed)")
+            _redis_unavailable_logged = True
+        elif not redis_enabled:
             logger.debug("Redis disabled - skipping usage counter update")
         return False
 
