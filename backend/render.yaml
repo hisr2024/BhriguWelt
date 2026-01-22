@@ -7,36 +7,86 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 4 --timeout 120
     envVars:
+      # Flask Configuration
       - key: FLASK_ENV
         value: production
       - key: SECRET_KEY
         generateValue: true
       - key: JWT_SECRET_KEY
         generateValue: true
+
+      # OpenAI Configuration
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_BASE_URL
         value: https://api.openai.com/v1
-      - key: FRONTEND_URL
-        value: https://bhrigu-welt.vercel.app
+      - key: OPENAI_MODEL
+        value: gpt-3.5-turbo
+      - key: OPENAI_MAX_TOKENS
+        value: "512"
+      - key: OPENAI_TEMPERATURE
+        value: "0.6"
+      - key: OPENAI_PROMPT_TOKEN_BUDGET
+        value: "2000"
+      - key: OPENAI_USE_JSON_FORMAT
+        value: "true"
+
+      # Quota and Cost Management
+      - key: USER_DAILY_TOKEN_LIMIT
+        value: "50000"
+      - key: PER_REQUEST_COST_LIMIT
+        value: "0.30"
+      - key: OPENAI_COST_PER_1K
+        value: "0.002"
+
+      # Caching Configuration
+      - key: CACHE_TTL
+        value: "3600"
+      - key: PREDICTION_CACHE_ENABLED
+        value: "true"
+
+      # Redis Configuration
       - key: REDIS_ENABLED
-        value: true
+        value: "true"
       - key: REDIS_URL
         fromDatabase:
           name: bhriguwelt-redis
           property: connectionString
       - key: REDIS_MAX_CONNECTIONS
-        value: 50
+        value: "50"
       - key: REDIS_SOCKET_TIMEOUT
-        value: 5
+        value: "5"
       - key: REDIS_CONNECT_TIMEOUT
-        value: 5
-      - key: USER_DAILY_TOKEN_LIMIT
-        value: 100000
-      - key: OPENAI_USE_JSON_FORMAT
-        value: true
+        value: "5"
+      - key: REDIS_CIRCUIT_BREAKER_THRESHOLD
+        value: "5"
+      - key: REDIS_CIRCUIT_BREAKER_TIMEOUT
+        value: "60"
+      - key: REDIS_RECONNECT_BACKOFF
+        value: "30"
+      - key: REDIS_MAX_RECONNECT_ATTEMPTS
+        value: "10"
+
+      # Frontend URL (for CORS)
+      - key: FRONTEND_URL
+        value: https://bhrigu-welt.vercel.app
+
+      # Core Wisdom Path
       - key: CORE_WISDOM_PATH
         value: /opt/render/project/src/core_wisdom
+
+      # Logging Configuration
+      - key: LOG_LEVEL
+        value: INFO
+      - key: LOG_FORMAT
+        value: json
+
+      # Security
+      - key: RATE_LIMIT_ENABLED
+        value: "true"
+      - key: RATE_LIMIT_DEFAULT
+        value: "100/hour"
+
     healthCheckPath: /health
     autoDeploy: true
 
