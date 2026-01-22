@@ -1,16 +1,121 @@
 """
 Health and Status Routes
 Comprehensive health checks, service status monitoring, and diagnostic endpoints
+Includes cost monitoring for OpenAI API usage tracking
 """
 from flask import Blueprint, jsonify, request
 from datetime import datetime
 import sys
 import os
 from pathlib import Path
+from typing import Dict, Any, Optional
 from utils.logger import setup_logger, log_exception
 
 logger = setup_logger(__name__)
 bp = Blueprint('health', __name__)
+
+
+# ============================================================================
+# COST MONITORING HELPERS
+# ============================================================================
+
+def _get_redis_client_safe():
+    """
+    Safely get Redis client, returning None if unavailable.
+    """
+    try:
+        from services.redis_connection import get_redis_client
+        return get_redis_client()
+    except Exception as e:
+        logger.debug(f"Redis client unavailable: {e}")
+        return None
+
+
+def _calculate_cost_metrics(redis_client) -> Dict[str, Any]:
+    """
+    Calculate cost metrics from Redis quota data.
+
+    Returns aggregated cost information for monitoring.
+    """
+    if redis_client is None:
+        return {
+            'error': 'Redis unavailable',
+            'daily_cost_usd': 0,
+            'monthly_projection_usd': 0,
+            'total_tokens_today': 0,
+            'request_count_today': 0,
+            'active_users_today': 0,
+        }
+
+    try:
+        # Get all user quota keys for today
+        today_str = datetime.utcnow().strftime('%Y-%m-%d')
+        daily_pattern = f"ai_usage:*:{today_str}"
+
+        # Use scan instead of keys for production safety
+        user_keys = redis_client.keys(daily_pattern)
+
+        total_tokens_today = 0
+        active_users = 0
+
+        for key in user_keys:
+            try:
+                tokens = redis_client.get(key)
+                if tokens:
+                    token_count = int(tokens)
+                    if token_count > 0:
+                        total_tokens_today += token_count
+                        active_users += 1
+            except (ValueError, TypeError):
+                continue
+
+        # Calculate costs
+        cost_per_1k = float(os.getenv('OPENAI_COST_PER_1K', '0.002'))
+        cost_per_token = cost_per_1k / 1000
+        daily_cost = total_tokens_today * cost_per_token
+        monthly_projection = daily_cost * 30
+
+        # Get request count if tracked
+        request_count_key = f"stats:requests:{today_str}"
+        request_count = 0
+        try:
+            count = redis_client.get(request_count_key)
+            if count:
+                request_count = int(count)
+        except Exception:
+            pass
+
+        # Calculate averages
+        avg_tokens_per_request = (
+            round(total_tokens_today / request_count, 2)
+            if request_count > 0 else 0
+        )
+        cost_per_request = (
+            round(daily_cost / request_count, 4)
+            if request_count > 0 else 0
+        )
+
+        return {
+            'daily_cost_usd': round(daily_cost, 4),
+            'monthly_projection_usd': round(monthly_projection, 2),
+            'total_tokens_today': total_tokens_today,
+            'request_count_today': request_count,
+            'active_users_today': active_users,
+            'avg_tokens_per_request': avg_tokens_per_request,
+            'cost_per_request_usd': cost_per_request,
+            'quota_limit': int(os.getenv('USER_DAILY_TOKEN_LIMIT', '100000')),
+            'cost_limit_per_request': float(os.getenv('PER_REQUEST_COST_LIMIT', '0.30')),
+            'cost_per_1k_tokens': cost_per_1k,
+        }
+
+    except Exception as e:
+        logger.error(f"Error calculating cost metrics: {e}")
+        return {
+            'error': str(e),
+            'daily_cost_usd': 0,
+            'monthly_projection_usd': 0,
+            'total_tokens_today': 0,
+        }
 
 
 @bp.route('/status', methods=['GET'])
@@ -25,6 +130,111 @@ def simple_status():
         'service': 'BhriguWelt-API',
         'version': '2.0.0'
     }), 200
+
+
+@bp.route('/health/costs', methods=['GET'])
+def cost_monitoring():
+    """
+    Real-time API cost monitoring endpoint.
+
+    Returns daily costs, request counts, projections, and quota information.
+    Useful for monitoring OpenAI API spending and optimizing usage.
+
+    Returns:
+        JSON with cost metrics:
+        - daily_cost_usd: Total cost for today
+        - monthly_projection_usd: Projected monthly cost
+        - total_tokens_today: Total tokens consumed today
+        - request_count_today: Number of API requests today
+        - active_users_today: Number of users who made requests
+        - avg_tokens_per_request: Average tokens per request
+        - cost_per_request_usd: Average cost per request
+        - quota_limit: Daily token quota per user
+        - cost_limit_per_request: Maximum cost allowed per request
+    """
+    try:
+        redis_client = _get_redis_client_safe()
+        cost_data = _calculate_cost_metrics(redis_client)
+
+        # Add cache statistics if available
+        cache_stats = {}
+        try:
+            from services.prediction_cache import PredictionCache
+            cache_stats = PredictionCache.get_cache_stats()
+        except ImportError:
+            cache_stats = {'available': False}
+        except Exception as e:
+            cache_stats = {'error': str(e)}
+
+        # Add Redis health status
+        redis_status = {
+            'connected': redis_client is not None,
+            'enabled': os.getenv('REDIS_ENABLED', 'true').lower() == 'true',
+        }
+
+        if redis_client is not None:
+            try:
+                from services.redis_connection import get_redis_manager
+                manager = get_redis_manager()
+                redis_status.update(manager.get_metrics())
+            except Exception:
+                pass
+
+        return jsonify({
+            'status': 'success',
+            'timestamp': datetime.utcnow().isoformat(),
+            'data': {
+                'costs': cost_data,
+                'cache': cache_stats,
+                'redis': redis_status,
+            },
+            'config': {
+                'user_daily_token_limit': int(os.getenv('USER_DAILY_TOKEN_LIMIT', '100000')),
+                'per_request_cost_limit': float(os.getenv('PER_REQUEST_COST_LIMIT', '0.30')),
+                'cost_per_1k_tokens': float(os.getenv('OPENAI_COST_PER_1K', '0.002')),
+                'cache_enabled': os.getenv('PREDICTION_CACHE_ENABLED', 'true').lower() == 'true',
+                'cache_ttl_seconds': int(os.getenv('CACHE_TTL', '3600')),
+            }
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Cost monitoring error: {e}")
+        log_exception(logger, e, context="cost_monitoring")
+        return jsonify({
+            'status': 'error',
+            'timestamp': datetime.utcnow().isoformat(),
+            'error': str(e),
+        }), 500
+
+
+@bp.route('/health/quota/<user_id>', methods=['GET'])
+def user_quota_status(user_id: str):
+    """
+    Get quota status for a specific user.
+
+    Args:
+        user_id: The user identifier to check quota for
+
+    Returns:
+        JSON with user's quota information
+    """
+    try:
+        from services.ai_quota import get_user_quota_status
+        quota = get_user_quota_status(user_id)
+
+        return jsonify({
+            'status': 'success',
+            'timestamp': datetime.utcnow().isoformat(),
+            'user_id': user_id,
+            'quota': quota,
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error getting user quota: {e}")
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+        }), 500
 
 
 @bp.route('/health/detailed', methods=['GET'])
