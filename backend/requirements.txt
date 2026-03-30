@@ -23,7 +23,7 @@ anthropic>=0.18.0
 requests==2.31.0
 
 # Data Processing
-pandas==2.2.0
+pandas==3.0.1
 numpy==1.26.4
 PyYAML==6.0.3
 
