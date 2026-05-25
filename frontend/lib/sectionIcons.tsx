@@ -193,9 +193,6 @@ export const getSectionIcon = (
   sectionKey: string,
   className?: string
 ): React.ReactNode => {
-  // Check cache first for performance
-  const cacheKey = `${sectionKey}-${className}`;
-
   let IconComponent: LucideIcon;
 
   // Try exact match first

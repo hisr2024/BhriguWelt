@@ -241,7 +241,7 @@ const extractYamlRules = (text: string, source: string): RelationshipRule[] => {
 
   let match = quoted.exec(text);
   while (match) {
-    const ruleText = match[1].trim();
+    const ruleText = match[1]!.trim();
     if (RELATIONSHIP_KEYWORDS.some(keyword => normalizeText(ruleText).includes(keyword))) {
       rules.push({
         text: ruleText,
@@ -254,8 +254,8 @@ const extractYamlRules = (text: string, source: string): RelationshipRule[] => {
 
   match = unquoted.exec(text);
   while (match) {
-    if (!match[1].includes('"')) {
-      const ruleText = match[1].trim();
+    if (!match[1]!.includes('"')) {
+      const ruleText = match[1]!.trim();
       if (RELATIONSHIP_KEYWORDS.some(keyword => normalizeText(ruleText).includes(keyword))) {
         rules.push({
           text: ruleText,

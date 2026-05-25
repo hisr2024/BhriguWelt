@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import {
@@ -9,12 +9,10 @@ import {
   Heart,
   DollarSign,
   Activity,
-  Sparkles,
   ArrowLeft,
   Loader2,
   Clock,
   AlertCircle,
-  CheckCircle,
   ChevronRight
 } from 'lucide-react';
 import AnimatedBackground, { FloatingElements } from '../components/AnimatedBackground';

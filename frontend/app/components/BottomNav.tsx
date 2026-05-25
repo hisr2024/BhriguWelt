@@ -2,7 +2,7 @@
 
 import { Home, Sparkles, Calendar, User, Heart, Plus } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
-import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion';
 import { useState, useEffect, useCallback } from 'react';
 
 interface NavItem {
@@ -115,7 +115,7 @@ export default function BottomNav() {
       />
 
       <div className="relative flex items-center justify-around px-2 pt-2 pb-2">
-        {navItems.map((item, index) => {
+        {navItems.map((item, _index) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
 

@@ -171,7 +171,7 @@ export function CleanPredictionDisplay({
   className = ''
 }: CleanPredictionDisplayProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(sections.length > 0 ? [sections[0].id] : [])
+    new Set(sections[0] ? [sections[0].id] : [])
   );
 
   const toggleSection = (id: string) => {
@@ -292,7 +292,7 @@ export function CleanPredictionDisplay({
 
       {/* Sections */}
       <div className="space-y-3">
-        {sections.map((section, index) => (
+        {sections.map((section, _index) => (
           <CollapsibleSection
             key={section.id}
             section={section}

@@ -858,7 +858,11 @@ export class PredictionsAPI {
       locale: options.locale,
     });
 
-    if (!options.useAI || !options.aiMode?.consent) {
+    if (
+      !options.useAI ||
+      !options.aiMode?.consent ||
+      (options.aiMode.mode !== 'hybrid' && options.aiMode.mode !== 'conversational')
+    ) {
       return baseResult;
     }
 

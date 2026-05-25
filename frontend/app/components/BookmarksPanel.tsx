@@ -5,11 +5,10 @@
  * Displays and manages user bookmarks
  */
 
-import React, { useState, useEffect } from 'react';
-import { Bookmark, BookmarkCheck, Trash2, Search, Star, Clock, TrendingUp, Tag } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Bookmark, BookmarkCheck, Trash2, Search, Star, Clock, TrendingUp } from 'lucide-react';
 import {
   getAllBookmarks,
-  getBookmarksByType,
   deleteBookmark,
   searchBookmarks,
   getRecentBookmarks,

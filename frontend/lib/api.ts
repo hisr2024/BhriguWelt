@@ -4,9 +4,7 @@
 import axios from 'axios';
 import type {
   BirthDetails,
-  BirthChartAPI,
   AIMode,
-  AIBirthData,
   AIComposeRequest,
   AIChatRequest,
   AISummarizeRequest,
@@ -16,7 +14,6 @@ import { normalizePredictionResponse } from './api/predictionResponse';
 import { emitToast, buildIssueReportUrl } from './toast';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const AUTH_REFRESH_ENDPOINT = '/api/auth/refresh';
 const API_TIMEOUT_MS = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '300000', 10); // 5 minutes (increased from 120000)
 const MAX_REQUEST_BYTES = parseInt(process.env.NEXT_PUBLIC_MAX_REQUEST_BYTES || '1048576', 10);
 const COMPRESSION_THRESHOLD_BYTES = parseInt(
@@ -46,15 +43,6 @@ export const api = axios.create({
   timeout: API_TIMEOUT_MS,  // 5 minutes - increased for AI-powered predictions
   withCredentials: true,  // Enable CORS credentials for cross-origin requests
   validateStatus: (status) => status < 500, // Don't throw on 4xx errors
-});
-
-const refreshClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 120000,
-  withCredentials: true,
 });
 
 // Request interceptor for logging
@@ -126,10 +114,6 @@ const redirectToUnlock = () => {
   }
 };
 
-const tryRefreshSession = async () => {
-  await refreshClient.post(AUTH_REFRESH_ENDPOINT);
-};
-
 /**
  * Determines if an error should be retried
  */
@@ -172,25 +156,12 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const responseData = error.response?.data ?? {};
 
-    // Handle unauthorized responses with refresh/redirect flow
-    if (status === 401 && config && config.url !== AUTH_REFRESH_ENDPOINT) {
+    // Handle unauthorized responses: the backend uses local passcode auth and
+    // issues no refresh tokens, so route 401s straight to the unlock screen.
+    if (status === 401 && config) {
       if (!unauthorized) {
         unauthorizedState.set(config, { attempted: true });
-        try {
-          await tryRefreshSession();
-          return api(config);
-        } catch (refreshError) {
-          emitToast({
-            type: 'error',
-            title: 'Session expired',
-            message: 'Your session has expired. Please unlock again to continue.',
-            errorCode: 'UNAUTHORIZED',
-          });
-          redirectToUnlock();
-          return Promise.reject(refreshError);
-        }
       }
-
       emitToast({
         type: 'error',
         title: 'Session expired',
@@ -627,7 +598,11 @@ export const aiAPI = {
     if (!aiMode.consent) {
       throw new Error('AI consent required');
     }
-    
+
+    if (aiMode.mode !== 'hybrid' && aiMode.mode !== 'conversational') {
+      throw new Error('AI mode must be hybrid or conversational');
+    }
+
     const response = await api.post('/api/ai/compose', data, {
       headers:  {
         'X-AI-Consent': 'granted',
@@ -666,6 +641,10 @@ export const aiAPI = {
   summarize: async (data:  AISummarizeRequest, aiMode:  AIMode) => {
     if (!aiMode.consent) {
       throw new Error('AI consent required');
+    }
+
+    if (aiMode.mode !== 'hybrid' && aiMode.mode !== 'conversational') {
+      throw new Error('AI mode must be hybrid or conversational');
     }
 
     const response = await api.post('/api/ai/summarize', data, {

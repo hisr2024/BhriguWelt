@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 
@@ -120,7 +120,7 @@ export function DivineIntroSlides({ onComplete, isOpen }: DivineIntroSlidesProps
   }, [currentSlide, goToSlide]);
 
   const handleButtonClick = useCallback(() => {
-    const action = slides[currentSlide].buttonAction;
+    const action = slides[currentSlide]?.buttonAction;
     if (action === 'complete') {
       onComplete();
     } else {
@@ -131,6 +131,7 @@ export function DivineIntroSlides({ onComplete, isOpen }: DivineIntroSlidesProps
   if (!isOpen) return null;
 
   const slide = slides[currentSlide];
+  if (!slide) return null;
 
   return (
     <div

@@ -32,7 +32,7 @@ interface CategoryCardProps {
   onClick: () => void;
 }
 
-const CategoryCard = ({ icon, title, description, badge, category, onClick }: CategoryCardProps) => (
+const CategoryCard = ({ icon, title, description, badge, onClick }: CategoryCardProps) => (
   <motion.div
     whileHover={{ scale: 1.02, y: -4 }}
     whileTap={{ scale: 0.98 }}
@@ -79,8 +79,7 @@ export default function BhriguPredictionsPage() {
   const { getAllProfiles } = useEncryptedStorage();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [, setSessionId] = useState<string | null>(null);
   const [isProfileReady, setIsProfileReady] = useState(false);
 
   useEffect(() => {

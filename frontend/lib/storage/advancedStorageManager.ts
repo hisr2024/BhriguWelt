@@ -31,7 +31,6 @@ type WindowWithMemoryStorage = Window & {
 export class AdvancedStorageManager {
   private static instance: AdvancedStorageManager;
   private db: IDBDatabase | null = null;
-  private dbPromise: Promise<IDBDatabase> | null = null;
   private isInitializing = false;
 
   private config: StorageConfig = {

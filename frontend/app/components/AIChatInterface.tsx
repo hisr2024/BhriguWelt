@@ -449,7 +449,7 @@ async function generateRealAIResponse(
 }
 
 // Mock response generator (fallback)
-async function generateMockResponse(userMessage: string, context: string): Promise<string> {
+async function generateMockResponse(userMessage: string, _context: string): Promise<string> {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 500));
 

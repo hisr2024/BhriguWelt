@@ -1,14 +1,12 @@
 'use client';
 
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { ReactNode, useState, useCallback, useRef } from 'react';
+import { ReactNode, useState, useRef } from 'react';
 import {
-  ChevronDown, ChevronUp, Share2, Download, Bookmark,
-  BookmarkCheck, Copy, Check, Sparkles, Moon, Sun,
-  Star, Heart, Shield, Zap, Clock, Eye, EyeOff
+  ChevronDown, Share2, Download, Bookmark,
+  BookmarkCheck, Copy, Check, Sparkles, Eye, EyeOff
 } from 'lucide-react';
 import GenZButton from './GenZButton';
-import { MobileBottomSheet } from './MobilePageWrapper';
 
 // Section accordion for mobile predictions
 interface MobilePredictionSectionProps {
@@ -79,7 +77,7 @@ export function MobilePredictionSection({
     },
   };
 
-  const variant = colorVariants[color] || colorVariants.cyan;
+  const variant = colorVariants[color] || colorVariants.cyan!;
 
   return (
     <motion.div
@@ -337,7 +335,7 @@ interface InsightCardsProps {
 export function SwipeableInsightCards({ insights }: InsightCardsProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleDragEnd = (e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const handleDragEnd = (_e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 50;
     if (info.offset.x > threshold && currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);

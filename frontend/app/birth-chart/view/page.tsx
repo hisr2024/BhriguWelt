@@ -18,7 +18,7 @@ import { loadCurrentProfile } from '@/lib/profileHelpers';
 import { useRouter } from 'next/navigation';
 import { astrologyAPI } from '@/lib/api';
 import ErrorBoundary from '../../components/ErrorBoundary';
-import { PDFGenerator, downloadBirthChartPDF, type BirthData, type ChartData as PDFChartData, type Interpretation } from '@/lib/export/pdfGenerator';
+import { downloadBirthChartPDF, type BirthData, type ChartData as PDFChartData, type Interpretation } from '@/lib/export/pdfGenerator';
 import { ShareUtils, showShareSuccess, showShareError } from '@/lib/export/shareUtils';
 
 export default function BirthChartViewPage() {

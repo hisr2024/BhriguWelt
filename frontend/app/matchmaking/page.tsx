@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, ArrowLeft, Star, Loader2, Users, Calendar, MapPin, Clock } from 'lucide-react';
+import { Heart, ArrowLeft, Loader2, Users, Calendar, MapPin, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AnimatedBackground, { FloatingElements } from '../components/AnimatedBackground';

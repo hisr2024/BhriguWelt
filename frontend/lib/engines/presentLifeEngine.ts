@@ -234,7 +234,7 @@ function parseMarkdownRules(text: string, tradition: RuleTradition): PresentLife
 
   while ((match = ruleRegex.exec(text)) !== null) {
     const id = match[1];
-    const ruleText = match[2].trim();
+    const ruleText = (match[2] ?? '').trim();
     rules.push({
       id,
       tradition,
@@ -270,7 +270,7 @@ function parseYamlDescriptions(text: string, source: string): PresentLifeRule[] 
 
   let match = quoted.exec(text);
   while (match) {
-    const description = match[1].trim();
+    const description = (match[1] ?? '').trim();
     rules.push({
       id: `YAML-${rules.length + 1}`,
       tradition: 'Bhrigu Samhita',
@@ -283,7 +283,7 @@ function parseYamlDescriptions(text: string, source: string): PresentLifeRule[] 
 
   match = unquoted.exec(text);
   while (match) {
-    const description = match[1].trim();
+    const description = (match[1] ?? '').trim();
     if (!description.startsWith('{') && !description.startsWith('[')) {
       rules.push({
         id: `YAML-${rules.length + 1}`,

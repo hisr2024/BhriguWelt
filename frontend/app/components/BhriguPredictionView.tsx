@@ -1,20 +1,18 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useLayoutEffect, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp, Clock, Star, Shield, Sparkles, Code } from 'lucide-react';
+import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp, Clock, Star, Shield, Sparkles } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
+import type { Profile, BirthDetails, PredictionResult } from '@/lib/types';
 import { getCurrentLanguage, setLanguage as setLanguagePreference, type Language } from '@/lib/copy';
 import { tLocale } from '@/lib/locales';
 import { Accordion } from '@/app/components/ui/Accordion';
-import { AccordionItem } from '@/app/components/ui/AccordionItem';
-import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { deleteItem, getAllItems, getItem, setItem, STORES } from '@/lib/storage';
 import { useBhriguPrediction } from '@/lib/hooks/useBhriguPrediction';
 import useFeatureFlags from '@/hooks/useFeatureFlags';
-import { getSectionIcon, SectionIcon } from '@/lib/sectionIcons';
+import { SectionIcon } from '@/lib/sectionIcons';
 import { parsePredictionResponse, type ParsedPrediction, type PredictionSection as ParsedSection } from '@/lib/predictionParser';
 import { MarkdownRenderer } from '@/app/components/MarkdownRenderer';
 
@@ -148,104 +146,10 @@ const COLOR_CLASSES: Record<string, { border: string; hover: string; accent: str
 
 // Default color for sections without a specific color mapping
 const DEFAULT_COLOR = 'cyan';
-const SKELETON_LINES = 5;
-const STREAM_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const LEGACY_UA_TOKENS = ['MSIE', 'Trident/', 'Edge/'];
-
-const isLegacyBrowser = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  if (!('Worker' in window)) return true;
-  const ua = navigator.userAgent || '';
-  return LEGACY_UA_TOKENS.some(token => ua.includes(token));
-};
-
-const isAlphaNumeric = (char: string): boolean => {
-  const code = char.charCodeAt(0);
-  return (
-    (code >= 48 && code <= 57) ||
-    (code >= 97 && code <= 122) ||
-    (code >= 65 && code <= 90)
-  );
-};
-
-const normalizeHeading = (value: string): string => {
-  let output = '';
-  let lastWasSpace = false;
-
-  for (const char of value) {
-    if (isAlphaNumeric(char)) {
-      output += char.toLowerCase();
-      lastWasSpace = false;
-    } else if (!lastWasSpace) {
-      output += ' ';
-      lastWasSpace = true;
-    }
-  }
-
-  return output.trim();
-};
-
-const isNumberedHeader = (line: string): boolean => {
-  let index = 0;
-  while (index < line.length && line[index] >= '0' && line[index] <= '9') {
-    index += 1;
-  }
-  if (index === 0) return false;
-  const nextChar = line[index];
-  return nextChar === '.' || nextChar === ')';
-};
-
-const stripHeaderMarkers = (line: string): string => {
-  let cleaned = line.trim();
-
-  while (cleaned.startsWith('#')) {
-    cleaned = cleaned.slice(1).trim();
-  }
-
-  if (cleaned.startsWith('**') && cleaned.endsWith('**') && cleaned.length > 4) {
-    cleaned = cleaned.slice(2, cleaned.length - 2).trim();
-  }
-
-  if (isNumberedHeader(cleaned)) {
-    let index = 0;
-    while (index < cleaned.length && cleaned[index] >= '0' && cleaned[index] <= '9') {
-      index += 1;
-    }
-    if (cleaned[index] === '.' || cleaned[index] === ')') {
-      cleaned = cleaned.slice(index + 1).trim();
-    }
-  }
-
-  if (cleaned.endsWith(':')) {
-    cleaned = cleaned.slice(0, -1).trim();
-  }
-
-  return cleaned;
-};
-
-const isHeaderLine = (line: string): boolean => {
-  const trimmed = line.trim();
-  if (!trimmed) return false;
-  if (trimmed.startsWith('#')) return true;
-  if (trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length > 4) return true;
-  if (isNumberedHeader(trimmed)) return true;
-  if (trimmed.endsWith(':')) {
-    const words = trimmed.split(' ').filter(Boolean).length;
-    return words <= 6;
-  }
-  return false;
-};
 
 // Helper function to normalize category keys
 const normalizeCategoryKey = (category: string): string => {
   return category?.toLowerCase().replace(/[^a-z0-9-]/g, '-') || '';
-};
-
-type AnalysisWorkerResponse = {
-  id: number;
-  sections: Record<string, string>;
-  error?: string;
-  fromCache?: boolean;
 };
 
 interface BhriguPredictionViewProps {
@@ -259,13 +163,6 @@ interface BhriguPredictionViewProps {
   profile: Profile | null;
 }
 
-type PredictionRequestOptions = {
-  forceRegenerate?: boolean;
-  profileHash?: string;
-  questionOverride?: string;
-  skipQueue?: boolean;
-};
-
 type QueuedPredictionRequest = {
   id: number;
   question: string;
@@ -274,11 +171,6 @@ type QueuedPredictionRequest = {
 };
 
 const getProfileHashKey = (profile: Profile) => `${PROFILE_HASH_PREFIX}${profile.id ?? 'current'}`;
-
-const getPredictionCacheKey = (profile: Profile, category: string, question: string, language: Language) => {
-  const questionKey = question.trim() === '' ? 'default' : encodeURIComponent(question.trim());
-  return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${language}_${questionKey}`;
-};
 
 const clearCachedPredictions = async (profile: Profile, encryptionKey: CryptoKey) => {
   const prefix = `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_`;
@@ -459,38 +351,6 @@ const extractTiming = (prediction: any): string => {
   return 'Timing details available in full analysis below';
 };
 
-/**
- * Filter sections based on view mode (layman vs astrologer)
- * Layman mode hides technical astrological sections
- */
-const filterSectionsByViewMode = (
-  sections: CategorySectionConfig[],
-  viewMode: 'layman' | 'astrologer'
-): CategorySectionConfig[] => {
-  if (viewMode === 'astrologer') {
-    return sections; // Show all sections for astrologer mode
-  }
-
-  // Filter out technical sections for layman mode
-  const technicalKeywords = [
-    'technical',
-    'planetary_combinations',
-    'dosha_identification',
-    'ashtakavarga',
-    'bhava_analysis',
-    'dasha_analysis',
-    'transit_analysis',
-    'yogas',
-    'divisional_charts',
-    'nakshatra_lord'
-  ];
-
-  return sections.filter(section => {
-    const sectionKey = section.key.toLowerCase();
-    return !technicalKeywords.some(keyword => sectionKey.includes(keyword));
-  });
-};
-
 export default function BhriguPredictionView({
   category,
   title,
@@ -527,8 +387,6 @@ export default function BhriguPredictionView({
   // ═══════════════════════════════════════════════════════════════════════════
   // 📂 SECTION STATE
   // ═══════════════════════════════════════════════════════════════════════════
-  const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
-  const [expandingSections, setExpandingSections] = useState<Record<string, boolean>>({});
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const expandedRef = useRef<Set<string>>(new Set());
 
@@ -538,7 +396,7 @@ export default function BhriguPredictionView({
   const [cacheTimestamp, setCacheTimestamp] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(false);
   const [isLowEndDevice, setIsLowEndDevice] = useState(false);
-  const [streaming, setStreaming] = useState(false);
+  const [streaming] = useState(false);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 📊 VIEW MODE STATE (Layman vs Astrologer)
@@ -552,7 +410,7 @@ export default function BhriguPredictionView({
     }
     return 'layman';
   });
-  const [showTechnicalDetails, setShowTechnicalDetails] = useState<boolean>(false);
+  const [, setShowTechnicalDetails] = useState<boolean>(false);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 🔧 CONTEXT & ENCRYPTION
@@ -563,13 +421,9 @@ export default function BhriguPredictionView({
 
   const workerRef = useRef<Worker | null>(null);
   const workerRequestId = useRef(0);
-  const expandingTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
-  const queuedRequestsRef = useRef<QueuedPredictionRequest[]>([]);
-  const requestIdRef = useRef(0);
-  const requestInFlightRef = useRef(false);
   const touchStartTime = useRef<number>(0); // Track touch duration to distinguish tap from scroll
 
-  const { debugUI } = useFeatureFlags();
+  useFeatureFlags();
   const searchParams = useSearchParams();
   const [language, setLanguage] = useState<Language>(getCurrentLanguage());
   const debugAllowed = searchParams?.get('debug') === 'true';
@@ -609,7 +463,7 @@ export default function BhriguPredictionView({
   }, [toggleSection]);
 
   // ✨ QUANTUM FIX: Touch handlers for mobile (300ms delay fix + scroll detection)
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+  const handleTouchStart = useCallback((_e: React.TouchEvent) => {
     touchStartTime.current = Date.now();
   }, []);
 
@@ -795,8 +649,9 @@ export default function BhriguPredictionView({
         for (const pattern of patterns) {
           try {
             const match = fullAnalysis.match(pattern);
-            if (match && match[1]?.trim().length > 50) {
-              parsedSections[section.key] = match[1].trim();
+            const captured = match?.[1]?.trim();
+            if (captured && captured.length > 50) {
+              parsedSections[section.key] = captured;
               break;
             }
           } catch (e) {
@@ -979,7 +834,7 @@ export default function BhriguPredictionView({
     content: string,
     color: string,
     isOpen: boolean,
-    onToggle?: (next: boolean) => void
+    _onToggle?: (next: boolean) => void
   ) => {
     // More lenient filtering - only exclude truly empty or placeholder content
     if (!content || content.trim() === '') {
@@ -999,7 +854,7 @@ export default function BhriguPredictionView({
       return null;
     }
 
-    const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES[DEFAULT_COLOR];
+    const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES[DEFAULT_COLOR]!;
     const headerId = `header-${sectionKey}`;
     const contentId = `content-${sectionKey}`;
 
@@ -1182,7 +1037,6 @@ export default function BhriguPredictionView({
 
     // Filter sections based on view mode (layman vs astrologer)
     const sections = filterSectionsByViewMode(allSections, viewMode);
-    const shouldShowPartialBanner = false;
 
     // Karmic Journey section markers - used to detect wrong category content
     // IMPORTANT: These must be defined BEFORE they are used in the filter below
@@ -1197,7 +1051,7 @@ export default function BhriguPredictionView({
 
     // Check if content contains wrong category markers
     // IMPORTANT: This function must be defined BEFORE the filter that uses it
-    const containsWrongCategoryContent = (content: string, sectionKey: string): boolean => {
+    const containsWrongCategoryContent = (content: string, _sectionKey: string): boolean => {
       if (!content) return false;
       const lowerContent = content.toLowerCase();
 

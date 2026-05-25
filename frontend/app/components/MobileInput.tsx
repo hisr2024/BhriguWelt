@@ -1,9 +1,9 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { ReactNode, useState, useRef, forwardRef, useId } from 'react';
+import { ReactNode, useState, forwardRef, useId } from 'react';
 import {
-  Check, X, Eye, EyeOff, Calendar, Clock, MapPin,
+  X, Eye, EyeOff, Calendar, Clock,
   ChevronDown, Search, AlertCircle
 } from 'lucide-react';
 
@@ -337,7 +337,6 @@ export function MobileSelect({
 }: MobileSelectProps) {
   const [isFocused, setIsFocused] = useState(false);
   const selectId = useId();
-  const selectedOption = options.find((opt) => opt.value === value);
 
   return (
     <div className={`relative ${className}`}>

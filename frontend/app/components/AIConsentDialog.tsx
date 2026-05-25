@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { grantAIConsent, revokeAIConsent, getAIPreferences } from '@/lib/ai-preferences';
+import { grantAIConsent, revokeAIConsent } from '@/lib/ai-preferences';
 import { aiAPI } from '@/lib/api';
 
 interface AIConsentDialogProps {

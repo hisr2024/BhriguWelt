@@ -127,7 +127,7 @@ function extractRulesFromText(text: string, tradition: RuleTradition): WisdomRul
 
   while ((match = ruleRegex.exec(text)) !== null) {
     const id = match[1];
-    const ruleText = match[2].trim();
+    const ruleText = (match[2] ?? '').trim();
     rules.push({
       id,
       tradition,
@@ -429,7 +429,7 @@ function buildFutureProjections(
     if (!focusBuckets[focus]) {
       focusBuckets[focus] = [];
     }
-    focusBuckets[focus].push(rule);
+    focusBuckets[focus]?.push(rule);
   }
 
   const focusAreas = Object.keys(focusBuckets);
@@ -438,6 +438,7 @@ function buildFutureProjections(
   for (const focus of focusAreas) {
     if (projections.length >= maxProjections) break;
     const rules = focusBuckets[focus];
+    if (!rules) continue;
     const alignmentScore = Math.round(
       rules.reduce((total, rule) => total + scoreRuleMatch(rule, chartData), 0) / rules.length
     );

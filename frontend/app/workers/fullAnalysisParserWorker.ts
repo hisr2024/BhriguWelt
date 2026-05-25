@@ -56,8 +56,8 @@ const parseMarkdownAst = (markdown: string): HeadingNode[] => {
   for (const line of lines) {
     const match = line.match(/^(#{1,6})\s+(.*)$/);
     if (match) {
-      const depth = match[1].length;
-      const text = match[2].trim();
+      const depth = match[1]!.length;
+      const text = match[2]!.trim();
       headings.push({
         type: 'heading',
         depth,
@@ -101,6 +101,9 @@ const extractSectionsFromAst = (markdown: string, sections: SectionConfig[]): Re
 
   for (let i = 0; i < headings.length; i += 1) {
     const node = headings[i];
+    if (!node) {
+      continue;
+    }
     const matchedKey = findMatchingKey(node.text);
     if (!matchedKey) {
       continue;
@@ -109,7 +112,7 @@ const extractSectionsFromAst = (markdown: string, sections: SectionConfig[]): Re
     let endOffset = markdown.length;
     for (let j = i + 1; j < headings.length; j += 1) {
       const nextNode = headings[j];
-      if (nextNode.depth <= node.depth) {
+      if (nextNode && nextNode.depth <= node.depth) {
         endOffset = nextNode.start;
         break;
       }
@@ -138,8 +141,9 @@ const extractSectionsWithRegex = (markdown: string, sections: SectionConfig[]): 
 
     for (const pattern of patterns) {
       const match = markdown.match(pattern);
-      if (match && match[1]?.trim().length > 50) {
-        parsedSections[section.key] = match[1].trim();
+      const captured = match?.[1]?.trim();
+      if (captured && captured.length > 50) {
+        parsedSections[section.key] = captured;
         break;
       }
     }

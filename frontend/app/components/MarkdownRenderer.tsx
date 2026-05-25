@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
@@ -17,8 +16,7 @@ interface MarkdownRendererProps {
  */
 export function MarkdownRenderer({
   content,
-  className = '',
-  viewMode = 'layman'
+  className = ''
 }: MarkdownRendererProps) {
   if (!content || content.trim() === '') {
     return null;

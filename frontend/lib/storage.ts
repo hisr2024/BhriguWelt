@@ -305,7 +305,7 @@ export async function getItem(
 ): Promise<any> {
   const database = await initDB();
 
-  return new Promise(async (resolve, reject) => {
+  return new Promise(async (resolve) => {
     try {
       const transaction = database.transaction(storeName, 'readonly');
       const store = transaction.objectStore(storeName);

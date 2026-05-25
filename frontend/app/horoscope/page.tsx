@@ -285,8 +285,7 @@ const QuarterCard = ({
   name,
   theme,
   summary,
-  focusAreas,
-  energy
+  focusAreas
 }: {
   name: string;
   theme: string;

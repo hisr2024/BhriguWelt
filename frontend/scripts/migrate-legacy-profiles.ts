@@ -127,7 +127,7 @@ async function createBackup(backupPath: string, profiles: ProfileEntry[]): Promi
 /**
  * Apply migration (template)
  */
-async function applyMigration(profiles: ProfileEntry[]): Promise<void> {
+async function applyMigration(_profiles: ProfileEntry[]): Promise<void> {
   console.log('⚠️  Migration must be applied in browser context');
   console.log('📝 Manual migration steps:');
   console.log('   1. Export profiles: Use browser DevTools to export data');

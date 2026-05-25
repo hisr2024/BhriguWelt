@@ -215,7 +215,7 @@ const parseRulesFromMarkdown = (text: string, source: string): LifeEventRule[] =
 
   while ((match = ruleRegex.exec(text)) !== null) {
     const id = match[1];
-    const ruleText = match[2].trim();
+    const ruleText = match[2]?.trim() ?? '';
     rules.push({
       id,
       source,

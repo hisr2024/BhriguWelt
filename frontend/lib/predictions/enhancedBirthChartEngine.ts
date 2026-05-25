@@ -317,9 +317,9 @@ Your chart speaks to specific karmic patterns that require attention in this lif
    * Generate personality section (300-400 words)
    */
   private async generatePersonalitySection(
-    birthData: BirthData,
+    _birthData: BirthData,
     chartData: ChartData,
-    mode: 'online' | 'offline' | 'hybrid'
+    _mode: 'online' | 'offline' | 'hybrid'
   ): Promise<InterpretationSection> {
     const ascendant = chartData.ascendant?.sign || 'Unknown';
     const sunSign = chartData.sun?.sign || 'Unknown';
@@ -355,9 +355,9 @@ Your personality also reflects specific karmic patterns that you're here to bala
    * Generate career section (300-400 words)
    */
   private async generateCareerSection(
-    birthData: BirthData,
+    _birthData: BirthData,
     chartData: ChartData,
-    mode: 'online' | 'offline' | 'hybrid'
+    _mode: 'online' | 'offline' | 'hybrid'
   ): Promise<InterpretationSection> {
     const sunSign = chartData.sun?.sign || 'Unknown';
     const sunHouse = chartData.sun?.house || 1;
@@ -393,9 +393,9 @@ The Nadi tradition emphasizes that career is not separate from spirituality. You
    * Generate health section (300-400 words)
    */
   private async generateHealthSection(
-    birthData: BirthData,
+    _birthData: BirthData,
     chartData: ChartData,
-    mode: 'online' | 'offline' | 'hybrid'
+    _mode: 'online' | 'offline' | 'hybrid'
   ): Promise<InterpretationSection> {
     const ascendant = chartData.ascendant?.sign || 'Unknown';
     const moonSign = chartData.moon?.sign || 'Unknown';
@@ -431,9 +431,9 @@ The timing of health issues is indicated by Dasha periods and transits of malefi
    * Generate relationships section (300-400 words)
    */
   private async generateRelationshipsSection(
-    birthData: BirthData,
+    _birthData: BirthData,
     chartData: ChartData,
-    mode: 'online' | 'offline' | 'hybrid'
+    _mode: 'online' | 'offline' | 'hybrid'
   ): Promise<InterpretationSection> {
     const moonSign = chartData.moon?.sign || 'Unknown';
     const venusData = chartData.planets?.find(p => p.name === 'Venus');
@@ -471,9 +471,9 @@ The timing of significant relationships is indicated by Dasha periods and transi
    * Generate spiritual section (300-400 words)
    */
   private async generateSpiritualSection(
-    birthData: BirthData,
+    _birthData: BirthData,
     chartData: ChartData,
-    mode: 'online' | 'offline' | 'hybrid'
+    _mode: 'online' | 'offline' | 'hybrid'
   ): Promise<InterpretationSection> {
     const nakshatra = chartData.moon?.nakshatra || 'Unknown';
     const jupiterData = chartData.planets?.find(p => p.name === 'Jupiter');
@@ -571,7 +571,7 @@ The ancient texts emphasize that spiritual evolution is the ultimate purpose of 
   /**
    * Extract challenges from chart data
    */
-  private extractChallenges(chartData: ChartData): string[] {
+  private extractChallenges(_chartData: ChartData): string[] {
     return [
       'Balancing personal ambitions with service to others',
       'Managing emotional intensity and maintaining inner peace',
@@ -583,7 +583,7 @@ The ancient texts emphasize that spiritual evolution is the ultimate purpose of 
   /**
    * Generate personalized recommendations
    */
-  private generateRecommendations(chartData: ChartData): string[] {
+  private generateRecommendations(_chartData: ChartData): string[] {
     return [
       'Practice daily meditation to strengthen mental clarity and spiritual connection',
       'Engage in regular physical exercise to balance energies and maintain vitality',

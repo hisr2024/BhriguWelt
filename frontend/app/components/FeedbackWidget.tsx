@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Star, ThumbsUp, ThumbsDown, Smile, Meh, Frown } from 'lucide-react';
+import { MessageSquare, X, Send, Star, ThumbsUp, Smile, Meh, Frown } from 'lucide-react';
 
 interface Feedback {
   id?: number;

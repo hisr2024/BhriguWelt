@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Calendar, MapPin, Settings, LogOut, ArrowLeft, Edit, Clock, Plus, UserCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { User, Calendar, MapPin, Settings, LogOut, ArrowLeft, Edit, Clock, Plus, UserCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AnimatedBackground, { FloatingElements } from '../components/AnimatedBackground';
@@ -16,9 +16,8 @@ import type { Profile } from '@/lib/types';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { lock, isUnlocked } = useEncryption();
+  const { lock } = useEncryption();
   const { getAllProfiles } = useEncryptedStorage();
-  const [editing, setEditing] = useState(false);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
@@ -41,7 +40,7 @@ export default function ProfilePage() {
         setCurrentProfile(profile || loadedProfiles[0] || null);
       } else if (loadedProfiles.length > 0) {
         setCurrentProfile(loadedProfiles[0]);
-        localStorage.setItem('current_profile_id', loadedProfiles[0].id!.toString());
+        localStorage.setItem('current_profile_id', loadedProfiles[0]!.id!.toString());
       }
     } catch (error) {
       console.error('Error loading profiles:', error);

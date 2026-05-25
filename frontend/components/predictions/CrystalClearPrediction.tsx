@@ -28,7 +28,6 @@ import {
   Share2,
   Download,
   ChevronDown,
-  ChevronUp,
   CheckCircle,
   AlertCircle
 } from 'lucide-react';

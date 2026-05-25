@@ -1,8 +1,8 @@
 'use client';
 
-import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion';
-import { ReactNode, useState, useCallback, useRef, useEffect } from 'react';
-import { Loader2, ChevronLeft, MoreVertical } from 'lucide-react';
+import { motion, AnimatePresence, useMotionValue, PanInfo } from 'framer-motion';
+import { ReactNode, useState, useCallback, useRef } from 'react';
+import { Loader2, ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface MobilePageWrapperProps {
@@ -48,7 +48,7 @@ export default function MobilePageWrapper({
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (!pullToRefresh || !containerRef.current) return;
     const scrollTop = containerRef.current.scrollTop;
-    if (scrollTop <= 0) {
+    if (scrollTop <= 0 && e.touches[0]) {
       startY.current = e.touches[0].clientY;
     }
   }, [pullToRefresh]);
@@ -58,7 +58,7 @@ export default function MobilePageWrapper({
     const scrollTop = containerRef.current.scrollTop;
     if (scrollTop > 0) return;
 
-    currentY.current = e.touches[0].clientY;
+    currentY.current = e.touches[0]?.clientY ?? currentY.current;
     const diff = currentY.current - startY.current;
 
     if (diff > 0) {
@@ -285,7 +285,7 @@ export function MobileBottomSheet({
   const y = useMotionValue(0);
   const [currentSnap, setCurrentSnap] = useState(0);
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const velocity = info.velocity.y;
     const offset = info.offset.y;
 
@@ -297,7 +297,7 @@ export function MobileBottomSheet({
   };
 
   const sheetHeight = typeof window !== 'undefined'
-    ? window.innerHeight * snapPoints[currentSnap]
+    ? window.innerHeight * (snapPoints[currentSnap] ?? 0.5)
     : 400;
 
   return (
@@ -364,7 +364,7 @@ export function SwipeableCardStack({
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo, index: number) => {
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo, index: number) => {
     const threshold = 100;
     if (info.offset.x > threshold) {
       onSwipeRight?.(index);
