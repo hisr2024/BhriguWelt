@@ -28,7 +28,7 @@ export function initSentry() {
     replaysOnErrorSampleRate: 1.0,
 
     // Privacy-friendly settings
-    beforeSend(event, hint) {
+    beforeSend(event, _hint) {
       // Remove sensitive data
       if (event.request) {
         delete event.request.cookies;

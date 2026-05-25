@@ -160,7 +160,7 @@ export async function getActiveTests(): Promise<ABTest[]> {
  */
 export async function getVariant(testId: string): Promise<string | null> {
   try {
-    const database = await initABTestDB();
+    await initABTestDB();
     const userId = getUserId();
 
     // Check if already assigned
@@ -224,7 +224,7 @@ function selectVariant(variants: ABTest['variants']): string {
   }
 
   // Fallback to first variant
-  return variants[0].id;
+  return variants[0]!.id;
 }
 
 /**

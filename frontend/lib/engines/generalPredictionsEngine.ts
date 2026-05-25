@@ -52,21 +52,6 @@ const ELEMENT_BY_SIGN: Record<string, string> = {
   Pisces: 'Water',
 };
 
-const RULING_PLANET_BY_SIGN: Record<string, string> = {
-  Aries: 'Mars',
-  Taurus: 'Venus',
-  Gemini: 'Mercury',
-  Cancer: 'Moon',
-  Leo: 'Sun',
-  Virgo: 'Mercury',
-  Libra: 'Venus',
-  Scorpio: 'Mars',
-  Sagittarius: 'Jupiter',
-  Capricorn: 'Saturn',
-  Aquarius: 'Saturn',
-  Pisces: 'Jupiter',
-};
-
 const PLANETARY_ORDER = ['Saturn', 'Jupiter', 'Mars', 'Sun', 'Venus', 'Mercury', 'Moon'];
 const DAY_LORDS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
 
@@ -214,13 +199,13 @@ const getLunarDetails = (date: Date): LunarDetails => {
   };
 };
 
-const getDayLord = (date: Date) => DAY_LORDS[date.getDay()];
+const getDayLord = (date: Date) => DAY_LORDS[date.getDay()]!;
 
 const buildHoraSequence = (dayLord: string) => {
   const startIndex = PLANETARY_ORDER.indexOf(dayLord);
   const sequence: string[] = [];
   for (let i = 0; i < 24; i += 1) {
-    sequence.push(PLANETARY_ORDER[(startIndex + i) % PLANETARY_ORDER.length]);
+    sequence.push(PLANETARY_ORDER[(startIndex + i) % PLANETARY_ORDER.length]!);
   }
   return sequence;
 };
@@ -246,7 +231,7 @@ const getHoraDetails = (date: Date, sunTimes: SunTimes): HoraDetails => {
   const end = new Date(periodStart + horaLength * (hourIndex + 1));
 
   return {
-    planet: sequence[index % sequence.length],
+    planet: sequence[index % sequence.length]!,
     start,
     end,
   };
@@ -255,7 +240,7 @@ const getHoraDetails = (date: Date, sunTimes: SunTimes): HoraDetails => {
 const getRahuKala = (date: Date, sunTimes: SunTimes): RahuKala => {
   const { sunrise, sunset } = sunTimes;
   const dayIndex = date.getDay();
-  const segmentIndex = RAHU_KALA_INDEX[dayIndex] - 1;
+  const segmentIndex = (RAHU_KALA_INDEX[dayIndex] ?? 1) - 1;
   const dayLength = sunset.getTime() - sunrise.getTime();
   const segmentLength = dayLength / 8;
   const start = new Date(sunrise.getTime() + segmentIndex * segmentLength);
@@ -318,7 +303,6 @@ export const generateGeneralPredictions = async (
   const ascendant = chart.ascendant ?? 'Unknown';
   const nakshatra = chart.nakshatra ?? 'Unknown';
   const element = ELEMENT_BY_SIGN[zodiac] ?? 'Unknown';
-  const ruler = RULING_PLANET_BY_SIGN[zodiac] ?? 'Unknown';
   const dayLord = getDayLord(now);
 
   const sunTimes = estimateSunTimes(now, chart.latitude);

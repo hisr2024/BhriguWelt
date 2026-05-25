@@ -30,7 +30,7 @@ export function resolveToastTitle(payload: ToastPayload): string {
   }
 
   if (payload.errorCode && payload.errorCode in ERROR_TITLE_MAP) {
-    return ERROR_TITLE_MAP[payload.errorCode];
+    return ERROR_TITLE_MAP[payload.errorCode]!;
   }
 
   if (payload.type === 'error') {

@@ -111,7 +111,7 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   let binary = '';
   for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
+    binary += String.fromCharCode(bytes[i]!);
   }
   return btoa(binary);
 }
@@ -206,7 +206,7 @@ export function generateSecurePasscode(length: number = 4): string {
   const randomValues = crypto.getRandomValues(new Uint8Array(length));
 
   for (let i = 0; i < length; i++) {
-    passcode += digits[randomValues[i] % digits.length];
+    passcode += digits[(randomValues[i] ?? 0) % digits.length] ?? '';
   }
 
   return passcode;

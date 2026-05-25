@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, X, FileText, User, BookOpen, Star, Clock, TrendingUp } from 'lucide-react';
+import { Search, X, Clock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getAllItems, STORES } from '@/lib/storage';
 import { getAllBookmarks } from '@/lib/bookmarks';
@@ -250,7 +250,7 @@ export default function AdvancedSearch({ isOpen, onClose }: AdvancedSearchProps)
       e.preventDefault();
       setSelectedIndex((prev) => Math.max(prev - 1, 0));
     } else if (e.key === 'Enter' && results[selectedIndex]) {
-      handleSelect(results[selectedIndex]);
+      handleSelect(results[selectedIndex]!);
     } else if (e.key === 'Escape') {
       onClose();
     }

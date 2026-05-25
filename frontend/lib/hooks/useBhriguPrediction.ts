@@ -413,6 +413,7 @@ export const useBhriguPrediction = ({
     } else {
       setTimeoutWarning(false);
     }
+    return undefined;
   }, [loading]);
 
   useEffect(() => {

@@ -107,7 +107,7 @@ function validateProfileData(data: ProfileData): { valid: boolean; errors: strin
   if (!data.date_of_birth) {
     errors.push('Date of birth is required');
   } else {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0] ?? '';
     if (data.date_of_birth > today) {
       errors.push('Date of birth cannot be in the future');
     }

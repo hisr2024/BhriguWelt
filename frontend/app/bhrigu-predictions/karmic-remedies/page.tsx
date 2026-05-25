@@ -20,7 +20,7 @@ export default function KarmicRemediesPage() {
     try {
       const profiles = await getAllProfiles();
       if (profiles.length > 0) {
-        setProfile(profiles[0]);
+        setProfile(profiles[0] ?? null);
       }
     } catch (error) {
       console.error('Error loading profile:', error);

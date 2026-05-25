@@ -167,8 +167,6 @@ export class PDFGenerator {
    * Add cover page with Om symbol and title
    */
   private async addCoverPage(birthData: BirthData): Promise<void> {
-    const margin = this.options.pageMargin || 20;
-
     // Background gradient effect (simulated with rectangles)
     this.pdf.setFillColor(74, 20, 140); // Deep purple
     this.pdf.rect(0, 0, this.pageWidth, this.pageHeight / 3, 'F');
@@ -380,7 +378,7 @@ export class PDFGenerator {
     this.addNewPage();
     this.addSectionHeader('Detailed Interpretations');
 
-    interpretations.forEach((interpretation, index) => {
+    interpretations.forEach((interpretation, _index) => {
       this.checkPageSpace(40);
 
       // Category and title

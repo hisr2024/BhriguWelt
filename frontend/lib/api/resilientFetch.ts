@@ -248,7 +248,7 @@ export async function safeSetItem(key: string, value: any): Promise<boolean> {
     try {
       const keys = Object.keys(localStorage);
       if (keys.length > 0) {
-        localStorage.removeItem(keys[0]);
+        localStorage.removeItem(keys[0]!);
         // Try again
         localStorage.setItem(key, JSON.stringify(value));
         return true;

@@ -25,7 +25,6 @@ import GenZCard from '../components/GenZCard';
 import GenZButton from '../components/GenZButton';
 import GenZBadge from '../components/GenZBadge';
 import BottomNav from '../components/BottomNav';
-import CardSkeleton from '../components/CardSkeleton';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, setItem, STORES } from '@/lib/storage';
 import { loadCurrentProfile } from '@/lib/profileHelpers';
@@ -72,7 +71,6 @@ function CategoryCard({
   icon,
   title,
   rating,
-  message,
   color,
 }: {
   icon: React.ReactNode;

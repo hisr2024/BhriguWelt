@@ -78,7 +78,7 @@ class NavigationHistory {
    */
   current(): NavigationEntry | null {
     if (this.currentIndex >= 0 && this.currentIndex < this.history.length) {
-      return this.history[this.currentIndex];
+      return this.history[this.currentIndex] ?? null;
     }
     return null;
   }

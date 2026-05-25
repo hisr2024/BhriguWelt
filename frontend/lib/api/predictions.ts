@@ -858,7 +858,11 @@ export class PredictionsAPI {
       locale: options.locale,
     });
 
-    if (!options.useAI || !options.aiMode?.consent) {
+    if (
+      !options.useAI ||
+      !options.aiMode?.consent ||
+      (options.aiMode.mode !== 'hybrid' && options.aiMode.mode !== 'conversational')
+    ) {
       return baseResult;
     }
 
@@ -1080,7 +1084,7 @@ export class PredictionsAPI {
     const results = await Promise.all(promises);
 
     return engines.reduce((acc, engine, index) => {
-      acc[engine] = results[index];
+      acc[engine] = results[index]!;
       return acc;
     }, {} as Record<PredictionEngine, PredictionResult>);
   }

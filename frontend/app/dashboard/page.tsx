@@ -17,7 +17,7 @@ import { loadCurrentProfile } from '@/lib/profileHelpers';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
-  const [birthDetails, setBirthDetails] = useState<any>(null);
+  const [, setBirthDetails] = useState<any>(null);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
   const router = useRouter();
 

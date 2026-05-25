@@ -312,7 +312,7 @@ export async function getDailyWisdomCard(encryptionKey?: CryptoKey): Promise<Wis
     }
     
     const index = Math.abs(hash) % allCards.length;
-    return allCards[index];
+    return allCards[index] ?? null;
   } catch (error) {
     console.error('[WisdomCards] Error getting daily card:', error);
     return null;

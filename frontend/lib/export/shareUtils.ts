@@ -74,7 +74,7 @@ export class ShareUtils {
     } = {}
   ): Promise<ShareResult> {
     try {
-      const { title, content, url, category } = predictionData;
+      const { title, content, url } = predictionData;
       const shareTitle = `${title} - BhriguWelt`;
       const shareText = this.formatShareText(content, 280); // Limit for social media
 
@@ -292,7 +292,6 @@ export class ShareUtils {
    */
   static shareViaTelegram(text: string, url?: string): ShareResult {
     try {
-      const message = encodeURIComponent(`${text}\n\n${url || window.location.href}`);
       const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(url || window.location.href)}&text=${encodeURIComponent(text)}`;
       window.open(telegramUrl, '_blank');
       return { success: true, method: 'social' };
@@ -427,7 +426,7 @@ export class ShareUtils {
     chartData?: ChartData;
     interpretations?: Interpretation[];
   }): string {
-    const { title, content, birthData, chartData, interpretations } = predictionData;
+    const { title, content, birthData, interpretations } = predictionData;
 
     return `
       <!DOCTYPE html>
@@ -559,7 +558,7 @@ export class ShareUtils {
    * Generate shareable link with prediction data (requires backend support)
    */
   static async generateShareLink(
-    predictionData: {
+    _predictionData: {
       title: string;
       content: string;
       birthData?: BirthData;

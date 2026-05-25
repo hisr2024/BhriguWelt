@@ -193,14 +193,11 @@ export const getSectionIcon = (
   sectionKey: string,
   className?: string
 ): React.ReactNode => {
-  // Check cache first for performance
-  const cacheKey = `${sectionKey}-${className}`;
-
   let IconComponent: LucideIcon;
 
   // Try exact match first
   if (SECTION_ICONS[sectionKey]) {
-    IconComponent = SECTION_ICONS[sectionKey];
+    IconComponent = SECTION_ICONS[sectionKey]!;
   } else if (iconCache.has(sectionKey)) {
     // Use cached partial match
     IconComponent = iconCache.get(sectionKey)!;
@@ -212,7 +209,7 @@ export const getSectionIcon = (
     );
 
     if (matchedKey) {
-      IconComponent = SECTION_ICONS[matchedKey];
+      IconComponent = SECTION_ICONS[matchedKey]!;
       // Cache the result for future lookups
       iconCache.set(sectionKey, IconComponent);
     } else {

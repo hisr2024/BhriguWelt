@@ -31,6 +31,32 @@ except ImportError:
     REDIS_AVAILABLE = False
     logger.warning("redis package not installed - using in-memory quota tracking")
 
+# Try to import tiktoken for accurate token counting; fall back to a heuristic.
+try:
+    import tiktoken
+    TIKTOKEN_AVAILABLE = True
+except ImportError:
+    TIKTOKEN_AVAILABLE = False
+    logger.info("tiktoken not installed - using character-based token estimation")
+
+_encoder_cache: Dict[str, Any] = {}
+
+
+def _get_encoder():
+    """Return a cached tiktoken encoder for the configured model, or None."""
+    if not TIKTOKEN_AVAILABLE:
+        return None
+    model = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
+    if model not in _encoder_cache:
+        try:
+            _encoder_cache[model] = tiktoken.encoding_for_model(model)
+        except KeyError:
+            _encoder_cache[model] = tiktoken.get_encoding('cl100k_base')
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning(f"tiktoken encoder init failed: {exc}")
+            _encoder_cache[model] = None
+    return _encoder_cache[model]
+
 
 # Custom exceptions
 class QuotaExceededError(Exception):
@@ -45,25 +71,25 @@ class CostLimitExceededError(Exception):
 
 def estimate_tokens(text: str) -> int:
     """
-    Conservative token estimation using character count method.
-    This is a simple heuristic that can be replaced with tiktoken later.
+    Estimate token count for the configured model.
 
-    Formula: max(1, len(text) // 4)
+    Uses tiktoken for accurate counts when available, and falls back to the
+    conservative character heuristic max(1, len(text) // 4) otherwise.
 
     Args:
         text: Input text to estimate tokens for
 
     Returns:
         Estimated token count (minimum 1)
-
-    Note:
-        For production use with accurate tokenization, consider integrating tiktoken:
-        import tiktoken
-        encoding = tiktoken.encoding_for_model("gpt-4")
-        return len(encoding.encode(text))
     """
     if text is None:
         text = ""
+    encoder = _get_encoder()
+    if encoder is not None:
+        try:
+            return max(1, len(encoder.encode(text)))
+        except Exception:  # pragma: no cover - defensive
+            pass
     return max(1, len(text) // 4)
 
 

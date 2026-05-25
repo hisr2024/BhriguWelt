@@ -198,6 +198,7 @@ export function SessionProvider({ children, defaultTimeout = 300 }: SessionProvi
       
       return () => clearTimeout(timeout);
     }
+    return undefined;
   }, [failedAttempts]);
   
   const value: SessionContextType = {

@@ -108,7 +108,7 @@ export class Web3WalletConnector {
 
       this.provider = ethereum;
       this.connection = {
-        address: accounts[0],
+        address: accounts[0]!,
         chainId: parseInt(chainId, 16),
         provider: ethereum,
         connected: true,
@@ -120,7 +120,7 @@ export class Web3WalletConnector {
       // Emit connect event
       this.emit('connect', this.connection);
 
-      return this.connection;
+      return this.connection!;
     } catch (error: unknown) {
       const normalizedError = error as { code?: number; message?: string };
       if (normalizedError.code === 4001) {
@@ -313,7 +313,7 @@ export class Web3WalletConnector {
       if (accounts.length === 0) {
         this.disconnect();
       } else if (this.connection) {
-        this.connection.address = accounts[0];
+        this.connection.address = accounts[0]!;
         this.emit('accountsChanged', accounts[0]);
       }
     });

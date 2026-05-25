@@ -14,7 +14,7 @@
 
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Glasses, AlertCircle, Loader2 } from 'lucide-react';
 
@@ -26,7 +26,6 @@ export interface VRChartViewerProps {
 }
 
 export default function VRChartViewer({
-  chartData,
   onEnterVR,
   onExitVR,
   className = '',
