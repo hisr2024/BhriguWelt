@@ -68,7 +68,7 @@ function parseArgs(): MigrationOptions {
 
   const backupIndex = args.indexOf('--backup');
   if (backupIndex !== -1 && args[backupIndex + 1]) {
-    options.backupPath = args[backupIndex + 1];
+    options.backupPath = args[backupIndex + 1]!;
   }
 
   return options;

@@ -242,7 +242,7 @@ const parseMarkdownRules = (text: string, source: string): KarmicRule[] => {
   let match: RegExpExecArray | null;
 
   while ((match = ruleRegex.exec(text)) !== null) {
-    const id = match[1];
+    const id = match[1] ?? '';
     const ruleText = match[2]!.trim();
     rules.push({
       id,
@@ -273,7 +273,7 @@ const parsePrinciples = (text: string, source: string): KarmicRule[] => {
     const rules: KarmicRule[] = [];
     const idRegex = /"id"\s*:\s*"(BR-\d+)"/g;
     const descRegex = /"description"\s*:\s*"([^"]+)"/g;
-    const ids = Array.from(text.matchAll(idRegex)).map(match => match[1]);
+    const ids = Array.from(text.matchAll(idRegex)).map(match => match[1] ?? '');
     const descs = Array.from(text.matchAll(descRegex)).map(match => match[1]);
     ids.forEach((id, index) => {
       const description = descs[index];

@@ -1084,7 +1084,7 @@ export class PredictionsAPI {
     const results = await Promise.all(promises);
 
     return engines.reduce((acc, engine, index) => {
-      acc[engine] = results[index];
+      acc[engine] = results[index]!;
       return acc;
     }, {} as Record<PredictionEngine, PredictionResult>);
   }

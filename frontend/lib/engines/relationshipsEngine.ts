@@ -177,7 +177,7 @@ const getOppositeSign = (sign?: string): string | null => {
   if (index < 0) {
     return null;
   }
-  return SIGN_ORDER[(index + 6) % 12];
+  return SIGN_ORDER[(index + 6) % 12] ?? null;
 };
 
 const getHouseNumber = (ascendant?: string, planetSign?: string): number | null => {
@@ -365,7 +365,7 @@ const buildCompatibilityNote = (seventhSign?: string | null): string => {
     return 'Compatibility patterns require the ascendant to calculate the 7th house sign.';
   }
   const element = SIGN_ELEMENT[seventhSign];
-  const note = COMPATIBILITY_BY_ELEMENT[element];
+  const note = element ? COMPATIBILITY_BY_ELEMENT[element] : '';
   return `${seventhSign} as the 7th house highlights ${note}`;
 };
 

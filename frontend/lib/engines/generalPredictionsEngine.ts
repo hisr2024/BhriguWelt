@@ -199,13 +199,13 @@ const getLunarDetails = (date: Date): LunarDetails => {
   };
 };
 
-const getDayLord = (date: Date) => DAY_LORDS[date.getDay()];
+const getDayLord = (date: Date) => DAY_LORDS[date.getDay()]!;
 
 const buildHoraSequence = (dayLord: string) => {
   const startIndex = PLANETARY_ORDER.indexOf(dayLord);
   const sequence: string[] = [];
   for (let i = 0; i < 24; i += 1) {
-    sequence.push(PLANETARY_ORDER[(startIndex + i) % PLANETARY_ORDER.length]);
+    sequence.push(PLANETARY_ORDER[(startIndex + i) % PLANETARY_ORDER.length]!);
   }
   return sequence;
 };
@@ -231,7 +231,7 @@ const getHoraDetails = (date: Date, sunTimes: SunTimes): HoraDetails => {
   const end = new Date(periodStart + horaLength * (hourIndex + 1));
 
   return {
-    planet: sequence[index % sequence.length],
+    planet: sequence[index % sequence.length]!,
     start,
     end,
   };

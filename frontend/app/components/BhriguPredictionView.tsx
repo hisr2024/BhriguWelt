@@ -704,11 +704,11 @@ export default function BhriguPredictionView({
     };
 
     // Extract the base section key (without category prefix if present)
-    const baseKey = sectionKey.includes(':') ? sectionKey.split(':')[1] : sectionKey;
+    const baseKey = sectionKey.includes(':') ? (sectionKey.split(':')[1] ?? sectionKey) : sectionKey;
 
     // Check if we have a template for this section
     if (summaryTemplates[baseKey]) {
-      return summaryTemplates[baseKey];
+      return summaryTemplates[baseKey]!;
     }
 
     // Fallback: extract first meaningful sentence
@@ -1071,7 +1071,7 @@ export default function BhriguPredictionView({
     // Then fall back to direct properties on prediction object
     let availableSections = sections.filter(section => {
       // Check subcategories first (new API format)
-      const subcategories = predictionData.subcategories;
+      const subcategories = predictionData.subcategories as Record<string, any> | undefined;
       if (subcategories && typeof subcategories === 'object') {
         const subcategoryData = subcategories[section.key];
         if (subcategoryData && typeof subcategoryData === 'object' && subcategoryData.content) {
@@ -1148,7 +1148,7 @@ export default function BhriguPredictionView({
       let rawContent: string = '';
 
       // PRIORITY 1: Check subcategories from API response (new structured format)
-      const subcategories = predictionData.subcategories;
+      const subcategories = predictionData.subcategories as Record<string, any> | undefined;
       if (subcategories && typeof subcategories === 'object') {
         const subcategoryContent = subcategories[key];
         if (subcategoryContent && typeof subcategoryContent === 'object' && subcategoryContent.content) {
@@ -1329,7 +1329,7 @@ export default function BhriguPredictionView({
                 const sectionId = `parsed:${section.key}`;
                 const isOpen = expandedSections.has(sectionId);
                 const colorOptions = ['cyan', 'purple', 'blue', 'indigo', 'violet', 'pink', 'rose', 'amber'];
-                const sectionColor = section.color || colorOptions[index % colorOptions.length];
+                const sectionColor = section.color || colorOptions[index % colorOptions.length]!;
 
                 return renderSection(
                   sectionId,

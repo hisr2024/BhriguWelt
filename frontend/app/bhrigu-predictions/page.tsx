@@ -96,7 +96,7 @@ export default function BhriguPredictionsPage() {
       const loadedProfiles = await getAllProfiles();
       setProfiles(loadedProfiles);
       if (loadedProfiles.length > 0) {
-        setSelectedProfile(loadedProfiles[0]);
+        setSelectedProfile(loadedProfiles[0] ?? null);
       }
     } catch (error) {
       console.error('Error loading profiles:', error);

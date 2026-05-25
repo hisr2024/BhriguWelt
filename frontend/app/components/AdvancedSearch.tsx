@@ -250,7 +250,7 @@ export default function AdvancedSearch({ isOpen, onClose }: AdvancedSearchProps)
       e.preventDefault();
       setSelectedIndex((prev) => Math.max(prev - 1, 0));
     } else if (e.key === 'Enter' && results[selectedIndex]) {
-      handleSelect(results[selectedIndex]);
+      handleSelect(results[selectedIndex]!);
     } else if (e.key === 'Escape') {
       onClose();
     }

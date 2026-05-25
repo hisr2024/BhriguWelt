@@ -103,7 +103,7 @@ function extractFirstParagraph(text: string): string {
     .filter(p => p.length > 50 && !p.startsWith('#') && !p.startsWith('**'));
 
   if (paragraphs.length > 0) {
-    return cleanText(paragraphs[0]);
+    return cleanText(paragraphs[0]!);
   }
 
   return '';

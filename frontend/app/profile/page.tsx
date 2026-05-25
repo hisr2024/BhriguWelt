@@ -39,7 +39,7 @@ export default function ProfilePage() {
         const profile = loadedProfiles.find(p => p.id === parseInt(currentProfileId));
         setCurrentProfile(profile || loadedProfiles[0] || null);
       } else if (loadedProfiles.length > 0) {
-        setCurrentProfile(loadedProfiles[0]);
+        setCurrentProfile(loadedProfiles[0] ?? null);
         localStorage.setItem('current_profile_id', loadedProfiles[0]!.id!.toString());
       }
     } catch (error) {

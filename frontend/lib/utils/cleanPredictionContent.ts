@@ -349,19 +349,19 @@ export function parsePredictionToViewData(
 
   // Determine if this is a Daily Insights API response format
   if (isDailyInsightResponse(data)) {
-    return parseDailyInsightResponse(data as DailyInsightResponse, timeframe);
+    return parseDailyInsightResponse(data as unknown as DailyInsightResponse, timeframe);
   }
 
   if (isWeeklyForecastResponse(data)) {
-    return parseWeeklyForecastResponse(data as WeeklyForecastResponse);
+    return parseWeeklyForecastResponse(data as unknown as WeeklyForecastResponse);
   }
 
   if (isMonthlyForecastResponse(data)) {
-    return parseMonthlyForecastResponse(data as MonthlyForecastResponse);
+    return parseMonthlyForecastResponse(data as unknown as MonthlyForecastResponse);
   }
 
   if (isYearlyForecastResponse(data)) {
-    return parseYearlyForecastResponse(data as YearlyForecastResponse);
+    return parseYearlyForecastResponse(data as unknown as YearlyForecastResponse);
   }
 
   // Handle generic prediction response with sections
@@ -452,7 +452,7 @@ function parseDailyInsightResponse(
     donts: data.dont_list || [],
 
     dailyDetails: {
-      date: data.date || new Date().toISOString().split('T')[0],
+      date: data.date || new Date().toISOString().split('T')[0] || '',
       dayOfWeek: data.day_of_week || new Date().toLocaleDateString('en-US', { weekday: 'long' }),
       dayRuler: {
         planet: data.day_ruler?.planet || 'Sun',
@@ -737,7 +737,7 @@ function createDefaultLuckyElements(): LuckyElements {
 
   return {
     number: dayNumber,
-    color: colors[now.getDay()],
+    color: colors[now.getDay()] ?? '',
     direction: directions[now.getDay()],
     time: '7:00 AM',
   };
@@ -779,7 +779,7 @@ function extractOverallFromSections(sections: Record<string, string>): string {
 
   for (const key of priorityKeys) {
     if (sections[key]) {
-      return cleanPredictionContent(sections[key]);
+      return cleanPredictionContent(sections[key]!);
     }
   }
 

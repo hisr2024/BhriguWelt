@@ -214,7 +214,7 @@ const parseRulesFromMarkdown = (text: string, source: string): LifeEventRule[] =
   let match: RegExpExecArray | null;
 
   while ((match = ruleRegex.exec(text)) !== null) {
-    const id = match[1];
+    const id = match[1] ?? '';
     const ruleText = match[2]?.trim() ?? '';
     rules.push({
       id,
@@ -747,7 +747,7 @@ const composeAISection = async (
   logger: LifeEventsLogger,
   language: string,
   aiMode: string
-): Promise<string | null> => {
+): Promise<string | undefined> => {
   try {
     const response = await fetch('/api/ai/compose', {
       method: 'POST',
