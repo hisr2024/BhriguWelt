@@ -419,8 +419,6 @@ export default function BhriguPredictionView({
 
   const queuedRequests: QueuedPredictionRequest[] = [];
 
-  const workerRef = useRef<Worker | null>(null);
-  const workerRequestId = useRef(0);
   const touchStartTime = useRef<number>(0); // Track touch duration to distinguish tap from scroll
 
   useFeatureFlags();
@@ -806,26 +804,14 @@ export default function BhriguPredictionView({
       return;
     }
 
-    const worker = workerRef.current;
-    if (!worker) {
-      setIsParsing(true);
-      const parseStart = typeof performance !== 'undefined' ? performance.now() : Date.now();
-      const parsed = parseFullAnalysisIntoSections(predictionData.full_analysis, category);
-      setParsedFromFullAnalysis(parsed);
-      setIsParsing(false);
-      reportMetric('prediction.parse', (typeof performance !== 'undefined' ? performance.now() : Date.now()) - parseStart, {
-        mode: 'regex',
-        sectionsExtracted: Object.keys(parsed).length,
-      });
-      return;
-    }
-
     setIsParsing(true);
-    workerRequestId.current += 1;
-    worker.postMessage({
-      id: workerRequestId.current,
-      markdown: predictionData.full_analysis,
-      sections: categoryConfig.map(section => ({ key: section.key, titles: section.titleVariants }))
+    const parseStart = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const parsed = parseFullAnalysisIntoSections(predictionData.full_analysis, category);
+    setParsedFromFullAnalysis(parsed);
+    setIsParsing(false);
+    reportMetric('prediction.parse', (typeof performance !== 'undefined' ? performance.now() : Date.now()) - parseStart, {
+      mode: 'regex',
+      sectionsExtracted: Object.keys(parsed).length,
     });
   }, [prediction?.full_analysis, category, simplifiedRendering, reportMetric]);
 
