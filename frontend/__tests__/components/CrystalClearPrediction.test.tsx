@@ -7,6 +7,46 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import CrystalClearPrediction from '@/components/predictions/CrystalClearPrediction';
 
+// Mock framer-motion so content renders without animation styles.
+// In jsdom animations never run, leaving elements stuck at their
+// `initial` styles (opacity: 0, height: 0), which breaks visibility checks.
+jest.mock('framer-motion', () => {
+  const ReactLib = require('react');
+  const MOTION_PROPS = [
+    'initial',
+    'animate',
+    'exit',
+    'transition',
+    'variants',
+    'whileHover',
+    'whileTap',
+    'whileFocus',
+    'whileInView',
+    'layout',
+  ];
+  const componentCache = new Map<string, unknown>();
+  const createMotionComponent = (tag: string) => {
+    if (!componentCache.has(tag)) {
+      componentCache.set(
+        tag,
+        ReactLib.forwardRef((props: Record<string, unknown>, ref: unknown) => {
+          const domProps: Record<string, unknown> = { ...props };
+          MOTION_PROPS.forEach((key) => delete domProps[key]);
+          return ReactLib.createElement(tag, { ...domProps, ref });
+        })
+      );
+    }
+    return componentCache.get(tag);
+  };
+  return {
+    motion: new Proxy(
+      {},
+      { get: (_target, tag) => createMotionComponent(String(tag)) }
+    ),
+    AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+  };
+});
+
 const mockPrediction = {
   summary: 'Your soul has a unique purpose to fulfill in this lifetime.',
   astrologicalSummary: 'Jupiter in the 10th house indicates success in career and public life.',
@@ -104,7 +144,7 @@ describe('CrystalClearPrediction', () => {
   });
 
   describe('Section Interaction', () => {
-    it('toggles section expansion on click', () => {
+    it('toggles section expansion on click', async () => {
       render(<CrystalClearPrediction prediction={mockPrediction} />);
 
       const summaryButton = screen.getByText('Summary').closest('button');
@@ -115,19 +155,19 @@ describe('CrystalClearPrediction', () => {
       // Click to collapse
       fireEvent.click(summaryButton!);
 
-      // Wait for animation
-      waitFor(() => {
-        expect(screen.queryByText(mockPrediction.summary)).not.toBeVisible();
+      // Collapsed content is removed from the DOM
+      await waitFor(() => {
+        expect(screen.queryByText(mockPrediction.summary)).not.toBeInTheDocument();
       });
     });
 
-    it('shows "Click to expand" text for collapsed sections', () => {
+    it('shows "Click to expand" text for collapsed sections', async () => {
       render(<CrystalClearPrediction prediction={mockPrediction} />);
 
       const summaryButton = screen.getByText('Summary').closest('button');
       fireEvent.click(summaryButton!);
 
-      waitFor(() => {
+      await waitFor(() => {
         expect(screen.getByText(/Click to expand/i)).toBeInTheDocument();
       });
     });

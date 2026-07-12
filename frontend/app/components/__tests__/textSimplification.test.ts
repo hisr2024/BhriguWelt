@@ -23,17 +23,21 @@ const simplifyContent = (content: string | null | undefined): string => {
   simplified = simplified.replace(/[\[\(](?:Chart|See Chart|Ref):\s*[^\]\)]+[\]\)]/gi, '');
 
   // Phrase transformations
+  simplified = simplified.replace(/\b(?:the\s+)?native'?s\b/gi, 'your');
   simplified = simplified.replace(/\bthe\s+native\b/gi, 'you');
-  simplified = simplified.replace(/\bnative'?s\b/gi, 'your');
   simplified = simplified.replace(/\bthe\s+chart\s+shows\b/gi, 'your birth chart reveals');
-  simplified = simplified.replace(/\bindicates?\b/gi, (match) => {
-    return match[0] === match[0].toUpperCase() ? 'Suggests' : 'suggests';
+  simplified = simplified.replace(/\bindicate[sd]?\b/gi, (match) => {
+    const lower = match.toLowerCase();
+    const replacement = lower === 'indicated' ? 'suggested' : lower === 'indicate' ? 'suggest' : 'suggests';
+    return match[0] === match[0].toUpperCase()
+      ? replacement[0].toUpperCase() + replacement.slice(1)
+      : replacement;
   });
   simplified = simplified.replace(/\bsignifies\b/gi, (match) => {
     return match[0] === match[0].toUpperCase() ? 'Points to' : 'points to';
   });
+  simplified = simplified.replace(/\b(?:the\s+)?individual'?s\b/gi, 'your');
   simplified = simplified.replace(/\bthe\s+individual\b/gi, 'you');
-  simplified = simplified.replace(/\bindividual'?s\b/gi, 'your');
   simplified = simplified.replace(/\bone\s+will\b/gi, 'you will');
   simplified = simplified.replace(/\bone'?s\b/gi, 'your');
 
@@ -61,7 +65,7 @@ const simplifyContent = (content: string | null | undefined): string => {
   simplified = simplified.replace(/\(\s*\)/g, '');
   simplified = simplified.replace(/\[\s*\]/g, '');
   simplified = simplified.replace(/\s+([.,!?;:])/g, '$1');
-  simplified = simplified.replace(/([.,!?;:])\s{2,}/g, '$1 ');
+  simplified = simplified.replace(/([.,!?;:])[ \t]{2,}/g, '$1 ');
 
   return simplified;
 };
@@ -91,7 +95,7 @@ describe('Text Simplification Functions', () => {
 
     test('should remove Sanskrit bracketed terms', () => {
       const input = "The native has strong dharma [Sanskrit: righteousness].";
-      const expected = "You has strong dharma.";
+      const expected = "you has strong dharma.";
       expect(simplifyContent(input)).toBe(expected);
     });
 
@@ -266,7 +270,7 @@ The native's career indicates growth (ND-123).`;
     test('should return simplified content in layman mode', () => {
       const input = "The native will succeed (Bikaner 12b).";
       const result = getSimplifiedSectionContent(input, 'layman');
-      expect(result).toBe("You will succeed.");
+      expect(result).toBe("you will succeed.");
     });
 
     test('should return original content in astrologer mode', () => {

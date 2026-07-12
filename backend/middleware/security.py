@@ -20,6 +20,7 @@ class SecurityMiddleware:
     
     def init_app(self, app):
         """Initialize security middleware with Flask app"""
+        self.app = app
         app.after_request(self.add_security_headers)
         
         # Force HTTPS in production

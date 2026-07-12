@@ -487,6 +487,14 @@ class VedicCalculationEngine:
         References: Bhrigu Samhita remedial principles
         """
         try:
+            if not isinstance(chart_data, dict):
+                # Legacy call style: generate_remedial_measures(afflictions, ascendant).
+                # Normalize so a bare list of afflictions doesn't crash on .get().
+                afflictions = list(chart_data) if isinstance(chart_data, (list, tuple)) else []
+                ascendant_hint = specific_issue if isinstance(specific_issue, str) else 'Unknown'
+                chart_data = {'afflictions': afflictions, 'ascendant': ascendant_hint}
+                specific_issue = None
+
             remedies = {
                 'mantras': [],
                 'gemstones': [],

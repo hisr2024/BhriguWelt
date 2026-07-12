@@ -232,8 +232,12 @@ class ConsciousnessAwareAI:
     def _enhance_empowerment(self, prediction: str) -> str:
         """Enhance prediction to be more empowering"""
 
-        # Replace disempowering language
+        # Replace disempowering and fatalistic language (longer phrases first
+        # so partial words are not left behind, e.g. 'doomed')
         replacements = {
+            'you are doomed': 'you face a pivotal turning point',
+            'there is no other way': 'there are multiple paths forward',
+            'doomed': 'challenged',
             'you must': 'you may choose to',
             'you should': 'you might consider',
             'you have to': 'you have the option to',

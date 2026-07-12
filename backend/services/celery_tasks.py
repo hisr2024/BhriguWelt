@@ -556,7 +556,7 @@ def task_with_retry(self, *args, **kwargs):
         # Simulate task that might fail
         logger.info(
             f"Executing task_with_retry (attempt {self.request.retries + 1})",
-            extra={'args': args, 'kwargs': kwargs}
+            extra={'task_args': args, 'task_kwargs': kwargs}
         )
 
         # Example: Process the task

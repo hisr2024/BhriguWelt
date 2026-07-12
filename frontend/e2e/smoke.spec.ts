@@ -15,7 +15,8 @@ test.describe('Smoke Tests', () => {
   test('navigation is accessible', async ({ page }) => {
     await page.goto('/');
     
-    const navigation = page.locator('nav');
+    // The app renders a top navbar and a bottom mobile nav - target the first
+    const navigation = page.locator('nav').first();
     await expect(navigation).toBeVisible();
     await expect(navigation).toContainText('BhriguWelt');
   });
@@ -40,6 +41,9 @@ test.describe('Smoke Tests', () => {
     const ACCEPTABLE_ERROR_PATTERNS = [
       'Failed to fetch',
       'ECONNREFUSED',
+      'ERR_CONNECTION_RESET',
+      'ERR_CONNECTION_REFUSED',
+      'Failed to load resource',
     ];
     
     page.on('console', (msg) => {

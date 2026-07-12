@@ -34,3 +34,4 @@ backend/*.db
 .idea/
 .railway/
 render.yaml.local
+test-results/

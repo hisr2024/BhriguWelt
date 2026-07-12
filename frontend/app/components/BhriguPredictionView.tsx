@@ -419,8 +419,6 @@ export default function BhriguPredictionView({
 
   const queuedRequests: QueuedPredictionRequest[] = [];
 
-  const workerRef = useRef<Worker | null>(null);
-  const workerRequestId = useRef(0);
   const touchStartTime = useRef<number>(0); // Track touch duration to distinguish tap from scroll
 
   useFeatureFlags();
@@ -544,6 +542,9 @@ export default function BhriguPredictionView({
     setIsLowEndDevice(lowEnd);
   }, []);
 
+  // Encrypted-store profile-hash bookkeeping only. Generation is triggered
+  // solely by useBhriguPrediction's own effect — this effect previously ALSO
+  // called loadPrediction, firing two identical prediction POSTs per mount.
   useEffect(() => {
     if (profile && encryptionKey) {
       const checkProfile = async () => {
@@ -557,7 +558,6 @@ export default function BhriguPredictionView({
         }
 
         await setItem(STORES.SETTINGS, hashKey, currentHash, encryptionKey);
-        await loadPrediction(hasChanged, currentHash);
       };
 
       void checkProfile();
@@ -804,26 +804,14 @@ export default function BhriguPredictionView({
       return;
     }
 
-    const worker = workerRef.current;
-    if (!worker) {
-      setIsParsing(true);
-      const parseStart = typeof performance !== 'undefined' ? performance.now() : Date.now();
-      const parsed = parseFullAnalysisIntoSections(predictionData.full_analysis, category);
-      setParsedFromFullAnalysis(parsed);
-      setIsParsing(false);
-      reportMetric('prediction.parse', (typeof performance !== 'undefined' ? performance.now() : Date.now()) - parseStart, {
-        mode: 'regex',
-        sectionsExtracted: Object.keys(parsed).length,
-      });
-      return;
-    }
-
     setIsParsing(true);
-    workerRequestId.current += 1;
-    worker.postMessage({
-      id: workerRequestId.current,
-      markdown: predictionData.full_analysis,
-      sections: categoryConfig.map(section => ({ key: section.key, titles: section.titleVariants }))
+    const parseStart = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const parsed = parseFullAnalysisIntoSections(predictionData.full_analysis, category);
+    setParsedFromFullAnalysis(parsed);
+    setIsParsing(false);
+    reportMetric('prediction.parse', (typeof performance !== 'undefined' ? performance.now() : Date.now()) - parseStart, {
+      mode: 'regex',
+      sectionsExtracted: Object.keys(parsed).length,
     });
   }, [prediction?.full_analysis, category, simplifiedRendering, reportMetric]);
 
@@ -1146,6 +1134,17 @@ export default function BhriguPredictionView({
     // Helper function to get section content from either source with validation
     const getSectionContent = (key: string): string => {
       let rawContent: string = '';
+
+      // PRIORITY 0: backend-provided sharp user view (Wisdom Core postfilter).
+      // In layman mode this is already precise and free of technical detail —
+      // no client-side regex simplification needed.
+      const userViews = (predictionData as Record<string, any>).user_views as
+        | Record<string, string>
+        | undefined;
+      const userView = viewMode === 'layman' && userViews ? userViews[key] : undefined;
+      if (typeof userView === 'string' && userView.trim().length > 0) {
+        return userView;
+      }
 
       // PRIORITY 1: Check subcategories from API response (new structured format)
       const subcategories = predictionData.subcategories as Record<string, any> | undefined;

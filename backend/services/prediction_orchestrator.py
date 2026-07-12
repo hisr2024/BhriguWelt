@@ -124,17 +124,18 @@ class PredictionOrchestrator:
         Returns:
             Dictionary with prediction and metadata
         """
+        # Validate inputs BEFORE the guaranteed-fallback block: bad arguments
+        # are caller errors and must raise, not be masked by a fallback dict.
+        if not category or not isinstance(category, str):
+            raise ValueError("Invalid category: must be a non-empty string")
+
+        if not chart_data or not isinstance(chart_data, dict):
+            raise ValueError("Invalid chart_data: must be a non-empty dictionary")
+
         # OPTIMIZED: Removed global lock - prediction generation is now concurrent
         # Each underlying service (OpenAI, offline) handles its own thread safety
         if True:  # Keeping indentation structure for minimal code change
             try:
-                # Validate inputs
-                if not category or not isinstance(category, str):
-                    raise ValueError("Invalid category: must be a non-empty string")
-
-                if not chart_data or not isinstance(chart_data, dict):
-                    raise ValueError("Invalid chart_data: must be a non-empty dictionary")
-
                 # Validate category is supported
                 valid_categories = {
                     'karmic_journey',

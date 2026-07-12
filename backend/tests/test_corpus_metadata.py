@@ -30,6 +30,13 @@ def test_metadata_marks_missing_corpus(monkeypatch):
     monkeypatch.setattr(corpus_loader_module.CorpusLoader, "_load_corpus", fake_load)
     monkeypatch.setattr(corpus_loader_module, "_corpus_loader", None)
     monkeypatch.setattr(openai_service_module, "_openai_service_instance", None)
+    # Legacy offline pipeline is under test (strict mode raises instead of
+    # falling back), and OpenAI HTTP must fail fast without real network.
+    monkeypatch.setenv('BHRIGU_STRICT_PRECISION', 'false')
+    import requests as requests_module
+    def _no_network(*args, **kwargs):
+        raise requests_module.exceptions.ConnectionError('offline test environment')
+    monkeypatch.setattr(openai_service_module.requests, 'post', _no_network)
 
     service = BhriguPredictionsService()
     birth_data = {

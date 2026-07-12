@@ -2,14 +2,49 @@
 Comprehensive Test Suite for Resilient Response System
 VALIDATION EMPIRE: 10 Imperial Test Runs to ensure 100% response rate
 """
+import importlib.util
 import pytest
 import json
 import time
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import patch, MagicMock
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+# The frontend resilience layer is TypeScript; it cannot be imported or
+# executed from Python. The frontend-facing tests below statically verify
+# that the resilientFetch contract the backend relies on still exists.
+RESILIENT_FETCH_TS = (
+    Path(__file__).resolve().parents[2] / 'frontend' / 'lib' / 'api' / 'resilientFetch.ts'
+)
+
+# The full Flask app (used by the `client` fixture) needs the complete web
+# stack from requirements.txt; some test environments install only the
+# service-layer dependencies.
+APP_DEPS_AVAILABLE = all(
+    importlib.util.find_spec(mod) is not None
+    for mod in ('flask_sqlalchemy', 'flask_jwt_extended')
+)
+
 # Test fixtures and sample data
+
+
+@pytest.fixture
+def resilient_fetch_source():
+    if not RESILIENT_FETCH_TS.exists():
+        pytest.skip("frontend/lib/api/resilientFetch.ts not present in this checkout")
+    return RESILIENT_FETCH_TS.read_text()
+
+
+@pytest.fixture(autouse=True)
+def legacy_resilience_mode(monkeypatch):
+    """These tests exercise the legacy always-return-a-dict resilience
+    machinery, which is now gated behind BHRIGU_STRICT_PRECISION=false.
+    Strict mode (default) raises PredictionUnavailableError instead of
+    serving generalised fallback text; that contract is covered in
+    tests/test_wisdom_core_pipeline.py."""
+    monkeypatch.setenv('BHRIGU_STRICT_PRECISION', 'false')
+
 @pytest.fixture
 def sample_birth_data():
     """Sample birth data for testing"""
@@ -106,97 +141,69 @@ class TestBackendConcurrency:
 
 
 class TestFrontendNormalOperation:
-    """Test 4: Frontend Normal - Load page should show predictions"""
+    """Test 4: Frontend Normal - normalization contract must exist"""
 
-    def test_frontend_api_structure(self):
-        """Verify frontend API structures are correct"""
-        # This would typically be an E2E test, but we can validate structure
-        from frontend.lib.api.resilientFetch import normalizePredictionResponse
+    def test_frontend_api_structure(self, resilient_fetch_source):
+        """Verify the response normalizer exists and always yields an object"""
+        src = resilient_fetch_source
 
-        # Test normalization with various inputs
-        test_cases = [
-            {'full_analysis': 'test', 'category': 'karmic_journey'},
-            {'error': 'test error'},
-            {},
-            None
-        ]
-
-        for test_data in test_cases:
-            result = normalizePredictionResponse(test_data)
-            assert isinstance(result, dict), "Normalized result must be dict"
-            print(f"✓ Test 4 PASSED: Frontend normalizes: {test_data}")
+        assert 'export function normalizePredictionResponse' in src, \
+            "normalizePredictionResponse export missing"
+        # Invalid/null payloads must be converted into an error object,
+        # never passed through as null/undefined
+        assert "if (!data || typeof data !== 'object')" in src, \
+            "normalizer must guard against null/non-object payloads"
+        assert 'success: false' in src, "normalizer must flag failures"
+        print("✓ Test 4 PASSED: Frontend normalization contract present")
 
 
 class TestFrontendBackendDown:
-    """Test 5: Frontend Backend Down - Mock 500 should show offline message"""
+    """Test 5: Frontend Backend Down - offline fallback contract must exist"""
 
-    @patch('frontend.lib.api.resilientFetch.fetch')
-    async def test_offline_handling(self, mock_fetch):
-        """Test frontend handles backend being down"""
-        from frontend.lib.api.resilientFetch import resilientFetch
+    def test_offline_handling(self, resilient_fetch_source):
+        """Verify resilientFetch returns offline fallback data on network errors"""
+        src = resilient_fetch_source
 
-        # Mock network error
-        mock_fetch.side_effect = Exception("Failed to fetch")
-
-        result = await resilientFetch('http://test.com/api', {
-            'fallbackData': {'offline': True, 'message': 'Service temporarily unavailable'}
-        })
-
-        assert isinstance(result, dict), "Result must be dict"
-        offline_mode = result.get('offline', False)
-        success = result.get('success', True)
-        assert offline_mode or not success, f"Expected offline mode or failure, got: {result}"
-        print("✓ Test 5 PASSED: Frontend handles backend down")
+        assert 'export async function resilientFetch' in src, \
+            "resilientFetch export missing"
+        # Network failures must surface offline mode with the caller's fallback data
+        assert "error.message?.includes('Failed to fetch')" in src, \
+            "network-error detection missing"
+        assert 'offline: true' in src, "offline flag missing from network-error response"
+        assert 'data: fallbackData' in src, "fallbackData must be served when offline"
+        print("✓ Test 5 PASSED: Frontend offline fallback contract present")
 
 
 class TestFrontendTimeout:
-    """Test 6: Frontend Timeout - Slow API should abort and show message"""
+    """Test 6: Frontend Timeout - abort contract must exist"""
 
-    @patch('frontend.lib.api.resilientFetch.fetch')
-    async def test_timeout_abort(self, mock_fetch):
-        """Test frontend times out slow requests"""
-        from frontend.lib.api.resilientFetch import resilientFetch
+    def test_timeout_abort(self, resilient_fetch_source):
+        """Verify resilientFetch aborts slow requests and flags the timeout"""
+        src = resilient_fetch_source
 
-        # Mock slow response
-        async def slow_response(*args, **kwargs):
-            await asyncio.sleep(10)  # Longer than timeout
-            return MagicMock()
-
-        mock_fetch.side_effect = slow_response
-
-        start = time.time()
-        result = await resilientFetch('http://test.com/api', {'timeout': 1000})
-        duration = time.time() - start
-
-        assert duration < 5, f"Request should timeout quickly, took {duration}s"
-        timeout_occurred = result.get('timedOut', False)
-        success = result.get('success', True)
-        assert timeout_occurred or not success, f"Expected timeout or failure, got: {result}"
-        print("✓ Test 6 PASSED: Frontend aborts on timeout")
+        assert 'new AbortController()' in src, "timeout requires an AbortController"
+        assert 'setTimeout(() => controller.abort(), timeout)' in src, \
+            "requests must be aborted after the configured timeout"
+        assert 'timedOut: true' in src, "timed-out responses must set timedOut"
+        print("✓ Test 6 PASSED: Frontend timeout abort contract present")
 
 
 class TestFrontendCacheRecovery:
-    """Test 7: Frontend Cache Fail - Corrupt cache should clear & reload"""
+    """Test 7: Frontend Cache Fail - corruption recovery contract must exist"""
 
-    async def test_cache_corruption_recovery(self):
-        """Test cache corruption handling"""
-        from frontend.lib.api.resilientFetch import handleCacheCorruption, safeGetItem
+    def test_cache_corruption_recovery(self, resilient_fetch_source):
+        """Verify corrupted cache entries are cleared instead of crashing"""
+        src = resilient_fetch_source
 
-        # Simulate corrupted cache
-        test_key = 'test_prediction_cache'
-
-        # Try to set corrupted data (if localStorage available)
-        try:
-            import js
-            js.localStorage.setItem(test_key, '{invalid json')
-        except (ImportError, AttributeError):
-            # Not in browser environment, skip localStorage test
-            pass
-
-        # Should recover without crashing
-        result = await safeGetItem(test_key)
-        assert result is None or isinstance(result, dict)
-        print("✓ Test 7 PASSED: Cache corruption recovery works")
+        assert 'export async function handleCacheCorruption' in src, \
+            "handleCacheCorruption export missing"
+        assert 'export async function safeGetItem' in src, "safeGetItem export missing"
+        # Unparseable entries must be removed and reads must recover to null
+        assert 'localStorage.removeItem' in src, \
+            "corrupted entries must be removed from localStorage"
+        assert 'await handleCacheCorruption(key)' in src, \
+            "safeGetItem must trigger corruption recovery on parse failure"
+        print("✓ Test 7 PASSED: Frontend cache corruption recovery contract present")
 
 
 class TestEndToEnd:
@@ -300,6 +307,11 @@ class TestEdgeCases:
 
 
 # Integration test to validate all systems
+@pytest.mark.skipif(
+    not APP_DEPS_AVAILABLE,
+    reason="Flask app requires flask_sqlalchemy/flask_jwt_extended (installed via "
+           "requirements.txt in CI); without them the client fixture yields a Mock"
+)
 class TestSystemIntegration:
     """Integration test validating entire resilient system"""
 
@@ -322,8 +334,8 @@ class TestSystemIntegration:
             headers={'Content-Type': 'application/json'}
         )
 
-        # Should get a response (even if error)
-        assert response.status_code in [200, 400, 500]
+        # Should get a response (even if error; 429 = live rate limiter)
+        assert response.status_code in [200, 400, 429, 500]
         assert response.content_type == 'application/json'
 
         data = json.loads(response.data)

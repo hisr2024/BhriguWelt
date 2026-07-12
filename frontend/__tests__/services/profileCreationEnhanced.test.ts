@@ -26,8 +26,14 @@ describe('Enhanced Profile Creation Service', () => {
   let mockConfig: ProfileCreationConfig;
 
   beforeEach(() => {
-    // Create a mock encryption key
-    mockEncryptionKey = {} as CryptoKey;
+    // Create a mock encryption key (must expose `usages` to pass the
+    // service's encryption readiness check)
+    mockEncryptionKey = {
+      algorithm: { name: 'AES-GCM' },
+      type: 'secret',
+      extractable: false,
+      usages: ['encrypt', 'decrypt'] as KeyUsage[],
+    } as CryptoKey;
     mockConfig = {
       encryptionKey: mockEncryptionKey,
       onProgress: jest.fn(),

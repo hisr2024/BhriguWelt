@@ -7,6 +7,17 @@ from services.bhrigu_predictions import BhriguPredictionsService
 from services.section_parser import SectionParser
 
 
+@pytest.fixture(autouse=True)
+def legacy_resilience_mode(monkeypatch):
+    """These tests exercise the legacy always-return-a-dict resilience
+    machinery, which is now gated behind BHRIGU_STRICT_PRECISION=false.
+    Strict mode (default) raises PredictionUnavailableError instead of
+    serving generalised fallback text; that contract is covered in
+    tests/test_wisdom_core_pipeline.py."""
+    monkeypatch.setenv('BHRIGU_STRICT_PRECISION', 'false')
+
+
+
 class TestStructuredPredictions:
     """Integration tests for structured prediction generation"""
     
@@ -15,8 +26,16 @@ class TestStructuredPredictions:
     
     @pytest.fixture
     def service(self):
-        """Create a predictions service instance"""
-        return BhriguPredictionsService()
+        """Create a predictions service instance.
+
+        Build with a FRESH OpenAIService rather than the module singleton:
+        suites that import backend.app at collection time create the
+        singleton before conftest's function-scoped env fixture sets
+        OPENAI_API_KEY, leaving it permanently disabled and making this
+        suite order-dependent in full-suite runs.
+        """
+        from services.openai_service import OpenAIService
+        return BhriguPredictionsService(openai_service=OpenAIService())
     
     @pytest.fixture
     def sample_birth_data(self):
@@ -270,10 +289,13 @@ class TestStructuredPredictions:
 
 class TestAutoRepairFunctionality:
     """Test the auto-repair functionality for missing sections"""
-    
+
     @pytest.fixture
     def service(self):
-        return BhriguPredictionsService()
+        # Fresh OpenAIService for order-independence (see note in
+        # TestStructuredPredictions.service).
+        from services.openai_service import OpenAIService
+        return BhriguPredictionsService(openai_service=OpenAIService())
     
     @pytest.fixture
     def sample_birth_data(self):

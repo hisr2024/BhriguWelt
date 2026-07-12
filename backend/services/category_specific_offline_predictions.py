@@ -2194,7 +2194,11 @@ By December {year}, you will have made significant progress in {nak_data.get('ch
 
         generator = generators.get(category)
         if generator:
-            return generator(birth_data)
+            result = generator(birth_data)
+            # Keep the top-level contract consistent with service-generated
+            # predictions, which always carry 'generated_at'.
+            result.setdefault('generated_at', datetime.utcnow().isoformat())
+            return result
 
         # Fallback for unknown categories
         return {

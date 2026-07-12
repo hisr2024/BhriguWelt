@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
 import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 
@@ -6,73 +6,12 @@ const PROFILE_HASH_PREFIX = 'profile_hash_';
 const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_';
 
 /**
- * Retry options for the retryWithBackoff helper
+ * In-flight request dedupe: identical prediction requests (same profile,
+ * category, question, and force flag) share one promise instead of firing
+ * duplicate POSTs. This collapses double-mounted effects and rapid re-calls
+ * into a single network request.
  */
-interface RetryOptions {
-  maxRetries?: number;
-  baseDelay?: number;
-  maxDelay?: number;
-  shouldRetry?: (error: any) => boolean;
-  onRetry?: (attempt: number, error: any) => void;
-}
-
-/**
- * Retry an async operation with exponential backoff
- * @param operation - The async function to retry
- * @param options - Retry configuration options
- * @returns The result of the operation
- */
-async function retryWithBackoff<T>(
-  operation: () => Promise<T>,
-  options: RetryOptions = {}
-): Promise<T> {
-  const {
-    maxRetries = 2,
-    baseDelay = 500, // 500ms - reduced for faster retries
-    maxDelay = 3000, // 3 seconds max - reduced for faster recovery
-    shouldRetry = () => true,
-    onRetry,
-  } = options;
-
-  let lastError: any;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await operation();
-    } catch (error) {
-      lastError = error;
-
-      // Don't retry if we've exhausted attempts
-      if (attempt === maxRetries) {
-        break;
-      }
-
-      // Check if we should retry this error
-      if (!shouldRetry(error)) {
-        throw error;
-      }
-
-      // Calculate delay with exponential backoff + jitter
-      const exponentialDelay = Math.min(
-        baseDelay * Math.pow(2, attempt),
-        maxDelay
-      );
-      // Add 0-30% random jitter to prevent thundering herd
-      const jitter = Math.random() * 0.3 * exponentialDelay;
-      const delay = exponentialDelay + jitter;
-
-      // Call retry callback
-      if (onRetry) {
-        onRetry(attempt + 1, error);
-      }
-
-      // Wait before retry
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-  }
-
-  throw lastError;
-}
+const inFlightRequests = new Map<string, Promise<PredictionResult>>();
 
 /**
  * Request queue for limiting concurrent API requests
@@ -238,6 +177,13 @@ export const useBhriguPrediction = ({
   const [timeoutWarning, setTimeoutWarning] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
 
+  // The question is read through a ref so typing in the question box does NOT
+  // change loadPrediction's identity — previously every keystroke re-ran the
+  // mount effect and fired a fresh generation request per character typed.
+  // Generation now happens only on mount/profile change or explicit submit.
+  const questionRef = useRef(question);
+  questionRef.current = question;
+
   const loadPrediction = useCallback(async (
     forceRegenerate = false,
     profileHash?: string
@@ -257,8 +203,9 @@ export const useBhriguPrediction = ({
     setRetryAttempt(0);
 
     try {
+      const currentQuestion = questionRef.current;
       const resolvedHash = profileHash ?? await getProfileHash(profile);
-      const cacheKey = getPredictionCacheKey(profile, category, question);
+      const cacheKey = getPredictionCacheKey(profile, category, currentQuestion);
       const cached = typeof window === 'undefined' ? null : localStorage.getItem(cacheKey);
 
       // Check cache first (fast path)
@@ -287,42 +234,24 @@ export const useBhriguPrediction = ({
         place_of_birth: profile.placeOfBirth,
         latitude: profile.latitude,
         longitude: profile.longitude,
-        question: question || undefined,
+        question: currentQuestion || undefined,
         force_regenerate: forceRegenerate
       };
 
-      // Use request queue and retry logic for API call
-      const response = await requestQueue.enqueue(() =>
-        retryWithBackoff(
-          () => fetchPrediction(profileData),
-          {
-            maxRetries: 2, // Retry up to 2 times (3 total attempts)
-            baseDelay: 2000, // Start with 2 seconds
-            shouldRetry: (error) => {
-              // Retry on network errors, 5xx, or timeouts
-              const status = error?.response?.status;
-              return (
-                !error.response || // Network error
-                error.code === 'ECONNABORTED' || // Timeout
-                error.code === 'ETIMEDOUT' || // Timeout
-                (status && status >= 500 && status < 600) || // Server error
-                error?.response?.data?.retryable === true // Explicit retry flag
-              );
-            },
-            onRetry: (attempt, error) => {
-              // Update UI to show retry progress
-              setRetryAttempt(attempt);
-
-              setErrorDetails({
-                message: `Retrying... (attempt ${attempt}/2)`,
-                isNetwork: !error.response,
-                code: 'RETRY',
-                action: 'Automatic retry in progress. Please wait...',
-              });
-            },
-          }
-        )
-      );
+      // Single retry layer: the shared axios client already retries network
+      // and 5xx errors with backoff. Wrapping another retry loop here caused
+      // up to 9 attempts per failure and ~40s of stuck loading state.
+      // In-flight dedupe: identical concurrent requests share one promise.
+      const requestKey = `${cacheKey}::${forceRegenerate ? 'force' : 'normal'}`;
+      let pending = inFlightRequests.get(requestKey);
+      if (!pending) {
+        pending = requestQueue.enqueue(() => fetchPrediction(profileData));
+        inFlightRequests.set(requestKey, pending);
+        // Cleanup must observe the rejection; a bare .finally() chain would
+        // surface as an unhandled promise rejection on failure.
+        pending.catch(() => undefined).finally(() => inFlightRequests.delete(requestKey));
+      }
+      const response = await pending;
 
       const normalized = normalizePredictionResponse<BhriguPrediction>(response);
 
@@ -398,7 +327,7 @@ export const useBhriguPrediction = ({
       setLoading(false);
       setRetryAttempt(0);
     }
-  }, [category, fetchPrediction, profile, question]);
+  }, [category, fetchPrediction, profile]);
 
   // Timeout warning effect - show warning after 30 seconds of loading
   useEffect(() => {
