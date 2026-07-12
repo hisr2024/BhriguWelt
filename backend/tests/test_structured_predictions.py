@@ -7,6 +7,17 @@ from services.bhrigu_predictions import BhriguPredictionsService
 from services.section_parser import SectionParser
 
 
+@pytest.fixture(autouse=True)
+def legacy_resilience_mode(monkeypatch):
+    """These tests exercise the legacy always-return-a-dict resilience
+    machinery, which is now gated behind BHRIGU_STRICT_PRECISION=false.
+    Strict mode (default) raises PredictionUnavailableError instead of
+    serving generalised fallback text; that contract is covered in
+    tests/test_wisdom_core_pipeline.py."""
+    monkeypatch.setenv('BHRIGU_STRICT_PRECISION', 'false')
+
+
+
 class TestStructuredPredictions:
     """Integration tests for structured prediction generation"""
     

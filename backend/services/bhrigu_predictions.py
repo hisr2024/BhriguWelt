@@ -12,6 +12,16 @@ from services.astrology_calculator import AstrologyCalculator
 from services.section_parser import get_section_parser
 from services.bhrigu_corpus_db import get_corpus_database
 from services.bhrigu_core_wisdom import BhriguCoreWisdom
+from services.wisdom_core_pipeline import (
+    InsufficientChartDataError,
+    PredictionUnavailableError,
+    build_chart_facts,
+    correction_instructions,
+    format_chart_context,
+    postfilter_report,
+    split_views,
+    strict_precision_enabled,
+)
 from utils.logger import setup_logger, log_exception, secure_log, sanitize_error
 
 # Initialize logger first
@@ -408,6 +418,11 @@ Actionable Guidance:
                 f"parser={bool(self.section_parser)}, "
                 f"errors={len(self.init_errors)}"
             )
+
+            if self.strict_precision:
+                # No generalised emergency fallback in strict precision mode —
+                # surface an explicit, retryable error instead.
+                raise PredictionUnavailableError('services_unavailable')
 
             # Import fallback functions
             from services.prediction_helpers import (
@@ -1293,6 +1308,16 @@ Actionable Guidance:
             ]
         }
 
+    @property
+    def strict_precision(self) -> bool:
+        """
+        Strict precision mode (default ON): never serve generalised fallback
+        text; every section is grounded in the computed chart and
+        postfilter-verified. Read dynamically so deployments (and tests) can
+        toggle via BHRIGU_STRICT_PRECISION without service re-initialization.
+        """
+        return strict_precision_enabled()
+
     @staticmethod
     def _clean_value(value: Any) -> Any:
         if value is None:
@@ -1402,11 +1427,30 @@ Actionable Guidance:
             return f"Complete analysis synthesis: See detailed sections above for comprehensive insights into your {category.replace('_', ' ')}."
 
     def _format_birth_details(self, birth_data: Dict[str, Any]) -> str:
-        detail_map = [
+        scalar_map = [
             ('date_of_birth', 'Date of Birth'),
             ('time_of_birth', 'Time of Birth'),
             ('place_of_birth', 'Place of Birth'),
             ('age', 'Current Age'),
+        ]
+        lines = []
+        for key, label in scalar_map:
+            value = birth_data.get(key)
+            if value not in (None, '', []):
+                lines.append(f"- {label}: {value}")
+
+        # PREFILTER: inject the FULL computed chart (every planet with sign,
+        # degree, nakshatra+pada and whole-sign house, plus dasha) so the
+        # model grounds every claim in real placements instead of inventing.
+        try:
+            facts = build_chart_facts(birth_data)
+            lines.append(format_chart_context(facts))
+            return "\n".join(lines)
+        except InsufficientChartDataError:
+            pass
+
+        # Legacy scalar fields when no computed planets are available
+        legacy_map = [
             ('zodiac_sign', 'Zodiac Sign (Rashi)'),
             ('moon_sign', 'Moon Sign'),
             ('ascendant', 'Ascendant (Lagna)'),
@@ -1417,8 +1461,7 @@ Actionable Guidance:
             ('saturn_position', 'Saturn Position'),
             ('dasha_period', 'Current Dasha Period')
         ]
-        lines = []
-        for key, label in detail_map:
+        for key, label in legacy_map:
             value = birth_data.get(key)
             if value not in (None, '', []):
                 lines.append(f"- {label}: {value}")
@@ -1462,11 +1505,22 @@ Birth Details:
 ## SECTION FOCUS for "{section_spec['title']}":
 {focus_lines}
 
+## GROUNDING RULES (mandatory):
+- Cite ONLY the placements listed under Birth Details above. NEVER invent a planetary position, house, or nakshatra that is not listed.
+- Anchor every claim to a named planet, sign, nakshatra, house, or dasha period from this chart.
+- Give timing as concrete windows (dasha periods, age ranges, or years) — never "at some point" or "sometime in the future".
+- NO generalised filler ("every soul", "trust the universe", "in general") and NO hedging ("may or may not").
+
+## OUTPUT STRUCTURE (mandatory — use these exact bold markers):
+**Key Insight:** 2-4 sharp, plain-language sentences a non-astrologer instantly understands. Precise, specific, no jargon.
+**Timing:** the concrete periods/age ranges for this section's themes, anchored to the dasha and placements above.
+**Technical Analysis:** the full astrological reasoning — placements, yogas, doshas, and Bhrigu Samhita / Nadi Jyotisha principles cited by name. This is the astrologer-mode detail.
+Actionable Guidance: 3 specific bullet points.
+
 ## OUTPUT REQUIREMENTS:
 - Minimum 250 words of CATEGORY-SPECIFIC content
 - Use specific astrological references (yogas, doshas, planetary combinations)
 - Cite Bhrigu Samhita or Nadi principles where applicable
-- End with "Actionable Guidance:" followed by 3 specific bullet points
 - DO NOT repeat generic content - make it UNIQUE to this section"""
 
     def _actionable_guidance(self, category: str) -> List[str]:
@@ -1563,16 +1617,61 @@ Birth Details:
         birth_data: Dict[str, Any],
         question: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Generate sectioned prediction with crash prevention"""
+        """Generate sectioned prediction with prefilter/postfilter precision verification"""
         try:
             section_specs = self.SECTION_SPECS.get(category, [])
             sections: Dict[str, Any] = {}
             status_map: Dict[str, Any] = {}
 
+            # PREFILTER: chart facts computed once, used to ground and verify
+            # every section. Absence of facts is tolerated only outside strict
+            # mode (legacy scalar prompts still apply).
+            chart_facts = None
+            chart_context = ""
+            try:
+                chart_facts = build_chart_facts(birth_data)
+                chart_context = format_chart_context(chart_facts)
+            except InsufficientChartDataError as e:
+                if self.strict_precision and not birth_data.get('zodiac_sign'):
+                    raise PredictionUnavailableError('insufficient_chart_data') from e
+                logger.warning(f"Chart facts unavailable for postfilter verification: {e}")
+
+            allow_fallback = not self.strict_precision
+
             for section_spec in section_specs:
                 try:
                     prompt = self._build_section_prompt(category, section_spec, birth_data, question)
-                    section_text = self.openai_service.generate_prediction(prompt, birth_data)
+                    section_text = self.openai_service.generate_prediction(
+                        prompt, birth_data, allow_fallback=allow_fallback
+                    )
+                    status_entry: Dict[str, Any] = {'status': 'generated'}
+
+                    # POSTFILTER: verify grounding + specificity; one corrective
+                    # regeneration when the draft fails verification.
+                    if chart_facts:
+                        report = postfilter_report(section_text, chart_facts)
+                        if not report['ok']:
+                            corrective_prompt = (
+                                f"{prompt}\n\n{correction_instructions(report, chart_context)}"
+                            )
+                            retry_text = self.openai_service.generate_prediction(
+                                corrective_prompt, birth_data, allow_fallback=allow_fallback
+                            )
+                            retry_report = postfilter_report(retry_text, chart_facts)
+                            if retry_report['ok'] or (
+                                len(retry_report['mismatched_claims']) <= len(report['mismatched_claims'])
+                                and retry_report['specific_refs'] >= report['specific_refs']
+                            ):
+                                section_text, report = retry_text, retry_report
+                        status_entry['precision'] = {
+                            'verified': report['ok'],
+                            'specific_refs': report['specific_refs'],
+                            'mismatched_claims': report['mismatched_claims'],
+                            'generic_hits': report['generic_hits'],
+                        }
+                        if not report['ok']:
+                            status_entry['status'] = 'generated_unverified'
+
                     cleaned_section = self._strip_section_header(
                         section_text,
                         section_spec['title']
@@ -1582,9 +1681,14 @@ Birth Details:
                         category,
                         section_spec['title']
                     )
-                    status_map[section_spec['key']] = {'status': 'generated'}
+                    status_map[section_spec['key']] = status_entry
+                except PredictionUnavailableError:
+                    raise
                 except Exception as e:
                     logger.error(f"Section generation failed for {section_spec['key']}: {e}")
+                    if self.strict_precision:
+                        # No generalised per-section fallback in strict mode.
+                        raise PredictionUnavailableError('section_generation_failed') from e
                     sections[section_spec['key']] = self._fallback_section_text(
                         category,
                         section_spec['title']
@@ -1596,13 +1700,30 @@ Birth Details:
             sections = self._auto_repair_sections(sections, full_analysis, category, birth_data)
             full_analysis = self._assemble_full_analysis(section_specs, sections)
 
+            # Dual audience views derived from the SAME generated content
+            # (no extra LLM call): sharp user view / detailed astrologer view.
+            user_views: Dict[str, str] = {}
+            for spec in section_specs:
+                content = sections.get(spec['key'])
+                if isinstance(content, str) and content.strip():
+                    user_views[spec['key']] = split_views(content)['user']
+            sections['user_views'] = user_views
+
             return {
                 'full_analysis': full_analysis,
                 'sections': sections,
-                'chunking': self._is_long_profile(birth_data)
+                'chunking': self._is_long_profile(birth_data),
+                'precision_verified': all(
+                    entry.get('precision', {}).get('verified', True)
+                    for entry in status_map.values()
+                ) if chart_facts else False
             }
+        except PredictionUnavailableError:
+            raise
         except Exception as e:
             logger.error(f"Critical error in _generate_sectioned_prediction: {e}", exc_info=True)
+            if self.strict_precision:
+                raise PredictionUnavailableError('generation_error') from e
             # Return minimal valid structure
             return {
                 'full_analysis': f"Prediction generation encountered an error. Category: {category}",
@@ -1658,6 +1779,8 @@ Birth Details:
                     metadata['nadi_integrated'] = False
 
             return result
+        except PredictionUnavailableError:
+            raise
         except Exception as e:
             logger.error(f"Karmic journey prediction failed: {e}", exc_info=True)
             # GUARANTEED fallback - always return valid dict
@@ -1716,6 +1839,8 @@ Birth Details:
                     metadata['nadi_integrated'] = False
 
             return result
+        except PredictionUnavailableError:
+            raise
         except Exception as e:
             logger.error(f"Past lives prediction failed: {e}", exc_info=True)
             return self._get_fallback_if_unavailable('past_lives', birth_data) or {
@@ -1773,6 +1898,8 @@ Birth Details:
                     metadata['nadi_integrated'] = False
 
             return result
+        except PredictionUnavailableError:
+            raise
         except Exception as e:
             logger.error(f"Future lives prediction failed: {e}", exc_info=True)
             return self._get_fallback_if_unavailable('future_lives', birth_data) or {
@@ -1816,6 +1943,8 @@ Birth Details:
             }
 
             return self._enrich_with_nadi(result, 'present_life', birth_data)
+        except PredictionUnavailableError:
+            raise
         except Exception as e:
             logger.error(f"Present life prediction failed: {e}", exc_info=True)
             return self._get_fallback_if_unavailable('present_life', birth_data) or {
@@ -1872,6 +2001,8 @@ Birth Details:
             }
 
             return self._enrich_with_nadi(result, 'life_events', birth_data)
+        except PredictionUnavailableError:
+            raise
         except Exception as e:
             logger.error(f"Life events prediction failed: {e}", exc_info=True)
             return self._get_fallback_if_unavailable('life_events', birth_data) or {
@@ -1923,6 +2054,8 @@ Birth Details:
             }
 
             return self._enrich_with_nadi(result, 'karmic_remedies', birth_data)
+        except PredictionUnavailableError:
+            raise
         except Exception as e:
             logger.error(f"Karmic remedies prediction failed: {e}", exc_info=True)
             return self._get_fallback_if_unavailable('karmic_remedies', birth_data) or {
@@ -1975,6 +2108,8 @@ Birth Details:
             }
 
             return self._enrich_with_nadi(result, 'karma_reset', birth_data)
+        except PredictionUnavailableError:
+            raise
         except Exception as e:
             logger.error(f"Karma reset prediction failed: {e}", exc_info=True)
             return self._get_fallback_if_unavailable('karma_reset', birth_data) or self._build_karma_reset_fallback(birth_data)
@@ -2010,6 +2145,8 @@ Birth Details:
             }
 
             return self._enrich_with_nadi(result, 'relationships', birth_data)
+        except PredictionUnavailableError:
+            raise
         except Exception as e:
             logger.error(f"Relationships prediction failed: {e}", exc_info=True)
             return self._get_fallback_if_unavailable('relationships', birth_data) or {
@@ -2052,6 +2189,8 @@ Birth Details:
             }
 
             return self._enrich_with_nadi(result, 'predictions', birth_data)
+        except PredictionUnavailableError:
+            raise
         except Exception as e:
             logger.error(f"General predictions failed: {e}", exc_info=True)
             return self._get_fallback_if_unavailable('predictions', birth_data) or {

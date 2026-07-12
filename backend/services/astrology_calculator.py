@@ -681,8 +681,14 @@ class AstrologyCalculator:
 
     def _calculate_ayanamsa(self, julian_date: float) -> float:
         """
-        Calculate Lahiri ayanamsa for a given Julian date
-        Lahiri ayanamsa formula: ayanamsa = 23.85 + (julian_date - 2451545.0) / 36525 * 50.27
+        Calculate Lahiri ayanamsa for a given Julian date.
+
+        Reference: Jan 1, 2000, 12:00 TT = JD 2451545.0, Lahiri ayanamsa ≈ 23.85°.
+        Precession accumulates at ~50.27 ARC-SECONDS per YEAR (0.013964°/year),
+        so the offset from J2000 must be scaled per year and converted from
+        arc-seconds to degrees. The previous formula applied 50.27 as degrees
+        per Julian century, which skewed every longitude by ~10° for births
+        a couple of decades from 2000.
 
         Args:
             julian_date: Julian date
@@ -690,10 +696,8 @@ class AstrologyCalculator:
         Returns:
             Ayanamsa in degrees
         """
-        # Simplified Lahiri ayanamsa calculation
-        # Reference: Jan 1, 2000, 12:00 TT = JD 2451545.0, ayanamsa ≈ 23.85°
-        t = (julian_date - 2451545.0) / 36525.0  # Julian centuries from J2000.0
-        ayanamsa = 23.85 + t * 50.27  # Approximate formula
+        years_from_j2000 = (julian_date - 2451545.0) / 365.25
+        ayanamsa = 23.85 + years_from_j2000 * (50.27 / 3600.0)
         return ayanamsa
 
     def _normalize_degrees(self, degrees: float) -> float:

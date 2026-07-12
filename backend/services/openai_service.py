@@ -16,6 +16,7 @@ import requests
 from utils.logger import setup_logger, log_exception
 
 from services.sentry_service import capture_message
+from services.wisdom_core_pipeline import PredictionUnavailableError
 from services.ai_quota import (
     estimate_tokens,
     estimate_cost,
@@ -198,7 +199,8 @@ class OpenAIService:
         context: Dict[str, Any] = None,
         return_metadata: bool = False,
         user_id: Optional[str] = None,
-        max_tokens: Optional[int] = None
+        max_tokens: Optional[int] = None,
+        allow_fallback: bool = True
     ) -> Union[str, Dict[str, Any]]:
         """
         Generate AI-powered predictions using OpenAI with authentic corpus integration
@@ -208,12 +210,17 @@ class OpenAIService:
             context: Additional context for the prediction
             return_metadata: Whether to return metadata with the response
             user_id: User ID for quota tracking (optional, defaults to 'anonymous')
+            allow_fallback: When False (strict precision mode), raise
+                PredictionUnavailableError instead of returning generalised
+                fallback text on any failure.
 
         Returns:
             Generated prediction text or dict with metadata
         """
         # Use fallback if AI is not enabled
         if not self.enabled:
+            if not allow_fallback:
+                raise PredictionUnavailableError('ai_disabled')
             fallback = self._fallback_prediction(prompt, context)
             if return_metadata:
                 return {
@@ -327,6 +334,9 @@ Your predictions must:
                 f"{error_reason.capitalize()} limit reached, using fallback: {sanitize_log(str(e)[:200])}"
             )
 
+            if not allow_fallback:
+                raise PredictionUnavailableError(error_reason) from e
+
             fallback = self._fallback_prediction(prompt, context)
             if return_metadata:
                 return {
@@ -350,6 +360,8 @@ Your predictions must:
                 "OpenAI API call failed",
                 extra={"error_code": "OPENAI_API_REQUEST_FAILED", "error": sanitize_log(str(e))},
             )
+            if not allow_fallback:
+                raise PredictionUnavailableError('api_error') from e
             # Fallback to traditional analysis if API fails
             fallback = self._fallback_prediction(prompt, context)
             if return_metadata:

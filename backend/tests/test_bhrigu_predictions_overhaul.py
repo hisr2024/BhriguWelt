@@ -16,6 +16,17 @@ from services.prediction_orchestrator import PredictionOrchestrator, PredictionM
 from utils.logger import secure_log, sanitize_error, setup_logger
 
 
+@pytest.fixture(autouse=True)
+def legacy_resilience_mode(monkeypatch):
+    """These tests exercise the legacy always-return-a-dict resilience
+    machinery, which is now gated behind BHRIGU_STRICT_PRECISION=false.
+    Strict mode (default) raises PredictionUnavailableError instead of
+    serving generalised fallback text; that contract is covered in
+    tests/test_wisdom_core_pipeline.py."""
+    monkeypatch.setenv('BHRIGU_STRICT_PRECISION', 'false')
+
+
+
 class TestSecureLogging:
     """Test secure logging functionality"""
 

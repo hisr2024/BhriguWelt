@@ -544,6 +544,9 @@ export default function BhriguPredictionView({
     setIsLowEndDevice(lowEnd);
   }, []);
 
+  // Encrypted-store profile-hash bookkeeping only. Generation is triggered
+  // solely by useBhriguPrediction's own effect — this effect previously ALSO
+  // called loadPrediction, firing two identical prediction POSTs per mount.
   useEffect(() => {
     if (profile && encryptionKey) {
       const checkProfile = async () => {
@@ -557,7 +560,6 @@ export default function BhriguPredictionView({
         }
 
         await setItem(STORES.SETTINGS, hashKey, currentHash, encryptionKey);
-        await loadPrediction(hasChanged, currentHash);
       };
 
       void checkProfile();
@@ -1146,6 +1148,16 @@ export default function BhriguPredictionView({
     // Helper function to get section content from either source with validation
     const getSectionContent = (key: string): string => {
       let rawContent: string = '';
+
+      // PRIORITY 0: backend-provided sharp user view (Wisdom Core postfilter).
+      // In layman mode this is already precise and free of technical detail —
+      // no client-side regex simplification needed.
+      const userViews = (predictionData as Record<string, any>).user_views as
+        | Record<string, string>
+        | undefined;
+      if (viewMode === 'layman' && userViews && typeof userViews[key] === 'string' && userViews[key].trim().length > 0) {
+        return userViews[key];
+      }
 
       // PRIORITY 1: Check subcategories from API response (new structured format)
       const subcategories = predictionData.subcategories as Record<string, any> | undefined;
