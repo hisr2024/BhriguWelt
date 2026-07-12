@@ -247,7 +247,9 @@ export const useBhriguPrediction = ({
       if (!pending) {
         pending = requestQueue.enqueue(() => fetchPrediction(profileData));
         inFlightRequests.set(requestKey, pending);
-        void pending.finally(() => inFlightRequests.delete(requestKey));
+        // Cleanup must observe the rejection; a bare .finally() chain would
+        // surface as an unhandled promise rejection on failure.
+        pending.catch(() => undefined).finally(() => inFlightRequests.delete(requestKey));
       }
       const response = await pending;
 
