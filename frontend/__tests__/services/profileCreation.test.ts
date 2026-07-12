@@ -178,32 +178,42 @@ describe('Profile Creation Service', () => {
 
   describe('Retry Logic', () => {
     it('should retry on retryable errors', async () => {
-      let attempts = 0;
+      jest.useFakeTimers();
 
-      (astrologyAPI.calculateBirthChart as jest.Mock).mockImplementation(() => {
-        attempts++;
-        if (attempts < 3) {
-          const error = new Error('Temporary Error');
-          (error as any).code = 'ERR_NETWORK';
-          throw error;
-        }
-        return Promise.resolve({
-          data: {
-            zodiac_sign: 'Capricorn',
-            moon_sign: 'Taurus',
-            ascendant: 'Virgo',
-          },
+      try {
+        let attempts = 0;
+
+        (astrologyAPI.calculateBirthChart as jest.Mock).mockImplementation(() => {
+          attempts++;
+          if (attempts < 3) {
+            const error = new Error('Temporary Error');
+            (error as any).code = 'ERR_NETWORK';
+            throw error;
+          }
+          return Promise.resolve({
+            data: {
+              zodiac_sign: 'Capricorn',
+              moon_sign: 'Taurus',
+              ascendant: 'Virgo',
+            },
+          });
         });
-      });
 
-      const result = await createProfileWithRetry(
-        validProfileData,
-        { encryptionKey: mockEncryptionKey },
-        2 // maxRetries
-      );
+        const resultPromise = createProfileWithRetry(
+          validProfileData,
+          { encryptionKey: mockEncryptionKey },
+          2 // maxRetries
+        );
 
-      expect(attempts).toBe(3); // Initial + 2 retries
-      expect(result.success).toBe(true);
+        // Flush the exponential backoff delays without waiting in real time
+        await jest.runAllTimersAsync();
+        const result = await resultPromise;
+
+        expect(attempts).toBe(3); // Initial + 2 retries
+        expect(result.success).toBe(true);
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it('should not retry on non-retryable errors', async () => {
