@@ -45,16 +45,17 @@ class TestTokenEstimation:
 
     def test_estimate_tokens_formula(self, monkeypatch):
         """The char-based fallback formula is len(text) // 4 (tiktoken, when
-        importable, gives model-accurate counts instead — forced off here)."""
-        import services.ai_quota as ai_quota
-        monkeypatch.setattr(ai_quota, 'TIKTOKEN_AVAILABLE', False)
+        importable, gives model-accurate counts instead — forced off here).
+        Patch the SAME module object estimate_tokens was imported from
+        (backend.services.ai_quota); the bare services.ai_quota path is a
+        distinct module identity and patching it has no effect here."""
+        monkeypatch.setattr(ai_quota, '_get_encoder', lambda: None)
         text = "a" * 100
         assert estimate_tokens(text) == 25
 
     def test_estimate_tokens_long_text(self, monkeypatch):
         """Longer text should scale correctly under the fallback formula."""
-        import services.ai_quota as ai_quota
-        monkeypatch.setattr(ai_quota, 'TIKTOKEN_AVAILABLE', False)
+        monkeypatch.setattr(ai_quota, '_get_encoder', lambda: None)
         text = "Hello world! " * 100
         expected = len(text) // 4
         assert estimate_tokens(text) == expected
