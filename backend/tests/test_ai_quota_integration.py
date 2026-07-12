@@ -22,6 +22,30 @@ from services.ai_quota import (
 )
 
 
+def install_quota_eval_sim(client):
+    """
+    Wire an `eval` side effect onto a MagicMock Redis client that simulates
+    the atomic Lua quota script used by check_daily_quota_and_reserve.
+
+    Current usage is read via client.get (so tests can control it with
+    return_value/side_effect), and incrby/expire are invoked on the mock so
+    call assertions keep working.
+    """
+    def _eval(script, numkeys, key, limit, incr):
+        current = int(client.get(key) or 0)
+        limit = int(limit)
+        incr = int(incr)
+        if (current + incr) > limit:
+            return [0, limit - current]
+        new_total = current + incr
+        client.incrby(key, incr)
+        client.expire(key, 172800)
+        return [1, limit - new_total]
+
+    client.eval.side_effect = _eval
+    return client
+
+
 class TestOpenAIIntegrationWithQuota:
     """Integration tests for OpenAI service with quota management"""
 
@@ -34,6 +58,7 @@ class TestOpenAIIntegrationWithQuota:
         client.__enter__ = MagicMock(return_value=client)
         client.__exit__ = MagicMock(return_value=False)
         client.ping.return_value = True
+        install_quota_eval_sim(client)
         return client
 
     @pytest.fixture
@@ -222,12 +247,17 @@ class TestOpenAIIntegrationWithQuota:
         # Redis is unavailable
         mock_redis_getter.return_value = None
 
-        # Should allow request but log warning
+        # Start from a clean in-memory fallback store for determinism
+        from services import ai_quota as ai_quota_module
+        ai_quota_module._memory_quota_store.clear()
+
+        # Should allow request via the in-memory fallback (tokens still reserved
+        # so quotas cannot be bypassed when Redis is down)
         allowed, remaining = check_daily_quota_and_reserve('test_user', 1000)
 
         assert allowed is True
-        # Should return default limit when Redis unavailable
-        assert remaining == int(os.getenv('USER_DAILY_TOKEN_LIMIT', '100000'))
+        daily_limit = int(os.getenv('USER_DAILY_TOKEN_LIMIT', '100000'))
+        assert remaining == daily_limit - 1000
 
     @patch('services.ai_quota._get_redis_client')
     def test_quota_status_endpoint(self, mock_redis_getter, mock_redis_client):
@@ -357,6 +387,7 @@ class TestEndToEndQuotaFlow:
         mock_redis.pipeline.return_value = mock_redis
         mock_redis.__enter__ = MagicMock(return_value=mock_redis)
         mock_redis.__exit__ = MagicMock(return_value=False)
+        install_quota_eval_sim(mock_redis)
         mock_redis_getter.return_value = mock_redis
 
         mock_response = Mock()
@@ -396,6 +427,7 @@ class TestEndToEndQuotaFlow:
         # Setup: User near limit
         mock_redis = MagicMock()
         mock_redis.get.return_value = '99500'
+        install_quota_eval_sim(mock_redis)
         mock_redis_getter.return_value = mock_redis
 
         with patch.dict(os.environ, {'USER_DAILY_TOKEN_LIMIT': '100000'}):
