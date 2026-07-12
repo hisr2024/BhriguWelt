@@ -1155,8 +1155,9 @@ export default function BhriguPredictionView({
       const userViews = (predictionData as Record<string, any>).user_views as
         | Record<string, string>
         | undefined;
-      if (viewMode === 'layman' && userViews && typeof userViews[key] === 'string' && userViews[key].trim().length > 0) {
-        return userViews[key];
+      const userView = viewMode === 'layman' && userViews ? userViews[key] : undefined;
+      if (typeof userView === 'string' && userView.trim().length > 0) {
+        return userView;
       }
 
       // PRIORITY 1: Check subcategories from API response (new structured format)
