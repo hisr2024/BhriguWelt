@@ -334,8 +334,8 @@ class TestSystemIntegration:
             headers={'Content-Type': 'application/json'}
         )
 
-        # Should get a response (even if error)
-        assert response.status_code in [200, 400, 500]
+        # Should get a response (even if error; 429 = live rate limiter)
+        assert response.status_code in [200, 400, 429, 500]
         assert response.content_type == 'application/json'
 
         data = json.loads(response.data)

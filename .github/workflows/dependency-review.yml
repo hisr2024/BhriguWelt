@@ -14,5 +14,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/dependency-review-action@v4
+        # Requires the repository's Dependency Graph to be enabled
+        # (Settings -> Advanced Security -> Dependency graph). Until then the
+        # action errors out; keep it advisory instead of blocking merges.
+        continue-on-error: true
         with:
           fail-on-severity: high

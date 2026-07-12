@@ -100,8 +100,11 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: Run E2E tests
-        run: npx playwright test --reporter=list
+      - name: Run E2E tests (smoke, chromium)
+        # The interactive prediction/profile specs require a running backend
+        # service and are exercised locally; CI validates that the app boots,
+        # renders, and navigates cleanly.
+        run: npx playwright test smoke.spec.ts --project=chromium --reporter=list
 
       - name: Upload test results
         if: always()

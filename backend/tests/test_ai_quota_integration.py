@@ -339,8 +339,11 @@ class TestOpenAIIntegrationWithQuota:
             calls = [str(call) for call in mock_redis_client.get.call_args_list]
             assert any('anonymous' in str(call) for call in calls)
 
-    def test_token_estimation_accuracy(self):
-        """Test token estimation for various text lengths"""
+    def test_token_estimation_accuracy(self, monkeypatch):
+        """Test token estimation minimums under the char-based fallback
+        (tiktoken, when importable, yields smaller model-accurate counts)."""
+        import services.ai_quota as ai_quota
+        monkeypatch.setattr(ai_quota, 'TIKTOKEN_AVAILABLE', False)
         test_cases = [
             ("", 0),
             ("Hello", 1),
