@@ -2276,10 +2276,10 @@ Actionable Guidance: 3 specific bullet points.
         if self.openai_service:
             selected_model = self.openai_service.get_selected_model()
         metadata = {
-            'zodiac_sign': birth_data.get('zodiac_sign'),
-            'nakshatra': birth_data.get('nakshatra'),
-            'moon_sign': birth_data.get('moon_sign'),
-            'ascendant': birth_data.get('ascendant'),
+            'zodiac_sign': self._safe_get(birth_data, 'zodiac_sign'),
+            'nakshatra': self._safe_get(birth_data, 'nakshatra'),
+            'moon_sign': self._safe_get(birth_data, 'moon_sign'),
+            'ascendant': self._safe_get(birth_data, 'ascendant'),
             'ai_model': selected_model,
             'corpus_available': self.openai_service.corpus_available,
             'tradition': 'Bhrigu Samhita & Nadi Jyotisa'

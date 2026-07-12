@@ -9,7 +9,10 @@ Tests brute-force protection for passcode verification:
 """
 import pytest
 from unittest.mock import Mock, patch, MagicMock
-import fakeredis
+
+# fakeredis is a test dependency from requirements.txt; skip cleanly when the
+# environment installs only the core service dependencies.
+fakeredis = pytest.importorskip('fakeredis')
 
 
 class TestPasscodeRateLimiter:
