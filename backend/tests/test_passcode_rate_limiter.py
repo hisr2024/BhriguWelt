@@ -223,19 +223,23 @@ class TestPasscodeVerificationEndpoint:
 
     @pytest.fixture
     def client(self):
-        """Flask test client"""
-        from backend.app import create_app
-        app = create_app()
+        """Flask test client (the backend exposes a module-level app, not a factory)"""
+        from backend.app import app
         app.config['TESTING'] = True
         with app.test_client() as client:
             yield client
 
     @pytest.fixture
     def mock_redis_for_endpoint(self):
-        """Mock Redis for endpoint tests"""
+        """Mock Redis for endpoint tests.
+
+        Patch the 'middleware.passcode_rate_limiter' module identity — that is
+        what routes/user_routes.py imports; patching the 'backend.'-prefixed
+        path targets a different module object and never reaches the endpoint.
+        """
         fake_redis = fakeredis.FakeStrictRedis(decode_responses=True)
-        with patch('backend.middleware.passcode_rate_limiter.get_redis_client', return_value=fake_redis):
-            with patch('backend.middleware.passcode_rate_limiter._redis_client', fake_redis):
+        with patch('middleware.passcode_rate_limiter.get_redis_client', return_value=fake_redis):
+            with patch('middleware.passcode_rate_limiter._redis_client', fake_redis):
                 yield fake_redis
 
     def test_verify_passcode_success(self, client, mock_redis_for_endpoint):

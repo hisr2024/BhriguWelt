@@ -230,13 +230,30 @@ logger.info("✓ CORS configured with allowed origins: %s", ", ".join(ALLOWED_OR
 
 # Initialize Rate Limiter
 logger.info("Initializing rate limiter...")
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri=os.getenv('REDIS_URL', 'memory://'),
-    strategy="fixed-window",
-)
+_rate_limit_storage_uri = os.getenv('REDIS_URL', 'memory://')
+try:
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri=_rate_limit_storage_uri,
+        strategy="fixed-window",
+    )
+except Exception as _limiter_exc:
+    # An unreachable/incompatible Redis at boot must not take the app down —
+    # degrade to per-process in-memory rate limiting instead.
+    logger.warning(
+        "Rate limiter storage '%s' unavailable (%s); falling back to in-memory storage.",
+        _rate_limit_storage_uri,
+        _limiter_exc,
+    )
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri="memory://",
+        strategy="fixed-window",
+    )
 logger.info("✓ Rate limiter initialized with default limits: 200/day, 50/hour")
 
 # Request preprocessing middleware

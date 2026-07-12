@@ -38,7 +38,10 @@ def calculate_birth_chart():
             logger.warning("Birth chart request with invalid content type")
             return error_response("Content-Type must be application/json", 400)
 
-        data = request.get_json()
+        data = request.get_json(silent=True)
+        if data is None:
+            logger.warning("Birth chart request with malformed JSON body")
+            return error_response("Request body must be valid JSON", 400)
         log_request(logger, data, '/api/astrology/birth-chart')
 
         calculator = get_astrology_calculator()
