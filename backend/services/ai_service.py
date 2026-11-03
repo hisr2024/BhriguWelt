@@ -3,6 +3,7 @@ AI Service for secure AI integration
 Handles AI-powered features with privacy controls
 """
 import os
+from services.ai_provider import ai_configured
 from typing import Dict, Any, List, Optional
 from services.openai_service import openai_service
 from services.bhrigu_core_wisdom import get_bhrigu_core_wisdom
@@ -25,7 +26,7 @@ class AIService:
     
     def __init__(self):
         self.openai = openai_service
-        self.ai_enabled = bool(os.getenv('OPENAI_API_KEY'))
+        self.ai_enabled = ai_configured()
         self.core_wisdom = None
         self.offline_ready = False
         try:

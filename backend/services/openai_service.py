@@ -16,6 +16,7 @@ import requests
 from utils.logger import setup_logger, log_exception
 
 from services.sentry_service import capture_message
+from services.ai_provider import resolve_provider
 from services.structured_output import extract_json_object, to_readable_text
 from services.wisdom_core_pipeline import PredictionUnavailableError
 from services.ai_quota import (
@@ -61,7 +62,9 @@ class OpenAIService:
             return default
 
     def __init__(self):
-        self.api_key = os.getenv('OPENAI_API_KEY')
+        # OpenAI or Sarvam AI (OpenAI-compatible) — see services/ai_provider.py
+        self.provider = resolve_provider()
+        self.api_key = self.provider.api_key
         self.base_urls = self._load_base_urls()
         self.base_url = self.base_urls[0]
         self.prompt_token_limit = self._get_int_env('PROMPT_TOKEN_LIMIT', 6000)
@@ -111,22 +114,24 @@ class OpenAIService:
             }
             logger.warning(f"Could not initialize offline wisdom generator: {e}")
 
+        if self.enabled:
+            logger.info(f"AI provider: {self.provider.name} (model {self.provider.model})")
         if not self.enabled:
             self._set_last_error(
                 "OPENAI_API_KEY_MISSING",
-                "OPENAI_API_KEY not set. AI features will use fallback responses.",
+                "No AI key set (OPENAI_API_KEY or SARVAM_API_KEY). AI features will use fallback responses.",
             )
             logger.warning(
                 "OPENAI_API_KEY not set. AI features will use fallback responses.",
                 extra={"error_code": "OPENAI_API_KEY_MISSING"},
             )
 
-        self.headers = {
-            'Authorization': f'Bearer {self.api_key}',
-            'Content-Type': 'application/json'
-        } if self.enabled else {}
+        self.headers = self.provider.headers() if self.enabled else {}
 
     def _load_base_urls(self) -> List[str]:
+        provider = getattr(self, 'provider', None)
+        if provider is not None:
+            return list(provider.base_urls)
         urls: List[str] = []
         base_urls_env = os.getenv('OPENAI_BASE_URLS', '')
         if base_urls_env:
@@ -426,6 +431,9 @@ Your predictions must:
         return "\n\n".join(sections)
 
     def _get_model_candidates(self) -> List[str]:
+        provider = getattr(self, 'provider', None)
+        if provider is not None:
+            return [provider.model] + provider.fallback_models
         primary_model = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
         fallback_env = os.getenv('OPENAI_MODEL_FALLBACKS', '')
         fallback_models = [model.strip() for model in fallback_env.split(',') if model.strip()]
@@ -475,7 +483,8 @@ Your predictions must:
         raise requests.exceptions.RequestException("OpenAI API retries exhausted.")
 
     def get_selected_model(self) -> str:
-        return self.last_model_used or os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
+        provider = getattr(self, 'provider', None)
+        return self.last_model_used or (provider.model if provider else os.getenv('OPENAI_MODEL', 'gpt-4o-mini'))
 
     def _parse_json_response(self, content: str) -> str:
         """
@@ -568,7 +577,7 @@ Your predictions must:
         effective_max_tokens = max_tokens or self._get_int_env('OPENAI_MAX_TOKENS', 2048)
 
         payload = {
-            'model': os.getenv('OPENAI_MODEL', 'gpt-4o-mini'),
+            'model': self.get_selected_model(),
             'messages': [
                 {
                     'role': 'system',
@@ -619,9 +628,17 @@ Your predictions must:
 
         # Try to use JSON mode if model supports it (GPT-4 Turbo, GPT-4o, and later models)
         model = payload['model']
+        provider = getattr(self, 'provider', None)
+        if provider is not None:
+            payload.update(provider.extra_payload())
+            if provider.name == 'sarvam' and provider.reasoning_effort not in (None, 'none'):
+                # Reasoning tokens count against max_tokens on Sarvam; leave room
+                # so the JSON answer itself is not truncated.
+                payload['max_tokens'] = int(payload['max_tokens']) + int(os.getenv('SARVAM_REASONING_HEADROOM', '800'))
         if use_json_format:
             # Try to enable JSON mode for supported models
-            if any(term in model.lower() for term in ['gpt-4-turbo', 'gpt-4o', 'gpt-4.1', 'gpt-4.5', 'gpt-5', 'gpt-3.5-turbo', 'o3', 'o4']):
+            if (provider.supports_json_mode(model) if provider is not None else
+                    any(term in model.lower() for term in ['gpt-4-turbo', 'gpt-4o', 'gpt-4.1', 'gpt-4.5', 'gpt-5', 'gpt-3.5-turbo', 'o3', 'o4'])):
                 payload['response_format'] = {'type': 'json_object'}
                 logger.debug(f"Enabled JSON response format for model: {model}")
             else:

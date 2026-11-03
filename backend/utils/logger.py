@@ -247,7 +247,7 @@ def secure_log(logger: logging.Logger, level: str, message: str, extra: dict = N
     sanitized_message = sanitize_error(message)
 
     # Ensure API keys are redacted even if not in standard fields
-    for env_key in ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'API_KEY']:
+    for env_key in ['OPENAI_API_KEY', 'SARVAM_API_KEY', 'SARVAM_AI_API_KEY', 'SARVAM_KEY', 'ANTHROPIC_API_KEY', 'API_KEY']:
         api_key = os.getenv(env_key, '')
         if api_key and api_key in sanitized_message:
             sanitized_message = sanitized_message.replace(api_key, '[REDACTED]')
