@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
 import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
+import { getCurrentLanguage } from '@/lib/copy';
 
 const PROFILE_HASH_PREFIX = 'profile_hash_';
-const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_';
+// v2: readings cached before the structured-reading fix held raw JSON bodies.
+const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_v2_';
 
 /**
  * In-flight request dedupe: identical prediction requests (same profile,
@@ -77,7 +79,7 @@ interface ErrorDetails {
 interface UseBhriguPredictionArgs {
   category: string;
   fetchPrediction: (
-    profileData: BirthDetails & { question?: string; force_regenerate?: boolean }
+    profileData: BirthDetails & { question?: string; language?: string; force_regenerate?: boolean }
   ) => Promise<PredictionResult>;
   profile: Profile | null;
 }
@@ -93,9 +95,9 @@ const hasRequiredProfileFields = (profile: Profile): boolean => {
 
 const getProfileHashKey = (profile: Profile) => `${PROFILE_HASH_PREFIX}${profile.id ?? 'current'}`;
 
-const getPredictionCacheKey = (profile: Profile, category: string, question: string) => {
+const getPredictionCacheKey = (profile: Profile, category: string, question: string, language = 'en') => {
   const questionKey = question.trim() === '' ? 'default' : encodeURIComponent(question.trim());
-  return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${questionKey}`;
+  return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${language}_${questionKey}`;
 };
 
 /**
@@ -205,7 +207,8 @@ export const useBhriguPrediction = ({
     try {
       const currentQuestion = questionRef.current;
       const resolvedHash = profileHash ?? await getProfileHash(profile);
-      const cacheKey = getPredictionCacheKey(profile, category, currentQuestion);
+      const currentLanguage = getCurrentLanguage();
+      const cacheKey = getPredictionCacheKey(profile, category, currentQuestion, currentLanguage);
       const cached = typeof window === 'undefined' ? null : localStorage.getItem(cacheKey);
 
       // Check cache first (fast path)
@@ -235,6 +238,7 @@ export const useBhriguPrediction = ({
         latitude: profile.latitude,
         longitude: profile.longitude,
         question: currentQuestion || undefined,
+        language: currentLanguage,
         force_regenerate: forceRegenerate
       };
 

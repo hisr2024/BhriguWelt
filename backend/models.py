@@ -103,6 +103,11 @@ class BhriguPredictionCache(db.Model):
         ]
         if version == cls.HASH_VERSION_CURRENT:
             optional_parts.insert(1, question)
+            # Non-English readings are distinct cache entries; English keeps
+            # its existing hash so warm caches stay valid.
+            language = str(birth_data.get('language') or 'en').lower()
+            if language not in ('en', 'english'):
+                optional_parts.append(f"lang:{language}")
         data_parts = [part for part in base_parts if part not in (None, '')]
         data_parts.extend(part for part in optional_parts if part not in (None, ''))
         data_parts.append(version)

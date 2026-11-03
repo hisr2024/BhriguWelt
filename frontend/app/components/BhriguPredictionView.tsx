@@ -15,6 +15,7 @@ import useFeatureFlags from '@/hooks/useFeatureFlags';
 import { SectionIcon } from '@/lib/sectionIcons';
 import { parsePredictionResponse, type ParsedPrediction, type PredictionSection as ParsedSection } from '@/lib/predictionParser';
 import { MarkdownRenderer } from '@/app/components/MarkdownRenderer';
+import { ReadingView, isStructuredReading, type StructuredReading } from '@/app/components/predictions/ReadingView';
 
 const SECTION_LANGUAGES: Language[] = ['en', 'hi'];
 
@@ -934,7 +935,7 @@ export default function BhriguPredictionView({
         </AnimatePresence>
       </motion.div>
     );
-  }, [toggleSection, handleKeyDown, handleTouchStart, handleTouchEnd]);
+  }, [toggleSection, handleKeyDown, handleTouchStart, handleTouchEnd, viewMode]);
 
   // ✨ QUANTUM FIX: Updated to work with Set<string> instead of Record
   const setExpandedSection = useCallback((sectionId: string, isOpen: boolean) => {
@@ -1005,6 +1006,12 @@ export default function BhriguPredictionView({
   const renderPredictionContent = useCallback(() => {
     if (!prediction) return null;
     const predictionData = prediction;
+
+    // Structured reading (reading_format 2): single clean renderer, no
+    // client-side regex parsing, no duplicate "complete reading" dump.
+    if (isStructuredReading(predictionData)) {
+      return <ReadingView prediction={predictionData as unknown as StructuredReading} viewMode={viewMode} />;
+    }
 
     // 🆕 PRIORITY 1: Check if we have parsed sections from nested structure
     // This handles the case where API returns { summary: "...", sections: { "## Title": "content" } }
@@ -1374,8 +1381,9 @@ export default function BhriguPredictionView({
           </div>
         )}
 
-        {/* Full Analysis - Collapsible at the bottom */}
-        {predictionData.full_analysis && (
+        {/* Full Analysis — only when nothing was parsed into sections;
+            otherwise it just repeats every section a second time. */}
+        {predictionData.full_analysis && !(useParsedSections && parsedSectionsToRender.length > 0) && availableSections.length === 0 && (
           <div className="mt-8 pt-8 border-t border-gray-700/50">
             <button
               onClick={() => setShowFullAnalysis(!showFullAnalysis)}
@@ -1653,23 +1661,10 @@ export default function BhriguPredictionView({
                 <option value="hi">हिंदी</option>
               </select>
             </div>
-            <div className="flex items-center gap-2">
-              <label htmlFor="view-mode" className="text-sm text-gray-400">
-                View
-              </label>
-              <select
-                id="view-mode"
-                value={viewMode}
-                onChange={(e) => setViewMode(e.target.value as 'layman' | 'astrologer')}
-                className="bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-3 text-white
-                         focus:outline-none focus:border-cyan-400 transition-colors"
-              >
-                <option value="layman">Layman</option>
-                <option value="astrologer">Astrologer</option>
-              </select>
-            </div>
             <button
               onClick={() => loadPrediction()}
+              disabled={loading}
+              aria-busy={loading}
               className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500
                        text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600
                        disabled:opacity-50 disabled:cursor-not-allowed transition-all
@@ -1678,7 +1673,7 @@ export default function BhriguPredictionView({
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Queue Request
+                  Reading your chart…
                 </>
               ) : (
                 <>

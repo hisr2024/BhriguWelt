@@ -1669,7 +1669,15 @@ Return JSON:
    "guidance": ["3 short specific actions"],
    "basis": ["rule IDs / facts used"]}}}}}}
 
-Rules: <=110 words per section; never repeat a sentence across sections; omit a section key only if no listed fact supports it."""
+Rules: <=110 words per section; never repeat a sentence across sections; omit a section key only if no listed fact supports it.{self._language_line(birth_data)}"""
+
+    @staticmethod
+    def _language_line(birth_data: Dict[str, Any]) -> str:
+        lang = str(birth_data.get('language') or 'en').lower()
+        if lang.startswith('hi'):
+            return ("\nWrite every JSON string VALUE in simple Hindi (Devanagari); keep JSON keys, "
+                    "rule IDs and planet/sign names as given.")
+        return ""
 
     def _call_category_reading(
         self, prompt: str, max_tokens: int, user_id: Optional[str], allow_fallback: bool
