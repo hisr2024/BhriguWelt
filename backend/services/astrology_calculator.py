@@ -9,6 +9,8 @@ from collections import OrderedDict
 from importlib import import_module, util as importlib_util
 import logging
 import math
+
+from services import ephemeris_core
 from typing import Dict, Any, Tuple, List
 
 from utils.errors import AstrologyDependencyError, ASTROLOGY_DEPENDENCIES
@@ -332,22 +334,24 @@ class AstrologyCalculator:
         local_dt = timezone.localize(local_dt)
         utc_dt = local_dt.astimezone(self.pytz.UTC)
 
-        # Create observer
-        observer = self.ephem.Observer()
-        observer.lat = str(latitude)
-        observer.lon = str(longitude)
-        observer.date = utc_dt
-
-        # Calculate planetary positions
-        planets = self._calculate_planetary_positions(observer)
+        if ephemeris_core.SWISSEPH_AVAILABLE:
+            # Swiss Ephemeris, Lahiri, whole-sign houses (accurate Lagna,
+            # nodes, speeds/retrogrades, per-planet nakshatra and house).
+            core_chart = ephemeris_core.build_chart(utc_dt, float(latitude), float(longitude))
+            planets = core_chart['planets']
+            ascendant = core_chart['ascendant']
+        else:
+            observer = self.ephem.Observer()
+            observer.lat = str(latitude)
+            observer.lon = str(longitude)
+            observer.date = utc_dt
+            planets = self._calculate_planetary_positions(observer)
+            ascendant = self._calculate_ascendant(observer, utc_dt)
 
         # Calculate zodiac sign and nakshatra
         zodiac_sign = self._calculate_zodiac_sign(planets['Sun']['longitude'])
         moon_sign = self._calculate_zodiac_sign(planets['Moon']['longitude'])
         nakshatra = self._calculate_nakshatra(planets['Moon']['longitude'])
-
-        # Calculate ascendant (Lagna)
-        ascendant = self._calculate_ascendant(observer, utc_dt)
 
         # Calculate houses
         houses = self._calculate_houses(ascendant['sign'])
@@ -359,7 +363,8 @@ class AstrologyCalculator:
                 'place': place,
                 'latitude': latitude,
                 'longitude': longitude,
-                'timezone': timezone_str
+                'timezone': timezone_str,
+                'utc': utc_dt.isoformat(),
             },
             'zodiac_sign': zodiac_sign,
             'moon_sign': moon_sign,
@@ -552,8 +557,10 @@ class AstrologyCalculator:
         # Simplified: Using a more accurate calculation for Rahu
         # The mean node precesses backwards at about 19.3 degrees per year
         # For a more accurate calculation, we calculate it from the Moon's orbit
-        days_since_epoch = float(observer.date - 2444238.5)  # Jan 1, 1980
-        rahu_mean_longitude = (125.04 - 0.0529539 * days_since_epoch) % 360
+        # observer.date is a Dublin JD; convert to a standard JD before using
+        # the J2000 mean-node formula (mixing the two put Rahu ~58° off).
+        days_since_j2000 = float(self.ephem.julian_date(observer.date)) - 2451545.0
+        rahu_mean_longitude = (125.04452 - 0.0529537648 * days_since_j2000) % 360
         rahu_longitude = self._normalize_degrees(rahu_mean_longitude - ayanamsa)
         planets['Rahu'] = {
             'longitude': rahu_longitude,
@@ -601,19 +608,16 @@ class AstrologyCalculator:
         # Get sidereal time at birth location
         sidereal_time = observer.sidereal_time()
 
-        # Convert sidereal time to degrees (1 hour = 15 degrees)
-        lst_degrees = math.degrees(sidereal_time) * 15
-
-        # Get latitude
-        lat = math.radians(float(observer.lat))
-
-        # Calculate RAMC (Right Ascension of Medium Coeli)
-        ramc = lst_degrees
-
-        # Simple ascendant approximation using latitude
-        # More accurate: would use full house calculation
-        # For now, using a simplified formula
-        ascendant_tropical = (ramc + 90 + math.degrees(lat) * 0.5) % 360
+        # ephem returns local sidereal time as an angle in radians already
+        # (the old code multiplied by 15 a second time).
+        ramc = float(sidereal_time)
+        lat = float(observer.lat)  # radians
+        eps = math.radians(23.4393)
+        # Standard ascendant formula from RAMC, obliquity and latitude.
+        ascendant_tropical = math.degrees(math.atan2(
+            math.cos(ramc),
+            -(math.sin(ramc) * math.cos(eps) + math.tan(lat) * math.sin(eps))
+        )) % 360
 
         # Apply Lahiri ayanamsa for Vedic astrology
         jd = self.ephem.julian_date(observer.date)
@@ -652,37 +656,38 @@ class AstrologyCalculator:
             day = sum(int(digit) for digit in str(day))
         return day
 
-    def _calculate_current_dasha(self, birth_dt: datetime, moon_longitude: float) -> Dict[str, str]:
-        """Calculate current Vimshottari Dasha period"""
-        nakshatra = self._calculate_nakshatra(moon_longitude)
-        dasha_lords = ['Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury']
-        dasha_years = [7, 20, 6, 10, 7, 18, 16, 19, 17]
-
-        # Find starting dasha
-        nakshatra_lord_index = dasha_lords.index(nakshatra['lord'])
-
-        # Calculate age
+    def _calculate_current_dasha(self, birth_dt: datetime, moon_longitude: float) -> Dict[str, Any]:
+        """Current Vimshottari maha/antar dasha with real birth balance."""
+        birth_utc = birth_dt if birth_dt.tzinfo else birth_dt.replace(tzinfo=self.pytz.UTC)
+        periods = ephemeris_core.vimshottari(birth_utc, moon_longitude)
         now = datetime.now(self.pytz.UTC)
-        age_years = (now - birth_dt.replace(tzinfo=self.pytz.UTC)).days / 365.25
-
-        # Find current dasha (simplified)
-        total_years = 0
-        for i in range(len(dasha_lords)):
-            lord_index = (nakshatra_lord_index + i) % len(dasha_lords)
-            years = dasha_years[lord_index]
-            if total_years + years > age_years:
-                return {
-                    'maha_dasha': dasha_lords[lord_index],
-                    'years_remaining': round(total_years + years - age_years, 1)
-                }
-            total_years += years
-
-        return {'maha_dasha': 'Unknown', 'years_remaining': 0}
+        maha, antar = ephemeris_core.current_dasha(periods, now)
+        if not maha:
+            return {'maha_dasha': 'Unknown', 'years_remaining': 0}
+        result: Dict[str, Any] = {
+            'maha_dasha': maha.maha,
+            'years_remaining': round((maha.end - now).days / ephemeris_core.YEAR_DAYS, 1),
+            'maha_start': maha.start.date().isoformat(),
+            'maha_end': maha.end.date().isoformat(),
+        }
+        if antar:
+            result.update({
+                'antar_dasha': antar.antar,
+                'antar_start': antar.start.date().isoformat(),
+                'antar_end': antar.end.date().isoformat(),
+            })
+        return result
 
     def _calculate_ayanamsa(self, julian_date: float) -> float:
         """
-        Calculate Lahiri ayanamsa for a given Julian date
-        Lahiri ayanamsa formula: ayanamsa = 23.85 + (julian_date - 2451545.0) / 36525 * 50.27
+        Calculate Lahiri ayanamsa for a given Julian date.
+
+        Reference: Jan 1, 2000, 12:00 TT = JD 2451545.0, Lahiri ayanamsa ≈ 23.85°.
+        Precession accumulates at ~50.27 ARC-SECONDS per YEAR (0.013964°/year),
+        so the offset from J2000 must be scaled per year and converted from
+        arc-seconds to degrees. The previous formula applied 50.27 as degrees
+        per Julian century, which skewed every longitude by ~10° for births
+        a couple of decades from 2000.
 
         Args:
             julian_date: Julian date
@@ -690,10 +695,8 @@ class AstrologyCalculator:
         Returns:
             Ayanamsa in degrees
         """
-        # Simplified Lahiri ayanamsa calculation
-        # Reference: Jan 1, 2000, 12:00 TT = JD 2451545.0, ayanamsa ≈ 23.85°
-        t = (julian_date - 2451545.0) / 36525.0  # Julian centuries from J2000.0
-        ayanamsa = 23.85 + t * 50.27  # Approximate formula
+        years_from_j2000 = (julian_date - 2451545.0) / 365.25
+        ayanamsa = 23.85 + years_from_j2000 * (50.27 / 3600.0)
         return ayanamsa
 
     def _normalize_degrees(self, degrees: float) -> float:

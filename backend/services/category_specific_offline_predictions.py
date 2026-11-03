@@ -188,7 +188,7 @@ Your {zodiac} ascendant with {nakshatra} Moon creates a soul contract focused on
 - Future: Teaching {spiritual_path}
 
 **Remaining Journey:**
-Based on your {nakshatra} placement and {zodiac} Lagna, approximately 7-12 incarnations remain for liberation with dedicated practice. This can reduce to 3-5 with intensive sadhana."""
+Liberation indicators are read from the 12th house, Ketu and the 12th from the Atmakaraka; dedicated sadhana strengthens them."""
 
         # Life Mission & Dharma - from 9th and 10th house themes
         karma_house = self._get_house_data(10)
@@ -682,7 +682,7 @@ Each life reduces {ruler} attachment while increasing {nak_data.get('deity', 'Di
 - **Likelihood if:** {zodiac_data.get('element', 'Fire')} attachments strengthen
 
 **Your Current Trajectory:** Between A and B
-Based on {nakshatra} indicators, you're positioned for 7-12 more lives, reducible to 3-5 with dedicated practice."""
+Dedicated practice strengthens the chart's moksha indicators (12th house, Ketu, Jupiter)."""
 
         # Moksha Timeline
         sections['moksha_timeline'] = f"""**Moksha Timeline - Liberation Forecast**
@@ -2194,7 +2194,11 @@ By December {year}, you will have made significant progress in {nak_data.get('ch
 
         generator = generators.get(category)
         if generator:
-            return generator(birth_data)
+            result = generator(birth_data)
+            # Keep the top-level contract consistent with service-generated
+            # predictions, which always carry 'generated_at'.
+            result.setdefault('generated_at', datetime.utcnow().isoformat())
+            return result
 
         # Fallback for unknown categories
         return {
