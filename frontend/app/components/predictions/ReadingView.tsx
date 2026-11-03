@@ -28,6 +28,7 @@ export interface SectionDetail {
 export interface RuleFinding {
   id: string;
   source?: string;
+  provenance?: 'classical' | 'tradition-attributed' | 'modern' | string;
   principle?: string;
   finding: string;
   timing?: string;
@@ -209,6 +210,8 @@ export function ReadingView({ prediction, viewMode }: { prediction: StructuredRe
   );
 
   const findings = prediction.rule_findings || [];
+  const [showAllRules, setShowAllRules] = useState(false);
+  const visibleFindings = showAllRules ? findings : findings.slice(0, 6);
 
   return (
     <div className="space-y-5">
@@ -263,7 +266,7 @@ export function ReadingView({ prediction, viewMode }: { prediction: StructuredRe
             <ScrollText className="w-3.5 h-3.5" aria-hidden="true" /> Rules applied to this chart
           </p>
           <ul className="divide-y divide-white/[0.06]">
-            {findings.map((f) => (
+            {visibleFindings.map((f) => (
               <li key={f.id + f.finding} className="py-2.5">
                 <div className="flex items-baseline gap-2">
                   <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-violet-400/15 text-violet-200 shrink-0">{f.id}</span>
@@ -271,6 +274,19 @@ export function ReadingView({ prediction, viewMode }: { prediction: StructuredRe
                 </div>
                 {(f.timing || f.principle) && (
                   <p className="mt-1 pl-1 text-xs text-slate-400">
+                    {f.provenance && (
+                      <span
+                        className={`mr-1.5 inline-block px-1.5 rounded text-[10px] uppercase tracking-wide ${
+                          f.provenance === 'classical'
+                            ? 'bg-emerald-400/10 text-emerald-300'
+                            : f.provenance === 'tradition-attributed'
+                              ? 'bg-amber-400/10 text-amber-300'
+                              : 'bg-slate-400/10 text-slate-300'
+                        }`}
+                      >
+                        {f.provenance === 'tradition-attributed' ? 'tradition' : f.provenance}
+                      </span>
+                    )}
                     {f.principle}
                     {f.principle && f.timing ? ' · ' : ''}
                     {f.timing && <span className="text-amber-200/90">{f.timing}</span>}
@@ -279,6 +295,15 @@ export function ReadingView({ prediction, viewMode }: { prediction: StructuredRe
               </li>
             ))}
           </ul>
+          {findings.length > 6 && (
+            <button
+              type="button"
+              onClick={() => setShowAllRules((v) => !v)}
+              className="mt-2 text-sm font-medium text-violet-300 hover:text-violet-200 min-h-[44px]"
+            >
+              {showAllRules ? 'Show fewer' : `Show all ${findings.length} rules`}
+            </button>
+          )}
         </section>
       )}
     </div>

@@ -201,8 +201,8 @@ def rule_karakas(c: Chart) -> List[Dict[str, Any]]:
     ordered = sorted(cand, key=cand.get, reverse=True)
     ak, dk = ordered[0], ordered[-1]
     ak_h12 = (c.sign(ak) + 11) % 12
-    text = (f"Atmakaraka {ak} ({cand[ak]:.2f}° in sign) — {c.desc(ak)}; Amatyakaraka {ordered[1]}; "
-            f"Darakaraka {dk} ({c.desc(dk)}). 12th from Atmakaraka: {SIGNS[ak_h12]}"
+    text = (f"Atmakaraka {c.desc(ak)}; Amatyakaraka {ordered[1]}; "
+            f"Darakaraka {c.desc(dk)}. 12th from Atmakaraka: {SIGNS[ak_h12]}"
             f"{' with ' + ', '.join(c.occupants(ak_h12)) if c.occupants(ak_h12) else ' (empty)'}")
     return [_f('F-KARAKA-01', 'classical', 'Jaimini chara karakas (7-karaka scheme)', text,
                ['karmic_journey', 'past_lives', 'future_lives', 'relationships', 'present_life'], 0.75)]
@@ -366,7 +366,7 @@ def rule_dasha(c: Chart, now: datetime, domains: List[str], categories: List[str
         picks = sorted((p for _s, p in scored[:3]), key=lambda p: p.start)
         if picks:
             out.append(_f('F-DASHA-03', 'classical', f'Dasha windows for {label} (BS-216/224/231/236)',
-                          f"{label.capitalize()} significators {sorted(sig)}; strongest periods: "
+                          f"{label.capitalize()} significators {', '.join(sorted(sig))}; strongest periods: "
                           + '; '.join(f"{p.label()} {_span(max(p.start, now), p.end)}" for p in picks),
                           categories, 0.8, timing=_span(max(picks[0].start, now), picks[0].end), start=picks[0].start))
     return out

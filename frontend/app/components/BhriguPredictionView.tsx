@@ -1577,62 +1577,37 @@ export default function BhriguPredictionView({
             </div>
           </div>
 
-          {/* View Mode Toggle */}
+          {/* View Mode Toggle — one control; switching never re-generates */}
           <div className="mt-6 mb-6">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              {/* Simple View Button */}
-              <button
-                onClick={() => handleViewModeChange('layman')}
-                aria-pressed={viewMode === 'layman'}
-                aria-label="Switch to Simple View"
-                className={`flex-1 sm:flex-initial px-6 py-3 rounded-xl font-semibold
-                           transition-all duration-300 flex items-center justify-center gap-2
-                           min-h-[44px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900
-                           ${
-                             viewMode === 'layman'
-                               ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-genz-glow focus:ring-cyan-400'
-                               : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700 hover:text-white focus:ring-gray-500'
-                           }`}
-              >
-                <span className="text-xl" aria-hidden="true">👤</span>
-                <span>Simple View</span>
-              </button>
-
-              {/* Astrologer View Button */}
-              <button
-                onClick={() => handleViewModeChange('astrologer')}
-                aria-pressed={viewMode === 'astrologer'}
-                aria-label="Switch to Astrologer View"
-                className={`flex-1 sm:flex-initial px-6 py-3 rounded-xl font-semibold
-                           transition-all duration-300 flex items-center justify-center gap-2
-                           min-h-[44px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900
-                           ${
-                             viewMode === 'astrologer'
-                               ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-genz-glow focus:ring-purple-400'
-                               : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700 hover:text-white focus:ring-gray-500'
-                           }`}
-              >
-                <span className="text-xl" aria-hidden="true">🔮</span>
-                <span>Astrologer View</span>
-              </button>
+            <div
+              role="tablist"
+              aria-label="Reading view"
+              className="grid grid-cols-2 p-1 rounded-xl bg-white/[0.05] border border-white/10 max-w-md mx-auto"
+            >
+              {(['layman', 'astrologer'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  role="tab"
+                  aria-selected={viewMode === mode}
+                  onClick={() => handleViewModeChange(mode)}
+                  className={`py-2.5 min-h-[44px] rounded-lg text-sm font-semibold transition-colors
+                             focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 ${
+                               viewMode === mode
+                                 ? mode === 'layman'
+                                   ? 'bg-cyan-500 text-slate-950'
+                                   : 'bg-violet-500 text-white'
+                                 : 'text-slate-300 hover:text-white'
+                             }`}
+                >
+                  {mode === 'layman' ? 'Simple' : 'Astrologer'}
+                </button>
+              ))}
             </div>
-
-            {/* Explainer Text */}
-            <div className="mt-3 text-center">
-              <p className="text-sm text-slate-100/70">
-                {viewMode === 'layman' ? (
-                  <>
-                    <span className="text-cyan-400" aria-hidden="true">✨</span>
-                    {' '}Reading simplified for easy understanding
-                  </>
-                ) : (
-                  <>
-                    <span className="text-purple-400" aria-hidden="true">📊</span>
-                    {' '}Technical analysis with astrological references
-                  </>
-                )}
-              </p>
-            </div>
+            <p className="mt-2 text-center text-xs text-slate-400">
+              {viewMode === 'layman'
+                ? 'Plain-language reading with dates and actions'
+                : 'Adds placements, dasha, rule IDs and verification'}
+            </p>
           </div>
 
           {/* Question Input */}
