@@ -4,6 +4,7 @@ Ensures 100% structured output with AI-powered section generation
 """
 import difflib
 import logging
+import math
 import os
 import re
 import unicodedata

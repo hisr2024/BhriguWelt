@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Sun, Briefcase, Heart, Activity, DollarSign, Sparkles, ArrowLeft, Loader2 } from 'lucide-react';
+import { Briefcase, Heart, Activity, DollarSign, Sparkles, ArrowLeft, Loader2 } from 'lucide-react';
 import AnimatedBackground, { FloatingElements } from '../components/AnimatedBackground';
 import GenZCard from '../components/GenZCard';
 import GenZButton from '../components/GenZButton';

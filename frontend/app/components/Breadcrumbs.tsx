@@ -53,7 +53,7 @@ export default function Breadcrumbs() {
     const breadcrumbs: BreadcrumbItem[] = [];
     let currentPath = '';
 
-    paths.forEach((path, index) => {
+    paths.forEach((path, _index) => {
       currentPath += `/${path}`;
       const label = labelMap[path] || path.split('-').map(word =>
         word.charAt(0).toUpperCase() + word.slice(1)

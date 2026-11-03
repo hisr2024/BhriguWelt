@@ -2,6 +2,7 @@
 Test Suite for BhriguWelt Prediction System Overhaul
 Validates critical fixes and enhancements
 """
+import importlib.util
 import pytest
 import sys
 import os
@@ -11,9 +12,24 @@ from unittest.mock import Mock, patch, MagicMock
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+# routes/models need flask_sqlalchemy (in requirements.txt, but not every
+# test environment installs the full web stack)
+FLASK_SQLALCHEMY_AVAILABLE = importlib.util.find_spec('flask_sqlalchemy') is not None
+
 from services.bhrigu_predictions import BhriguPredictionsService
 from services.prediction_orchestrator import PredictionOrchestrator, PredictionMode
 from utils.logger import secure_log, sanitize_error, setup_logger
+
+
+@pytest.fixture(autouse=True)
+def legacy_resilience_mode(monkeypatch):
+    """These tests exercise the legacy always-return-a-dict resilience
+    machinery, which is now gated behind BHRIGU_STRICT_PRECISION=false.
+    Strict mode (default) raises PredictionUnavailableError instead of
+    serving generalised fallback text; that contract is covered in
+    tests/test_wisdom_core_pipeline.py."""
+    monkeypatch.setenv('BHRIGU_STRICT_PRECISION', 'false')
+
 
 
 class TestSecureLogging:
@@ -205,6 +221,10 @@ class TestCriticalBugFixes:
 class TestAPIHealthEndpoint:
     """Test API health endpoint"""
 
+    @pytest.mark.skipif(
+        not FLASK_SQLALCHEMY_AVAILABLE,
+        reason="routes.bhrigu_predictions_routes imports models, which requires flask_sqlalchemy"
+    )
     def test_health_endpoint_structure(self):
         """Test that health endpoint returns expected structure"""
         from routes.bhrigu_predictions_routes import bhrigu_service

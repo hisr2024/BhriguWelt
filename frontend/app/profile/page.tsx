@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Calendar, MapPin, Settings, LogOut, ArrowLeft, Edit, Clock, Plus, UserCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { User, Calendar, MapPin, Settings, LogOut, ArrowLeft, Edit, Clock, Plus, UserCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AnimatedBackground, { FloatingElements } from '../components/AnimatedBackground';
@@ -13,12 +13,20 @@ import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { useEncryptedStorage } from '@/lib/hooks/useEncryptedStorage';
 import type { Profile } from '@/lib/types';
+import { GenderField, BirthTimeAccuracyField } from '@/app/components/BirthPrecisionFields';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { lock, isUnlocked } = useEncryption();
-  const { getAllProfiles } = useEncryptedStorage();
-  const [editing, setEditing] = useState(false);
+  const { lock } = useEncryption();
+  const { getAllProfiles, updateProfileFields } = useEncryptedStorage();
+
+  const savePrecision = async (updates: Partial<Profile>) => {
+    if (!currentProfile) return;
+    setCurrentProfile({ ...currentProfile, ...updates });
+    if (currentProfile.id !== undefined) {
+      await updateProfileFields(currentProfile.id, updates);
+    }
+  };
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
@@ -40,8 +48,8 @@ export default function ProfilePage() {
         const profile = loadedProfiles.find(p => p.id === parseInt(currentProfileId));
         setCurrentProfile(profile || loadedProfiles[0] || null);
       } else if (loadedProfiles.length > 0) {
-        setCurrentProfile(loadedProfiles[0]);
-        localStorage.setItem('current_profile_id', loadedProfiles[0].id!.toString());
+        setCurrentProfile(loadedProfiles[0] ?? null);
+        localStorage.setItem('current_profile_id', loadedProfiles[0]!.id!.toString());
       }
     } catch (error) {
       console.error('Error loading profiles:', error);
@@ -184,6 +192,25 @@ export default function ProfilePage() {
                     <p className="text-white font-medium">{currentProfile.placeOfBirth}</p>
                   </div>
                 </div>
+              </div>
+            </GenZCard>
+          )}
+
+          {currentProfile && (
+            <GenZCard variant="glass">
+              <h2 className="text-xl font-display font-bold text-white mb-1">Reading precision</h2>
+              <p className="text-sm text-white/60 mb-5">
+                Optional. These make house-based and Nadi statements more reliable.
+              </p>
+              <div className="space-y-6">
+                <BirthTimeAccuracyField
+                  value={currentProfile.birthTimeAccuracy}
+                  onChange={(birthTimeAccuracy) => savePrecision({ birthTimeAccuracy })}
+                />
+                <GenderField
+                  value={currentProfile.gender}
+                  onChange={(gender) => savePrecision({ gender })}
+                />
               </div>
             </GenZCard>
           )}

@@ -660,6 +660,34 @@ class ComprehensivePredictionService:
             'calculation_method': 'Vedic astrology with Swiss Ephemeris'
         }
 
+    def _generate_ai_synthesis(self, result: Dict[str, Any], engine: str) -> Optional[str]:
+        """
+        Generate an AI synthesis of the prediction result.
+
+        Thin wrapper over the lazily-loaded AI service: returns the synthesis
+        text when the service is available, otherwise None (callers already
+        handle a missing synthesis gracefully).
+        """
+        ai_service = self.ai_service
+        if not (ai_service and getattr(ai_service, 'enabled', False)):
+            return None
+
+        sections = []
+        for key, subcategory in (result.get('subcategories') or {}).items():
+            if isinstance(subcategory, dict):
+                title = subcategory.get('title', key.replace('_', ' ').title())
+                content = subcategory.get('content', '')
+                sections.append(f"### {title}\n{content}")
+
+        prompt = (
+            f"Synthesize the following {engine.replace('_', ' ')} analysis "
+            f"sections into one cohesive, flowing summary in the voice of "
+            f"Bhrigu Samhita and Nadi Jyotisha wisdom:\n\n" + "\n\n".join(sections)
+        )
+
+        synthesis = ai_service.generate_prediction(prompt)
+        return synthesis if isinstance(synthesis, str) and synthesis.strip() else None
+
     def _error_response(self, engine: str, error: str) -> Dict[str, Any]:
         """Generate error response"""
         return {

@@ -110,7 +110,7 @@ class TestValidateBirthData:
         }
         result = validate_birth_data(data)
         assert result is not None
-        assert 'must be numbers' in result.lower()
+        assert 'must be valid numbers' in result.lower()
 
 
 class TestBirthChartCalculation:
