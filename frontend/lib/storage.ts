@@ -252,7 +252,8 @@ export async function setItem(
   storeName: string,
   key: string,
   data: any,
-  encryptionKey?: CryptoKey
+  encryptionKey?: CryptoKey,
+  options: { id?: IDBValidKey } = {}
 ): Promise<IDBValidKey> {
   const database = await initDB();
 
@@ -274,6 +275,12 @@ export async function setItem(
       encrypted: false,
       updatedAt: new Date().toISOString(),
     };
+  }
+
+  // Stores use an auto-increment primary key: pass the existing id to update
+  // that record in place (without it, put() inserts a duplicate).
+  if (options.id !== undefined && options.id !== null) {
+    item.id = options.id;
   }
 
   return new Promise((resolve, reject) => {

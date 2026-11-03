@@ -24,6 +24,5 @@ Sources: Jaimini Upadesa Sutras, adhyaya 1 (karakas, karakamsha), the BPHS chapt
 - **F-MOKSHA-01** lists only the indicators actually present:
   - Ketu in the 12th
   - Jupiter occupying or aspecting the 12th
-  - the 12th lord in a kendra, trikona or the 12th
   - benefics or Ketu in the 12th from the karakamsha
 - The engine **never** outputs a count of remaining lives or a percentage of progress. No classical text computes either, and the earlier template invented them.

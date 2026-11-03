@@ -126,6 +126,8 @@ class Chart:
         accuracy = str(birth_data.get('birth_time_accuracy') or '').strip().lower()
         self.time_accuracy = accuracy if accuracy in ('exact', 'within_15', 'within_hour', 'unknown') else ''
         self.reference = 'Lagna'
+        if self.time_accuracy == 'within_hour':
+            self.asc_exact = False  # sign is the best estimate; degree is not reliable
         if self.time_accuracy == 'unknown' and 'Moon' in self.lon:
             # Classical fallback when the birth time is not known: read the
             # houses from the Moon (Chandra Lagna) instead of the Ascendant.
@@ -265,7 +267,7 @@ def rule_dignity(c: Chart) -> List[Dict[str, Any]]:
                 cancel = [q for q in (SIGN_LORDS[s], next(k for k, v in EXALT.items() if v == s) if s in EXALT.values() else None)
                           if q and q in c.lon and c.house(q) in (1, 4, 7, 10)]
                 if cancel:
-                    note = f"; neecha-bhanga: {', '.join(cancel)} in a kendra from Lagna"
+                    note = f"; neecha-bhanga: {', '.join(cancel)} in a kendra from the {c.reference}"
             out.append(_f('F-DIGNITY-01', 'classical', 'Graha dignity', f"{c.desc(p)} — {state}{note}",
                           [ALL], 0.6))
     return out
@@ -318,6 +320,8 @@ def rule_bhavat(c: Chart, domains: List[str], categories: List[str]) -> List[Dic
         for hx in dict.fromkeys([h, hh]):
             occ = c.occupants(c.house_sign(hx))
             lord = c.lord_of_house(hx)
+            if lord not in c.lon:
+                continue
             asp = c.aspecting(c.house_sign(hx))
             parts.append(f"{_ordinal(hx)} {SIGNS[c.house_sign(hx)]}"
                          f"{' (' + ', '.join(occ) + ')' if occ else ' (empty)'}, lord {lord} in {_ordinal(c.house(lord))}"
@@ -415,6 +419,7 @@ def rule_dasha(c: Chart, now: datetime, domains: List[str], categories: List[str
                           + '; '.join(f"{p.label()} {_span(max(p.start, now), p.end)}" for p in picks),
                           categories, 0.8, timing=_span(max(picks[0].start, now), picks[0].end),
                           start=max(picks[0].start, now), end=picks[0].end, house_based=True))
+            out[-1]['domain'] = dom
     return out
 
 
@@ -446,7 +451,7 @@ def rule_transits(c: Chart, now: datetime) -> List[Dict[str, Any]]:
         first = wins[0]
         desc = '; '.join(f"{phases[s]} ({SIGNS[s]}) {_span(max(a, now), b)}" for a, b, s in wins[:4])
         active = first[0] <= now <= first[1] + timedelta(days=3)
-        out.append(_f('F-SADESATI-01', 'classical', 'Sade Sati — Saturn 12th/1st/2nd from Moon',
+        out.append(_f('F-SADESATI-01', 'classical', 'Saturn 12th/1st/2nd from Moon (popularly "Sade Sati"; results per Phaladeepika ch. 26)',
                       f"{'Sade Sati running now' if active else 'Next Sade Sati'} (Moon in {SIGNS[ms]}): {desc}",
                       [ALL], 0.75 if active else 0.55, timing=_span(max(first[0], now), first[1]),
                       start=max(first[0], now), end=wins[min(len(wins), 3) - 1][1]))
@@ -498,7 +503,7 @@ def rule_bcp(c: Chart, now: datetime) -> List[Dict[str, Any]]:
     except ValueError:  # 29 Feb
         start = c.birth_utc.replace(year=c.birth_utc.year + int(age), day=28)
     end = start.replace(year=start.year + 1) if not (start.month == 2 and start.day == 29) else start + timedelta(days=365)
-    return [_f('F-BCP-01', 'tradition-attributed', 'Bhrigu Chakra Paddhati (one house per year from Lagna)',
+    return [_f('F-BCP-01', 'tradition-attributed', f'Bhrigu Chakra Paddhati (one house per year from the {c.reference})',
                f"Running year {running} activates the {_ordinal(h)} house ({SIGNS[c.house_sign(h)]}"
                f"{': ' + ', '.join(occ) if occ else ', empty'}); its lord {lord} sits in {_ordinal(c.house(lord))}",
                ['present_life', 'predictions', 'life_events', 'karmic_journey'], 0.5,
@@ -523,12 +528,19 @@ def rule_sensitivity(c: Chart, birth_data: Dict[str, Any]) -> List[Dict[str, Any
     if c.time_accuracy == 'unknown' and E.SWISSEPH_AVAILABLE and c.birth_utc:
         # Moon moves ~13° a day: check whether its nakshatra (and so the
         # whole dasha sequence) is even stable across the birth date.
-        naks = []
+        naks, moon_signs = [], []
         for hours in (-12, 0, 12):
             moon = E.planet_positions(c.birth_utc + timedelta(hours=hours))['Moon']['longitude']
             nak = E.nakshatra_of(moon)
             naks.append(f"{nak[0]} ({nak[2]} dasha)")
+            moon_signs.append(E.sign_of(moon))
         naks = list(dict.fromkeys(naks))
+        moon_signs = list(dict.fromkeys(moon_signs))
+        if len(moon_signs) > 1:
+            return [_f('F-SENS-01', 'modern', 'Birth-time sensitivity check',
+                       'Birth time unknown and the Moon changes sign that day (' + ' → '.join(moon_signs) +
+                       ') — the Chandra Lagna itself is uncertain' +
+                       ('; dasha dates are uncertain too' if len(naks) > 1 else ''), [ALL], 0.95)]
         if len(naks) > 1:
             return [_f('F-SENS-01', 'modern', 'Birth-time sensitivity check',
                        'Birth time unknown and the Moon changes nakshatra that day (' + ' → '.join(naks) +
@@ -631,7 +643,7 @@ def rule_more_yogas(c: Chart) -> List[Dict[str, Any]]:
     neighbours = [p for p in ('Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn') if p in c.lon and c.sign(p) in ((ms + 1) % 12, (ms - 1) % 12)]
     if not neighbours and not [p for p in ('Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn') if p in c.lon and c.sign(p) == ms]:
         kendra_from_moon = [p for p in ('Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn') if p in c.lon and (c.sign(p) - ms) % 3 == 0]
-        out.append(_f('F-YOGA-04', 'classical', 'Kemadruma — no planet 2nd/12th from Moon (Brihat Jataka, Chandra-yoga chapter)',
+        out.append(_f('F-YOGA-04', 'classical', 'Kemadruma — no planet 2nd/12th from Moon (Brihat Jataka; cancellation per later texts)',
                       'Kemadruma: no planet in the 2nd or 12th from the Moon'
                       + (f"; cancelled by {', '.join(kendra_from_moon)} in a kendra from the Moon" if kendra_from_moon else ' — emotional self-reliance is a theme'),
                       ['present_life', 'karmic_journey', 'karmic_remedies'], 0.5 if kendra_from_moon else 0.6))
@@ -678,12 +690,9 @@ def rule_moksha(c: Chart) -> List[Dict[str, Any]]:
         marks.append('Ketu in the 12th')
     if 'Jupiter' in c.lon and (c.house('Jupiter') == 12 or c.aspects_sign('Jupiter', c.house_sign(12))):
         marks.append('Jupiter influences the 12th')
-    l12 = c.lord_of_house(12)
-    if l12 in c.lon and c.house(l12) in (1, 4, 5, 7, 9, 10, 12):
-        marks.append(f"12th lord {l12} in {_ordinal(c.house(l12))}")
     cand = {p: c.lon[p] % 30 for p in GRAHAS7 if p in c.lon}
-    if len(cand) == 7:
-        ak = max(cand, key=cand.get)
+    ak = max(cand, key=cand.get) if len(cand) == 7 else None
+    if ak and not (ak == 'Moon' and c.time_accuracy in ('within_hour', 'unknown')):
         km12 = (navamsa_sign(c.lon[ak]) + 11) % 12
         benefic = [p for p in ('Jupiter', 'Venus', 'Ketu', 'Mercury') if p in c.lon and navamsa_sign(c.lon[p]) == km12]
         if benefic:
@@ -766,6 +775,7 @@ def rule_double_transit(c: Chart, now: datetime, domains: List[str], categories:
                           f"Jupiter and Saturn both activate the {_ordinal(h)} ({SIGNS[c.house_sign(h)]}) or its lord {lord}: "
                           + ', '.join(_span(a, b) for a, b in wins[:3]) + f" — supports {DOMAINS[dom][2]} events if the dasha agrees",
                           categories, 0.65, timing=_span(wins[0][0], wins[0][1]), start=wins[0][0], end=wins[0][1], house_based=True))
+            out[-1]['domain'] = dom
     return out
 
 
@@ -777,14 +787,14 @@ def rule_saturn_gochara(c: Chart, now: datetime) -> List[Dict[str, Any]]:
     sat = E.sign_index(E.planet_positions(now)['Saturn']['longitude'])
     rel = (sat - ms) % 12 + 1
     tone = 'supportive' if rel in (3, 6, 11) else 'demanding'
-    out = [_f('F-GOCHARA-02', 'classical', 'Saturn transit from Moon (Phaladeepika ch. 26)',
+    out = [_f('F-GOCHARA-02', 'classical', 'Saturn transit results by house from Moon (Phaladeepika ch. 26)',
               f"Saturn in {SIGNS[sat]} = {_ordinal(rel)} from the Moon — {tone} period for effort and results",
               [ALL], 0.5, start=now)]
     names = {(ms + 3) % 12: 'Kantaka Shani (4th from Moon)', (ms + 7) % 12: 'Ashtama Shani (8th from Moon)'}
     wins = [w for w in E.sign_windows('Saturn', set(names), now, now + timedelta(days=12 * 365), step_days=3) if w[1] >= now]
     if wins:
         a, b, sg = wins[0]
-        out.append(_f('F-GOCHARA-03', 'classical', 'Kantaka / Ashtama Shani (Phaladeepika ch. 26)',
+        out.append(_f('F-GOCHARA-03', 'classical', 'Saturn 4th/8th from Moon — results per Phaladeepika ch. 26 (names "Kantaka/Ashtama Shani" are later usage)',
                       f"{names[sg]}: Saturn in {SIGNS[sg]} {_span(max(a, now), b)}" + (f"; then {names[wins[1][2]]} {_span(wins[1][0], wins[1][1])}" if len(wins) > 1 else ''),
                       ['present_life', 'predictions', 'life_events', 'karmic_remedies'], 0.6,
                       timing=_span(max(a, now), b), start=max(a, now), end=b))
@@ -804,39 +814,59 @@ def rule_nodal_return(c: Chart, now: datetime) -> List[Dict[str, Any]]:
 
 
 def compose_windows(findings: List[Dict[str, Any]], categories: List[str]) -> List[Dict[str, Any]]:
-    """Rank upcoming windows by how many dated rules overlap (F-WINDOW-01)."""
-    dated = [f for f in findings if f.get('start') and f.get('end')
-             and f['id'] not in ('F-DASHA-01', 'F-DASHA-02', 'F-BCP-01', 'F-WINDOW-01')]
+    """Rank upcoming windows where dated rules for the SAME theme truly overlap (F-WINDOW-01).
+
+    A window needs a domain dasha period (F-DASHA-03) plus at least one
+    supporting dated rule.
+
+    The window reported is the intersection of the contributing ranges, and
+    findings for different domains (e.g. career vs. 9th house) never combine.
+    General findings (no domain) may combine with any domain.
+    """
     spans = []
-    for f in dated:
+    for f in findings:
+        if not (f.get('start') and f.get('end')) or f['id'] in ('F-DASHA-01', 'F-DASHA-02', 'F-BCP-01', 'F-WINDOW-01'):
+            continue
         try:
-            a, b = datetime.fromisoformat(f['start']), datetime.fromisoformat(f['end'])
-        except ValueError:
+            a, b = datetime.fromisoformat(str(f['start'])), datetime.fromisoformat(str(f['end']))
+        except (TypeError, ValueError):
             continue
-        spans.append((a, b, f))
-    scored = []
+        if b > a:
+            spans.append((a, b, f))
+    candidates = []
     for a, b, f in spans:
-        overlap = [g for a2, b2, g in spans if g is not f and a2 <= b and b2 >= a]
-        ids = sorted({f['id']} | {g['id'] for g in overlap})
-        if len(ids) < 2:
-            continue
-        score = f['weight'] + sum(g['weight'] for g in overlap)
-        scored.append((score, a, b, ids))
-    if not scored:
+        lo, hi, members = a, b, [f]
+        for a2, b2, g in sorted(spans, key=lambda x: -x[2]['weight']):
+            if g is f:
+                continue
+            dom_f, dom_g = f.get('domain'), g.get('domain')
+            if dom_f and dom_g and dom_f != dom_g:
+                continue
+            nlo, nhi = max(lo, a2), min(hi, b2)
+            if (nhi - nlo).days >= 14:
+                lo, hi = nlo, nhi
+                members.append(g)
+        ids = sorted({m['id'] for m in members})
+        # Transits only deliver what the dasha promises: a window must
+        # include a domain dasha period (F-DASHA-03) plus a transit/rule.
+        if len(ids) >= 2 and 'F-DASHA-03' in ids:
+            candidates.append((sum(m['weight'] for m in members), lo, hi, ids,
+                               next((m.get('domain') for m in members if m.get('domain')), None)))
+    if not candidates:
         return []
-    scored.sort(key=lambda x: (-x[0], x[1]))
-    top: List[Tuple[datetime, datetime, List[str]]] = []
-    for score, a, b, ids in scored:
-        if any(a <= b2 and b >= a2 for a2, b2, _ in top):  # keep windows distinct
+    candidates.sort(key=lambda x: (-x[0], x[1]))
+    top: List[Tuple[datetime, datetime, List[str], Optional[str]]] = []
+    for _score, lo, hi, ids, dom in candidates:
+        if any(lo <= h2 and hi >= l2 for l2, h2, _i, _d in top):
             continue
-        top.append((a, b, ids))
+        top.append((lo, hi, ids, dom))
         if len(top) == 3:
             break
-    top.sort(key=lambda x: x[1])
-    return [_f('F-WINDOW-01', 'modern', 'Ranked windows — overlapping dated rules',
-               'Strongest windows: ' + '; '.join(f"{_span(a, b)} ({' + '.join(ids)})" for a, b, ids in top),
-               categories, 0.85, timing=_span(top[0][0], top[0][1]),
-               start=top[0][0], end=top[0][1])]
+    top.sort(key=lambda x: x[0])
+    label = lambda dom: f"{DOMAINS[dom][2]}: " if dom in DOMAINS else ''
+    return [_f('F-WINDOW-01', 'modern', 'Ranked windows — overlapping dated rules for the same theme',
+               'Strongest windows: ' + '; '.join(f"{label(dom)}{_span(lo, hi)} ({' + '.join(ids)})" for lo, hi, ids, dom in top),
+               categories, 0.85, timing=_span(top[0][0], top[0][1]), start=top[0][0], end=top[0][1])]
 
 
 ACCURACY_NOTES = {

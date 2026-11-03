@@ -12,7 +12,11 @@ Every rule in `backend/services/bhrigu_nadi_rules.py` carries one of three label
 
 Most classical texts reached print from manuscripts only in the late 19th and early 20th centuries, so "19th-century source" usually means "the first printed edition of an older text".
 
-- **Brihat Parashara Hora Shastra:** first printed by Venkateswara Press, Bombay, in 1905. The Sitaram Jha edition followed in 1944, and that editor admitted altering the text. No ancient commentary on BPHS survives.
+- **Brihat Parashara Hora Shastra:** according to its Wikipedia article (https://en.wikipedia.org/wiki/Brihat_Parashara_Hora_Shastra), which itself cites secondary scholarship, the text was:
+  - first printed by Venkateswara Press, Bombay, in 1905;
+  - edited by Sitaram Jha in 1944, who reportedly acknowledged altering it;
+  - without any known ancient commentary.
+  Check this against a primary source before quoting it.
 - **Brihat Jataka (Varahamihira) and Phaladeepika (Mantreswara):** both have long, continuous manuscript and commentary traditions.
 - **Jaimini Upadesa Sutras:** survive with medieval commentaries.
 

@@ -3,10 +3,8 @@
 ## Classical — counted from the natal Moon (Phaladeepika ch. 26, Gocharaphala)
 - **F-GOCHARA-01:** Jupiter is favourable in the 2nd, 5th, 7th, 9th and 11th signs from the Moon.
 - **F-GOCHARA-02:** Saturn is favourable in the 3rd, 6th and 11th signs from the Moon, and demanding elsewhere.
-- **F-GOCHARA-03:**
-  - *Kantaka Shani* is Saturn in the 4th from the Moon.
-  - *Ashtama Shani* is Saturn in the 8th from the Moon.
-- **F-SADESATI-01:** Sade Sati is Saturn in the 12th, 1st and 2nd from the Moon (the rising, peak and setting phases). Retrograde re-entries are included.
+- **F-GOCHARA-03:** Saturn in the 4th or 8th from the Moon. Phaladeepika ch. 26 gives Saturn's results by house from the Moon. The names *Kantaka Shani* and *Ashtama Shani* are later popular usage, not terms from that chapter.
+- **F-SADESATI-01:** Saturn in the 12th, 1st and 2nd from the Moon (the rising, peak and setting phases), including retrograde re-entries. The name *Sade Sati* is likewise popular usage; the results come from the same chapter.
 - The vedha (obstruction) refinements in the same chapter are **not yet implemented**.
 
 ## Transits over natal points — F-TRANSIT-01
@@ -24,6 +22,7 @@
 - The "desire-axis reset" reading is interpretive.
 
 ## Ranked windows — F-WINDOW-01 (modern)
-- The engine merges dated findings whose date ranges overlap, and scores each window by the sum of the rule weights.
+- A window is reported only when a domain dasha period (F-DASHA-03) overlaps at least one other dated rule for the **same** theme. This follows the principle that transits deliver what the dasha promises.
+- The dates shown are the actual intersection of the overlapping ranges.
 - It returns up to three windows that don't overlap each other.
 - Weights are ranking priors. The UI never shows them as probabilities.

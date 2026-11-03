@@ -137,8 +137,8 @@ def test_new_rules_fire_on_reference_chart(birth_data):
     findings = evaluate_rules(build_chart_facts(birth_data), birth_data, "karmic_journey", now=NOW, limit=80)
     ids = {f["id"] for f in findings}
     assert {"F-KARAKAMSHA-01", "F-D9-01", "F-GOCHARA-02", "F-NODES-02", "F-STAR-01", "F-LESSON-01"} <= ids
-    win = next(f for f in findings if f["id"] == "F-WINDOW-01")
-    assert win["start"] and "+" in win["finding"]
+    for win in (f for f in findings if f["id"] == "F-WINDOW-01"):
+        assert win["start"] and "F-DASHA-03" in win["finding"]
 
 
 def test_unknown_birth_time_uses_chandra_lagna(birth_data):
@@ -169,11 +169,20 @@ def test_gender_controls_jiva_karaka(birth_data):
     assert not any("as jiva" in p for p in ids("other"))
 
 
-def test_window_composer_returns_distinct_windows():
-    f = lambda i, a, b, w=0.7: {"id": i, "start": a, "end": b, "weight": w}
-    out = compose_windows([f("A", "2027-01-01", "2027-06-01"), f("B", "2027-03-01", "2027-04-01"),
-                           f("C", "2027-02-01", "2027-05-01"), f("D", "2030-01-01", "2030-02-01")], ["all"])
-    assert out and "A + B + C" in out[0]["finding"] and "2030" not in out[0]["finding"]
+def test_window_composer_uses_true_overlap_and_same_domain():
+    f = lambda i, a, b, dom=None, w=0.7: {"id": i, "start": a, "end": b, "weight": w, "domain": dom}
+    out = compose_windows([
+        f("F-DASHA-03", "2027-01-01", "2027-12-31", "career"),
+        f("F-TRANSIT-02", "2027-03-01", "2027-06-01", "career"),
+        f("F-TRANSIT-02", "2027-02-01", "2027-04-01", "marriage"),   # other domain: must not combine
+        f("F-TRANSIT-01", "2030-01-01", "2030-02-01"),               # no dasha support
+    ], ["all"])
+    assert len(out) == 1
+    text = out[0]["finding"]
+    assert "career / public role: Mar 2027–Jun 2027 (F-DASHA-03 + F-TRANSIT-02)" in text
+    assert "2030" not in text
+    assert compose_windows([f("F-TRANSIT-01", "2027-01-01", "2027-03-01"),
+                            f("F-BB-01", "2027-01-15", "2027-02-20")], ["all"]) == []
 
 
 def test_request_sanitizer_drops_unknown_values():
@@ -181,6 +190,9 @@ def test_request_sanitizer_drops_unknown_values():
     data = {"gender": "Female ", "birth_time_accuracy": "sometime"}
     _sanitize_question_field(data)
     assert data == {"gender": "female"}
+    legacy = {"gender": "M", "birth_time_accuracy": "UNKNOWN"}
+    _sanitize_question_field(legacy)
+    assert legacy == {"gender": "male", "birth_time_accuracy": "unknown"}
 
 
 def test_cache_hash_distinguishes_precision_inputs():
@@ -189,3 +201,33 @@ def test_cache_hash_distinguishes_precision_inputs():
     h = lambda **k: C.create_hash({**base, **k}, "relationships")
     assert h() == h(gender="other") == h(birth_time_accuracy="exact")
     assert len({h(), h(gender="male"), h(gender="female"), h(birth_time_accuracy="unknown")}) == 4
+
+
+def test_unknown_time_prompt_and_rules_share_one_house_system(birth_data):
+    from services.wisdom_core_pipeline import format_chart_context
+    bd = {**birth_data, "birth_time_accuracy": "unknown"}
+    facts = build_chart_facts(bd)
+    ctx = format_chart_context(facts)
+    assert "no Ascendant is used" in ctx and "Lagna (Ascendant)" not in ctx
+    assert facts["planets"]["Venus"]["house"] == 4  # Pisces from Sagittarius Moon
+    venus = next(f for f in evaluate_rules(facts, bd, "relationships", now=NOW, limit=80)
+                 if f["id"] == "F-DIGNITY-01" and "Venus" in f["finding"])
+    assert "4th house" in venus["finding"]
+
+
+def test_unknown_time_flags_moon_sign_change():
+    u = datetime(1985, 1, 3, 6, 0, tzinfo=timezone.utc)
+    ch = E.build_chart(u, 28.6, 77.2)
+    bd = {"birth_details": {"utc": u.isoformat()}, "birth_time_accuracy": "unknown",
+          "latitude": 28.6, "longitude": 77.2, "moon_sign": ch["planets"]["Moon"]["sign"], **ch}
+    sens = next(f for f in evaluate_rules(build_chart_facts(bd), bd, "karmic_journey", now=NOW, limit=80)
+                if f["id"] == "F-SENS-01")
+    assert "changes sign" in sens["finding"]
+
+
+def test_approximate_time_hides_lagna_degree(birth_data):
+    bd = {**birth_data, "birth_time_accuracy": "within_hour"}
+    findings = evaluate_rules(build_chart_facts(bd), bd, "karmic_journey", now=NOW, limit=80)
+    lagna = next(f for f in findings if f["id"] == "F-LAGNA-01")
+    assert lagna["finding"].startswith("Lagna Cancer;")
+    assert not any("Lagna degree" in f["finding"] for f in findings)

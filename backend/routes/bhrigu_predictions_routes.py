@@ -182,6 +182,7 @@ def _sanitize_question_field(data: dict):
         from utils.validators import sanitizeQuestion
         data['question'] = sanitizeQuestion(data['question'])
     gender = str(data.get('gender') or '').strip().lower()
+    gender = {'m': 'male', 'f': 'female'}.get(gender, gender)
     if gender in ALLOWED_GENDERS:
         data['gender'] = gender
     else:
@@ -228,6 +229,7 @@ def stream_prediction_sections(category: str):
     data = request.get_json()
     if not data:
         return error_response("Invalid request payload", 400)
+    _sanitize_question_field(data)
     calculator = get_astrology_calculator()
     cached_birth_data = get_cached_birth_data(data)
     if not calculator and not cached_birth_data:

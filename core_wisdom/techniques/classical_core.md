@@ -37,7 +37,7 @@ Two planets in each other's signs (PD, chapter on yogas). The exchange is classe
 | F-YOGA-01 | Gajakesari | Jupiter in a kendra from the Moon | BPHS, PD |
 | F-YOGA-02 | Dharma-Karmadhipati | 9th and 10th lords conjunct, in exchange or in mutual 7th aspect | BPHS, Rajayoga chapter |
 | F-YOGA-03 | Viparita raja | Lords of the 6th, 8th or 12th placed in the 6th, 8th or 12th | BPHS; Uttara Kalamrita |
-| F-YOGA-04 | Sunapha / Anapha / Durudhara / Kemadruma | Planets (excluding the Sun and nodes) 2nd, 12th, both or neither from the Moon. Kemadruma is cancelled by a planet in a kendra from the Moon | BJ, Chandra-yoga chapter; PD |
+| F-YOGA-04 | Sunapha / Anapha / Durudhara / Kemadruma | Planets (excluding the Sun and nodes) 2nd, 12th, both or neither from the Moon | BJ, Chandra-yoga chapter. The Kemadruma cancellation used here (a planet in a kendra from the Moon) comes from later texts such as PD, not from BJ |
 | F-YOGA-05 | Dhana | 2nd or 11th lord conjunct the lord of the 1st, 5th or 9th | BPHS, Dhanayoga chapter |
 
 The old `vedic_yogas_calculator.py` marks 27 yogas active regardless of the chart, so it must not be used for readings.

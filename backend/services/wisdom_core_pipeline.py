@@ -108,6 +108,18 @@ def build_chart_facts(birth_data: Dict[str, Any]) -> Dict[str, Any]:
         )
 
     lagna_sign = _ascendant_sign(birth_data)
+    accuracy = str(birth_data.get('birth_time_accuracy') or '').lower()
+    house_reference = 'Lagna'
+    if accuracy == 'unknown':
+        # Birth time unknown: count houses from the Moon (Chandra Lagna) so the
+        # prompt and the rule findings use ONE house system.
+        moon = (planets_raw.get('Moon') or {}) if isinstance(planets_raw, dict) else {}
+        moon_sign = moon.get('sign') or birth_data.get('moon_sign')
+        if not moon_sign and isinstance(moon.get('longitude'), (int, float)):
+            moon_sign = SIGNS[int(float(moon['longitude']) % 360 // 30)]
+        if moon_sign:
+            lagna_sign = moon_sign
+            house_reference = 'Moon'
     lagna_index = _sign_index(lagna_sign)
 
     planets: Dict[str, Dict[str, Any]] = {}
@@ -153,6 +165,8 @@ def build_chart_facts(birth_data: Dict[str, Any]) -> Dict[str, Any]:
 
     return {
         'lagna': lagna_sign,
+        'house_reference': house_reference,
+        'birth_time_accuracy': accuracy or None,
         'moon_sign': birth_data.get('moon_sign'),
         'sun_sign': birth_data.get('zodiac_sign'),
         'nakshatra': birth_data.get('nakshatra'),
@@ -166,8 +180,11 @@ def build_chart_facts(birth_data: Dict[str, Any]) -> Dict[str, Any]:
 def format_chart_context(facts: Dict[str, Any]) -> str:
     """Render chart facts as the precise, grounded block injected into prompts."""
     lines: List[str] = []
-    if facts.get('lagna'):
-        lines.append(f"- Lagna (Ascendant): {facts['lagna']}")
+    if facts.get('house_reference') == 'Moon':
+        lines.append(f"- Birth time unknown: houses counted from the Moon (Chandra Lagna {facts['lagna']}); no Ascendant is used")
+    elif facts.get('lagna'):
+        approx = ' (birth time approximate — house placements may shift)' if facts.get('birth_time_accuracy') == 'within_hour' else ''
+        lines.append(f"- Lagna (Ascendant): {facts['lagna']}{approx}")
     if facts.get('moon_sign'):
         moon_line = f"- Moon Sign (Rashi): {facts['moon_sign']}"
         if facts.get('nakshatra'):
@@ -214,7 +231,8 @@ def format_chart_context(facts: Dict[str, Any]) -> str:
             planet_lines.append(f"  - {name}: " + ", ".join(parts))
 
     if planet_lines:
-        lines.append("- Planetary Positions (sidereal, whole-sign houses from Lagna):")
+        ref = 'the Moon' if facts.get('house_reference') == 'Moon' else 'Lagna'
+        lines.append(f"- Planetary Positions (sidereal, whole-sign houses from {ref}):")
         lines.extend(planet_lines)
 
     return "\n".join(lines) if lines else "- Birth details unavailable"

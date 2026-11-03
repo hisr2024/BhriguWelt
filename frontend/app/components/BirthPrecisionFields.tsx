@@ -20,7 +20,7 @@ export const ACCURACY_OPTIONS: { value: BirthTimeAccuracy; label: string; hint: 
   { value: 'exact', label: 'Exact', hint: 'From a birth certificate or hospital record' },
   { value: 'within_15', label: '± 15 min', hint: 'Remembered by family, fairly sure' },
   { value: 'within_hour', label: '± 1 hour', hint: 'Rough time of day' },
-  { value: 'unknown', label: "Don't know", hint: 'House-based statements will be left out' },
+  { value: 'unknown', label: "Don't know", hint: 'Houses will be read from your Moon sign instead' },
 ];
 
 function Chips<T extends string>({
