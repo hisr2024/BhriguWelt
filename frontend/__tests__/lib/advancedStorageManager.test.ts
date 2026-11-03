@@ -6,21 +6,106 @@
 import { AdvancedStorageManager } from '@/lib/storage/advancedStorageManager';
 import { MonitoringService } from '@/lib/monitoring';
 
-// Mock dependencies
-jest.mock('@/lib/monitoring', () => ({
-  MonitoringService: {
-    getInstance: jest.fn(() => ({
-      trackEvent: jest.fn(),
-      trackError: jest.fn(),
-    })),
-  },
-}));
+// Mock dependencies with a single stable monitoring instance so that the
+// mocks asserted on in tests are the same ones used by the source module.
+jest.mock('@/lib/monitoring', () => {
+  const instance = {
+    trackEvent: jest.fn(),
+    trackError: jest.fn(),
+  };
+  return {
+    MonitoringService: {
+      getInstance: jest.fn(() => instance),
+    },
+  };
+});
+
+/**
+ * Minimal functional in-memory fake of the IndexedDB API surface used by
+ * AdvancedStorageManager (open/upgrade/transaction/put/get).
+ */
+class FakeIDBRequest {
+  onsuccess: ((event?: unknown) => void) | null = null;
+  onerror: ((event?: unknown) => void) | null = null;
+  onupgradeneeded: ((event: { target: FakeIDBRequest }) => void) | null = null;
+  onblocked: (() => void) | null = null;
+  result: any = undefined;
+  error: Error | null = null;
+}
+
+function createFakeIndexedDB() {
+  // dbName -> storeName -> key -> record
+  const databases = new Map<string, Map<string, Map<string, any>>>();
+
+  return {
+    open: jest.fn((name: string, version?: number) => {
+      const request = new FakeIDBRequest();
+      setTimeout(() => {
+        if (!databases.has(name)) {
+          databases.set(name, new Map());
+        }
+        const stores = databases.get(name)!;
+        const db = {
+          objectStoreNames: {
+            contains: (storeName: string) => stores.has(storeName),
+          },
+          createObjectStore: (storeName: string) => {
+            stores.set(storeName, new Map());
+            return { createIndex: jest.fn() };
+          },
+          transaction: (storeNames: string[]) => ({
+            objectStore: (storeName: string) => {
+              const store = stores.get(storeName);
+              if (!store) {
+                throw new Error(`No objectStore named ${storeName}`);
+              }
+              return {
+                put: (record: { id: string }) => {
+                  const req = new FakeIDBRequest();
+                  setTimeout(() => {
+                    store.set(record.id, record);
+                    req.onsuccess?.();
+                  }, 0);
+                  return req;
+                },
+                get: (key: string) => {
+                  const req = new FakeIDBRequest();
+                  setTimeout(() => {
+                    req.result = store.get(key);
+                    req.onsuccess?.();
+                  }, 0);
+                  return req;
+                },
+              };
+            },
+          }),
+          close: jest.fn(),
+        };
+        request.result = db;
+        if (version !== undefined) {
+          request.onupgradeneeded?.({ target: request });
+        }
+        request.onsuccess?.();
+      }, 0);
+      return request;
+    }),
+    deleteDatabase: jest.fn((name: string) => {
+      databases.delete(name);
+      return new FakeIDBRequest();
+    }),
+  };
+}
 
 describe('AdvancedStorageManager', () => {
   let storageManager: AdvancedStorageManager;
   let mockMonitoring: any;
 
   beforeEach(() => {
+    // Reset the singleton and give each test a fresh, functional IndexedDB
+    // fake so tests are independent of each other.
+    (AdvancedStorageManager as any).instance = undefined;
+    (global as any).indexedDB = createFakeIndexedDB();
+    delete (window as any).memoryStorage;
     storageManager = AdvancedStorageManager.getInstance();
     mockMonitoring = MonitoringService.getInstance();
     jest.clearAllMocks();
@@ -125,10 +210,13 @@ describe('AdvancedStorageManager', () => {
     });
 
     test('tracks storage errors', async () => {
-      // Force an error by using invalid store name
+      // Force an error by making IndexedDB unavailable before initialization
+      (global as any).indexedDB = undefined;
+
       await expect(
-        storageManager.setItem('invalid-store', 'key', {})
+        storageManager.setItem('profiles', 'key', {})
       ).rejects.toThrow();
+      expect(mockMonitoring.trackError).toHaveBeenCalled();
     });
   });
 });

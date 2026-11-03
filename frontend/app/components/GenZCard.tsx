@@ -26,7 +26,7 @@ export default function GenZCard({
   glowOnHover = false,
   delay = 0,
 }: GenZCardProps) {
-  const [isPressed, setIsPressed] = useState(false);
+  const [, setIsPressed] = useState(false);
   const [ripple, setRipple] = useState<{ x: number; y: number; id: number } | null>(null);
 
   // Touch/click ripple effect
@@ -38,8 +38,8 @@ export default function GenZCard({
       let x: number, y: number;
       if ('touches' in e) {
         const rect = e.currentTarget.getBoundingClientRect();
-        x = e.touches[0].clientX - rect.left;
-        y = e.touches[0].clientY - rect.top;
+        x = (e.touches[0]?.clientX ?? 0) - rect.left;
+        y = (e.touches[0]?.clientY ?? 0) - rect.top;
       } else {
         const rect = e.currentTarget.getBoundingClientRect();
         x = e.clientX - rect.left;
@@ -210,7 +210,6 @@ export function GenZFeatureCard({
   badge,
   color = 'from-cyan-500 to-blue-500',
   onClick,
-  href,
 }: {
   icon: ReactNode;
   title: string;

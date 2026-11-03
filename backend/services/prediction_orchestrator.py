@@ -124,17 +124,18 @@ class PredictionOrchestrator:
         Returns:
             Dictionary with prediction and metadata
         """
+        # Validate inputs BEFORE the guaranteed-fallback block: bad arguments
+        # are caller errors and must raise, not be masked by a fallback dict.
+        if not category or not isinstance(category, str):
+            raise ValueError("Invalid category: must be a non-empty string")
+
+        if not chart_data or not isinstance(chart_data, dict):
+            raise ValueError("Invalid chart_data: must be a non-empty dictionary")
+
         # OPTIMIZED: Removed global lock - prediction generation is now concurrent
         # Each underlying service (OpenAI, offline) handles its own thread safety
         if True:  # Keeping indentation structure for minimal code change
             try:
-                # Validate inputs
-                if not category or not isinstance(category, str):
-                    raise ValueError("Invalid category: must be a non-empty string")
-
-                if not chart_data or not isinstance(chart_data, dict):
-                    raise ValueError("Invalid chart_data: must be a non-empty dictionary")
-
                 # Validate category is supported
                 valid_categories = {
                     'karmic_journey',
@@ -882,7 +883,6 @@ Your {zodiac} energy combined with {nakshatra} influence indicates a dharmic pat
             'spiritual_evolution': f"""## Spiritual Evolution Stage
             
 **Current Stage:** Intermediate level of soul development
-**Evolution Progress:** Approximately 60-70% complete
 **Next Steps:** Deepening meditation and service
 **Challenges:** Balancing material and spiritual life
 
@@ -891,7 +891,6 @@ Your {zodiac} energy combined with {nakshatra} influence indicates a dharmic pat
             'moksha_indicators': f"""## Moksha Indicators
             
 **Liberation Potential:** Moderate to high based on your configuration
-**Estimated Timeline:** 7-12 incarnations remaining
 **Key Indicators:** Spiritual inclination, detachment capacity
 **Preparation:** Regular practice, selfless service, study of scriptures
 

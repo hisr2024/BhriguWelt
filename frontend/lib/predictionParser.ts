@@ -103,7 +103,7 @@ function extractFirstParagraph(text: string): string {
     .filter(p => p.length > 50 && !p.startsWith('#') && !p.startsWith('**'));
 
   if (paragraphs.length > 0) {
-    return cleanText(paragraphs[0]);
+    return cleanText(paragraphs[0]!);
   }
 
   return '';
@@ -245,9 +245,10 @@ function parseSectionsFromMarkdown(
 
   for (let i = 0; i < matches.length; i++) {
     const match = matches[i];
-    const title = match[1].trim();
+    if (!match) continue;
+    const title = (match[1] ?? '').trim();
     const startPos = match.index! + match[0].length;
-    const endPos = i < matches.length - 1 ? matches[i + 1].index! : markdown.length;
+    const endPos = i < matches.length - 1 ? (matches[i + 1]?.index ?? markdown.length) : markdown.length;
 
     const content = markdown.substring(startPos, endPos).trim();
 
