@@ -58,6 +58,9 @@ describe('Profile Helpers', () => {
     localStorageMock.clear();
 
     getItemMock = storageMock.getItem as jest.Mock;
+    // Fully reset so mockResolvedValueOnce queues never leak between tests
+    // (jest.clearAllMocks clears call data but not queued once-values)
+    getItemMock.mockReset();
   });
 
   describe('setCurrentProfileId', () => {

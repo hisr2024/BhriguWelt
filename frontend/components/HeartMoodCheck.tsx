@@ -67,7 +67,7 @@ export function HeartMoodCheck({ onMoodSelect, initialMood = 5, timeOfDay = 'eve
   const [selectedMood, setSelectedMood] = useState(initialMood);
 
   // Memoize time-based messages
-  const { greeting, message } = useMemo(() => {
+  const { message } = useMemo(() => {
     const messages = {
       morning: {
         greeting: 'Good morning',

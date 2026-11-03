@@ -159,7 +159,7 @@ function generateHoroscopePredictions(
   return { daily, weekly, monthly, yearly };
 }
 
-function generateDailyPrediction(chartData: ChartData, moonSign: string, nakshatra: string): string {
+function generateDailyPrediction(_chartData: ChartData, moonSign: string, _nakshatra: string): string {
   const predictions = {
     Aries: 'Today brings opportunities for new beginnings. Your natural leadership shines through. Focus on initiating projects.',
     Taurus: 'A day for consolidation and enjoying comforts. Financial matters favor you. Trust your practical instincts.',
@@ -179,7 +179,7 @@ function generateDailyPrediction(chartData: ChartData, moonSign: string, nakshat
     'Cosmic energies are aligning in your favor. Stay open to the guidance of the universe.';
 }
 
-function generateWeeklyPrediction(chartData: ChartData, dashaPlanet: string): string {
+function generateWeeklyPrediction(_chartData: ChartData, dashaPlanet: string): string {
   const dashaThemes = {
     Sun: 'This week emphasizes leadership, vitality, and self-expression. Your confidence attracts opportunities. Focus on personal goals and creative projects.',
     Moon: 'Emotional awareness and intuition guide you this week. Nurture relationships and trust your feelings. Home and family matters gain importance.',
@@ -196,7 +196,7 @@ function generateWeeklyPrediction(chartData: ChartData, dashaPlanet: string): st
     'This week brings a blend of opportunities and lessons. Stay aligned with your dharma and trust the cosmic timing.';
 }
 
-function generateMonthlyPrediction(chartData: ChartData, lifeEvents: PredictionResult): string {
+function generateMonthlyPrediction(chartData: ChartData, _lifeEvents: PredictionResult): string {
   // Extract key themes from life events
   const themes = [];
 
@@ -214,7 +214,7 @@ function generateMonthlyPrediction(chartData: ChartData, lifeEvents: PredictionR
   }. The planets support your evolution. Stay aligned with your higher purpose and take inspired action. Opportunities for growth appear in unexpected ways.`;
 }
 
-function generateYearlyPrediction(chartData: ChartData, presentLife: PredictionResult): string {
+function generateYearlyPrediction(chartData: ChartData, _presentLife: PredictionResult): string {
   const ascendant = chartData.ascendant || 'Unknown';
   const currentYear = new Date().getFullYear();
 
@@ -298,7 +298,7 @@ function getPlanetTheme(planet: string): string {
   return themes[planet] || 'personal development';
 }
 
-function calculateKarmaScore(chartData: ChartData, predictions: any): number {
+function calculateKarmaScore(chartData: ChartData, _predictions: any): number {
   let score = 50; // Base score
 
   // Analyze 6th house (karmic debts)
@@ -322,7 +322,7 @@ function calculateKarmaScore(chartData: ChartData, predictions: any): number {
   return Math.max(0, Math.min(100, score));
 }
 
-function calculateDharmaScore(chartData: ChartData, predictions: any): number {
+function calculateDharmaScore(chartData: ChartData, _predictions: any): number {
   let score = 50; // Base score
 
   // Analyze 9th house (dharma)
@@ -346,7 +346,7 @@ function calculateDharmaScore(chartData: ChartData, predictions: any): number {
   return Math.max(0, Math.min(100, score));
 }
 
-function calculateMokshaScore(chartData: ChartData, predictions: any): number {
+function calculateMokshaScore(chartData: ChartData, _predictions: any): number {
   let score = 50; // Base score
 
   // Analyze 12th house (moksha)
@@ -402,7 +402,7 @@ export function getPredictionSummary(predictions: ComprehensivePredictions): str
   // Extract first subcategory content as summary (truncated)
   const getFirstContent = (result: PredictionResult) => {
     const firstKey = Object.keys(result.subcategories)[0];
-    const content = firstKey ? result.subcategories[firstKey].content : result.title;
+    const content = firstKey ? (result.subcategories[firstKey]?.content ?? result.title) : result.title;
     return content.substring(0, 150);
   };
 

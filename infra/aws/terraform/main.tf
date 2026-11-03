@@ -78,6 +78,7 @@ resource "aws_cloudfront_distribution" "bhriguwelt" {
         "Authorization",
         "Content-Type",
         "X-Client-Online",
+        "X-Client-Id",
         "X-AI-Consent",
         "X-AI-Mode",
         "X-Uncompressed-Content-Length",

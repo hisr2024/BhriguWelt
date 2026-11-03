@@ -207,7 +207,7 @@ const parseYamlDescriptions = (text: string, source: string): PastLivesRule[] =>
 
   let match = quoted.exec(text);
   while (match) {
-    const matchText = match[1];
+    const matchText = match[1]!;
     rules.push({
       text: matchText.trim(),
       tags: RULE_KEYWORDS.filter(keyword => matchText.toLowerCase().includes(keyword)),
@@ -218,7 +218,7 @@ const parseYamlDescriptions = (text: string, source: string): PastLivesRule[] =>
 
   match = unquoted.exec(text);
   while (match) {
-    const matchText = match[1];
+    const matchText = match[1]!;
     if (!matchText.includes('"')) {
       rules.push({
         text: matchText.trim(),

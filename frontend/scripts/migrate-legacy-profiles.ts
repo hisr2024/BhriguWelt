@@ -68,7 +68,7 @@ function parseArgs(): MigrationOptions {
 
   const backupIndex = args.indexOf('--backup');
   if (backupIndex !== -1 && args[backupIndex + 1]) {
-    options.backupPath = args[backupIndex + 1];
+    options.backupPath = args[backupIndex + 1]!;
   }
 
   return options;
@@ -127,7 +127,7 @@ async function createBackup(backupPath: string, profiles: ProfileEntry[]): Promi
 /**
  * Apply migration (template)
  */
-async function applyMigration(profiles: ProfileEntry[]): Promise<void> {
+async function applyMigration(_profiles: ProfileEntry[]): Promise<void> {
   console.log('⚠️  Migration must be applied in browser context');
   console.log('📝 Manual migration steps:');
   console.log('   1. Export profiles: Use browser DevTools to export data');

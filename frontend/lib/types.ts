@@ -3,6 +3,9 @@
  */
 
 // API Types for BhriguWelt Backend
+export type Gender = 'male' | 'female' | 'other';
+export type BirthTimeAccuracy = 'exact' | 'within_15' | 'within_hour' | 'unknown';
+
 export interface BirthDetails {
   date_of_birth: string;
   time_of_birth: string;
@@ -10,6 +13,8 @@ export interface BirthDetails {
   latitude?: number;
   longitude?: number;
   language?: string;
+  gender?: Gender;
+  birth_time_accuracy?: BirthTimeAccuracy;
 }
 
 export interface BirthChartAPI {
@@ -118,6 +123,8 @@ export interface Profile {
   longitude?: number;
   timezone?: string;
   notes?: string;
+  gender?: Gender;
+  birthTimeAccuracy?: BirthTimeAccuracy;
   createdAt: string;
   updatedAt: string;
 }
