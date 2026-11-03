@@ -58,6 +58,9 @@ Weights (0–1) are ranking priors. They are never shown as percentages or proba
 | F-TRANSIT-02 | modern | Double transit of Jupiter + Saturn on a domain house or its lord | ✔ |
 | F-GOCHARA-02 / 03 | classical | Saturn from Moon; Kantaka (4th) and Ashtama (8th) Shani windows (Phaladeepika ch. 26) | ✔ |
 | F-AV-01 / 02 | classical | Sarvashtakavarga house strength; transit bindus of Saturn and Jupiter (BPHS ch. 66) | ✔ |
+| F-AV-03 | classical | Trikona and ekadhipatya shodhana of the transit sign's bindus | – |
+| F-AV-04 | classical | Kakshya timing: Saturn and Jupiter windows in bindu-giving kakshyas | ✔ |
+| F-GOCHARA-04 | classical | Sun, Mars, Mercury and Venus (60 days) and the nodes: house from Moon, vedha-blocked days, bindus | ✔ |
 | F-NODES-02 | modern | Nodal return of Rahu to its natal degree | ✔ |
 | F-WINDOW-01 | modern | Ranks up to three distinct windows where dated rules overlap | ✔ |
 
@@ -83,7 +86,6 @@ Both are optional fields on the get-started form and the profile page. Both are 
 
 ## Still open
 
-- Ashtakavarga shodhana (Trikona and Ekadhipatya reductions) and kakshya timing.
-- Vedha is applied to Jupiter and Saturn; the other planets' transits aren't reported yet.
+- Sodhya pinda: the rasi multipliers differ between editions, so it is left out until a source is chosen.
 - `vedic_yogas_calculator.py` still marks 27 yogas active regardless of the chart, so don't use it for readings.
 - `backend/data/*_principles.yml` and `docs/bhrigu_references.md` contain folio numbers we could not verify.

@@ -355,3 +355,52 @@ def test_comprehensive_route_ignores_body_client_id():
         data = {"client_id": "victim-or-random"}
         _sanitize_question_field(data)
         assert data["client_id"] == "client:abcd1234-real@ip:5.6.7.8"
+
+
+# --- Shodhana, kakshya, fast transits ----------------------------------------
+
+from services.bhrigu_nadi_rules import (  # noqa: E402
+    trikona_shodhana, ekadhipatya_shodhana, kakshya_of, prastara,
+)
+
+
+def test_trikona_shodhana_rules():
+    row = [0] * 12
+    row[0], row[4], row[8] = 5, 3, 4        # fire: subtract min 3
+    row[1], row[5], row[9] = 2, 2, 2        # earth: all equal -> 0
+    row[2], row[6], row[10] = 0, 6, 1       # air: a zero -> unchanged
+    row[3], row[7], row[11] = 7, 1, 1       # water: subtract 1
+    out = trikona_shodhana(row)
+    assert out[0:12] == [2, 0, 0, 6, 0, 0, 6, 0, 1, 0, 1, 0]
+
+
+def test_ekadhipatya_shodhana_rules():
+    row = [3, 4, 2, 5, 5, 2, 4, 5, 6, 0, 3, 2]
+    # Mars pair Aries(0)/Scorpio(7): both empty, unequal -> both min (3)
+    # Venus pair Taurus(1)/Libra(6): both empty, equal -> both 0
+    # Mercury pair Gemini(2)/Virgo(5): Gemini occupied, Virgo empty equal -> Virgo = Gemini value
+    # Jupiter pair Sag(8)/Pisces(11): Sag occupied, Pisces lower -> Pisces 0
+    # Saturn pair Cap(9)/Aq(10): Cap is 0 -> unchanged
+    out = ekadhipatya_shodhana(row, occupied={2, 8})
+    assert out[0] == out[7] == 3
+    assert out[1] == out[6] == 0
+    assert out[2] == 2 and out[5] == 2
+    assert out[8] == 6 and out[11] == 0
+    assert out[9] == 0 and out[10] == 3
+
+
+def test_kakshya_lords_and_prastara():
+    assert kakshya_of(0.0) == (0, 'Saturn')
+    assert kakshya_of(3.75) == (1, 'Jupiter')
+    assert kakshya_of(29.99) == (7, 'Lagna')
+    givers = prastara('Sun', {p: 0 for p in ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']}, 0)
+    assert sum(len(g) for g in givers) == 48
+
+
+def test_fast_transits_and_shodhana_on_reference_chart(birth_data):
+    findings = evaluate_rules(build_chart_facts(birth_data), birth_data, "predictions", now=NOW, limit=80)
+    ids = {f["id"] for f in findings}
+    assert {"F-AV-03", "F-AV-04", "F-GOCHARA-04"} <= ids
+    fast = next(f for f in findings if f["id"] == "F-GOCHARA-04")
+    for planet in ("Sun", "Mars", "Mercury", "Venus", "Rahu"):
+        assert planet in fast["finding"]

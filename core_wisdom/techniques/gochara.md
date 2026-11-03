@@ -18,6 +18,11 @@
   - The nodes are not used as obstructers.
   - Source: *Phaladeepika*, tr. V. Subrahmanya Sastri, 2nd ed. 1950 (on wisdomlib.org). The OCR of v. 8 (Venus) is damaged; its pairs follow the order of houses listed in that verse.
 
+## Faster planets — F-GOCHARA-04
+- Covers the Sun, Mars, Mercury and Venus over the next 60 days, with dates to the day.
+- For each sign stay it gives the house from the Moon and whether that is favourable per ch. 26. Favourable stays also show the number of days blocked by vedha (the Moon excluded) and the planet's own Ashtakavarga bindus for that sign.
+- Rahu and Ketu are judged like the Sun (v. 2: good in the 3rd, 6th, 10th and 11th), with no vedha.
+
 ## Transits over natal points — F-TRANSIT-01
 - The engine flags Saturn or Jupiter within 1° of the natal Moon, Sun or Lagna degree, over the next 5 years.
 - Conjunction is classical gochara. The 1° orb is a modern precision choice.

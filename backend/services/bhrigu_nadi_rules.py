@@ -117,6 +117,75 @@ def sarvashtakavarga(bav: Dict[str, List[int]]) -> List[int]:
     return [sum(bav[p][i] for p in bav) for i in range(12)]
 
 
+def prastara(planet: str, planet_signs: Dict[str, int], lagna_sign: int) -> List[List[str]]:
+    """For each sign, which contributors gave ``planet`` a bindu (prastara chart)."""
+    positions = dict(planet_signs)
+    positions['Lagna'] = lagna_sign
+    givers: List[List[str]] = [[] for _ in range(12)]
+    for contributor, houses in zip(AV_CONTRIBUTORS, ASHTAKAVARGA[planet]):
+        base = positions.get(contributor)
+        if base is None:
+            continue
+        for h in houses:
+            givers[(base + h - 1) % 12].append(contributor)
+    return givers
+
+
+def trikona_shodhana(row: List[int]) -> List[int]:
+    """BPHS trikona reduction on one BAV row (index 0 = Aries).
+    Per trine group (1-5-9 signs): any zero -> unchanged; all equal -> all 0;
+    otherwise subtract the minimum from each."""
+    out = list(row)
+    for start in range(4):
+        idx = (start, start + 4, start + 8)
+        vals = [out[i] for i in idx]
+        if 0 in vals:
+            continue
+        if vals[0] == vals[1] == vals[2]:
+            for i in idx:
+                out[i] = 0
+        else:
+            m = min(vals)
+            for i in idx:
+                out[i] -= m
+    return out
+
+
+# Signs owned by the same planet (Sun and Moon own one sign each: no reduction).
+EKADHIPATYA_PAIRS = [(0, 7), (1, 6), (2, 5), (8, 11), (9, 10)]
+
+
+def ekadhipatya_shodhana(row: List[int], occupied: set) -> List[int]:
+    """BPHS ekadhipatya reduction, applied after trikona shodhana.
+    ``occupied``: sign indices holding any of the seven grahas.
+      - either value 0, or both signs occupied -> unchanged
+      - both empty: equal -> both 0; unequal -> both become the smaller
+      - one occupied: if the empty sign is lower -> it becomes 0,
+        otherwise it is reduced to the occupied sign's value."""
+    out = list(row)
+    for a, b in EKADHIPATYA_PAIRS:
+        if out[a] == 0 or out[b] == 0 or (a in occupied and b in occupied):
+            continue
+        if a not in occupied and b not in occupied:
+            if out[a] == out[b]:
+                out[a] = out[b] = 0
+            else:
+                out[a] = out[b] = min(out[a], out[b])
+        else:
+            full, empty = (a, b) if a in occupied else (b, a)
+            out[empty] = 0 if out[empty] < out[full] else out[full]
+    return out
+
+
+# Kakshya: each sign split into 8 parts of 3°45'; lords in this order.
+KAKSHYA_LORDS = ['Saturn', 'Jupiter', 'Mars', 'Sun', 'Venus', 'Mercury', 'Moon', 'Lagna']
+
+
+def kakshya_of(lon: float) -> Tuple[int, str]:
+    i = min(int((lon % 30.0) / 3.75), 7)
+    return i, KAKSHYA_LORDS[i]
+
+
 # ---------------------------------------------------------------------------
 # Vedha — Phaladeepika ch. 26, vv. 3–8 (Subrahmanya Sastri tr.).
 # favourable house from Moon -> vedha house; a transit in the vedha house
@@ -169,6 +238,13 @@ def _f(rule_id: str, provenance: str, principle: str, finding: str, categories: 
 
 def _d(dt: datetime) -> str:
     return dt.strftime('%b %Y')
+
+
+def _dspan(a: datetime, b: datetime) -> str:
+    """Day-precision span for fast planets, e.g. '3–16 Nov' or '28 Nov–9 Dec'."""
+    if (a.year, a.month) == (b.year, b.month):
+        return f"{a.day}–{b.day} {a.strftime('%b')}" if a.day != b.day else f"{a.day} {a.strftime('%b')}"
+    return f"{a.day} {a.strftime('%b')}–{b.day} {b.strftime('%b %Y') if a.year != b.year else b.strftime('%b')}"
 
 
 def _span(a: datetime, b: datetime) -> str:
@@ -940,7 +1016,92 @@ def rule_ashtakavarga(c: Chart, now: datetime, domains: List[str], categories: L
             parts.append(f"next Saturn sign {SIGNS[sg]} from ~{_d(a)}: {bav['Saturn'][sg]} bindus")
         out.append(_f('F-AV-02', 'classical', 'Transit strength by Ashtakavarga bindus (BPHS; 4+ of 8 is favourable)',
                       '; '.join(parts) + approx, [ALL], 0.6, start=now))
+
+        # Reduced (shodhita) bindus for the transit sign
+        occupied = set(signs.values())
+        red = []
+        for p in ('Saturn', 'Jupiter'):
+            sg = E.sign_index(pos[p]['longitude'])
+            reduced = ekadhipatya_shodhana(trikona_shodhana(bav[p]), occupied)
+            red.append(f"{p} in {SIGNS[sg]}: {bav[p][sg]} → {reduced[sg]} after trikona and ekadhipatya shodhana")
+        out.append(_f('F-AV-03', 'classical', 'Shodhita Ashtakavarga — trikona and ekadhipatya reductions (BPHS)',
+                      '; '.join(red) + approx, ['predictions', 'present_life', 'life_events', 'karmic_remedies'], 0.45))
+
+        # Kakshya timing: a slow planet gives results while crossing a kakshya
+        # whose lord contributed a bindu to its BAV in that sign.
+        for p in ('Saturn', 'Jupiter'):
+            givers = prastara(p, signs, E.sign_index(c.asc))
+            def good(day: datetime, p=p, givers=givers) -> bool:
+                lon = E.planet_positions(day)['Saturn' if p == 'Saturn' else 'Jupiter']['longitude']
+                return kakshya_of(lon)[1] in givers[E.sign_index(lon)]
+            wins = [w for w in _windows(good, now, now + timedelta(days=2 * 365), step_days=3) if (w[1] - w[0]).days >= 9]
+            if wins:
+                lon0 = E.planet_positions(wins[0][0])[p]['longitude']
+                k0 = kakshya_of(lon0)[1]
+                out.append(_f('F-AV-04', 'classical', 'Kakshya timing — transit through a bindu-giving kakshya (BPHS / Phaladeepika)',
+                              f"{p}'s most productive sub-periods (kakshyas whose lord gave it a bindu): "
+                              + ', '.join(_span(a, b) for a, b in wins[:3])
+                              + f" (first: {k0}'s kakshya in {E.sign_of(lon0)})" + approx,
+                              ['predictions', 'present_life', 'life_events'], 0.5,
+                              timing=_span(wins[0][0], wins[0][1]), start=wins[0][0], end=wins[0][1]))
     return out
+
+
+GOOD_FROM_MOON = {p: set(t) for p, t in VEDHA.items()}
+GOOD_FROM_MOON['Rahu'] = GOOD_FROM_MOON['Ketu'] = set(VEDHA['Sun'])  # Phaladeepika 26 v. 2: nodes as the Sun
+
+
+def rule_fast_transits(c: Chart, now: datetime, categories: List[str]) -> List[Dict[str, Any]]:
+    """Sun, Mars, Mercury, Venus (next 60 days) and the nodes: results by house
+    from the Moon, vedha-obstructed days, and own-BAV bindus (Phaladeepika ch. 26)."""
+    if not E.SWISSEPH_AVAILABLE:
+        return []
+    ms = c.sign('Moon')
+    signs = {p: c.sign(p) for p in GRAHAS7 if p in c.lon}
+    bav = bhinnashtakavarga(signs, E.sign_index(c.asc)) if len(signs) == 7 else {}
+    end = now + timedelta(days=60)
+    lines = []
+    first_good: Optional[Tuple[datetime, datetime]] = None
+    for p in ('Sun', 'Mars', 'Mercury', 'Venus'):
+        stays = [w for w in E.sign_windows(p, set(range(12)), now, end, step_days=1) if w[1] >= now][:2]
+        parts = []
+        for a, b, sg in stays:
+            a = max(a, now)
+            house = (sg - ms) % 12 + 1
+            label = f"{SIGNS[sg]} ({_ordinal(house)} from Moon) {_dspan(a, b)}"
+            bindu = f", {bav[p][sg]}/8 bindus" if p in bav else ''
+            if house in GOOD_FROM_MOON[p]:
+                blocked_days = 0
+                total_days = 0
+                d = a
+                while d <= b:
+                    total_days += 1
+                    ts = {q: E.sign_index(v['longitude']) for q, v in E.planet_positions(d).items()}
+                    if vedha_obstructers(p, ms, ts)[1]:
+                        blocked_days += 1
+                    d += timedelta(days=1)
+                share = blocked_days / max(total_days, 1)
+                verdict = 'favourable' if share < 0.5 else 'favourable house, mostly obstructed by vedha'
+                if share and share < 0.5:
+                    verdict += f" ({blocked_days} of {total_days} days obstructed)"
+                if verdict.startswith('favourable') and share < 0.5 and first_good is None:
+                    first_good = (a, b)
+            else:
+                verdict = 'challenging'
+            parts.append(f"{label}: {verdict}{bindu}")
+        if parts:
+            lines.append(f"{p} — " + '; '.join(parts))
+    pos = E.planet_positions(now)
+    for p in ('Rahu', 'Ketu'):
+        sg = E.sign_index(pos[p]['longitude'])
+        house = (sg - ms) % 12 + 1
+        lines.append(f"{p} in {SIGNS[sg]} ({_ordinal(house)} from Moon): {'favourable' if house in GOOD_FROM_MOON[p] else 'challenging'}")
+    if not lines:
+        return []
+    return [_f('F-GOCHARA-04', 'classical', 'Transits of Sun, Mars, Mercury, Venus and the nodes from Moon, with vedha (Phaladeepika ch. 26)',
+               'Next 60 days: ' + ' | '.join(lines), categories, 0.5,
+               timing=_dspan(*first_good) if first_good else '', start=first_good[0] if first_good else None,
+               end=first_good[1] if first_good else None)]
 
 
 def rule_nodal_return(c: Chart, now: datetime) -> List[Dict[str, Any]]:
@@ -1051,6 +1212,7 @@ def evaluate_rules(chart_facts: Dict[str, Any], birth_data: Dict[str, Any], cate
         lambda: rule_moksha(c), lambda: rule_lessons(c), lambda: rule_double_transit(c, now, domains, cats),
         lambda: rule_saturn_gochara(c, now), lambda: rule_nodal_return(c, now),
         lambda: rule_ashtakavarga(c, now, domains, cats),
+        lambda: rule_fast_transits(c, now, [x for x in cats if x in ('predictions', 'present_life', 'life_events')] or ['predictions']),
     ]
     findings: List[Dict[str, Any]] = []
     for rule in rules:

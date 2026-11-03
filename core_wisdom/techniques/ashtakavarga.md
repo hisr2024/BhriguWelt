@@ -29,5 +29,24 @@ These four rows were checked against two pages that cite BPHS ch. 66 (tempora.lt
 
 Both readings keep the same per-planet totals. If you prefer the other reading, change those four rows in the table.
 
-## Not implemented yet
-Trikona and Ekadhipatya shodhana (the reductions), and kakshya sub-divisions for transit timing.
+## Reductions (shodhana) — F-AV-03
+Both reductions follow BPHS.
+
+**Trikona shodhana.** For each trine group of signs (fire, earth, air, water):
+- if any sign in the group has 0, the group is left unchanged;
+- if all three are equal, all become 0;
+- otherwise the smallest value is subtracted from each sign.
+
+**Ekadhipatya shodhana.** Applied after trikona, to the pairs of signs that share a lord (Mars, Venus, Mercury, Jupiter and Saturn each own two). The Sun and Moon own one sign each, so they have no pair.
+- No change if either value is 0 or both signs hold a graha.
+- **Both signs empty:** equal values become 0; unequal values both drop to the smaller one.
+- **One sign occupied:** if the empty sign is lower it becomes 0; otherwise it is reduced to the occupied sign's value.
+- "Occupied" counts the seven grahas only. The nodes and the Lagna are not counted.
+- Some authors instead reduce an empty sign that is *equal* to the occupied sign to 0. This engine follows the reading also used by PyJHora: equal means unchanged.
+
+The app reports the reduced bindus for the sign Saturn and Jupiter are transiting. Sodhya pinda (the weighted sum) is **not** computed, because the published rasi multipliers differ between editions (for example, Virgo is 5 or 6).
+
+## Kakshya timing — F-AV-04
+- Each sign is split into 8 kakshyas of 3°45′. Their lords, in order, are Saturn, Jupiter, Mars, Sun, Venus, Mercury, Moon and Lagna.
+- A slow planet gives its results while it crosses a kakshya whose lord gave it a bindu in that sign. That information comes from the prastara chart, the contributor-by-sign breakdown.
+- The app lists the next such windows for Saturn and Jupiter over 2 years.
