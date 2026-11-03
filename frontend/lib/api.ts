@@ -118,6 +118,14 @@ const redirectToUnlock = () => {
  * Determines if an error should be retried
  */
 const shouldRetryError = (error: any, status?: number): boolean => {
+  // Never auto-retry non-idempotent calls (POST/PUT/PATCH/DELETE). Prediction
+  // POSTs trigger an LLM generation; a timeout usually means the server is
+  // still generating, so a silent retry just pays for the same reading again.
+  const method = String(error?.config?.method || 'get').toLowerCase();
+  if (method !== 'get' && method !== 'head' && method !== 'options') {
+    return false;
+  }
+
   // Retry on network errors (no response)
   if (!error.response) {
     return true;
