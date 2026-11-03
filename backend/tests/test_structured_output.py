@@ -157,3 +157,24 @@ def test_fallback_category_marker_routes_correctly():
     svc = OpenAIService.__new__(OpenAIService)
     prompt = "CATEGORY_KEY: life_events\nDo NOT mention soul purpose."
     assert svc._detect_category_from_prompt(prompt) == "life_events"
+
+
+def test_hindi_sections_are_not_falsely_deduplicated(monkeypatch):
+    payload = {"sections": {
+        "soul_purpose": _section("आपका जीवन उद्देश्य सेवा के माध्यम से नेतृत्व करना है।"),
+        "karmic_blueprint": _section("पिछले जन्म की प्रशंसा पाने की आदत फिर लौटती है।"),
+        "life_mission": _section("आपका धर्म शिक्षा और स्थिर संरचना बनाना है।"),
+    }}
+    service, _ = _service(monkeypatch, payload)
+    result = service.generate_karmic_journey_prediction({**BIRTH, "language": "hi"})
+    status = result["section_generation_status"]
+    assert all(status[k]["status"].startswith("generated") for k in ("soul_purpose", "karmic_blueprint", "life_mission"))
+
+
+def test_incomplete_reading_is_flagged_and_not_cache_current(monkeypatch):
+    from models import BhriguPredictionCache
+    payload = {"sections": {"soul_purpose": _section("Only one section came back.")}}
+    service, _ = _service(monkeypatch, payload)
+    result = service.generate_karmic_journey_prediction(BIRTH)
+    assert result.get("reading_incomplete") is True
+    assert not BhriguPredictionCache._is_current_format(json.dumps(result))

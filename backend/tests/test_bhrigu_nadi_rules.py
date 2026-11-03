@@ -89,3 +89,23 @@ def test_rules_degrade_without_birth_time():
     facts = {"lagna": "Leo", "planets": {"Moon": {"sign": "Leo", "longitude": 130.0}}}
     findings = evaluate_rules(facts, {"planets": {"Moon": {"longitude": 130.0}}}, "karmic_journey", now=NOW)
     assert all(f["id"] not in ("F-DASHA-01", "F-BCP-01") for f in findings)
+
+
+def test_sade_sati_not_reported_running_after_it_ended():
+    from services.bhrigu_nadi_rules import Chart, rule_transits
+    facts = {"lagna": "Aries", "planets": {}}
+    # Moon in Capricorn; Saturn left Aquarius (setting phase) on 29 Mar 2025.
+    bd = {"planets": {"Moon": {"longitude": 280.0}, "Sun": {"longitude": 10.0}},
+          "ascendant": {"degree": 5.0}}
+    out = rule_transits(Chart(facts, bd), datetime(2025, 5, 1, tzinfo=timezone.utc))
+    sade = [f for f in out if f["id"] == "F-SADESATI-01"]
+    assert not sade or "running now" not in sade[0]["finding"]
+
+
+def test_inexact_lagna_degree_is_not_presented_as_exact():
+    facts = {"lagna": "Aries", "planets": {"Moon": {"sign": "Leo", "longitude": 130.0}}}
+    bd = {"planets": {"Moon": {"longitude": 130.0}}, "ascendant": "Aries"}
+    findings = evaluate_rules(facts, bd, "karmic_journey", now=NOW, limit=40)
+    lagna = next(f for f in findings if f["id"] == "F-LAGNA-01")
+    assert "°" not in lagna["finding"].split(";")[0]
+    assert not any("Lagna degree" in f["finding"] for f in findings)

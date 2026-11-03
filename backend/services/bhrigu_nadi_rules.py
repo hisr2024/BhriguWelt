@@ -103,7 +103,9 @@ class Chart:
                 self.speed[p] = float(entry.get('speed') or 0.0)
         asc = birth_data.get('ascendant')
         asc_deg = asc.get('degree') if isinstance(asc, dict) else None
-        if not isinstance(asc_deg, (int, float)):
+        self.asc_exact = isinstance(asc_deg, (int, float))
+        if not self.asc_exact:
+            # Sign known, degree not: houses are valid, degree-based rules are not.
             lagna_sign = chart_facts.get('lagna')
             asc_deg = SIGNS.index(lagna_sign) * 30 + 15 if lagna_sign in SIGNS else None
         self.asc: Optional[float] = float(asc_deg) % 360.0 if asc_deg is not None else None
@@ -172,8 +174,12 @@ def _birth_utc(birth_data: Dict[str, Any]) -> Optional[datetime]:
 
 def rule_lagna(c: Chart) -> List[Dict[str, Any]]:
     lord = c.lord_of_house(1)
-    nak, pada, _ = E.nakshatra_of(c.asc)
-    text = f"Lagna {E.fmt_dms(c.asc)} ({nak}-{pada}); Lagna lord {c.desc(lord)}"
+    lord_text = c.desc(lord) if lord in c.lon else lord
+    if c.asc_exact:
+        nak, pada, _ = E.nakshatra_of(c.asc)
+        text = f"Lagna {E.fmt_dms(c.asc)} ({nak}-{pada}); Lagna lord {lord_text}"
+    else:
+        text = f"Lagna {E.sign_of(c.asc)}; Lagna lord {lord_text}"
     occ = c.occupants(E.sign_index(c.asc))
     if occ:
         text += f"; in Lagna: {', '.join(occ)}"
@@ -377,7 +383,9 @@ def rule_transits(c: Chart, now: datetime) -> List[Dict[str, Any]]:
         return []
     out = []
     end5 = now + timedelta(days=5 * 365)
-    points = {'natal Moon': c.lon['Moon'], 'Lagna degree': c.asc}
+    points = {'natal Moon': c.lon['Moon']}
+    if c.asc_exact:
+        points['Lagna degree'] = c.asc
     if 'Sun' in c.lon:
         points['natal Sun'] = c.lon['Sun']
     for planet in ('Saturn', 'Jupiter'):
@@ -393,10 +401,11 @@ def rule_transits(c: Chart, now: datetime) -> List[Dict[str, Any]]:
     ms = c.sign('Moon')
     phases = {(ms - 1) % 12: 'rising', ms: 'peak', (ms + 1) % 12: 'setting'}
     wins = E.sign_windows('Saturn', set(phases), now - timedelta(days=60), now + timedelta(days=12 * 365), step_days=3)
+    wins = [w for w in wins if w[1] >= now - timedelta(days=3)]  # drop phases already over
     if wins:
         first = wins[0]
         desc = '; '.join(f"{phases[s]} ({SIGNS[s]}) {_span(max(a, now), b)}" for a, b, s in wins[:4])
-        active = first[0] <= now
+        active = first[0] <= now <= first[1] + timedelta(days=3)
         out.append(_f('F-SADESATI-01', 'classical', 'Sade Sati — Saturn 12th/1st/2nd from Moon',
                       f"{'Sade Sati running now' if active else 'Next Sade Sati'} (Moon in {SIGNS[ms]}): {desc}",
                       [ALL], 0.75 if active else 0.55, timing=_span(max(first[0], now), first[1]), start=first[0]))
@@ -469,7 +478,7 @@ def rule_bnn_progression(c: Chart, now: datetime) -> List[Dict[str, Any]]:
 
 
 def rule_sensitivity(c: Chart, birth_data: Dict[str, Any]) -> List[Dict[str, Any]]:
-    if not (E.SWISSEPH_AVAILABLE and c.birth_utc and c.lat is not None and c.lng is not None):
+    if not (E.SWISSEPH_AVAILABLE and c.birth_utc and c.asc_exact and c.lat is not None and c.lng is not None):
         return []
     flagged = []
     tight = False

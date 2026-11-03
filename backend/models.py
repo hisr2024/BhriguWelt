@@ -180,10 +180,15 @@ class BhriguPredictionCache(db.Model):
             return None
 
     READING_FORMAT_MARKER = '"reading_format": 2'
+    INCOMPLETE_MARKER = '"reading_incomplete": true'
 
     @classmethod
     def _is_current_format(cls, prediction_data: str) -> bool:
-        return bool(prediction_data) and cls.READING_FORMAT_MARKER in prediction_data
+        return (
+            bool(prediction_data)
+            and cls.READING_FORMAT_MARKER in prediction_data
+            and cls.INCOMPLETE_MARKER not in prediction_data
+        )
 
     @classmethod
     def get_cached_prediction(cls, birth_data: dict, category: str, question: str = None):

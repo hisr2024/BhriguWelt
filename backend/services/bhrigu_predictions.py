@@ -1626,9 +1626,13 @@ Actionable Guidance: 3 specific bullet points.
         "Return ONE valid JSON object exactly matching the requested schema."
     )
 
-    def _section_max_tokens(self, section_count: int) -> int:
+    def _section_max_tokens(self, section_count: int, language: str = 'en') -> int:
         per_section = int(os.getenv('BHRIGU_TOKENS_PER_SECTION', '260'))
         ceiling = int(os.getenv('BHRIGU_MAX_OUTPUT_TOKENS', '3200'))
+        if not str(language or 'en').lower().startswith('en'):
+            # Non-Latin scripts tokenise ~2x denser than English.
+            per_section = int(per_section * 1.9)
+            ceiling = int(ceiling * 1.9)
         return max(600, min(ceiling, 220 + per_section * max(section_count, 1)))
 
     def _build_category_prompt(
@@ -1674,10 +1678,14 @@ Rules: <=110 words per section; never repeat a sentence across sections; omit a 
     @staticmethod
     def _language_line(birth_data: Dict[str, Any]) -> str:
         lang = str(birth_data.get('language') or 'en').lower()
-        if lang.startswith('hi'):
-            return ("\nWrite every JSON string VALUE in simple Hindi (Devanagari); keep JSON keys, "
-                    "rule IDs and planet/sign names as given.")
-        return ""
+        names = {'hi': 'simple Hindi (Devanagari)', 'ar': 'Modern Standard Arabic', 'de': 'German',
+                 'es': 'Spanish', 'fr': 'French', 'ta': 'Tamil', 'te': 'Telugu', 'bn': 'Bengali',
+                 'mr': 'Marathi', 'gu': 'Gujarati', 'kn': 'Kannada', 'ml': 'Malayalam'}
+        name = names.get(lang[:2])
+        if not name:
+            return ""
+        return (f"\nWrite every JSON string VALUE in {name}; keep JSON keys, "
+                "rule IDs and planet/sign names as given.")
 
     def _call_category_reading(
         self, prompt: str, max_tokens: int, user_id: Optional[str], allow_fallback: bool
@@ -1821,7 +1829,8 @@ Rules: <=110 words per section; never repeat a sentence across sections; omit a 
                 category, section_specs, birth_data, self._format_rule_block(findings), question
             )
             data, raw_text, partial = self._call_category_reading(
-                prompt, self._section_max_tokens(len(section_specs)), user_id, allow_fallback
+                prompt, self._section_max_tokens(len(section_specs), birth_data.get('language') or 'en'),
+                user_id, allow_fallback
             )
 
             blocks: Dict[str, Any] = {}
@@ -1845,7 +1854,8 @@ Rules: <=110 words per section; never repeat a sentence across sections; omit a 
                 if not text:
                     status_map[key] = {'status': 'unavailable'}
                     continue
-                fingerprint = normalize_for_dedupe(text)[:400]
+                # Fingerprint the model's own prose, not our injected labels.
+                fingerprint = normalize_for_dedupe((detail or {}).get('simple') or text)[:400]
                 if fingerprint in seen_texts:
                     status_map[key] = {'status': 'duplicate', 'duplicate_of': seen_texts[fingerprint]}
                     continue
@@ -1924,7 +1934,17 @@ Rules: <=110 words per section; never repeat a sentence across sections; omit a 
             sections['overview'] = overview
             sections['key_insight'] = key_insight
             sections['rule_findings'] = findings
+            generated_ok = sum(1 for v in status_map.values() if v.get('status', '').startswith('generated'))
+            complete = (
+                not partial
+                and not any(v.get('status') == 'fallback' for v in status_map.values())
+                and generated_ok >= max(1, int(0.6 * len(section_specs)))
+            )
+            # Only complete AI readings carry the cache marker; partial or
+            # offline readings are shown once but regenerate next time.
             sections['reading_format'] = 2
+            if not complete:
+                sections['reading_incomplete'] = True
 
             return {
                 'full_analysis': self._assemble_full_analysis(section_specs, sections),

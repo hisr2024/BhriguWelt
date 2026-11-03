@@ -6,6 +6,21 @@ import { getCurrentLanguage } from '@/lib/copy';
 const PROFILE_HASH_PREFIX = 'profile_hash_';
 // v2: readings cached before the structured-reading fix held raw JSON bodies.
 const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_v2_';
+const LEGACY_CACHE_PREFIX = 'bhrigu_prediction_';
+
+// One-time cleanup of pre-v2 cached readings so they don't fill storage.
+if (typeof window !== 'undefined') {
+  try {
+    const stale: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(LEGACY_CACHE_PREFIX) && !key.startsWith(PREDICTION_CACHE_PREFIX)) stale.push(key);
+    }
+    stale.forEach((key) => localStorage.removeItem(key));
+  } catch {
+    /* storage unavailable — nothing to clean */
+  }
+}
 
 /**
  * In-flight request dedupe: identical prediction requests (same profile,
@@ -242,9 +257,8 @@ export const useBhriguPrediction = ({
         force_regenerate: forceRegenerate
       };
 
-      // Single retry layer: the shared axios client already retries network
-      // and 5xx errors with backoff. Wrapping another retry loop here caused
-      // up to 9 attempts per failure and ~40s of stuck loading state.
+      // No automatic retries for prediction POSTs (each one is a paid LLM
+      // generation); the user retries explicitly from the error state.
       // In-flight dedupe: identical concurrent requests share one promise.
       const requestKey = `${cacheKey}::${forceRegenerate ? 'force' : 'normal'}`;
       let pending = inFlightRequests.get(requestKey);
@@ -267,8 +281,10 @@ export const useBhriguPrediction = ({
           normalized.message?.toLowerCase()?.includes('cache')
         ));
 
-        // Cache the successful result
-        if (typeof window !== 'undefined') {
+        // Cache the successful result — but never a partial/offline reading
+        // (it should regenerate next time rather than stick around).
+        const incomplete = Boolean((normalized.prediction as Record<string, unknown> | null)?.reading_incomplete);
+        if (typeof window !== 'undefined' && !incomplete) {
           try {
             localStorage.setItem(
               cacheKey,

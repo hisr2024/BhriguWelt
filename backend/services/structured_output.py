@@ -266,4 +266,6 @@ def to_readable_text(text: Any) -> str:
 
 
 def normalize_for_dedupe(text: str) -> str:
-    return re.sub(r'[^a-z0-9]+', ' ', (text or '').lower()).strip()
+    # Unicode-aware: Devanagari and other scripts must survive, otherwise
+    # every Hindi section reduces to the same English labels and is dropped.
+    return re.sub(r'[\W_]+', ' ', (text or '').lower(), flags=re.UNICODE).strip()
