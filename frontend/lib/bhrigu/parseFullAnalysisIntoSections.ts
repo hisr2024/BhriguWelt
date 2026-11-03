@@ -28,8 +28,8 @@ export const parseFullAnalysisIntoSections = (
     for (const pattern of patterns) {
       try {
         const match = fullAnalysis.match(pattern);
-        if (match && match[1]?.trim().length > 50) {
-          parsedSections[section.key] = match[1].trim();
+        if (match && (match[1]?.trim().length ?? 0) > 50) {
+          parsedSections[section.key] = (match[1] ?? '').trim();
           break;
         }
       } catch (e) {

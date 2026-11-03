@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, ArrowLeft, Loader2, Download, Users, FileText, Activity, Sparkles } from 'lucide-react';
+import { BarChart3, ArrowLeft, Loader2, Users, FileText, Activity, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { format, subMonths } from 'date-fns';

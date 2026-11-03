@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { GenderField, BirthTimeAccuracyField } from '@/app/components/BirthPrecisionFields';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Sparkles, Calendar, Clock, MapPin, ArrowRight, Shield, Zap, User } from 'lucide-react';
@@ -34,7 +35,7 @@ export default function GetStartedPage() {
   const [manualCoords, setManualCoords] = useState({ latitude: '', longitude: '' });
   const [creationProgress, setCreationProgress] = useState<ProfileCreationProgress | null>(null);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split('T')[0] ?? '';
 
   const validateName = (value: string) => value.trim().length >= 2 && value.trim().length <= 80;
   const validateDate = (value: string) => {
@@ -44,13 +45,6 @@ export default function GetStartedPage() {
   };
   const validateTime = (value: string) => Boolean(value && value.length >= 4);
   const validatePlace = (value: string) => /[a-zA-Z]/.test(value) && value.trim().length >= 2;
-
-  const validationErrors = {
-    name: step === 1 && formData.name ? !validateName(formData.name) : false,
-    date: step === 2 && formData.date_of_birth ? !validateDate(formData.date_of_birth) : false,
-    time: step === 3 && formData.time_of_birth ? !validateTime(formData.time_of_birth) : false,
-    place: step === 4 && formData.place_of_birth ? !validatePlace(formData.place_of_birth) : false,
-  };
 
   useEffect(() => {
     if (!encryptionLoading && !isSetup) {
@@ -90,6 +84,8 @@ export default function GetStartedPage() {
         date_of_birth: formData.date_of_birth,
         time_of_birth: formData.time_of_birth,
         place_of_birth: formData.place_of_birth,
+        gender: formData.gender,
+        birth_time_accuracy: formData.birth_time_accuracy,
       };
 
       // Only add coordinates if both are present and are valid numbers
@@ -254,6 +250,9 @@ export default function GetStartedPage() {
                   Your Name
                 </label>
                 <input type="text" required placeholder="e.g., Arjun Kumar" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="genz-input w-full text-lg touch-manipulation" autoFocus />
+                <div className="mt-5">
+                  <GenderField value={formData.gender} onChange={(gender) => setFormData({ ...formData, gender })} />
+                </div>
               </motion.div>
             )}
             {step === 2 && (
@@ -273,6 +272,9 @@ export default function GetStartedPage() {
                 </label>
                 <input type="time" required value={formData.time_of_birth} onChange={(e) => setFormData({ ...formData, time_of_birth: e.target.value })} className="genz-input w-full text-lg touch-manipulation" autoFocus />
                 <p className="text-sm text-genz-mint-fresh mt-3 flex items-center gap-2"><Zap className="w-4 h-4" />Exact time gives more accurate predictions</p>
+                <div className="mt-5">
+                  <BirthTimeAccuracyField value={formData.birth_time_accuracy} onChange={(birth_time_accuracy) => setFormData({ ...formData, birth_time_accuracy })} />
+                </div>
               </motion.div>
             )}
             {step === 4 && (

@@ -60,9 +60,13 @@ class AIService:
             
             # Build prompt based on section type
             prompt = self._build_section_prompt(section_type, astrological_data)
-            
+
             # Get AI response
-            response = self.openai.generate_prediction(prompt, astrological_data)
+            response = self.openai.generate_prediction(
+                prompt,
+                astrological_data,
+                max_tokens=int(os.getenv('AI_MAX_TOKENS_REPORT', '1500'))
+            )
             
             # Sanitize response
             sanitized_response = RequestSanitizer.sanitize_ai_response(response)
@@ -107,9 +111,13 @@ class AIService:
                 astrological_data,
                 history or []
             )
-            
+
             # Get AI response
-            response = self.openai.generate_prediction(prompt, astrological_data)
+            response = self.openai.generate_prediction(
+                prompt,
+                astrological_data,
+                max_tokens=int(os.getenv('AI_MAX_TOKENS_CHAT', '800'))
+            )
             
             # Sanitize response
             sanitized_response = RequestSanitizer.sanitize_ai_response(response)
@@ -163,9 +171,13 @@ class AIService:
                 astrological_data,
                 summary_type
             )
-            
+
             # Get AI response
-            response = self.openai.generate_prediction(prompt, astrological_data)
+            response = self.openai.generate_prediction(
+                prompt,
+                astrological_data,
+                max_tokens=int(os.getenv('AI_MAX_TOKENS_SUMMARY', '600'))
+            )
             
             # Sanitize response
             sanitized_response = RequestSanitizer.sanitize_ai_response(response)

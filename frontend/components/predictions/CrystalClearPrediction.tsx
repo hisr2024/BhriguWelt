@@ -28,7 +28,6 @@ import {
   Share2,
   Download,
   ChevronDown,
-  ChevronUp,
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
@@ -272,6 +271,7 @@ export default function CrystalClearPrediction({
             >
               {/* Section Header */}
               <button
+                type="button"
                 onClick={() => toggleSection(section.type)}
                 className="w-full flex items-center justify-between p-6 text-left hover:bg-white/5 transition-colors"
                 aria-expanded={isExpanded}

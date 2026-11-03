@@ -16,11 +16,15 @@ import requests
 from utils.logger import setup_logger, log_exception
 
 from services.sentry_service import capture_message
+from services.structured_output import extract_json_object, to_readable_text
+from services.wisdom_core_pipeline import PredictionUnavailableError
 from services.ai_quota import (
     estimate_tokens,
     estimate_cost,
     check_daily_quota_and_reserve,
     update_usage_after_call,
+    reserve_for_identities,
+    mask_identity,
     sanitize_log,
     QuotaExceededError,
     CostLimitExceededError
@@ -197,7 +201,9 @@ class OpenAIService:
         prompt: str,
         context: Dict[str, Any] = None,
         return_metadata: bool = False,
-        user_id: Optional[str] = None
+        user_id: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        allow_fallback: bool = True
     ) -> Union[str, Dict[str, Any]]:
         """
         Generate AI-powered predictions using OpenAI with authentic corpus integration
@@ -207,12 +213,17 @@ class OpenAIService:
             context: Additional context for the prediction
             return_metadata: Whether to return metadata with the response
             user_id: User ID for quota tracking (optional, defaults to 'anonymous')
+            allow_fallback: When False (strict precision mode), raise
+                PredictionUnavailableError instead of returning generalised
+                fallback text on any failure.
 
         Returns:
             Generated prediction text or dict with metadata
         """
         # Use fallback if AI is not enabled
         if not self.enabled:
+            if not allow_fallback:
+                raise PredictionUnavailableError('ai_disabled')
             fallback = self._fallback_prediction(prompt, context)
             if return_metadata:
                 return {
@@ -257,7 +268,9 @@ class OpenAIService:
                 'CATEGORY-SPECIFIC'
             ])
 
-            # Use minimal system content when category-specific prompt is provided
+            # Keep system_content a stable, request-independent prefix so OpenAI
+            # automatic prompt caching can reuse it across calls. Volatile data
+            # (corpus snippets, birth-chart summary) goes into the user message.
             if has_category_prompt:
                 system_content = '''You are a master Vedic astrologer versed in Bhrigu Samhita and Nadi Jyotisha.
 
@@ -266,31 +279,18 @@ CRITICAL INSTRUCTION: Follow the category-specific instructions in the user prom
 - Do NOT add generic content from other categories
 - Make predictions SPECIFIC to the birth chart provided
 - Reference authentic Vedic sources and specific yogas
-- Each section should be unique and category-relevant''' + corpus_context
+- Each section should be unique and category-relevant'''
             else:
-                # Original generic system content for non-category requests
-                system_content = '''You are a master Vedic astrologer deeply versed in the ancient texts of Bhrigu Samhita and Nadi Jyotisha.
-
-Your expertise includes:
-- Bhrigu Samhita: The sacred treatise by Maharishi Bhrigu containing life predictions based on planetary positions
-- Nadi Jyotisha: Ancient palm leaf manuscripts with precise life predictions from Tamil Nadu traditions
-- Brihat Parasara Hora Shastra: The foundational text of Vedic astrology by Sage Parasara
-- Jaimini Sutras: Advanced predictive techniques using Karakas and Rashi Dashas
-- Vimshottari Dasha: The 120-year planetary period system for timing events
+                system_content = '''You are a master Vedic astrologer versed in Bhrigu Samhita, Nadi Jyotisha, Brihat Parasara Hora Shastra, Jaimini Sutras, and Vimshottari Dasha.
 
 Your predictions must:
-1. Be deeply rooted in classical Vedic principles and authentic scriptural references
-2. **Reference specific sutras, folios, and manuscript citations from the corpus provided**
-3. Identify doshas (Kuja Dosha, Kala Sarpa Dosha, Pitru Dosha, etc.) and their remedies
-4. Analyze planetary combinations with precise interpretations
-5. Provide practical, actionable guidance for the modern seeker
-6. Maintain compassion, wisdom, and spiritual depth in all readings
-7. Explain karmic reasons behind life patterns using Vedic philosophy
-8. Offer authentic remedies (mantras, gemstones, rituals) from Vedic traditions
-9. **Include confidence scores and source references where applicable**
+- Be grounded in classical Vedic principles, citing only the rules or corpus entries actually provided (never invent folio numbers)
+- Identify relevant doshas and yogas, with authentic remedies (mantras, gemstones, rituals)
+- Explain karmic patterns and give practical, compassionate, actionable guidance with timing when possible
+- Include confidence and source references where applicable'''
 
-Always provide detailed, specific predictions with timing when possible.''' + corpus_context
-
+            # Assemble the volatile context block placed into the user prompt.
+            context_block = corpus_context
             if context:
                 structured_summary = self._format_context_summary(context)
                 base_prompt = f"{system_content}\n\nUser Prompt:\n{prompt}"
@@ -300,7 +300,7 @@ Always provide detailed, specific predictions with timing when possible.''' + co
                     self.prompt_token_limit
                 )
                 if normalized_summary:
-                    system_content += f"\n\nBirth Chart Summary:\n{normalized_summary}"
+                    context_block += f"\n\nBirth Chart Summary:\n{normalized_summary}"
                 else:
                     raw_context = json.dumps(context, ensure_ascii=False)
                     normalized_raw_context = self.normalize_prompt(
@@ -309,9 +309,15 @@ Always provide detailed, specific predictions with timing when possible.''' + co
                         self.prompt_token_limit
                     )
                     if normalized_raw_context:
-                        system_content += f"\n\nBirth Chart Context (raw JSON): {normalized_raw_context}"
+                        context_block += f"\n\nBirth Chart Context (raw JSON): {normalized_raw_context}"
 
-            prediction, partial = self._generate_with_chunking(prompt, system_content, user_id)
+            augmented_prompt = prompt
+            if context_block.strip():
+                augmented_prompt = f"{context_block.strip()}\n\n{prompt}"
+
+            prediction, partial = self._generate_with_chunking(
+                augmented_prompt, system_content, user_id, max_tokens
+            )
 
             if return_metadata:
                 return {
@@ -330,6 +336,9 @@ Always provide detailed, specific predictions with timing when possible.''' + co
             logger.warning(
                 f"{error_reason.capitalize()} limit reached, using fallback: {sanitize_log(str(e)[:200])}"
             )
+
+            if not allow_fallback:
+                raise PredictionUnavailableError(error_reason) from e
 
             fallback = self._fallback_prediction(prompt, context)
             if return_metadata:
@@ -354,6 +363,8 @@ Always provide detailed, specific predictions with timing when possible.''' + co
                 "OpenAI API call failed",
                 extra={"error_code": "OPENAI_API_REQUEST_FAILED", "error": sanitize_log(str(e))},
             )
+            if not allow_fallback:
+                raise PredictionUnavailableError('api_error') from e
             # Fallback to traditional analysis if API fails
             fallback = self._fallback_prediction(prompt, context)
             if return_metadata:
@@ -367,18 +378,18 @@ Always provide detailed, specific predictions with timing when possible.''' + co
                 }
             return fallback
 
-    def _generate_with_chunking(self, prompt: str, system_content: str, user_id: Optional[str] = None) -> Tuple[str, bool]:
+    def _generate_with_chunking(self, prompt: str, system_content: str, user_id: Optional[str] = None, max_tokens: Optional[int] = None) -> Tuple[str, bool]:
         max_prompt_tokens = self._get_int_env('OPENAI_PROMPT_TOKEN_BUDGET', 8000)
         system_tokens = self._estimate_tokens(system_content)
         prompt_tokens = self._estimate_tokens(prompt)
 
         if system_tokens + prompt_tokens <= max_prompt_tokens:
-            prediction, partial = self._request_completion(prompt, system_content, user_id)
+            prediction, partial = self._request_completion(prompt, system_content, user_id, max_tokens)
             return prediction, partial
 
         preamble, sections = self._split_prompt_sections(prompt)
         if not sections:
-            prediction, partial = self._request_completion(prompt, system_content, user_id)
+            prediction, partial = self._request_completion(prompt, system_content, user_id, max_tokens)
             return prediction, partial
 
         chunk_prompts = []
@@ -403,7 +414,7 @@ Always provide detailed, specific predictions with timing when possible.''' + co
         responses = []
         partial = False
         for chunk_prompt in chunk_prompts:
-            chunk_response, chunk_partial = self._request_completion(chunk_prompt, system_content, user_id)
+            chunk_response, chunk_partial = self._request_completion(chunk_prompt, system_content, user_id, max_tokens)
             responses.append(chunk_response)
             partial = partial or chunk_partial
 
@@ -415,7 +426,7 @@ Always provide detailed, specific predictions with timing when possible.''' + co
         return "\n\n".join(sections)
 
     def _get_model_candidates(self) -> List[str]:
-        primary_model = os.getenv('OPENAI_MODEL', 'gpt-4')
+        primary_model = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
         fallback_env = os.getenv('OPENAI_MODEL_FALLBACKS', '')
         fallback_models = [model.strip() for model in fallback_env.split(',') if model.strip()]
         return [primary_model] + [model for model in fallback_models if model != primary_model]
@@ -464,68 +475,70 @@ Always provide detailed, specific predictions with timing when possible.''' + co
         raise requests.exceptions.RequestException("OpenAI API retries exhausted.")
 
     def get_selected_model(self) -> str:
-        return self.last_model_used or os.getenv('OPENAI_MODEL', 'gpt-4')
+        return self.last_model_used or os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
 
     def _parse_json_response(self, content: str) -> str:
         """
-        Robustly parse JSON from OpenAI response with fallback to free-text.
+        Decode a JSON-mode reply into clean, readable markdown text.
 
-        Strategy:
-        1. Try direct JSON parsing
-        2. Try extracting JSON-like substring using regex
-        3. Fall back to original text with warning
-
-        Args:
-            content: Raw response text from OpenAI
-
-        Returns:
-            Parsed JSON string or original content
+        Callers of generate_prediction() treat the result as display text, so
+        a JSON reply must never be passed through as a JSON *string* (that is
+        what put ``{"summary": ..., "sections": ...}`` on users' screens).
+        Fenced, prose-wrapped, concatenated, double-encoded and truncated
+        replies are all handled by services.structured_output.
         """
         if not content:
             return content
-
-        # Attempt 1: Direct JSON parsing
-        try:
-            parsed = json.loads(content)
-            # Validate expected structure
-            if isinstance(parsed, dict):
-                logger.info("Successfully parsed structured JSON response")
-                return json.dumps(parsed)  # Return normalized JSON string
-        except json.JSONDecodeError:
-            pass
-
-        # Attempt 2: Extract JSON from text using regex
-        try:
-            # Look for JSON object boundaries
-            json_match = re.search(r'\{[\s\S]*\}', content)
-            if json_match:
-                json_str = json_match.group(0)
-                parsed = json.loads(json_str)
-                if isinstance(parsed, dict):
-                    logger.info("Successfully extracted and parsed embedded JSON")
-                    return json.dumps(parsed)
-        except (json.JSONDecodeError, AttributeError):
-            pass
-
-        # Fallback: Return original text and log warning
-        logger.warning(
-            "Failed to parse response as JSON - using free-text fallback",
-            extra={'content_preview': content[:200]}
-        )
-
-        # Increment telemetry counter if available
-        try:
-            import sentry_sdk
-            sentry_sdk.metrics.incr(
-                'openai.json_parse_failure',
-                tags={'model': self.get_selected_model()}
+        if extract_json_object(content) is None:
+            logger.warning(
+                "Failed to parse response as JSON - using free-text fallback",
+                extra={'content_preview': content[:200]}
             )
-        except Exception:
-            pass
+            return content
+        return to_readable_text(content)
 
-        return content
+    def generate_structured(
+        self,
+        prompt: str,
+        system_content: str,
+        user_id: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        One JSON-mode completion returning the decoded object.
 
-    def _request_completion(self, prompt: str, system_content: str, user_id: Optional[str] = None) -> Tuple[str, bool]:
+        Unlike generate_prediction() this does NOT re-inject the chart or corpus
+        (the caller's prompt already carries the computed facts) and never
+        chunks — one request, one bounded answer.
+
+        Returns {'data': dict|None, 'text': raw str, 'partial': bool}.
+        Raises PredictionUnavailableError when AI is disabled or the call fails.
+        """
+        if not self.enabled:
+            raise PredictionUnavailableError('ai_disabled')
+        self._clear_last_error()
+        if 'JSON' not in system_content.upper():
+            system_content += "\n\nReturn ONLY one valid JSON object."
+        try:
+            raw, partial = self._request_completion(
+                prompt, system_content, user_id, max_tokens, force_json=True, render_json=False
+            )
+        except (QuotaExceededError, CostLimitExceededError) as e:
+            raise PredictionUnavailableError('quota') from e
+        except requests.exceptions.RequestException as e:
+            self._set_last_error("OPENAI_API_REQUEST_FAILED", "OpenAI API call failed.", {"error": str(e)})
+            raise PredictionUnavailableError('api_error') from e
+        return {'data': extract_json_object(raw), 'text': raw, 'partial': partial}
+
+    def _request_completion(
+        self,
+        prompt: str,
+        system_content: str,
+        user_id: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        force_json: bool = False,
+        render_json: bool = True,
+    ) -> Tuple[str, bool]:
         """
         Request completion from OpenAI with quota and cost management.
 
@@ -533,34 +546,29 @@ Always provide detailed, specific predictions with timing when possible.''' + co
             prompt: User prompt
             system_content: System context
             user_id: Optional user ID for quota tracking (defaults to 'anonymous')
+            max_tokens: Optional per-call output token cap (defaults to OPENAI_MAX_TOKENS)
 
         Returns:
             Tuple of (content: str, partial: bool)
         """
         # Add JSON format instruction to system content if not already present
-        use_json_format = os.getenv('OPENAI_USE_JSON_FORMAT', 'true').lower() == 'true'
+        use_json_format = force_json or os.getenv('OPENAI_USE_JSON_FORMAT', 'true').lower() == 'true'
 
         if use_json_format and 'JSON' not in system_content.upper():
-            json_instruction = '''
-
-**OUTPUT FORMAT REQUIREMENT**:
-You MUST return your response as a valid JSON object with this exact structure:
-{
-  "summary": "Brief summary of the prediction (1-2 sentences)",
-  "sections": {
-    "section_name_1": "Detailed content for section 1",
-    "section_name_2": "Detailed content for section 2",
-    ...
-  },
-  "confidence": 0.85
-}
-
-CRITICAL: Return ONLY the JSON object. No additional text before or after. Use double quotes for all strings. Ensure the JSON is valid and parseable.
-'''
+            json_instruction = (
+                '\n\nReturn ONLY a valid JSON object (double-quoted strings, no text '
+                'before/after) of the form: '
+                '{"summary": "1-2 sentences", "sections": {"section_name": "content"}, '
+                '"confidence": 0.85}'
+            )
             system_content = system_content + json_instruction
 
+        # Per-call output cap; callers pass endpoint-specific budgets (chat/summary
+        # need far fewer tokens than full reports), falling back to the global env.
+        effective_max_tokens = max_tokens or self._get_int_env('OPENAI_MAX_TOKENS', 2048)
+
         payload = {
-            'model': os.getenv('OPENAI_MODEL', 'gpt-4'),
+            'model': os.getenv('OPENAI_MODEL', 'gpt-4o-mini'),
             'messages': [
                 {
                     'role': 'system',
@@ -572,7 +580,7 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
                 }
             ],
             'temperature': float(os.getenv('OPENAI_TEMPERATURE', '0.7')),
-            'max_tokens': self._get_int_env('OPENAI_MAX_TOKENS', 2048)  # Increased from 512 for comprehensive predictions
+            'max_tokens': effective_max_tokens
         }
 
         # ==================== QUOTA AND COST CHECKS ====================
@@ -580,7 +588,7 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
         # Estimate tokens for quota check
         prompt_text = f"{system_content}\n\n{prompt}"
         prompt_tokens_estimated = estimate_tokens(prompt_text)
-        response_tokens_estimated = self._get_int_env('OPENAI_MAX_TOKENS', 2048)
+        response_tokens_estimated = effective_max_tokens
         total_tokens_estimated = prompt_tokens_estimated + response_tokens_estimated
 
         # Check cost limit BEFORE checking quota (fail fast)
@@ -598,13 +606,13 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
         # Check daily quota and reserve tokens
         user_id = user_id or 'anonymous'
         try:
-            allowed, remaining = check_daily_quota_and_reserve(user_id, total_tokens_estimated)
+            remaining, reserved_quota_keys = reserve_for_identities(user_id, total_tokens_estimated)
             logger.info(
-                f"Quota check passed for user {sanitize_log(user_id)}: "
+                f"Quota check passed for user {mask_identity(user_id)}: "
                 f"estimated_tokens={total_tokens_estimated}, remaining={remaining}"
             )
         except QuotaExceededError as e:
-            logger.warning(f"Quota exceeded for user {sanitize_log(user_id)}: {str(e)}")
+            logger.warning(f"Quota exceeded for user {mask_identity(user_id)}: {str(e)}")
             raise  # Re-raise to be caught by caller
 
         # ==================== END QUOTA CHECKS ====================
@@ -613,7 +621,7 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
         model = payload['model']
         if use_json_format:
             # Try to enable JSON mode for supported models
-            if any(term in model.lower() for term in ['gpt-4-turbo', 'gpt-4o', 'gpt-4.5', 'gpt-5']):
+            if any(term in model.lower() for term in ['gpt-4-turbo', 'gpt-4o', 'gpt-4.1', 'gpt-4.5', 'gpt-5', 'gpt-3.5-turbo', 'o3', 'o4']):
                 payload['response_format'] = {'type': 'json_object'}
                 logger.debug(f"Enabled JSON response format for model: {model}")
             else:
@@ -641,13 +649,17 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
                     f"cost=${actual_cost:.4f} (estimated=${estimated_cost:.4f})"
                 )
 
-                # Update usage counter with actual tokens
-                # Note: We already reserved estimated tokens, so we add actual tokens
-                # This may slightly over-count but ensures we never under-count
-                update_usage_after_call(user_id, actual_total_tokens)
+                # The estimate (prompt + max_tokens) was already reserved by
+                # check_daily_quota_and_reserve. Settle only the difference so
+                # each call is charged its ACTUAL usage once — adding the full
+                # actual on top double-charged every call (~2x quota burn).
+                usage_delta = actual_total_tokens - total_tokens_estimated
+                if usage_delta:
+                    for quota_key in reserved_quota_keys:
+                        update_usage_after_call(user_id, usage_delta, quota_key=quota_key)
             else:
-                logger.warning("No usage data in OpenAI response - using estimates")
-                update_usage_after_call(user_id, total_tokens_estimated)
+                # No usage data: the reservation already stands as the charge.
+                logger.warning("No usage data in OpenAI response - keeping reserved estimate")
             # ==================== END USAGE UPDATE ====================
 
             choice = result['choices'][0]
@@ -655,7 +667,7 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
             finish_reason = choice.get('finish_reason')
 
             # Try to parse as JSON and validate structure
-            if use_json_format:
+            if use_json_format and render_json:
                 content = self._parse_json_response(content)
 
             return content, finish_reason == 'length'
@@ -744,7 +756,7 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
     def _estimate_tokens(self, text: str) -> int:
         if not text:
             return 0
-        return max(1, len(text) // 4)
+        return estimate_tokens(text)
 
     def _split_prompt_sections(self, prompt: str) -> Tuple[str, List[str]]:
         lines = prompt.splitlines()
@@ -831,7 +843,7 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
         5. Skills and talents carried forward
         6. Past life traumas needing healing
         
-        **Reference the authentic corpus patterns above and cite specific sutras/folios.**
+        **Reference the authentic corpus patterns above and cite only entries actually provided; never invent folio numbers.**
         """
 
         analysis_result = self.generate_prediction(prompt, birth_data, return_metadata=True, user_id=user_id)
@@ -871,7 +883,7 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
         5. Conditions for liberation (moksha)
         6. Timeline and probability assessments
         
-        **Reference the authentic corpus trajectories above and cite specific sutras/folios.**
+        **Reference the authentic corpus trajectories above and cite only entries actually provided; never invent folio numbers.**
         """
 
         try:
@@ -996,7 +1008,7 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
         7. Meditation practices
         8. Yantra and sacred geometry
         
-        **Reference the authentic remedial practices above and cite specific sutras/folios.**
+        **Reference the authentic remedial practices above and cite only entries actually provided; never invent folio numbers.**
         """
 
         remedies_result = self.generate_prediction(prompt, birth_data, return_metadata=True)
@@ -1088,6 +1100,12 @@ CRITICAL: Return ONLY the JSON object. No additional text before or after. Use d
 
     def _detect_category_from_prompt(self, prompt: str) -> str:
         """Detect prediction category from the prompt content"""
+        # Explicit marker set by BhriguPredictionsService prompts. Keyword
+        # sniffing alone misrouted every category to karmic_journey because
+        # section prompts say "Do NOT mention soul purpose ...".
+        marker = re.search(r'CATEGORY_KEY:\s*([a-z_]+)', prompt or '')
+        if marker:
+            return marker.group(1)
         prompt_lower = prompt.lower()
 
         if 'karmic journey' in prompt_lower or 'soul\'s purpose' in prompt_lower or 'soul purpose' in prompt_lower:

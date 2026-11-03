@@ -285,8 +285,7 @@ const QuarterCard = ({
   name,
   theme,
   summary,
-  focusAreas,
-  energy
+  focusAreas
 }: {
   name: string;
   theme: string;
@@ -576,10 +575,10 @@ export default function HoroscopePage() {
         focus: 'Personal Development'
       };
       base.dailySummaries = days.map((day, i) => ({
-        date: new Date(now.getTime() + (i - now.getDay() + 1) * 86400000).toISOString().split('T')[0],
+        date: new Date(now.getTime() + (i - now.getDay() + 1) * 86400000).toISOString().split('T')[0] ?? '',
         day,
-        energy: energies[i],
-        focus: focuses[i]
+        energy: energies[i] ?? '',
+        focus: focuses[i] ?? ''
       }));
       base.bestDay = 'Friday';
       base.challengingDay = 'Saturday';
