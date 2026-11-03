@@ -1,9 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
 import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
+import { getCurrentLanguage } from '@/lib/copy';
 
 const PROFILE_HASH_PREFIX = 'profile_hash_';
-const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_';
+// v2: readings cached before the structured-reading fix held raw JSON bodies.
+const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_v2_';
+const LEGACY_CACHE_PREFIX = 'bhrigu_prediction_';
+
+// One-time cleanup of pre-v2 cached readings so they don't fill storage.
+if (typeof window !== 'undefined') {
+  try {
+    const stale: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(LEGACY_CACHE_PREFIX) && !key.startsWith(PREDICTION_CACHE_PREFIX)) stale.push(key);
+    }
+    stale.forEach((key) => localStorage.removeItem(key));
+  } catch {
+    /* storage unavailable — nothing to clean */
+  }
+}
 
 /**
  * In-flight request dedupe: identical prediction requests (same profile,
@@ -77,7 +94,7 @@ interface ErrorDetails {
 interface UseBhriguPredictionArgs {
   category: string;
   fetchPrediction: (
-    profileData: BirthDetails & { question?: string; force_regenerate?: boolean }
+    profileData: BirthDetails & { question?: string; language?: string; force_regenerate?: boolean }
   ) => Promise<PredictionResult>;
   profile: Profile | null;
 }
@@ -93,9 +110,9 @@ const hasRequiredProfileFields = (profile: Profile): boolean => {
 
 const getProfileHashKey = (profile: Profile) => `${PROFILE_HASH_PREFIX}${profile.id ?? 'current'}`;
 
-const getPredictionCacheKey = (profile: Profile, category: string, question: string) => {
+const getPredictionCacheKey = (profile: Profile, category: string, question: string, language = 'en') => {
   const questionKey = question.trim() === '' ? 'default' : encodeURIComponent(question.trim());
-  return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${questionKey}`;
+  return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${language}_${questionKey}`;
 };
 
 /**
@@ -153,6 +170,8 @@ const getProfileHash = async (profile: Profile) => {
     placeOfBirth: profile.placeOfBirth ?? '',
     latitude: profile.latitude ?? null,
     longitude: profile.longitude ?? null,
+    gender: profile.gender ?? null,
+    birthTimeAccuracy: profile.birthTimeAccuracy ?? null,
   });
   const encoder = new TextEncoder();
   const data = encoder.encode(profilePayload);
@@ -205,7 +224,8 @@ export const useBhriguPrediction = ({
     try {
       const currentQuestion = questionRef.current;
       const resolvedHash = profileHash ?? await getProfileHash(profile);
-      const cacheKey = getPredictionCacheKey(profile, category, currentQuestion);
+      const currentLanguage = getCurrentLanguage();
+      const cacheKey = getPredictionCacheKey(profile, category, currentQuestion, currentLanguage);
       const cached = typeof window === 'undefined' ? null : localStorage.getItem(cacheKey);
 
       // Check cache first (fast path)
@@ -235,12 +255,14 @@ export const useBhriguPrediction = ({
         latitude: profile.latitude,
         longitude: profile.longitude,
         question: currentQuestion || undefined,
+        language: currentLanguage,
+        gender: profile.gender,
+        birth_time_accuracy: profile.birthTimeAccuracy,
         force_regenerate: forceRegenerate
       };
 
-      // Single retry layer: the shared axios client already retries network
-      // and 5xx errors with backoff. Wrapping another retry loop here caused
-      // up to 9 attempts per failure and ~40s of stuck loading state.
+      // No automatic retries for prediction POSTs (each one is a paid LLM
+      // generation); the user retries explicitly from the error state.
       // In-flight dedupe: identical concurrent requests share one promise.
       const requestKey = `${cacheKey}::${forceRegenerate ? 'force' : 'normal'}`;
       let pending = inFlightRequests.get(requestKey);
@@ -263,8 +285,10 @@ export const useBhriguPrediction = ({
           normalized.message?.toLowerCase()?.includes('cache')
         ));
 
-        // Cache the successful result
-        if (typeof window !== 'undefined') {
+        // Cache the successful result — but never a partial/offline reading
+        // (it should regenerate next time rather than stick around).
+        const incomplete = Boolean((normalized.prediction as Record<string, unknown> | null)?.reading_incomplete);
+        if (typeof window !== 'undefined' && !incomplete) {
           try {
             localStorage.setItem(
               cacheKey,

@@ -168,6 +168,7 @@ STANDARD_CORS_HEADERS = [
     "X-AI-Consent",
     "X-AI-Mode",
     "X-Client-Online",
+    "X-Client-Id",
     "X-Uncompressed-Content-Length",
     "Content-Encoding",
     "X-API-Key",

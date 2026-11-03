@@ -15,6 +15,7 @@ import useFeatureFlags from '@/hooks/useFeatureFlags';
 import { SectionIcon } from '@/lib/sectionIcons';
 import { parsePredictionResponse, type ParsedPrediction, type PredictionSection as ParsedSection } from '@/lib/predictionParser';
 import { MarkdownRenderer } from '@/app/components/MarkdownRenderer';
+import { ReadingView, isStructuredReading, type StructuredReading } from '@/app/components/predictions/ReadingView';
 
 const SECTION_LANGUAGES: Language[] = ['en', 'hi'];
 
@@ -934,7 +935,7 @@ export default function BhriguPredictionView({
         </AnimatePresence>
       </motion.div>
     );
-  }, [toggleSection, handleKeyDown, handleTouchStart, handleTouchEnd]);
+  }, [toggleSection, handleKeyDown, handleTouchStart, handleTouchEnd, viewMode]);
 
   // ✨ QUANTUM FIX: Updated to work with Set<string> instead of Record
   const setExpandedSection = useCallback((sectionId: string, isOpen: boolean) => {
@@ -1005,6 +1006,12 @@ export default function BhriguPredictionView({
   const renderPredictionContent = useCallback(() => {
     if (!prediction) return null;
     const predictionData = prediction;
+
+    // Structured reading (reading_format 2): single clean renderer, no
+    // client-side regex parsing, no duplicate "complete reading" dump.
+    if (isStructuredReading(predictionData)) {
+      return <ReadingView prediction={predictionData as unknown as StructuredReading} viewMode={viewMode} />;
+    }
 
     // 🆕 PRIORITY 1: Check if we have parsed sections from nested structure
     // This handles the case where API returns { summary: "...", sections: { "## Title": "content" } }
@@ -1374,8 +1381,9 @@ export default function BhriguPredictionView({
           </div>
         )}
 
-        {/* Full Analysis - Collapsible at the bottom */}
-        {predictionData.full_analysis && (
+        {/* Full Analysis — only when nothing was parsed into sections;
+            otherwise it just repeats every section a second time. */}
+        {predictionData.full_analysis && !(useParsedSections && parsedSectionsToRender.length > 0) && availableSections.length === 0 && (
           <div className="mt-8 pt-8 border-t border-gray-700/50">
             <button
               onClick={() => setShowFullAnalysis(!showFullAnalysis)}
@@ -1569,62 +1577,37 @@ export default function BhriguPredictionView({
             </div>
           </div>
 
-          {/* View Mode Toggle */}
+          {/* View Mode Toggle — one control; switching never re-generates */}
           <div className="mt-6 mb-6">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              {/* Simple View Button */}
-              <button
-                onClick={() => handleViewModeChange('layman')}
-                aria-pressed={viewMode === 'layman'}
-                aria-label="Switch to Simple View"
-                className={`flex-1 sm:flex-initial px-6 py-3 rounded-xl font-semibold
-                           transition-all duration-300 flex items-center justify-center gap-2
-                           min-h-[44px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900
-                           ${
-                             viewMode === 'layman'
-                               ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-genz-glow focus:ring-cyan-400'
-                               : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700 hover:text-white focus:ring-gray-500'
-                           }`}
-              >
-                <span className="text-xl" aria-hidden="true">👤</span>
-                <span>Simple View</span>
-              </button>
-
-              {/* Astrologer View Button */}
-              <button
-                onClick={() => handleViewModeChange('astrologer')}
-                aria-pressed={viewMode === 'astrologer'}
-                aria-label="Switch to Astrologer View"
-                className={`flex-1 sm:flex-initial px-6 py-3 rounded-xl font-semibold
-                           transition-all duration-300 flex items-center justify-center gap-2
-                           min-h-[44px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900
-                           ${
-                             viewMode === 'astrologer'
-                               ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-genz-glow focus:ring-purple-400'
-                               : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700 hover:text-white focus:ring-gray-500'
-                           }`}
-              >
-                <span className="text-xl" aria-hidden="true">🔮</span>
-                <span>Astrologer View</span>
-              </button>
+            <div
+              role="tablist"
+              aria-label="Reading view"
+              className="grid grid-cols-2 p-1 rounded-xl bg-white/[0.05] border border-white/10 max-w-md mx-auto"
+            >
+              {(['layman', 'astrologer'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  role="tab"
+                  aria-selected={viewMode === mode}
+                  onClick={() => handleViewModeChange(mode)}
+                  className={`py-2.5 min-h-[44px] rounded-lg text-sm font-semibold transition-colors
+                             focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 ${
+                               viewMode === mode
+                                 ? mode === 'layman'
+                                   ? 'bg-cyan-500 text-slate-950'
+                                   : 'bg-violet-500 text-white'
+                                 : 'text-slate-300 hover:text-white'
+                             }`}
+                >
+                  {mode === 'layman' ? 'Simple' : 'Astrologer'}
+                </button>
+              ))}
             </div>
-
-            {/* Explainer Text */}
-            <div className="mt-3 text-center">
-              <p className="text-sm text-slate-100/70">
-                {viewMode === 'layman' ? (
-                  <>
-                    <span className="text-cyan-400" aria-hidden="true">✨</span>
-                    {' '}Reading simplified for easy understanding
-                  </>
-                ) : (
-                  <>
-                    <span className="text-purple-400" aria-hidden="true">📊</span>
-                    {' '}Technical analysis with astrological references
-                  </>
-                )}
-              </p>
-            </div>
+            <p className="mt-2 text-center text-xs text-slate-400">
+              {viewMode === 'layman'
+                ? 'Plain-language reading with dates and actions'
+                : 'Adds placements, dasha, rule IDs and verification'}
+            </p>
           </div>
 
           {/* Question Input */}
@@ -1653,23 +1636,10 @@ export default function BhriguPredictionView({
                 <option value="hi">हिंदी</option>
               </select>
             </div>
-            <div className="flex items-center gap-2">
-              <label htmlFor="view-mode" className="text-sm text-gray-400">
-                View
-              </label>
-              <select
-                id="view-mode"
-                value={viewMode}
-                onChange={(e) => setViewMode(e.target.value as 'layman' | 'astrologer')}
-                className="bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-3 text-white
-                         focus:outline-none focus:border-cyan-400 transition-colors"
-              >
-                <option value="layman">Layman</option>
-                <option value="astrologer">Astrologer</option>
-              </select>
-            </div>
             <button
               onClick={() => loadPrediction()}
+              disabled={loading}
+              aria-busy={loading}
               className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500
                        text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600
                        disabled:opacity-50 disabled:cursor-not-allowed transition-all
@@ -1678,7 +1648,7 @@ export default function BhriguPredictionView({
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Queue Request
+                  Reading your chart…
                 </>
               ) : (
                 <>

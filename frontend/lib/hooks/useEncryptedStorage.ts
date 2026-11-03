@@ -46,8 +46,24 @@ export function useEncryptedStorage() {
     }
   }, [encryptionKey]);
 
+  /** Merge fields into a stored profile (keeps encryption and id). */
+  const updateProfileFields = useCallback(async (id: Profile['id'] | string, updates: Partial<Profile>) => {
+    if (!encryptionKey || id === undefined || id === null) return false;
+    try {
+      const existing = await getItem(STORES.PROFILES, id as any, encryptionKey);
+      if (!existing) return false;
+      const { id: _ignored, ...rest } = { ...(existing as Profile), ...updates, updatedAt: new Date().toISOString() };
+      await setItem(STORES.PROFILES, String(id), rest, encryptionKey, { id: id as IDBValidKey });
+      return true;
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      return false;
+    }
+  }, [encryptionKey]);
+
   return {
     getAllProfiles,
+    updateProfileFields,
   };
 }
 
@@ -115,7 +131,8 @@ export function useProfiles(encryptionKey: CryptoKey | null) {
         updatedAt: new Date().toISOString(),
       };
 
-      await setItem(STORES.PROFILES, id.toString(), updated, encryptionKey);
+      const { id: _existingId, ...withoutId } = updated as Profile;
+      await setItem(STORES.PROFILES, id.toString(), withoutId, encryptionKey, { id });
       await loadProfiles();
     } catch (err) {
       setError('Failed to update profile');

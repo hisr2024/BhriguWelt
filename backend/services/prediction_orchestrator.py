@@ -883,7 +883,6 @@ Your {zodiac} energy combined with {nakshatra} influence indicates a dharmic pat
             'spiritual_evolution': f"""## Spiritual Evolution Stage
             
 **Current Stage:** Intermediate level of soul development
-**Evolution Progress:** Approximately 60-70% complete
 **Next Steps:** Deepening meditation and service
 **Challenges:** Balancing material and spiritual life
 
@@ -892,7 +891,6 @@ Your {zodiac} energy combined with {nakshatra} influence indicates a dharmic pat
             'moksha_indicators': f"""## Moksha Indicators
             
 **Liberation Potential:** Moderate to high based on your configuration
-**Estimated Timeline:** 7-12 incarnations remaining
 **Key Indicators:** Spiritual inclination, detachment capacity
 **Preparation:** Regular practice, selfless service, study of scriptures
 
