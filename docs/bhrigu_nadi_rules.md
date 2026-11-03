@@ -1,0 +1,69 @@
+# Bhrigu / Nadi rule catalogue (chart-facts layer)
+
+Implemented in `backend/services/bhrigu_nadi_rules.py` on top of
+`backend/services/ephemeris_core.py` (Swiss Ephemeris, Lahiri ayanamsa,
+whole-sign houses, mean node). Every prediction is now built from these
+findings first; the LLM only phrases them (one call per category).
+
+## Why this layer exists
+
+The audit found the readings were generic because:
+
+1. **The chart itself was wrong.** The Lagna was wrong in every tested chart, because sidereal time was converted to degrees twice and then fed into an invented formula. Rahu/Ketu were about 58° off, because a Dublin Julian Day was mixed with a standard one. The dasha ignored the birth balance and had no antardasha.
+2. **Fallback routing.** Every section prompt contained "Do NOT mention soul purpose", which made fallback routing send every section to the Karmic Journey template.
+3. **Invented content.** That template contained invented figures ("60-70% through the journey", "7-12 incarnations") and invented folio citations.
+
+All three are fixed. The invented constants are removed and prompts no longer ask for folio numbers.
+
+## Provenance labels
+
+| Label | Meaning |
+|---|---|
+| classical | BPHS, Phaladeepika, Jaimini Sutras, standard gochara |
+| tradition-attributed | Practised under the Bhrigu/Nadi name and known mainly from 20th-century publications: Bhrigu Bindu, Bhrigu Chakra Paddhati, R.G. Rao's Bhrigu Nandi Nadi. **Add a sourced text to `core_wisdom/techniques/` before marketing these as canonical Bhrigu Samhita.** |
+| modern | Engineering or modern synthesis |
+
+Weights (0–1) are ranking priors. They are never shown as percentages or probabilities.
+
+## Rules
+
+| ID | Provenance | What it computes | Dated |
+|---|---|---|---|
+| F-LAGNA-01 | classical | Lagna degree and nakshatra; Lagna lord's sign, house, nakshatra; occupants | – |
+| F-NODES-01 | classical | Rahu/Ketu sign, degree and house; conjunct planets; the karmic axis | – |
+| F-KARAKA-01 | classical | Jaimini 7-karaka scheme: Atmakaraka, Amatyakaraka, Darakaraka; 12th from the Atmakaraka | – |
+| F-DIGNITY-01 | classical | Exaltation, debilitation (with neecha-bhanga check), own sign | – |
+| F-RETRO-01 | modern reading | Retrograde grahas at birth | – |
+| F-PARIVARTANA-01 | classical | Sign exchange, classified Maha / Khala / Dainya | – |
+| F-YOGA-01 | classical | Gajakesari and Pancha Mahapurusha, both tested against the chart | – |
+| F-BHAVAT-01 | classical | For each domain: house H, Hth from H, and Hth from the natural karaka | – |
+| F-BNN-02 | tradition-attributed | Jiva karaka (Jupiter for male charts, Venus for female) and its trine/2nd/12th/7th links. Needs the optional `gender` input; never guessed | – |
+| F-BNN-03 | tradition-attributed | Saturn as karma karaka and its links. A retrograde planet also acts from the previous sign | – |
+| F-DASHA-01 | classical | Vimshottari maha/antar dasha with birth balance; next two antardashas | ✔ |
+| F-DASHA-02 | classical | Activation by the dasha lord: house it occupies, houses it owns, its star lord's house | ✔ |
+| F-DASHA-03 | classical | Domain windows over 12 years: periods where both the maha and antar lords signify the domain | ✔ |
+| F-TRANSIT-01 | classical | Saturn/Jupiter within 1° of natal Moon, Sun and Lagna degree, next 5 years | ✔ |
+| F-SADESATI-01 | classical | Saturn in the 12th/1st/2nd sign from the Moon (rising, peak, setting phases) | ✔ |
+| F-GOCHARA-01 | classical | Jupiter's sign counted from the Moon (Phaladeepika ch. 26) | ✔ |
+| F-BB-01 | tradition-attributed | Bhrigu Bindu (Rahu→Moon midpoint); Saturn/Jupiter conjunctions with it over 10 years | ✔ |
+| F-BCP-01 | tradition-attributed | Bhrigu Chakra Paddhati: running year N activates house ((N−1) mod 12)+1 | ✔ |
+| F-BNN-01 | tradition-attributed | Jupiter progressed one sign per year, and the natal planets it links | ✔ |
+| F-SENS-01 | modern | Re-computes the chart at ±15/30 min; flags a Lagna or Moon-sign change | – |
+
+## Reference chart (unit-tested)
+
+15 May 1990, 10:30 IST, Delhi:
+
+- **Lagna and nodes:** Lagna 9°53′ Cancer. Rahu 17°38′ Capricorn (7th). Ketu 17°38′ Cancer (1st).
+- **Dasha:** Rahu MD until 2029-12-09. Rahu–Sun AD runs 2026-06-28 → 2027-05-22.
+- **Bhrigu Bindu:** 8°44′ Cancer. Saturn conjoins it in Sep 2034 – Jun 2035.
+- **Sensitivity flag:** the Moon sits at 29°51′ Sagittarius and becomes Capricorn at +30 min.
+
+See `backend/tests/test_bhrigu_nadi_rules.py`.
+
+## Still open (recommended next)
+
+- Add optional `gender` and `birth_time_accuracy` fields to the birth form. F-BNN-02 only runs when gender is given.
+- Add D9 (navamsa) for karakamsha, and the double transit (Jupiter and Saturn both influencing a house) as a contributor to F-DASHA-03.
+- `vedic_yogas_calculator.py` still marks 27 yogas active regardless of the chart, so it should not be used for readings. F-YOGA-01 replaces it.
+- `backend/data/*_principles.yml` and `docs/bhrigu_references.md` contain unsourced or invented folio content. Replace them with sourced texts.

@@ -282,7 +282,7 @@ CRITICAL INSTRUCTION: Follow the category-specific instructions in the user prom
                 system_content = '''You are a master Vedic astrologer versed in Bhrigu Samhita, Nadi Jyotisha, Brihat Parasara Hora Shastra, Jaimini Sutras, and Vimshottari Dasha.
 
 Your predictions must:
-- Be grounded in classical Vedic principles, citing specific sutras/folios from any corpus provided
+- Be grounded in classical Vedic principles, citing only the rules or corpus entries actually provided (never invent folio numbers)
 - Identify relevant doshas and yogas, with authentic remedies (mantras, gemstones, rituals)
 - Explain karmic patterns and give practical, compassionate, actionable guidance with timing when possible
 - Include confidence and source references where applicable'''
@@ -840,7 +840,7 @@ Your predictions must:
         5. Skills and talents carried forward
         6. Past life traumas needing healing
         
-        **Reference the authentic corpus patterns above and cite specific sutras/folios.**
+        **Reference the authentic corpus patterns above and cite only entries actually provided; never invent folio numbers.**
         """
 
         analysis_result = self.generate_prediction(prompt, birth_data, return_metadata=True, user_id=user_id)
@@ -880,7 +880,7 @@ Your predictions must:
         5. Conditions for liberation (moksha)
         6. Timeline and probability assessments
         
-        **Reference the authentic corpus trajectories above and cite specific sutras/folios.**
+        **Reference the authentic corpus trajectories above and cite only entries actually provided; never invent folio numbers.**
         """
 
         try:
@@ -1005,7 +1005,7 @@ Your predictions must:
         7. Meditation practices
         8. Yantra and sacred geometry
         
-        **Reference the authentic remedial practices above and cite specific sutras/folios.**
+        **Reference the authentic remedial practices above and cite only entries actually provided; never invent folio numbers.**
         """
 
         remedies_result = self.generate_prediction(prompt, birth_data, return_metadata=True)

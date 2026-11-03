@@ -1776,7 +1776,7 @@ Rules: <=110 words per section; never repeat a sentence across sections; omit a 
             return []
 
     @staticmethod
-    def _format_rule_block(findings: List[Dict[str, Any]], limit: int = 14) -> str:
+    def _format_rule_block(findings: List[Dict[str, Any]], limit: int = 16) -> str:
         lines = []
         for f in findings[:limit]:
             line = f"- [{f['id']}] {f['finding']}"
