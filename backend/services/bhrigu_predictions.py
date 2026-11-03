@@ -3,7 +3,8 @@ Bhrigu Samhita and Nadi Jyotisa Predictions Service
 Comprehensive predictions based on ancient Vedic wisdom
 """
 import os
-from typing import Dict, Any, List, Optional
+import re
+from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
 import json
 
@@ -12,6 +13,7 @@ from services.astrology_calculator import AstrologyCalculator
 from services.section_parser import get_section_parser
 from services.bhrigu_corpus_db import get_corpus_database
 from services.bhrigu_core_wisdom import BhriguCoreWisdom
+from services.structured_output import extract_json_object, normalize_for_dedupe, to_readable_text
 from services.wisdom_core_pipeline import (
     InsufficientChartDataError,
     PredictionUnavailableError,
@@ -96,7 +98,7 @@ class BhriguPredictionsService:
         # Base Bhrigu Samhita principles for all predictions
         self.bhrigu_base_principles = """## BHRIGU SAMHITA PRINCIPLES:
 Bhrigu Samhita is the sacred treatise by Maharishi Bhrigu, containing life predictions for every soul based on planetary positions.
-- Every soul's destiny is pre-recorded based on past karma
+- Destiny is recorded from past karma (prarabdha) and read from the birth chart
 - Planetary positions at birth reveal the soul's karmic blueprint
 - Jupiter's position indicates wisdom, children, and spiritual progress
 - Saturn reveals karmic debts, delays, and life lessons
@@ -1481,7 +1483,8 @@ Actionable Guidance:
         # Use category-specific prompt if available, otherwise use base
         category_prompt = self.category_prompts.get(category, self.bhrigu_system_prompt)
 
-        return f"""{category_prompt}
+        return f"""CATEGORY_KEY: {category}
+{category_prompt}
 
 {self.bhrigu_base_principles}
 
@@ -1518,7 +1521,7 @@ Birth Details:
 Actionable Guidance: 3 specific bullet points.
 
 ## OUTPUT REQUIREMENTS:
-- Minimum 250 words of CATEGORY-SPECIFIC content
+- 120-180 words of CATEGORY-SPECIFIC content
 - Use specific astrological references (yogas, doshas, planetary combinations)
 - Cite Bhrigu Samhita or Nadi principles where applicable
 - DO NOT repeat generic content - make it UNIQUE to this section"""
@@ -1611,112 +1614,319 @@ Actionable Guidance: 3 specific bullet points.
         threshold = int(os.getenv('PROFILE_CHUNK_TOKEN_THRESHOLD', '2000'))
         return token_estimate >= threshold
 
+    # ------------------------------------------------------------------
+    # Single-call structured generation
+    # ------------------------------------------------------------------
+
+    READING_SYSTEM_PROMPT = (
+        "You are a Bhrigu Samhita and Nadi Jyotisha astrologer. You interpret ONLY the "
+        "computed chart facts and rule findings you are given; you never invent a "
+        "placement, degree, house, dasha or date. Every statement must trace to a listed "
+        "fact or rule ID. No generic filler, no hedging, no repetition between sections. "
+        "Return ONE valid JSON object exactly matching the requested schema."
+    )
+
+    def _section_max_tokens(self, section_count: int) -> int:
+        per_section = int(os.getenv('BHRIGU_TOKENS_PER_SECTION', '260'))
+        ceiling = int(os.getenv('BHRIGU_MAX_OUTPUT_TOKENS', '3200'))
+        return max(600, min(ceiling, 220 + per_section * max(section_count, 1)))
+
+    def _build_category_prompt(
+        self,
+        category: str,
+        section_specs: List[Dict[str, Any]],
+        birth_data: Dict[str, Any],
+        rule_block: str,
+        question: Optional[str] = None,
+    ) -> str:
+        """One compact prompt for the whole category (replaces N section prompts)."""
+        label = category.replace('_', ' ').title()
+        section_lines = "\n".join(
+            f'- "{spec["key"]}" ({spec["title"]}): ' + "; ".join(spec.get('bullets', [])[:3])
+            for spec in section_specs
+        )
+        question_line = f"\nUser question (answer it inside the most relevant section): {question.strip()}" if question and question.strip() else ""
+        return f"""CATEGORY_KEY: {category}
+Reading: {label}. Stay strictly inside this category; each section covers a DIFFERENT theme.
+
+CHART FACTS (computed, authoritative):
+{self._format_birth_details(birth_data)}
+
+RULE FINDINGS (deterministic Bhrigu/Nadi rules applied to this chart — build on these first):
+{rule_block or "- none computed"}
+{question_line}
+
+SECTIONS (use these exact keys):
+{section_lines}
+
+Return JSON:
+{{"overview": "2 plain sentences: the single most important theme of this reading",
+ "key_insight": "1 sentence, the sharpest chart-specific takeaway",
+ "sections": {{"<key>": {{
+   "simple": "2-3 plain-language sentences, no jargon, specific to this chart",
+   "timing": "concrete window from the dasha/transit/age facts (e.g. 'Saturn–Venus period, Mar 2027–Jan 2028'), or '' if none applies",
+   "technical": "2-4 sentences: exact placements, houses, nakshatras, dasha and the rule IDs used",
+   "guidance": ["3 short specific actions"],
+   "basis": ["rule IDs / facts used"]}}}}}}
+
+Rules: <=110 words per section; never repeat a sentence across sections; omit a section key only if no listed fact supports it."""
+
+    def _call_category_reading(
+        self, prompt: str, max_tokens: int, user_id: Optional[str], allow_fallback: bool
+    ) -> Tuple[Optional[Dict[str, Any]], str, bool]:
+        """Return (decoded_json_or_None, raw_text, partial)."""
+        structured = getattr(self.openai_service, 'generate_structured', None)
+        if callable(structured) and getattr(self.openai_service, 'enabled', False):
+            try:
+                result = structured(prompt, self.READING_SYSTEM_PROMPT, user_id=user_id, max_tokens=max_tokens)
+                return result.get('data'), result.get('text') or '', bool(result.get('partial'))
+            except PredictionUnavailableError:
+                if not allow_fallback:
+                    raise
+                # Non-strict: go straight to offline text; do not pay for a
+                # second API attempt that will fail the same way.
+                return None, '', False
+        text = self.openai_service.generate_prediction(
+            prompt, None, allow_fallback=allow_fallback, max_tokens=max_tokens, user_id=user_id
+        )
+        if isinstance(text, dict):
+            text = text.get('text', '')
+        return extract_json_object(text), text or '', False
+
+    @staticmethod
+    def _split_markdown_sections(text: str, section_specs: List[Dict[str, Any]]) -> Dict[str, str]:
+        """Map '## Title' blocks of a markdown reply onto section keys."""
+        by_title = {spec['title'].lower(): spec['key'] for spec in section_specs}
+        by_key = {spec['key'].lower(): spec['key'] for spec in section_specs}
+        found: Dict[str, str] = {}
+        current = None
+        buf: List[str] = []
+
+        def flush():
+            if current and current not in found:
+                body = "\n".join(buf).strip()
+                if body:
+                    found[current] = body
+
+        for line in (text or '').splitlines():
+            header = re.match(r'^#{2,3}\s+(?:\d+[.)]\s*)?(.+?)\s*#*\s*$', line)
+            if header:
+                flush()
+                name = header.group(1).strip().strip('*').lower()
+                current = by_title.get(name) or by_key.get(name.replace(' ', '_'))
+                if current is None:
+                    current = next((k for t, k in by_title.items() if name.startswith(t) or t.startswith(name)), None)
+                buf = []
+            elif current:
+                buf.append(line)
+        flush()
+        return found
+
+    @staticmethod
+    def _section_from_block(block: Any) -> Tuple[str, Dict[str, Any]]:
+        """Turn one decoded section into (display markdown, structured detail)."""
+        if isinstance(block, str):
+            text = to_readable_text(block).strip()
+            return text, {'simple': text}
+        if not isinstance(block, dict):
+            return '', {}
+        get = lambda *names: next((block[n] for n in names if block.get(n)), '')
+        simple = str(get('simple', 'key_insight', 'summary', 'insight', 'text') or '').strip()
+        timing = str(get('timing', 'when') or '').strip()
+        technical = str(get('technical', 'technical_analysis', 'analysis', 'astrology') or '').strip()
+        guidance_raw = get('guidance', 'actionable_guidance', 'actions', 'remedies')
+        guidance = guidance_raw if isinstance(guidance_raw, list) else [
+            g.strip() for g in re.split(r'\n|(?<=\.)\s+(?=\d+[.)])', str(guidance_raw or '')) if g.strip()
+        ]
+        guidance = [re.sub(r'^\s*(?:\d+[.)]|[-•*])\s*', '', str(g)).strip() for g in guidance if str(g).strip()][:4]
+        basis = block.get('basis') or block.get('rule_ids') or []
+        if not isinstance(basis, list):
+            basis = [str(basis)]
+        parts = []
+        if simple:
+            parts.append(f"**Key Insight:** {simple}")
+        if timing:
+            parts.append(f"**Timing:** {timing}")
+        if technical:
+            parts.append(f"**Technical Analysis:** {technical}")
+        if guidance:
+            parts.append("Actionable Guidance:\n" + "\n".join(f"- {g}" for g in guidance))
+        detail = {
+            'simple': simple, 'timing': timing, 'technical': technical,
+            'guidance': guidance, 'basis': [str(b) for b in basis][:8],
+        }
+        return "\n\n".join(parts).strip(), detail
+
+    def _derive_rule_findings(self, chart_facts: Optional[Dict[str, Any]], birth_data: Dict[str, Any], category: str) -> List[Dict[str, Any]]:
+        if not chart_facts:
+            return []
+        try:
+            from services.bhrigu_nadi_rules import evaluate_rules
+            return evaluate_rules(chart_facts, birth_data, category=category)
+        except Exception as e:  # rules are additive; never block generation
+            logger.warning(f"Rule evaluation failed: {e}")
+            return []
+
+    @staticmethod
+    def _format_rule_block(findings: List[Dict[str, Any]], limit: int = 14) -> str:
+        lines = []
+        for f in findings[:limit]:
+            line = f"- [{f['id']}] {f['finding']}"
+            if f.get('timing'):
+                line += f" | timing: {f['timing']}"
+            lines.append(line)
+        return "\n".join(lines)
+
     def _generate_sectioned_prediction(
         self,
         category: str,
         birth_data: Dict[str, Any],
-        question: Optional[str] = None
+        question: Optional[str] = None,
+        user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Generate sectioned prediction with prefilter/postfilter precision verification"""
+        """
+        Generate a whole category in ONE structured LLM call.
+
+        Previously each section was its own call (8-13 calls, plus a corrective
+        re-generation each), every reply was JSON stored as a string, and the
+        chart was injected twice per call. Now: chart facts + deterministic
+        Bhrigu/Nadi rule findings are computed once, the model phrases them in
+        one bounded JSON reply, and the reply is decoded — never shown raw.
+        """
         try:
             section_specs = self.SECTION_SPECS.get(category, [])
             sections: Dict[str, Any] = {}
             status_map: Dict[str, Any] = {}
+            details: Dict[str, Dict[str, Any]] = {}
 
-            # PREFILTER: chart facts computed once, used to ground and verify
-            # every section. Absence of facts is tolerated only outside strict
-            # mode (legacy scalar prompts still apply).
             chart_facts = None
-            chart_context = ""
             try:
                 chart_facts = build_chart_facts(birth_data)
-                chart_context = format_chart_context(chart_facts)
             except InsufficientChartDataError as e:
                 if self.strict_precision and not birth_data.get('zodiac_sign'):
                     raise PredictionUnavailableError('insufficient_chart_data') from e
                 logger.warning(f"Chart facts unavailable for postfilter verification: {e}")
 
+            findings = self._derive_rule_findings(chart_facts, birth_data, category)
             allow_fallback = not self.strict_precision
+            prompt = self._build_category_prompt(
+                category, section_specs, birth_data, self._format_rule_block(findings), question
+            )
+            data, raw_text, partial = self._call_category_reading(
+                prompt, self._section_max_tokens(len(section_specs)), user_id, allow_fallback
+            )
 
-            for section_spec in section_specs:
-                try:
-                    prompt = self._build_section_prompt(category, section_spec, birth_data, question)
-                    section_text = self.openai_service.generate_prediction(
-                        prompt, birth_data, allow_fallback=allow_fallback
+            blocks: Dict[str, Any] = {}
+            overview = key_insight = ''
+            if isinstance(data, dict):
+                raw_sections = data.get('sections') if isinstance(data.get('sections'), dict) else {}
+                title_to_key = {spec['title'].lower(): spec['key'] for spec in section_specs}
+                for k, v in raw_sections.items():
+                    key = k if k in title_to_key.values() else title_to_key.get(str(k).lower(), str(k).lower().replace(' ', '_'))
+                    blocks[key] = v
+                overview = str(data.get('overview') or data.get('summary') or '').strip()
+                key_insight = str(data.get('key_insight') or '').strip()
+            else:
+                blocks = self._split_markdown_sections(raw_text, section_specs)
+
+            seen_texts: Dict[str, str] = {}
+            for spec in section_specs:
+                key = spec['key']
+                text, detail = self._section_from_block(blocks.get(key))
+                text = self._strip_section_header(text, spec['title'])
+                if not text:
+                    status_map[key] = {'status': 'unavailable'}
+                    continue
+                fingerprint = normalize_for_dedupe(text)[:400]
+                if fingerprint in seen_texts:
+                    status_map[key] = {'status': 'duplicate', 'duplicate_of': seen_texts[fingerprint]}
+                    continue
+                seen_texts[fingerprint] = key
+                entry: Dict[str, Any] = {'status': 'generated'}
+                if chart_facts:
+                    report = postfilter_report(text, chart_facts)
+                    entry['precision'] = {
+                        'verified': report['ok'],
+                        'specific_refs': report['specific_refs'],
+                        'mismatched_claims': report['mismatched_claims'],
+                        'generic_hits': report['generic_hits'],
+                    }
+                    if report['mismatched_claims']:
+                        entry['status'] = 'generated_unverified'
+                sections[key] = text
+                if detail:
+                    details[key] = detail
+                status_map[key] = entry
+
+            # Repair only what is missing, with a hard cap, instead of
+            # regenerating everything (bounded extra cost, never a filler).
+            missing = [spec for spec in section_specs if status_map.get(spec['key'], {}).get('status') == 'unavailable']
+            repair_cap = int(os.getenv('BHRIGU_MAX_SECTION_REPAIRS', '2'))
+            if missing and len(missing) <= repair_cap and not partial:
+                for spec in missing:
+                    try:
+                        legacy_prompt = self._build_section_prompt(category, spec, birth_data, question)
+                        text = self.openai_service.generate_prediction(
+                            legacy_prompt, None, allow_fallback=False, max_tokens=420, user_id=user_id
+                        )
+                        text = self._strip_section_header(to_readable_text(text), spec['title'])
+                        if text and normalize_for_dedupe(text)[:400] not in seen_texts:
+                            sections[spec['key']] = text
+                            status_map[spec['key']] = {'status': 'generated', 'repaired': True}
+                    except Exception as e:
+                        logger.warning(f"Section repair failed for {spec['key']}: {e}")
+
+            generated = [k for k, v in status_map.items() if v.get('status', '').startswith('generated')]
+            if not generated:
+                if self.strict_precision:
+                    raise PredictionUnavailableError('empty_reading')
+                # Legacy (non-strict) deployments: category-matched offline text.
+                offline = getattr(self.openai_service, '_fallback_prediction', None)
+                offline_text = offline(prompt, birth_data) if callable(offline) else ''
+                offline_sections = self._split_markdown_sections(offline_text, section_specs)
+                for spec in section_specs:
+                    # Legacy contract (non-strict only): every section present,
+                    # explicitly labelled 'fallback' so clients can mark it.
+                    sections[spec['key']] = offline_sections.get(spec['key']) or self._fallback_section_text(
+                        category, spec['title']
                     )
-                    status_entry: Dict[str, Any] = {'status': 'generated'}
+                    status_map[spec['key']] = {'status': 'fallback'}
+                    generated.append(spec['key'])
 
-                    # POSTFILTER: verify grounding + specificity; one corrective
-                    # regeneration when the draft fails verification.
-                    if chart_facts:
-                        report = postfilter_report(section_text, chart_facts)
-                        if not report['ok']:
-                            corrective_prompt = (
-                                f"{prompt}\n\n{correction_instructions(report, chart_context)}"
-                            )
-                            retry_text = self.openai_service.generate_prediction(
-                                corrective_prompt, birth_data, allow_fallback=allow_fallback
-                            )
-                            retry_report = postfilter_report(retry_text, chart_facts)
-                            if retry_report['ok'] or (
-                                len(retry_report['mismatched_claims']) <= len(report['mismatched_claims'])
-                                and retry_report['specific_refs'] >= report['specific_refs']
-                            ):
-                                section_text, report = retry_text, retry_report
-                        status_entry['precision'] = {
-                            'verified': report['ok'],
-                            'specific_refs': report['specific_refs'],
-                            'mismatched_claims': report['mismatched_claims'],
-                            'generic_hits': report['generic_hits'],
-                        }
-                        if not report['ok']:
-                            status_entry['status'] = 'generated_unverified'
-
-                    cleaned_section = self._strip_section_header(
-                        section_text,
-                        section_spec['title']
-                    )
-                    sections[section_spec['key']] = self._normalize_section_text(
-                        cleaned_section,
-                        category,
-                        section_spec['title']
-                    )
-                    status_map[section_spec['key']] = status_entry
-                except PredictionUnavailableError:
-                    raise
-                except Exception as e:
-                    logger.error(f"Section generation failed for {section_spec['key']}: {e}")
-                    if self.strict_precision:
-                        # No generalised per-section fallback in strict mode.
-                        raise PredictionUnavailableError('section_generation_failed') from e
-                    sections[section_spec['key']] = self._fallback_section_text(
-                        category,
-                        section_spec['title']
-                    )
-                    status_map[section_spec['key']] = {'status': 'fallback', 'error': str(e)}
-
-            sections['section_generation_status'] = status_map
-            full_analysis = self._assemble_full_analysis(section_specs, sections)
-            sections = self._auto_repair_sections(sections, full_analysis, category, birth_data)
-            full_analysis = self._assemble_full_analysis(section_specs, sections)
-
-            # Dual audience views derived from the SAME generated content
-            # (no extra LLM call): sharp user view / detailed astrologer view.
+            # Dual audience views from the SAME content (no extra LLM call).
             user_views: Dict[str, str] = {}
+            astrologer_views: Dict[str, str] = {}
             for spec in section_specs:
                 content = sections.get(spec['key'])
                 if isinstance(content, str) and content.strip():
-                    user_views[spec['key']] = split_views(content)['user']
+                    views = split_views(content)
+                    user_views[spec['key']] = views['user']
+                    astrologer_views[spec['key']] = views['astrologer']
+
+            if not key_insight:
+                first = next((details[k]['simple'] for k in generated if details.get(k, {}).get('simple')), '')
+                key_insight = re.split(r'(?<=[.!?])\s+', first.strip())[0] if first else ''
+
+            sections['section_generation_status'] = status_map
             sections['user_views'] = user_views
+            sections['astrologer_views'] = astrologer_views
+            sections['section_details'] = details
+            sections['section_order'] = [spec['key'] for spec in section_specs if spec['key'] in sections]
+            sections['section_titles'] = {spec['key']: spec['title'] for spec in section_specs}
+            sections['overview'] = overview
+            sections['key_insight'] = key_insight
+            sections['rule_findings'] = findings
+            sections['reading_format'] = 2
 
             return {
-                'full_analysis': full_analysis,
+                'full_analysis': self._assemble_full_analysis(section_specs, sections),
                 'sections': sections,
-                'chunking': self._is_long_profile(birth_data),
-                'precision_verified': all(
-                    entry.get('precision', {}).get('verified', True)
-                    for entry in status_map.values()
-                ) if chart_facts else False
+                'chunking': False,
+                'partial': partial,
+                'precision_verified': bool(chart_facts) and all(
+                    v.get('precision', {}).get('verified', True) for v in status_map.values()
+                    if v.get('status', '').startswith('generated')
+                ),
             }
         except PredictionUnavailableError:
             raise
@@ -1724,9 +1934,8 @@ Actionable Guidance: 3 specific bullet points.
             logger.error(f"Critical error in _generate_sectioned_prediction: {e}", exc_info=True)
             if self.strict_precision:
                 raise PredictionUnavailableError('generation_error') from e
-            # Return minimal valid structure
             return {
-                'full_analysis': f"Prediction generation encountered an error. Category: {category}",
+                'full_analysis': '',
                 'sections': {},
                 'chunking': False,
                 'error': str(e)

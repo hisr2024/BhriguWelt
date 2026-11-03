@@ -129,12 +129,20 @@ class BhriguPredictionCache(db.Model):
                     question=question
                 ).first()
 
-                if existing:
-                    logger.debug(f"Prediction already cached for hash {birth_hash}")
-                    return existing
-
                 prediction_payload = dict(prediction)
                 complete_analysis = prediction_payload.pop('complete_analysis', None)
+
+                if existing:
+                    # force_regenerate produced a fresh (paid-for) reading:
+                    # replace the stale row instead of silently discarding it.
+                    existing.prediction_data = json.dumps(prediction_payload)
+                    existing.complete_analysis = complete_analysis
+                    existing.created_at = datetime.utcnow()
+                    if metadata and metadata.get('ai_model'):
+                        existing.ai_model = metadata['ai_model']
+                    db.session.add(existing)
+                    db.session.commit()
+                    return existing
                 cache_entry = cls(
                     birth_data_hash=birth_hash,
                     category=category,
@@ -166,6 +174,12 @@ class BhriguPredictionCache(db.Model):
             logger.error(f"Failed to cache prediction: {e}")
             return None
 
+    READING_FORMAT_MARKER = '"reading_format": 2'
+
+    @classmethod
+    def _is_current_format(cls, prediction_data: str) -> bool:
+        return bool(prediction_data) and cls.READING_FORMAT_MARKER in prediction_data
+
     @classmethod
     def get_cached_prediction(cls, birth_data: dict, category: str, question: str = None):
         """Retrieve cached prediction if available"""
@@ -180,6 +194,10 @@ class BhriguPredictionCache(db.Model):
                 query = query.filter_by(question=question)
 
             cached = query.order_by(cls.created_at.desc()).first()
+            if cached and not cls._is_current_format(cached.prediction_data):
+                # Readings from before the structured-reading fix carry raw
+                # JSON section bodies and generic templates — never serve them.
+                cached = None
             if cached:
                 cached_id = cached.id
                 break
