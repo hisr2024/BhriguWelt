@@ -47,7 +47,6 @@ def _check_required_env_vars():
     # Only require critical vars in production; allow defaults for development
     if IS_PRODUCTION:
         required_vars = {
-            'OPENAI_API_KEY': 'Required for AI-enhanced predictions (e.g., sk-...)',
             'SECRET_KEY': 'Required for Flask session security (generate with: python -c "import secrets; print(secrets.token_hex(32))")',
             'JWT_SECRET_KEY': 'Required for JWT token signing (generate with: python -c "import secrets; print(secrets.token_hex(32))")',
             'FRONTEND_URL': 'Required for CORS configuration (e.g., https://yourdomain.com)',
@@ -56,6 +55,11 @@ def _check_required_env_vars():
         for var, description in required_vars.items():
             if not os.getenv(var):
                 missing_vars.append(f"{var}: {description}")
+        # Any supported AI provider satisfies the AI requirement (OpenAI or Sarvam).
+        if not resolve_provider().configured:
+            missing_vars.append(
+                "OPENAI_API_KEY or SARVAM_API_KEY: Required for AI-enhanced predictions"
+            )
 
         if missing_vars:
             error_lines = ["Missing required environment variables in PRODUCTION mode:"]
