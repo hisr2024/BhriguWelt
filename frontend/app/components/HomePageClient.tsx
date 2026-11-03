@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 import { Award, ArrowRight, BookOpen, CheckCircle, ChevronRight, Clock, Compass, Globe, Heart, Menu, Moon, Play, Quote, Shield, Sparkles, Star, Sun, TrendingUp, Users, X, Zap } from 'lucide-react';
 import GenZButton from './GenZButton';
 import GenZCard, { GenZCardGradient } from './GenZCard';
-import GenZBadge, { StatusBadge } from './GenZBadge';
+import GenZBadge from './GenZBadge';
 import BottomNav from './BottomNav';
 
 const AnimatedBackground = dynamic(() => import('./AnimatedBackground'), { ssr: false });
@@ -18,7 +18,7 @@ const FloatingElements = dynamic(
 const OnboardingTutorial = dynamic(() => import('../../components/OnboardingTutorial'), { ssr: false });
 
 export default function HomePage() {
-  const [activeFeature, setActiveFeature] = useState(0);
+  const [, setActiveFeature] = useState(0);
   const [email, setEmail] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);

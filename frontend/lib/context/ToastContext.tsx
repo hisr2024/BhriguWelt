@@ -22,7 +22,7 @@ const generateId = () => {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
-  const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const timeoutsRef = useRef<Map<string, number>>(new Map());
 
   const removeToastById = (id: string) => {
     setToasts((prev) => prev.filter((item) => item.id !== id));

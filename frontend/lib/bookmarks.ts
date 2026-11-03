@@ -3,7 +3,7 @@
  * Allows users to bookmark reports, wisdom cards, and pages for quick access
  */
 
-import { initDB, STORES } from './storage';
+import { initDB } from './storage';
 
 export interface Bookmark {
   id?: number;

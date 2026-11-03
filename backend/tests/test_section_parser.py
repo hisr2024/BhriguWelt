@@ -142,7 +142,7 @@ The karmic blueprint shows past life patterns.
         validation = parser.validate_sections(sections, 'karmic_journey')
         
         # Most sections should be invalid
-        invalid_count = sum(1 for valid in validation.values() if not valid)
+        invalid_count = sum(1 for status in validation.values() if status != "ok")
         assert invalid_count > 0
     
     def test_get_missing_sections(self, parser):
@@ -250,8 +250,8 @@ Sanskrit mantras: ॐ नमः शिवाय
         validation = parser.validate_sections({}, 'karmic_journey')
         
         # All should be invalid
-        for valid in validation.values():
-            assert not valid
+        for status in validation.values():
+            assert status != "ok"
     
     def test_extract_sections_invalid_category(self, parser):
         """Test extraction with invalid category"""
@@ -487,8 +487,8 @@ class TestSectionParserValidationAndLogging:
         }
 
         validation = parser.validate_sections(sections, 'karmic_journey')
-        assert validation['soul_purpose'] == True
-        assert validation['karmic_blueprint'] == False
+        assert validation['soul_purpose'] == "ok"
+        assert validation['karmic_blueprint'] == "short"
 
     def test_extraction_statistics(self, parser):
         """Test extraction success rate"""

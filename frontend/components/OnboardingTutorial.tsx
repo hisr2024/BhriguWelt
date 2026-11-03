@@ -147,16 +147,16 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
               className="text-center"
             >
               {/* Emoji with gradient background - using memoized component */}
-              <AnimatedEmojiIcon emoji={currentStep.emoji} gradient={currentStep.gradient} />
+              <AnimatedEmojiIcon emoji={currentStep?.emoji ?? ''} gradient={currentStep?.gradient ?? ''} />
 
               {/* Title */}
               <h3 className="text-3xl font-display font-bold mb-4 bg-gradient-to-r from-genz-electric-blue via-white to-genz-hot-pink bg-clip-text text-transparent">
-                {currentStep.title}
+                {currentStep?.title}
               </h3>
 
               {/* Content */}
               <p className="text-lg text-white/80 mb-8 leading-relaxed max-w-lg mx-auto">
-                {currentStep.content}
+                {currentStep?.content}
               </p>
             </motion.div>
           </AnimatePresence>

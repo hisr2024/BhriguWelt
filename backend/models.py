@@ -5,6 +5,7 @@ Handles caching and storage of predictions and user data
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import json
+import os
 from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -51,8 +52,10 @@ class BhriguPredictionCache(db.Model):
     confidence_score = db.Column(db.Float, default=0.0)
     user_rating = db.Column(db.Integer)  # 1-5 stars if user rates
 
-    HASH_VERSION_CURRENT = 'v3'
-    HASH_VERSION_FALLBACKS = ('v2',)
+    # v4: readings now include Ashtakavarga/vedha/precision inputs; older
+    # entries are never served (no fallbacks).
+    HASH_VERSION_CURRENT = 'v4'
+    HASH_VERSION_FALLBACKS = ()
 
     def __repr__(self):
         return f'<BhriguPredictionCache {self.id}: {self.category} - {self.zodiac_sign}>'
@@ -103,6 +106,21 @@ class BhriguPredictionCache(db.Model):
         ]
         if version == cls.HASH_VERSION_CURRENT:
             optional_parts.insert(1, question)
+            # Non-English readings are distinct cache entries; English keeps
+            # its existing hash so warm caches stay valid.
+            language = str(birth_data.get('language') or 'en').lower()
+            if language not in ('en', 'english'):
+                optional_parts.append(f"lang:{language}")
+            # Precision inputs change the reading (jiva karaka, house weighting).
+            gender = str(birth_data.get('gender') or '').strip().lower()
+            gender = {'m': 'male', 'f': 'female'}.get(gender, gender)
+            if gender in ('male', 'female'):
+                optional_parts.append(f"g:{gender}")
+            accuracy = str(birth_data.get('birth_time_accuracy') or '').strip().lower()
+            if accuracy in ('within_15', 'within_hour', 'unknown'):
+                optional_parts.append(f"acc:{accuracy}")
+            if os.getenv('BHRIGU_KARAKA_SCHEME', '7').strip() == '8':
+                optional_parts.append("ks:8")
         data_parts = [part for part in base_parts if part not in (None, '')]
         data_parts.extend(part for part in optional_parts if part not in (None, ''))
         data_parts.append(version)
@@ -129,12 +147,20 @@ class BhriguPredictionCache(db.Model):
                     question=question
                 ).first()
 
-                if existing:
-                    logger.debug(f"Prediction already cached for hash {birth_hash}")
-                    return existing
-
                 prediction_payload = dict(prediction)
                 complete_analysis = prediction_payload.pop('complete_analysis', None)
+
+                if existing:
+                    # force_regenerate produced a fresh (paid-for) reading:
+                    # replace the stale row instead of silently discarding it.
+                    existing.prediction_data = json.dumps(prediction_payload)
+                    existing.complete_analysis = complete_analysis
+                    existing.created_at = datetime.utcnow()
+                    if metadata and metadata.get('ai_model'):
+                        existing.ai_model = metadata['ai_model']
+                    db.session.add(existing)
+                    db.session.commit()
+                    return existing
                 cache_entry = cls(
                     birth_data_hash=birth_hash,
                     category=category,
@@ -166,6 +192,17 @@ class BhriguPredictionCache(db.Model):
             logger.error(f"Failed to cache prediction: {e}")
             return None
 
+    READING_FORMAT_MARKER = '"reading_format": 2'
+    INCOMPLETE_MARKER = '"reading_incomplete": true'
+
+    @classmethod
+    def _is_current_format(cls, prediction_data: str) -> bool:
+        return (
+            bool(prediction_data)
+            and cls.READING_FORMAT_MARKER in prediction_data
+            and cls.INCOMPLETE_MARKER not in prediction_data
+        )
+
     @classmethod
     def get_cached_prediction(cls, birth_data: dict, category: str, question: str = None):
         """Retrieve cached prediction if available"""
@@ -180,6 +217,10 @@ class BhriguPredictionCache(db.Model):
                 query = query.filter_by(question=question)
 
             cached = query.order_by(cls.created_at.desc()).first()
+            if cached and not cls._is_current_format(cached.prediction_data):
+                # Readings from before the structured-reading fix carry raw
+                # JSON section bodies and generic templates — never serve them.
+                cached = None
             if cached:
                 cached_id = cached.id
                 break
