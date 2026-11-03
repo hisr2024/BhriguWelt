@@ -19,7 +19,6 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronDown,
-  ChevronUp,
   BookOpen,
   Award,
   AlertCircle,

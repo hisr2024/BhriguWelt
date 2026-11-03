@@ -10,7 +10,7 @@ import os
 import re
 import hashlib
 from datetime import datetime, timezone
-from typing import Tuple, Optional, Dict, Any
+from typing import Tuple, Optional, Dict, Any, List
 from collections import defaultdict
 from threading import Lock
 from utils.logger import setup_logger
@@ -31,6 +31,32 @@ except ImportError:
     REDIS_AVAILABLE = False
     logger.warning("redis package not installed - using in-memory quota tracking")
 
+# Try to import tiktoken for accurate token counting; fall back to a heuristic.
+try:
+    import tiktoken
+    TIKTOKEN_AVAILABLE = True
+except ImportError:
+    TIKTOKEN_AVAILABLE = False
+    logger.info("tiktoken not installed - using character-based token estimation")
+
+_encoder_cache: Dict[str, Any] = {}
+
+
+def _get_encoder():
+    """Return a cached tiktoken encoder for the configured model, or None."""
+    if not TIKTOKEN_AVAILABLE:
+        return None
+    model = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
+    if model not in _encoder_cache:
+        try:
+            _encoder_cache[model] = tiktoken.encoding_for_model(model)
+        except KeyError:
+            _encoder_cache[model] = tiktoken.get_encoding('cl100k_base')
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning(f"tiktoken encoder init failed: {exc}")
+            _encoder_cache[model] = None
+    return _encoder_cache[model]
+
 
 # Custom exceptions
 class QuotaExceededError(Exception):
@@ -45,25 +71,25 @@ class CostLimitExceededError(Exception):
 
 def estimate_tokens(text: str) -> int:
     """
-    Conservative token estimation using character count method.
-    This is a simple heuristic that can be replaced with tiktoken later.
+    Estimate token count for the configured model.
 
-    Formula: max(1, len(text) // 4)
+    Uses tiktoken for accurate counts when available, and falls back to the
+    conservative character heuristic max(1, len(text) // 4) otherwise.
 
     Args:
         text: Input text to estimate tokens for
 
     Returns:
         Estimated token count (minimum 1)
-
-    Note:
-        For production use with accurate tokenization, consider integrating tiktoken:
-        import tiktoken
-        encoding = tiktoken.encoding_for_model("gpt-4")
-        return len(encoding.encode(text))
     """
     if text is None:
         text = ""
+    encoder = _get_encoder()
+    if encoder is not None:
+        try:
+            return max(1, len(encoder.encode(text)))
+        except Exception:  # pragma: no cover - defensive
+            pass
     return max(1, len(text) // 4)
 
 
@@ -160,6 +186,65 @@ def _get_redis_client() -> Optional[Any]:
             return None
 
 
+def mask_identity(user_id: Optional[str]) -> str:
+    """Log-safe form of a quota identity: per-device ids and IPs are personal
+    data (GDPR), so only a short hash is logged."""
+    if not user_id:
+        return 'anonymous'
+    parts = []
+    for part in str(user_id).split('@'):
+        if part.startswith(('client:', 'ip:')):
+            prefix = part.split(':', 1)[0]
+            parts.append(f"{prefix}:{hashlib.sha256(part.encode()).hexdigest()[:8]}")
+        else:
+            parts.append(sanitize_log(part))
+    return '@'.join(parts)
+
+
+_MEMORY_STORE_MAX_KEYS = int(os.getenv('QUOTA_MEMORY_MAX_KEYS', '20000'))
+
+
+def _prune_memory_store() -> None:
+    """Bound the in-memory fallback: drop keys from previous days, then oldest."""
+    if len(_memory_quota_store) <= _MEMORY_STORE_MAX_KEYS:
+        return
+    today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    for key in [k for k in _memory_quota_store if not k.endswith(today)]:
+        _memory_quota_store.pop(key, None)
+    while len(_memory_quota_store) > _MEMORY_STORE_MAX_KEYS:
+        _memory_quota_store.pop(next(iter(_memory_quota_store)))
+
+
+def quota_identities(user_id: Optional[str]) -> List[Tuple[str, int]]:
+    """Split a composite identity ('client:<id>@ip:<addr>') into (id, daily_limit).
+
+    A per-device id alone could be rotated for a fresh quota, so every device
+    bucket is backed by a per-network ceiling (ANON_IP_DAILY_TOKEN_LIMIT).
+    """
+    user_limit = int(os.getenv('USER_DAILY_TOKEN_LIMIT', '100000'))
+    ip_limit = int(os.getenv('ANON_IP_DAILY_TOKEN_LIMIT', '400000'))
+    ids = [p for p in str(user_id or 'anonymous').split('@') if p]
+    return [(i, ip_limit if i.startswith('ip:') else user_limit) for i in ids] or [('anonymous', user_limit)]
+
+
+def reserve_for_identities(user_id: Optional[str], tokens_needed: int) -> Tuple[int, List[str]]:
+    """Reserve on every identity; roll back earlier reservations if one fails.
+    Returns (min remaining, quota keys reserved) so usage settles on the same keys."""
+    reserved: List[str] = []
+    remaining_values: List[int] = []
+    try:
+        for identity, limit in quota_identities(user_id):
+            key = _get_quota_key(identity)
+            _allowed, remaining = check_daily_quota_and_reserve(identity, tokens_needed, daily_limit=limit)
+            reserved.append(key)
+            remaining_values.append(remaining)
+    except QuotaExceededError:
+        for key in reserved:
+            update_usage_after_call(user_id or 'anonymous', -tokens_needed, quota_key=key)
+        raise
+    return (min(remaining_values) if remaining_values else 0), reserved
+
+
 def _get_quota_key(user_id: str) -> str:
     """
     Generate Redis key for user's daily quota.
@@ -213,13 +298,14 @@ def _check_memory_quota(user_id: str, tokens_needed: int, daily_limit: int) -> T
     quota_key = _get_quota_key(user_id)
 
     with _memory_quota_lock:
+        _prune_memory_store()
         current_usage = _memory_quota_store[quota_key]
         new_usage = current_usage + tokens_needed
 
         if new_usage > daily_limit:
             remaining = daily_limit - current_usage
             logger.warning(
-                f"[MEMORY FALLBACK] Quota exceeded for user {sanitize_log(user_id)}: "
+                f"[MEMORY FALLBACK] Quota exceeded for user {mask_identity(user_id)}: "
                 f"needed={tokens_needed}, remaining={remaining}, limit={daily_limit}"
             )
             raise QuotaExceededError(
@@ -232,14 +318,14 @@ def _check_memory_quota(user_id: str, tokens_needed: int, daily_limit: int) -> T
         remaining = daily_limit - new_usage
 
         logger.info(
-            f"[MEMORY FALLBACK] Quota reserved for user {sanitize_log(user_id)}: "
+            f"[MEMORY FALLBACK] Quota reserved for user {mask_identity(user_id)}: "
             f"reserved={tokens_needed}, remaining={remaining}/{daily_limit}"
         )
 
         return True, remaining
 
 
-def check_daily_quota_and_reserve(user_id: str, tokens_needed: int) -> Tuple[bool, int]:
+def check_daily_quota_and_reserve(user_id: str, tokens_needed: int, daily_limit: Optional[int] = None) -> Tuple[bool, int]:
     """
     Check if user has sufficient quota and atomically reserve tokens.
 
@@ -265,8 +351,9 @@ def check_daily_quota_and_reserve(user_id: str, tokens_needed: int) -> Tuple[boo
         ...     # Proceed with OpenAI call
         ...     pass
     """
-    # Get daily limit from environment
-    daily_limit = int(os.getenv('USER_DAILY_TOKEN_LIMIT', '100000'))  # Default: 100K tokens/day
+    # Get daily limit from environment unless the caller supplies one
+    if daily_limit is None:
+        daily_limit = int(os.getenv('USER_DAILY_TOKEN_LIMIT', '100000'))  # Default: 100K tokens/day
 
     # If no user_id provided, use anonymous quota
     if not user_id:
@@ -301,7 +388,7 @@ def check_daily_quota_and_reserve(user_id: str, tokens_needed: int) -> Tuple[boo
 
         if not allowed:
             logger.warning(
-                f"Quota exceeded for user {sanitize_log(user_id)}: "
+                f"Quota exceeded for user {mask_identity(user_id)}: "
                 f"needed={tokens_needed}, remaining={remaining}, limit={daily_limit}"
             )
             current_usage = daily_limit - int(remaining)
@@ -311,7 +398,7 @@ def check_daily_quota_and_reserve(user_id: str, tokens_needed: int) -> Tuple[boo
             )
 
         logger.info(
-            f"Quota reserved for user {sanitize_log(user_id)}: "
+            f"Quota reserved for user {mask_identity(user_id)}: "
             f"reserved={tokens_needed}, remaining={remaining}/{daily_limit}"
         )
 
@@ -326,7 +413,7 @@ def check_daily_quota_and_reserve(user_id: str, tokens_needed: int) -> Tuple[boo
         return True, daily_limit
 
 
-def update_usage_after_call(user_id: str, tokens_used: int) -> bool:
+def update_usage_after_call(user_id: str, tokens_used: int, quota_key: Optional[str] = None) -> bool:
     """
     Update actual token usage after successful OpenAI call.
 
@@ -355,6 +442,11 @@ def update_usage_after_call(user_id: str, tokens_used: int) -> bool:
 
     client = _get_redis_client()
 
+    if not client and quota_key and quota_key in _memory_quota_store:
+        with _memory_quota_lock:
+            _memory_quota_store[quota_key] = max(0, _memory_quota_store[quota_key] + tokens_used)
+        return True
+
     if not client:
         global _redis_unavailable_logged
         redis_enabled = os.getenv('REDIS_ENABLED', 'true').lower() == 'true'
@@ -365,7 +457,9 @@ def update_usage_after_call(user_id: str, tokens_used: int) -> bool:
             logger.debug("Redis disabled - skipping usage counter update")
         return False
 
-    quota_key = _get_quota_key(user_id)
+    # Settle against the key the reservation was made on (a call that spans
+    # UTC midnight must not credit the next day's counter).
+    quota_key = quota_key or _get_quota_key(user_id)
 
     try:
         # Add actual usage (note: this adds to any reservation already made)
@@ -378,7 +472,7 @@ def update_usage_after_call(user_id: str, tokens_used: int) -> bool:
         daily_limit = int(os.getenv('USER_DAILY_TOKEN_LIMIT', '100000'))
 
         logger.info(
-            f"Usage updated for user {sanitize_log(user_id)}: "
+            f"Usage updated for user {mask_identity(user_id)}: "
             f"added={tokens_used}, total={total_usage}/{daily_limit}"
         )
 

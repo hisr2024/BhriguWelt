@@ -193,10 +193,16 @@ def compute_julian_date_and_positions(profile: BirthChartProfile) -> Dict[str, A
         utc_dt.hour + utc_dt.minute / 60 + utc_dt.second / 3600,
     )
 
+    # Sidereal (Lahiri) zodiac so this endpoint agrees with the prediction
+    # engine — every feature must present the SAME chart. Positions were
+    # previously tropical (Western), desynchronized from the rest of the app.
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    ayanamsa = swe.get_ayanamsa_ut(jd)
+
     planets: Dict[str, Dict[str, Any]] = {}
     for name, planet_id in PLANETS.items():
         position = swe.calc_ut(jd, planet_id)[0]
-        longitude = position[0] % 360
+        longitude = (position[0] - ayanamsa) % 360
         sign, degree = _longitude_to_sign(longitude)
         planets[name] = {
             'sign': sign,
@@ -205,7 +211,7 @@ def compute_julian_date_and_positions(profile: BirthChartProfile) -> Dict[str, A
         }
 
     nodes = swe.calc_ut(jd, NODE_PLANET)[0]
-    rahu_longitude = nodes[0] % 360
+    rahu_longitude = (nodes[0] - ayanamsa) % 360
     ketu_longitude = (rahu_longitude + 180) % 360
     rahu_sign, rahu_degree = _longitude_to_sign(rahu_longitude)
     ketu_sign, ketu_degree = _longitude_to_sign(ketu_longitude)
@@ -226,6 +232,8 @@ def compute_julian_date_and_positions(profile: BirthChartProfile) -> Dict[str, A
     try:
         house_code = HOUSE_SYSTEMS.get(profile.house_system, 'P')
         houses, ascmc = swe.houses(jd, profile.latitude, profile.longitude, house_code)
+        houses = [(cusp - ayanamsa) % 360 for cusp in houses]
+        ascmc = [(value - ayanamsa) % 360 for value in ascmc]
         house_cusps = _build_house_lookup(list(houses))
         houses_payload = [
             {

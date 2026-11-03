@@ -185,26 +185,23 @@ class TestPredictionHelpers(unittest.TestCase):
         """Test fallback karmic journey"""
         result = fallback_karmic_journey(self.sample_chart)
 
-        self.assertTrue(result.get('success'))
-        self.assertEqual(result['engine'], 'karmic_journey')
-        self.assertIn('subcategories', result)
-        self.assertIn('soul_purpose', result['subcategories'])
+        self.assertEqual(result['category'], 'karmic_journey')
+        self.assertIn('full_analysis', result)
+        self.assertIn('soul_purpose', result)
 
     def test_fallback_past_lives(self):
         """Test fallback past lives"""
         result = fallback_past_lives(self.sample_chart)
 
-        self.assertTrue(result.get('success'))
-        self.assertEqual(result['engine'], 'past_lives')
-        self.assertIn('subcategories', result)
+        self.assertEqual(result['category'], 'past_lives')
+        self.assertIn('full_analysis', result)
 
     def test_fallback_future_lives(self):
         """Test fallback future lives"""
         result = fallback_future_lives(self.sample_chart)
 
-        self.assertTrue(result.get('success'))
-        self.assertEqual(result['engine'], 'future_lives')
-        self.assertIn('subcategories', result)
+        self.assertEqual(result['category'], 'future_lives')
+        self.assertIn('full_analysis', result)
 
 
 class TestPredictionAnalysisMethods(unittest.TestCase):
@@ -390,14 +387,16 @@ class TestIntegration(unittest.TestCase):
 
         # Use fallback functions
         journey = fallback_karmic_journey(minimal_chart)
-        self.assertTrue(journey.get('success'))
-        self.assertIn('subcategories', journey)
+        self.assertEqual(journey['category'], 'karmic_journey')
+        self.assertIn('full_analysis', journey)
 
         past_lives = fallback_past_lives(minimal_chart)
-        self.assertTrue(past_lives.get('success'))
+        self.assertEqual(past_lives['category'], 'past_lives')
+        self.assertIn('full_analysis', past_lives)
 
         future_lives = fallback_future_lives(minimal_chart)
-        self.assertTrue(future_lives.get('success'))
+        self.assertEqual(future_lives['category'], 'future_lives')
+        self.assertIn('full_analysis', future_lives)
 
 
 class TestDeterminism(unittest.TestCase):
