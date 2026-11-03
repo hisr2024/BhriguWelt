@@ -231,3 +231,96 @@ def test_approximate_time_hides_lagna_degree(birth_data):
     lagna = next(f for f in findings if f["id"] == "F-LAGNA-01")
     assert lagna["finding"].startswith("Lagna Cancer;")
     assert not any("Lagna degree" in f["finding"] for f in findings)
+
+
+# --- Ashtakavarga, vedha, karaka scheme, quota identity ----------------------
+
+from services.bhrigu_nadi_rules import (  # noqa: E402
+    ASHTAKAVARGA, bhinnashtakavarga, sarvashtakavarga, vedha_obstructers,
+)
+
+
+def test_ashtakavarga_tables_match_bphs_totals():
+    totals = {p: sum(len(r) for r in rows) for p, rows in ASHTAKAVARGA.items()}
+    assert totals == {'Sun': 48, 'Moon': 49, 'Mars': 39, 'Mercury': 54, 'Jupiter': 56, 'Venus': 52, 'Saturn': 39}
+    # BPHS ch. 66 rows where some software follows a variant reading
+    assert ASHTAKAVARGA['Moon'][1] == [1, 3, 6, 7, 10, 11]
+    assert ASHTAKAVARGA['Moon'][4] == [1, 4, 7, 8, 10, 11, 12]
+    assert ASHTAKAVARGA['Venus'][2] == [3, 5, 6, 9, 11, 12]
+
+
+def test_sarvashtakavarga_sums_to_337_for_any_chart():
+    import random
+    rnd = random.Random(7)
+    for _ in range(20):
+        signs = {p: rnd.randrange(12) for p in ASHTAKAVARGA}
+        bav = bhinnashtakavarga(signs, rnd.randrange(12))
+        assert sum(sarvashtakavarga(bav)) == 337
+        assert all(0 <= v <= 8 for row in bav.values() for v in row)
+
+
+def test_bhinnashtakavarga_single_contributor_placement():
+    # Everything in Aries (0) incl. Lagna: Sun's BAV gets a bindu in sign h-1
+    # for every house h listed in each row → Aries gets one from every row with 1.
+    bav = bhinnashtakavarga({p: 0 for p in ASHTAKAVARGA}, 0)
+    rows_with_1 = sum(1 in r for r in ASHTAKAVARGA['Sun'])
+    assert bav['Sun'][0] == rows_with_1
+
+
+def test_vedha_obstruction_and_exemptions():
+    moon = 0  # Moon in Aries
+    # Jupiter in 5th (Leo) is good; vedha house 4th (Cancer)
+    good, blockers = vedha_obstructers('Jupiter', moon, {'Jupiter': 4, 'Mars': 3})
+    assert good and blockers == ['Mars']
+    # Saturn in 3rd (Gemini) good; vedha 12th (Pisces); Sun there does NOT obstruct
+    good, blockers = vedha_obstructers('Saturn', moon, {'Saturn': 2, 'Sun': 11})
+    assert good and blockers == []
+    # Moon in 3rd good; vedha 9th; Mercury exempt, Venus obstructs
+    good, blockers = vedha_obstructers('Moon', moon, {'Moon': 2, 'Mercury': 8, 'Venus': 8})
+    assert blockers == ['Venus']
+    # unfavourable house → no vedha evaluation
+    assert vedha_obstructers('Jupiter', moon, {'Jupiter': 0}) == (False, [])
+    # nodes never obstruct
+    assert vedha_obstructers('Jupiter', moon, {'Jupiter': 4, 'Rahu': 3})[1] == []
+
+
+def test_ashtakavarga_rule_on_reference_chart(birth_data):
+    findings = evaluate_rules(build_chart_facts(birth_data), birth_data, "present_life", now=NOW, limit=80)
+    av1 = next(f for f in findings if f["id"] == "F-AV-01")
+    assert "SAV" in av1["finding"] and "10th" in av1["finding"]
+    av2 = next(f for f in findings if f["id"] == "F-AV-02")
+    assert "of 8 bindus" in av2["finding"]
+
+
+def test_eight_karaka_scheme_option(birth_data, monkeypatch):
+    monkeypatch.setenv("BHRIGU_KARAKA_SCHEME", "8")
+    findings = evaluate_rules(build_chart_facts(birth_data), birth_data, "karmic_journey", now=NOW, limit=80)
+    k = next(f for f in findings if f["id"] == "F-KARAKA-01")
+    assert "8-karaka" in k["principle"]
+
+
+def test_client_id_header_sets_quota_identity():
+    from flask import Flask
+    from routes.bhrigu_predictions_routes import _sanitize_question_field
+    app = Flask(__name__)
+    with app.test_request_context(headers={"X-Client-Id": "abcd1234-ef56"}):
+        data = {"client_id": "spoofed"}
+        _sanitize_question_field(data)
+        assert data["client_id"] == "client:abcd1234-ef56"
+    with app.test_request_context(headers={"X-Client-Id": "bad id; drop"}):
+        data = {}
+        _sanitize_question_field(data)
+        assert "client_id" not in data
+
+
+def test_quota_settles_on_reserved_key(monkeypatch):
+    from services import ai_quota
+    calls = []
+
+    class FakeRedis:
+        def incrby(self, key, n): calls.append((key, n))
+        def expire(self, *a): pass
+        def get(self, key): return 0
+    monkeypatch.setattr(ai_quota, "_get_redis_client", lambda: FakeRedis())
+    assert ai_quota.update_usage_after_call("u1", -50, quota_key="ai_usage:u1:2026-11-03")
+    assert calls == [("ai_usage:u1:2026-11-03", -50)]

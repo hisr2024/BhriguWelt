@@ -57,6 +57,7 @@ Weights (0–1) are ranking priors. They are never shown as percentages or proba
 | F-LESSON-01 | modern | Lesson triggers from `data/bhrigu_karmic_soul_journey_model.json` | – |
 | F-TRANSIT-02 | modern | Double transit of Jupiter + Saturn on a domain house or its lord | ✔ |
 | F-GOCHARA-02 / 03 | classical | Saturn from Moon; Kantaka (4th) and Ashtama (8th) Shani windows (Phaladeepika ch. 26) | ✔ |
+| F-AV-01 / 02 | classical | Sarvashtakavarga house strength; transit bindus of Saturn and Jupiter (BPHS ch. 66) | ✔ |
 | F-NODES-02 | modern | Nodal return of Rahu to its natal degree | ✔ |
 | F-WINDOW-01 | modern | Ranks up to three distinct windows where dated rules overlap | ✔ |
 
@@ -82,7 +83,7 @@ Both are optional fields on the get-started form and the profile page. Both are 
 
 ## Still open
 
-- Vedha refinements for gochara, and Ashtakavarga bindus for transit strength (classical, BPHS).
-- An option for the 8-karaka scheme (Rahu as a karaka).
+- Ashtakavarga shodhana (Trikona and Ekadhipatya reductions) and kakshya timing.
+- Vedha is applied to Jupiter and Saturn; the other planets' transits aren't reported yet.
 - `vedic_yogas_calculator.py` still marks 27 yogas active regardless of the chart, so don't use it for readings.
 - `backend/data/*_principles.yml` and `docs/bhrigu_references.md` contain folio numbers we could not verify.

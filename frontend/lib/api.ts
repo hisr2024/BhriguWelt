@@ -35,6 +35,28 @@ const gzipCompress = async (data: Uint8Array): Promise<Uint8Array> => {
   return new Uint8Array(compressed);
 };
 
+/**
+ * Random per-install id so the backend can apply the daily AI token quota
+ * per device instead of one shared "anonymous" bucket. Contains no personal
+ * data; regenerated if storage is cleared.
+ */
+const CLIENT_ID_KEY = 'bhriguwelt_client_id';
+export const getClientId = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    let id = window.localStorage.getItem(CLIENT_ID_KEY);
+    if (!id) {
+      id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+      window.localStorage.setItem(CLIENT_ID_KEY, id);
+    }
+    return id;
+  } catch {
+    return null;
+  }
+};
+
 export const api = axios.create({
   baseURL:  API_URL,
   headers: {
@@ -54,6 +76,10 @@ api.interceptors.request.use(
     if (typeof navigator !== 'undefined') {
       config.headers = config.headers ?? {};
       config.headers['X-Client-Online'] = navigator.onLine ? 'true' : 'false';
+      const clientId = getClientId();
+      if (clientId) {
+        config.headers['X-Client-Id'] = clientId;
+      }
     }
 
     if (config.data) {

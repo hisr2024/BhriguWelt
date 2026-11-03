@@ -1836,6 +1836,7 @@ Rules: <=110 words per section; never repeat a sentence across sections; omit a 
 
             findings = self._derive_rule_findings(chart_facts, birth_data, category)
             allow_fallback = not self.strict_precision
+            user_id = user_id or birth_data.get('client_id')
             prompt = self._build_category_prompt(
                 category, section_specs, birth_data, self._format_rule_block(findings), question
             )

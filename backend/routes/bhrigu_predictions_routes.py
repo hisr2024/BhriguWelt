@@ -3,7 +3,7 @@ Bhrigu Predictions Routes
 Handles all Bhrigu Samhita and Nadi Jyotisa prediction requests
 FORTIFIED: All routes guaranteed to return JSON responses - never crash
 """
-from flask import Blueprint, request, jsonify, Response, stream_with_context
+from flask import Blueprint, request, jsonify, Response, stream_with_context, has_request_context
 from services.bhrigu_predictions import get_bhrigu_service
 from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.section_parser import get_section_parser
@@ -21,6 +21,7 @@ from datetime import datetime
 from typing import Optional
 import uuid
 import json
+import re
 import time
 import logging
 from functools import wraps
@@ -192,6 +193,15 @@ def _sanitize_question_field(data: dict):
         data['birth_time_accuracy'] = accuracy
     else:
         data.pop('birth_time_accuracy', None)
+    # Per-install quota identity (X-Client-Id header). Never taken from the
+    # JSON body; only a bounded token of [A-Za-z0-9-] is accepted.
+    data.pop('client_id', None)
+    try:
+        header_id = request.headers.get('X-Client-Id', '') if has_request_context() else ''
+    except RuntimeError:
+        header_id = ''
+    if header_id and re.fullmatch(r'[A-Za-z0-9-]{8,64}', header_id):
+        data['client_id'] = f"client:{header_id}"
 
 
 def validate_chart_inputs(data: dict) -> Optional[str]:

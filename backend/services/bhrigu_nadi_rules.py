@@ -20,6 +20,7 @@ See docs/bhrigu_nadi_rules.md for the catalogue and sources.
 from __future__ import annotations
 
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
@@ -66,6 +67,86 @@ SPECIAL_ASPECTS = {'Mars': (4, 8), 'Jupiter': (5, 9), 'Saturn': (3, 10)}
 def aspects_from(planet: str, from_sign: int, target_sign: int) -> bool:
     rel = (target_sign - from_sign) % 12 + 1
     return rel == 7 or rel in SPECIAL_ASPECTS.get(planet, ())
+
+
+# ---------------------------------------------------------------------------
+# Ashtakavarga — BPHS ch. 66 (Santhanam ed.). Houses, counted from each
+# contributor, in which it gives a bindu to the planet's Bhinnashtakavarga.
+# Contributor order: Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Lagna.
+# Totals 48/49/39/54/56/52/39 (SAV 337). PyJHora/Jagannatha Hora follow a
+# variant reading for 4 rows (Moon-from-Moon/Mars/Jupiter, Venus-from-Mars);
+# see core_wisdom/techniques/ashtakavarga.md.
+# ---------------------------------------------------------------------------
+AV_CONTRIBUTORS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Lagna']
+ASHTAKAVARGA: Dict[str, List[List[int]]] = {
+    'Sun':     [[1, 2, 4, 7, 8, 9, 10, 11], [3, 6, 10, 11], [1, 2, 4, 7, 8, 9, 10, 11], [3, 5, 6, 9, 10, 11, 12],
+                [5, 6, 9, 11], [6, 7, 12], [1, 2, 4, 7, 8, 9, 10, 11], [3, 4, 6, 10, 11, 12]],
+    'Moon':    [[3, 6, 7, 8, 10, 11], [1, 3, 6, 7, 10, 11], [2, 3, 5, 6, 9, 10, 11], [1, 3, 4, 5, 7, 8, 10, 11],
+                [1, 4, 7, 8, 10, 11, 12], [3, 4, 5, 7, 9, 10, 11], [3, 5, 6, 11], [3, 6, 10, 11]],
+    'Mars':    [[3, 5, 6, 10, 11], [3, 6, 11], [1, 2, 4, 7, 8, 10, 11], [3, 5, 6, 11],
+                [6, 10, 11, 12], [6, 8, 11, 12], [1, 4, 7, 8, 9, 10, 11], [1, 3, 6, 10, 11]],
+    'Mercury': [[5, 6, 9, 11, 12], [2, 4, 6, 8, 10, 11], [1, 2, 4, 7, 8, 9, 10, 11], [1, 3, 5, 6, 9, 10, 11, 12],
+                [6, 8, 11, 12], [1, 2, 3, 4, 5, 8, 9, 11], [1, 2, 4, 7, 8, 9, 10, 11], [1, 2, 4, 6, 8, 10, 11]],
+    'Jupiter': [[1, 2, 3, 4, 7, 8, 9, 10, 11], [2, 5, 7, 9, 11], [1, 2, 4, 7, 8, 10, 11], [1, 2, 4, 5, 6, 9, 10, 11],
+                [1, 2, 3, 4, 7, 8, 10, 11], [2, 5, 6, 9, 10, 11], [3, 5, 6, 12], [1, 2, 4, 5, 6, 7, 9, 10, 11]],
+    'Venus':   [[8, 11, 12], [1, 2, 3, 4, 5, 8, 9, 11, 12], [3, 5, 6, 9, 11, 12], [3, 5, 6, 9, 11],
+                [5, 8, 9, 10, 11], [1, 2, 3, 4, 5, 8, 9, 10, 11], [3, 4, 5, 8, 9, 10, 11], [1, 2, 3, 4, 5, 8, 9, 11]],
+    'Saturn':  [[1, 2, 4, 7, 8, 10, 11], [3, 6, 11], [3, 5, 6, 10, 11, 12], [6, 8, 9, 10, 11, 12],
+                [5, 6, 11, 12], [6, 11, 12], [3, 5, 6, 11], [1, 3, 4, 6, 10, 11]],
+}
+
+
+def bhinnashtakavarga(planet_signs: Dict[str, int], lagna_sign: int) -> Dict[str, List[int]]:
+    """Bindus per sign (index 0 = Aries) for each of the seven grahas."""
+    positions = dict(planet_signs)
+    positions['Lagna'] = lagna_sign
+    bav: Dict[str, List[int]] = {}
+    for planet, rows in ASHTAKAVARGA.items():
+        counts = [0] * 12
+        for contributor, houses in zip(AV_CONTRIBUTORS, rows):
+            base = positions.get(contributor)
+            if base is None:
+                continue
+            for h in houses:
+                counts[(base + h - 1) % 12] += 1
+        bav[planet] = counts
+    return bav
+
+
+def sarvashtakavarga(bav: Dict[str, List[int]]) -> List[int]:
+    return [sum(bav[p][i] for p in bav) for i in range(12)]
+
+
+# ---------------------------------------------------------------------------
+# Vedha — Phaladeepika ch. 26, vv. 3–8 (Subrahmanya Sastri tr.).
+# favourable house from Moon -> vedha house; a transit in the vedha house
+# cancels the good result. Exemptions: Sun and Saturn never obstruct each
+# other; Moon and Mercury never obstruct each other. Nodes are not used as
+# obstructers. Rahu/Ketu results follow the Sun's (v. 2).
+# ---------------------------------------------------------------------------
+VEDHA: Dict[str, Dict[int, int]] = {
+    'Sun':     {3: 9, 6: 12, 10: 4, 11: 5},
+    'Moon':    {1: 5, 3: 9, 6: 12, 7: 2, 10: 4, 11: 8},
+    'Mars':    {3: 12, 6: 9, 11: 5},
+    'Mercury': {2: 5, 4: 3, 6: 9, 8: 1, 10: 8, 11: 12},
+    'Jupiter': {2: 12, 5: 4, 7: 3, 9: 10, 11: 8},
+    'Venus':   {1: 8, 2: 7, 3: 1, 4: 10, 5: 9, 8: 5, 9: 11, 11: 6, 12: 3},
+    'Saturn':  {3: 12, 6: 9, 11: 5},
+}
+VEDHA_EXEMPT = {('Sun', 'Saturn'), ('Saturn', 'Sun'), ('Moon', 'Mercury'), ('Mercury', 'Moon')}
+
+
+def vedha_obstructers(planet: str, moon_sign: int, transit_signs: Dict[str, int]) -> Tuple[bool, List[str]]:
+    """(is_favourable_house, obstructing planets) for a transiting planet."""
+    house = (transit_signs[planet] - moon_sign) % 12 + 1
+    table = VEDHA.get(planet, {})
+    if house not in table:
+        return False, []
+    vedha_sign = (moon_sign + table[house] - 1) % 12
+    blockers = [q for q, s in transit_signs.items()
+                if q != planet and s == vedha_sign and q not in ('Rahu', 'Ketu')
+                and (planet, q) not in VEDHA_EXEMPT]
+    return True, blockers
 
 
 def navamsa_sign(lon: float) -> int:
@@ -239,9 +320,18 @@ def rule_nodes(c: Chart) -> List[Dict[str, Any]]:
                ['karmic_journey', 'past_lives', 'future_lives', 'karma_reset', 'karmic_remedies'], 0.85, house_based=True)]
 
 
-def rule_karakas(c: Chart) -> List[Dict[str, Any]]:
+def karaka_candidates(c: Chart) -> Dict[str, float]:
+    """Degrees used to rank chara karakas. Default: 7-karaka scheme (Sun–Saturn).
+    BHRIGU_KARAKA_SCHEME=8 adds Rahu measured as 30° minus its degree (BPHS)."""
     cand = {p: c.lon[p] % 30 for p in GRAHAS7 if p in c.lon}
-    if len(cand) < 7:
+    if len(cand) == 7 and os.getenv('BHRIGU_KARAKA_SCHEME', '7').strip() == '8' and 'Rahu' in c.lon:
+        cand['Rahu'] = 30.0 - (c.lon['Rahu'] % 30)
+    return cand if len(cand) >= 7 else {}
+
+
+def rule_karakas(c: Chart) -> List[Dict[str, Any]]:
+    cand = karaka_candidates(c)
+    if not cand:
         return []
     ordered = sorted(cand, key=cand.get, reverse=True)
     ak, dk = ordered[0], ordered[-1]
@@ -249,7 +339,7 @@ def rule_karakas(c: Chart) -> List[Dict[str, Any]]:
     text = (f"Atmakaraka {c.desc(ak)}; Amatyakaraka {ordered[1]}; "
             f"Darakaraka {c.desc(dk)}. 12th from Atmakaraka: {SIGNS[ak_h12]}"
             f"{' with ' + ', '.join(c.occupants(ak_h12)) if c.occupants(ak_h12) else ' (empty)'}")
-    return [_f('F-KARAKA-01', 'classical', 'Jaimini chara karakas (7-karaka scheme)', text,
+    return [_f('F-KARAKA-01', 'classical', f"Jaimini chara karakas ({'8' if 'Rahu' in cand else '7'}-karaka scheme)", text,
                ['karmic_journey', 'past_lives', 'future_lives', 'relationships', 'present_life'], 0.75, house_based=True)]
 
 
@@ -462,7 +552,11 @@ def rule_transits(c: Chart, now: datetime) -> List[Dict[str, Any]]:
         jw = E.sign_windows('Jupiter', {j}, now, now + timedelta(days=500), step_days=3)
         until = jw[0][1] if jw else now
         tone = 'favourable' if rel in (2, 5, 7, 9, 11) else 'testing'
-        out.append(_f('F-GOCHARA-01', 'classical', 'Jupiter transit from Moon (Phaladeepika ch. 26)',
+        transit_signs = {p: E.sign_index(v['longitude']) for p, v in E.planet_positions(now).items()}
+        good, blockers = vedha_obstructers('Jupiter', ms, transit_signs)
+        if good and blockers:
+            tone = f"favourable house, but obstructed by {', '.join(blockers)} in the vedha house (Phaladeepika ch. 26)"
+        out.append(_f('F-GOCHARA-01', 'classical', 'Jupiter transit from Moon with vedha (Phaladeepika ch. 26)',
                       f"Jupiter in {SIGNS[j]} = {_ordinal(rel)} from the Moon — {tone} for growth/support",
                       [ALL], 0.5, timing=f"until ~{_d(until)}", start=now))
     return out
@@ -593,8 +687,8 @@ def rule_navamsa(c: Chart) -> List[Dict[str, Any]]:
         out.append(_f('F-D9-01', 'classical', 'Vargottama — same sign in Rashi and Navamsa (BPHS, Shodashavarga)',
                       'Vargottama: ' + ', '.join(f"{p} ({SIGNS[c.sign(p)]})" for p in varg) + ' — these planets give steady, reliable results',
                       [ALL], 0.55))
-    cand = {p: c.lon[p] % 30 for p in GRAHAS7 if p in c.lon}
-    if len(cand) == 7:
+    cand = karaka_candidates(c)
+    if cand:
         ak = max(cand, key=cand.get)
         if ak == 'Moon' and moon_uncertain:
             return out
@@ -690,8 +784,8 @@ def rule_moksha(c: Chart) -> List[Dict[str, Any]]:
         marks.append('Ketu in the 12th')
     if 'Jupiter' in c.lon and (c.house('Jupiter') == 12 or c.aspects_sign('Jupiter', c.house_sign(12))):
         marks.append('Jupiter influences the 12th')
-    cand = {p: c.lon[p] % 30 for p in GRAHAS7 if p in c.lon}
-    ak = max(cand, key=cand.get) if len(cand) == 7 else None
+    cand = karaka_candidates(c)
+    ak = max(cand, key=cand.get) if cand else None
     if ak and not (ak == 'Moon' and c.time_accuracy in ('within_hour', 'unknown')):
         km12 = (navamsa_sign(c.lon[ak]) + 11) % 12
         benefic = [p for p in ('Jupiter', 'Venus', 'Ketu', 'Mercury') if p in c.lon and navamsa_sign(c.lon[p]) == km12]
@@ -784,9 +878,13 @@ def rule_saturn_gochara(c: Chart, now: datetime) -> List[Dict[str, Any]]:
     if not E.SWISSEPH_AVAILABLE:
         return []
     ms = c.sign('Moon')
-    sat = E.sign_index(E.planet_positions(now)['Saturn']['longitude'])
+    transit_signs = {p: E.sign_index(v['longitude']) for p, v in E.planet_positions(now).items()}
+    sat = transit_signs['Saturn']
     rel = (sat - ms) % 12 + 1
     tone = 'supportive' if rel in (3, 6, 11) else 'demanding'
+    good, blockers = vedha_obstructers('Saturn', ms, transit_signs)
+    if good and blockers:
+        tone = f"supportive house, but obstructed by {', '.join(blockers)} in the vedha house"
     out = [_f('F-GOCHARA-02', 'classical', 'Saturn transit results by house from Moon (Phaladeepika ch. 26)',
               f"Saturn in {SIGNS[sat]} = {_ordinal(rel)} from the Moon — {tone} period for effort and results",
               [ALL], 0.5, start=now)]
@@ -798,6 +896,45 @@ def rule_saturn_gochara(c: Chart, now: datetime) -> List[Dict[str, Any]]:
                       f"{names[sg]}: Saturn in {SIGNS[sg]} {_span(max(a, now), b)}" + (f"; then {names[wins[1][2]]} {_span(wins[1][0], wins[1][1])}" if len(wins) > 1 else ''),
                       ['present_life', 'predictions', 'life_events', 'karmic_remedies'], 0.6,
                       timing=_span(max(a, now), b), start=max(a, now), end=b))
+    return out
+
+
+def rule_ashtakavarga(c: Chart, now: datetime, domains: List[str], categories: List[str]) -> List[Dict[str, Any]]:
+    """Sarvashtakavarga house strength and transit bindus (BPHS ch. 66)."""
+    signs = {p: c.sign(p) for p in GRAHAS7 if p in c.lon}
+    if len(signs) < 7:
+        return []
+    bav = bhinnashtakavarga(signs, E.sign_index(c.asc))
+    sav = sarvashtakavarga(bav)
+    approx = '' if c.time_accuracy not in ('within_hour', 'unknown') else (
+        ' (Lagna contribution uses the Moon)' if c.reference == 'Moon' else ' (Lagna contribution approximate)')
+    by_house = {h: sav[c.house_sign(h)] for h in range(1, 13)}
+    strong = sorted(by_house, key=lambda h: -by_house[h])[:3]
+    weak = sorted(by_house, key=lambda h: by_house[h])[:2]
+    dom_txt = []
+    for dom in domains[:3]:
+        h = DOMAINS[dom][0][0]
+        v = by_house[h]
+        dom_txt.append(f"{DOMAINS[dom][2]} ({_ordinal(h)}): {v} — {'strong' if v >= 28 else 'weak' if v < 25 else 'average'}")
+    out = [_f('F-AV-01', 'classical', 'Sarvashtakavarga house strength (BPHS, Ashtakavarga chapters)',
+              'SAV ' + '; '.join(dom_txt) + f". Strongest houses {', '.join(f'{_ordinal(h)} ({by_house[h]})' for h in strong)}; "
+              f"weakest {', '.join(f'{_ordinal(h)} ({by_house[h]})' for h in weak)}{approx}",
+              categories, 0.6, house_based=True)]
+    if E.SWISSEPH_AVAILABLE:
+        pos = E.planet_positions(now)
+        parts = []
+        for p in ('Saturn', 'Jupiter'):
+            sg = E.sign_index(pos[p]['longitude'])
+            b = bav[p][sg]
+            parts.append(f"{p} transits {SIGNS[sg]} with {b} of 8 bindus in its own Ashtakavarga ("
+                         f"{'gives good results' if b >= 4 else 'gives weak results'}) and SAV {sav[sg]}")
+        nxt = [w for w in E.sign_windows('Saturn', set(range(12)) - {E.sign_index(pos['Saturn']['longitude'])},
+                                          now, now + timedelta(days=4 * 365), step_days=5)]
+        if nxt:
+            a, _b, sg = nxt[0]
+            parts.append(f"next Saturn sign {SIGNS[sg]} from ~{_d(a)}: {bav['Saturn'][sg]} bindus")
+        out.append(_f('F-AV-02', 'classical', 'Transit strength by Ashtakavarga bindus (BPHS; 4+ of 8 is favourable)',
+                      '; '.join(parts) + approx, [ALL], 0.6, start=now))
     return out
 
 
@@ -908,6 +1045,7 @@ def evaluate_rules(chart_facts: Dict[str, Any], birth_data: Dict[str, Any], cate
         lambda: rule_navamsa(c), lambda: rule_more_yogas(c), lambda: rule_star_chain(c, domains, cats),
         lambda: rule_moksha(c), lambda: rule_lessons(c), lambda: rule_double_transit(c, now, domains, cats),
         lambda: rule_saturn_gochara(c, now), lambda: rule_nodal_return(c, now),
+        lambda: rule_ashtakavarga(c, now, domains, cats),
     ]
     findings: List[Dict[str, Any]] = []
     for rule in rules:

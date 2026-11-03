@@ -352,7 +352,7 @@ def check_daily_quota_and_reserve(user_id: str, tokens_needed: int) -> Tuple[boo
         return True, daily_limit
 
 
-def update_usage_after_call(user_id: str, tokens_used: int) -> bool:
+def update_usage_after_call(user_id: str, tokens_used: int, quota_key: Optional[str] = None) -> bool:
     """
     Update actual token usage after successful OpenAI call.
 
@@ -391,7 +391,9 @@ def update_usage_after_call(user_id: str, tokens_used: int) -> bool:
             logger.debug("Redis disabled - skipping usage counter update")
         return False
 
-    quota_key = _get_quota_key(user_id)
+    # Settle against the key the reservation was made on (a call that spans
+    # UTC midnight must not credit the next day's counter).
+    quota_key = quota_key or _get_quota_key(user_id)
 
     try:
         # Add actual usage (note: this adds to any reservation already made)

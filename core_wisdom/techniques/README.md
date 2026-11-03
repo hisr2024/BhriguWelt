@@ -36,6 +36,7 @@ The repo files `backend/data/*_principles.yml` and `docs/bhrigu_references.md` c
 |---|---|---|
 | [classical_core.md](classical_core.md) | Lagna and house lords, graha drishti, dignity, parivartana, Vimshottari dasha, bhavat-bhavam, yogas (Pancha Mahapurusha, Gajakesari, Dharma-Karmadhipati, Viparita, Dhana, Chandra yogas incl. Kemadruma) | classical |
 | [jaimini_navamsa.md](jaimini_navamsa.md) | Chara karakas, karakamsha, 12th from karakamsha, navamsa, vargottama, moksha indicators | classical |
+| [ashtakavarga.md](ashtakavarga.md) | Bhinnashtakavarga, Sarvashtakavarga, transit bindus | classical |
 | [gochara.md](gochara.md) | Transits counted from the Moon, Sade Sati, Kantaka and Ashtama Shani, transits over natal points, double transit, nodal return | classical / modern |
 | [bhrigu_bindu.md](bhrigu_bindu.md) | Bhrigu Bindu | tradition-attributed |
 | [bhrigu_chakra_paddhati.md](bhrigu_chakra_paddhati.md) | Yearly house activation | tradition-attributed |

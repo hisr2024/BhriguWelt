@@ -5,7 +5,7 @@ Sources: Jaimini Upadesa Sutras, adhyaya 1 (karakas, karakamsha), the BPHS chapt
 ## Chara karakas — F-KARAKA-01
 - The seven grahas, Sun to Saturn, are ranked by degree within their sign.
 - The highest degree is the Atmakaraka (AK), the next is the Amatyakaraka, and the lowest is the Darakaraka (DK, the spouse significator).
-- The engine uses the 7-karaka scheme. BPHS also gives an 8-karaka scheme that includes Rahu, measured as 30° minus its degree; that scheme would need to be set as an option.
+- The default is the 7-karaka scheme. Set `BHRIGU_KARAKA_SCHEME=8` to use BPHS's 8-karaka scheme, which adds Rahu measured as 30° minus its degree.
 
 ## Navamsa (D9) — F-D9-01, F-D9-02
 - Each sign is split into nine padas of 3°20′. The count runs continuously from Aries, which places:
