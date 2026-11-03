@@ -404,3 +404,22 @@ def test_fast_transits_and_shodhana_on_reference_chart(birth_data):
     fast = next(f for f in findings if f["id"] == "F-GOCHARA-04")
     for planet in ("Sun", "Mars", "Mercury", "Venus", "Rahu"):
         assert planet in fast["finding"]
+
+
+def test_fast_transit_output_details(birth_data):
+    from services.bhrigu_nadi_rules import _dspan
+    findings = evaluate_rules(build_chart_facts(birth_data), birth_data, "predictions", now=NOW, limit=80)
+    fast = next(f for f in findings if f["id"] == "F-GOCHARA-04")
+    # a stay in progress at day 60 shows its real exit, not the horizon
+    assert "2 Jan 2027" not in fast["finding"]
+    # obstructed favourable stays always show the day count
+    assert "mostly obstructed by vedha (" in fast["finding"] or "days obstructed" in fast["finding"] or "favourable" in fast["finding"]
+    assert _dspan(datetime(2027, 1, 3), datetime(2027, 1, 16), 2026) == "3–16 Jan 2027"
+    assert _dspan(datetime(2026, 11, 3), datetime(2026, 11, 16), 2026) == "3–16 Nov"
+    assert _dspan(datetime(2026, 12, 28), datetime(2027, 1, 9), 2026) == "28 Dec–9 Jan 2027"
+
+
+def test_heavy_timing_rules_skipped_for_other_categories(birth_data):
+    findings = evaluate_rules(build_chart_facts(birth_data), birth_data, "karmic_journey", now=NOW, limit=80)
+    ids = {f["id"] for f in findings}
+    assert "F-GOCHARA-04" not in ids and "F-AV-04" not in ids

@@ -42,7 +42,8 @@ Both reductions follow BPHS.
 - **Both signs empty:** equal values become 0; unequal values both drop to the smaller one.
 - **One sign occupied:** if the empty sign is lower it becomes 0; otherwise it is reduced to the occupied sign's value.
 - "Occupied" counts the seven grahas only. The nodes and the Lagna are not counted.
-- Some authors instead reduce an empty sign that is *equal* to the occupied sign to 0. This engine follows the reading also used by PyJHora: equal means unchanged.
+- Some authors instead reduce an empty sign that is *equal* to the occupied sign to 0. This engine treats equal as unchanged, the same reading PyJHora uses for that case.
+- All five sign pairs are reduced in every planet's row, as BPHS describes. PyJHora differs on two points: it reduces only the owning planet's own pair, and it counts the Lagna and the nodes as occupants.
 
 The app reports the reduced bindus for the sign Saturn and Jupiter are transiting. Sodhya pinda (the weighted sum) is **not** computed, because the published rasi multipliers differ between editions (for example, Virgo is 5 or 6).
 
