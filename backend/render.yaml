@@ -15,7 +15,16 @@ services:
       - key: JWT_SECRET_KEY
         generateValue: true
 
-      # OpenAI Configuration
+      # AI provider: Sarvam AI (set SARVAM_API_KEY) or OpenAI (set OPENAI_API_KEY).
+      # With only a Sarvam key, OPENAI_MODEL/OPENAI_BASE_URL below are ignored.
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: SARVAM_MODEL
+        value: sarvam-105b
+      - key: SARVAM_REASONING_EFFORT
+        value: low
+
+      # OpenAI Configuration (only used when OPENAI_API_KEY is set)
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_BASE_URL

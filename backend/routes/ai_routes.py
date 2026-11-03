@@ -6,6 +6,7 @@ Integrates Bhrigu Samhita and Nadi Jyotisha wisdom for authentic Vedic guidance
 from flask import Blueprint, request, jsonify
 from functools import wraps
 import os
+from services.ai_provider import ai_configured
 
 from middleware.sanitizer import RequestSanitizer
 from middleware.ai_constants import PII_FIELDS
@@ -30,7 +31,7 @@ def require_ai_consent(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         # Check if AI is enabled in environment
-        if not os.getenv('OPENAI_API_KEY') and not ai_service.offline_ready:
+        if not ai_configured() and not ai_service.offline_ready:
             return jsonify({
                 'error': 'AI features not configured',
                 'message': 'AI integration is not available'
@@ -331,7 +332,7 @@ def ai_status():
     Check AI service status and wisdom database availability
     No authentication required
     """
-    ai_configured = bool(os.getenv('OPENAI_API_KEY'))
+    ai_is_configured = ai_configured()
 
     # Get wisdom database status
     wisdom_status = {}
@@ -347,8 +348,8 @@ def ai_status():
     return jsonify({
         'status': 'success',
         'data': {
-            'ai_available': ai_configured,
-            'service_operational': ai_configured or wisdom_status.get('modules_available', False),
+            'ai_available': ai_is_configured,
+            'service_operational': ai_is_configured or wisdom_status.get('modules_available', False),
             'wisdom_database': {
                 'available': wisdom_status.get('modules_available', False),
                 'bhrigu_samhita_loaded': wisdom_status.get('bhrigu_samhita_loaded', False),

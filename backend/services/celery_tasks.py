@@ -200,7 +200,8 @@ def generate_daily_insights():
         import os
 
         # Skip if AI not available
-        if not os.getenv('OPENAI_API_KEY'):
+        from services.ai_provider import ai_configured
+        if not ai_configured():
             return {
                 'success': True,
                 'processed_count': 0,

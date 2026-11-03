@@ -10,6 +10,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 import os
+from services.ai_provider import resolve_provider
 import sys
 import json
 import uuid
@@ -62,14 +63,15 @@ def _check_required_env_vars():
             error_lines.append("\nSet these in your .env file or environment configuration.")
             _exit_startup(error_lines)
 
-        # Validate OPENAI_API_KEY format
+        # Validate AI key format (OpenAI keys start 'sk-', Sarvam keys 'sk_')
         openai_key = os.getenv('OPENAI_API_KEY')
-        if openai_key and not openai_key.startswith('sk-'):
-            logger.warning("OPENAI_API_KEY does not start with 'sk-' - this may be invalid")
+        if openai_key and not openai_key.startswith(('sk-', 'sk_')):
+            logger.warning("OPENAI_API_KEY does not look like an OpenAI ('sk-') or Sarvam ('sk_') key")
 
     # Log environment variable status
     env_status = {
-        'OPENAI_API_KEY': '✓ Set' if os.getenv('OPENAI_API_KEY') else '✗ Not set (offline mode only)',
+        'AI_PROVIDER': (lambda p: f"✓ {p.name} ({p.model})" if p.configured else
+                        '✗ No OPENAI_API_KEY or SARVAM_API_KEY (offline mode only)')(resolve_provider()),
         'SECRET_KEY': '✓ Set' if os.getenv('SECRET_KEY') else '⚠ Will generate random key',
         'JWT_SECRET_KEY': '✓ Set' if os.getenv('JWT_SECRET_KEY') else '⚠ Will generate random key',
         'DATABASE_URL': '✓ Set' if os.getenv('DATABASE_URL') else '⚠ Using SQLite default',
