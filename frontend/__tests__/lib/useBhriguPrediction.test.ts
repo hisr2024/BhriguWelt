@@ -27,9 +27,13 @@ Object.defineProperty(global, 'crypto', {
   value: {
     subtle: {
       digest: async (algorithm: string, data: ArrayBuffer) => {
-        // Simple mock hash
+        // Deterministic mock hash derived from the input bytes so the same
+        // profile always hashes identically (cache validation depends on it)
+        const bytes = new Uint8Array(data);
+        let acc = 0;
+        for (const b of bytes) acc = (acc + b) % 256;
         const hashArray = new Uint8Array(32);
-        hashArray.fill(Math.floor(Math.random() * 256));
+        hashArray.fill(acc);
         return hashArray.buffer;
       }
     }
@@ -120,10 +124,13 @@ describe('useBhriguPrediction', () => {
         expect(result.current.prediction).toEqual(mockPrediction);
       });
 
-      // Check that cache was written
-      const cacheKeys = Object.keys(localStorageMock).filter(k =>
-        k.startsWith('bhrigu_prediction_')
-      );
+      // Check that cache was written (enumerate via the storage API — the
+      // mock object's own keys are just its methods)
+      const cacheKeys: string[] = [];
+      for (let i = 0; i < localStorageMock.length; i++) {
+        const key = localStorageMock.key(i);
+        if (key && key.startsWith('bhrigu_prediction_')) cacheKeys.push(key);
+      }
       expect(cacheKeys.length).toBeGreaterThan(0);
     });
 
@@ -134,8 +141,8 @@ describe('useBhriguPrediction', () => {
         message: 'Success',
       });
 
-      // First render - fetch from API
-      const { result, rerender } = renderHook(() =>
+      // First mount - fetch from API
+      const first = renderHook(() =>
         useBhriguPrediction({
           category: 'career',
           fetchPrediction: mockFetchPrediction,
@@ -144,16 +151,23 @@ describe('useBhriguPrediction', () => {
       );
 
       await waitFor(() => {
-        expect(result.current.prediction).toEqual(mockPrediction);
+        expect(first.result.current.prediction).toEqual(mockPrediction);
       });
 
       expect(mockFetchPrediction).toHaveBeenCalledTimes(1);
+      first.unmount();
 
-      // Unmount and remount - should use cache
-      rerender();
+      // Fresh mount - should serve from cache without refetching
+      const second = renderHook(() =>
+        useBhriguPrediction({
+          category: 'career',
+          fetchPrediction: mockFetchPrediction,
+          profile: mockProfile,
+        })
+      );
 
       await waitFor(() => {
-        expect(result.current.fromCache).toBe(true);
+        expect(second.result.current.fromCache).toBe(true);
       });
 
       // Should not fetch again
@@ -331,7 +345,7 @@ describe('useBhriguPrediction', () => {
 
       // Force regenerate
       await act(async () => {
-        await result.current.regenerate();
+        await result.current.loadPrediction(true);
       });
 
       await waitFor(() => {

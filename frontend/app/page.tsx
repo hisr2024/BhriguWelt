@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import GenZButton from './components/GenZButton';
 import GenZCard, { GenZCardGradient } from './components/GenZCard';
-import GenZBadge, { StatusBadge } from './components/GenZBadge';
+import GenZBadge from './components/GenZBadge';
 import BottomNav from './components/BottomNav';
 import HoroscopeBricks from './components/HoroscopeBricks';
 import useFeatureFlags from '../hooks/useFeatureFlags';
@@ -35,11 +35,11 @@ const OnboardingTutorial = dynamic(() => import('../components/OnboardingTutoria
 });
 
 export default function HomePage() {
-  const [activeFeature, setActiveFeature] = useState(0);
+  const [, setActiveFeature] = useState(0);
   const [email, setEmail] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
-  const { advancedControls } = useFeatureFlags();
+  useFeatureFlags();
   const { scrollYProgress } = useScroll();
   const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
   const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.8]);

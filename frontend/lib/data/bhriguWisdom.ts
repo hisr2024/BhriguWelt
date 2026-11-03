@@ -504,7 +504,7 @@ export function getBhriguWisdom(
   }
 
   // Fallback to Aries if sign not found
-  return BHRIGU_WISDOM.Aries[timeframe];
+  return BHRIGU_WISDOM.Aries![timeframe];
 }
 
 /**

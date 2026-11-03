@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Circle, Star, Moon, Sun, Sparkles, Info,
   ChevronLeft, ChevronRight, ZoomIn, ZoomOut
 } from 'lucide-react';
 
@@ -138,17 +137,6 @@ export default function BirthChartVisualization({
     'Ketu': '#10B981',
   };
 
-  const planetIcons: Record<string, any> = {
-    'Sun': Sun,
-    'Moon': Moon,
-    'Mercury': Sparkles,
-    'Venus': Star,
-    'Mars': Circle,
-    'Jupiter': Circle,
-    'Saturn': Circle,
-    'Rahu': Circle,
-    'Ketu': Circle,
-  };
 
   // Calculate planet positions on the chart
   const getPlanetPosition = (planet: Planet) => {
@@ -322,15 +310,14 @@ export default function BirthChartVisualization({
                 dominantBaseline="middle"
                 opacity="0.8"
               >
-                {zodiacSigns[(house - 1) % 12].slice(0, 3)}
+                {zodiacSigns[(house - 1) % 12]?.slice(0, 3)}
               </text>
             </g>
           ))}
 
           {/* Planets */}
-          {normalizedChartData.planets && normalizedChartData.planets.map((planet, index) => {
+          {normalizedChartData.planets && normalizedChartData.planets.map((planet, _index) => {
             const pos = getPlanetPosition(planet);
-            const PlanetIcon = planetIcons[planet.name] || Circle;
 
             return (
               <g key={planet.name}>

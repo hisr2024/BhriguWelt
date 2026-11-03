@@ -95,7 +95,6 @@ export default function ProfileCreationProgress({ progress, error, onRetry }: Pr
         {steps.map((step, index) => {
           const isComplete = index < currentStepIndex || progress.step === 'complete';
           const isCurrent = index === currentStepIndex && progress.step !== 'complete';
-          const isPending = index > currentStepIndex && progress.step !== 'complete';
 
           return (
             <motion.div

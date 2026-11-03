@@ -558,9 +558,12 @@ def client():
             response = client.get('/health')
             assert response.status_code == 200
     """
-    # Import here to avoid circular imports
+    # Import here to avoid circular imports. Use the 'backend.' package path —
+    # a bare 'from app import app' can resolve to the repo-root 'app/' package
+    # (the FastAPI service) depending on sys.path order, silently yielding the
+    # Mock fallback below.
     try:
-        from app import app
+        from backend.app import app
         app.config['TESTING'] = True
         app.config['WTF_CSRF_ENABLED'] = False
         with app.test_client() as test_client:
