@@ -13,11 +13,20 @@ import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { useEncryptedStorage } from '@/lib/hooks/useEncryptedStorage';
 import type { Profile } from '@/lib/types';
+import { GenderField, BirthTimeAccuracyField } from '@/app/components/BirthPrecisionFields';
 
 export default function ProfilePage() {
   const router = useRouter();
   const { lock } = useEncryption();
-  const { getAllProfiles } = useEncryptedStorage();
+  const { getAllProfiles, updateProfileFields } = useEncryptedStorage();
+
+  const savePrecision = async (updates: Partial<Profile>) => {
+    if (!currentProfile) return;
+    setCurrentProfile({ ...currentProfile, ...updates });
+    if (currentProfile.id !== undefined) {
+      await updateProfileFields(currentProfile.id, updates);
+    }
+  };
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
@@ -183,6 +192,25 @@ export default function ProfilePage() {
                     <p className="text-white font-medium">{currentProfile.placeOfBirth}</p>
                   </div>
                 </div>
+              </div>
+            </GenZCard>
+          )}
+
+          {currentProfile && (
+            <GenZCard variant="glass">
+              <h2 className="text-xl font-display font-bold text-white mb-1">Reading precision</h2>
+              <p className="text-sm text-white/60 mb-5">
+                Optional. These make house-based and Nadi statements more reliable.
+              </p>
+              <div className="space-y-6">
+                <BirthTimeAccuracyField
+                  value={currentProfile.birthTimeAccuracy}
+                  onChange={(birthTimeAccuracy) => savePrecision({ birthTimeAccuracy })}
+                />
+                <GenderField
+                  value={currentProfile.gender}
+                  onChange={(gender) => savePrecision({ gender })}
+                />
               </div>
             </GenZCard>
           )}

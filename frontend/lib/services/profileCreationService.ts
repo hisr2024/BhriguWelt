@@ -318,6 +318,8 @@ export async function createProfile(
       placeOfBirth: data.place_of_birth,
       latitude: finalLatitude,
       longitude: finalLongitude,
+      gender: data.gender,
+      birthTimeAccuracy: data.birth_time_accuracy,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

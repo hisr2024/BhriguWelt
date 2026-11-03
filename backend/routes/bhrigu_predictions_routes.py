@@ -165,11 +165,32 @@ def _stream_sections(category_key: str, prediction: dict, from_cache: bool):
     })
 
 
+ALLOWED_GENDERS = {'male', 'female', 'other'}
+ALLOWED_TIME_ACCURACY = {'exact', 'within_15', 'within_hour', 'unknown'}
+
+
 def _sanitize_question_field(data: dict):
-    """Sanitize the question field in the request data"""
-    if data and 'question' in data and data['question']:
+    """Sanitize free-text and enum fields in the request data.
+
+    Also normalises the optional precision inputs: ``gender`` (selects the
+    Bhrigu Nandi Nadi jiva karaka) and ``birth_time_accuracy`` (weights
+    house-based rules). Unknown values are dropped, never guessed.
+    """
+    if not data:
+        return
+    if 'question' in data and data['question']:
         from utils.validators import sanitizeQuestion
         data['question'] = sanitizeQuestion(data['question'])
+    gender = str(data.get('gender') or '').strip().lower()
+    if gender in ALLOWED_GENDERS:
+        data['gender'] = gender
+    else:
+        data.pop('gender', None)
+    accuracy = str(data.get('birth_time_accuracy') or '').strip().lower()
+    if accuracy in ALLOWED_TIME_ACCURACY:
+        data['birth_time_accuracy'] = accuracy
+    else:
+        data.pop('birth_time_accuracy', None)
 
 
 def validate_chart_inputs(data: dict) -> Optional[str]:

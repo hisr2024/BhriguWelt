@@ -1673,7 +1673,18 @@ Return JSON:
    "guidance": ["3 short specific actions"],
    "basis": ["rule IDs / facts used"]}}}}}}
 
-Rules: <=110 words per section; never repeat a sentence across sections; omit a section key only if no listed fact supports it.{self._language_line(birth_data)}"""
+Rules: <=110 words per section; never repeat a sentence across sections; omit a section key only if no listed fact supports it.{self._accuracy_line(birth_data)}{self._language_line(birth_data)}"""
+
+    @staticmethod
+    def _accuracy_line(birth_data: Dict[str, Any]) -> str:
+        acc = birth_data.get('birth_time_accuracy')
+        if acc == 'unknown':
+            return ("\nBirth time is UNKNOWN: houses are counted from the Moon (Chandra Lagna). "
+                    "Say 'from your Moon' instead of naming an Ascendant; give dates only from dasha/transit findings.")
+        if acc == 'within_hour':
+            return ("\nBirth time is approximate (±1 hour): phrase house-based statements as tendencies "
+                    "and lead with dasha/transit timing, which is less time-sensitive.")
+        return ""
 
     @staticmethod
     def _language_line(birth_data: Dict[str, Any]) -> str:

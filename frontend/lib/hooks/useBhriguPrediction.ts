@@ -170,6 +170,8 @@ const getProfileHash = async (profile: Profile) => {
     placeOfBirth: profile.placeOfBirth ?? '',
     latitude: profile.latitude ?? null,
     longitude: profile.longitude ?? null,
+    gender: profile.gender ?? null,
+    birthTimeAccuracy: profile.birthTimeAccuracy ?? null,
   });
   const encoder = new TextEncoder();
   const data = encoder.encode(profilePayload);
@@ -254,6 +256,8 @@ export const useBhriguPrediction = ({
         longitude: profile.longitude,
         question: currentQuestion || undefined,
         language: currentLanguage,
+        gender: profile.gender,
+        birth_time_accuracy: profile.birthTimeAccuracy,
         force_regenerate: forceRegenerate
       };
 

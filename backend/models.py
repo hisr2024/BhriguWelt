@@ -108,6 +108,11 @@ class BhriguPredictionCache(db.Model):
             language = str(birth_data.get('language') or 'en').lower()
             if language not in ('en', 'english'):
                 optional_parts.append(f"lang:{language}")
+            # Precision inputs change the reading (jiva karaka, house weighting).
+            if birth_data.get('gender') in ('male', 'female'):
+                optional_parts.append(f"g:{birth_data['gender']}")
+            if birth_data.get('birth_time_accuracy') in ('within_15', 'within_hour', 'unknown'):
+                optional_parts.append(f"acc:{birth_data['birth_time_accuracy']}")
         data_parts = [part for part in base_parts if part not in (None, '')]
         data_parts.extend(part for part in optional_parts if part not in (None, ''))
         data_parts.append(version)

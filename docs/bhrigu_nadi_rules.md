@@ -48,7 +48,19 @@ Weights (0–1) are ranking priors. They are never shown as percentages or proba
 | F-BB-01 | tradition-attributed | Bhrigu Bindu (Rahu→Moon midpoint); Saturn/Jupiter conjunctions with it over 10 years | ✔ |
 | F-BCP-01 | tradition-attributed | Bhrigu Chakra Paddhati: running year N activates house ((N−1) mod 12)+1 | ✔ |
 | F-BNN-01 | tradition-attributed | Jupiter progressed one sign per year, and the natal planets it links | ✔ |
-| F-SENS-01 | modern | Re-computes the chart at ±15/30 min; flags a Lagna or Moon-sign change | – |
+| F-SENS-01 | modern | Re-computes the chart at ±15/30 min (±60 if approximate); flags a Lagna or Moon-sign change. If the time is unknown, checks whether the Moon's nakshatra changes that day | – |
+| F-D9-01 / 02 | classical | Navamsa: vargottama planets; Venus and 7th lord in D9 | – |
+| F-KARAKAMSHA-01 | classical | Atmakaraka's navamsa sign, its occupants, 12th from it (Jaimini 1) | – |
+| F-YOGA-02..05 | classical | Dharma-Karmadhipati, Viparita raja, Sunapha / Anapha / Durudhara / Kemadruma, Dhana | – |
+| F-STAR-01 | modern | Domain lord → star lord → houses it occupies and owns | – |
+| F-MOKSHA-01 | classical | Moksha indicators that are actually present (no counts, no percentages) | – |
+| F-LESSON-01 | modern | Lesson triggers from `data/bhrigu_karmic_soul_journey_model.json` | – |
+| F-TRANSIT-02 | modern | Double transit of Jupiter + Saturn on a domain house or its lord | ✔ |
+| F-GOCHARA-02 / 03 | classical | Saturn from Moon; Kantaka (4th) and Ashtama (8th) Shani windows (Phaladeepika ch. 26) | ✔ |
+| F-NODES-02 | modern | Nodal return of Rahu to its natal degree | ✔ |
+| F-WINDOW-01 | modern | Ranks up to three distinct windows where dated rules overlap | ✔ |
+
+Sources and provenance for every technique: `core_wisdom/techniques/`.
 
 ## Reference chart (unit-tested)
 
@@ -61,9 +73,16 @@ Weights (0–1) are ranking priors. They are never shown as percentages or proba
 
 See `backend/tests/test_bhrigu_nadi_rules.py`.
 
-## Still open (recommended next)
+## Precision inputs
 
-- Add optional `gender` and `birth_time_accuracy` fields to the birth form. F-BNN-02 only runs when gender is given.
-- Add D9 (navamsa) for karakamsha, and the double transit (Jupiter and Saturn both influencing a house) as a contributor to F-DASHA-03.
-- `vedic_yogas_calculator.py` still marks 27 yogas active regardless of the chart, so it should not be used for readings. F-YOGA-01 replaces it.
-- `backend/data/*_principles.yml` and `docs/bhrigu_references.md` contain unsourced or invented folio content. Replace them with sourced texts.
+- **`gender`** (`male` / `female` / `other`): selects the Bhrigu Nandi Nadi jiva karaka (F-BNN-02). With `other`, the rule is skipped.
+- **`birth_time_accuracy`** (`exact` / `within_15` / `within_hour` / `unknown`): down-weights and tags house-based rules. With `unknown`, houses are counted from the Moon (Chandra Lagna). See `core_wisdom/techniques/birth_time.md`.
+
+Both are optional fields on the get-started form and the profile page. Both are part of the server cache key.
+
+## Still open
+
+- Vedha refinements for gochara, and Ashtakavarga bindus for transit strength (classical, BPHS).
+- An option for the 8-karaka scheme (Rahu as a karaka).
+- `vedic_yogas_calculator.py` still marks 27 yogas active regardless of the chart, so don't use it for readings.
+- `backend/data/*_principles.yml` and `docs/bhrigu_references.md` contain folio numbers we could not verify.
