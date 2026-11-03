@@ -143,8 +143,10 @@ def vedha_obstructers(planet: str, moon_sign: int, transit_signs: Dict[str, int]
     if house not in table:
         return False, []
     vedha_sign = (moon_sign + table[house] - 1) % 12
+    # The transiting Moon changes sign every ~2.5 days, so it is too brief to
+    # obstruct a slow planet's months-long transit; nodes are not used.
     blockers = [q for q, s in transit_signs.items()
-                if q != planet and s == vedha_sign and q not in ('Rahu', 'Ketu')
+                if q != planet and s == vedha_sign and q not in ('Rahu', 'Ketu', 'Moon')
                 and (planet, q) not in VEDHA_EXEMPT]
     return True, blockers
 
@@ -555,7 +557,8 @@ def rule_transits(c: Chart, now: datetime) -> List[Dict[str, Any]]:
         transit_signs = {p: E.sign_index(v['longitude']) for p, v in E.planet_positions(now).items()}
         good, blockers = vedha_obstructers('Jupiter', ms, transit_signs)
         if good and blockers:
-            tone = f"favourable house, but obstructed by {', '.join(blockers)} in the vedha house (Phaladeepika ch. 26)"
+            tone = (f"favourable house, but as of {_d(now)} obstructed by {', '.join(blockers)} "
+                    f"in the vedha house (Phaladeepika ch. 26) — the obstruction lifts when they move on")
         out.append(_f('F-GOCHARA-01', 'classical', 'Jupiter transit from Moon with vedha (Phaladeepika ch. 26)',
                       f"Jupiter in {SIGNS[j]} = {_ordinal(rel)} from the Moon — {tone} for growth/support",
                       [ALL], 0.5, timing=f"until ~{_d(until)}", start=now))
@@ -884,7 +887,8 @@ def rule_saturn_gochara(c: Chart, now: datetime) -> List[Dict[str, Any]]:
     tone = 'supportive' if rel in (3, 6, 11) else 'demanding'
     good, blockers = vedha_obstructers('Saturn', ms, transit_signs)
     if good and blockers:
-        tone = f"supportive house, but obstructed by {', '.join(blockers)} in the vedha house"
+        tone = (f"supportive house, but as of {_d(now)} obstructed by {', '.join(blockers)} in the vedha house "
+                "— the obstruction lifts when they move on")
     out = [_f('F-GOCHARA-02', 'classical', 'Saturn transit results by house from Moon (Phaladeepika ch. 26)',
               f"Saturn in {SIGNS[sat]} = {_ordinal(rel)} from the Moon — {tone} period for effort and results",
               [ALL], 0.5, start=now)]
@@ -907,7 +911,8 @@ def rule_ashtakavarga(c: Chart, now: datetime, domains: List[str], categories: L
     bav = bhinnashtakavarga(signs, E.sign_index(c.asc))
     sav = sarvashtakavarga(bav)
     approx = '' if c.time_accuracy not in ('within_hour', 'unknown') else (
-        ' (Lagna contribution uses the Moon)' if c.reference == 'Moon' else ' (Lagna contribution approximate)')
+        ' (houses and the Lagna contribution counted from the Moon)' if c.reference == 'Moon'
+        else ' (birth time ±1 h: the Lagna sign, and so these house numbers, may shift)')
     by_house = {h: sav[c.house_sign(h)] for h in range(1, 13)}
     strong = sorted(by_house, key=lambda h: -by_house[h])[:3]
     weak = sorted(by_house, key=lambda h: by_house[h])[:2]

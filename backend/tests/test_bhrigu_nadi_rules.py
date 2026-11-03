@@ -306,11 +306,11 @@ def test_client_id_header_sets_quota_identity():
     with app.test_request_context(headers={"X-Client-Id": "abcd1234-ef56"}):
         data = {"client_id": "spoofed"}
         _sanitize_question_field(data)
-        assert data["client_id"] == "client:abcd1234-ef56"
+        assert data["client_id"].split("@")[0] == "client:abcd1234-ef56"
     with app.test_request_context(headers={"X-Client-Id": "bad id; drop"}):
         data = {}
         _sanitize_question_field(data)
-        assert "client_id" not in data
+        assert not data.get("client_id", "").startswith("client:")
 
 
 def test_quota_settles_on_reserved_key(monkeypatch):
@@ -324,3 +324,34 @@ def test_quota_settles_on_reserved_key(monkeypatch):
     monkeypatch.setattr(ai_quota, "_get_redis_client", lambda: FakeRedis())
     assert ai_quota.update_usage_after_call("u1", -50, quota_key="ai_usage:u1:2026-11-03")
     assert calls == [("ai_usage:u1:2026-11-03", -50)]
+
+
+def test_layered_quota_blocks_rotating_device_ids(monkeypatch):
+    from services import ai_quota
+    monkeypatch.setattr(ai_quota, "_get_redis_client", lambda: None)
+    ai_quota._memory_quota_store.clear()
+    monkeypatch.setenv("USER_DAILY_TOKEN_LIMIT", "1000")
+    monkeypatch.setenv("ANON_IP_DAILY_TOKEN_LIMIT", "1500")
+    ai_quota.reserve_for_identities("client:aaaaaaaa@ip:9.9.9.9", 900)
+    with pytest.raises(ai_quota.QuotaExceededError):
+        # a fresh device id from the same network hits the network ceiling
+        ai_quota.reserve_for_identities("client:bbbbbbbb@ip:9.9.9.9", 900)
+    # the failed attempt rolled back its device reservation
+    assert ai_quota._memory_quota_store[ai_quota._get_quota_key("client:bbbbbbbb")] == 0
+
+
+def test_identities_are_masked_in_logs():
+    from services.ai_quota import mask_identity
+    masked = mask_identity("client:abcd1234-ef56@ip:1.2.3.4")
+    assert "abcd1234" not in masked and "1.2.3.4" not in masked
+    assert masked.startswith("client:") and "@ip:" in masked
+
+
+def test_comprehensive_route_ignores_body_client_id():
+    from flask import Flask
+    from routes.bhrigu_predictions_routes import _sanitize_question_field
+    app = Flask(__name__)
+    with app.test_request_context(headers={"X-Client-Id": "abcd1234-real"}, environ_base={"REMOTE_ADDR": "5.6.7.8"}):
+        data = {"client_id": "victim-or-random"}
+        _sanitize_question_field(data)
+        assert data["client_id"] == "client:abcd1234-real@ip:5.6.7.8"

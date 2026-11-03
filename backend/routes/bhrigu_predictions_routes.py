@@ -196,12 +196,18 @@ def _sanitize_question_field(data: dict):
     # Per-install quota identity (X-Client-Id header). Never taken from the
     # JSON body; only a bounded token of [A-Za-z0-9-] is accepted.
     data.pop('client_id', None)
-    try:
-        header_id = request.headers.get('X-Client-Id', '') if has_request_context() else ''
-    except RuntimeError:
-        header_id = ''
+    if not has_request_context():
+        return
+    header_id = request.headers.get('X-Client-Id', '')
+    route = request.access_route or [request.remote_addr or '']
+    ip = (route[0] or '').strip()[:64]
+    ids = []
     if header_id and re.fullmatch(r'[A-Za-z0-9-]{8,64}', header_id):
-        data['client_id'] = f"client:{header_id}"
+        ids.append(f"client:{header_id}")
+    if ip:
+        ids.append(f"ip:{ip}")  # per-network ceiling behind rotating device ids
+    if ids:
+        data['client_id'] = '@'.join(ids)
 
 
 def validate_chart_inputs(data: dict) -> Optional[str]:
@@ -1034,6 +1040,9 @@ def comprehensive_prediction():
     """
     try:
         data = request.get_json()
+        if not data:
+            return error_response("Invalid request payload", 400)
+        _sanitize_question_field(data)
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
         if not calculator and not cached_birth_data:

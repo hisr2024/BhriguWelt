@@ -23,7 +23,8 @@ from services.ai_quota import (
     estimate_cost,
     check_daily_quota_and_reserve,
     update_usage_after_call,
-    _get_quota_key,
+    reserve_for_identities,
+    mask_identity,
     sanitize_log,
     QuotaExceededError,
     CostLimitExceededError
@@ -604,15 +605,14 @@ Your predictions must:
 
         # Check daily quota and reserve tokens
         user_id = user_id or 'anonymous'
-        reserved_quota_key = _get_quota_key(user_id)
         try:
-            allowed, remaining = check_daily_quota_and_reserve(user_id, total_tokens_estimated)
+            remaining, reserved_quota_keys = reserve_for_identities(user_id, total_tokens_estimated)
             logger.info(
-                f"Quota check passed for user {sanitize_log(user_id)}: "
+                f"Quota check passed for user {mask_identity(user_id)}: "
                 f"estimated_tokens={total_tokens_estimated}, remaining={remaining}"
             )
         except QuotaExceededError as e:
-            logger.warning(f"Quota exceeded for user {sanitize_log(user_id)}: {str(e)}")
+            logger.warning(f"Quota exceeded for user {mask_identity(user_id)}: {str(e)}")
             raise  # Re-raise to be caught by caller
 
         # ==================== END QUOTA CHECKS ====================
@@ -655,7 +655,8 @@ Your predictions must:
                 # actual on top double-charged every call (~2x quota burn).
                 usage_delta = actual_total_tokens - total_tokens_estimated
                 if usage_delta:
-                    update_usage_after_call(user_id, usage_delta, quota_key=reserved_quota_key)
+                    for quota_key in reserved_quota_keys:
+                        update_usage_after_call(user_id, usage_delta, quota_key=quota_key)
             else:
                 # No usage data: the reservation already stands as the charge.
                 logger.warning("No usage data in OpenAI response - keeping reserved estimate")

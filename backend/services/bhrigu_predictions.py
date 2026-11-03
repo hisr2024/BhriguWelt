@@ -1386,11 +1386,13 @@ Actionable Guidance:
         
         # Add complete analysis synthesis for appropriate categories
         if category in ['past_lives', 'future_lives', 'karmic_remedies', 'relationships']:
-            result['complete_analysis'] = self._generate_complete_analysis(result, category)
+            result['complete_analysis'] = self._generate_complete_analysis(
+                result, category, user_id=birth_data.get('client_id'))
         
         return result
     
-    def _generate_complete_analysis(self, section_result: Dict[str, Any], category: str) -> str:
+    def _generate_complete_analysis(self, section_result: Dict[str, Any], category: str,
+                                    user_id: Optional[str] = None) -> str:
         """
         Generate a synthesized complete analysis that integrates all section content
         
@@ -1421,7 +1423,8 @@ Actionable Guidance:
         """
         
         try:
-            synthesis = self.openai_service.generate_prediction(synthesis_prompt, {})
+            synthesis = self.openai_service.generate_prediction(
+                synthesis_prompt, {}, user_id=user_id, allow_fallback=not self.strict_precision)
             if not synthesis or not synthesis.strip():
                 raise ValueError("Empty synthesis response")
             return synthesis

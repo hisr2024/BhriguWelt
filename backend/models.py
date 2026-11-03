@@ -5,6 +5,7 @@ Handles caching and storage of predictions and user data
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import json
+import os
 from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -51,8 +52,10 @@ class BhriguPredictionCache(db.Model):
     confidence_score = db.Column(db.Float, default=0.0)
     user_rating = db.Column(db.Integer)  # 1-5 stars if user rates
 
-    HASH_VERSION_CURRENT = 'v3'
-    HASH_VERSION_FALLBACKS = ('v2',)
+    # v4: readings now include Ashtakavarga/vedha/precision inputs; older
+    # entries are never served (no fallbacks).
+    HASH_VERSION_CURRENT = 'v4'
+    HASH_VERSION_FALLBACKS = ()
 
     def __repr__(self):
         return f'<BhriguPredictionCache {self.id}: {self.category} - {self.zodiac_sign}>'
@@ -116,6 +119,8 @@ class BhriguPredictionCache(db.Model):
             accuracy = str(birth_data.get('birth_time_accuracy') or '').strip().lower()
             if accuracy in ('within_15', 'within_hour', 'unknown'):
                 optional_parts.append(f"acc:{accuracy}")
+            if os.getenv('BHRIGU_KARAKA_SCHEME', '7').strip() == '8':
+                optional_parts.append("ks:8")
         data_parts = [part for part in base_parts if part not in (None, '')]
         data_parts.extend(part for part in optional_parts if part not in (None, ''))
         data_parts.append(version)
