@@ -3,9 +3,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  TrendingUp, TrendingDown, Target, Heart, Brain, Sparkles,
+  TrendingUp, TrendingDown, Target, Heart, Sparkles,
   Star, Moon, Sun, Zap, Activity, BarChart3, PieChart, LineChart,
-  ArrowUp, ArrowDown, Info, Eye, EyeOff, Download, RefreshCw
+  ArrowUp, Info, Eye, EyeOff, Download, RefreshCw
 } from 'lucide-react';
 import GenZCard from './GenZCard';
 import GenZBadge from './GenZBadge';

@@ -1,22 +1,21 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useLayoutEffect, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp, Clock, Star, Shield, Sparkles, Code } from 'lucide-react';
+import { Loader2, RefreshCw, Download, Share2, BookOpen, ChevronDown, ChevronUp, Clock, Star, Shield, Sparkles } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
+import type { Profile, BirthDetails, PredictionResult } from '@/lib/types';
 import { getCurrentLanguage, setLanguage as setLanguagePreference, type Language } from '@/lib/copy';
 import { tLocale } from '@/lib/locales';
 import { Accordion } from '@/app/components/ui/Accordion';
-import { AccordionItem } from '@/app/components/ui/AccordionItem';
-import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { deleteItem, getAllItems, getItem, setItem, STORES } from '@/lib/storage';
 import { useBhriguPrediction } from '@/lib/hooks/useBhriguPrediction';
 import useFeatureFlags from '@/hooks/useFeatureFlags';
-import { getSectionIcon, SectionIcon } from '@/lib/sectionIcons';
+import { SectionIcon } from '@/lib/sectionIcons';
 import { parsePredictionResponse, type ParsedPrediction, type PredictionSection as ParsedSection } from '@/lib/predictionParser';
 import { MarkdownRenderer } from '@/app/components/MarkdownRenderer';
+import { ReadingView, isStructuredReading, type StructuredReading } from '@/app/components/predictions/ReadingView';
 
 const SECTION_LANGUAGES: Language[] = ['en', 'hi'];
 
@@ -148,104 +147,10 @@ const COLOR_CLASSES: Record<string, { border: string; hover: string; accent: str
 
 // Default color for sections without a specific color mapping
 const DEFAULT_COLOR = 'cyan';
-const SKELETON_LINES = 5;
-const STREAM_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const LEGACY_UA_TOKENS = ['MSIE', 'Trident/', 'Edge/'];
-
-const isLegacyBrowser = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  if (!('Worker' in window)) return true;
-  const ua = navigator.userAgent || '';
-  return LEGACY_UA_TOKENS.some(token => ua.includes(token));
-};
-
-const isAlphaNumeric = (char: string): boolean => {
-  const code = char.charCodeAt(0);
-  return (
-    (code >= 48 && code <= 57) ||
-    (code >= 97 && code <= 122) ||
-    (code >= 65 && code <= 90)
-  );
-};
-
-const normalizeHeading = (value: string): string => {
-  let output = '';
-  let lastWasSpace = false;
-
-  for (const char of value) {
-    if (isAlphaNumeric(char)) {
-      output += char.toLowerCase();
-      lastWasSpace = false;
-    } else if (!lastWasSpace) {
-      output += ' ';
-      lastWasSpace = true;
-    }
-  }
-
-  return output.trim();
-};
-
-const isNumberedHeader = (line: string): boolean => {
-  let index = 0;
-  while (index < line.length && line[index] >= '0' && line[index] <= '9') {
-    index += 1;
-  }
-  if (index === 0) return false;
-  const nextChar = line[index];
-  return nextChar === '.' || nextChar === ')';
-};
-
-const stripHeaderMarkers = (line: string): string => {
-  let cleaned = line.trim();
-
-  while (cleaned.startsWith('#')) {
-    cleaned = cleaned.slice(1).trim();
-  }
-
-  if (cleaned.startsWith('**') && cleaned.endsWith('**') && cleaned.length > 4) {
-    cleaned = cleaned.slice(2, cleaned.length - 2).trim();
-  }
-
-  if (isNumberedHeader(cleaned)) {
-    let index = 0;
-    while (index < cleaned.length && cleaned[index] >= '0' && cleaned[index] <= '9') {
-      index += 1;
-    }
-    if (cleaned[index] === '.' || cleaned[index] === ')') {
-      cleaned = cleaned.slice(index + 1).trim();
-    }
-  }
-
-  if (cleaned.endsWith(':')) {
-    cleaned = cleaned.slice(0, -1).trim();
-  }
-
-  return cleaned;
-};
-
-const isHeaderLine = (line: string): boolean => {
-  const trimmed = line.trim();
-  if (!trimmed) return false;
-  if (trimmed.startsWith('#')) return true;
-  if (trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length > 4) return true;
-  if (isNumberedHeader(trimmed)) return true;
-  if (trimmed.endsWith(':')) {
-    const words = trimmed.split(' ').filter(Boolean).length;
-    return words <= 6;
-  }
-  return false;
-};
 
 // Helper function to normalize category keys
 const normalizeCategoryKey = (category: string): string => {
   return category?.toLowerCase().replace(/[^a-z0-9-]/g, '-') || '';
-};
-
-type AnalysisWorkerResponse = {
-  id: number;
-  sections: Record<string, string>;
-  error?: string;
-  fromCache?: boolean;
 };
 
 interface BhriguPredictionViewProps {
@@ -259,13 +164,6 @@ interface BhriguPredictionViewProps {
   profile: Profile | null;
 }
 
-type PredictionRequestOptions = {
-  forceRegenerate?: boolean;
-  profileHash?: string;
-  questionOverride?: string;
-  skipQueue?: boolean;
-};
-
 type QueuedPredictionRequest = {
   id: number;
   question: string;
@@ -274,11 +172,6 @@ type QueuedPredictionRequest = {
 };
 
 const getProfileHashKey = (profile: Profile) => `${PROFILE_HASH_PREFIX}${profile.id ?? 'current'}`;
-
-const getPredictionCacheKey = (profile: Profile, category: string, question: string, language: Language) => {
-  const questionKey = question.trim() === '' ? 'default' : encodeURIComponent(question.trim());
-  return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${language}_${questionKey}`;
-};
 
 const clearCachedPredictions = async (profile: Profile, encryptionKey: CryptoKey) => {
   const prefix = `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_`;
@@ -459,38 +352,6 @@ const extractTiming = (prediction: any): string => {
   return 'Timing details available in full analysis below';
 };
 
-/**
- * Filter sections based on view mode (layman vs astrologer)
- * Layman mode hides technical astrological sections
- */
-const filterSectionsByViewMode = (
-  sections: CategorySectionConfig[],
-  viewMode: 'layman' | 'astrologer'
-): CategorySectionConfig[] => {
-  if (viewMode === 'astrologer') {
-    return sections; // Show all sections for astrologer mode
-  }
-
-  // Filter out technical sections for layman mode
-  const technicalKeywords = [
-    'technical',
-    'planetary_combinations',
-    'dosha_identification',
-    'ashtakavarga',
-    'bhava_analysis',
-    'dasha_analysis',
-    'transit_analysis',
-    'yogas',
-    'divisional_charts',
-    'nakshatra_lord'
-  ];
-
-  return sections.filter(section => {
-    const sectionKey = section.key.toLowerCase();
-    return !technicalKeywords.some(keyword => sectionKey.includes(keyword));
-  });
-};
-
 export default function BhriguPredictionView({
   category,
   title,
@@ -527,8 +388,6 @@ export default function BhriguPredictionView({
   // ═══════════════════════════════════════════════════════════════════════════
   // 📂 SECTION STATE
   // ═══════════════════════════════════════════════════════════════════════════
-  const [expandedOnce, setExpandedOnce] = useState<Record<string, boolean>>({});
-  const [expandingSections, setExpandingSections] = useState<Record<string, boolean>>({});
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const expandedRef = useRef<Set<string>>(new Set());
 
@@ -538,7 +397,7 @@ export default function BhriguPredictionView({
   const [cacheTimestamp, setCacheTimestamp] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(false);
   const [isLowEndDevice, setIsLowEndDevice] = useState(false);
-  const [streaming, setStreaming] = useState(false);
+  const [streaming] = useState(false);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 📊 VIEW MODE STATE (Layman vs Astrologer)
@@ -552,7 +411,7 @@ export default function BhriguPredictionView({
     }
     return 'layman';
   });
-  const [showTechnicalDetails, setShowTechnicalDetails] = useState<boolean>(false);
+  const [, setShowTechnicalDetails] = useState<boolean>(false);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 🔧 CONTEXT & ENCRYPTION
@@ -561,15 +420,9 @@ export default function BhriguPredictionView({
 
   const queuedRequests: QueuedPredictionRequest[] = [];
 
-  const workerRef = useRef<Worker | null>(null);
-  const workerRequestId = useRef(0);
-  const expandingTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
-  const queuedRequestsRef = useRef<QueuedPredictionRequest[]>([]);
-  const requestIdRef = useRef(0);
-  const requestInFlightRef = useRef(false);
   const touchStartTime = useRef<number>(0); // Track touch duration to distinguish tap from scroll
 
-  const { debugUI } = useFeatureFlags();
+  useFeatureFlags();
   const searchParams = useSearchParams();
   const [language, setLanguage] = useState<Language>(getCurrentLanguage());
   const debugAllowed = searchParams?.get('debug') === 'true';
@@ -609,7 +462,7 @@ export default function BhriguPredictionView({
   }, [toggleSection]);
 
   // ✨ QUANTUM FIX: Touch handlers for mobile (300ms delay fix + scroll detection)
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+  const handleTouchStart = useCallback((_e: React.TouchEvent) => {
     touchStartTime.current = Date.now();
   }, []);
 
@@ -690,6 +543,9 @@ export default function BhriguPredictionView({
     setIsLowEndDevice(lowEnd);
   }, []);
 
+  // Encrypted-store profile-hash bookkeeping only. Generation is triggered
+  // solely by useBhriguPrediction's own effect — this effect previously ALSO
+  // called loadPrediction, firing two identical prediction POSTs per mount.
   useEffect(() => {
     if (profile && encryptionKey) {
       const checkProfile = async () => {
@@ -703,7 +559,6 @@ export default function BhriguPredictionView({
         }
 
         await setItem(STORES.SETTINGS, hashKey, currentHash, encryptionKey);
-        await loadPrediction(hasChanged, currentHash);
       };
 
       void checkProfile();
@@ -795,8 +650,9 @@ export default function BhriguPredictionView({
         for (const pattern of patterns) {
           try {
             const match = fullAnalysis.match(pattern);
-            if (match && match[1]?.trim().length > 50) {
-              parsedSections[section.key] = match[1].trim();
+            const captured = match?.[1]?.trim();
+            if (captured && captured.length > 50) {
+              parsedSections[section.key] = captured;
               break;
             }
           } catch (e) {
@@ -849,11 +705,11 @@ export default function BhriguPredictionView({
     };
 
     // Extract the base section key (without category prefix if present)
-    const baseKey = sectionKey.includes(':') ? sectionKey.split(':')[1] : sectionKey;
+    const baseKey = sectionKey.includes(':') ? (sectionKey.split(':')[1] ?? sectionKey) : sectionKey;
 
     // Check if we have a template for this section
     if (summaryTemplates[baseKey]) {
-      return summaryTemplates[baseKey];
+      return summaryTemplates[baseKey]!;
     }
 
     // Fallback: extract first meaningful sentence
@@ -949,26 +805,14 @@ export default function BhriguPredictionView({
       return;
     }
 
-    const worker = workerRef.current;
-    if (!worker) {
-      setIsParsing(true);
-      const parseStart = typeof performance !== 'undefined' ? performance.now() : Date.now();
-      const parsed = parseFullAnalysisIntoSections(predictionData.full_analysis, category);
-      setParsedFromFullAnalysis(parsed);
-      setIsParsing(false);
-      reportMetric('prediction.parse', (typeof performance !== 'undefined' ? performance.now() : Date.now()) - parseStart, {
-        mode: 'regex',
-        sectionsExtracted: Object.keys(parsed).length,
-      });
-      return;
-    }
-
     setIsParsing(true);
-    workerRequestId.current += 1;
-    worker.postMessage({
-      id: workerRequestId.current,
-      markdown: predictionData.full_analysis,
-      sections: categoryConfig.map(section => ({ key: section.key, titles: section.titleVariants }))
+    const parseStart = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const parsed = parseFullAnalysisIntoSections(predictionData.full_analysis, category);
+    setParsedFromFullAnalysis(parsed);
+    setIsParsing(false);
+    reportMetric('prediction.parse', (typeof performance !== 'undefined' ? performance.now() : Date.now()) - parseStart, {
+      mode: 'regex',
+      sectionsExtracted: Object.keys(parsed).length,
     });
   }, [prediction?.full_analysis, category, simplifiedRendering, reportMetric]);
 
@@ -979,7 +823,7 @@ export default function BhriguPredictionView({
     content: string,
     color: string,
     isOpen: boolean,
-    onToggle?: (next: boolean) => void
+    _onToggle?: (next: boolean) => void
   ) => {
     // More lenient filtering - only exclude truly empty or placeholder content
     if (!content || content.trim() === '') {
@@ -999,7 +843,7 @@ export default function BhriguPredictionView({
       return null;
     }
 
-    const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES[DEFAULT_COLOR];
+    const colorClass = COLOR_CLASSES[color] || COLOR_CLASSES[DEFAULT_COLOR]!;
     const headerId = `header-${sectionKey}`;
     const contentId = `content-${sectionKey}`;
 
@@ -1091,7 +935,7 @@ export default function BhriguPredictionView({
         </AnimatePresence>
       </motion.div>
     );
-  }, [toggleSection, handleKeyDown, handleTouchStart, handleTouchEnd]);
+  }, [toggleSection, handleKeyDown, handleTouchStart, handleTouchEnd, viewMode]);
 
   // ✨ QUANTUM FIX: Updated to work with Set<string> instead of Record
   const setExpandedSection = useCallback((sectionId: string, isOpen: boolean) => {
@@ -1163,6 +1007,12 @@ export default function BhriguPredictionView({
     if (!prediction) return null;
     const predictionData = prediction;
 
+    // Structured reading (reading_format 2): single clean renderer, no
+    // client-side regex parsing, no duplicate "complete reading" dump.
+    if (isStructuredReading(predictionData)) {
+      return <ReadingView prediction={predictionData as unknown as StructuredReading} viewMode={viewMode} />;
+    }
+
     // 🆕 PRIORITY 1: Check if we have parsed sections from nested structure
     // This handles the case where API returns { summary: "...", sections: { "## Title": "content" } }
     let useParsedSections = false;
@@ -1182,7 +1032,6 @@ export default function BhriguPredictionView({
 
     // Filter sections based on view mode (layman vs astrologer)
     const sections = filterSectionsByViewMode(allSections, viewMode);
-    const shouldShowPartialBanner = false;
 
     // Karmic Journey section markers - used to detect wrong category content
     // IMPORTANT: These must be defined BEFORE they are used in the filter below
@@ -1197,7 +1046,7 @@ export default function BhriguPredictionView({
 
     // Check if content contains wrong category markers
     // IMPORTANT: This function must be defined BEFORE the filter that uses it
-    const containsWrongCategoryContent = (content: string, sectionKey: string): boolean => {
+    const containsWrongCategoryContent = (content: string, _sectionKey: string): boolean => {
       if (!content) return false;
       const lowerContent = content.toLowerCase();
 
@@ -1217,7 +1066,7 @@ export default function BhriguPredictionView({
     // Then fall back to direct properties on prediction object
     let availableSections = sections.filter(section => {
       // Check subcategories first (new API format)
-      const subcategories = predictionData.subcategories;
+      const subcategories = predictionData.subcategories as Record<string, any> | undefined;
       if (subcategories && typeof subcategories === 'object') {
         const subcategoryData = subcategories[section.key];
         if (subcategoryData && typeof subcategoryData === 'object' && subcategoryData.content) {
@@ -1293,8 +1142,19 @@ export default function BhriguPredictionView({
     const getSectionContent = (key: string): string => {
       let rawContent: string = '';
 
+      // PRIORITY 0: backend-provided sharp user view (Wisdom Core postfilter).
+      // In layman mode this is already precise and free of technical detail —
+      // no client-side regex simplification needed.
+      const userViews = (predictionData as Record<string, any>).user_views as
+        | Record<string, string>
+        | undefined;
+      const userView = viewMode === 'layman' && userViews ? userViews[key] : undefined;
+      if (typeof userView === 'string' && userView.trim().length > 0) {
+        return userView;
+      }
+
       // PRIORITY 1: Check subcategories from API response (new structured format)
-      const subcategories = predictionData.subcategories;
+      const subcategories = predictionData.subcategories as Record<string, any> | undefined;
       if (subcategories && typeof subcategories === 'object') {
         const subcategoryContent = subcategories[key];
         if (subcategoryContent && typeof subcategoryContent === 'object' && subcategoryContent.content) {
@@ -1475,7 +1335,7 @@ export default function BhriguPredictionView({
                 const sectionId = `parsed:${section.key}`;
                 const isOpen = expandedSections.has(sectionId);
                 const colorOptions = ['cyan', 'purple', 'blue', 'indigo', 'violet', 'pink', 'rose', 'amber'];
-                const sectionColor = section.color || colorOptions[index % colorOptions.length];
+                const sectionColor = section.color || colorOptions[index % colorOptions.length]!;
 
                 return renderSection(
                   sectionId,
@@ -1521,8 +1381,9 @@ export default function BhriguPredictionView({
           </div>
         )}
 
-        {/* Full Analysis - Collapsible at the bottom */}
-        {predictionData.full_analysis && (
+        {/* Full Analysis — only when nothing was parsed into sections;
+            otherwise it just repeats every section a second time. */}
+        {predictionData.full_analysis && !(useParsedSections && parsedSectionsToRender.length > 0) && availableSections.length === 0 && (
           <div className="mt-8 pt-8 border-t border-gray-700/50">
             <button
               onClick={() => setShowFullAnalysis(!showFullAnalysis)}
@@ -1716,62 +1577,37 @@ export default function BhriguPredictionView({
             </div>
           </div>
 
-          {/* View Mode Toggle */}
+          {/* View Mode Toggle — one control; switching never re-generates */}
           <div className="mt-6 mb-6">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              {/* Simple View Button */}
-              <button
-                onClick={() => handleViewModeChange('layman')}
-                aria-pressed={viewMode === 'layman'}
-                aria-label="Switch to Simple View"
-                className={`flex-1 sm:flex-initial px-6 py-3 rounded-xl font-semibold
-                           transition-all duration-300 flex items-center justify-center gap-2
-                           min-h-[44px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900
-                           ${
-                             viewMode === 'layman'
-                               ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-genz-glow focus:ring-cyan-400'
-                               : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700 hover:text-white focus:ring-gray-500'
-                           }`}
-              >
-                <span className="text-xl" aria-hidden="true">👤</span>
-                <span>Simple View</span>
-              </button>
-
-              {/* Astrologer View Button */}
-              <button
-                onClick={() => handleViewModeChange('astrologer')}
-                aria-pressed={viewMode === 'astrologer'}
-                aria-label="Switch to Astrologer View"
-                className={`flex-1 sm:flex-initial px-6 py-3 rounded-xl font-semibold
-                           transition-all duration-300 flex items-center justify-center gap-2
-                           min-h-[44px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900
-                           ${
-                             viewMode === 'astrologer'
-                               ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-genz-glow focus:ring-purple-400'
-                               : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700 hover:text-white focus:ring-gray-500'
-                           }`}
-              >
-                <span className="text-xl" aria-hidden="true">🔮</span>
-                <span>Astrologer View</span>
-              </button>
+            <div
+              role="tablist"
+              aria-label="Reading view"
+              className="grid grid-cols-2 p-1 rounded-xl bg-white/[0.05] border border-white/10 max-w-md mx-auto"
+            >
+              {(['layman', 'astrologer'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  role="tab"
+                  aria-selected={viewMode === mode}
+                  onClick={() => handleViewModeChange(mode)}
+                  className={`py-2.5 min-h-[44px] rounded-lg text-sm font-semibold transition-colors
+                             focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 ${
+                               viewMode === mode
+                                 ? mode === 'layman'
+                                   ? 'bg-cyan-500 text-slate-950'
+                                   : 'bg-violet-500 text-white'
+                                 : 'text-slate-300 hover:text-white'
+                             }`}
+                >
+                  {mode === 'layman' ? 'Simple' : 'Astrologer'}
+                </button>
+              ))}
             </div>
-
-            {/* Explainer Text */}
-            <div className="mt-3 text-center">
-              <p className="text-sm text-slate-100/70">
-                {viewMode === 'layman' ? (
-                  <>
-                    <span className="text-cyan-400" aria-hidden="true">✨</span>
-                    {' '}Reading simplified for easy understanding
-                  </>
-                ) : (
-                  <>
-                    <span className="text-purple-400" aria-hidden="true">📊</span>
-                    {' '}Technical analysis with astrological references
-                  </>
-                )}
-              </p>
-            </div>
+            <p className="mt-2 text-center text-xs text-slate-400">
+              {viewMode === 'layman'
+                ? 'Plain-language reading with dates and actions'
+                : 'Adds placements, dasha, rule IDs and verification'}
+            </p>
           </div>
 
           {/* Question Input */}
@@ -1800,23 +1636,10 @@ export default function BhriguPredictionView({
                 <option value="hi">हिंदी</option>
               </select>
             </div>
-            <div className="flex items-center gap-2">
-              <label htmlFor="view-mode" className="text-sm text-gray-400">
-                View
-              </label>
-              <select
-                id="view-mode"
-                value={viewMode}
-                onChange={(e) => setViewMode(e.target.value as 'layman' | 'astrologer')}
-                className="bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-3 text-white
-                         focus:outline-none focus:border-cyan-400 transition-colors"
-              >
-                <option value="layman">Layman</option>
-                <option value="astrologer">Astrologer</option>
-              </select>
-            </div>
             <button
               onClick={() => loadPrediction()}
+              disabled={loading}
+              aria-busy={loading}
               className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500
                        text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600
                        disabled:opacity-50 disabled:cursor-not-allowed transition-all
@@ -1825,7 +1648,7 @@ export default function BhriguPredictionView({
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Queue Request
+                  Reading your chart…
                 </>
               ) : (
                 <>

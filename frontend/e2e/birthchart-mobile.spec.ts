@@ -45,8 +45,11 @@ const viewports = [
 ];
 
 for (const viewport of viewports) {
+  // defaultBrowserType is worker-scoped and illegal in a describe-level
+  // test.use — keep only the viewport/device emulation options.
+  const { defaultBrowserType: _browserType, ...deviceSettings } = viewport.settings;
   test.describe(`${viewport.name} birth chart flow`, () => {
-    test.use(viewport.settings);
+    test.use(deviceSettings);
 
     test('computes birth chart on mobile with slow network emulation', async ({ page, context }) => {
       if (process.env.CI) {

@@ -165,17 +165,6 @@ export class OfflineManager {
     }
   }
 
-  private loadSyncQueue(): void {
-    try {
-      const saved = localStorage.getItem('sync_queue');
-      if (saved) {
-        this.syncQueue = JSON.parse(saved);
-      }
-    } catch (error) {
-      console.error('Failed to load sync queue:', error);
-    }
-  }
-
   private async syncPendingData(): Promise<void> {
     if (this.syncQueue.length === 0) return;
     if (!this.shouldUseOnline()) return;

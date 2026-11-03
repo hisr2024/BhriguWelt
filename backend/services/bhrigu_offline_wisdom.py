@@ -1979,9 +1979,7 @@ Your soul incarnated with {zodiac} as the guiding energy, blessed by {deity} of 
 ## Soul Evolution Stage
 
 Your soul is at the **Madhyama (Intermediate)** stage:
-- Progress: Approximately 60-70% through evolutionary journey
 - Focus: Balancing material life with spiritual growth
-- Remaining: 7-12 incarnations before potential liberation
 
 ## Life Mission & Dharma
 
@@ -2051,10 +2049,9 @@ As per Nadi Jyotisha classification, your soul is at the **Madhyama (Intermediat
 
 - You have progressed beyond basic karmic lessons
 - Current focus: Balancing material responsibilities with spiritual growth
-- Estimated incarnations remaining: 7-12 before potential liberation
 - Progress indicator: Strong connection to dharmic principles
 
-The {nakshatra} nakshatra placement suggests you are approximately 60-70% through your soul's evolutionary journey.
+
 
 **Nadi Classification Details:**
 - Gana (Temperament): Based on nakshatra classification
@@ -2452,7 +2449,6 @@ Based on your {zodiac} energy and {nakshatra} nakshatra:
 
 **Next Life Focus:** {future_direction.capitalize()}
 **Evolution Path:** {evolution_path.capitalize()}
-**Estimated Progress:** 60-70% toward liberation
 
 ## Future Scenarios
 
@@ -2559,7 +2555,6 @@ If {element} attachments dominate over {nak_quality}:
 
 ## 5. Moksha Timeline & Preparation
 
-**Estimated Timeline to Liberation:** 7-12 incarnations under current {element} trajectory
 
 **Accelerating Factors:**
 - Daily meditation with {deity} focus

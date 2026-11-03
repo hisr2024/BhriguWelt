@@ -3,7 +3,7 @@ Bhrigu Predictions Routes
 Handles all Bhrigu Samhita and Nadi Jyotisa prediction requests
 FORTIFIED: All routes guaranteed to return JSON responses - never crash
 """
-from flask import Blueprint, request, jsonify, Response, stream_with_context
+from flask import Blueprint, request, jsonify, Response, stream_with_context, has_request_context
 from services.bhrigu_predictions import get_bhrigu_service
 from services.astrology_calculator import get_astrology_calculator, get_astrology_dependency_error
 from services.section_parser import get_section_parser
@@ -21,6 +21,7 @@ from datetime import datetime
 from typing import Optional
 import uuid
 import json
+import re
 import time
 import logging
 from functools import wraps
@@ -165,11 +166,48 @@ def _stream_sections(category_key: str, prediction: dict, from_cache: bool):
     })
 
 
+ALLOWED_GENDERS = {'male', 'female', 'other'}
+ALLOWED_TIME_ACCURACY = {'exact', 'within_15', 'within_hour', 'unknown'}
+
+
 def _sanitize_question_field(data: dict):
-    """Sanitize the question field in the request data"""
-    if data and 'question' in data and data['question']:
+    """Sanitize free-text and enum fields in the request data.
+
+    Also normalises the optional precision inputs: ``gender`` (selects the
+    Bhrigu Nandi Nadi jiva karaka) and ``birth_time_accuracy`` (weights
+    house-based rules). Unknown values are dropped, never guessed.
+    """
+    if not data:
+        return
+    if 'question' in data and data['question']:
         from utils.validators import sanitizeQuestion
         data['question'] = sanitizeQuestion(data['question'])
+    gender = str(data.get('gender') or '').strip().lower()
+    gender = {'m': 'male', 'f': 'female'}.get(gender, gender)
+    if gender in ALLOWED_GENDERS:
+        data['gender'] = gender
+    else:
+        data.pop('gender', None)
+    accuracy = str(data.get('birth_time_accuracy') or '').strip().lower()
+    if accuracy in ALLOWED_TIME_ACCURACY:
+        data['birth_time_accuracy'] = accuracy
+    else:
+        data.pop('birth_time_accuracy', None)
+    # Per-install quota identity (X-Client-Id header). Never taken from the
+    # JSON body; only a bounded token of [A-Za-z0-9-] is accepted.
+    data.pop('client_id', None)
+    if not has_request_context():
+        return
+    header_id = request.headers.get('X-Client-Id', '')
+    route = request.access_route or [request.remote_addr or '']
+    ip = (route[0] or '').strip()[:64]
+    ids = []
+    if header_id and re.fullmatch(r'[A-Za-z0-9-]{8,64}', header_id):
+        ids.append(f"client:{header_id}")
+    if ip:
+        ids.append(f"ip:{ip}")  # per-network ceiling behind rotating device ids
+    if ids:
+        data['client_id'] = '@'.join(ids)
 
 
 def validate_chart_inputs(data: dict) -> Optional[str]:
@@ -207,6 +245,7 @@ def stream_prediction_sections(category: str):
     data = request.get_json()
     if not data:
         return error_response("Invalid request payload", 400)
+    _sanitize_question_field(data)
     calculator = get_astrology_calculator()
     cached_birth_data = get_cached_birth_data(data)
     if not calculator and not cached_birth_data:
@@ -1001,6 +1040,9 @@ def comprehensive_prediction():
     """
     try:
         data = request.get_json()
+        if not data:
+            return error_response("Invalid request payload", 400)
+        _sanitize_question_field(data)
         calculator = get_astrology_calculator()
         cached_birth_data = get_cached_birth_data(data)
         if not calculator and not cached_birth_data:

@@ -132,7 +132,7 @@ def simple_status():
     }), 200
 
 
-@bp.route('/health/costs', methods=['GET'])
+@bp.route('/costs', methods=['GET'])
 def cost_monitoring():
     """
     Real-time API cost monitoring endpoint.
@@ -207,7 +207,7 @@ def cost_monitoring():
         }), 500
 
 
-@bp.route('/health/quota/<user_id>', methods=['GET'])
+@bp.route('/quota/<user_id>', methods=['GET'])
 def user_quota_status(user_id: str):
     """
     Get quota status for a specific user.
@@ -237,7 +237,7 @@ def user_quota_status(user_id: str):
         }), 500
 
 
-@bp.route('/health/detailed', methods=['GET'])
+@bp.route('/detailed', methods=['GET'])
 def detailed_health():
     """
     Detailed health check with comprehensive service diagnostics
@@ -380,7 +380,7 @@ def detailed_health():
     return jsonify(health_data), status_code
 
 
-@bp.route('/health/predictions', methods=['GET'])
+@bp.route('/predictions', methods=['GET'])
 def prediction_health():
     """
     Health check specifically for prediction services
@@ -440,7 +440,7 @@ def prediction_health():
     return jsonify(prediction_status), 200
 
 
-@bp.route('/health/database', methods=['GET'])
+@bp.route('/database', methods=['GET'])
 def database_health():
     """
     Detailed database health check
@@ -496,7 +496,7 @@ def database_health():
     return jsonify(db_status), status_code
 
 
-@bp.route('/health/corpus', methods=['GET'])
+@bp.route('/corpus', methods=['GET'])
 def corpus_health():
     """
     Check status of Vedic wisdom corpus files
@@ -549,7 +549,7 @@ def corpus_health():
     return jsonify(corpus_status), 200
 
 
-@bp.route('/health/readiness', methods=['GET'])
+@bp.route('/readiness', methods=['GET'])
 def readiness():
     """
     Kubernetes-style readiness probe
@@ -580,7 +580,7 @@ def readiness():
         }), 503
 
 
-@bp.route('/health/liveness', methods=['GET'])
+@bp.route('/liveness', methods=['GET'])
 def liveness():
     """
     Kubernetes-style liveness probe
