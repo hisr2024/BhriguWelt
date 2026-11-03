@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { getCurrentLanguage, setLanguage as setStoredLanguage, type Language } from '@/lib/copy';
 import { tLocale } from '@/lib/locales';
 

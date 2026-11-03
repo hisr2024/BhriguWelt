@@ -13,7 +13,7 @@ jest.mock('@/lib/storage', () => ({
   getEncryptionKey: jest.fn(async (passcode: string) => ({} as CryptoKey)),
   verifyEncryptionKey: jest.fn(async (passcode: string) => true),
   isEncryptionSetup: jest.fn(async () => false),
-  markKeyRotationRequired: jest.fn(),
+  markKeyRotationRequired: jest.fn(async () => {}),
   isKeyRotationRequired: jest.fn(async () => false),
   rotateEncryptionKey: jest.fn(async (oldPasscode: string, newPasscode: string) => true),
   clearKeyRotationRequired: jest.fn(),
@@ -21,7 +21,7 @@ jest.mock('@/lib/storage', () => ({
 
 // Mock auto-lock hooks
 jest.mock('@/lib/hooks/useAutoLock', () => ({
-  useAutoLock: jest.fn(() => {}),
+  useAutoLock: jest.fn(() => ({ resetTimer: jest.fn(), lastActivity: Date.now() })),
   useLockOnBackground: jest.fn(() => {}),
 }));
 

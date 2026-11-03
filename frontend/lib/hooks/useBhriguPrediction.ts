@@ -1,78 +1,34 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Profile, BirthDetails, PredictionResult, BhriguPrediction } from '@/lib/types';
 import { normalizePredictionResponse } from '@/lib/api/predictionResponse';
+import { getCurrentLanguage } from '@/lib/copy';
 
 const PROFILE_HASH_PREFIX = 'profile_hash_';
-const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_';
+// v2: readings cached before the structured-reading fix held raw JSON bodies.
+const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_v2_';
+const LEGACY_CACHE_PREFIX = 'bhrigu_prediction_';
 
-/**
- * Retry options for the retryWithBackoff helper
- */
-interface RetryOptions {
-  maxRetries?: number;
-  baseDelay?: number;
-  maxDelay?: number;
-  shouldRetry?: (error: any) => boolean;
-  onRetry?: (attempt: number, error: any) => void;
-}
-
-/**
- * Retry an async operation with exponential backoff
- * @param operation - The async function to retry
- * @param options - Retry configuration options
- * @returns The result of the operation
- */
-async function retryWithBackoff<T>(
-  operation: () => Promise<T>,
-  options: RetryOptions = {}
-): Promise<T> {
-  const {
-    maxRetries = 2,
-    baseDelay = 500, // 500ms - reduced for faster retries
-    maxDelay = 3000, // 3 seconds max - reduced for faster recovery
-    shouldRetry = () => true,
-    onRetry,
-  } = options;
-
-  let lastError: any;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await operation();
-    } catch (error) {
-      lastError = error;
-
-      // Don't retry if we've exhausted attempts
-      if (attempt === maxRetries) {
-        break;
-      }
-
-      // Check if we should retry this error
-      if (!shouldRetry(error)) {
-        throw error;
-      }
-
-      // Calculate delay with exponential backoff + jitter
-      const exponentialDelay = Math.min(
-        baseDelay * Math.pow(2, attempt),
-        maxDelay
-      );
-      // Add 0-30% random jitter to prevent thundering herd
-      const jitter = Math.random() * 0.3 * exponentialDelay;
-      const delay = exponentialDelay + jitter;
-
-      // Call retry callback
-      if (onRetry) {
-        onRetry(attempt + 1, error);
-      }
-
-      // Wait before retry
-      await new Promise(resolve => setTimeout(resolve, delay));
+// One-time cleanup of pre-v2 cached readings so they don't fill storage.
+if (typeof window !== 'undefined') {
+  try {
+    const stale: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(LEGACY_CACHE_PREFIX) && !key.startsWith(PREDICTION_CACHE_PREFIX)) stale.push(key);
     }
+    stale.forEach((key) => localStorage.removeItem(key));
+  } catch {
+    /* storage unavailable — nothing to clean */
   }
-
-  throw lastError;
 }
+
+/**
+ * In-flight request dedupe: identical prediction requests (same profile,
+ * category, question, and force flag) share one promise instead of firing
+ * duplicate POSTs. This collapses double-mounted effects and rapid re-calls
+ * into a single network request.
+ */
+const inFlightRequests = new Map<string, Promise<PredictionResult>>();
 
 /**
  * Request queue for limiting concurrent API requests
@@ -138,7 +94,7 @@ interface ErrorDetails {
 interface UseBhriguPredictionArgs {
   category: string;
   fetchPrediction: (
-    profileData: BirthDetails & { question?: string; force_regenerate?: boolean }
+    profileData: BirthDetails & { question?: string; language?: string; force_regenerate?: boolean }
   ) => Promise<PredictionResult>;
   profile: Profile | null;
 }
@@ -154,9 +110,9 @@ const hasRequiredProfileFields = (profile: Profile): boolean => {
 
 const getProfileHashKey = (profile: Profile) => `${PROFILE_HASH_PREFIX}${profile.id ?? 'current'}`;
 
-const getPredictionCacheKey = (profile: Profile, category: string, question: string) => {
+const getPredictionCacheKey = (profile: Profile, category: string, question: string, language = 'en') => {
   const questionKey = question.trim() === '' ? 'default' : encodeURIComponent(question.trim());
-  return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${questionKey}`;
+  return `${PREDICTION_CACHE_PREFIX}${profile.id ?? 'current'}_${category}_${language}_${questionKey}`;
 };
 
 /**
@@ -214,6 +170,8 @@ const getProfileHash = async (profile: Profile) => {
     placeOfBirth: profile.placeOfBirth ?? '',
     latitude: profile.latitude ?? null,
     longitude: profile.longitude ?? null,
+    gender: profile.gender ?? null,
+    birthTimeAccuracy: profile.birthTimeAccuracy ?? null,
   });
   const encoder = new TextEncoder();
   const data = encoder.encode(profilePayload);
@@ -238,6 +196,13 @@ export const useBhriguPrediction = ({
   const [timeoutWarning, setTimeoutWarning] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
 
+  // The question is read through a ref so typing in the question box does NOT
+  // change loadPrediction's identity — previously every keystroke re-ran the
+  // mount effect and fired a fresh generation request per character typed.
+  // Generation now happens only on mount/profile change or explicit submit.
+  const questionRef = useRef(question);
+  questionRef.current = question;
+
   const loadPrediction = useCallback(async (
     forceRegenerate = false,
     profileHash?: string
@@ -257,8 +222,10 @@ export const useBhriguPrediction = ({
     setRetryAttempt(0);
 
     try {
+      const currentQuestion = questionRef.current;
       const resolvedHash = profileHash ?? await getProfileHash(profile);
-      const cacheKey = getPredictionCacheKey(profile, category, question);
+      const currentLanguage = getCurrentLanguage();
+      const cacheKey = getPredictionCacheKey(profile, category, currentQuestion, currentLanguage);
       const cached = typeof window === 'undefined' ? null : localStorage.getItem(cacheKey);
 
       // Check cache first (fast path)
@@ -287,42 +254,26 @@ export const useBhriguPrediction = ({
         place_of_birth: profile.placeOfBirth,
         latitude: profile.latitude,
         longitude: profile.longitude,
-        question: question || undefined,
+        question: currentQuestion || undefined,
+        language: currentLanguage,
+        gender: profile.gender,
+        birth_time_accuracy: profile.birthTimeAccuracy,
         force_regenerate: forceRegenerate
       };
 
-      // Use request queue and retry logic for API call
-      const response = await requestQueue.enqueue(() =>
-        retryWithBackoff(
-          () => fetchPrediction(profileData),
-          {
-            maxRetries: 2, // Retry up to 2 times (3 total attempts)
-            baseDelay: 2000, // Start with 2 seconds
-            shouldRetry: (error) => {
-              // Retry on network errors, 5xx, or timeouts
-              const status = error?.response?.status;
-              return (
-                !error.response || // Network error
-                error.code === 'ECONNABORTED' || // Timeout
-                error.code === 'ETIMEDOUT' || // Timeout
-                (status && status >= 500 && status < 600) || // Server error
-                error?.response?.data?.retryable === true // Explicit retry flag
-              );
-            },
-            onRetry: (attempt, error) => {
-              // Update UI to show retry progress
-              setRetryAttempt(attempt);
-
-              setErrorDetails({
-                message: `Retrying... (attempt ${attempt}/2)`,
-                isNetwork: !error.response,
-                code: 'RETRY',
-                action: 'Automatic retry in progress. Please wait...',
-              });
-            },
-          }
-        )
-      );
+      // No automatic retries for prediction POSTs (each one is a paid LLM
+      // generation); the user retries explicitly from the error state.
+      // In-flight dedupe: identical concurrent requests share one promise.
+      const requestKey = `${cacheKey}::${forceRegenerate ? 'force' : 'normal'}`;
+      let pending = inFlightRequests.get(requestKey);
+      if (!pending) {
+        pending = requestQueue.enqueue(() => fetchPrediction(profileData));
+        inFlightRequests.set(requestKey, pending);
+        // Cleanup must observe the rejection; a bare .finally() chain would
+        // surface as an unhandled promise rejection on failure.
+        pending.catch(() => undefined).finally(() => inFlightRequests.delete(requestKey));
+      }
+      const response = await pending;
 
       const normalized = normalizePredictionResponse<BhriguPrediction>(response);
 
@@ -334,8 +285,10 @@ export const useBhriguPrediction = ({
           normalized.message?.toLowerCase()?.includes('cache')
         ));
 
-        // Cache the successful result
-        if (typeof window !== 'undefined') {
+        // Cache the successful result — but never a partial/offline reading
+        // (it should regenerate next time rather than stick around).
+        const incomplete = Boolean((normalized.prediction as Record<string, unknown> | null)?.reading_incomplete);
+        if (typeof window !== 'undefined' && !incomplete) {
           try {
             localStorage.setItem(
               cacheKey,
@@ -398,7 +351,7 @@ export const useBhriguPrediction = ({
       setLoading(false);
       setRetryAttempt(0);
     }
-  }, [category, fetchPrediction, profile, question]);
+  }, [category, fetchPrediction, profile]);
 
   // Timeout warning effect - show warning after 30 seconds of loading
   useEffect(() => {
@@ -413,6 +366,7 @@ export const useBhriguPrediction = ({
     } else {
       setTimeoutWarning(false);
     }
+    return undefined;
   }, [loading]);
 
   useEffect(() => {
