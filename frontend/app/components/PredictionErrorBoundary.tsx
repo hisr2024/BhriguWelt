@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { captureException } from '@/lib/sentry';
 
 type PredictionErrorBoundaryProps = {
   children: React.ReactNode;
@@ -28,11 +27,21 @@ export default class PredictionErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    captureException(error, {
-      boundary: 'PredictionErrorBoundary',
-      context: this.props.context,
-      componentStack: info.componentStack,
-    });
+    // Sentry is only loaded when a DSN is configured, so it is not shipped
+    // in every reading page's bundle.
+    if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+      import('@/lib/sentry')
+        .then(({ captureException }) =>
+          captureException(error, {
+            boundary: 'PredictionErrorBoundary',
+            context: this.props.context,
+            componentStack: info.componentStack,
+          })
+        )
+        .catch(() => undefined);
+    } else {
+      console.error('[PredictionErrorBoundary]', this.props.context, error);
+    }
   }
 
   handleReset = () => {

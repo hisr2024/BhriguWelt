@@ -74,9 +74,9 @@ const nextConfig = {
       // Note: 'unsafe-inline' is required for Next.js and Framer Motion inline styles
       // 'unsafe-eval' removed for better security - not needed for production
       `script-src 'self' 'unsafe-inline' ${cdnUrl}`,
-      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com ${cdnUrl}`,
+      `style-src 'self' 'unsafe-inline' ${cdnUrl}`,
       `img-src 'self' data: https: ${cdnUrl}`,
-      `font-src 'self' data: https://fonts.gstatic.com ${cdnUrl}`,
+      `font-src 'self' data: ${cdnUrl}`,
       "connect-src 'self' http: https:",
       "frame-ancestors 'none'",
       "base-uri 'self'",

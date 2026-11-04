@@ -18,7 +18,7 @@ import { loadCurrentProfile } from '@/lib/profileHelpers';
 import { useRouter } from 'next/navigation';
 import { astrologyAPI } from '@/lib/api';
 import ErrorBoundary from '../../components/ErrorBoundary';
-import { downloadBirthChartPDF, type BirthData, type ChartData as PDFChartData, type Interpretation } from '@/lib/export/pdfGenerator';
+import type { BirthData, ChartData as PDFChartData, Interpretation } from '@/lib/export/pdfGenerator';
 import { ShareUtils, showShareSuccess, showShareError } from '@/lib/export/shareUtils';
 
 export default function BirthChartViewPage() {
@@ -356,6 +356,8 @@ export default function BirthChartViewPage() {
       ];
 
       // Generate and download PDF
+      // jspdf + html2canvas (~170 KB gz) load only when the user exports.
+      const { downloadBirthChartPDF } = await import('@/lib/export/pdfGenerator');
       await downloadBirthChartPDF(birthData, pdfChartData, pdfInterpretations, {
         includeChartImage: true,
         includePlanets: true,

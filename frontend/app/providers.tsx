@@ -5,12 +5,12 @@ import { EncryptionProvider } from '@/lib/context/EncryptionContext';
 import { I18nProvider } from '@/lib/context/I18nContext';
 import ContrastModeProvider from './components/ContrastModeProvider';
 import { useOnlineStatus } from '@/lib/hooks/useOnlineStatus';
-import { processOfflineQueue } from '@/lib/api';
 
 export function Providers({ children }: { children: ReactNode }) {
   const handleOnlineChange = useCallback((isOnline: boolean) => {
     if (isOnline) {
-      processOfflineQueue();
+      // Loaded on demand so axios is not in every page's initial bundle.
+      import('@/lib/api').then(({ processOfflineQueue }) => processOfflineQueue()).catch(() => undefined);
     }
   }, []);
 

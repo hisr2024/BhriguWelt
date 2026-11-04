@@ -125,18 +125,18 @@ export default function BirthChartResultPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-4 py-10 text-white">
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-4 py-10 text-white">
         <div className="mx-auto max-w-3xl space-y-4">
           <SkeletonCard />
           <SkeletonCard />
         </div>
-      </main>
+      </div>
     );
   }
 
   if (!chart) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-4 py-10 text-white">
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-4 py-10 text-white">
         <div className="mx-auto max-w-xl space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
           <h1 className="text-xl font-semibold">Chart unavailable</h1>
           <p className="text-sm text-white/70">{error}</p>
@@ -157,12 +157,12 @@ export default function BirthChartResultPage() {
             </button>
           </div>
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-4 py-10 text-white">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-4 py-10 text-white">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
         {error && (
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
@@ -310,6 +310,6 @@ export default function BirthChartResultPage() {
           })}
         </section>
       </div>
-    </main>
+    </div>
   );
 }
