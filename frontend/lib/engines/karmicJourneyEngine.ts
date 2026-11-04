@@ -6,6 +6,7 @@
  *
  * Offline-first: pure computation with optional AI refinement, no secrets or database access.
  */
+import { backendUrl } from '@/lib/backendUrl';
 import type { ChartData, PredictionResult, Subcategory } from '../api/predictions';
 import { getAIMode } from '../ai-preferences';
 import { isSectionContentValid } from '../sectionParserConfig';
@@ -547,7 +548,7 @@ const fetchAISynthesis = async (
   }
 
   try {
-    const response = await fetch('/api/ai/compose', {
+    const response = await fetch(backendUrl('/api/ai/compose'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

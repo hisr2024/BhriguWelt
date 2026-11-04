@@ -3,6 +3,17 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 })
 
+// A production deploy without a real backend URL ships a site whose every
+// reading fails (browsers report it as a CORS error). Fail the build instead.
+if (process.env.VERCEL_ENV === 'production') {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
+  if (!/^https:\/\//.test(apiUrl) || /localhost|127\.0\.0\.1|example\.com/.test(apiUrl)) {
+    throw new Error(
+      `NEXT_PUBLIC_API_URL must be the https URL of the Render backend for production builds (got "${apiUrl || 'unset'}").`
+    )
+  }
+}
+
 const nextConfig = {
   reactStrictMode: true,
   // Enable standalone output for Docker production builds

@@ -13,7 +13,6 @@ import {
   Activity,
   Target
 } from 'lucide-react';
-import { bhriguPredictionsAPI } from '@/lib/api';
 import { useEncryptedStorage } from '@/lib/hooks/useEncryptedStorage';
 import type { Profile } from '@/lib/types';
 
@@ -79,17 +78,11 @@ export default function BhriguPredictionsPage() {
   const { getAllProfiles } = useEncryptedStorage();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
-  const [, setSessionId] = useState<string | null>(null);
   const [isProfileReady, setIsProfileReady] = useState(false);
 
   useEffect(() => {
     loadProfiles();
   }, []);
-
-  useEffect(() => {
-    if (!isProfileReady) return;
-    startSession();
-  }, [isProfileReady]);
 
   const loadProfiles = async () => {
     try {
@@ -102,15 +95,6 @@ export default function BhriguPredictionsPage() {
       console.error('Error loading profiles:', error);
     } finally {
       setIsProfileReady(true);
-    }
-  };
-
-  const startSession = async () => {
-    try {
-      const response = await bhriguPredictionsAPI.startSession();
-      setSessionId(response.data.session_id);
-    } catch (error) {
-      console.error('Error starting session:', error);
     }
   };
 

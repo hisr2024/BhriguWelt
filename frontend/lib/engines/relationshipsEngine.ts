@@ -5,6 +5,7 @@
  *
  * Offline-first: deterministic relationship insights with optional AI enrichment.
  */
+import { backendUrl } from '@/lib/backendUrl';
 import type { ChartData, PredictionMetadata, PredictionResult, Subcategory } from '@/lib/api/predictions';
 import { getAIMode } from '@/lib/ai-preferences';
 import { isSectionContentValid } from '@/lib/sectionParserConfig';
@@ -558,7 +559,7 @@ const composeAIInsights = async (
     if (!aiMode.consent) {
       return null;
     }
-    const response = await fetch('/api/ai/compose', {
+    const response = await fetch(backendUrl('/api/ai/compose'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
