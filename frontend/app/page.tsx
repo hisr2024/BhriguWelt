@@ -9,7 +9,7 @@ import {
   Sparkles, Moon, Sun, Star, Heart, Zap,
   BookOpen, Compass, TrendingUp, Shield,
   Users, Clock, Globe, Award, ChevronRight,
-  CheckCircle, ArrowRight, Play, Quote, Menu, X
+  CheckCircle, ArrowRight, Play, Menu, X
 } from 'lucide-react';
 import GenZButton from './components/GenZButton';
 import GenZCard, { GenZCardGradient } from './components/GenZCard';
@@ -117,35 +117,12 @@ export default function HomePage() {
   ], []);
 
   const stats = useMemo(() => [
-    { value: '100K+', label: 'Soul Journeys', icon: <Users className="w-6 h-6" /> },
-    { value: '95%', label: 'Accuracy Rate', icon: <Award className="w-6 h-6" /> },
-    { value: '24/7', label: 'AI Support', icon: <Clock className="w-6 h-6" /> },
-    { value: '50+', label: 'Countries', icon: <Globe className="w-6 h-6" /> },
+    { value: '20+', label: 'Classical Rules Applied', icon: <Users className="w-6 h-6" /> },
+    { value: 'Swiss', label: 'Ephemeris Precision', icon: <Award className="w-6 h-6" /> },
+    { value: '2', label: 'Reading Views', icon: <Clock className="w-6 h-6" /> },
+    { value: 'On-device', label: 'Encrypted Profile', icon: <Globe className="w-6 h-6" /> },
   ], []);
 
-  const testimonials = useMemo(() => [
-    {
-      name: 'Priya Sharma',
-      role: 'Spiritual Seeker',
-      content: 'BhriguWelt revealed patterns in my life I never understood. The past life reading was transformative.',
-      rating: 5,
-      avatar: '🙏'
-    },
-    {
-      name: 'Arjun Patel',
-      role: 'Entrepreneur',
-      content: 'The future predictions helped me make critical business decisions. Incredibly accurate and insightful.',
-      rating: 5,
-      avatar: '🌟'
-    },
-    {
-      name: 'Maya Krishnan',
-      role: 'Yoga Teacher',
-      content: 'The karmic remedies brought peace to my life. This is authentic Vedic wisdom enhanced by AI.',
-      rating: 5,
-      avatar: '✨'
-    },
-  ], []);
 
   const advancedFeatures = useMemo(() => [
     {
@@ -222,12 +199,6 @@ export default function HomePage() {
               >
                 How It Works
               </Link>
-              <Link
-                href="#testimonials"
-                className="text-white/80 hover:text-genz-electric-blue transition-colors font-medium"
-              >
-                Reviews
-              </Link>
               <GenZButton variant="primary" size="md">
                 <Link href="/get-started">Get Started</Link>
               </GenZButton>
@@ -264,13 +235,6 @@ export default function HomePage() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   How It Works
-                </Link>
-                <Link
-                  href="#testimonials"
-                  className="text-white/80 hover:text-genz-electric-blue transition-colors font-medium py-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Reviews
                 </Link>
                 <GenZButton variant="primary" size="md" fullWidth>
                   <Link href="/get-started">Get Started</Link>
@@ -324,7 +288,7 @@ export default function HomePage() {
                 Ancient Vedic wisdom meets{' '}
                 <span className="text-genz-electric-blue font-bold">cutting-edge AI</span> to
                 reveal your past, present, and future lives with{' '}
-                <span className="text-genz-hot-pink font-bold">unprecedented accuracy</span>
+                <span className="text-genz-hot-pink font-bold">dates drawn from your own chart</span>
               </motion.p>
 
               <motion.div
@@ -667,77 +631,6 @@ export default function HomePage() {
                   {item.title}
                 </h3>
                 <p className="text-white/80 leading-relaxed">{item.description}</p>
-              </GenZCard>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section id="testimonials" className="genz-section px-4 landscape:px-6 bg-dark-surface/30">
-        <div className="genz-container">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="text-center mb-16"
-          >
-            <motion.div
-              className="inline-block mb-4"
-              whileInView={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 0.6 }}
-            >
-              <GenZBadge variant="outline" size="lg">
-                💬 Reviews
-              </GenZBadge>
-            </motion.div>
-            <h2 className="genz-heading mb-6">
-              Trusted by Thousands
-            </h2>
-            <p className="text-xl md:text-2xl text-white/80 max-w-3xl mx-auto leading-relaxed">
-              See what our community says about their{' '}
-              <span className="text-genz-purple-haze font-bold">spiritual journey</span>
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <GenZCard
-                key={index}
-                variant="gradient"
-                className="relative group"
-              >
-                <div className="absolute top-6 right-6 text-6xl opacity-10">
-                  {testimonial.avatar}
-                </div>
-
-                <Quote className="w-10 h-10 text-genz-electric-blue mb-6 opacity-60 group-hover:opacity-100 transition-opacity" />
-
-                <div className="flex gap-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ scale: 0, rotate: -180 }}
-                      whileInView={{ scale: 1, rotate: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                    >
-                      <Star className="w-5 h-5 fill-genz-cyber-yellow text-genz-cyber-yellow" />
-                    </motion.div>
-                  ))}
-                </div>
-
-                <p className="text-white/90 mb-8 text-lg italic leading-relaxed relative z-10">
-                  "{testimonial.content}"
-                </p>
-
-                <div className="flex items-center gap-4 relative z-10">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-genz-electric-blue to-genz-purple-haze flex items-center justify-center text-2xl shadow-genz-glow">
-                    {testimonial.avatar}
-                  </div>
-                  <div>
-                    <div className="font-bold text-lg text-white">{testimonial.name}</div>
-                    <div className="text-sm text-genz-electric-blue font-medium">{testimonial.role}</div>
-                  </div>
-                </div>
               </GenZCard>
             ))}
           </div>
