@@ -3,6 +3,7 @@
  * Two-phase generation + precision validation for karmic remedies
  */
 
+import { backendUrl } from '@/lib/backendUrl';
 import type {
   ChartData,
   PredictionResult,
@@ -499,7 +500,7 @@ async function fetchAISuggestions(chartData: ChartData): Promise<string | null> 
   }
 
   try {
-    const response = await fetch('/api/ai/compose', {
+    const response = await fetch(backendUrl('/api/ai/compose'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

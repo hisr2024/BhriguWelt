@@ -4,15 +4,9 @@
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/.next",
   "devCommand": "cd frontend && npm run dev",
-  "env": {
-    "NEXT_PUBLIC_API_URL": "https://your-api.example.com",
-    "NEXT_PUBLIC_BACKEND_URL": "https://your-backend.example.com"
-  },
-  "functions": {
-    "app/api/**": {
-      "memory": 1024,
-      "maxDuration": 30
-    }
-  },
-  "regions": ["iad1", "sfo1", "fra1"]
+  "regions": [
+    "iad1",
+    "sfo1",
+    "fra1"
+  ]
 }

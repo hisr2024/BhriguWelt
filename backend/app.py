@@ -6,10 +6,9 @@ from flask import Flask, jsonify, request, g
 from werkzeug.exceptions import HTTPException
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 import os
+import re
 from services.ai_provider import resolve_provider
 import sys
 import json
@@ -47,7 +46,6 @@ def _check_required_env_vars():
     # Only require critical vars in production; allow defaults for development
     if IS_PRODUCTION:
         required_vars = {
-            'OPENAI_API_KEY': 'Required for AI-enhanced predictions (e.g., sk-...)',
             'SECRET_KEY': 'Required for Flask session security (generate with: python -c "import secrets; print(secrets.token_hex(32))")',
             'JWT_SECRET_KEY': 'Required for JWT token signing (generate with: python -c "import secrets; print(secrets.token_hex(32))")',
             'FRONTEND_URL': 'Required for CORS configuration (e.g., https://yourdomain.com)',
@@ -56,6 +54,11 @@ def _check_required_env_vars():
         for var, description in required_vars.items():
             if not os.getenv(var):
                 missing_vars.append(f"{var}: {description}")
+        # Any supported AI provider satisfies the AI requirement (OpenAI or Sarvam).
+        if not resolve_provider().configured:
+            missing_vars.append(
+                "OPENAI_API_KEY or SARVAM_API_KEY: Required for AI-enhanced predictions"
+            )
 
         if missing_vars:
             error_lines = ["Missing required environment variables in PRODUCTION mode:"]
@@ -118,6 +121,11 @@ _check_corpus_files()
 # Initialize Flask app
 logger.info("Initializing Flask application...")
 app = Flask(__name__)
+# Render (and Vercel rewrites) terminate TLS at a proxy. Trust exactly one hop
+# so request.remote_addr is the visitor (per-user rate limits instead of one
+# shared bucket) and request.is_secure is true (HSTS, no HTTPS redirect loop).
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 # Security: Generate secure random secrets if not provided
 import secrets
@@ -202,6 +210,26 @@ def _get_allowed_origins():
 
 ALLOWED_ORIGINS = _get_allowed_origins()
 
+# Optional: allow Vercel preview deployments. Opt-in only, because anyone can
+# deploy to *.vercel.app — set e.g.
+#   CORS_ORIGIN_REGEX=^https://bhrigu-?welt-[a-z0-9-]+-<your-team>\.vercel\.app$
+_ORIGIN_REGEX_RAW = os.getenv("CORS_ORIGIN_REGEX", "").strip()
+try:
+    ORIGIN_REGEX = re.compile(_ORIGIN_REGEX_RAW) if _ORIGIN_REGEX_RAW else None
+except re.error as _regex_error:
+    logger.error("Ignoring invalid CORS_ORIGIN_REGEX: %s", _regex_error)
+    ORIGIN_REGEX = None
+CORS_ORIGINS = ALLOWED_ORIGINS + ([ORIGIN_REGEX] if ORIGIN_REGEX else [])
+
+
+def is_origin_allowed(origin):
+    if not origin:
+        return False
+    normalized = origin.rstrip('/').lower()
+    if normalized in {o.lower().rstrip('/') for o in ALLOWED_ORIGINS}:
+        return True
+    return bool(ORIGIN_REGEX and ORIGIN_REGEX.fullmatch(origin.rstrip('/')))
+
 def _merge_cors_headers_case_insensitive(existing_headers, requested_headers):
     merged = {header.lower(): header for header in existing_headers}
     for header in requested_headers:
@@ -214,7 +242,7 @@ CORS(
     app,
     resources={
         r"/api/.*": {
-            "origins": ALLOWED_ORIGINS,
+            "origins": CORS_ORIGINS,
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
             "allow_headers": STANDARD_CORS_HEADERS,
             "supports_credentials": True,
@@ -222,7 +250,7 @@ CORS(
             "max_age": 86400,
         },
         r"/health": {
-            "origins": ALLOWED_ORIGINS,
+            "origins": CORS_ORIGINS,
             "methods": ["GET", "OPTIONS"],
             "supports_credentials": True,
         },
@@ -231,33 +259,9 @@ CORS(
 
 logger.info("✓ CORS configured with allowed origins: %s", ", ".join(ALLOWED_ORIGINS))
 
-# Initialize Rate Limiter
-logger.info("Initializing rate limiter...")
-_rate_limit_storage_uri = os.getenv('REDIS_URL', 'memory://')
-try:
-    limiter = Limiter(
-        app=app,
-        key_func=get_remote_address,
-        default_limits=["200 per day", "50 per hour"],
-        storage_uri=_rate_limit_storage_uri,
-        strategy="fixed-window",
-    )
-except Exception as _limiter_exc:
-    # An unreachable/incompatible Redis at boot must not take the app down —
-    # degrade to per-process in-memory rate limiting instead.
-    logger.warning(
-        "Rate limiter storage '%s' unavailable (%s); falling back to in-memory storage.",
-        _rate_limit_storage_uri,
-        _limiter_exc,
-    )
-    limiter = Limiter(
-        app=app,
-        key_func=get_remote_address,
-        default_limits=["200 per day", "50 per hour"],
-        storage_uri="memory://",
-        strategy="fixed-window",
-    )
-logger.info("✓ Rate limiter initialized with default limits: 200/day, 50/hour")
+# Rate limiting is configured once, in middleware.rate_limiter.setup_rate_limiter()
+# (below). A second app-wide Limiter here used to add a 50/hour cap that — keyed
+# on the proxy's address — every user shared.
 
 # Request preprocessing middleware
 def _assign_correlation_id():
@@ -287,18 +291,7 @@ def handle_preflight():
         # Normalize origin (remove trailing slash if present)
         normalized_origin = origin.rstrip('/') if origin else None
 
-        # Check if origin matches (with normalization)
-        origin_allowed = False
-        if normalized_origin:
-            # Check exact match first
-            if normalized_origin in ALLOWED_ORIGINS:
-                origin_allowed = True
-            else:
-                # Check with case-insensitive comparison
-                normalized_allowed = {o.lower().rstrip('/') for o in ALLOWED_ORIGINS}
-                if normalized_origin.lower() in normalized_allowed:
-                    origin_allowed = True
-                    logger.info(f"Origin matched via case-insensitive comparison: {origin}")
+        origin_allowed = is_origin_allowed(normalized_origin)
 
         if origin_allowed:
             # Get all headers requested by the browser

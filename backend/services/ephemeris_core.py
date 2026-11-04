@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+import threading
 from functools import lru_cache
 from typing import Dict, List, Optional, Tuple
 
@@ -37,6 +38,10 @@ DASHA_YEARS = dict(zip(DASHA_SEQ, [7, 20, 6, 10, 7, 18, 16, 19, 17]))
 YEAR_DAYS = 365.2425
 NAK_SPAN = 360.0 / 27.0
 PLANETS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu']
+
+# The Swiss Ephemeris C library keeps global state; serialise calls so the
+# threaded gunicorn worker cannot interleave them.
+_SWE_LOCK = threading.Lock()
 
 _CODES = {}
 if SWISSEPH_AVAILABLE:
@@ -82,7 +87,8 @@ def julian_day(dt_utc: datetime) -> float:
 def _positions_at_jd(jd: float) -> Tuple[Tuple[str, float, float, float], ...]:
     out = []
     for name, code in _CODES.items():
-        res = swe.calc_ut(jd, code, swe.FLG_SIDEREAL | swe.FLG_SPEED)[0]
+        with _SWE_LOCK:
+            res = swe.calc_ut(jd, code, swe.FLG_SIDEREAL | swe.FLG_SPEED)[0]
         out.append((name, res[0] % 360.0, res[1], res[3]))
     rahu = next(p for p in out if p[0] == 'Rahu')
     out.append(('Ketu', (rahu[1] + 180.0) % 360.0, -rahu[2], rahu[3]))
@@ -98,8 +104,14 @@ def planet_positions(dt_utc: datetime) -> Dict[str, Dict[str, float]]:
 
 def ascendant(dt_utc: datetime, latitude: float, longitude: float) -> float:
     jd = julian_day(dt_utc)
-    _cusps, ascmc = swe.houses_ex(jd, float(latitude), float(longitude), b'W', swe.FLG_SIDEREAL)
+    with _SWE_LOCK:
+        _cusps, ascmc = swe.houses_ex(jd, float(latitude), float(longitude), b'W', swe.FLG_SIDEREAL)
     return ascmc[0] % 360.0
+
+
+def _ayanamsa(dt_utc: datetime) -> float:
+    with _SWE_LOCK:
+        return swe.get_ayanamsa_ut(julian_day(dt_utc))
 
 
 def build_chart(dt_utc: datetime, latitude: float, longitude: float) -> Dict[str, object]:
@@ -126,7 +138,7 @@ def build_chart(dt_utc: datetime, latitude: float, longitude: float) -> Dict[str
     return {
         'ascendant': {'sign': sign_of(asc), 'degree': round(asc, 4), 'degree_in_sign': round(asc % 30.0, 4)},
         'planets': planets,
-        'ayanamsa': round(swe.get_ayanamsa_ut(julian_day(dt_utc)), 4),
+        'ayanamsa': round(_ayanamsa(dt_utc), 4),
     }
 
 

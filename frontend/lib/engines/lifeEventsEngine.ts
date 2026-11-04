@@ -5,6 +5,7 @@
  *
  * Offline-first: deterministic calculations with optional AI refinement, no secrets required.
  */
+import { backendUrl } from '@/lib/backendUrl';
 import type {
   ChartData,
   LifeEvent,
@@ -749,7 +750,7 @@ const composeAISection = async (
   aiMode: string
 ): Promise<string | undefined> => {
   try {
-    const response = await fetch('/api/ai/compose', {
+    const response = await fetch(backendUrl('/api/ai/compose'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

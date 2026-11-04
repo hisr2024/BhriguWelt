@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import {
   Sparkles, TrendingUp, Heart, Calendar, Zap, Star,
-  Moon, Sun, Award, Target, ArrowRight
+  Moon, Sun, ArrowRight
 } from 'lucide-react';
 import AnimatedBackground, { FloatingElements } from '../components/AnimatedBackground';
 import GenZCard from '../components/GenZCard';
@@ -76,9 +76,6 @@ export default function DashboardPage() {
 
   const stats = [
     { label: 'Charts Analyzed', value: '1', icon: <TrendingUp className="w-5 h-5" /> },
-    { label: 'Insights Gained', value: '24', icon: <Zap className="w-5 h-5" /> },
-    { label: 'Accuracy', value: '95%', icon: <Target className="w-5 h-5" /> },
-    { label: 'Soul Rank', value: 'Rising', icon: <Award className="w-5 h-5" /> },
   ];
 
   return (

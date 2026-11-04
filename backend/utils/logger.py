@@ -107,10 +107,22 @@ def setup_logger(name: str, level: str = None) -> logging.Logger:
     return logger
 
 
+# Birth details are personal data (GDPR); request logs record only which
+# fields were sent, never their values.
+_BIRTH_FIELDS = {
+    'date_of_birth', 'time_of_birth', 'place_of_birth', 'latitude', 'longitude',
+    'dob', 'tob', 'birth_date', 'birth_time', 'name', 'question', 'gender',
+    'person1', 'person2', 'partner', 'profile',
+}
+
+
 def log_request(logger: logging.Logger, request_data: dict, endpoint: str):
-    """Log incoming API request"""
-    sanitized_request = _redact_sensitive_data(request_data)
-    logger.info(f"API Request to {endpoint}: {sanitized_request}")
+    """Log incoming API request without personal values."""
+    if isinstance(request_data, dict):
+        fields = sorted(request_data.keys())
+        logger.info(f"API Request to {endpoint}: fields={fields}")
+    else:
+        logger.info(f"API Request to {endpoint}")
 
 
 def log_response(logger: logging.Logger, response_data: dict, endpoint: str, status_code: int):
@@ -132,6 +144,7 @@ def _redact_pii(value: str) -> str:
     patterns = [
         # OpenAI/Anthropic API keys (redact before generic numeric patterns)
         (r'\b(sk-[A-Za-z0-9]{10,})', '[REDACTED_API_KEY]'),
+        (r'\b(sk_[A-Za-z0-9_]{10,})', '[REDACTED_API_KEY]'),  # Sarvam
         (r'\b(sk-ant-[A-Za-z0-9\-]{10,})', '[REDACTED_API_KEY]'),
         (r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b', '[REDACTED_EMAIL]'),
         (r'\b\d{3}-\d{2}-\d{4}\b', '[REDACTED_SSN]'),

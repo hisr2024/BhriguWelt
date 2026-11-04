@@ -26,6 +26,7 @@ import time
 import logging
 from functools import wraps
 from utils.logger import setup_logger, log_error, sanitize_error
+from services.wisdom_core_pipeline import PredictionUnavailableError
 
 bp = Blueprint('bhrigu_predictions', __name__, url_prefix='/api/bhrigu-predictions')
 logger = setup_logger(__name__)
@@ -40,6 +41,8 @@ def route_error_handler(f):
     def decorated_function(*args, **kwargs):
         try:
             return f(*args, **kwargs)
+        except PredictionUnavailableError as e:
+            return _unavailable_response(e)
         except Exception as e:
             logger.error(f"Route handler {f.__name__} crashed: {e}", exc_info=True)
             # Log structured error for visibility
@@ -58,6 +61,21 @@ def route_error_handler(f):
                 'timestamp': datetime.utcnow().isoformat()
             }), 500
     return decorated_function
+
+
+def _unavailable_response(exc: Exception):
+    """AI generation unavailable (no key, quota, provider down): 503, retryable.
+
+    A 500 told clients the server was broken; this is a temporary condition."""
+    reason = getattr(exc, 'reason', 'unavailable')
+    logger.warning("Prediction unavailable: %s", reason)
+    response, _status = prediction_error_response(
+        "Precise readings are temporarily unavailable. Please try again in a few minutes.",
+        status_code=503,
+        metadata={'error_code': 'AI_UNAVAILABLE', 'reason': reason, 'retryable': True},
+    )
+    response.headers['Retry-After'] = '60'
+    return response, 503
 
 bhrigu_service = get_bhrigu_service()
 section_parser = get_section_parser()
@@ -290,6 +308,8 @@ def stream_prediction_sections(category: str):
             data.get('question'),
             metadata
         )
+    except PredictionUnavailableError as e:
+        return _unavailable_response(e)
     except Exception as e:
         logger = logging.getLogger(__name__)
         logger.error("Streaming prediction failed", exc_info=True)
@@ -384,6 +404,8 @@ def karmic_journey():
             metadata=_build_chart_metadata(chart_data, category='karmic_journey', extra=metadata)
         )
 
+    except PredictionUnavailableError as e:
+        return _unavailable_response(e)
     except Exception as e:
         log_error(logger, e, "Error in karmic_journey")
         return prediction_error_response(
@@ -456,6 +478,8 @@ def past_lives():
             metadata=_build_chart_metadata(chart_data, category='past_lives')
         )
 
+    except PredictionUnavailableError as e:
+        return _unavailable_response(e)
     except Exception as e:
         log_error(logger, e, "Error in past_lives")
         return prediction_error_response(
@@ -521,6 +545,8 @@ def future_lives():
             metadata=_build_chart_metadata(chart_data, category='future_lives')
         )
 
+    except PredictionUnavailableError as e:
+        return _unavailable_response(e)
     except Exception as e:
         log_error(logger, e, "Error in future_lives")
         return prediction_error_response(
@@ -586,6 +612,8 @@ def present_life():
             metadata=_build_chart_metadata(chart_data, category='present_life')
         )
 
+    except PredictionUnavailableError as e:
+        return _unavailable_response(e)
     except Exception as e:
         log_error(logger, e, "Error in present_life")
         return prediction_error_response(
@@ -651,6 +679,8 @@ def life_events():
             metadata=_build_chart_metadata(chart_data, category='life_events')
         )
 
+    except PredictionUnavailableError as e:
+        return _unavailable_response(e)
     except Exception as e:
         log_error(logger, e, "Error in life_events")
         return prediction_error_response(
@@ -723,6 +753,8 @@ def karmic_remedies():
             metadata=_build_chart_metadata(chart_data, category='karmic_remedies')
         )
 
+    except PredictionUnavailableError as e:
+        return _unavailable_response(e)
     except Exception as e:
         log_error(logger, e, "Error in karmic_remedies")
         return prediction_error_response(
@@ -795,6 +827,8 @@ def karma_reset():
             metadata=_build_chart_metadata(chart_data, category='karma_reset')
         )
 
+    except PredictionUnavailableError as e:
+        return _unavailable_response(e)
     except Exception as e:
         log_error(logger, e, "Error in karma_reset")
         return prediction_error_response(
@@ -860,6 +894,8 @@ def relationships():
             metadata=_build_chart_metadata(chart_data, category='relationships')
         )
 
+    except PredictionUnavailableError as e:
+        return _unavailable_response(e)
     except Exception as e:
         log_error(logger, e, "Error in relationships")
         return prediction_error_response(
@@ -925,6 +961,8 @@ def predictions():
             metadata=_build_chart_metadata(chart_data, category='predictions')
         )
 
+    except PredictionUnavailableError as e:
+        return _unavailable_response(e)
     except Exception as e:
         log_error(logger, e, "Error in predictions")
         return prediction_error_response(
@@ -1008,7 +1046,7 @@ def start_session():
     """
     try:
         session_id = str(uuid.uuid4())
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
 
         session_log = BhriguSessionLog(
             session_id=session_id,
@@ -1113,6 +1151,8 @@ def comprehensive_prediction():
             metadata=_build_chart_metadata(chart_data, category='comprehensive')
         )
 
+    except PredictionUnavailableError as e:
+        return _unavailable_response(e)
     except Exception as e:
         log_error(logger, e, "Error in comprehensive_prediction")
         return prediction_error_response(

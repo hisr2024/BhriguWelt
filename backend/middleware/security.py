@@ -82,6 +82,9 @@ class SecurityMiddleware:
     @staticmethod
     def enforce_https():
         """Enforce HTTPS in production"""
+        # Health checks come from the platform over plain HTTP inside the network.
+        if request.path in ('/health', '/api/health', '/api/health/') or request.path.startswith('/api/health/live'):
+            return None
         if not request.is_secure and request.headers.get('X-Forwarded-Proto') != 'https':
             # Redirect to HTTPS
             url = request.url.replace('http://', 'https://', 1)

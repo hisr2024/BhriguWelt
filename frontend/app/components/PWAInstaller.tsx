@@ -18,11 +18,7 @@ export function PWAInstaller() {
           .then((registration) => {
             console.log('[PWA] Service Worker registered:', registration.scope);
 
-            // Check for updates periodically
-            updateInterval = setInterval(() => {
-              registration.update();
-            }, 60000); // Check every minute
-
+            // Browsers re-check the SW on navigation; no polling needed.
             registration.addEventListener('updatefound', () => {
               const newWorker = registration.installing;
               if (newWorker) {
@@ -41,7 +37,13 @@ export function PWAInstaller() {
           });
       };
 
-      window.addEventListener('load', handleLoad);
+      // This effect runs after hydration, when 'load' has usually already
+      // fired — waiting for it meant the service worker never registered.
+      if (document.readyState === 'complete') {
+        handleLoad();
+      } else {
+        window.addEventListener('load', handleLoad, { once: true });
+      }
     }
 
     const handleServiceWorkerMessage = (event: MessageEvent) => {

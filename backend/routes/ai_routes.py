@@ -30,11 +30,15 @@ def require_ai_consent(f):
     """Decorator to ensure AI consent was provided"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Check if AI is enabled in environment
-        if not ai_configured() and not ai_service.offline_ready:
+        # Without an AI provider these endpoints used to return offline
+        # template text (with unfilled {name} placeholders) labelled
+        # ai_enhanced: true. Be honest instead: 503, retryable.
+        if not ai_configured():
             return jsonify({
                 'error': 'AI features not configured',
-                'message': 'AI integration is not available'
+                'error_code': 'AI_UNAVAILABLE',
+                'message': 'AI answers are temporarily unavailable. Please try again later.',
+                'retryable': True,
             }), 503
         
         # Check consent header

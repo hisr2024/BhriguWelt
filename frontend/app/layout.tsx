@@ -1,13 +1,52 @@
 import type { Metadata, Viewport } from 'next'
+import localFont from 'next/font/local'
 import './globals.css'
+import { SITE_URL } from '@/lib/site'
 import { PWAInstaller } from './components/PWAInstaller'
 import { Providers } from './providers'
-import { GDPRNotice } from '../components/GDPRNotice'
+import { GDPRNoticeLazy } from '../components/GDPRNoticeLazy'
+
+// Self-hosted variable fonts (SIL OFL): no request to Google's servers,
+// no render-blocking stylesheet, every weight 100–900 available.
+const inter = localFont({
+  src: './fonts/inter-latin-var.woff2',
+  variable: '--font-inter',
+  weight: '100 900',
+  display: 'swap',
+})
+const spaceGrotesk = localFont({
+  src: './fonts/space-grotesk-latin-var.woff2',
+  variable: '--font-space-grotesk',
+  weight: '300 700',
+  display: 'swap',
+})
+
+const SITE_DESCRIPTION =
+  'Vedic astrology readings built on Bhrigu Samhita and Nadi Jyotisha principles: your chart computed with Swiss Ephemeris, dated dasha and transit windows, in plain language or full astrologer detail.'
 
 export const metadata: Metadata = {
-  title: 'BhriguWelt - Discover Your Soul\'s Journey',
-  description: 'Ancient Vedic wisdom meets modern AI. Explore past lives, present purpose, and future possibilities through comprehensive astrology.',
-  keywords: 'astrology, vedic astrology, karmic journey, past lives, future prediction, spiritual guidance',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'BhriguWelt — Bhrigu Samhita & Nadi astrology readings',
+    template: '%s · BhriguWelt',
+  },
+  description: SITE_DESCRIPTION,
+  keywords: ['vedic astrology', 'bhrigu samhita', 'nadi jyotish', 'dasha', 'karmic astrology', 'birth chart'],
+  applicationName: 'BhriguWelt',
+  alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    siteName: 'BhriguWelt',
+    title: 'BhriguWelt — Bhrigu Samhita & Nadi astrology readings',
+    description: SITE_DESCRIPTION,
+    url: '/',
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'BhriguWelt — Bhrigu Samhita & Nadi astrology readings',
+    description: SITE_DESCRIPTION,
+  },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -27,7 +66,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#00d9ff',
+  themeColor: '#0B0B14',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -40,23 +79,15 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
-        <link rel="icon" href="/icons/icon-192x192.svg" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.svg" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Crimson+Pro:wght@400;600&display=swap"
-          rel="stylesheet"
-        />
       </head>
       <body className="font-sans">
         <Providers>
-          {children}
+          <main id="main-content">{children}</main>
           <PWAInstaller />
-          <GDPRNotice />
+          <GDPRNoticeLazy />
         </Providers>
       </body>
     </html>

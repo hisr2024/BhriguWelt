@@ -1,3 +1,4 @@
+import { backendUrl } from '@/lib/backendUrl';
 import { generatePastLivesPrediction, type PastLivesEngineOptions } from '../engines/pastLivesEngine';
 import {
   generateLifeEventsPrediction,
@@ -867,7 +868,7 @@ export class PredictionsAPI {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/ai/compose`, {
+      const response = await fetch(backendUrl('/api/ai/compose'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
