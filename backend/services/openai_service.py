@@ -712,9 +712,11 @@ Your predictions must:
             raise
 
     def _post_with_retry(self, payload: Dict[str, Any]) -> requests.Response:
-        max_retries = self._get_int_env('OPENAI_MAX_RETRIES', 2)  # Reduced from 3 for faster response
+        # One retry and a 90 s read timeout: a Sarvam reasoning call can take
+        # 30-60 s; worst case 2 x 90 s stays inside gunicorn's 300 s timeout.
+        max_retries = self._get_int_env('OPENAI_MAX_RETRIES', 1)
         backoff_base = float(os.getenv('OPENAI_BACKOFF_BASE', '0.5'))  # Reduced from 1s for faster retries
-        timeout = self._get_int_env('OPENAI_TIMEOUT', 45)  # Reduced from 90s for faster failure detection
+        timeout = self._get_int_env('OPENAI_TIMEOUT', 90)
 
         for attempt in range(max_retries + 1):
             try:

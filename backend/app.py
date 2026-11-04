@@ -6,8 +6,6 @@ from flask import Flask, jsonify, request, g
 from werkzeug.exceptions import HTTPException
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 import os
 from services.ai_provider import resolve_provider
@@ -122,6 +120,11 @@ _check_corpus_files()
 # Initialize Flask app
 logger.info("Initializing Flask application...")
 app = Flask(__name__)
+# Render (and Vercel rewrites) terminate TLS at a proxy. Trust exactly one hop
+# so request.remote_addr is the visitor (per-user rate limits instead of one
+# shared bucket) and request.is_secure is true (HSTS, no HTTPS redirect loop).
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 # Security: Generate secure random secrets if not provided
 import secrets
@@ -235,33 +238,9 @@ CORS(
 
 logger.info("✓ CORS configured with allowed origins: %s", ", ".join(ALLOWED_ORIGINS))
 
-# Initialize Rate Limiter
-logger.info("Initializing rate limiter...")
-_rate_limit_storage_uri = os.getenv('REDIS_URL', 'memory://')
-try:
-    limiter = Limiter(
-        app=app,
-        key_func=get_remote_address,
-        default_limits=["200 per day", "50 per hour"],
-        storage_uri=_rate_limit_storage_uri,
-        strategy="fixed-window",
-    )
-except Exception as _limiter_exc:
-    # An unreachable/incompatible Redis at boot must not take the app down —
-    # degrade to per-process in-memory rate limiting instead.
-    logger.warning(
-        "Rate limiter storage '%s' unavailable (%s); falling back to in-memory storage.",
-        _rate_limit_storage_uri,
-        _limiter_exc,
-    )
-    limiter = Limiter(
-        app=app,
-        key_func=get_remote_address,
-        default_limits=["200 per day", "50 per hour"],
-        storage_uri="memory://",
-        strategy="fixed-window",
-    )
-logger.info("✓ Rate limiter initialized with default limits: 200/day, 50/hour")
+# Rate limiting is configured once, in middleware.rate_limiter.setup_rate_limiter()
+# (below). A second app-wide Limiter here used to add a 50/hour cap that — keyed
+# on the proxy's address — every user shared.
 
 # Request preprocessing middleware
 def _assign_correlation_id():

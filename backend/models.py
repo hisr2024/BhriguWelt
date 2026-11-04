@@ -125,7 +125,36 @@ class BhriguPredictionCache(db.Model):
         data_parts.extend(part for part in optional_parts if part not in (None, ''))
         data_parts.append(version)
         data_str = "_".join(str(part) for part in data_parts)
+        # Birth data has little entropy, so a plain SHA-256 can be brute-forced
+        # back to the birth details. With SECRET_KEY set, use a keyed HMAC.
+        secret = os.getenv('SECRET_KEY')
+        if secret:
+            import hmac
+            return hmac.new(secret.encode(), data_str.encode(), hashlib.sha256).hexdigest()
         return hashlib.sha256(data_str.encode()).hexdigest()
+
+    @staticmethod
+    def question_digest(question):
+        """Questions can contain personal details: store only a digest."""
+        if not question:
+            return None
+        import hashlib
+        return 'q:' + hashlib.sha256(str(question).strip().encode()).hexdigest()[:40]
+
+    @classmethod
+    def purge_expired(cls, max_age_days=None) -> int:
+        """Delete cached readings older than PREDICTION_CACHE_TTL_DAYS (default 30)."""
+        from datetime import timedelta
+        days = int(max_age_days or os.getenv('PREDICTION_CACHE_TTL_DAYS', '30'))
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        try:
+            removed = cls.query.filter(cls.created_at < cutoff).delete(synchronize_session=False)
+            db.session.commit()
+            return int(removed or 0)
+        except Exception as e:
+            db.session.rollback()
+            logger.warning(f"Prediction cache purge failed: {e}")
+            return 0
 
     @classmethod
     def cache_prediction(cls, birth_data: dict, category: str, prediction: dict,
@@ -135,6 +164,7 @@ class BhriguPredictionCache(db.Model):
         Uses transaction isolation to prevent concurrent inserts of duplicate entries.
         """
         from sqlalchemy import exc
+        stored_question = cls.question_digest(question)
 
         try:
             # Begin explicit transaction with isolation
@@ -144,7 +174,7 @@ class BhriguPredictionCache(db.Model):
                 existing = cls.query.filter_by(
                     birth_data_hash=birth_hash,
                     category=category,
-                    question=question
+                    question=stored_question
                 ).first()
 
                 prediction_payload = dict(prediction)
@@ -164,7 +194,7 @@ class BhriguPredictionCache(db.Model):
                 cache_entry = cls(
                     birth_data_hash=birth_hash,
                     category=category,
-                    question=question,
+                    question=stored_question,
                     prediction_data=json.dumps(prediction_payload),
                     complete_analysis=complete_analysis,
                     zodiac_sign=metadata.get('zodiac_sign') if metadata else None,
@@ -185,7 +215,7 @@ class BhriguPredictionCache(db.Model):
             return cls.query.filter_by(
                 birth_data_hash=birth_hash,
                 category=category,
-                question=question
+                question=stored_question
             ).first()
         except Exception as e:
             db.session.rollback()
@@ -214,7 +244,7 @@ class BhriguPredictionCache(db.Model):
             query = cls.query.filter_by(birth_data_hash=birth_hash, category=category)
 
             if question:
-                query = query.filter_by(question=question)
+                query = query.filter_by(question=cls.question_digest(question))
 
             cached = query.order_by(cls.created_at.desc()).first()
             if cached and not cls._is_current_format(cached.prediction_data):
@@ -412,6 +442,9 @@ def init_db(app):
     with app.app_context():
         db.create_all()
         logger.info("✓ Database tables created successfully")
+        removed = BhriguPredictionCache.purge_expired()
+        if removed:
+            logger.info(f"Purged {removed} expired cached readings")
 
 
 def seed_initial_wisdom():

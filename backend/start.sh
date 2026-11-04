@@ -37,8 +37,12 @@ echo "================================"
 
 # Set defaults if not provided
 export WORKERS="${WORKERS:-1}"
-export TIMEOUT="${TIMEOUT:-120}"
-export WORKER_CLASS="${WORKER_CLASS:-sync}"
+# One process (SQLite + in-memory quota/rate limits stay consistent) with
+# threads, so a slow AI reading no longer blocks every other request. The
+# timeout covers a Sarvam reasoning call plus one retry.
+export TIMEOUT="${TIMEOUT:-300}"
+export WORKER_CLASS="${WORKER_CLASS:-gthread}"
+export THREADS="${THREADS:-8}"
 export MAX_REQUESTS="${MAX_REQUESTS:-1000}"
 export MAX_REQUESTS_JITTER="${MAX_REQUESTS_JITTER:-50}"
 
@@ -46,6 +50,7 @@ echo "Gunicorn Configuration:"
 echo "  Workers: $WORKERS"
 echo "  Timeout: $TIMEOUT seconds"
 echo "  Worker Class: $WORKER_CLASS"
+echo "  Threads: $THREADS"
 echo "  Max Requests: $MAX_REQUESTS"
 echo "================================"
 
@@ -66,7 +71,10 @@ exec gunicorn app:app \
     --bind 0.0.0.0:${PORT} \
     --workers ${WORKERS} \
     --worker-class ${WORKER_CLASS} \
+    --threads ${THREADS} \
     --timeout ${TIMEOUT} \
+    --graceful-timeout 30 \
+    --forwarded-allow-ips '*' \
     --max-requests ${MAX_REQUESTS} \
     --max-requests-jitter ${MAX_REQUESTS_JITTER} \
     --access-logfile - \
