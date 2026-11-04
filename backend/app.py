@@ -8,6 +8,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 import os
+import re
 from services.ai_provider import resolve_provider
 import sys
 import json
@@ -209,6 +210,26 @@ def _get_allowed_origins():
 
 ALLOWED_ORIGINS = _get_allowed_origins()
 
+# Optional: allow Vercel preview deployments. Opt-in only, because anyone can
+# deploy to *.vercel.app — set e.g.
+#   CORS_ORIGIN_REGEX=^https://bhrigu-?welt-[a-z0-9-]+-<your-team>\.vercel\.app$
+_ORIGIN_REGEX_RAW = os.getenv("CORS_ORIGIN_REGEX", "").strip()
+try:
+    ORIGIN_REGEX = re.compile(_ORIGIN_REGEX_RAW) if _ORIGIN_REGEX_RAW else None
+except re.error as _regex_error:
+    logger.error("Ignoring invalid CORS_ORIGIN_REGEX: %s", _regex_error)
+    ORIGIN_REGEX = None
+CORS_ORIGINS = ALLOWED_ORIGINS + ([ORIGIN_REGEX] if ORIGIN_REGEX else [])
+
+
+def is_origin_allowed(origin):
+    if not origin:
+        return False
+    normalized = origin.rstrip('/').lower()
+    if normalized in {o.lower().rstrip('/') for o in ALLOWED_ORIGINS}:
+        return True
+    return bool(ORIGIN_REGEX and ORIGIN_REGEX.fullmatch(origin.rstrip('/')))
+
 def _merge_cors_headers_case_insensitive(existing_headers, requested_headers):
     merged = {header.lower(): header for header in existing_headers}
     for header in requested_headers:
@@ -221,7 +242,7 @@ CORS(
     app,
     resources={
         r"/api/.*": {
-            "origins": ALLOWED_ORIGINS,
+            "origins": CORS_ORIGINS,
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
             "allow_headers": STANDARD_CORS_HEADERS,
             "supports_credentials": True,
@@ -229,7 +250,7 @@ CORS(
             "max_age": 86400,
         },
         r"/health": {
-            "origins": ALLOWED_ORIGINS,
+            "origins": CORS_ORIGINS,
             "methods": ["GET", "OPTIONS"],
             "supports_credentials": True,
         },
@@ -270,18 +291,7 @@ def handle_preflight():
         # Normalize origin (remove trailing slash if present)
         normalized_origin = origin.rstrip('/') if origin else None
 
-        # Check if origin matches (with normalization)
-        origin_allowed = False
-        if normalized_origin:
-            # Check exact match first
-            if normalized_origin in ALLOWED_ORIGINS:
-                origin_allowed = True
-            else:
-                # Check with case-insensitive comparison
-                normalized_allowed = {o.lower().rstrip('/') for o in ALLOWED_ORIGINS}
-                if normalized_origin.lower() in normalized_allowed:
-                    origin_allowed = True
-                    logger.info(f"Origin matched via case-insensitive comparison: {origin}")
+        origin_allowed = is_origin_allowed(normalized_origin)
 
         if origin_allowed:
             # Get all headers requested by the browser

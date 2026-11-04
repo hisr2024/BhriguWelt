@@ -14,6 +14,26 @@ from utils.logger import setup_logger, log_exception
 logger = setup_logger(__name__)
 bp = Blueprint('health', __name__)
 
+# Public probes. Everything else (costs, quotas, internals) is operator-only in
+# production: send X-Admin-Token matching HEALTH_ADMIN_TOKEN, or get a 404.
+_PUBLIC_HEALTH_ENDPOINTS = {'simple_status', 'readiness', 'liveness'}
+
+
+@bp.before_request
+def _restrict_internal_health():
+    import hmac
+    import os
+    if os.getenv('FLASK_ENV') != 'production':
+        return None
+    endpoint = (request.endpoint or '').split('.')[-1]
+    if endpoint in _PUBLIC_HEALTH_ENDPOINTS:
+        return None
+    expected = os.getenv('HEALTH_ADMIN_TOKEN', '')
+    supplied = request.headers.get('X-Admin-Token', '')
+    if expected and hmac.compare_digest(expected, supplied):
+        return None
+    return jsonify({'error': 'Not found'}), 404
+
 
 # ============================================================================
 # COST MONITORING HELPERS
