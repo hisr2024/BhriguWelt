@@ -11,6 +11,7 @@ import type { Profile } from '@/lib/types';
 import {
   ArrowIcon, AskIcon, FlameIcon, HourglassIcon, LeafIcon, LotusIcon, RebirthIcon, SunIcon, UnionIcon, WheelIcon,
 } from '@/components/nadi/icons';
+import { unlockHref } from '@/lib/unlockRedirect';
 
 type Reading = { slug: string; title: string; note: string; icon: ComponentType<{ size?: number }> };
 
@@ -42,7 +43,7 @@ export default function ReadingsHubPage() {
   useEffect(() => {
     if (isLoading) return;
     if (!isSetup) return void router.push('/setup-passcode');
-    if (!isUnlocked) return void router.push('/unlock');
+    if (!isUnlocked) return void router.push(unlockHref());
     getAllProfiles()
       .then((list) => {
         setProfiles(list);

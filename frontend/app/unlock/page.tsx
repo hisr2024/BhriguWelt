@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { safeNext } from '@/lib/unlockRedirect';
 import PasscodeUnlock from '../components/PasscodeUnlock';
 import AnimatedBackground from '../components/AnimatedBackground';
 import { useEncryption } from '@/lib/context/EncryptionContext';
@@ -9,6 +10,8 @@ import { useEncryption } from '@/lib/context/EncryptionContext';
 export default function UnlockPage() {
   const router = useRouter();
   const { unlockWithPasscode, isSetup, isLoading, isUnlocked } = useEncryption();
+  const nextPath = () =>
+    safeNext(typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('next'));
 
   // Redirect to setup if not set up
   useEffect(() => {
@@ -20,7 +23,7 @@ export default function UnlockPage() {
   // Redirect to dashboard if already unlocked
   useEffect(() => {
     if (!isLoading && isSetup && isUnlocked) {
-      router.push('/dashboard');
+      router.replace(nextPath());
     }
   }, [isLoading, isSetup, isUnlocked, router]);
 
@@ -30,7 +33,7 @@ export default function UnlockPage() {
       const success = await unlockWithPasscode(passcode);
       
       if (success) {
-        router.push('/dashboard');
+        router.replace(nextPath());
         return true;
       }
       return false;

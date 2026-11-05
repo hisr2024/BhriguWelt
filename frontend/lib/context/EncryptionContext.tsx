@@ -7,13 +7,14 @@ import {
   isEncryptionSetup,
   setupEncryption,
   setItem,
+  getItem,
   markKeyRotationRequired,
   isKeyRotationRequired,
   rotateEncryptionKey,
   clearKeyRotationRequired,
   STORES,
 } from '../storage';
-import { hashPasscode } from '../crypto';
+import { hashPasscode, verifyPasscode } from '../crypto';
 
 interface EncryptionContextType {
   encryptionKey: CryptoKey | null;
@@ -27,6 +28,29 @@ interface EncryptionContextType {
 }
 
 const EncryptionContext = createContext<EncryptionContextType | undefined>(undefined);
+
+async function isCorrectKey(passcode: string, key: CryptoKey): Promise<boolean> {
+  try {
+    const stored = await getItem(STORES.METADATA, 'encryptionTest');
+    if (stored) {
+      // getItem resolves null when decryption fails (wrong key).
+      const test = await getItem(STORES.METADATA, 'encryptionTest', key);
+      return !!test && test.test === 'encryption setup successful';
+    }
+  } catch {
+    return false;
+  }
+  // Vaults created before the test record existed: fall back to the stored hash.
+  try {
+    const storedHash = await getItem(STORES.METADATA, 'passcodeHash');
+    if (typeof storedHash === 'string' && storedHash) {
+      return verifyPasscode(passcode, storedHash);
+    }
+  } catch {
+    /* no hash either */
+  }
+  return true;
+}
 
 export function EncryptionProvider({ 
   children, 
@@ -96,6 +120,12 @@ export function EncryptionProvider({
   const unlockWithPasscode = async (passcode: string): Promise<boolean> => {
     try {
       const key = await getEncryptionKey(passcode);
+      // Every passcode derives *a* key; only the right one decrypts the
+      // vault's test record. Without this check a wrong passcode "unlocked"
+      // an empty-looking app and new data was saved under the wrong key.
+      if (!(await isCorrectKey(passcode, key))) {
+        return false;
+      }
       let activeKey = key;
       if (await isKeyRotationRequired()) {
         activeKey = await rotateEncryptionKey(passcode, key);

@@ -17,6 +17,7 @@ import { useEncryption } from '@/lib/context/EncryptionContext';
 import { loadCurrentProfile } from '@/lib/profileHelpers';
 import { astrologyAPI } from '@/lib/api';
 import { countItems, getAnalyticsCache, setAnalyticsCache, clearAnalyticsCache, STORES } from '@/lib/storage';
+import { unlockHref } from '@/lib/unlockRedirect';
 
 export default function AnalyticsPage() {
   const [analytics, setAnalytics] = useState<any>(null);
@@ -41,7 +42,7 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     if (!encryptionLoading && isSetup && !isUnlocked) {
-      router.push('/unlock');
+      router.push(unlockHref());
     }
   }, [encryptionLoading, isSetup, isUnlocked, router]);
 

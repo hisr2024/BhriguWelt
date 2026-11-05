@@ -19,13 +19,14 @@ import { astrologyAPI } from '@/lib/api';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import type { BirthData, ChartData as PDFChartData, Interpretation } from '@/lib/export/pdfGenerator';
 import { ShareUtils, showShareSuccess, showShareError } from '@/lib/export/shareUtils';
+import { unlockHref } from '@/lib/unlockRedirect';
 
 export default function BirthChartViewPage() {
   const [chartData, setChartData] = useState<any>(null);
   const [showAIChat, setShowAIChat] = useState(false);
   const [activeTab, setActiveTab] = useState<'chart' | 'details' | 'interpretation'>('chart');
   const [missingChart, setMissingChart] = useState(false);
-  const [usingDemo, setUsingDemo] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [loadingChart, setLoadingChart] = useState(true);
   const [chartSize, setChartSize] = useState(600);
   const [exportingPDF, setExportingPDF] = useState(false);
@@ -49,7 +50,7 @@ export default function BirthChartViewPage() {
   // Redirect to unlock if not unlocked
   useEffect(() => {
     if (!encryptionLoading && isSetup && !isUnlocked) {
-      router.push('/unlock');
+      router.push(unlockHref());
     }
   }, [encryptionLoading, isSetup, isUnlocked, router]);
 
@@ -137,31 +138,9 @@ export default function BirthChartViewPage() {
         }
       }
 
-      if (profile) {
-        console.warn('Birth chart missing, falling back to demo data for display.');
-        setUsingDemo(true);
-        setChartData({
-          ascendant: 'Aries',
-          zodiac_sign: 'Leo',
-          moon_sign: 'Taurus',
-          nakshatra: 'Rohini',
-          planets: [
-            { name: 'Sun', position: 120, sign: 'Leo', house: 5, retrograde: false },
-            { name: 'Moon', position: 45, sign: 'Taurus', house: 2, retrograde: false },
-            { name: 'Mercury', position: 135, sign: 'Virgo', house: 6, retrograde: true },
-            { name: 'Venus', position: 200, sign: 'Libra', house: 7, retrograde: false },
-            { name: 'Mars', position: 90, sign: 'Cancer', house: 4, retrograde: false },
-            { name: 'Jupiter', position: 270, sign: 'Capricorn', house: 10, retrograde: false },
-            { name: 'Saturn', position: 315, sign: 'Aquarius', house: 11, retrograde: false },
-            { name: 'Rahu', position: 180, sign: 'Libra', house: 7, retrograde: false },
-            { name: 'Ketu', position: 0, sign: 'Aries', house: 1, retrograde: false },
-          ],
-          houses: Array.from({ length: 12 }, (_, i) => i * 30),
-        });
-        setMissingChart(false);
-      } else {
-        setMissingChart(true);
-      }
+      // Never show someone else's chart: no demo data.
+      setLoadFailed(Boolean(profile));
+      setMissingChart(true);
     } catch (error) {
       console.error('Error loading chart data:', error);
       setMissingChart(true);
@@ -187,13 +166,27 @@ export default function BirthChartViewPage() {
         <FloatingElements />
         <div className="genz-container py-8 relative z-10">
           <GenZCard variant="glass" className="text-center max-w-xl mx-auto">
-            <h2 className="text-2xl font-display font-bold text-white mb-4">Create your birth chart</h2>
-            <p className="text-white/80 mb-6">
-              We couldn’t find a chart yet. Let’s create one so your insights stay personalized.
-            </p>
-            <Link href="/birth-chart/create">
-              <GenZButton variant="primary">Create Birth Chart</GenZButton>
-            </Link>
+            {loadFailed ? (
+              <>
+                <h2 className="text-2xl font-display font-bold text-white mb-4">Your chart couldn’t be loaded</h2>
+                <p className="text-white/80 mb-6">Check your connection and try again.</p>
+                <button
+                  type="button"
+                  className="nadi-btn"
+                  onClick={() => { setMissingChart(false); setLoadFailed(false); setLoadingChart(true); loadChartData(); }}
+                >
+                  Try again
+                </button>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl font-display font-bold text-white mb-4">Create your birth chart</h2>
+                <p className="text-white/80 mb-6">
+                  We couldn’t find a chart yet. Let’s create one so your insights stay personalized.
+                </p>
+                <Link href="/get-started" className="nadi-btn">Add your birth details</Link>
+              </>
+            )}
           </GenZCard>
         </div>
       </div>
@@ -201,21 +194,21 @@ export default function BirthChartViewPage() {
   }
 
   const resolveAscendant = (data: any): string => {
-    if (!data?.ascendant) return 'Aries';
+    if (!data?.ascendant) return '';
     if (typeof data.ascendant === 'string') return data.ascendant;
-    return data.ascendant?.sign ?? data.ascendant?.name ?? 'Aries';
+    return data.ascendant?.sign ?? data.ascendant?.name ?? '';
   };
 
   const resolveZodiacSign = (data: any): string => {
-    if (!data?.zodiac_sign) return 'Leo';
+    if (!data?.zodiac_sign) return '';
     if (typeof data.zodiac_sign === 'string') return data.zodiac_sign;
-    return data.zodiac_sign?.sign ?? data.zodiac_sign?.name ?? 'Leo';
+    return data.zodiac_sign?.sign ?? data.zodiac_sign?.name ?? '';
   };
 
   const resolveMoonSign = (data: any): string => {
-    if (!data?.moon_sign) return 'Taurus';
+    if (!data?.moon_sign) return '';
     if (typeof data.moon_sign === 'string') return data.moon_sign;
-    return data.moon_sign?.sign ?? data.moon_sign?.name ?? 'Taurus';
+    return data.moon_sign?.sign ?? data.moon_sign?.name ?? '';
   };
 
   const getPositionFromPlanet = (planet: any): number | null => {
@@ -303,8 +296,8 @@ export default function BirthChartViewPage() {
 
       // Prepare chart data for PDF
       const pdfChartData: PDFChartData = {
-        sun: chartData.sun || chartData.planets?.find((p: any) => p.name === 'Sun'),
-        moon: chartData.moon || chartData.planets?.find((p: any) => p.name === 'Moon'),
+        sun: chartData.sun || planetDetails.find((p: any) => p.name === 'Sun'),
+        moon: chartData.moon || planetDetails.find((p: any) => p.name === 'Moon'),
         ascendant: {
           sign: resolvedAscendant,
           degree: chartData.ascendant?.degree || 0,
@@ -390,7 +383,7 @@ export default function BirthChartViewPage() {
     try {
       setSharingChart(true);
 
-      const shareTitle = `${currentProfile.name}'s Birth Chart - BhriguWelt`;
+      const shareTitle = `${currentProfile.name}'s Birth Chart`;
       const shareContent = `
 Birth Chart Analysis for ${currentProfile.name}
 
@@ -505,7 +498,7 @@ ${interpretations.growth.map((g: string) => `• ${g}`).join('\n')}
   };
 
   const interpretations = {
-    sun: `Your Sun in ${resolvedZodiacSign || 'Leo'} reveals your core essence and life force. This placement highlights where you are meant to lead, create, and express your authentic self. When you align with this energy, you feel energized, confident, and capable of inspiring others. The Sun also speaks to your sense of purpose—what you naturally gravitate toward when you want to feel alive and fulfilled.`,
+    sun: `Your Sun in ${resolvedZodiacSign} reveals your core essence and life force. This placement highlights where you are meant to lead, create, and express your authentic self. When you align with this energy, you feel energized, confident, and capable of inspiring others. The Sun also speaks to your sense of purpose—what you naturally gravitate toward when you want to feel alive and fulfilled.`,
     moon: `Your Moon in ${resolvedMoonSign || 'Taurus'} describes your emotional needs, intuitive rhythms, and how you restore balance. This placement indicates the kind of environment that helps you feel safe, loved, and grounded. It also highlights how you process stress and what comforts you most during transitions. By honoring your Moon sign, you strengthen your inner resilience and emotional clarity.`,
     ascendant: `${resolvedAscendant || 'Aries'} rising shapes your first impressions, life approach, and the lens through which people experience you. This placement signals how you move through new situations, the way you initiate action, and the persona you wear in public. It also influences your physical presence, style, and your instinctive response to opportunities.`,
     overall: `Your birth chart reveals a multidimensional blueprint that blends destiny (the karmic themes you carry), free will (the choices you make), and timing (the cycles that activate growth). Together, your Sun, Moon, and Ascendant create a signature of purpose, emotional intelligence, and outward expression. Understanding this alignment helps you navigate relationships, career, and spiritual evolution with clarity and confidence.`,
@@ -535,12 +528,10 @@ ${interpretations.growth.map((g: string) => `• ${g}`).join('\n')}
         <div className="genz-container py-8 relative z-10">
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
-            <GenZButton variant="ghost" size="sm">
-              <Link href="/dashboard" className="flex items-center gap-2">
-                <ArrowLeft className="w-5 h-5" />
-                Back
-              </Link>
-            </GenZButton>
+            <Link href="/dashboard" className="flex h-11 items-center gap-2 px-2 text-sm text-ivory-2 hover:text-ivory">
+              <ArrowLeft className="w-5 h-5" />
+              Back
+            </Link>
           </div>
 
           <motion.div
@@ -557,11 +548,6 @@ ${interpretations.growth.map((g: string) => `• ${g}`).join('\n')}
             <p className="text-xl text-white/80">
               Explore the planetary positions at your birth
             </p>
-            {usingDemo && (
-              <p className="text-sm text-genz-electric-blue mt-4">
-                Showing a demo chart while we sync your saved data.
-              </p>
-            )}
           </motion.div>
 
           {/* Action Buttons */}
@@ -694,7 +680,7 @@ ${interpretations.growth.map((g: string) => `• ${g}`).join('\n')}
                             {planet.sign ?? 'Unknown'} • House {planet.house ? planet.house : '—'}
                           </p>
                           <p className="text-genz-electric-blue text-sm mt-1">
-                            {Number.isFinite(planet.position) ? `${planet.position.toFixed(2)}°` : '—'}
+                            {Number.isFinite(planet.position) ? `${(planet.position % 30).toFixed(2)}°` : '—'}
                           </p>
                         </div>
                       </div>

@@ -12,6 +12,7 @@ import {
   type ProfileCreationProgress,
 } from '@/lib/services/profileCreationService';
 import ProfileCreationProgressComponent from '@/components/ProfileCreationProgress';
+import { unlockHref } from '@/lib/unlockRedirect';
 
 export default function GetStartedPage() {
   const router = useRouter();
@@ -47,7 +48,7 @@ export default function GetStartedPage() {
 
   useEffect(() => {
     if (!encryptionLoading && isSetup && !isUnlocked) {
-      router.push('/unlock');
+      router.push(unlockHref());
     }
   }, [encryptionLoading, isSetup, isUnlocked, router]);
 

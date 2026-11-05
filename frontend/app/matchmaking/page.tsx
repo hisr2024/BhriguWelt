@@ -14,6 +14,7 @@ import GenZButton from '../components/GenZButton';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { loadCurrentProfile } from '@/lib/profileHelpers';
 import { api } from '@/lib/api';
+import { unlockHref } from '@/lib/unlockRedirect';
 
 interface MatchResult {
   total_score: number;
@@ -75,7 +76,7 @@ export default function MatchmakingPage() {
 
   useEffect(() => {
     if (! encryptionLoading && isSetup && ! isUnlocked) {
-      router.push('/unlock');
+      router.push(unlockHref());
     }
   }, [encryptionLoading, isSetup, isUnlocked, router]);
 
@@ -153,12 +154,10 @@ export default function MatchmakingPage() {
 
       <div className="genz-container py-8 relative z-10">
         <div className="flex items-center gap-4 mb-8">
-          <GenZButton variant="ghost" size="sm">
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <ArrowLeft className="w-5 h-5" />
-              Back
-            </Link>
-          </GenZButton>
+          <Link href="/dashboard" className="flex h-11 items-center gap-2 px-2 text-sm text-ivory-2 hover:text-ivory">
+            <ArrowLeft className="w-5 h-5" />
+            Back
+          </Link>
         </div>
 
         <motion.div
@@ -196,7 +195,12 @@ export default function MatchmakingPage() {
                     <input
                       type="checkbox"
                       checked={useMyProfile}
-                      onChange={(e) => setUseMyProfile(e.target.checked)}
+                      onChange={(e) => {
+                        setUseMyProfile(e.target.checked);
+                        if (!e.target.checked) {
+                          setPerson1({ name: '', date_of_birth: '', time_of_birth: '', place_of_birth: '' });
+                        }
+                      }}
                       className="rounded"
                     />
                     Use my profile

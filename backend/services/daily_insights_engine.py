@@ -9,6 +9,12 @@ import random
 
 from utils.logger import setup_logger
 from services.mantras import planet_mantra
+
+
+def _an(word: str) -> str:
+    """'an Aquarius', 'a Leo'."""
+    return f"{'an' if str(word)[:1].lower() in 'aeiou' else 'a'} {word}"
+
 from services.ephemeris_core import day_lord_hora_strings
 
 logger = setup_logger(__name__)
@@ -467,7 +473,7 @@ class DailyInsightsEngine:
         return {
             'rating': ratings.get(energy_level['level'], 4),
             'message': love_themes.get(planet, 'Open your heart to love today.'),
-            'advice': f"As a {zodiac_sign}, your {moon_sign} Moon enhances emotional awareness."
+            'advice': f"As {_an(zodiac_sign)}, your {moon_sign} Moon enhances emotional awareness."
         }
 
     def _generate_career_insight(
@@ -956,7 +962,7 @@ class DailyInsightsEngine:
         """Generate annual guidance"""
         themes = self.ZODIAC_DAILY_THEMES.get(zodiac_sign, {})
 
-        return f"As a {zodiac_sign}, embrace your natural {themes.get('strength', 'gifts')}. " \
+        return f"As {_an(zodiac_sign)}, embrace your natural {themes.get('strength', 'gifts')}. " \
                f"Work consciously with your tendency toward {themes.get('challenge', 'challenges')}. " \
                f"The year supports your focus on {themes.get('focus', 'growth')}."
 
