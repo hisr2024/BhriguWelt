@@ -539,26 +539,29 @@ export async function getAllItems(
         }
 
         if (encryptionKey) {
-          try {
-            const decrypted = await Promise.all(
-              items.map(async (item) => {
-                let data;
-                if (item.encrypted) {
-                  data = await decryptFromStorage(item.value, encryptionKey);
-                } else {
-                  // Return just the value for unencrypted items
-                  data = item.value;
-                }
-                // Include the id from IndexedDB in the returned object
-                return { ...data, id: item.id };
-              })
-            );
-            // Silent success
-            resolve(decrypted);
-          } catch (error) {
-            console.error(`Failed to decrypt items from store="${storeName}":`, error);
-            reject(new Error('Failed to decrypt items - incorrect key?'));
+          // Decrypt each record on its own: one record that can't be read
+          // (saved under an earlier passcode or app version) must not hide
+          // every other profile or report.
+          const results = await Promise.allSettled(
+            items.map(async (item) => {
+              const data = item.encrypted
+                ? await decryptFromStorage(item.value, encryptionKey)
+                : item.value;
+              return { ...data, id: item.id };
+            })
+          );
+          const readable = results
+            .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled')
+            .map((r) => r.value);
+          const skipped = results.length - readable.length;
+          if (skipped > 0) {
+            console.warn(`Skipped ${skipped} unreadable record(s) in store="${storeName}"`);
           }
+          if (readable.length === 0 && skipped > 0) {
+            reject(new Error('Failed to decrypt items - incorrect key?'));
+            return;
+          }
+          resolve(readable);
         } else {
           // Return values with their IDs for unencrypted items
           // Silent success
