@@ -8,7 +8,6 @@ import AnimatedBackground, { FloatingElements } from '../../components/AnimatedB
 import GenZCard from '../../components/GenZCard';
 import GenZBadge from '../../components/GenZBadge';
 import GenZButton from '../../components/GenZButton';
-import BottomNav from '../../components/BottomNav';
 import BirthChartVisualization from '../../components/BirthChartVisualization';
 import AIChatInterface from '../../components/AIChatInterface';
 import { useEncryption } from '@/lib/context/EncryptionContext';
@@ -197,7 +196,6 @@ export default function BirthChartViewPage() {
             </Link>
           </GenZCard>
         </div>
-        <BottomNav />
       </div>
     );
   }
@@ -551,7 +549,7 @@ ${interpretations.growth.map((g: string) => `• ${g}`).join('\n')}
             className="mb-12 text-center"
           >
             <GenZBadge variant="neon" size="lg" className="mb-6">
-              ✨ Birth Chart
+              Birth chart
             </GenZBadge>
             <h1 className="genz-title mb-4">
               Your Cosmic Blueprint
@@ -827,7 +825,6 @@ ${interpretations.growth.map((g: string) => `• ${g}`).join('\n')}
           </AnimatePresence>
         </div>
 
-        <BottomNav />
       </div>
     </ErrorBoundary>
   );

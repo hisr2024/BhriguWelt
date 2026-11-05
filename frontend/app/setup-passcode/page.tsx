@@ -1,27 +1,22 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import PasscodeSetup from '../components/PasscodeSetup';
-import AnimatedBackground from '../components/AnimatedBackground';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 
 export default function SetupPasscodePage() {
   const router = useRouter();
   const { isSetup, isLoading, isUnlocked } = useEncryption();
 
-  // If already set up and unlocked, go to dashboard
+  // Decide once, on arrival: a passcode that already exists sends you on.
+  // Creating one here must not trigger this (it used to win the race against
+  // handleComplete and skip profile creation).
+  const decided = useRef(false);
   useEffect(() => {
-    if (!isLoading && isSetup && isUnlocked) {
-      router.push('/dashboard');
-    }
-  }, [isLoading, isSetup, isUnlocked, router]);
-
-  // If already set up but not unlocked, go to unlock
-  useEffect(() => {
-    if (!isLoading && isSetup && !isUnlocked) {
-      router.push('/unlock');
-    }
+    if (isLoading || decided.current) return;
+    decided.current = true;
+    if (isSetup) router.push(isUnlocked ? '/dashboard' : '/unlock');
   }, [isLoading, isSetup, isUnlocked, router]);
 
   const handleComplete = () => {
@@ -30,19 +25,13 @@ export default function SetupPasscodePage() {
 
   if (isLoading) {
     return (
-      <>
-        <AnimatedBackground />
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-white text-xl">Loading...</div>
-        </div>
-      </>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="loading-spinner" role="status" aria-label="Loading" />
+      </div>
     );
   }
 
   return (
-    <>
-      <AnimatedBackground />
-      <PasscodeSetup onComplete={handleComplete} />
-    </>
+    <PasscodeSetup onComplete={handleComplete} />
   );
 }

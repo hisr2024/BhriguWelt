@@ -154,9 +154,11 @@ class DailyInsightsEngine:
         moon_sign = birth_data.get('moon_sign', zodiac_sign)
         nakshatra = birth_data.get('nakshatra', 'Ashwini')
         ascendant = birth_data.get('ascendant', zodiac_sign)
+        if isinstance(ascendant, dict):
+            ascendant = ascendant.get('sign') or zodiac_sign
 
         # Get day ruler info
-        day_info = self.DAY_RULERS.get(target_date.weekday(), self.DAY_RULERS[0])
+        day_info = self.DAY_RULERS[(target_date.weekday() + 1) % 7]
 
         # Get nakshatra energy
         nakshatra_energy = self.NAKSHATRA_ENERGIES.get(

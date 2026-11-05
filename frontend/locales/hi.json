@@ -137,7 +137,7 @@
       },
       "aiInsights": {
         "label": "एआई इनसाइट्स",
-        "description": "OpenAI भविष्यवाणियाँ सक्षम करें"
+        "description": "AI द्वारा लिखी गई रीडिंग सक्षम करें"
       },
       "aiLanguage": {
         "label": "एआई आउटपुट भाषा",
@@ -166,7 +166,7 @@
     "appInfo": {
       "appName": "भृगुवेल्ट",
       "version": "संस्करण 1.0.0",
-      "poweredBy": "OpenAI द्वारा संचालित"
+      "poweredBy": "Sarvam AI द्वारा लिखित"
     }
   },
   "bhriguPredictionView": {

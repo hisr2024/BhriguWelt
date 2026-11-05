@@ -126,15 +126,15 @@ export default function BirthChartVisualization({
   };
 
   const planetColors: Record<string, string> = {
-    'Sun': '#FFD700',
-    'Moon': '#E0E7FF',
-    'Mercury': '#A78BFA',
-    'Venus': '#EC4899',
-    'Mars': '#EF4444',
-    'Jupiter': '#F59E0B',
-    'Saturn': '#6366F1',
-    'Rahu': '#8B5CF6',
-    'Ketu': '#10B981',
+    'Sun': '#EBCB86',
+    'Moon': '#F3EDE0',
+    'Mercury': '#A9C5A0',
+    'Venus': '#E9C8B8',
+    'Mars': '#D06A50',
+    'Jupiter': '#D4AF5F',
+    'Saturn': '#8E97B8',
+    'Rahu': '#9A907E',
+    'Ketu': '#B08A40',
   };
 
 
@@ -174,7 +174,9 @@ export default function BirthChartVisualization({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setZoom(Math.min(zoom + 0.2, 2))}
-          className="w-10 h-10 rounded-full bg-genz-electric-blue/20 backdrop-blur-xl border border-genz-electric-blue/30 flex items-center justify-center text-white hover:bg-genz-electric-blue/30 transition-colors"
+          aria-label="Zoom in"
+          type="button"
+          className="w-11 h-11 rounded-full bg-genz-electric-blue/20 backdrop-blur-xl border border-genz-electric-blue/30 flex items-center justify-center text-white hover:bg-genz-electric-blue/30 transition-colors"
         >
           <ZoomIn className="w-5 h-5" />
         </motion.button>
@@ -182,7 +184,9 @@ export default function BirthChartVisualization({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setZoom(Math.max(zoom - 0.2, 0.5))}
-          className="w-10 h-10 rounded-full bg-genz-electric-blue/20 backdrop-blur-xl border border-genz-electric-blue/30 flex items-center justify-center text-white hover:bg-genz-electric-blue/30 transition-colors"
+          aria-label="Zoom out"
+          type="button"
+          className="w-11 h-11 rounded-full bg-genz-electric-blue/20 backdrop-blur-xl border border-genz-electric-blue/30 flex items-center justify-center text-white hover:bg-genz-electric-blue/30 transition-colors"
         >
           <ZoomOut className="w-5 h-5" />
         </motion.button>
@@ -258,12 +262,12 @@ export default function BirthChartVisualization({
           {/* Gradients */}
           <defs>
             <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#00D9FF" />
-              <stop offset="100%" stopColor="#B983FF" />
+              <stop offset="0%" stopColor="#EBCB86" />
+              <stop offset="100%" stopColor="#9C7A36" />
             </linearGradient>
             <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#FF006E" />
-              <stop offset="100%" stopColor="#FFD60A" />
+              <stop offset="0%" stopColor="#D4AF5F" />
+              <stop offset="100%" stopColor="#6B5225" />
             </linearGradient>
             <radialGradient id="houseGradient">
               <stop offset="0%" stopColor="rgba(0, 217, 255, 0.1)" />
@@ -303,7 +307,7 @@ export default function BirthChartVisualization({
               <text
                 x={size / 2 + ((size / 2) * 0.82) * Math.cos(((house - 0.5) * 30 - 90) * (Math.PI / 180))}
                 y={size / 2 + ((size / 2) * 0.82) * Math.sin(((house - 0.5) * 30 - 90) * (Math.PI / 180))}
-                fill="#00D9FF"
+                fill="#D4AF5F"
                 fontSize="10"
                 fontWeight="600"
                 textAnchor="middle"
@@ -345,7 +349,7 @@ export default function BirthChartVisualization({
                   onClick={() => setSelectedPlanet(planet)}
                   className="cursor-pointer"
                   style={{
-                    filter: `drop-shadow(0 0 8px ${planetColors[planet.name] || '#ffffff'})`
+                    filter: 'none'
                   }}
                 />
 
@@ -354,7 +358,7 @@ export default function BirthChartVisualization({
                   <text
                     x={pos.x}
                     y={pos.y - 20}
-                    fill="#FF006E"
+                    fill="#C0563A"
                     fontSize="10"
                     fontWeight="bold"
                     textAnchor="middle"
@@ -393,7 +397,7 @@ export default function BirthChartVisualization({
           <text
             x={size / 2}
             y={size / 2}
-            fill="#00D9FF"
+            fill="#D4AF5F"
             fontSize="12"
             textAnchor="middle"
           >
@@ -426,7 +430,7 @@ export default function BirthChartVisualization({
                 className="w-12 h-12 rounded-full flex items-center justify-center"
                 style={{
                   backgroundColor: planetColors[selectedPlanet.name] || '#ffffff',
-                  boxShadow: `0 0 20px ${planetColors[selectedPlanet.name] || '#ffffff'}`
+                  boxShadow: 'none'
                 }}
               >
                 <span className="text-white font-bold">{selectedPlanet.name[0]}</span>

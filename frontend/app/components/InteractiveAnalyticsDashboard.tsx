@@ -1,5 +1,7 @@
 'use client';
 
+import { toPlanetList } from '@/lib/chart/planetList';
+
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -96,9 +98,7 @@ export default function InteractiveAnalyticsDashboard({
 
   // Planetary strength analysis
   const planetaryStrength = useMemo(() => {
-    if (!chartData?.planets) return [];
-
-    return chartData.planets.map((planet: any) => ({
+    return toPlanetList(chartData?.planets).map((planet: any) => ({
       name: planet.name,
       strength: calculatePlanetStrength(planet),
       house: planet.house,

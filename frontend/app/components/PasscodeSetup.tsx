@@ -250,7 +250,7 @@ export default function PasscodeSetup({ onComplete }: PasscodeSetupProps) {
 
           <div className="mt-6 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
             <p className="text-xs text-yellow-200/90 flex items-start gap-2">
-              <span className="text-lg">⚠️</span>
+              <span aria-hidden className="text-lg text-kumkum-300">!</span>
               <span>
                 <strong>Important:</strong> Keep your passcode safe. If you forget it, you won&apos;t be able to access your encrypted data.
               </span>

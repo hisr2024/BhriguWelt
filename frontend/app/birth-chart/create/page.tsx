@@ -1,7 +1,6 @@
 'use client';
 
 import AnimatedBackground, { FloatingElements } from '../../components/AnimatedBackground';
-import BottomNav from '../../components/BottomNav';
 import CreateBirthChartForm from '../CreateBirthChartForm';
 
 export default function CreateBirthChartPage() {
@@ -14,7 +13,6 @@ export default function CreateBirthChartPage() {
         <CreateBirthChartForm />
       </div>
 
-      <BottomNav />
     </div>
   );
 }

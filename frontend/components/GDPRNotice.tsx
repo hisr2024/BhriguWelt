@@ -179,7 +179,7 @@ export function GDPRNotice({ onAccept, onDecline }: GDPRNoticeProps) {
 
                       <h3 className="font-semibold text-white text-sm mt-4">Third-Party Services:</h3>
                       <ul className="text-xs text-white/70 space-y-2 ml-4">
-                        <li>• OpenAI (optional, with consent) - AI predictions</li>
+                        <li>• Sarvam AI (with consent) - writes the text of readings</li>
                         <li>• Sentry (optional) - Error tracking (PII filtered)</li>
                         <li>• All data anonymized before transmission</li>
                       </ul>
@@ -188,7 +188,7 @@ export function GDPRNotice({ onAccept, onDecline }: GDPRNoticeProps) {
                     <div className="flex items-center gap-2 text-xs text-white/60">
                       <ExternalLink className="w-4 h-4" />
                       <a
-                        href="/docs/PRIVACY_AND_SECURITY.md"
+                        href="/privacy"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="hover:text-blue-400 transition-colors underline"

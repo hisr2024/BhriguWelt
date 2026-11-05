@@ -1,5 +1,7 @@
 'use client';
 
+import { UnionIcon } from '@/components/nadi/icons';
+
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, ArrowLeft, Loader2, Users, Calendar, MapPin, Clock } from 'lucide-react';
@@ -9,7 +11,6 @@ import AnimatedBackground, { FloatingElements } from '../components/AnimatedBack
 import GenZCard from '../components/GenZCard';
 import GenZBadge from '../components/GenZBadge';
 import GenZButton from '../components/GenZButton';
-import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { getItem, STORES } from '@/lib/storage';
 import { api } from '@/lib/api';
@@ -131,12 +132,6 @@ export default function MatchmakingPage() {
     return 'text-red-400';
   };
 
-  const getScoreEmoji = (percentage: number) => {
-    if (percentage >= 75) return '💚';
-    if (percentage >= 50) return '💛';
-    if (percentage >= 25) return '🧡';
-    return '❤️‍🩹';
-  };
 
   if (encryptionLoading) {
     return (
@@ -167,17 +162,13 @@ export default function MatchmakingPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8 text-center"
         >
-          <motion.div
-            className="text-7xl mb-4"
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            💕
-          </motion.div>
+          <div className="mb-4 flex justify-center text-gold-400" aria-hidden>
+            <UnionIcon size={44} />
+          </div>
           <GenZBadge variant="neon" size="lg" className="mb-4" pulse>
-            💫 Kundali Matching
+            Kundali matching
           </GenZBadge>
-          <h1 className="genz-title mb-2">Cosmic Compatibility</h1>
+          <h1 className="genz-title mb-2">Compatibility</h1>
           <p className="text-white/70">Ashtakoot Guna Milan - 36 Point System</p>
         </motion. div>
 
@@ -213,6 +204,7 @@ export default function MatchmakingPage() {
                 <input
                   type="text"
                   placeholder="Name"
+                  aria-label="Person 1 name"
                   value={person1.name}
                   onChange={(e) => setPerson1({ ...person1, name: e. target.value })}
                   className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50"
@@ -221,6 +213,7 @@ export default function MatchmakingPage() {
                   <Calendar className="w-5 h-5 text-white/50" />
                   <input
                     type="date"
+                    aria-label="Person 1 date of birth"
                     value={person1.date_of_birth}
                     onChange={(e) => setPerson1({ ...person1, date_of_birth: e.target.value })}
                     className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white"
@@ -230,6 +223,7 @@ export default function MatchmakingPage() {
                   <Clock className="w-5 h-5 text-white/50" />
                   <input
                     type="time"
+                    aria-label="Person 1 time of birth"
                     value={person1.time_of_birth}
                     onChange={(e) => setPerson1({ ...person1, time_of_birth: e.target.value })}
                     className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white"
@@ -240,6 +234,7 @@ export default function MatchmakingPage() {
                   <input
                     type="text"
                     placeholder="Place of Birth"
+                    aria-label="Person 1 place of birth"
                     value={person1.place_of_birth}
                     onChange={(e) => setPerson1({ ...person1, place_of_birth:  e.target.value })}
                     className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50"
@@ -261,6 +256,7 @@ export default function MatchmakingPage() {
                 <input
                   type="text"
                   placeholder="Name"
+                  aria-label="Person 2 name"
                   value={person2.name}
                   onChange={(e) => setPerson2({ ... person2, name: e.target.value })}
                   className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50"
@@ -269,6 +265,7 @@ export default function MatchmakingPage() {
                   <Calendar className="w-5 h-5 text-white/50" />
                   <input
                     type="date"
+                    aria-label="Person 2 date of birth"
                     value={person2.date_of_birth}
                     onChange={(e) => setPerson2({ ...person2, date_of_birth: e.target. value })}
                     className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white"
@@ -278,6 +275,7 @@ export default function MatchmakingPage() {
                   <Clock className="w-5 h-5 text-white/50" />
                   <input
                     type="time"
+                    aria-label="Person 2 time of birth"
                     value={person2.time_of_birth}
                     onChange={(e) => setPerson2({ ...person2, time_of_birth: e.target.value })}
                     className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white"
@@ -288,6 +286,7 @@ export default function MatchmakingPage() {
                   <input
                     type="text"
                     placeholder="Place of Birth"
+                    aria-label="Person 2 place of birth"
                     value={person2.place_of_birth}
                     onChange={(e) => setPerson2({ ...person2, place_of_birth:  e.target.value })}
                     className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50"
@@ -324,7 +323,6 @@ export default function MatchmakingPage() {
           <div className="space-y-6">
             {/* Main Score */}
             <GenZCard variant="gradient" className="text-center py-8">
-              <div className="text-6xl mb-4">{getScoreEmoji(result.percentage)}</div>
               <h2 className={`text-5xl font-bold mb-2 ${getScoreColor(result. percentage)}`}>
                 {result.percentage. toFixed(1)}%
               </h2>
@@ -399,7 +397,6 @@ export default function MatchmakingPage() {
         )}
       </div>
 
-      <BottomNav />
     </div>
   );
 }

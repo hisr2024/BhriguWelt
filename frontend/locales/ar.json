@@ -137,7 +137,7 @@
       },
       "aiInsights": {
         "label": "AI Insights",
-        "description": "Enable OpenAI predictions"
+        "description": "تفعيل القراءات المكتوبة بالذكاء الاصطناعي"
       },
       "aiLanguage": {
         "label": "AI Output Language",
@@ -166,7 +166,7 @@
     "appInfo": {
       "appName": "BhriguWelt",
       "version": "Version 1.0.0",
-      "poweredBy": "Powered by OpenAI"
+      "poweredBy": "مكتوبة بواسطة Sarvam AI"
     }
   },
   "bhriguPredictionView": {

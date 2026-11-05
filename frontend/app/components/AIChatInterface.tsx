@@ -218,6 +218,7 @@ export default function AIChatInterface({
           variant="outline"
           size="sm"
           onClick={handleClearChat}
+          aria-label="Clear conversation"
           className="group"
         >
           <Trash2 className="w-4 h-4 group-hover:text-genz-hot-pink transition-colors" />
@@ -353,7 +354,8 @@ export default function AIChatInterface({
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Ask me anything about your cosmic journey..."
+            aria-label="Your question"
+            placeholder="Ask anything about your chart…"
             maxLength={500}
             className="w-full min-h-[64px] p-3 pr-10 sm:min-h-[72px] sm:p-4 sm:pr-12 md:min-h-[80px] md:p-5 md:pr-14 max-[480px]:min-h-[60px] max-[480px]:p-3 max-[480px]:pr-10 rounded-2xl bg-white/5 border border-white/10 focus:border-genz-electric-blue/50 text-white placeholder-white/40 resize-none backdrop-blur-xl transition-colors"
             rows={2}
@@ -368,6 +370,7 @@ export default function AIChatInterface({
           variant="primary"
           size="lg"
           onClick={handleSendMessage}
+          aria-label="Send question"
           disabled={!inputMessage.trim() || isLoading}
           className="self-end min-w-[52px] min-h-[52px] sm:min-w-[60px] sm:min-h-[60px] md:min-w-[68px] md:min-h-[68px] max-[480px]:min-w-[52px] max-[480px]:min-h-[52px] shadow-genz-glow"
         >
@@ -396,7 +399,7 @@ const normalizeChatResponse = (response: string | null | undefined): string => {
 // Real AI response generator using OpenAI
 async function generateRealAIResponse(
   userMessage: string,
-  context: string,
+  _context: string,
   birthChartData: any,
   history: Array<{ role: string; content: string }>
 ): Promise<string> {
@@ -421,7 +424,7 @@ async function generateRealAIResponse(
 
     // Check if AI is enabled
     if (!settings.aiEnabled) {
-      return generateMockResponse(userMessage, context);
+      return 'AI answers are turned off in Settings. Turn them on to ask questions about your chart.';
     }
 
     const aiMode = {
@@ -443,34 +446,11 @@ async function generateRealAIResponse(
     return normalizeChatResponse(response.response || response.message);
   } catch (error) {
     console.error('Error calling AI API:', error);
-    // Fallback to mock response
-    return generateMockResponse(userMessage, context);
+    // Never invent chart-specific answers: say plainly that no answer is available.
+    const status = (error as any)?.response?.status;
+    return status === 503
+      ? 'Answers are temporarily unavailable. Please try again in a minute.'
+      : "Your question couldn't be answered right now. Check your connection and try again.";
   }
 }
 
-// Mock response generator (fallback)
-async function generateMockResponse(userMessage: string, _context: string): Promise<string> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 500));
-
-  const lowerMessage = userMessage.toLowerCase();
-
-  if (lowerMessage.includes('purpose') || lowerMessage.includes('life mission')) {
-    return `Based on your birth chart, your life purpose is deeply connected to spiritual growth and helping others. Your planetary placements suggest you're here to bridge the material and spiritual worlds, bringing ancient wisdom into modern contexts. Focus on developing your intuitive abilities and sharing your insights with others.`;
-  }
-
-  if (lowerMessage.includes('career') || lowerMessage.includes('profession')) {
-    return `Your astrological profile indicates strong potential in fields related to counseling, healing, teaching, or creative arts. The placement of Jupiter in your 10th house suggests success through service to others. Consider careers where you can use both your analytical mind and compassionate heart.`;
-  }
-
-  if (lowerMessage.includes('relationship') || lowerMessage.includes('love')) {
-    return `In relationships, your Venus placement suggests you value deep emotional connections and intellectual compatibility. You're attracted to partners who can engage you mentally and spiritually. For the best relationships, look for someone who respects your need for both independence and intimacy.`;
-  }
-
-  if (lowerMessage.includes('strength') || lowerMessage.includes('weakness')) {
-    return `Your strengths include strong intuition, creativity, and the ability to understand complex emotional dynamics. You're naturally empathetic and can read between the lines. Your challenges may include overthinking, being too self-critical, and difficulty setting boundaries. Work on trusting your first instincts more.`;
-  }
-
-  // Default response
-  return `That's an interesting question! Based on your birth chart and current planetary transits, I can provide insights. Your chart shows a unique combination of energies that shape your personality and life path. Would you like me to explore any specific area in more detail?`;
-}

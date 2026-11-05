@@ -9,7 +9,6 @@ import AnimatedBackground, { FloatingElements } from '../components/AnimatedBack
 import GenZCard from '../components/GenZCard';
 import GenZBadge from '../components/GenZBadge';
 import GenZButton from '../components/GenZButton';
-import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { useEncryptedStorage } from '@/lib/hooks/useEncryptedStorage';
 import type { Profile } from '@/lib/types';
@@ -114,16 +113,15 @@ export default function ProfilePage() {
           className="mb-12 text-center"
         >
           {/* Avatar */}
-          <motion.div
-            className="w-32 h-32 mx-auto mb-6 rounded-full bg-gradient-to-r from-genz-electric-blue to-genz-purple-haze flex items-center justify-center text-6xl shadow-genz-glow"
-            whileHover={{ scale: 1.05, rotate: 360 }}
-            transition={{ duration: 0.6 }}
+          <div
+            aria-hidden
+            className="mx-auto mb-6 grid h-24 w-24 place-items-center rounded-full border border-[color:var(--line-strong)] font-display text-4xl text-gold-200"
           >
-            ✨
-          </motion.div>
+            {(currentProfile?.name || 'A').charAt(0).toUpperCase()}
+          </div>
 
           <GenZBadge variant="neon" className="mb-4">
-            Soul Seeker
+            Your profile
           </GenZBadge>
 
           <h1 className="genz-title mb-4">
@@ -304,7 +302,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <BottomNav />
     </div>
   );
 }
