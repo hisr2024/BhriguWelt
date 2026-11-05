@@ -1911,6 +1911,15 @@ Rules: <=110 words per section; never repeat a sentence across sections; omit a 
 
             generated = [k for k, v in status_map.items() if v.get('status', '').startswith('generated')]
             if not generated:
+                # Shape only, never content: enough to see why nothing was usable.
+                logger.warning(
+                    "Reading had no usable sections: category=%s raw_chars=%d partial=%s json=%s "
+                    "top_keys=%s section_keys=%s expected=%s statuses=%s",
+                    category, len(raw_text or ''), partial, isinstance(data, dict),
+                    sorted(data.keys())[:12] if isinstance(data, dict) else None,
+                    sorted(blocks.keys())[:16], [spec['key'] for spec in section_specs],
+                    {k: v.get('status') for k, v in status_map.items()},
+                )
                 if self.strict_precision:
                     raise PredictionUnavailableError('empty_reading')
                 # Legacy (non-strict) deployments: category-matched offline text.
