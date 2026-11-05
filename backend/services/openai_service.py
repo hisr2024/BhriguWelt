@@ -680,8 +680,19 @@ Your predictions must:
             # ==================== END USAGE UPDATE ====================
 
             choice = result['choices'][0]
-            content = choice['message']['content']
+            message = choice.get('message') or {}
+            content = message.get('content') or ''
             finish_reason = choice.get('finish_reason')
+            if not content.strip():
+                # Make an empty answer diagnosable from the logs (no content logged).
+                details = (usage or {}).get('completion_tokens_details') or {}
+                logger.warning(
+                    "AI returned an empty answer: provider=%s model=%s finish_reason=%s "
+                    "completion_tokens=%s reasoning_tokens=%s max_tokens=%s",
+                    getattr(provider, 'name', 'openai'), payload.get('model'), finish_reason,
+                    (usage or {}).get('completion_tokens'), details.get('reasoning_tokens'),
+                    payload.get('max_tokens'),
+                )
 
             # Try to parse as JSON and validate structure
             if use_json_format and render_json:
