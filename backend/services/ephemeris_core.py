@@ -75,9 +75,7 @@ def nakshatra_of(lon: float) -> Tuple[str, int, str]:
 def fmt_dms(lon: float) -> str:
     d = lon % 30.0
     deg = int(d)
-    minutes = int(round((d - deg) * 60))
-    if minutes == 60:
-        deg, minutes = deg + 1, 0
+    minutes = int((d - deg) * 60)  # truncate: 29°59.7′ must not print as 30°00′
     return f"{deg}°{minutes:02d}′ {sign_of(lon)}"
 
 
@@ -278,3 +276,66 @@ def utcnow() -> datetime:
 def angular_distance(a: float, b: float) -> float:
     return abs((a - b + 180.0) % 360.0 - 180.0)
 
+
+
+# --- Horas (planetary hours) --------------------------------------------------
+HORA_ORDER = ['Sun', 'Venus', 'Mercury', 'Moon', 'Saturn', 'Jupiter', 'Mars']  # Chaldean, descending
+WEEKDAY_LORD = ['Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Sun']  # Python weekday() 0=Mon
+
+
+def _jd_to_dt(jd: float) -> datetime:
+    y, m, d, h = swe.revjul(jd)
+    return datetime(y, m, d, tzinfo=timezone.utc) + timedelta(hours=h)
+
+
+def sunrise_sunset(local_day, latitude: float, longitude: float, tzname: str) -> Optional[Tuple[datetime, datetime]]:
+    """Sunrise and following sunset (aware datetimes in tzname) for a local calendar day."""
+    if not SWISSEPH_AVAILABLE:
+        return None
+    try:
+        import pytz
+        tz = pytz.timezone(tzname)
+        midnight = tz.localize(datetime(local_day.year, local_day.month, local_day.day)).astimezone(timezone.utc)
+        jd0 = swe.julday(midnight.year, midnight.month, midnight.day,
+                         midnight.hour + midnight.minute / 60.0)
+        geo = (float(longitude), float(latitude), 0.0)
+        flags = swe.CALC_RISE | swe.BIT_DISC_CENTER
+        with _SWE_LOCK:
+            r1, rise = swe.rise_trans(jd0, swe.SUN, flags, geo)
+            if r1 != 0:
+                return None
+            r2, sset = swe.rise_trans(rise[0], swe.SUN, swe.CALC_SET | swe.BIT_DISC_CENTER, geo)
+            if r2 != 0:
+                return None
+        return _jd_to_dt(rise[0]).astimezone(tz), _jd_to_dt(sset[0]).astimezone(tz)
+    except Exception:
+        return None
+
+
+def day_lord_horas(local_day, latitude: float, longitude: float, tzname: str) -> Optional[List[Tuple[datetime, datetime]]]:
+    """
+    Daytime horas ruled by the weekday lord (the 1st and 8th of the 12 day horas).
+    Each day hora is one twelfth of sunrise→sunset.
+    """
+    times = sunrise_sunset(local_day, latitude, longitude, tzname)
+    if not times:
+        return None
+    rise, sset = times
+    length = (sset - rise) / 12
+    return [(rise + length * k, rise + length * (k + 1)) for k in (0, 7)]
+
+
+def fmt_hora(span: Tuple[datetime, datetime]) -> str:
+    a, b = span
+    return f"{a.strftime('%H:%M')}–{b.strftime('%H:%M')}"
+
+
+def day_lord_hora_strings(birth_data, target) -> List[str]:
+    """['06:36–07:31', '12:59–13:53'] for the chart's place, or [] when it is unknown."""
+    details = (birth_data or {}).get('birth_details') or {}
+    lat, lon, tzname = details.get('latitude'), details.get('longitude'), details.get('timezone')
+    if lat is None or lon is None or not tzname:
+        return []
+    day = target.date() if hasattr(target, 'date') else target
+    spans = day_lord_horas(day, lat, lon, tzname)
+    return [fmt_hora(s) for s in spans] if spans else []

@@ -26,6 +26,58 @@ except Exception as e:
     core_wisdom = None
 
 
+def _server_chart(birth_data):
+    """(chart, chart_facts) computed from birth details, or (None, None)."""
+    dob, tob = birth_data.get('date_of_birth'), birth_data.get('time_of_birth')
+    place = birth_data.get('place_of_birth') or ''
+    if not dob or not tob:
+        return None, None
+
+    def coord(value, limit):
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return None
+        return number if -limit <= number <= limit else None
+
+    try:
+        from services.astrology_calculator import AstrologyCalculator
+        chart = AstrologyCalculator().calculate_birth_chart(
+            date_of_birth=str(dob), time_of_birth=str(tob)[:5], place=str(place),
+            latitude=coord(birth_data.get('latitude'), 90),
+            longitude=coord(birth_data.get('longitude'), 180),
+            timezone_override=birth_data.get('timezone') or None,
+        )
+    except Exception as e:
+        log_exception(logger, e, context="ai.chat.chart")
+        return None, None
+    if not isinstance(chart, dict) or chart.get('error') or not chart.get('planets'):
+        return None, None
+    try:
+        from services.wisdom_core_pipeline import build_chart_facts
+        facts = build_chart_facts(chart)
+    except Exception:
+        facts = None
+    return chart, facts
+
+
+def _chart_for_ai(chart):
+    """Only computed astrological fields; no birth date, time or place."""
+    asc = chart.get('ascendant')
+    planets = {
+        name: {k: p.get(k) for k in ('sign', 'house', 'degree_in_sign', 'nakshatra', 'retrograde') if p.get(k) is not None}
+        for name, p in (chart.get('planets') or {}).items() if isinstance(p, dict)
+    }
+    return {
+        'zodiac_sign': chart.get('zodiac_sign'),
+        'moon_sign': chart.get('moon_sign'),
+        'ascendant': asc.get('sign') if isinstance(asc, dict) else asc,
+        'nakshatra': chart.get('nakshatra'),
+        'planetary_positions': planets,
+        'dasha_period': chart.get('dasha_period'),
+    }
+
+
 def require_ai_consent(f):
     """Decorator to ensure AI consent was provided"""
     @wraps(f)
@@ -161,14 +213,10 @@ def chat_about_report():
     try:
         data = request.get_json()
         message = data['message']
-        birth_data = data['birth_data']
-        conversation_history = data.get('conversation_history', [])
+        birth_data = data['birth_data'] if isinstance(data.get('birth_data'), dict) else {}
 
         # Sanitize user message
         message = RequestSanitizer.sanitize_string(message, max_length=1000)
-
-        # Sanitize birth data
-        sanitized_data = RequestSanitizer.sanitize_for_ai(birth_data)
 
         # Validate message is not empty
         if not message or len(message.strip()) == 0:
@@ -176,6 +224,25 @@ def chat_about_report():
                 'error': 'Empty message',
                 'message': 'Please provide a question or message'
             }), 400
+
+        # Ground every answer in a chart the SERVER computed from the birth
+        # details; client-supplied positions are never trusted.
+        chart, chart_facts = _server_chart(birth_data)
+        if chart is None:
+            return jsonify({
+                'error': 'Birth details required',
+                'error_code': 'BIRTH_DETAILS_REQUIRED',
+                'message': 'Add your date, time and place of birth to ask about your chart.',
+            }), 400
+        sanitized_data = _chart_for_ai(chart)
+
+        # Only the user's own earlier questions are replayed; assistant turns
+        # from the client could be forged to steer the model.
+        conversation_history = [
+            {'role': 'user', 'content': RequestSanitizer.sanitize_string(str(m.get('content', '')), max_length=500)}
+            for m in (data.get('conversation_history') or [])[-6:]
+            if isinstance(m, dict) and m.get('role') == 'user' and m.get('content')
+        ]
 
         # Get wisdom context for response metadata
         wisdom_metadata = {}
@@ -194,18 +261,33 @@ def chat_about_report():
                 logger.warning(f"Wisdom context error: {e}")
                 wisdom_metadata = {'query_category': 'general'}
 
-        # Generate AI response
-        response = ai_service.chat_response(
-            user_message=message,
-            astrological_data=sanitized_data,
-            history=conversation_history
-        )
+        try:
+            response = ai_service.chat_response(
+                user_message=message,
+                astrological_data=sanitized_data,
+                history=conversation_history,
+                allow_offline=False,
+            )
+        except Exception as e:
+            log_exception(logger, e, context="ai.chat.provider")
+            return jsonify({
+                'error': 'AI unavailable',
+                'error_code': 'AI_UNAVAILABLE',
+                'message': 'AI answers are temporarily unavailable. Please try again later.',
+                'retryable': True,
+            }), 503
+
+        corrections = []
+        if chart_facts:
+            from services.wisdom_core_pipeline import remove_false_sentences
+            response, corrections = remove_false_sentences(response, chart_facts)
 
         return jsonify({
             'status': 'success',
             'data': {
                 'response': response,
                 'ai_enhanced': True,
+                'corrections': len(corrections),
                 'mode': 'conversational',
                 'wisdom_source': 'Bhrigu Samhita & Nadi Jyotisha',
                 'wisdom_metadata': wisdom_metadata,

@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import json
 
 from utils.logger import setup_logger
+from services.ephemeris_core import day_lord_hora_strings
 
 logger = setup_logger(__name__)
 
@@ -268,7 +269,7 @@ class HoroscopeEngine:
         lucky_elements = {
             'number': wisdom['lucky_numbers'][target_date.day % len(wisdom['lucky_numbers'])],
             'color': wisdom['colors'][0],
-            'time': self._get_auspicious_time(day_ruler),
+            'time': ', '.join(day_lord_hora_strings(birth_data, target_date)) or None,
             'direction': self._get_lucky_direction(day_ruler)
         }
 
@@ -634,19 +635,6 @@ class HoroscopeEngine:
             'health': base,
             'finance': min(5, base + (1 if day_ruler in ['Jupiter', 'Venus'] else 0))
         }
-
-    def _get_auspicious_time(self, day_ruler: str) -> str:
-        """Get auspicious time based on day ruler"""
-        times = {
-            'Sun': '6:00 AM - 7:00 AM',
-            'Moon': '6:00 PM - 7:00 PM',
-            'Mars': '8:00 AM - 9:00 AM',
-            'Mercury': '9:00 AM - 10:00 AM',
-            'Jupiter': '7:00 AM - 8:00 AM',
-            'Venus': '5:00 PM - 6:00 PM',
-            'Saturn': '7:00 PM - 8:00 PM'
-        }
-        return times.get(day_ruler, '7:00 AM - 8:00 AM')
 
     def _get_lucky_direction(self, day_ruler: str) -> str:
         """Get lucky direction based on day ruler"""
