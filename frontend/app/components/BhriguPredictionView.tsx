@@ -687,21 +687,21 @@ export default function BhriguPredictionView({
   // Generate layman-friendly summary based on section key
   const generateLaymanSummary = (sectionKey: string, content: string): string => {
     const summaryTemplates: Record<string, string> = {
-      soul_purpose: "🌟 This describes your life's deeper meaning and what you're meant to achieve in this lifetime.",
-      karmic_lessons: "📚 These are important lessons you're here to learn. Understanding them helps you grow.",
-      past_relationships: "💞 This reveals patterns from past connections that influence how you relate to others today.",
-      recent_life: "🔄 This describes who you may have been in your most recent past life and what you carried forward.",
-      career: "💼 This shows your natural talents and the career path that aligns with your birth chart.",
-      health: "🏥 This highlights areas of health to be mindful of and preventive measures you can take.",
-      finances: "💰 This explains your relationship with money and wealth patterns in your life.",
-      spiritual_growth: "🧘 This outlines your spiritual journey and practices that can accelerate your growth.",
+      soul_purpose: "This describes your life's deeper meaning and what you're meant to achieve in this lifetime.",
+      karmic_lessons: "These are important lessons you're here to learn. Understanding them helps you grow.",
+      past_relationships: "This reveals patterns from past connections that influence how you relate to others today.",
+      recent_life: "This describes who you may have been in your most recent past life and what you carried forward.",
+      career: "This shows your natural talents and the career path that aligns with your birth chart.",
+      health: "This highlights areas of health to be mindful of and preventive measures you can take.",
+      finances: "This explains your relationship with money and wealth patterns in your life.",
+      spiritual_growth: "This outlines your spiritual journey and practices that can accelerate your growth.",
       timing: "⏰ This shows when major life events are likely to occur based on planetary periods.",
-      remedies: "🌿 These are practices recommended to balance energies and improve various areas of your life.",
-      mantras: "🕉️ These sacred sounds help harmonize planetary energies when chanted with devotion.",
-      gemstones: "💎 Wearing these can strengthen beneficial planetary influences in your chart.",
-      relationships: "❤️ This reveals how you connect with others and what makes your relationships thrive.",
-      family: "👨‍👩‍👧‍👦 This shows family dynamics and your role within your family structure.",
-      education: "📖 This indicates your learning style and educational opportunities in your life.",
+      remedies: "These are practices recommended to balance energies and improve various areas of your life.",
+      mantras: "These sacred sounds help harmonize planetary energies when chanted with devotion.",
+      gemstones: "Wearing these can strengthen beneficial planetary influences in your chart.",
+      relationships: "This reveals how you connect with others and what makes your relationships thrive.",
+      family: "This shows family dynamics and your role within your family structure.",
+      education: "This indicates your learning style and educational opportunities in your life.",
     };
 
     // Extract the base section key (without category prefix if present)
@@ -714,7 +714,7 @@ export default function BhriguPredictionView({
 
     // Fallback: extract first meaningful sentence
     const fallbackText = simplifyContent(content);
-    return `💫 ${fallbackText}`;
+    return fallbackText;
   };
 
   // Filter sections based on view mode (layman vs astrologer)
@@ -1614,6 +1614,7 @@ export default function BhriguPredictionView({
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-stretch">
             <input
               type="text"
+              aria-label="Ask a specific question (optional)"
               placeholder={t('bhriguPredictionView.question.placeholder')}
               value={question}
               onChange={handleQuestionChange}
@@ -1729,56 +1730,6 @@ export default function BhriguPredictionView({
             </div>
           )}
 
-          <AnimatePresence>
-            {errorDetails && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                className={`mt-6 rounded-xl border px-4 py-3 text-sm ${
-                  errorDetails.isNetwork
-                    ? 'border-amber-500/40 bg-amber-500/10 text-amber-200'
-                    : 'border-red-500/40 bg-red-500/10 text-red-200'
-                }`}
-              >
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="font-semibold">
-                      {errorDetails.isNetwork
-                        ? t('bhriguPredictionView.errors.networkIssue')
-                        : t('bhriguPredictionView.errors.apiFailed')}
-                    </p>
-                    <p className="text-xs text-gray-200/80">
-                      {errorDetails.message}
-                      {errorDetails.code && (
-                        <span className="ml-2 inline-flex items-center rounded-full border border-white/20 px-2 py-0.5 text-[10px] uppercase">
-                          {errorDetails.code}
-                        </span>
-                      )}
-                    </p>
-                    <p className="text-xs text-gray-200/80 mt-1">
-                      {t('bhriguPredictionView.errors.suggestedAction')}: {errorDetails.action}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => loadPrediction()}
-                      className="rounded-lg border border-white/20 px-3 py-1 text-xs text-white hover:border-white/40"
-                    >
-                      {t('bhriguPredictionView.actions.retryCached')}
-                    </button>
-                    <button
-                      onClick={() => loadPrediction(true)}
-                      disabled={isOffline}
-                      className="rounded-lg bg-white/10 px-3 py-1 text-xs text-white hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {t('bhriguPredictionView.actions.retryRequest')}
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </div>
 
@@ -1797,37 +1748,28 @@ export default function BhriguPredictionView({
         )}
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6">
-            <div className="space-y-2">
-              <p className="text-red-400">{error}</p>
-              {errorDetails?.code && (
-                <p className="text-xs text-red-200/80">
-                  {t('bhriguPredictionView.errors.errorCode')}: {errorDetails.code}
-                </p>
-              )}
-              {errorDetails?.action && (
-                <p className="text-xs text-red-200/80">
-                  {t('bhriguPredictionView.errors.suggestedAction')}: {errorDetails.action}
-                </p>
-              )}
-            </div>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <button
-                onClick={() => loadPrediction(true)}
-                disabled={isOffline}
-                className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <RefreshCw className="w-4 h-4" />
-                {t('bhriguPredictionView.actions.retryRequest')}
-              </button>
-              <button
-                onClick={() => loadPrediction()}
-                className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                {t('bhriguPredictionView.actions.retryCached')}
-              </button>
-            </div>
+          <div role="alert" className="nadi-card text-center">
+            <p className="nadi-eyebrow">{errorDetails?.isNetwork ? 'Connection' : 'Reading unavailable'}</p>
+            <p className="mx-auto mt-2 max-w-md font-display text-xl text-ivory">
+              {errorDetails?.isNetwork
+                ? "You're offline or the server can't be reached."
+                : error}
+            </p>
+            <p className="mx-auto mt-2 max-w-md text-sm text-ivory-2">
+              Nothing was lost. Try again in a minute; your birth details stay on this device.
+            </p>
+            <button
+              type="button"
+              onClick={() => loadPrediction(true)}
+              disabled={isOffline || loading}
+              className="nadi-btn mt-5"
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden />
+              {t('bhriguPredictionView.actions.retryRequest')}
+            </button>
+            {errorDetails?.code && (
+              <p className="mt-3 text-[11px] text-ivory-muted">Reference: {errorDetails.code}</p>
+            )}
           </div>
         )}
 

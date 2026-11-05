@@ -2,4 +2,4 @@
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://bhriguwelt.vercel.app').replace(/\/$/, '');
 
 /** Public, indexable pages. Private screens (unlock, profile, settings…) are excluded on purpose. */
-export const PUBLIC_ROUTES = ['/', '/get-started', '/bhrigu-predictions', '/horoscope', '/daily-insights', '/matchmaking'];
+export const PUBLIC_ROUTES = ['/', '/privacy', '/terms', '/impressum'];

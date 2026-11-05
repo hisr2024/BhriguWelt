@@ -2,209 +2,287 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * "Nadi Gold" design system — ink-night sky, champagne gold, ivory text.
+ * One accent (gold) used sparingly; serif (Cormorant Garamond) for headings
+ * and verses, Inter for UI, Noto Serif Devanagari for Sanskrit.
+ */
 :root {
-  /* Legacy colors */
-  --cosmic-cyan: #4DEEEA;
-  --cosmic-purple: #8A5CF6;
-  --cosmic-lime: #BEF264;
-  --cosmic-yellow: #FACC15;
-  --cosmic-pink: #EC4899;
+  --ink: #07080F;
+  --night: #0B0E1C;
+  --surface: #10131F;
+  --card: #141828;
+  --raised: #1B2033;
+  --line: rgba(212, 175, 95, 0.2);
+  --line-strong: rgba(212, 175, 95, 0.42);
+  --gold: #D4AF5F;
+  --gold-hi: #EBCB86;
+  --gold-deep: #9C7A36;
+  --on-gold: #1A1206;
+  --ivory: #F3EDE0;
+  --text-2: #BDB3A0;
+  --muted: #9A907E;
+  --kumkum: #C0563A;
+  --sage: #8FB38A;
 
-  /* Gen Z vibrant palette */
-  --genz-electric-blue: #00D9FF;
-  --genz-hot-pink: #FF006E;
-  --genz-neon-green: #39FF14;
-  --genz-cyber-yellow: #FFD60A;
-  --genz-purple-haze: #B983FF;
-  --genz-mint-fresh: #94F9F0;
-  --genz-sunset-orange: #FF6B35;
-  --genz-lavender-dream: #C297FF;
-  --genz-coral-pop: #FF5D8F;
-  --genz-lime-zest: #CCFF00;
-
-  /* Dark backgrounds */
-  --dark-base: #0A0A0F;
-  --dark-surface: #121218;
-  --dark-elevated: #1A1A24;
-  --dark-card: #1F1F2E;
+  /* Legacy variable names now resolve to the Nadi Gold palette. */
+  --cosmic-cyan: var(--gold-hi);
+  --cosmic-purple: var(--gold);
+  --cosmic-lime: var(--sage);
+  --cosmic-yellow: var(--gold-hi);
+  --cosmic-pink: var(--gold);
+  --genz-electric-blue: var(--gold);
+  --genz-hot-pink: var(--gold);
+  --genz-neon-green: var(--sage);
+  --genz-cyber-yellow: var(--gold-hi);
+  --genz-purple-haze: var(--gold-hi);
+  --genz-mint-fresh: var(--ivory);
+  --genz-sunset-orange: var(--gold);
+  --genz-lavender-dream: var(--gold-hi);
+  --genz-coral-pop: var(--kumkum);
+  --genz-lime-zest: var(--sage);
+  --dark-base: var(--ink);
+  --dark-surface: var(--surface);
+  --dark-elevated: var(--card);
+  --dark-card: var(--raised);
 
   --font-size-adjust-sans: 0.52;
-  --font-size-adjust-display: 0.53;
-  --font-size-adjust-serif: 0.46;
-  --font-size-adjust-mono: 0.53;
+  color-scheme: dark;
 }
 
 @layer base {
   * {
-    @apply border-white/10;
-  }
-
-  body {
-    @apply bg-dark-base min-h-screen text-white antialiased;
-    background: linear-gradient(135deg, #0A0A0F 0%, #1A1A24 50%, #0A0A0F 100%);
-    background-attachment: fixed;
-    font-size-adjust: var(--font-size-adjust-sans);
-  }
-
-  button {
-    min-height: 44px;
+    border-color: rgba(212, 175, 95, 0.14);
   }
 
   html {
     scroll-behavior: smooth;
+    background: var(--ink);
   }
 
-  .font-display {
-    font-size-adjust: var(--font-size-adjust-display);
+  body {
+    min-height: 100vh;
+    color: var(--ivory);
+    -webkit-font-smoothing: antialiased;
+    background:
+      radial-gradient(120% 55% at 50% -12%, #1A1F3A 0%, rgba(11, 14, 28, 0.6) 45%, transparent 75%),
+      var(--ink);
+    background-attachment: fixed;
+    font-size-adjust: var(--font-size-adjust-sans);
   }
 
-  .font-serif {
-    font-size-adjust: var(--font-size-adjust-serif);
+  h1, h2, h3, .font-display, .font-serif {
+    font-family: var(--font-cormorant), 'Cormorant Garamond', var(--font-devanagari), Georgia, serif;
+    font-weight: 500;
+    letter-spacing: 0.005em;
+    font-size-adjust: none;
   }
 
-  .font-mono {
-    font-size-adjust: var(--font-size-adjust-mono);
+  h1, h2 { line-height: 1.12; }
+
+  :lang(sa), :lang(hi), .font-deva {
+    font-family: var(--font-devanagari), 'Noto Serif Devanagari', serif;
+    line-height: 2;
+  }
+
+  ::selection { background: rgba(212, 175, 95, 0.35); color: var(--ivory); }
+
+  button { min-height: 44px; }
+
+  :focus-visible {
+    outline: 2px solid var(--gold-hi);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Gradient-filled headings from the old theme become solid ivory-gold:
+     legible and calm instead of rainbow text. */
+  h1.bg-clip-text, h2.bg-clip-text, h3.bg-clip-text,
+  span.bg-clip-text, p.bg-clip-text, div.bg-clip-text {
+    background-image: linear-gradient(180deg, #F3EDE0 0%, #EBCB86 100%) !important;
   }
 }
 
 @layer components {
-  /* Card Components */
-  .cosmic-card {
-    @apply bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6 shadow-xl;
+  /* Cards */
+  .nadi-card, .cosmic-card, .genz-card, .genz-card-glass, .genz-card-neon, .glass-premium {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0)),
+      var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 1.25rem;
+    box-shadow: 0 24px 60px -32px rgba(0, 0, 0, 0.9);
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+  }
+  .genz-card:hover, .genz-card-glass:hover, .genz-card-neon:hover, .feature-card:hover {
+    border-color: var(--line-strong);
   }
 
-  .genz-card {
-    @apply bg-gradient-to-br from-dark-surface/80 to-dark-elevated/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-glass-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-genz-glow;
+  /* Palm-leaf (tāḍapatra) card: the signature object. */
+  .nadi-leaf {
+    position: relative;
+    border-radius: 999px / 60px;
+    padding: 1.1rem 2.4rem;
+    background: linear-gradient(180deg, #2A2213, #1A160E);
+    border: 1px solid var(--line-strong);
   }
-
-  .genz-card-glass {
-    @apply bg-white/5 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 shadow-glass-lg hover:bg-white/10 transition-all duration-300;
-  }
-
-  .genz-card-neon {
-    @apply bg-dark-card/50 backdrop-blur-xl border-2 border-genz-electric-blue/30 rounded-3xl p-6 shadow-neon-cyan hover:border-genz-electric-blue/60 hover:shadow-genz-glow transition-all duration-300;
-  }
-
-  /* Button Components */
-  .cosmic-button {
-    @apply bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl;
-  }
-
-  .genz-button {
-    @apply bg-gradient-to-r from-genz-electric-blue to-genz-purple-haze hover:from-genz-electric-blue/80 hover:to-genz-purple-haze/80 text-white font-bold rounded-2xl transition-all duration-300 shadow-genz-glow hover:scale-105 hover:shadow-neon-cyan active:scale-95;
-  }
-
-  .genz-button-outline {
-    @apply bg-transparent border-2 border-genz-electric-blue text-genz-electric-blue hover:bg-genz-electric-blue hover:text-dark-base font-bold rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95;
-  }
-
-  .genz-button-pill {
-    @apply bg-gradient-to-r from-genz-hot-pink to-genz-coral-pop text-white font-semibold rounded-full transition-all duration-300 hover:scale-110 hover:shadow-neon-pink active:scale-95;
-  }
-
-  .genz-button-neon {
-    @apply bg-dark-surface border-2 border-genz-neon-green text-genz-neon-green font-bold rounded-2xl transition-all duration-300 hover:bg-genz-neon-green hover:text-dark-base hover:shadow-neon-green hover:scale-105 active:scale-95;
-  }
-
-  /* Input Components */
-  .cosmic-input {
-    @apply bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent;
-  }
-
-  .genz-input {
-    @apply bg-dark-surface/50 backdrop-blur-xl border-2 border-white/20 rounded-2xl px-6 py-4 text-white placeholder-white/40 focus:outline-none focus:border-genz-electric-blue focus:shadow-neon-cyan transition-all duration-300 touch-manipulation;
-  }
-
-  .genz-input-glass {
-    @apply bg-white/5 backdrop-blur-xl border border-white/30 rounded-2xl px-6 py-4 text-white placeholder-white/50 focus:outline-none focus:bg-white/10 focus:border-genz-purple-haze focus:shadow-genz-glow transition-all duration-300 touch-manipulation;
-  }
-
-  /* Text Styles */
-  .section-title {
-    @apply text-3xl md:text-4xl font-bold bg-gradient-to-r from-cosmic-cyan via-cosmic-purple to-cosmic-pink bg-clip-text text-transparent;
-  }
-
-  .genz-title {
-    @apply text-4xl md:text-6xl lg:text-7xl font-display font-extrabold bg-gradient-to-r from-genz-electric-blue via-genz-purple-haze to-genz-hot-pink bg-clip-text text-transparent leading-tight;
-  }
-
-  .genz-heading {
-    @apply text-2xl md:text-4xl font-display font-bold bg-gradient-to-r from-genz-mint-fresh to-genz-electric-blue bg-clip-text text-transparent;
-  }
-
-  .genz-text-neon {
-    @apply text-genz-neon-green drop-shadow-[0_0_10px_rgba(57,255,20,0.5)];
-  }
-
-  .genz-text-glow {
-    @apply text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.5)];
-  }
-
-  /* Feature Cards */
-  .feature-card {
-    @apply cosmic-card hover:bg-white/10 transition-all duration-300 cursor-pointer group;
-  }
-
-  .genz-feature-card {
-    @apply genz-card-glass cursor-pointer group overflow-hidden relative;
-  }
-
-  .genz-feature-card::before {
+  .nadi-leaf::before, .nadi-leaf::after {
     content: '';
-    @apply absolute inset-0 bg-gradient-to-r from-genz-electric-blue/0 via-genz-electric-blue/20 to-genz-electric-blue/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000;
+    position: absolute;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ink);
+    border: 1px solid var(--gold-deep);
+    transform: translateY(-50%);
+  }
+  .nadi-leaf::before { left: 14px; }
+  .nadi-leaf::after { right: 14px; }
+
+  /* Buttons */
+  .nadi-btn, .cosmic-button, .genz-button, .genz-button-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 48px;
+    padding: 0 1.25rem;
+    border-radius: 14px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--on-gold);
+    background: linear-gradient(180deg, #EBCB86 0%, #D4AF5F 55%, #B8913F 100%);
+    box-shadow: 0 8px 24px -10px rgba(212, 175, 95, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    transition: filter 0.15s ease, transform 0.15s ease;
+  }
+  .nadi-btn:hover, .cosmic-button:hover, .genz-button:hover, .genz-button-pill:hover { filter: brightness(1.06); }
+  .nadi-btn:active, .cosmic-button:active, .genz-button:active, .genz-button-pill:active { transform: scale(0.98); }
+  .nadi-btn:disabled, .genz-button:disabled, .cosmic-button:disabled {
+    filter: saturate(0.4) brightness(0.75);
+    cursor: not-allowed;
   }
 
-  /* Badge Components */
-  .genz-badge {
-    @apply inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-genz-purple-haze to-genz-lavender-dream text-white shadow-lg;
+  .nadi-btn-ghost, .genz-button-outline, .genz-button-neon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 48px;
+    padding: 0 1.25rem;
+    border-radius: 14px;
+    font-weight: 500;
+    color: var(--gold-hi);
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+  .nadi-btn-ghost:hover, .genz-button-outline:hover, .genz-button-neon:hover {
+    background: rgba(212, 175, 95, 0.08);
+    border-color: var(--gold);
   }
 
-  .genz-badge-outline {
-    @apply inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold border-2 border-genz-electric-blue text-genz-electric-blue;
+  /* Inputs */
+  .nadi-input, .cosmic-input, .genz-input, .genz-input-glass {
+    width: 100%;
+    min-height: 48px;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    color: var(--ivory);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(212, 175, 95, 0.25);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    touch-action: manipulation;
+  }
+  .nadi-input::placeholder, .cosmic-input::placeholder, .genz-input::placeholder, .genz-input-glass::placeholder {
+    color: var(--muted);
+  }
+  .nadi-input:focus, .cosmic-input:focus, .genz-input:focus, .genz-input-glass:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(212, 175, 95, 0.18);
   }
 
-  .genz-badge-neon {
-    @apply inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-genz-neon-green/20 border border-genz-neon-green text-genz-neon-green shadow-neon-green;
+  /* Type */
+  .nadi-eyebrow {
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 500;
+  }
+  .section-title, .genz-heading {
+    font-family: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
+    font-weight: 500;
+    font-size: clamp(1.6rem, 3vw, 2.25rem);
+    line-height: 1.15;
+    color: var(--ivory);
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+  .genz-title {
+    font-family: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
+    font-weight: 500;
+    font-size: clamp(2.25rem, 6vw, 4rem);
+    line-height: 1.06;
+    color: var(--ivory);
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+  .genz-text-neon { color: var(--gold-hi); }
+  .genz-text-glow { color: var(--ivory); }
+
+  .nadi-rule {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--gold);
+  }
+  .nadi-rule::before, .nadi-rule::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
   }
 
-  /* Loading Spinner */
-  .loading-spinner {
-    @apply animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cosmic-purple;
+  .feature-card { cursor: pointer; }
+  .genz-feature-card { cursor: pointer; position: relative; overflow: hidden; }
+
+  /* Badges */
+  .genz-badge, .genz-badge-outline, .genz-badge-neon, .nadi-chip {
+    display: inline-flex;
+    align-items: center;
+    height: 28px;
+    padding: 0 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--gold-hi);
+    background: rgba(212, 175, 95, 0.08);
+    border: 1px solid var(--line);
   }
 
-  .genz-spinner {
-    @apply animate-spin rounded-full h-12 w-12 border-4 border-genz-electric-blue/20 border-t-genz-electric-blue;
+  .loading-spinner, .genz-spinner {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 999px;
+    border: 2px solid rgba(212, 175, 95, 0.18);
+    border-top-color: var(--gold);
+    animation: spin 1s linear infinite;
   }
 
-  /* Container Utilities */
-  .genz-container {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  .genz-container { @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8; }
+  .genz-section { @apply py-14 md:py-20; }
+
+  .glass-effect, .glass-effect-strong {
+    background: rgba(20, 24, 40, 0.85);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--line);
   }
 
-  .genz-section {
-    @apply py-16 md:py-24 lg:py-32;
-  }
-
-  /* Glass Morphism */
-  .glass-effect {
-    @apply bg-white/10 backdrop-blur-2xl border border-white/20;
-  }
-
-  .glass-effect-strong {
-    @apply bg-white/20 backdrop-blur-3xl border border-white/30;
-  }
-
-  /* Neon Glow Effects */
-  .neon-glow-blue {
-    box-shadow: 0 0 20px rgba(0, 217, 255, 0.6), 0 0 40px rgba(0, 217, 255, 0.4), 0 0 60px rgba(0, 217, 255, 0.2);
-  }
-
-  .neon-glow-pink {
-    box-shadow: 0 0 20px rgba(255, 0, 110, 0.6), 0 0 40px rgba(255, 0, 110, 0.4), 0 0 60px rgba(255, 0, 110, 0.2);
-  }
-
-  .neon-glow-green {
-    box-shadow: 0 0 20px rgba(57, 255, 20, 0.6), 0 0 40px rgba(57, 255, 20, 0.4), 0 0 60px rgba(57, 255, 20, 0.2);
+  .neon-glow-blue, .neon-glow-pink, .neon-glow-green {
+    box-shadow: 0 10px 30px -14px rgba(212, 175, 95, 0.45);
   }
 }
 
@@ -236,10 +314,10 @@
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
+    box-shadow: 0 0 20px rgba(212, 175, 95, 0.4);
   }
   50% {
-    box-shadow: 0 0 40px rgba(0, 217, 255, 0.8), 0 0 60px rgba(185, 131, 255, 0.6);
+    box-shadow: 0 0 40px rgba(212, 175, 95, 0.8), 0 0 60px rgba(235, 203, 134, 0.6);
   }
 }
 
@@ -274,7 +352,7 @@
 
 /* Cosmic background effect */
 .cosmic-bg {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--night);
   position: relative;
   overflow: hidden;
 }
@@ -286,20 +364,13 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at 50% 50%, rgba(77, 238, 234, 0.1) 0%, transparent 50%);
+  background: radial-gradient(circle at 50% 50%, rgba(212, 175, 95, 0.06) 0%, transparent 50%);
   animation: glow 4s ease-in-out infinite;
 }
 
 /* Gen Z Mesh Background */
 .genz-mesh-bg {
-  background:
-    radial-gradient(at 40% 20%, rgba(0, 217, 255, 0.3) 0px, transparent 50%),
-    radial-gradient(at 80% 0%, rgba(185, 131, 255, 0.25) 0px, transparent 50%),
-    radial-gradient(at 0% 50%, rgba(255, 0, 110, 0.3) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(57, 255, 20, 0.2) 0px, transparent 50%),
-    linear-gradient(135deg, #0A0A0F 0%, #1A1A24 50%, #0A0A0F 100%);
-  background-attachment: fixed;
-  position: relative;
+  background: radial-gradient(120% 55% at 50% -12%, #1A1F3A 0%, rgba(11, 14, 28, 0.6) 45%, transparent 75%), var(--ink);
 }
 
 /* Starry background */
@@ -514,31 +585,16 @@
   -webkit-backdrop-filter: saturate(200%) blur(40px);
 }
 
-/* Premium glass card */
-.glass-premium {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0.05) 50%,
-    rgba(255, 255, 255, 0.1) 100%
-  );
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
 
 /* Glowing border animation */
 @keyframes border-glow {
   0%, 100% {
-    border-color: rgba(0, 217, 255, 0.3);
-    box-shadow: 0 0 15px rgba(0, 217, 255, 0.2);
+    border-color: rgba(212, 175, 95, 0.3);
+    box-shadow: 0 0 15px rgba(212, 175, 95, 0.2);
   }
   50% {
-    border-color: rgba(185, 131, 255, 0.5);
-    box-shadow: 0 0 25px rgba(185, 131, 255, 0.3);
+    border-color: rgba(235, 203, 134, 0.5);
+    box-shadow: 0 0 25px rgba(235, 203, 134, 0.3);
   }
 }
 
@@ -828,4 +884,14 @@ html {
 
 .prose-prediction blockquote {
   @apply border-l-4 border-purple-500 pl-4 italic text-gray-600 my-4;
+}
+
+/* Respect the OS "reduce motion" setting: stop ambient animation. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

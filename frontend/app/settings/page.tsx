@@ -20,7 +20,6 @@ import AnimatedBackground, { FloatingElements } from '../components/AnimatedBack
 import GenZCard from '../components/GenZCard';
 import GenZBadge from '../components/GenZBadge';
 import GenZButton from '../components/GenZButton';
-import BottomNav from '../components/BottomNav';
 import { applyHighContrast } from '@/lib/accessibility';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { useI18n } from '@/lib/context/I18nContext';
@@ -384,6 +383,7 @@ export default function SettingsPage() {
                                 [item.key!]: e.target.checked,
                               }))
                             }
+                            aria-label={item.label}
                             className="sr-only peer"
                           />
                           <div className="w-14 h-7 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-genz-electric-blue peer-checked:to-genz-purple-haze"></div>
@@ -393,6 +393,7 @@ export default function SettingsPage() {
                       {/* Select */}
                       {item.type === 'select' && item.key && 'options' in item && item.options && (
                         <select
+                          aria-label={item.label}
                           value={settings[item.key as keyof typeof settings] as string}
                           onChange={(e) => handleSelectChange(item.key!, e.target.value)}
                           className="bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-genz-electric-blue"
@@ -435,7 +436,7 @@ export default function SettingsPage() {
 
           {/* App Info */}
         <GenZCard variant="neon" className="text-center">
-          <div className="text-6xl mb-4">✨</div>
+          
           <h3 className="text-xl font-display font-bold text-white mb-2">
             {t('settings.appInfo.appName')}
           </h3>
@@ -447,7 +448,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <BottomNav />
     </div>
   );
 }

@@ -1,6 +1,23 @@
 /** @type {import('tailwindcss').Config} */
 const plugin = require('tailwindcss/plugin')
 
+const GOLD = {
+  50: '#FBF6EA', 100: '#F5EAD0', 200: '#EBCB86', 300: '#E2BC70', 400: '#D4AF5F',
+  500: '#B08A40', 600: '#8A6A2E', 700: '#6B5225', 800: '#4A3A1D', 900: '#2E2414', 950: '#1A140B',
+}
+const NEUTRAL = {
+  50: '#F3EDE0', 100: '#EAE3D5', 200: '#D8D0C0', 300: '#BDB3A0', 400: '#A39985',
+  500: '#857B6A', 600: '#3A3F55', 700: '#262B3F', 800: '#181C2C', 900: '#0E1120', 950: '#07080F',
+}
+const SAGE = {
+  50: '#F1F6EF', 100: '#E3EDE0', 200: '#C7DBC1', 300: '#A9C5A0', 400: '#8FB38A',
+  500: '#6E9668', 600: '#557A50', 700: '#3F5C3B', 800: '#2A3F28', 900: '#1A2819', 950: '#101910',
+}
+const KUMKUM = {
+  50: '#FBEDE9', 100: '#F5D3CA', 200: '#EBAE9E', 300: '#E08A73', 400: '#D06A50',
+  500: '#C0563A', 600: '#9E4430', 700: '#7C3526', 800: '#5A271C', 900: '#3B1A13', 950: '#26100B',
+}
+
 module.exports = {
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
@@ -9,51 +26,42 @@ module.exports = {
   ],
   theme: {
     extend: {
+      // "Nadi Gold" design system. Every legacy colour family (purple, cyan,
+      // pink, neon "genz", "cosmic"…) is remapped onto this palette, so the
+      // whole app wears one look without touching any component logic.
       colors: {
-        primary: {
-          50: '#f5f3ff',
-          100: '#ede9fe',
-          200: '#ddd6fe',
-          300: '#c4b5fd',
-          400: '#a78bfa',
-          500: '#8b5cf6',
-          600: '#7c3aed',
-          700: '#6d28d9',
-          800: '#5b21b6',
-          900: '#4c1d95',
-        },
-        cosmic: {
-          cyan: '#4DEEEA',
-          purple: '#8A5CF6',
-          lime: '#BEF264',
-          yellow: '#FACC15',
-          pink: '#EC4899',
-        },
-        // Gen Z vibrant palette
+        ink: { DEFAULT: '#07080F', night: '#0B0E1C', surface: '#10131F', card: '#141828', raised: '#1B2033' },
+        gold: GOLD,
+        ivory: { DEFAULT: '#F3EDE0', 2: '#BDB3A0', muted: '#9A907E' },
+        kumkum: KUMKUM,
+        sage: SAGE,
+        primary: GOLD,
+        purple: GOLD, violet: GOLD, indigo: GOLD, fuchsia: GOLD, pink: GOLD,
+        cyan: GOLD, sky: GOLD, blue: GOLD, teal: GOLD,
+        yellow: GOLD, amber: GOLD, orange: GOLD,
+        green: SAGE, emerald: SAGE, lime: SAGE,
+        red: KUMKUM, rose: KUMKUM,
+        gray: NEUTRAL, slate: NEUTRAL, zinc: NEUTRAL, neutral: NEUTRAL, stone: NEUTRAL,
+        cosmic: { cyan: GOLD[300], purple: GOLD[400], lime: SAGE[300], yellow: GOLD[200], pink: GOLD[500] },
         genz: {
-          'electric-blue': '#00D9FF',
-          'hot-pink': '#FF006E',
-          'neon-green': '#39FF14',
-          'cyber-yellow': '#FFD60A',
-          'purple-haze': '#B983FF',
-          'mint-fresh': '#94F9F0',
-          'sunset-orange': '#FF6B35',
-          'lavender-dream': '#C297FF',
-          'coral-pop': '#FF5D8F',
-          'lime-zest': '#CCFF00',
+          'electric-blue': GOLD[400],
+          'hot-pink': GOLD[500],
+          'neon-green': SAGE[300],
+          'cyber-yellow': GOLD[200],
+          'purple-haze': GOLD[300],
+          'mint-fresh': '#F3EDE0',
+          'sunset-orange': GOLD[500],
+          'lavender-dream': GOLD[200],
+          'coral-pop': KUMKUM[400],
+          'lime-zest': SAGE[300],
         },
-        // Dark mode backgrounds
-        dark: {
-          base: '#0A0A0F',
-          surface: '#121218',
-          elevated: '#1A1A24',
-          card: '#1F1F2E',
-        },
+        dark: { base: '#07080F', surface: '#10131F', elevated: '#141828', card: '#1B2033' },
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Noto Sans Devanagari', 'sans-serif'],
-        serif: ['Georgia', 'Cambria', 'Noto Serif Devanagari', 'serif'],
-        display: ['var(--font-space-grotesk)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-inter)', 'Inter', 'system-ui', '-apple-system', 'Segoe UI', 'var(--font-devanagari)', 'sans-serif'],
+        serif: ['var(--font-cormorant)', 'Cormorant Garamond', 'var(--font-devanagari)', 'Georgia', 'serif'],
+        display: ['var(--font-cormorant)', 'Cormorant Garamond', 'var(--font-devanagari)', 'Georgia', 'serif'],
+        deva: ['var(--font-devanagari)', 'Noto Serif Devanagari', 'serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       fontSize: {
@@ -62,13 +70,14 @@ module.exports = {
         'display-md': ['2.5rem', { lineHeight: '1.2', fontWeight: '700' }],
       },
       backgroundImage: {
-        'cosmic-gradient': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        'starry-night': 'linear-gradient(180deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
-        'genz-gradient': 'linear-gradient(135deg, #00D9FF 0%, #B983FF 50%, #FF006E 100%)',
-        'sunset-gradient': 'linear-gradient(135deg, #FF6B35 0%, #FFD60A 50%, #FF006E 100%)',
-        'cyber-gradient': 'linear-gradient(135deg, #39FF14 0%, #00D9FF 50%, #B983FF 100%)',
-        'neon-glow': 'radial-gradient(circle at center, rgba(0, 217, 255, 0.3) 0%, transparent 70%)',
-        'mesh-gradient': 'radial-gradient(at 40% 20%, hsla(280, 100%, 70%, 0.5) 0px, transparent 50%), radial-gradient(at 80% 0%, hsla(180, 100%, 70%, 0.4) 0px, transparent 50%), radial-gradient(at 0% 50%, hsla(330, 100%, 70%, 0.5) 0px, transparent 50%)',
+        'cosmic-gradient': 'linear-gradient(180deg, #EBCB86 0%, #D4AF5F 55%, #B8913F 100%)',
+        'starry-night': 'radial-gradient(120% 60% at 50% -10%, #1A1F3A 0%, #0B0E1C 45%, #07080F 100%)',
+        'genz-gradient': 'linear-gradient(180deg, #EBCB86 0%, #D4AF5F 55%, #B8913F 100%)',
+        'sunset-gradient': 'linear-gradient(180deg, #EBCB86 0%, #D4AF5F 55%, #B8913F 100%)',
+        'cyber-gradient': 'linear-gradient(180deg, #EBCB86 0%, #D4AF5F 55%, #B8913F 100%)',
+        'neon-glow': 'radial-gradient(circle at center, rgba(212, 175, 95, 0.12) 0%, transparent 70%)',
+        'mesh-gradient': 'radial-gradient(120% 60% at 50% -10%, rgba(26, 31, 58, 0.9) 0%, transparent 60%)',
+        'gold-leaf': 'linear-gradient(180deg, #EBCB86 0%, #D4AF5F 55%, #B8913F 100%)',
       },
       animation: {
         'bounce-slow': 'bounce 3s infinite',
@@ -122,12 +131,13 @@ module.exports = {
         },
       },
       boxShadow: {
-        'genz-glow': '0 0 30px rgba(0, 217, 255, 0.5), 0 0 60px rgba(185, 131, 255, 0.3)',
-        'neon-pink': '0 0 20px rgba(255, 0, 110, 0.6)',
-        'neon-cyan': '0 0 20px rgba(0, 217, 255, 0.6)',
-        'neon-green': '0 0 20px rgba(57, 255, 20, 0.6)',
-        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-        'glass-lg': '0 20px 60px 0 rgba(31, 38, 135, 0.45)',
+        'genz-glow': '0 10px 30px -14px rgba(212, 175, 95, 0.45)',
+        'neon-pink': '0 10px 30px -14px rgba(212, 175, 95, 0.45)',
+        'neon-cyan': '0 10px 30px -14px rgba(212, 175, 95, 0.45)',
+        'neon-green': '0 10px 30px -14px rgba(143, 179, 138, 0.4)',
+        'glass': '0 12px 32px -16px rgba(0, 0, 0, 0.7)',
+        'glass-lg': '0 24px 60px -24px rgba(0, 0, 0, 0.8)',
+        'gold': '0 8px 24px -10px rgba(212, 175, 95, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.35)',
       },
       backdropBlur: {
         xs: '2px',

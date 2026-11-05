@@ -18,6 +18,15 @@ logger = setup_logger(__name__)
 bp = Blueprint('daily_insights', __name__, url_prefix='/api/insights')
 
 
+def _coord(value, limit):
+    """Saved profile coordinates, so the chart needn't re-geocode the place name."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if -limit <= number <= limit else None
+
+
 @bp.route('/daily', methods=['POST'])
 def get_daily_insight():
     """
@@ -48,7 +57,9 @@ def get_daily_insight():
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
                 place=data['place_of_birth'],
-                timezone_override=sanitize_input(data.get('timezone'), max_length=64)
+                latitude=_coord(data.get('latitude'), 90),
+                longitude=_coord(data.get('longitude'), 180),
+                timezone_override=sanitize_input(data.get('timezone'), max_length=64) if data.get('timezone') else None
             )
 
             error_response = handle_birth_chart_error(birth_chart)
@@ -109,7 +120,9 @@ def get_weekly_forecast():
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
                 place=data['place_of_birth'],
-                timezone_override=sanitize_input(data.get('timezone'), max_length=64)
+                latitude=_coord(data.get('latitude'), 90),
+                longitude=_coord(data.get('longitude'), 180),
+                timezone_override=sanitize_input(data.get('timezone'), max_length=64) if data.get('timezone') else None
             )
 
             error_response = handle_birth_chart_error(birth_chart)
@@ -167,7 +180,9 @@ def get_monthly_forecast():
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
                 place=data['place_of_birth'],
-                timezone_override=sanitize_input(data.get('timezone'), max_length=64)
+                latitude=_coord(data.get('latitude'), 90),
+                longitude=_coord(data.get('longitude'), 180),
+                timezone_override=sanitize_input(data.get('timezone'), max_length=64) if data.get('timezone') else None
             )
 
             error_response = handle_birth_chart_error(birth_chart)
@@ -221,7 +236,9 @@ def get_yearly_forecast():
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
                 place=data['place_of_birth'],
-                timezone_override=sanitize_input(data.get('timezone'), max_length=64)
+                latitude=_coord(data.get('latitude'), 90),
+                longitude=_coord(data.get('longitude'), 180),
+                timezone_override=sanitize_input(data.get('timezone'), max_length=64) if data.get('timezone') else None
             )
 
             error_response = handle_birth_chart_error(birth_chart)
@@ -275,7 +292,9 @@ def get_daily_horoscope():
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
                 place=data['place_of_birth'],
-                timezone_override=sanitize_input(data.get('timezone'), max_length=64)
+                latitude=_coord(data.get('latitude'), 90),
+                longitude=_coord(data.get('longitude'), 180),
+                timezone_override=sanitize_input(data.get('timezone'), max_length=64) if data.get('timezone') else None
             )
 
             error_response = handle_birth_chart_error(birth_chart)
@@ -333,7 +352,9 @@ def get_weekly_horoscope():
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
                 place=data['place_of_birth'],
-                timezone_override=sanitize_input(data.get('timezone'), max_length=64)
+                latitude=_coord(data.get('latitude'), 90),
+                longitude=_coord(data.get('longitude'), 180),
+                timezone_override=sanitize_input(data.get('timezone'), max_length=64) if data.get('timezone') else None
             )
 
             error_response = handle_birth_chart_error(birth_chart)
@@ -391,7 +412,9 @@ def get_monthly_horoscope():
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
                 place=data['place_of_birth'],
-                timezone_override=sanitize_input(data.get('timezone'), max_length=64)
+                latitude=_coord(data.get('latitude'), 90),
+                longitude=_coord(data.get('longitude'), 180),
+                timezone_override=sanitize_input(data.get('timezone'), max_length=64) if data.get('timezone') else None
             )
 
             error_response = handle_birth_chart_error(birth_chart)
@@ -445,7 +468,9 @@ def get_yearly_horoscope():
                 date_of_birth=data['date_of_birth'],
                 time_of_birth=data['time_of_birth'],
                 place=data['place_of_birth'],
-                timezone_override=sanitize_input(data.get('timezone'), max_length=64)
+                latitude=_coord(data.get('latitude'), 90),
+                longitude=_coord(data.get('longitude'), 180),
+                timezone_override=sanitize_input(data.get('timezone'), max_length=64) if data.get('timezone') else None
             )
 
             error_response = handle_birth_chart_error(birth_chart)

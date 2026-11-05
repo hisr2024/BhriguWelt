@@ -244,6 +244,8 @@ class HoroscopeEngine:
         moon_sign = birth_data.get('moon_sign', zodiac_sign)
         nakshatra = birth_data.get('nakshatra', 'Ashwini')
         ascendant = birth_data.get('ascendant', zodiac_sign)
+        if isinstance(ascendant, dict):
+            ascendant = ascendant.get('sign') or zodiac_sign
 
         # Get zodiac wisdom
         wisdom = self.ZODIAC_WISDOM.get(zodiac_sign, self.ZODIAC_WISDOM['Aries'])
@@ -486,7 +488,8 @@ class HoroscopeEngine:
 
     def _get_day_ruler(self, weekday: int) -> str:
         """Get the planetary ruler of the day"""
-        rulers = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']
+        # Python's weekday(): Monday = 0. Monday is ruled by the Moon.
+        rulers = ['Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Sun']
         return rulers[weekday]
 
     def _generate_daily_overall(

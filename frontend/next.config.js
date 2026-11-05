@@ -76,6 +76,26 @@ const nextConfig = {
       exclude: ['error', 'warn'],
     } : false,
   },
+  // Retired duplicate pages: old URLs and bookmarks land on the current screen.
+  async redirects() {
+    const to = (source, destination) => ({ source, destination, permanent: true })
+    return [
+      to('/karmic-journey', '/bhrigu-predictions/karmic-journey'),
+      to('/past-lives', '/bhrigu-predictions/past-lives'),
+      to('/future-lives', '/bhrigu-predictions/future-lives'),
+      to('/present-life', '/bhrigu-predictions/present-life'),
+      to('/relationships', '/bhrigu-predictions/relationships'),
+      to('/karmic-remedies', '/bhrigu-predictions/karmic-remedies'),
+      to('/remedies', '/bhrigu-predictions/karmic-remedies'),
+      to('/karma-reset', '/bhrigu-predictions/karmic-remedies'),
+      to('/life-events', '/bhrigu-predictions/life-events'),
+      to('/predictions', '/bhrigu-predictions/predictions'),
+      to('/daily-insights', '/dashboard'),
+      to('/birthchart', '/birth-chart'),
+      to('/birthchart/:path*', '/birth-chart'),
+    ]
+  },
+
   async headers() {
     // Get CDN URL for CSP
     const cdnUrl = process.env.NEXT_PUBLIC_CDN_URL || '';

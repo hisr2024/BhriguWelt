@@ -1,5 +1,7 @@
 'use client';
 
+import { toPlanetList } from '@/lib/chart/planetList';
+
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, ArrowLeft, Loader2, Users, FileText, Activity, Sparkles } from 'lucide-react';
@@ -10,7 +12,6 @@ import AnimatedBackground, { FloatingElements } from '../components/AnimatedBack
 import GenZBadge from '../components/GenZBadge';
 import GenZButton from '../components/GenZButton';
 import GenZCard from '../components/GenZCard';
-import BottomNav from '../components/BottomNav';
 import InteractiveAnalyticsDashboard from '../components/InteractiveAnalyticsDashboard';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { loadCurrentProfile } from '@/lib/profileHelpers';
@@ -149,7 +150,7 @@ export default function AnalyticsPage() {
     const challenges: string[] = [];
     const opportunities: string[] = [];
 
-    const planets = chart.planets || [];
+    const planets = toPlanetList(chart.planets);
     planets.forEach((planet: any) => {
       if (planet.is_exalted) {
         strengths.push(`${planet.name} in exaltation brings exceptional ${getPlanetTheme(planet.name)}`);
@@ -194,12 +195,12 @@ export default function AnalyticsPage() {
   const calculateKarmaScore = (chart: any): number => {
     let score = 50;
     if (chart.houses && chart.houses[5]) score += 10;
-    const saturn = chart.planets?.find((p: any) => p.name === 'Saturn');
+    const saturn = toPlanetList(chart.planets).find((p: any) => p.name === 'Saturn');
     if (saturn) {
       if (saturn.house === 10 || saturn.house === 1) score += 15;
       if (saturn.is_retrograde) score -= 10;
     }
-    const rahu = chart.planets?.find((p: any) => p.name === 'Rahu');
+    const rahu = toPlanetList(chart.planets).find((p: any) => p.name === 'Rahu');
     if (rahu && (rahu.house === 6 || rahu.house === 8 || rahu.house === 12)) {
       score += 10;
     }
@@ -209,12 +210,12 @@ export default function AnalyticsPage() {
   const calculateDharmaScore = (chart: any): number => {
     let score = 50;
     if (chart.houses && chart.houses[8]) score += 15;
-    const jupiter = chart.planets?.find((p: any) => p.name === 'Jupiter');
+    const jupiter = toPlanetList(chart.planets).find((p: any) => p.name === 'Jupiter');
     if (jupiter) {
       if (jupiter.is_exalted) score += 20;
       if (jupiter.house === 9 || jupiter.house === 1) score += 15;
     }
-    const sun = chart.planets?.find((p: any) => p.name === 'Sun');
+    const sun = toPlanetList(chart.planets).find((p: any) => p.name === 'Sun');
     if (sun && (sun.house === 10 || sun.house === 9)) {
       score += 10;
     }
@@ -224,12 +225,12 @@ export default function AnalyticsPage() {
   const calculateMokshaScore = (chart: any): number => {
     let score = 50;
     if (chart.houses && chart.houses[11]) score += 15;
-    const ketu = chart.planets?.find((p: any) => p.name === 'Ketu');
+    const ketu = toPlanetList(chart.planets).find((p: any) => p.name === 'Ketu');
     if (ketu) {
       if (ketu.house === 12 || ketu.house === 9) score += 20;
       if (ketu.house === 8) score += 15;
     }
-    const moon = chart.planets?.find((p: any) => p.name === 'Moon');
+    const moon = toPlanetList(chart.planets).find((p: any) => p.name === 'Moon');
     if (moon && (moon.house === 12 || moon.house === 9)) {
       score += 10;
     }
@@ -460,7 +461,6 @@ export default function AnalyticsPage() {
             </Link>
           </div>
         </div>
-        <BottomNav />
       </div>
     );
   }
@@ -577,7 +577,7 @@ export default function AnalyticsPage() {
                     </linearGradient>
                   </defs>
                   <path d={timelineFillPath} fill="url(#timeline-fill)" />
-                  <path d={timelineChartPath} fill="none" stroke="#EC4899" strokeWidth="2" />
+                  <path d={timelineChartPath} fill="none" stroke="#E08A73" strokeWidth="2" />
                 </svg>
               </div>
               <div className="mt-4 space-y-3">
@@ -767,7 +767,6 @@ export default function AnalyticsPage() {
         )}
       </div>
 
-      <BottomNav />
     </div>
   );
 }

@@ -607,6 +607,23 @@ export const predictionsAPI = {
   },
 };
 
+export type InsightScope = 'daily' | 'weekly' | 'monthly' | 'yearly';
+
+/**
+ * Chart-based daily/weekly/monthly/yearly insights and horoscopes, computed on
+ * the backend from the birth chart (Swiss Ephemeris). No AI call involved.
+ */
+export const insightsAPI = {
+  get: async (scope: InsightScope, data: BirthDetails & { target_date?: string }) => {
+    const response = await api.post(`/api/insights/${scope}`, data);
+    return response.data;
+  },
+  horoscope: async (scope: InsightScope, data: BirthDetails & { target_date?: string }) => {
+    const response = await api.post(`/api/insights/horoscope/${scope}`, data);
+    return response.data;
+  },
+};
+
 export const aiAPI = {
   /**
    * Get AI consent information and requirements

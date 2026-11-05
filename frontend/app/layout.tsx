@@ -4,6 +4,7 @@ import './globals.css'
 import { SITE_URL } from '@/lib/site'
 import { PWAInstaller } from './components/PWAInstaller'
 import { Providers } from './providers'
+import { AppShell } from '../components/nadi/AppShell'
 import { GDPRNoticeLazy } from '../components/GDPRNoticeLazy'
 
 // Self-hosted variable fonts (SIL OFL): no request to Google's servers,
@@ -14,11 +15,21 @@ const inter = localFont({
   weight: '100 900',
   display: 'swap',
 })
-const spaceGrotesk = localFont({
-  src: './fonts/space-grotesk-latin-var.woff2',
-  variable: '--font-space-grotesk',
+const cormorant = localFont({
+  src: [
+    { path: './fonts/cormorant-garamond-latin-var.woff2', style: 'normal' },
+    { path: './fonts/cormorant-garamond-latin-italic-var.woff2', style: 'italic' },
+  ],
+  variable: '--font-cormorant',
   weight: '300 700',
   display: 'swap',
+})
+const notoDevanagari = localFont({
+  src: './fonts/noto-serif-devanagari-var.woff2',
+  variable: '--font-devanagari',
+  weight: '100 900',
+  display: 'swap',
+  preload: false,
 })
 
 const SITE_DESCRIPTION =
@@ -66,7 +77,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0B0B14',
+  themeColor: '#07080F',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -79,13 +90,15 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+    <html lang="en" className={`${inter.variable} ${cormorant.variable} ${notoDevanagari.variable}`}>
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="font-sans">
         <Providers>
-          <main id="main-content">{children}</main>
+          <AppShell>
+            <main id="main-content">{children}</main>
+          </AppShell>
           <PWAInstaller />
           <GDPRNoticeLazy />
         </Providers>

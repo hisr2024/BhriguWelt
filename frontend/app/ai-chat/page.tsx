@@ -9,7 +9,6 @@ import AnimatedBackground, { FloatingElements } from '../components/AnimatedBack
 import AIChatInterface from '../components/AIChatInterface';
 import GenZBadge from '../components/GenZBadge';
 import GenZButton from '../components/GenZButton';
-import BottomNav from '../components/BottomNav';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { STORES } from '@/lib/storage';
 import { getItemSafe } from '@/lib/storage-safe';
@@ -173,7 +172,6 @@ export default function AIChatPage() {
           </div>
         </div>
 
-        <BottomNav />
       </div>
     </ErrorBoundary>
   );

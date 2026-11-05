@@ -1,840 +1,111 @@
-'use client';
-
-import dynamic from 'next/dynamic';
-
-import { useMemo, useState, useEffect } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
 import Link from 'next/link';
 import {
-  Sparkles, Moon, Sun, Star, Heart, Zap,
-  BookOpen, Compass, TrendingUp, Shield,
-  Users, Clock, Globe, Award, ChevronRight,
-  CheckCircle, ArrowRight, Play, Menu, X
-} from 'lucide-react';
-import GenZButton from './components/GenZButton';
-import GenZCard, { GenZCardGradient } from './components/GenZCard';
-import GenZBadge from './components/GenZBadge';
-import BottomNav from './components/BottomNav';
-import HoroscopeBricks from './components/HoroscopeBricks';
-import useFeatureFlags from '../hooks/useFeatureFlags';
+  ArrowIcon, ChartIcon, DiamondChartEmblem, FlameIcon, HourglassIcon, UnionIcon, WheelIcon,
+} from '@/components/nadi/icons';
 
-const AnimatedBackground = dynamic(() => import('./components/AnimatedBackground'), {
-  ssr: false,
-  loading: () => null,
-});
-const FloatingElements = dynamic(
-  () => import('./components/AnimatedBackground').then((mod) => mod.FloatingElements),
-  {
-    ssr: false,
-    loading: () => null,
-  }
-);
-const OnboardingTutorial = dynamic(() => import('../components/OnboardingTutorial'), {
-  ssr: false,
-  loading: () => null,
-});
+const OFFERINGS = [
+  { icon: WheelIcon, title: 'Karmic journey', text: "Your soul's purpose, the lessons of this birth and the karma you carry, read from the 9th, 10th and 12th houses." },
+  { icon: HourglassIcon, title: 'Life events, with dates', text: 'Marriage, career turns, relocation and health windows timed by Vimshottari dasha and slow-planet transits.' },
+  { icon: FlameIcon, title: 'Classical remedies', text: 'Mantras, charity and observances tied to the specific placements that need support, never generic advice.' },
+  { icon: UnionIcon, title: 'Compatibility', text: 'Ashtakoot guna milan on 36 points, with Mangal dosha checks and what the score means for your match.' },
+];
 
-export default function HomePage() {
-  const [, setActiveFeature] = useState(0);
-  const [email, setEmail] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(false);
-  useFeatureFlags();
-  const { scrollYProgress } = useScroll();
-  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.8]);
+const STEPS = [
+  { n: 'I', title: 'Enter your birth details', text: 'Date, exact time and place. They stay encrypted on your device behind your passcode.' },
+  { n: 'II', title: 'Your chart is computed', text: 'Swiss Ephemeris positions with Lahiri ayanamsa, then Bhrigu Samhita and Nadi rules applied to your placements.' },
+  { n: 'III', title: 'Read it your way', text: 'Plain language with dates and actions, or the astrologer view with every yoga, dasha and source rule.' },
+];
 
-  // Check if tutorial has been completed on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const tutorialCompleted = localStorage.getItem('tutorialCompleted');
-      if (!tutorialCompleted) {
-        setShowTutorial(true);
-      }
-    }
-  }, []);
-
-  const features = useMemo(() => [
-    {
-      icon: <Sparkles className="w-8 h-8" />,
-      title: 'Karmic Journey',
-      description: 'Discover your soul\'s purpose and life mission through detailed karmic analysis',
-      link: '/karmic-journey',
-      color: 'from-cyan-500 to-blue-500',
-      badge: 'Popular'
-    },
-    {
-      icon: <Moon className="w-8 h-8" />,
-      title: 'Past Lives',
-      description: 'Explore your previous incarnations and karmic patterns across lifetimes',
-      link: '/past-lives',
-      color: 'from-purple-500 to-pink-500',
-      badge: 'New'
-    },
-    {
-      icon: <Star className="w-8 h-8" />,
-      title: 'Future Lives',
-      description: 'Envision your soul\'s evolution and future paths with AI-powered predictions',
-      link: '/future-lives',
-      color: 'from-yellow-500 to-orange-500',
-      badge: 'AI Powered'
-    },
-    {
-      icon: <Sun className="w-8 h-8" />,
-      title: 'Present Life',
-      description: 'Comprehensive analysis of your current life path and opportunities',
-      link: '/present-life',
-      color: 'from-lime-500 to-green-500'
-    },
-    {
-      icon: <TrendingUp className="w-8 h-8" />,
-      title: 'Life Events',
-      description: 'Predict important milestones and transitions with precision timing',
-      link: '/life-events',
-      color: 'from-blue-500 to-indigo-500'
-    },
-    {
-      icon: <Shield className="w-8 h-8" />,
-      title: 'Karmic Remedies',
-      description: 'Personalized spiritual practices and remedies for balance',
-      link: '/karmic-remedies',
-      color: 'from-pink-500 to-rose-500'
-    },
-    {
-      icon: <Heart className="w-8 h-8" />,
-      title: 'Relationships',
-      description: 'Soul connections and compatibility analysis for deeper bonds',
-      link: '/relationships',
-      color: 'from-red-500 to-pink-500'
-    },
-    {
-      icon: <Compass className="w-8 h-8" />,
-      title: 'Predictions',
-      description: 'Daily, weekly, and monthly forecasts with actionable insights',
-      link: '/predictions',
-      color: 'from-teal-500 to-cyan-500'
-    },
-  ], []);
-
-  const stats = useMemo(() => [
-    { value: '20+', label: 'Classical Rules Applied', icon: <Users className="w-6 h-6" /> },
-    { value: 'Swiss', label: 'Ephemeris Precision', icon: <Award className="w-6 h-6" /> },
-    { value: '2', label: 'Reading Views', icon: <Clock className="w-6 h-6" /> },
-    { value: 'On-device', label: 'Encrypted Profile', icon: <Globe className="w-6 h-6" /> },
-  ], []);
-
-
-  const advancedFeatures = useMemo(() => [
-    {
-      icon: <Zap className="w-6 h-6" />,
-      title: 'AI-Powered Insights',
-      description: 'OpenAI analyzes millions of astrological patterns'
-    },
-    {
-      icon: <BookOpen className="w-6 h-6" />,
-      title: 'Vedic Knowledge',
-      description: '5000+ years of ancient wisdom at your fingertips'
-    },
-    {
-      icon: <Shield className="w-6 h-6" />,
-      title: 'Privacy First',
-      description: 'Your spiritual journey is completely confidential'
-    },
-    {
-      icon: <TrendingUp className="w-6 h-6" />,
-      title: 'Real-Time Updates',
-      description: 'Daily insights based on planetary transits'
-    },
-  ], []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveFeature((prev) => (prev + 1) % features.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [features.length]);
-
+export default function LandingPage() {
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      <AnimatedBackground />
-      <FloatingElements />
+    <div className="relative">
+      <header>
+        <nav aria-label="Primary" className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+          <Link href="/" className="flex h-11 items-center font-display text-xl uppercase tracking-[0.08em] text-gold-200">BhriguWelt</Link>
+          <Link href="/setup-passcode" className="flex h-11 items-center px-2 text-sm text-ivory-2 hover:text-ivory">
+            Open the app
+          </Link>
+        </nav>
+      </header>
 
-      {/* Header */}
-      <nav className="fixed top-0 w-full z-50 border-b border-white/10 bg-dark-elevated/50 backdrop-blur-2xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center space-x-3"
-            >
-              <motion.div
-                whileHover={{ rotate: 360, scale: 1.2 }}
-                transition={{ duration: 0.6 }}
-              >
-                <Sparkles className="w-8 h-8 text-genz-electric-blue animate-pulse-glow" />
-              </motion.div>
-              <span className="text-2xl md:text-3xl font-display font-extrabold bg-gradient-to-r from-genz-electric-blue via-genz-purple-haze to-genz-hot-pink bg-clip-text text-transparent">
-                BhriguWelt
+      <section className="mx-auto flex max-w-3xl flex-col items-center px-5 pb-16 pt-10 text-center md:pt-16">
+        <DiamondChartEmblem size={150} className="mb-8" />
+        <p className="nadi-eyebrow">Bhrigu Samhita · Nadi Jyotisha</p>
+        <h1 className="mt-4 text-[2.6rem] leading-[1.05] text-ivory md:text-6xl">
+          The leaf that was
+          <br />
+          <em className="text-gold-200">written for you</em>
+        </h1>
+        <p className="mt-5 max-w-xl text-base leading-relaxed text-ivory-2 md:text-lg">
+          Karmic readings drawn from your exact birth chart and the classical rules of the rishis. Private by design.
+        </p>
+        <Link href="/setup-passcode" className="nadi-btn mt-8 w-full max-w-xs text-base">
+          Begin your reading <ArrowIcon size={18} />
+        </Link>
+        <p className="mt-3 text-xs text-ivory-muted">Swiss Ephemeris precision · encrypted on your device</p>
+      </section>
+
+      <section aria-labelledby="receive" className="mx-auto max-w-5xl px-5 py-12">
+        <div className="nadi-rule mb-8"><span className="nadi-eyebrow">What you receive</span></div>
+        <h2 id="receive" className="sr-only">What you receive</h2>
+        <ul className="grid gap-4 sm:grid-cols-2">
+          {OFFERINGS.map(({ icon: Icon, title, text }) => (
+            <li key={title} className="nadi-card flex gap-4">
+              <span className="grid h-11 w-11 flex-none place-items-center rounded-xl border border-[color:var(--line)] bg-[rgba(212,175,95,0.04)] text-gold-400">
+                <Icon size={22} />
               </span>
-              <GenZBadge variant="neon" size="sm" className="hidden sm:inline-flex">
-                AI
-              </GenZBadge>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="hidden md:flex items-center space-x-6"
-            >
-              <Link
-                href="#features"
-                className="text-white/80 hover:text-genz-electric-blue transition-colors font-medium"
-              >
-                Features
-              </Link>
-              <Link
-                href="#how-it-works"
-                className="text-white/80 hover:text-genz-electric-blue transition-colors font-medium"
-              >
-                How It Works
-              </Link>
-              <GenZButton variant="primary" size="md">
-                <Link href="/get-started">Get Started</Link>
-              </GenZButton>
-            </motion.div>
-
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden text-white p-2 hover:bg-white/10 rounded-xl transition-colors"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
-
-          {/* Mobile Menu */}
-          {mobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden py-4 border-t border-white/10"
-            >
-              <div className="flex flex-col space-y-4">
-                <Link
-                  href="#features"
-                  className="text-white/80 hover:text-genz-electric-blue transition-colors font-medium py-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Features
-                </Link>
-                <Link
-                  href="#how-it-works"
-                  className="text-white/80 hover:text-genz-electric-blue transition-colors font-medium py-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  How It Works
-                </Link>
-                <GenZButton variant="primary" size="md" fullWidth>
-                  <Link href="/get-started">Get Started</Link>
-                </GenZButton>
+              <div>
+                <h3 className="text-xl text-ivory">{title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-ivory-2">{text}</p>
               </div>
-            </motion.div>
-          )}
-        </div>
-      </nav>
+            </li>
+          ))}
+        </ul>
+      </section>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden pt-32 pb-20 px-4 landscape:px-6 landscape:pt-36 landscape:pb-24">
-        <div className="genz-container">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, type: 'spring' }}
-              className="relative z-10"
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 }}
-                className="inline-block mb-6"
-              >
-                <GenZBadge variant="neon" size="lg" icon="✨" pulse>
-                  AI-Powered Vedic Astrology
-                </GenZBadge>
-              </motion.div>
+      <section aria-labelledby="how" className="mx-auto max-w-5xl px-5 py-12">
+        <div className="nadi-rule mb-8"><span className="nadi-eyebrow">How it works</span></div>
+        <h2 id="how" className="sr-only">How it works</h2>
+        <ol className="grid gap-6 md:grid-cols-3">
+          {STEPS.map((s) => (
+            <li key={s.n} className="text-center md:text-left">
+              <span className="font-display text-3xl text-gold-300">{s.n}</span>
+              <h3 className="mt-2 text-xl text-ivory">{s.title}</h3>
+              <p className="mt-1 text-sm leading-relaxed text-ivory-2">{s.text}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
 
-              <motion.h1
-                className="genz-title mb-6 animate-gradient"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                Unlock Your
-                <br />
-                <span className="text-white drop-shadow-[0_0_30px_rgba(0,217,255,0.5)]">
-                  Soul's Journey ✨
-                </span>
-              </motion.h1>
-
-              <motion.p
-                className="text-xl md:text-2xl text-white/90 mb-10 max-w-2xl leading-relaxed"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                Ancient Vedic wisdom meets{' '}
-                <span className="text-genz-electric-blue font-bold">cutting-edge AI</span> to
-                reveal your past, present, and future lives with{' '}
-                <span className="text-genz-hot-pink font-bold">dates drawn from your own chart</span>
-              </motion.p>
-
-              <motion.div
-                className="flex flex-col sm:flex-row gap-4 mb-10"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-              >
-                <GenZButton variant="primary" size="lg" className="group">
-                  <Link href="/get-started" className="flex items-center gap-2">
-                    Start Your Journey
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
-                  </Link>
-                </GenZButton>
-                <GenZButton variant="outline" size="lg" className="group">
-                  <Play className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                  Watch Demo
-                </GenZButton>
-              </motion.div>
-
-              <motion.div
-                className="flex flex-wrap gap-6"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-              >
-                {[
-                  { icon: '🎁', text: '100% Free to Start' },
-                  { icon: '💳', text: 'No Credit Card' },
-                  { icon: '⚡', text: 'Instant Results' },
-                ].map((item, idx) => (
-                  <motion.div
-                    key={idx}
-                    className="flex items-center gap-2 bg-white/5 backdrop-blur-xl px-4 py-2 rounded-full border border-white/10"
-                    whileHover={{ scale: 1.05, borderColor: 'rgba(0, 217, 255, 0.5)' }}
-                  >
-                    <span className="text-lg">{item.icon}</span>
-                    <span className="text-white/90 font-medium">{item.text}</span>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </motion.div>
-
-            {/* Floating OM Symbol - KEPT FROM OLD DESIGN */}
-            <motion.div
-              style={{ opacity, scale }}
-              className="flex justify-center lg:justify-end"
-            >
-              <div className="relative">
-                <motion.div
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    rotate: [0, 360],
-                  }}
-                  transition={{
-                    duration: 20,
-                    repeat: Infinity,
-                    ease: "linear"
-                  }}
-                  className="absolute inset-0 bg-gradient-to-r from-cosmic-purple/30 via-cosmic-pink/30 to-cosmic-cyan/30 blur-3xl rounded-full"
-                ></motion.div>
-
-                <div className="relative">
-                  <div className="absolute inset-0 bg-cosmic-purple/20 blur-3xl rounded-full"></div>
-                  <div className="relative text-9xl md:text-[12rem] animate-float filter drop-shadow-2xl">
-                    ॐ
-                  </div>
-                </div>
-
-                {/* Orbiting elements */}
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                  className="absolute inset-0"
-                >
-                  <div className="absolute top-0 left-1/2 w-4 h-4 bg-cosmic-cyan rounded-full blur-sm"></div>
-                </motion.div>
-                <motion.div
-                  animate={{ rotate: -360 }}
-                  transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                  className="absolute inset-0"
-                >
-                  <div className="absolute bottom-0 right-1/2 w-3 h-3 bg-cosmic-pink rounded-full blur-sm"></div>
-                </motion.div>
-              </div>
-            </motion.div>
-          </div>
+      <section aria-labelledby="privacy" className="mx-auto max-w-3xl px-5 py-12">
+        <div className="nadi-leaf text-center">
+          <p className="nadi-eyebrow !text-[0.62rem]">Private by design</p>
+          <h2 id="privacy" className="mt-2 text-2xl text-ivory">No account. Your chart stays yours.</h2>
+          <p className="mx-auto mt-2 max-w-lg text-sm text-ivory-2">
+            Profiles and saved readings are encrypted in your browser with your passcode. Birth details leave your device
+            only to compute your chart and reading, and are never written to our logs.
+          </p>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 px-4 landscape:px-6 bg-dark-elevated/30 backdrop-blur-2xl border-y border-genz-electric-blue/20">
-        <div className="genz-container">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.1, type: 'spring' }}
-                whileHover={{ scale: 1.05 }}
-                className="text-center group cursor-pointer"
-              >
-                <motion.div
-                  className="flex justify-center mb-4 text-genz-electric-blue group-hover:text-genz-hot-pink transition-colors"
-                  whileHover={{ rotate: 360 }}
-                  transition={{ duration: 0.6 }}
-                >
-                  {stat.icon}
-                </motion.div>
-                <div className="text-4xl md:text-5xl font-display font-extrabold bg-gradient-to-r from-genz-electric-blue via-genz-purple-haze to-genz-hot-pink bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
-                  {stat.value}
-                </div>
-                <div className="text-white/80 font-medium">{stat.label}</div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
+      <section className="mx-auto flex max-w-3xl flex-col items-center px-5 pb-20 pt-6 text-center">
+        <ChartIcon size={28} className="text-gold-400" />
+        <h2 className="mt-3 text-3xl text-ivory">Begin with your birth chart</h2>
+        <Link href="/setup-passcode" className="nadi-btn mt-6 w-full max-w-xs">
+          Begin your reading <ArrowIcon size={18} />
+        </Link>
       </section>
 
-      {/* Features Grid */}
-      <section id="features" className="genz-section px-4 landscape:px-6">
-        <div className="genz-container">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-16"
-          >
-            <motion.div
-              className="inline-block mb-4"
-              initial={{ scale: 0 }}
-              whileInView={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 200 }}
-            >
-              <GenZBadge variant="outline" size="lg">
-                🎯 Features
-              </GenZBadge>
-            </motion.div>
-            <h2 className="genz-heading mb-6">
-              Explore Your Cosmic Blueprint
-            </h2>
-            <p className="text-xl md:text-2xl text-white/80 max-w-3xl mx-auto leading-relaxed">
-              Comprehensive astrological insights powered by{' '}
-              <span className="text-genz-neon-green font-bold">OpenAI</span> and ancient Vedic knowledge
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, index) => (
-              <GenZCard
-                key={index}
-                variant="glass"
-                className="group relative overflow-hidden"
-                hoverEffect={true}
-              >
-                <Link href={feature.link}>
-                  {feature.badge && (
-                    <div className="absolute top-4 right-4 z-10">
-                      <GenZBadge variant="default" size="sm">
-                        {feature.badge}
-                      </GenZBadge>
-                    </div>
-                  )}
-
-                  <motion.div
-                    className={`w-20 h-20 rounded-2xl bg-gradient-to-r ${feature.color} flex items-center justify-center mb-6 shadow-genz-glow`}
-                    whileHover={{ rotate: [0, -10, 10, -10, 0], scale: 1.1 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    {feature.icon}
-                  </motion.div>
-
-                  <h3 className="text-xl font-display font-bold mb-3 text-white group-hover:text-genz-electric-blue transition-colors">
-                    {feature.title}
-                  </h3>
-
-                  <p className="text-white/70 mb-6 line-clamp-3">
-                    {feature.description}
-                  </p>
-
-                  <div className="flex items-center text-genz-electric-blue font-bold group-hover:gap-3 transition-all">
-                    Explore
-                    <ChevronRight className="w-5 h-5 ml-1 group-hover:translate-x-2 transition-transform" />
-                  </div>
-                </Link>
-              </GenZCard>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Advanced Features */}
-      <section className="genz-section px-4 landscape:px-6 bg-gradient-to-b from-dark-elevated/20 to-transparent">
-        <div className="genz-container">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="text-center mb-16"
-          >
-              <motion.div
-                className="inline-block mb-4"
-                initial={{ scale: 0 }}
-                whileInView={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 200 }}
-              >
-                <GenZBadge variant="default" size="lg">
-                  🚀 Technology
-                </GenZBadge>
-              </motion.div>
-              <h2 className="genz-heading mb-6">
-                Powered by Advanced Technology
-              </h2>
-              <p className="text-xl md:text-2xl text-white/80 max-w-3xl mx-auto leading-relaxed">
-                Experience the perfect fusion of{' '}
-                <span className="text-genz-lavender-dream font-bold">ancient wisdom</span> and{' '}
-                <span className="text-genz-electric-blue font-bold">modern AI</span>
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {advancedFeatures.map((feature, index) => (
-                <GenZCard
-                  key={index}
-                  variant="glass"
-                  className="text-center group"
-                >
-                  <motion.div
-                    className="w-16 h-16 rounded-2xl bg-gradient-to-br from-genz-purple-haze to-genz-hot-pink flex items-center justify-center mx-auto mb-6 shadow-genz-glow group-hover:scale-110 transition-transform"
-                    whileHover={{ rotate: 360 }}
-                    transition={{ duration: 0.6 }}
-                  >
-                    {feature.icon}
-                  </motion.div>
-                  <h3 className="text-lg font-display font-bold mb-3 text-white group-hover:text-genz-electric-blue transition-colors">
-                    {feature.title}
-                  </h3>
-                  <p className="text-white/70 text-sm leading-relaxed">{feature.description}</p>
-                </GenZCard>
-              ))}
-            </div>
-          </div>
-      </section>
-
-      {/* Horoscope Bricks */}
-      <section className="genz-section px-4 landscape:px-6">
-        <div className="genz-container">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="text-center mb-16"
-          >
-            <GenZBadge variant="neon" size="lg" className="mb-4">
-              🌙 Horoscope
-            </GenZBadge>
-            <h2 className="genz-heading mb-4">Pick Your Cosmic Window</h2>
-            <p className="text-xl text-white/80 max-w-3xl mx-auto">
-              Tap a timeframe to explore tailored insights in seconds.
-            </p>
-          </motion.div>
-          <HoroscopeBricks />
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section id="how-it-works" className="genz-section px-4 landscape:px-6">
-        <div className="genz-container">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="text-center mb-20"
-          >
-            <motion.div
-              className="inline-block mb-4"
-              initial={{ scale: 0, rotate: -180 }}
-              whileInView={{ scale: 1, rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 200 }}
-            >
-              <GenZBadge variant="neon" size="lg">
-                ⚡ How It Works
-              </GenZBadge>
-            </motion.div>
-            <h2 className="genz-heading mb-6">
-              Three Simple Steps
-            </h2>
-            <p className="text-xl md:text-2xl text-white/80 max-w-3xl mx-auto leading-relaxed">
-              Start your cosmic journey in minutes
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            {/* Connection lines */}
-            <div className="hidden md:block absolute top-1/3 left-0 right-0 h-1 bg-gradient-to-r from-genz-electric-blue via-genz-purple-haze to-genz-hot-pink opacity-20 rounded-full"></div>
-
-            {[
-              {
-                step: 1,
-                emoji: '📝',
-                title: 'Enter Birth Details',
-                description: 'Provide your date, time, and place of birth for precise calculations',
-                icon: <BookOpen className="w-6 h-6" />,
-                color: 'from-genz-electric-blue to-genz-mint-fresh',
-              },
-              {
-                step: 2,
-                emoji: '🤖',
-                title: 'AI Analysis',
-                description: 'Our OpenAI analyzes your unique astrological chart with millions of data points',
-                icon: <Zap className="w-6 h-6" />,
-                color: 'from-genz-purple-haze to-genz-lavender-dream',
-              },
-              {
-                step: 3,
-                emoji: '✨',
-                title: 'Receive Insights',
-                description: 'Get comprehensive predictions, guidance, and personalized remedies',
-                icon: <Sparkles className="w-6 h-6" />,
-                color: 'from-genz-hot-pink to-genz-coral-pop',
-              },
-            ].map((item, index) => (
-              <GenZCard
-                key={index}
-                variant="neon"
-                className="text-center relative z-10 group"
-              >
-                <motion.div
-                  className={`w-24 h-24 rounded-full bg-gradient-to-br ${item.color} flex items-center justify-center text-4xl font-display font-black mx-auto mb-6 shadow-genz-glow relative`}
-                  whileHover={{ scale: 1.1, rotate: [0, -5, 5, -5, 0] }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <span className="absolute text-6xl opacity-20">{item.emoji}</span>
-                  <span className="relative z-10 text-white">{item.step}</span>
-                </motion.div>
-
-                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform`}>
-                  {item.icon}
-                </div>
-
-                <h3 className="text-2xl font-display font-bold mb-4 text-white group-hover:text-genz-electric-blue transition-colors">
-                  {item.title}
-                </h3>
-                <p className="text-white/80 leading-relaxed">{item.description}</p>
-              </GenZCard>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="genz-section px-4 landscape:px-6">
-        <div className="max-w-5xl mx-auto">
-          <GenZCardGradient className="text-center relative overflow-hidden p-12 md:p-16">
-            <div className="absolute inset-0 bg-mesh-gradient opacity-50"></div>
-            <div className="absolute inset-0 animate-pulse-glow"></div>
-
-            <div className="relative z-10">
-              <motion.div
-                className="text-7xl md:text-8xl mb-8"
-                animate={{
-                  y: [0, -20, 0],
-                  rotate: [0, 10, -10, 0],
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                }}
-              >
-                🌟
-              </motion.div>
-
-              <motion.h2
-                className="text-4xl md:text-6xl font-display font-extrabold mb-6 bg-gradient-to-r from-genz-electric-blue via-white to-genz-hot-pink bg-clip-text text-transparent leading-tight"
-                initial={{ scale: 0.9 }}
-                whileInView={{ scale: 1 }}
-                transition={{ type: 'spring' }}
-              >
-                Begin Your Soul's
-                <br />
-                Journey Today
-              </motion.h2>
-
-              <p className="text-xl md:text-2xl text-white/90 mb-10 max-w-3xl mx-auto leading-relaxed">
-                Unlock the mysteries of your past, navigate your present, and illuminate your future with{' '}
-                <span className="text-genz-neon-green font-bold">AI-powered</span> Vedic wisdom
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-                <GenZButton variant="primary" size="lg" className="group shadow-genz-glow">
-                  <Link href="/get-started" className="flex items-center gap-2">
-                    Get Started Free
-                    <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
-                  </Link>
-                </GenZButton>
-                <GenZButton variant="outline" size="lg">
-                  Learn More
-                </GenZButton>
-              </div>
-
-              <div className="flex flex-wrap gap-4 justify-center text-sm text-white/80">
-                {['No credit card required', 'Instant access', '100% secure'].map((text, i) => (
-                  <div key={i} className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-xl">
-                    <CheckCircle className="w-4 h-4 text-genz-neon-green" />
-                    <span>{text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </GenZCardGradient>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-genz-electric-blue/20 py-16 px-4 landscape:px-6 bg-dark-surface/50 backdrop-blur-2xl mt-20">
-        <div className="genz-container">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
-            <div>
-              <div className="flex items-center space-x-3 mb-6">
-                <motion.div whileHover={{ rotate: 360 }} transition={{ duration: 0.6 }}>
-                  <Sparkles className="w-7 h-7 text-genz-electric-blue" />
-                </motion.div>
-                <span className="text-2xl font-display font-extrabold bg-gradient-to-r from-genz-electric-blue to-genz-purple-haze bg-clip-text text-transparent">
-                  BhriguWelt
-                </span>
-              </div>
-              <p className="text-white/70 text-sm leading-relaxed mb-4">
-                Ancient wisdom for modern souls. Your journey to self-discovery starts here.
-              </p>
-              <GenZBadge variant="neon" size="sm">
-                AI-Powered
-              </GenZBadge>
-            </div>
-
-            <div>
-              <h4 className="font-display font-bold mb-6 text-lg text-white">Features</h4>
-              <ul className="space-y-3 text-white/70 text-sm">
-                <li>
-                  <Link href="/birth-chart" className="hover:text-genz-electric-blue transition-colors flex items-center gap-2">
-                    <ChevronRight className="w-4 h-4" />
-                    Birth Chart
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/horoscope" className="hover:text-genz-electric-blue transition-colors flex items-center gap-2">
-                    <ChevronRight className="w-4 h-4" />
-                    Horoscope
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/daily-insights" className="hover:text-genz-electric-blue transition-colors flex items-center gap-2">
-                    <ChevronRight className="w-4 h-4" />
-                    Daily Insights
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/matchmaking" className="hover:text-genz-electric-blue transition-colors flex items-center gap-2">
-                    <ChevronRight className="w-4 h-4" />
-                    Matchmaking
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-display font-bold mb-6 text-lg text-white">Company</h4>
-              <ul className="space-y-3 text-white/70 text-sm">
-                <li>
-                  <Link href="/about" className="hover:text-genz-electric-blue transition-colors flex items-center gap-2">
-                    <ChevronRight className="w-4 h-4" />
-                    About Us
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#how-it-works" className="hover:text-genz-electric-blue transition-colors flex items-center gap-2">
-                    <ChevronRight className="w-4 h-4" />
-                    How It Works
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/privacy" className="hover:text-genz-electric-blue transition-colors flex items-center gap-2">
-                    <ChevronRight className="w-4 h-4" />
-                    Privacy
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/terms" className="hover:text-genz-electric-blue transition-colors flex items-center gap-2">
-                    <ChevronRight className="w-4 h-4" />
-                    Terms
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-display font-bold mb-6 text-lg text-white">Stay Connected</h4>
-              <p className="text-white/70 text-sm mb-4 leading-relaxed">
-                Get cosmic insights in your inbox
-              </p>
-              <div className="flex flex-col gap-3">
-                <input
-                  type="email"
-                  placeholder="Your email"
-                  className="genz-input-glass text-sm py-3 px-4"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-                <GenZButton variant="pill" size="sm" fullWidth>
-                  Join Now
-                </GenZButton>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-genz-electric-blue/20 pt-8">
-            <div className="text-center">
-              <motion.p
-                className="text-4xl mb-4"
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                ॐ
-              </motion.p>
-              <p className="text-white/80 mb-3 text-lg font-serif">शान्तिः शान्तिः शान्तिः</p>
-              <p className="text-sm text-white/60">
-                © 2025 BhriguWelt.{' '}
-                <span className="text-genz-electric-blue">Ancient wisdom for modern souls.</span>
-              </p>
-            </div>
-          </div>
+      <footer className="border-t border-[color:var(--line)]">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-5 py-6 text-xs text-ivory-muted sm:flex-row">
+          <span>© {new Date().getFullYear()} BhriguWelt · Readings are for reflection, not medical, legal or financial advice.</span>
+          <nav aria-label="Legal" className="flex gap-1">
+            <Link href="/privacy" className="flex h-11 items-center px-2 hover:text-ivory">Privacy</Link>
+            <Link href="/terms" className="flex h-11 items-center px-2 hover:text-ivory">Terms</Link>
+            <Link href="/impressum" className="flex h-11 items-center px-2 hover:text-ivory">Impressum</Link>
+          </nav>
         </div>
       </footer>
-
-      {/* Mobile Bottom Navigation */}
-      <BottomNav />
-
-      {/* Onboarding Tutorial */}
-      {showTutorial && (
-        <OnboardingTutorial
-          onComplete={() => {
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('tutorialCompleted', 'true');
-            }
-            setShowTutorial(false);
-          }}
-        />
-      )}
     </div>
   );
 }
