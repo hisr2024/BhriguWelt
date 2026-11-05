@@ -645,7 +645,20 @@ Your predictions must:
                 logger.debug(f"JSON response format not explicitly enabled for model: {model} (relies on prompt)")
 
         try:
-            response = self._post_with_model_fallbacks(payload)
+            try:
+                response = self._post_with_model_fallbacks(payload)
+            except requests.exceptions.HTTPError as http_error:
+                body = getattr(getattr(http_error, 'response', None), 'text', '') or ''
+                status = getattr(getattr(http_error, 'response', None), 'status_code', None)
+                if status == 400 and 'reasoning_effort' in body and 'reasoning_effort' in payload:
+                    # Provider rejected our reasoning setting: retry once with the
+                    # lowest accepted level and room for its reasoning tokens.
+                    logger.warning("Provider rejected reasoning_effort=%r; retrying with 'low'", payload.get('reasoning_effort'))
+                    payload['reasoning_effort'] = 'low'
+                    payload['max_tokens'] = int(payload['max_tokens']) + int(os.getenv('SARVAM_REASONING_HEADROOM', '1600'))
+                    response = self._post_with_model_fallbacks(payload)
+                else:
+                    raise
             result = response.json()
 
             # ==================== UPDATE ACTUAL USAGE ====================
