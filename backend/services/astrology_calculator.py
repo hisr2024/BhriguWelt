@@ -242,6 +242,7 @@ class AstrologyCalculator:
         self.Nominatim = geopy_geocoders.Nominatim
 
         self.tf = self.TimezoneFinder()
+
         self.geolocator = self.Nominatim(user_agent="bhriguwelt", timeout=10)
         self.MapBox = getattr(geopy_geocoders, "MapBox", None)
         self.mapbox_token = os.getenv("MAPBOX_ACCESS_TOKEN") or os.getenv("MAPBOX_TOKEN")
@@ -252,6 +253,24 @@ class AstrologyCalculator:
         )
         self._geocode_cache = OrderedDict()
         self._geocode_cache_max_size = 256
+
+    def _timezone_at(self, latitude: float, longitude: float):
+        """
+        IANA zone for a birth place, keeping HISTORICAL zones distinct.
+
+        timezonefinder ships the merged "now" boundaries (Berlin, Rome, Vienna
+        -> Europe/Paris; Indianapolis -> America/New_York; Singapore ->
+        Asia/Manila), which converts older births to UTC with the wrong offset.
+        tzfpy uses the full boundary set; timezonefinder is the fallback.
+        """
+        try:
+            from tzfpy import get_tz
+            zone = get_tz(float(longitude), float(latitude))
+            if zone:
+                return zone
+        except Exception:
+            pass
+        return self.tf.timezone_at(lat=latitude, lng=longitude)
 
     def calculate_birth_chart(self, date_of_birth: str, time_of_birth: str,
                               place: str, latitude: float = None,
@@ -305,14 +324,13 @@ class AstrologyCalculator:
                 }
 
         if not timezone_str:
-            timezone_str = self.tf.timezone_at(lat=latitude, lng=longitude)
+            timezone_str = self._timezone_at(latitude, longitude)
 
         if not timezone_str and place:
             geocoded_coords = geocoded_coords or self._geocode_location(place)
             if geocoded_coords:
-                timezone_str = self.tf.timezone_at(
-                    lat=geocoded_coords['latitude'],
-                    lng=geocoded_coords['longitude']
+                timezone_str = self._timezone_at(
+                    geocoded_coords['latitude'], geocoded_coords['longitude']
                 )
                 if timezone_str:
                     latitude = geocoded_coords['latitude']
@@ -442,21 +460,18 @@ class AstrologyCalculator:
         if place_key in self.BUILTIN_GEOCODES:
             return self.BUILTIN_GEOCODES[place_key].copy()
 
-        # Try without common suffixes/prefixes
-        normalized = place_key.replace(',', '').strip()
-        # Remove country suffixes like ", india" or ", usa"
-        for suffix in [', india', ', usa', ', uk', ', australia', ', canada', ', nepal', ', pakistan', ', bangladesh', ', sri lanka']:
-            if normalized.endswith(suffix):
-                normalized = normalized[:-len(suffix)].strip()
-                break
+        # "Pune, Maharashtra, India" -> try "pune" (the city part) exactly
+        city = place_key.split(',')[0].strip()
+        if city in self.BUILTIN_GEOCODES:
+            return self.BUILTIN_GEOCODES[city].copy()
 
-        if normalized in self.BUILTIN_GEOCODES:
-            return self.BUILTIN_GEOCODES[normalized].copy()
-
-        # Try matching city name within the query (e.g., "New Delhi, India" -> "new delhi")
-        for city_name, coords in self.BUILTIN_GEOCODES.items():
-            if city_name in place_key or place_key in city_name:
-                return coords.copy()
+        # Whole-word match of a known city inside the query, longest name first
+        # ("new delhi" before "delhi"); never the reverse (query inside a name),
+        # which mapped "York" to New York.
+        import re as _re
+        for city_name in sorted(self.BUILTIN_GEOCODES, key=len, reverse=True):
+            if _re.search(r'\b' + _re.escape(city_name) + r'\b', place_key):
+                return self.BUILTIN_GEOCODES[city_name].copy()
 
         return None
 

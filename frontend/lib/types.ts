@@ -61,6 +61,13 @@ export interface AIBirthData {
   elements?: string;
   qualities?: string;
   karmic_number?: number;
+  /** Birth details: the chat endpoint computes the chart from these itself. */
+  date_of_birth?: string;
+  time_of_birth?: string;
+  place_of_birth?: string;
+  latitude?: number;
+  longitude?: number;
+  timezone?: string;
 }
 
 export interface AIComposeRequest {

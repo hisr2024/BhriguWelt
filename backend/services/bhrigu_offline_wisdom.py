@@ -9,6 +9,7 @@ import json
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from utils.logger import setup_logger, log_exception
+from services.mantras import planet_mantra
 
 logger = setup_logger(__name__)
 
@@ -1339,15 +1340,45 @@ class BhriguOfflineWisdomGenerator:
         return f"{quality}. Focus: {', '.join(maha_keywords[:2])} + {', '.join(antar_keywords[:2])}"
 
     def _generate_dasha_analysis(self, chart_data: Dict[str, Any]) -> str:
-        """Generate comprehensive Dasha analysis"""
-        nakshatra = chart_data.get('nakshatra', 'Ashwini')
-        birth_year = chart_data.get('birth_year', 1990)
+        """Dasha analysis from the chart's real Vimshottari periods (never estimated)."""
+        nakshatra = chart_data.get('nakshatra', '')
+        period = chart_data.get('dasha_period') or {}
+        maha = period.get('maha_dasha')
+        if not maha or maha == 'Unknown' or not period.get('maha_end'):
+            return ("## Vimshottari Dasha Analysis\n\n"
+                    "Dasha periods need the exact birth date, time and place; they are shown on the birth chart page.\n")
 
-        dasha_info = self._calculate_dasha_balance(nakshatra, birth_year)
-        antar_info = self._calculate_antardasha(
-            dasha_info['current_dasha'],
-            dasha_info['years_remaining']
-        )
+        from datetime import date
+        dasha_years = self._get_dasha_years()
+        sequence = self._get_dasha_sequence()
+        today = date.today()
+        maha_end = date.fromisoformat(period['maha_end'])
+        years_left = max((maha_end - today).days / 365.25, 0)
+
+        upcoming = []
+        start = maha_end
+        idx = sequence.index(maha)
+        for _ in range(4):
+            idx = (idx + 1) % 9
+            lord = sequence[idx]
+            upcoming.append({'planet': lord, 'starts': start.strftime('%b %Y'), 'years': dasha_years[lord],
+                             'keywords': self._get_dasha_keywords(lord)})
+            start = date(start.year + dasha_years[lord], start.month, min(start.day, 28))
+
+        antar = period.get('antar_dasha') or maha
+        antar_months = 0.0
+        if period.get('antar_end'):
+            antar_months = max((date.fromisoformat(period['antar_end']) - today).days / 30.44, 0)
+        dasha_info = {
+            'current_dasha': maha, 'total_years': dasha_years[maha], 'years_remaining': round(years_left, 1),
+            'keywords': self._get_dasha_keywords(maha), 'upcoming_dashas': upcoming,
+            'birth_dasha': self._get_nakshatra_dasha_lord(nakshatra) if nakshatra else maha,
+        }
+        antar_info = {
+            'antardasha': antar, 'combination': f'{maha}-{antar}',
+            'antar_remaining_months': round(antar_months, 1),
+            'interpretation': self._interpret_dasha_combination(maha, antar),
+        }
 
         analysis = f"""## Vimshottari Dasha Analysis (120-Year Cycle)
 
@@ -1355,7 +1386,7 @@ class BhriguOfflineWisdomGenerator:
 
 **Mahadasha (Major Period):** {dasha_info['current_dasha']}
 - Duration: {dasha_info['total_years']} years total
-- Remaining: ~{dasha_info['years_remaining']} years
+- Runs {period.get('maha_start', '')} to {period['maha_end']} (~{dasha_info['years_remaining']} years left)
 - Keywords: {', '.join(dasha_info['keywords'])}
 
 **Antardasha (Sub-Period):** {antar_info['antardasha']}
@@ -1365,12 +1396,12 @@ class BhriguOfflineWisdomGenerator:
 
 ### Upcoming Dasha Periods
 
-| Period | Starts In | Duration | Key Themes |
-|--------|-----------|----------|------------|
+| Period | Starts | Duration | Key Themes |
+|--------|--------|----------|------------|
 """
         for ud in dasha_info['upcoming_dashas'][:4]:
             keywords_str = ', '.join(ud['keywords'][:2])
-            analysis += f"| {ud['planet']} | ~{ud['starts_in']} years | {ud['years']} years | {keywords_str} |\n"
+            analysis += f"| {ud['planet']} | {ud['starts']} | {ud['years']} years | {keywords_str} |\n"
 
         analysis += f"""
 ### Dasha Interpretation Principles
@@ -1561,82 +1592,45 @@ class BhriguOfflineWisdomGenerator:
     # ==========================================================================
 
     def _get_jaimini_karakas(self, chart_data: Dict[str, Any]) -> Dict[str, str]:
-        """Get Jaimini Chara Karakas based on planetary degrees"""
-        # In a real implementation, this would use actual planetary positions
-        # For now, we'll use zodiac/nakshatra to estimate
-        zodiac = chart_data.get('zodiac_sign', 'Aries')
-
-        # Simplified karaka assignment based on zodiac ruler
-        zodiac_info = self._get_zodiac_info(zodiac)
-        ruler = zodiac_info.get('ruler', 'Sun')
-
-        # Default karaka assignments (would be calculated from actual degrees)
-        karakas = {
-            'Atmakaraka': ruler,  # Soul significator
-            'Amatyakaraka': 'Mercury',  # Career/minister
-            'Bhratrukaraka': 'Mars',  # Siblings
-            'Matrukaraka': 'Moon',  # Mother
-            'Putrakaraka': 'Jupiter',  # Children
-            'Gnatikaraka': 'Saturn',  # Relatives/enemies
-            'Darakaraka': 'Venus'  # Spouse
-        }
-
-        return karakas
+        """Chara Karakas ranked by each planet's degree in sign (real positions only)."""
+        from services.jaimini import KARAKA_NAMES, chara_karakas
+        karakas = chara_karakas(chart_data.get('planets') or {})
+        return karakas or {name: 'not available' for name in KARAKA_NAMES}
 
     def _calculate_chara_dasha(self, chart_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Calculate Jaimini Chara Dasha periods"""
-        zodiac = chart_data.get('zodiac_sign', 'Aries')
-        birth_year = chart_data.get('birth_year', 1990)
+        """Jaimini Chara Dasha from the Lagna and real planetary positions."""
+        from datetime import datetime, timezone as dt_timezone
+        from services.jaimini import chara_dasha
 
-        from datetime import datetime
-        current_year = datetime.now().year
-        age = current_year - birth_year
-
-        # Zodiac signs in order
-        signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
-                 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
-
-        # Get starting sign (Lagna)
-        start_idx = signs.index(zodiac) if zodiac in signs else 0
-
-        # Chara Dasha calculation (simplified)
-        # Odd signs count forward, even signs count backward
-        # Duration = distance from Lagna lord to sign
-
-        dasha_periods = []
-        cumulative = 0
-        current_dasha_sign = zodiac
-
-        for i in range(12):
-            if start_idx % 2 == 0:  # Even sign - count forward
-                sign_idx = (start_idx + i) % 12
-            else:  # Odd sign - count backward
-                sign_idx = (start_idx - i) % 12
-
-            sign = signs[sign_idx]
-            # Duration based on sign characteristics (simplified)
-            duration = (sign_idx % 12) + 1  # 1-12 years per sign
-
-            if cumulative <= age < cumulative + duration:
-                current_dasha_sign = sign
-                years_remaining = duration - (age - cumulative)
-
-            dasha_periods.append({
-                'sign': sign,
-                'duration': duration,
-                'starts_at_age': cumulative
-            })
-            cumulative += duration
-
-        # Get karakas
         karakas = self._get_jaimini_karakas(chart_data)
+        ascendant = chart_data.get('ascendant')
+        lagna = ascendant.get('sign') if isinstance(ascendant, dict) else ascendant
+        birth_iso = (chart_data.get('birth_details') or {}).get('utc')
+        periods = None
+        if lagna and birth_iso:
+            try:
+                birth = datetime.fromisoformat(birth_iso)
+                if birth.tzinfo is None:
+                    birth = birth.replace(tzinfo=dt_timezone.utc)
+                periods = chara_dasha(lagna, chart_data.get('planets') or {}, birth)
+            except (TypeError, ValueError):
+                periods = None
+
+        current, upcoming = 'not available', []
+        if periods:
+            now = datetime.now(dt_timezone.utc)
+            for k, p in enumerate(periods):
+                if p['start'] <= now < p['end']:
+                    current = f"{p['sign']} ({p['start'].year}–{p['end'].year})"
+                    upcoming = periods[k + 1:k + 6]
+                    break
 
         return {
-            'current_rashi_dasha': current_dasha_sign,
+            'current_rashi_dasha': current,
             'atmakaraka': karakas['Atmakaraka'],
             'darakaraka': karakas['Darakaraka'],
             'all_karakas': karakas,
-            'periods': dasha_periods[:6]  # Next 6 periods
+            'periods': [{'sign': p['sign'], 'duration': p['years'], 'starts': p['start'].year} for p in upcoming],
         }
 
     def _generate_jaimini_analysis(self, chart_data: Dict[str, Any]) -> str:
@@ -4845,8 +4839,7 @@ Based on Nadi Jyotisha timing principles for {zodiac} ({element}, ruled by {rule
 
     def _get_daily_mantra(self, nakshatra_info: Dict, day_ruler: str) -> str:
         """Get recommended daily mantra"""
-        deity = nakshatra_info.get('deity', 'Divine')
-        return f"Om {deity.split()[0] if deity else 'Namah'}aya Namaha (108 times)"
+        return f"{planet_mantra(day_ruler)} (108 times)"
 
     # Placeholder methods for detailed astrologer mode - these provide the framework
     def _get_hora_sequence(self, day_ruler: str) -> str:
@@ -4969,7 +4962,7 @@ Based on Nadi Jyotisha timing principles for {zodiac} ({element}, ruled by {rule
         return f"{element} constitution requires attention to related body systems. {nakshatra_info.get('quality', 'Natural')} energy governs vitality cycles."
 
     def _get_weekly_mantra(self, nakshatra_info: Dict, ruler: str) -> str:
-        return f"Daily: Om {nakshatra_info.get('deity', 'Namah').split()[0]}aya Namaha\n{ruler} day: Om {ruler}aya Namaha (108 times)"
+        return f"{ruler} day: {planet_mantra(ruler)} (108 times)"
 
     def _get_fasting_day(self, ruler: str) -> str:
         fasting = {
@@ -5050,7 +5043,7 @@ Based on Nadi Jyotisha timing principles for {zodiac} ({element}, ruled by {rule
         return f"Your nakshatra days this month are powerful for spiritual practices"
 
     def _get_monthly_mantra(self, nakshatra_info: Dict, ruler: str) -> str:
-        return f"Primary: Om {nakshatra_info.get('deity', 'Namah').split()[0]}aya Namaha (1008 times monthly)\nSupport: Om {ruler}aya Namaha daily"
+        return f"{planet_mantra(ruler)} daily (108 times)"
 
     def _get_monthly_charity(self, ruler: str) -> str:
         charity = {
@@ -5171,7 +5164,7 @@ Based on Nadi Jyotisha timing principles for {zodiac} ({element}, ruled by {rule
         return f"{nakshatra_info.get('deity', 'Your nakshatra deity')} - daily worship recommended"
 
     def _get_yearly_mantra(self, nakshatra_info: Dict, ruler: str) -> str:
-        return f"Nakshatra Mantra: Om {nakshatra_info.get('deity', 'Namah').split()[0]}aya Namaha (10,000 times annually)\nPlanetary: Om {ruler}aya Namaha (108 daily)"
+        return f"Planetary: {planet_mantra(ruler)} (108 daily)"
 
     def _get_yearly_gemstone(self, ruler: str, zodiac: str) -> str:
         gemstones = {

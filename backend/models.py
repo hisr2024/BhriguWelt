@@ -3,7 +3,7 @@ Database Models for BhriguWelt
 Handles caching and storage of predictions and user data
 """
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import os
 from utils.logger import setup_logger
@@ -223,6 +223,7 @@ class BhriguPredictionCache(db.Model):
             logger.error(f"Failed to cache prediction: {e}")
             return None
 
+    MAX_READING_AGE_DAYS = int(os.getenv('READING_MAX_AGE_DAYS', '7'))
     READING_FORMAT_MARKER = '"reading_format": 2'
     INCOMPLETE_MARKER = '"reading_incomplete": true'
 
@@ -251,6 +252,10 @@ class BhriguPredictionCache(db.Model):
             if cached and not cls._is_current_format(cached.prediction_data):
                 # Readings from before the structured-reading fix carry raw
                 # JSON section bodies and generic templates — never serve them.
+                cached = None
+            if cached and cached.created_at and \
+                    datetime.utcnow() - cached.created_at > timedelta(days=cls.MAX_READING_AGE_DAYS):
+                # Readings cite current dashas and transits: regenerate weekly.
                 cached = None
             if cached:
                 cached_id = cached.id

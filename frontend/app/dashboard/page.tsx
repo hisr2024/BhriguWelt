@@ -9,6 +9,7 @@ import { insightsAPI } from '@/lib/api';
 import {
   ArrowIcon, ChartIcon, HourglassIcon, LeafIcon, SunIcon, UnionIcon, WheelIcon,
 } from '@/components/nadi/icons';
+import { unlockHref } from '@/lib/unlockRedirect';
 
 type Category = { message?: string; advice?: string; rating?: number };
 type DailyInsight = {
@@ -51,7 +52,7 @@ export default function TodayPage() {
   useEffect(() => {
     if (encryptionLoading) return;
     if (!isSetup) router.push('/setup-passcode');
-    else if (!isUnlocked) router.push('/unlock');
+    else if (!isUnlocked) router.push(unlockHref());
   }, [encryptionLoading, isSetup, isUnlocked, router]);
 
   const loadInsight = useCallback(async (p: any) => {

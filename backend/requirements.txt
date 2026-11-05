@@ -15,6 +15,7 @@ pytz==2025.2
 python-dateutil==2.9.0.post0
 geopy==2.5.0
 timezonefinder==8.1.0
+tzfpy==2.1.2
 pyswisseph==2.10.3.2
 
 # AI & ML

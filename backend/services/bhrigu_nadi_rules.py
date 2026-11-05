@@ -440,8 +440,11 @@ def rule_dignity(c: Chart) -> List[Dict[str, Any]]:
                           if q and q in c.lon and c.house(q) in (1, 4, 7, 10)]
                 if cancel:
                     note = f"; neecha-bhanga: {', '.join(cancel)} in a kendra from the {c.reference}"
+            # Rank so the per-rule cap keeps the strongest placements:
+            # exalted > uncancelled debilitation > cancelled > own sign.
+            weight = {'exalted': 0.7, 'debilitated': 0.6 if note else 0.66, 'own sign': 0.55}[state]
             out.append(_f('F-DIGNITY-01', 'classical', 'Graha dignity', f"{c.desc(p)} — {state}{note}",
-                          [ALL], 0.6))
+                          [ALL], weight))
     return out
 
 
@@ -934,8 +937,12 @@ def rule_double_transit(c: Chart, now: datetime, domains: List[str], categories:
         return []
     out = []
     end = now + timedelta(days=4 * 365)
+    seen_houses = set()
     for dom in domains[:3]:
         h = DOMAINS[dom][0][0]
+        if h in seen_houses:  # two themes on one house would repeat the same window
+            continue
+        seen_houses.add(h)
         targets = {c.house_sign(h)}
         lord = c.lord_of_house(h)
         if lord in c.lon:
@@ -1239,10 +1246,6 @@ def evaluate_rules(chart_facts: Dict[str, Any], birth_data: Dict[str, Any], cate
             logger.warning("Rule failed: %s", e)
     apply_time_accuracy(c, findings)
     relevant = [f for f in findings if ALL in f['categories'] or not category or category in f['categories']]
-    try:
-        relevant.extend(compose_windows(relevant, cats))
-    except Exception as e:
-        logger.warning("Window composer failed: %s", e)
     relevant.sort(key=lambda f: -f['weight'])
     # Diversity: at most two findings per rule so dated Bhrigu/Nadi techniques
     # are not crowded out by several dignity/yoga lines.
@@ -1255,4 +1258,13 @@ def evaluate_rules(chart_facts: Dict[str, Any], birth_data: Dict[str, Any], cate
         picked.append(f)
         if len(picked) >= limit:
             break
+    # Windows are composed only from findings the model will actually see,
+    # so every window's member rules are citable.
+    try:
+        windows = compose_windows(picked, cats)[:2]
+    except Exception as e:
+        logger.warning("Window composer failed: %s", e)
+        windows = []
+    if windows:
+        picked = sorted(picked + windows, key=lambda f: -f['weight'])[:limit + len(windows)]
     return picked

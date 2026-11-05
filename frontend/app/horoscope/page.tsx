@@ -7,6 +7,7 @@ import { useEncryption } from '@/lib/context/EncryptionContext';
 import { loadCurrentProfile } from '@/lib/profileHelpers';
 import { insightsAPI, type InsightScope } from '@/lib/api';
 import { BackIcon } from '@/components/nadi/icons';
+import { unlockHref } from '@/lib/unlockRedirect';
 
 const SCOPES: Array<{ id: InsightScope; label: string; aliases: string[] }> = [
   { id: 'daily', label: 'Today', aliases: ['daily', 'today', 'day'] },
@@ -14,6 +15,10 @@ const SCOPES: Array<{ id: InsightScope; label: string; aliases: string[] }> = [
   { id: 'monthly', label: 'This month', aliases: ['monthly', 'month'] },
   { id: 'yearly', label: 'This year', aliases: ['yearly', 'year'] },
 ];
+
+const HEADINGS: Record<InsightScope, string> = {
+  daily: 'Your day', weekly: 'Your week', monthly: 'Your month', yearly: 'Your year',
+};
 
 const SECTION_LABELS: Record<string, string> = {
   career: 'Work', love: 'Relationships', health: 'Health', finance: 'Money', spiritual: 'Spiritual',
@@ -37,7 +42,7 @@ export default function HoroscopePage() {
   useEffect(() => {
     if (encryptionLoading) return;
     if (!isSetup) router.push('/setup-passcode');
-    else if (!isUnlocked) router.push('/unlock');
+    else if (!isUnlocked) router.push(unlockHref());
   }, [encryptionLoading, isSetup, isUnlocked, router]);
 
   const load = useCallback(async () => {
@@ -77,7 +82,7 @@ export default function HoroscopePage() {
         <BackIcon size={18} /> Today
       </Link>
       <p className="nadi-eyebrow mt-2">Horoscope</p>
-      <h1 className="mt-1 text-3xl text-ivory md:text-4xl">Your {SCOPES.find((s) => s.id === scope)?.label.toLowerCase()}</h1>
+      <h1 className="mt-1 text-3xl text-ivory md:text-4xl">{HEADINGS[scope]}</h1>
 
       <div role="tablist" aria-label="Period" className="mt-5 flex gap-2 overflow-x-auto pb-1">
         {SCOPES.map((s) => (

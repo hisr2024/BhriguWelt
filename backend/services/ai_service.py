@@ -82,7 +82,8 @@ class AIService:
         self,
         user_message: str,
         astrological_data: Dict[str, Any],
-        history: List[Dict[str, str]] = None
+        history: List[Dict[str, str]] = None,
+        allow_offline: bool = True
     ) -> str:
         """
         Generate conversational AI response about astrology report
@@ -96,6 +97,8 @@ class AIService:
             AI response text
         """
         if not self.ai_enabled:
+            if not allow_offline:
+                raise RuntimeError('AI provider not configured')
             return self._offline_chat_response(
                 user_message=user_message,
                 astrological_data=astrological_data,
@@ -136,6 +139,8 @@ class AIService:
             
         except Exception as e:
             logger.error(f"AI chat error: {e}")
+            if not allow_offline:
+                raise
             return self._offline_chat_response(
                 user_message=user_message,
                 astrological_data=astrological_data,

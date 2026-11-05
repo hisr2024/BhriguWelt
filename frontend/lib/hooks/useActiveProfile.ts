@@ -6,6 +6,7 @@ import { useEncryption } from '@/lib/context/EncryptionContext';
 import { useEncryptedStorage } from '@/lib/hooks/useEncryptedStorage';
 import { getCurrentProfileId } from '@/lib/profileHelpers';
 import type { Profile } from '@/lib/types';
+import { unlockHref } from '@/lib/unlockRedirect';
 
 /**
  * The profile a reading is for: the one chosen on the readings hub
@@ -27,7 +28,7 @@ export function useActiveProfile() {
       return;
     }
     if (!isUnlocked) {
-      router.push('/unlock');
+      router.push(unlockHref());
       return;
     }
     let cancelled = false;

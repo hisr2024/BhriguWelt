@@ -13,6 +13,7 @@ import { useEncryption } from '@/lib/context/EncryptionContext';
 import { useEncryptedStorage } from '@/lib/hooks/useEncryptedStorage';
 import type { Profile } from '@/lib/types';
 import { GenderField, BirthTimeAccuracyField } from '@/app/components/BirthPrecisionFields';
+import { unlockHref } from '@/lib/unlockRedirect';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -70,7 +71,7 @@ export default function ProfilePage() {
     sessionStorage.clear();
 
     // Redirect to unlock page
-    router.push('/unlock');
+    router.push(unlockHref());
   };
 
   const handleSwitchProfile = (profile: Profile) => {

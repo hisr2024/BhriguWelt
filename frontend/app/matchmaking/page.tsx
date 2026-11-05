@@ -12,8 +12,9 @@ import GenZCard from '../components/GenZCard';
 import GenZBadge from '../components/GenZBadge';
 import GenZButton from '../components/GenZButton';
 import { useEncryption } from '@/lib/context/EncryptionContext';
-import { getItem, STORES } from '@/lib/storage';
+import { loadCurrentProfile } from '@/lib/profileHelpers';
 import { api } from '@/lib/api';
+import { unlockHref } from '@/lib/unlockRedirect';
 
 interface MatchResult {
   total_score: number;
@@ -37,15 +38,25 @@ interface MatchResult {
   };
 }
 
+type PersonInput = {
+  name: string;
+  date_of_birth: string;
+  time_of_birth: string;
+  place_of_birth: string;
+  latitude?: number;
+  longitude?: number;
+  timezone?: string;
+};
+
 export default function MatchmakingPage() {
   const [step, setStep] = useState<'input' | 'loading' | 'result'>('input');
-  const [person1, setPerson1] = useState({
+  const [person1, setPerson1] = useState<PersonInput>({
     name: '',
     date_of_birth: '',
     time_of_birth: '',
     place_of_birth: '',
   });
-  const [person2, setPerson2] = useState({
+  const [person2, setPerson2] = useState<PersonInput>({
     name: '',
     date_of_birth: '',
     time_of_birth: '',
@@ -65,7 +76,7 @@ export default function MatchmakingPage() {
 
   useEffect(() => {
     if (! encryptionLoading && isSetup && ! isUnlocked) {
-      router.push('/unlock');
+      router.push(unlockHref());
     }
   }, [encryptionLoading, isSetup, isUnlocked, router]);
 
@@ -77,16 +88,19 @@ export default function MatchmakingPage() {
   }, [useMyProfile, encryptionKey]);
 
   const loadMyProfile = async () => {
-    if (! encryptionKey) return;
-    
+    if (!encryptionKey) return;
+
     try {
-      const profile = await getItem(STORES. PROFILES, 'current_profile', encryptionKey);
+      const profile = await loadCurrentProfile(encryptionKey);
       if (profile) {
         setPerson1({
           name: profile.name || 'Me',
           date_of_birth: profile.dateOfBirth || '',
-          time_of_birth: profile. timeOfBirth || '',
+          time_of_birth: profile.timeOfBirth || '',
           place_of_birth: profile.placeOfBirth || '',
+          latitude: profile.latitude,
+          longitude: profile.longitude,
+          timezone: profile.timezone,
         });
       }
     } catch (err) {
@@ -99,18 +113,9 @@ export default function MatchmakingPage() {
     setError(null);
 
     try {
-      const response = await api.post('/api/matchmaking/compatibility', {
-        person1: {
-          ... person1,
-          latitude: 0,
-          longitude: 0,
-        },
-        person2: {
-          ...person2,
-          latitude: 0,
-          longitude: 0,
-        },
-      });
+      // Coordinates are sent only when known (a saved profile); otherwise the
+      // server geocodes the place. Never send 0,0 — that is the Gulf of Guinea.
+      const response = await api.post('/api/matchmaking/compatibility', { person1, person2 });
 
       if (response.data.status === 'success') {
         setResult(response.data);
@@ -149,12 +154,10 @@ export default function MatchmakingPage() {
 
       <div className="genz-container py-8 relative z-10">
         <div className="flex items-center gap-4 mb-8">
-          <GenZButton variant="ghost" size="sm">
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <ArrowLeft className="w-5 h-5" />
-              Back
-            </Link>
-          </GenZButton>
+          <Link href="/dashboard" className="flex h-11 items-center gap-2 px-2 text-sm text-ivory-2 hover:text-ivory">
+            <ArrowLeft className="w-5 h-5" />
+            Back
+          </Link>
         </div>
 
         <motion.div
@@ -192,7 +195,12 @@ export default function MatchmakingPage() {
                     <input
                       type="checkbox"
                       checked={useMyProfile}
-                      onChange={(e) => setUseMyProfile(e.target.checked)}
+                      onChange={(e) => {
+                        setUseMyProfile(e.target.checked);
+                        if (!e.target.checked) {
+                          setPerson1({ name: '', date_of_birth: '', time_of_birth: '', place_of_birth: '' });
+                        }
+                      }}
                       className="rounded"
                     />
                     Use my profile
@@ -236,7 +244,7 @@ export default function MatchmakingPage() {
                     placeholder="Place of Birth"
                     aria-label="Person 1 place of birth"
                     value={person1.place_of_birth}
-                    onChange={(e) => setPerson1({ ...person1, place_of_birth:  e.target.value })}
+                    onChange={(e) => setPerson1({ ...person1, place_of_birth: e.target.value, latitude: undefined, longitude: undefined, timezone: undefined })}
                     className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50"
                   />
                 </div>
@@ -288,7 +296,7 @@ export default function MatchmakingPage() {
                     placeholder="Place of Birth"
                     aria-label="Person 2 place of birth"
                     value={person2.place_of_birth}
-                    onChange={(e) => setPerson2({ ...person2, place_of_birth:  e.target.value })}
+                    onChange={(e) => setPerson2({ ...person2, place_of_birth: e.target.value, latitude: undefined, longitude: undefined, timezone: undefined })}
                     className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50"
                   />
                 </div>

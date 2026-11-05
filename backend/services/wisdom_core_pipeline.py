@@ -462,26 +462,36 @@ OWN_SIGNS = {'Sun': ['Leo'], 'Moon': ['Cancer'], 'Mars': ['Aries', 'Scorpio'],
 
 _ORD = r'(\d{1,2})(?:st|nd|rd|th)'
 _NAK_RE = '|'.join(sorted((re.escape(n) for n in NAKSHATRAS), key=len, reverse=True))
+# Span between a planet and its claim that names no other planet and no
+# aspect/transit/dasha context ("Mars aspects Saturn in the 7th" is about
+# Saturn; "Saturn transits the 10th" is not a natal placement).
+_GAP = rf"(?:(?!\b(?:{_PLANET_RE})\b|\baspect|\btransit|\bperiod\b|\bdasha|\bbhukti|\bantardasha|\bfrom\b)[^.;:]){{0,40}}?"
+_NOT_A_HOUSE = r"(?!\s*(?:lord|year|month|day|week|decade|century|dasha|from|sign|pada|nakshatra|navamsa|amsa|of)\b)"
 _CLAIM_PATTERNS = [
     # "the 7th house Rahu", "7th-house Saturn"
     ('house', re.compile(rf'\b{_ORD}[\s-]+house\s+({_PLANET_RE})\b', re.I), (1, 2)),
-    # "Rahu in Taurus in the 9th house", "Moon sits in the 11th house"
-    ('house', re.compile(rf'\b({_PLANET_RE})\b[^.;:]{{0,40}}?\bin\s+(?:the\s+|your\s+)?{_ORD}\s+house\b', re.I), (2, 1)),
-    # "the 9th lord Venus", "9th-lord Venus"
-    ('lord', re.compile(rf'\b{_ORD}[\s-]+lord\s+({_PLANET_RE})\b', re.I), (1, 2)),
-    # "Venus, the 9th lord" / "Venus as 9th lord"
-    ('lord', re.compile(rf'\b({_PLANET_RE}),?\s+(?:the|as(?:\s+the)?)\s+{_ORD}[\s-]+lord\b', re.I), (2, 1)),
+    # "Rahu in Taurus in the 9th house", "Saturn occupies the 7th", "Moon sits in the 11th"
+    ('house', re.compile(
+        rf'\b({_PLANET_RE})\b{_GAP}\b(?:in|occupies|occupying|placed\s+in|sits\s+in|resides\s+in)\s+'
+        rf'(?:the\s+|your\s+|its\s+)?{_ORD}(?:\s+house\b|{_NOT_A_HOUSE}(?![\s-]*house)\b)', re.I), (2, 1)),
+    # "the 9th lord Venus", "9th-lord Venus", "9th house lord Venus"
+    ('lord', re.compile(rf'\b{_ORD}[\s-]+(?:house[\s-]+)?lord(?:,)?\s+({_PLANET_RE})\b', re.I), (1, 2)),
+    # "lord of the 9th (house) is Venus", "lord of the 9th, Venus"
+    ('lord', re.compile(rf'\blord\s+of\s+(?:the\s+|your\s+)?{_ORD}(?:\s+house)?(?:,|\s+is|\s+being)?\s+({_PLANET_RE})\b', re.I), (1, 2)),
+    # "Venus, the 9th lord" / "Venus as 9th lord" / "Venus, lord of the 9th"
+    ('lord', re.compile(rf'\b({_PLANET_RE}),?\s+(?:the|as(?:\s+the)?|is\s+the)\s+{_ORD}[\s-]+(?:house[\s-]+)?lord\b', re.I), (2, 1)),
+    ('lord', re.compile(rf'\b({_PLANET_RE}),?\s+(?:as\s+|is\s+|being\s+)?(?:the\s+)?lord\s+of\s+(?:the\s+|your\s+)?{_ORD}\b', re.I), (2, 1)),
     # "debilitated Mars", "Mars is debilitated"
     ('debilitated', re.compile(rf'\bdebilitated\s+({_PLANET_RE})\b', re.I), (1,)),
     ('debilitated', re.compile(rf'\b({_PLANET_RE})\s+(?:is\s+)?debilitated\b', re.I), (1,)),
     ('exalted', re.compile(rf'\bexalted\s+({_PLANET_RE})\b', re.I), (1,)),
     ('exalted', re.compile(rf'\b({_PLANET_RE})\s+(?:is\s+)?exalted\b', re.I), (1,)),
-    ('own', re.compile(rf'\b({_PLANET_RE})\b[^.;:]{{0,30}}?\bin\s+its\s+own\s+sign\b', re.I), (1,)),
+    ('own', re.compile(rf'\b({_PLANET_RE})\b{_GAP}\bin\s+its\s+own\s+sign\b', re.I), (1,)),
     # "Ketu in Scorpio conjuncts Jupiter", "Venus and Mercury are conjunct"
-    ('conjunct', re.compile(rf'\b({_PLANET_RE})\b[^.;:]{{0,30}}?\bconjunct(?:s|ion\s+with|ed\s+with)?\s+({_PLANET_RE})\b', re.I), (1, 2)),
+    ('conjunct', re.compile(rf'\b({_PLANET_RE})\b{_GAP}\bconjunct(?:s|ion\s+with|ed\s+with|\s+with)?\s+({_PLANET_RE})\b', re.I), (1, 2)),
     ('conjunct', re.compile(rf'\b({_PLANET_RE})\s+and\s+({_PLANET_RE})\s+(?:are\s+)?conjunct\b', re.I), (1, 2)),
     # "Moon in Ashlesha-3", "Mercury in Purva Phalguni"
-    ('nakshatra', re.compile(rf'\b({_PLANET_RE})\b[^.;:]{{0,40}}?\bin\s+({_NAK_RE})(?:[\s-]+(\d))?\b', re.I), (1, 2, 3)),
+    ('nakshatra', re.compile(rf'\b({_PLANET_RE})\b{_GAP}\bin\s+({_NAK_RE})(?:[\s-]+(\d))?\b', re.I), (1, 2, 3)),
 ]
 
 
@@ -544,7 +554,8 @@ def find_false_claims(text: str, facts: Dict[str, Any]) -> List[Tuple[str, str]]
     return found
 
 
-_SENTENCE_SPLIT_RE = re.compile(r'(?<=[.!?])\s+(?=[A-Z0-9"“(])')
+# English sentence ends, plus the Devanagari danda (Hindi readings).
+_SENTENCE_SPLIT_RE = re.compile(r'(?<=[.!?])\s+(?=[A-Z0-9"“(\u0900-\u097F])|(?<=[।॥])\s*')
 
 
 def remove_false_sentences(text: str, facts: Dict[str, Any]) -> Tuple[str, List[str]]:

@@ -5,7 +5,7 @@ Provides accurate, reproducible calculations without AI dependency
 """
 import logging
 from typing import Dict, Any, List, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -310,64 +310,55 @@ class VedicCalculationEngine:
             # Get starting dasha lord
             nakshatra_lord = self.NAKSHATRA_LORDS[nakshatra_index]
 
-            # Calculate balance of starting dasha at birth
-            total_period = self.VIMSHOTTARI_PERIODS[nakshatra_lord]
-            elapsed_fraction = position_in_nakshatra / nakshatra_span
-            balance_years = total_period * (1 - elapsed_fraction)
+            # Exact birth moment when the chart carries it (dasha balance depends on it).
+            birth_dt = None
+            utc_iso = ((chart_data or {}).get('birth_details') or {}).get('utc')
+            if utc_iso:
+                try:
+                    birth_dt = datetime.fromisoformat(utc_iso)
+                except ValueError:
+                    birth_dt = None
+            if birth_dt is None:
+                birth_dt = datetime.fromisoformat(birth_date.replace('/', '-'))
+            if birth_dt.tzinfo is None:
+                birth_dt = birth_dt.replace(tzinfo=dt_timezone.utc)
+            now = datetime.now(dt_timezone.utc)
 
-            # Build dasha timeline
-            birth_dt = datetime.fromisoformat(birth_date.replace('/', '-'))
-            current_dt = datetime.now()
+            from services import ephemeris_core
+            periods = ephemeris_core.vimshottari(birth_dt, moon_longitude)
+            mahas = ephemeris_core.maha_periods(periods)
 
             dasha_timeline = []
-            current_date = birth_dt
-
-            # Start with partial period of birth nakshatra lord
-            end_date = current_date + timedelta(days=balance_years * 365.25)
-            dasha_timeline.append({
-                'maha_dasha_lord': nakshatra_lord,
-                'start_date': current_date.strftime('%Y-%m-%d'),
-                'end_date': end_date.strftime('%Y-%m-%d'),
-                'duration_years': balance_years,
-                'is_current': current_date <= current_dt < end_date,
-                'effects': self._get_dasha_effects(nakshatra_lord, chart_data)
-            })
-            current_date = end_date
-
-            # Continue with full periods of remaining planets
-            dasha_lords = ['Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu',
-                          'Jupiter', 'Saturn', 'Mercury']
-            start_index = (dasha_lords.index(nakshatra_lord) + 1) % 9
-
-            for i in range(9):
-                lord_index = (start_index + i) % 9
-                lord = dasha_lords[lord_index]
-                duration = self.VIMSHOTTARI_PERIODS[lord]
-
-                end_date = current_date + timedelta(days=duration * 365.25)
+            for k, m in enumerate(mahas):
+                start = max(m.start, birth_dt)
+                if m.end <= birth_dt:
+                    continue
                 dasha_timeline.append({
-                    'maha_dasha_lord': lord,
-                    'start_date': current_date.strftime('%Y-%m-%d'),
-                    'end_date': end_date.strftime('%Y-%m-%d'),
-                    'duration_years': duration,
-                    'is_current': current_date <= current_dt < end_date,
-                    'effects': self._get_dasha_effects(lord, chart_data)
+                    'maha_dasha_lord': m.maha,
+                    'start_date': start.strftime('%Y-%m-%d'),
+                    'end_date': m.end.strftime('%Y-%m-%d'),
+                    'duration_years': round((m.end - start).days / ephemeris_core.YEAR_DAYS, 2),
+                    'is_current': start <= now < m.end,
+                    'effects': self._get_dasha_effects(m.maha, chart_data),
                 })
-                current_date = end_date
 
-            # Identify current dasha
-            current_dasha = next(
-                (d for d in dasha_timeline if d['is_current']),
-                dasha_timeline[0]
-            )
+            current_dasha = next((d for d in dasha_timeline if d['is_current']), dasha_timeline[0])
 
-            # Calculate sub-periods (Bhukti) for current dasha
-            current_bhuktis = self._calculate_bhuktis(
-                current_dasha['maha_dasha_lord'],
-                current_dasha['start_date'],
-                current_dasha['duration_years'],
-                chart_data
-            )
+            # Bhuktis of the current maha dasha, from the true (theoretical) maha start
+            current_bhuktis = []
+            for p in periods:
+                if p.maha != current_dasha['maha_dasha_lord'] or p.end <= birth_dt:
+                    continue
+                if p.start.strftime('%Y-%m-%d') >= current_dasha['end_date']:
+                    break
+                current_bhuktis.append({
+                    'maha_dasha_lord': p.maha,
+                    'bhukti_lord': p.antar,
+                    'start_date': max(p.start, birth_dt).strftime('%Y-%m-%d'),
+                    'end_date': p.end.strftime('%Y-%m-%d'),
+                    'duration_months': (p.end - max(p.start, birth_dt)).days / 30.44,
+                    'combined_effects': f'{p.maha}-{p.antar} period brings combined influences of both planets',
+                })
 
             return {
                 'dasha_timeline': dasha_timeline,

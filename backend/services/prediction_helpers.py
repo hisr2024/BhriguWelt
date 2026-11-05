@@ -9,6 +9,11 @@ import logging
 from typing import Dict, Any, List
 from datetime import datetime, timedelta
 
+
+def _an(word) -> str:
+    """'an Aries', 'a Leo'."""
+    return f"{'an' if str(word)[:1].lower() in 'aeiou' else 'a'} {word}"
+
 logger = logging.getLogger(__name__)
 
 # Import EnhancedPredictionEngine for unique fallback predictions
@@ -281,7 +286,7 @@ def fallback_soul_purpose(chart_data: Dict[str, Any]) -> Dict[str, Any]:
         'title': 'Soul Purpose',
         'content': f"""## Your Soul Purpose
 
-As a {zodiac} native with {nakshatra} nakshatra, your soul has incarnated with a specific mission in this lifetime.
+As {_an(zodiac)} native with {nakshatra} nakshatra, your soul has incarnated with a specific mission in this lifetime.
 
 ### Primary Purpose
 Your primary soul purpose is spiritual evolution through practical life experiences. Every challenge and opportunity serves your growth.
@@ -313,7 +318,7 @@ def fallback_karmic_journey(chart_data: Dict[str, Any]) -> Dict[str, Any]:
     return {
         'category': 'karmic_journey',
         'title': 'Your Karmic Journey & Soul Purpose',
-        'full_analysis': f"As a {zodiac} native with {nakshatra} nakshatra, your karmic journey analysis requires the enhanced wisdom engine. Please ensure the system is properly configured.",
+        'full_analysis': f"As {_an(zodiac)} native with {nakshatra} nakshatra, your karmic journey analysis requires the enhanced wisdom engine. Please ensure the system is properly configured.",
         'metadata': {
             'zodiac_sign': zodiac,
             'nakshatra': nakshatra,
@@ -339,7 +344,7 @@ def fallback_past_lives(chart_data: Dict[str, Any]) -> Dict[str, Any]:
     return {
         'category': 'past_lives',
         'title': 'Your Past Lives & Karmic Patterns',
-        'full_analysis': f"As a {zodiac} native with {nakshatra} nakshatra, your past lives analysis requires the enhanced wisdom engine.",
+        'full_analysis': f"As {_an(zodiac)} native with {nakshatra} nakshatra, your past lives analysis requires the enhanced wisdom engine.",
         'metadata': {
             'zodiac_sign': zodiac,
             'nakshatra': nakshatra,
@@ -365,7 +370,7 @@ def fallback_future_lives(chart_data: Dict[str, Any]) -> Dict[str, Any]:
     return {
         'category': 'future_lives',
         'title': 'Your Future Lives & Soul Evolution',
-        'full_analysis': f"As a {zodiac} native with {nakshatra} nakshatra, your future lives analysis requires the enhanced wisdom engine.",
+        'full_analysis': f"As {_an(zodiac)} native with {nakshatra} nakshatra, your future lives analysis requires the enhanced wisdom engine.",
         'metadata': {
             'zodiac_sign': zodiac,
             'nakshatra': nakshatra,
@@ -390,7 +395,7 @@ def fallback_present_life(chart_data: Dict[str, Any]) -> Dict[str, Any]:
     return {
         'category': 'present_life',
         'title': 'Your Present Life Comprehensive Analysis',
-        'full_analysis': f"As a {zodiac} native, your present life analysis requires the enhanced wisdom engine.",
+        'full_analysis': f"As {_an(zodiac)} native, your present life analysis requires the enhanced wisdom engine.",
         'metadata': {
             'zodiac_sign': zodiac,
             'ai_model': 'minimal_fallback',
@@ -414,7 +419,7 @@ def fallback_life_events(chart_data: Dict[str, Any]) -> Dict[str, Any]:
     return {
         'category': 'life_events',
         'title': 'Your Life Events with Precision Timing',
-        'full_analysis': f"As a {zodiac} native, your life events analysis requires the enhanced wisdom engine.",
+        'full_analysis': f"As {_an(zodiac)} native, your life events analysis requires the enhanced wisdom engine.",
         'metadata': {
             'zodiac_sign': zodiac,
             'ai_model': 'minimal_fallback',
@@ -438,7 +443,7 @@ def fallback_karmic_remedies(chart_data: Dict[str, Any]) -> Dict[str, Any]:
     return {
         'category': 'karmic_remedies',
         'title': 'Your Personalized Karmic Remedies',
-        'full_analysis': f"As a {zodiac} native, your karmic remedies analysis requires the enhanced wisdom engine.",
+        'full_analysis': f"As {_an(zodiac)} native, your karmic remedies analysis requires the enhanced wisdom engine.",
         'metadata': {
             'zodiac_sign': zodiac,
             'ai_model': 'minimal_fallback',
@@ -463,7 +468,7 @@ def fallback_karma_reset(chart_data: Dict[str, Any]) -> Dict[str, Any]:
     return {
         'category': 'karma_reset',
         'title': 'Your Karma Reset Plan',
-        'full_analysis': f"As a {zodiac} native, your karma reset analysis requires the enhanced wisdom engine.",
+        'full_analysis': f"As {_an(zodiac)} native, your karma reset analysis requires the enhanced wisdom engine.",
         'metadata': {
             'zodiac_sign': zodiac,
             'ai_model': 'minimal_fallback',
@@ -487,7 +492,7 @@ def fallback_relationships(chart_data: Dict[str, Any]) -> Dict[str, Any]:
     return {
         'category': 'relationships',
         'title': 'Your Relationships & Soul Connections',
-        'full_analysis': f"As a {zodiac} native, your relationships analysis requires the enhanced wisdom engine.",
+        'full_analysis': f"As {_an(zodiac)} native, your relationships analysis requires the enhanced wisdom engine.",
         'metadata': {
             'zodiac_sign': zodiac,
             'ai_model': 'minimal_fallback',
@@ -511,7 +516,7 @@ def fallback_predictions(chart_data: Dict[str, Any]) -> Dict[str, Any]:
     return {
         'category': 'predictions',
         'title': 'Your General Predictions',
-        'full_analysis': f"As a {zodiac} native, your predictions analysis requires the enhanced wisdom engine.",
+        'full_analysis': f"As {_an(zodiac)} native, your predictions analysis requires the enhanced wisdom engine.",
         'metadata': {
             'zodiac_sign': zodiac,
             'ai_model': 'minimal_fallback',

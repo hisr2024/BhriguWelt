@@ -13,6 +13,25 @@ from services.bhrigu_offline_wisdom import get_offline_wisdom_generator
 logger = logging.getLogger(__name__)
 
 
+from services.ashtakoot import ashtakoot
+
+
+def _coord(value, limit):
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if -limit <= number <= limit else None
+
+
+def _coords(person):
+    """(lat, lon) or (None, None); 0,0 placeholders from older clients mean 'unknown'."""
+    lat, lon = _coord(person.get('latitude'), 90), _coord(person.get('longitude'), 180)
+    if lat is None or lon is None or (lat == 0 and lon == 0):
+        return None, None
+    return lat, lon
+
+
 class MatchmakingService:
     """
     Comprehensive Kundali Matching Service
@@ -44,17 +63,30 @@ class MatchmakingService:
             chart1 = self.astrology_calculator.calculate_birth_chart(
                 date_of_birth=person1_data['date_of_birth'],
                 time_of_birth=person1_data['time_of_birth'],
-                place=person1_data['place_of_birth']
+                place=person1_data['place_of_birth'],
+                latitude=_coords(person1_data)[0],
+                longitude=_coords(person1_data)[1],
+                timezone_override=person1_data.get('timezone') or None,
             )
+            if isinstance(chart1, dict) and chart1.get('error'):
+                raise ValueError(chart1['error'].get('message', 'Birth chart could not be calculated'))
             
             chart2 = self.astrology_calculator.calculate_birth_chart(
                 date_of_birth=person2_data['date_of_birth'],
                 time_of_birth=person2_data['time_of_birth'],
-                place=person2_data['place_of_birth']
+                place=person2_data['place_of_birth'],
+                latitude=_coords(person2_data)[0],
+                longitude=_coords(person2_data)[1],
+                timezone_override=person2_data.get('timezone') or None,
             )
+            if isinstance(chart2, dict) and chart2.get('error'):
+                raise ValueError(chart2['error'].get('message', 'Birth chart could not be calculated'))
             
-            # Calculate Ashtakoot scores
-            ashtakoot_scores = self._calculate_ashtakoot(chart1, chart2)
+            # Varna, Vashya and Gana are directional: score from the groom's side.
+            groom_first = str(person2_data.get('gender', '')).lower() != 'male' or \
+                str(person1_data.get('gender', '')).lower() == 'male'
+            ashtakoot_scores = (self._calculate_ashtakoot(chart1, chart2) if groom_first
+                                else self._calculate_ashtakoot(chart2, chart1))
             
             # Check doshas
             doshas = self._check_doshas(chart1, chart2)
@@ -132,52 +164,32 @@ class MatchmakingService:
     
     def _calculate_ashtakoot(self, chart1: Dict, chart2: Dict) -> Dict[str, Any]:
         """
-        Calculate Ashtakoot (8-fold) Guna Milan scores
-        
-        The 8 Kutas (factors) with maximum points:
-        1. Varna (1 point) - Spiritual compatibility
-        2. Vashya (2 points) - Dominance/control
-        3. Tara (3 points) - Birth star compatibility
-        4. Yoni (4 points) - Sexual compatibility
-        5. Graha Maitri (5 points) - Planetary friendship
-        6. Gana (6 points) - Temperament matching
-        7. Bhakoot (7 points) - Relative moon sign position
-        8. Nadi (8 points) - Health and genes
-        Total: 36 points
+        Ashtakoot (8-fold) Guna Milan, 36 points, via services.ashtakoot
+        (standard classical tables). chart1 is scored as the groom.
         """
-        
-        # Get moon signs and nakshatras
-        moon_sign1 = chart1['moon_sign']
-        moon_sign2 = chart2['moon_sign']
-        nakshatra1 = chart1['nakshatra']
-        nakshatra2 = chart2['nakshatra']
-        
-        # Calculate individual Kuta scores
-        varna_score = self._calculate_varna(chart1, chart2)
-        vashya_score = self._calculate_vashya(moon_sign1, moon_sign2)
-        tara_score = self._calculate_tara(nakshatra1, nakshatra2)
-        yoni_score = self._calculate_yoni(nakshatra1, nakshatra2)
-        graha_maitri_score = self._calculate_graha_maitri(moon_sign1, moon_sign2, chart1, chart2)
-        gana_score = self._calculate_gana(nakshatra1, nakshatra2)
-        bhakoot_score = self._calculate_bhakoot(moon_sign1, moon_sign2)
-        nadi_score = self._calculate_nadi(nakshatra1, nakshatra2)
-        
-        total_score = (varna_score + vashya_score + tara_score + yoni_score + 
-                      graha_maitri_score + gana_score + bhakoot_score + nadi_score)
-        
-        return {
-            'varna': {'score': varna_score, 'max': 1, 'description': 'Spiritual compatibility'},
-            'vashya': {'score': vashya_score, 'max': 2, 'description': 'Dominance and control'},
-            'tara': {'score': tara_score, 'max': 3, 'description': 'Birth star compatibility'},
-            'yoni': {'score': yoni_score, 'max': 4, 'description': 'Sexual compatibility'},
-            'graha_maitri': {'score': graha_maitri_score, 'max': 5, 'description': 'Planetary friendship'},
-            'gana': {'score': gana_score, 'max': 6, 'description': 'Temperament matching'},
-            'bhakoot': {'score': bhakoot_score, 'max': 7, 'description': 'Moon sign harmony'},
-            'nadi': {'score': nadi_score, 'max': 8, 'description': 'Health and progeny'},
-            'total_score': total_score,
-            'max_score': 36
+        def moon(chart: Dict) -> Dict[str, Any]:
+            planet = (chart.get('planets') or {}).get('Moon') or {}
+            degree = planet.get('degree_in_sign')
+            if degree is None and isinstance(planet.get('longitude'), (int, float)):
+                degree = float(planet['longitude']) % 30
+            return {'moon_sign': chart['moon_sign'], 'nakshatra': chart['nakshatra'], 'moon_degree': degree}
+
+        result = ashtakoot(moon(chart1), moon(chart2))
+        descriptions = {
+            'varna': 'Spiritual compatibility', 'vashya': 'Mutual attraction and influence',
+            'tara': 'Birth star compatibility', 'yoni': 'Physical and instinctive compatibility',
+            'graha_maitri': 'Friendship of Moon-sign lords', 'gana': 'Temperament matching',
+            'bhakoot': 'Moon sign harmony', 'nadi': 'Health and progeny',
         }
-    
+        out: Dict[str, Any] = {
+            key: {'score': result[key]['score'], 'max': result[key]['max'],
+                  'description': descriptions[key], 'detail': result[key]['detail']}
+            for key in descriptions
+        }
+        out['total_score'] = result['total']
+        out['max_score'] = 36
+        return out
+
     def _calculate_varna(self, chart1: Dict, chart2: Dict) -> int:
         """Varna Kuta - Spiritual compatibility (1 point)"""
         varna_order = {
@@ -444,14 +456,14 @@ class MatchmakingService:
             }
         }
     
-    def _get_planet_house(self, chart: Dict, planet_name: str) -> int:
+    def _get_planet_house(self, chart: Dict, planet_name: str) -> Optional[int]:
         """Get the house number for a planet"""
         try:
             planet_data = chart.get('planets', {}).get(planet_name, {})
-            return planet_data.get('house', 1)
-        except (KeyError, AttributeError, TypeError) as e:
-            # Return default house if planet data unavailable
-            return 1
+            return planet_data.get('house')
+        except (KeyError, AttributeError, TypeError):
+            # Unknown house: never guess (a default of 1 flagged everyone Manglik).
+            return None
     
     def _get_recommendation(self, total_score: int, doshas: Dict) -> Dict[str, str]:
         """Get marriage recommendation based on score and doshas"""

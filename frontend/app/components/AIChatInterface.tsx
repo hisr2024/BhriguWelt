@@ -407,15 +407,16 @@ async function generateRealAIResponse(
     // Import the AI API
     const { aiAPI } = await import('@/lib/api');
 
-    // Prepare birth data for AI
+    // Send birth details only; the server computes the chart itself and
+    // never trusts client-supplied positions.
+    const details = birthChartData?.birth_details ?? {};
     const birthData = {
-      zodiac_sign: birthChartData?.zodiac_sign,
-      nakshatra: birthChartData?.nakshatra,
-      moon_sign: birthChartData?.moon_sign,
-      ascendant: birthChartData?.ascendant,
-      planetary_positions: birthChartData?.planets,
-      houses: birthChartData?.houses,
-      dasha_period: birthChartData?.dasha_period?.maha_dasha,
+      date_of_birth: details.date ?? birthChartData?.dateOfBirth,
+      time_of_birth: details.time ?? birthChartData?.timeOfBirth,
+      place_of_birth: details.place ?? birthChartData?.placeOfBirth,
+      latitude: details.latitude ?? birthChartData?.latitude,
+      longitude: details.longitude ?? birthChartData?.longitude,
+      timezone: details.timezone ?? birthChartData?.timezone,
     };
 
     // Get AI mode from localStorage
@@ -443,11 +444,14 @@ async function generateRealAIResponse(
       aiMode
     );
 
-    return normalizeChatResponse(response.response || response.message);
+    return normalizeChatResponse(response?.data?.response ?? response?.response ?? response?.message);
   } catch (error) {
     console.error('Error calling AI API:', error);
     // Never invent chart-specific answers: say plainly that no answer is available.
     const status = (error as any)?.response?.status;
+    if ((error as any)?.response?.data?.error_code === 'BIRTH_DETAILS_REQUIRED') {
+      return 'Add your date, time and place of birth to your profile to ask about your chart.';
+    }
     return status === 503
       ? 'Answers are temporarily unavailable. Please try again in a minute.'
       : "Your question couldn't be answered right now. Check your connection and try again.";

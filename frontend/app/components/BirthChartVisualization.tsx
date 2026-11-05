@@ -147,9 +147,23 @@ export default function BirthChartVisualization({
 
 
   // Calculate planet positions on the chart
+  // Planets within 9° of each other get different rings so labels never overlap.
+  const RINGS = [0.7, 0.56, 0.82];
+  const ringOf: Record<string, number> = {};
+  {
+    const sorted = [...(normalizedChartData.planets ?? [])]
+      .filter((p) => Number.isFinite(p.position))
+      .sort((a, b) => a.position - b.position);
+    sorted.forEach((p, i) => {
+      const prev = sorted[i - 1];
+      const prevRing = prev ? ringOf[prev.name] ?? 0 : -1;
+      ringOf[p.name] = prev && p.position - prev.position < 9 ? (prevRing + 1) % RINGS.length : 0;
+    });
+  }
+
   const getPlanetPosition = (planet: Planet) => {
     const angle = (planet.position * Math.PI) / 180 - Math.PI / 2;
-    const radius = (size / 2) * 0.7;
+    const radius = (size / 2) * (RINGS[ringOf[planet.name] ?? 0] ?? 0.7);
     const x = size / 2 + radius * Math.cos(angle);
     const y = size / 2 + radius * Math.sin(angle);
     return { x, y, angle: planet.position };
@@ -200,47 +214,22 @@ export default function BirthChartVisualization({
         </motion.button>
       </div>
 
-      {/* Rotation Controls */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setRotation(rotation - 30)}
-          className="w-10 h-10 rounded-full bg-genz-purple-haze/20 backdrop-blur-xl border border-genz-purple-haze/30 flex items-center justify-center text-white hover:bg-genz-purple-haze/30 transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setRotation(0)}
-          className="px-4 h-10 rounded-full bg-genz-purple-haze/20 backdrop-blur-xl border border-genz-purple-haze/30 flex items-center justify-center text-white text-sm font-bold hover:bg-genz-purple-haze/30 transition-colors"
-        >
-          Reset
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setRotation(rotation + 30)}
-          className="w-10 h-10 rounded-full bg-genz-purple-haze/20 backdrop-blur-xl border border-genz-purple-haze/30 flex items-center justify-center text-white hover:bg-genz-purple-haze/30 transition-colors"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </motion.button>
-      </div>
-
       {/* Chart Container */}
       <motion.div
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900/50 via-purple-900/50 to-pink-900/50 backdrop-blur-xl border border-white/10 p-8"
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900/50 via-purple-900/50 to-pink-900/50 backdrop-blur-xl border border-white/10"
         style={{
-          width: size + 64,
-          height: size + 64,
+          width: '100%',
+          maxWidth: size + 64,
+          aspectRatio: '1 / 1',
+          padding: 'clamp(8px, 4%, 32px)',
         }}
         animate={{ scale: zoom }}
         transition={{ type: 'spring', stiffness: 200, damping: 20 }}
       >
         <motion.svg
-          width={size}
-          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          width="100%"
+          height="100%"
           className="mx-auto"
           style={{ transform: `rotate(${rotation}deg)` }}
           transition={{ type: 'spring', stiffness: 100, damping: 15 }}
@@ -355,6 +344,15 @@ export default function BirthChartVisualization({
                   animate={{ scale: selectedPlanet?.name === planet.name ? 1.3 : 1 }}
                   whileHover={{ scale: 1.2 }}
                   onClick={() => setSelectedPlanet(planet)}
+                  onKeyDown={(e: React.KeyboardEvent) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedPlanet(planet);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${planet.name} in ${planet.sign}`}
                   className="cursor-pointer"
                   style={{
                     filter: 'none'
@@ -424,6 +422,40 @@ export default function BirthChartVisualization({
         </motion.svg>
       </motion.div>
 
+      {/* Rotation Controls */}
+      <div className="mt-3 flex justify-center gap-2">
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setRotation(rotation - 30)}
+          type="button"
+          aria-label="Rotate chart left"
+          className="w-11 h-11 rounded-full bg-genz-purple-haze/20 backdrop-blur-xl border border-genz-purple-haze/30 flex items-center justify-center text-white hover:bg-genz-purple-haze/30 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setRotation(0)}
+          type="button"
+          aria-label="Reset rotation"
+          className="px-4 h-11 rounded-full bg-genz-purple-haze/20 backdrop-blur-xl border border-genz-purple-haze/30 flex items-center justify-center text-white text-sm font-bold hover:bg-genz-purple-haze/30 transition-colors"
+        >
+          Reset
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setRotation(rotation + 30)}
+          type="button"
+          aria-label="Rotate chart right"
+          className="w-11 h-11 rounded-full bg-genz-purple-haze/20 backdrop-blur-xl border border-genz-purple-haze/30 flex items-center justify-center text-white hover:bg-genz-purple-haze/30 transition-colors"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </motion.button>
+      </div>
+
       {/* Planet Info Panel */}
       <AnimatePresence>
         {selectedPlanet && (
@@ -456,7 +488,7 @@ export default function BirthChartVisualization({
                 <p className="text-white/60 text-sm">Position</p>
                 <p className="text-white font-bold">
                   {Number.isFinite(selectedPlanet.position)
-                    ? `${selectedPlanet.position.toFixed(2)}°`
+                    ? `${(selectedPlanet.position % 30).toFixed(2)}° ${selectedPlanet.sign ?? ''}`
                     : '—'}
                 </p>
               </div>

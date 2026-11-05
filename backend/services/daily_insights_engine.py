@@ -8,6 +8,14 @@ import json
 import random
 
 from utils.logger import setup_logger
+from services.mantras import planet_mantra
+
+
+def _an(word: str) -> str:
+    """'an Aquarius', 'a Leo'."""
+    return f"{'an' if str(word)[:1].lower() in 'aeiou' else 'a'} {word}"
+
+from services.ephemeris_core import day_lord_hora_strings
 
 logger = setup_logger(__name__)
 
@@ -183,7 +191,7 @@ class DailyInsightsEngine:
         spiritual = self._generate_spiritual_insight(nakshatra, nakshatra_energy, day_info)
 
         # Generate lucky elements
-        lucky_elements = self._generate_lucky_elements(zodiac_sign, day_info, target_date)
+        lucky_elements = self._generate_lucky_elements(zodiac_sign, day_info, target_date, birth_data)
 
         # Generate do/don't lists
         do_list = self._generate_do_list(zodiac_theme, day_info, nakshatra_energy)
@@ -465,7 +473,7 @@ class DailyInsightsEngine:
         return {
             'rating': ratings.get(energy_level['level'], 4),
             'message': love_themes.get(planet, 'Open your heart to love today.'),
-            'advice': f"As a {zodiac_sign}, your {moon_sign} Moon enhances emotional awareness."
+            'advice': f"As {_an(zodiac_sign)}, your {moon_sign} Moon enhances emotional awareness."
         }
 
     def _generate_career_insight(
@@ -586,7 +594,7 @@ class DailyInsightsEngine:
             'rating': 4,
             'message': spiritual_guidance,
             'deity': deity,
-            'mantra': f"Om {deity}aya Namaha",
+            'mantra': planet_mantra(day_info.get('planet') or deity),
             'practice': f"Invoke {deity} through morning prayer or meditation."
         }
 
@@ -594,7 +602,8 @@ class DailyInsightsEngine:
         self,
         zodiac_sign: str,
         day_info: Dict[str, Any],
-        target_date: datetime
+        target_date: datetime,
+        birth_data: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Generate lucky elements for the day"""
         # Calculate lucky number based on date and sign
@@ -632,19 +641,15 @@ class DailyInsightsEngine:
 
         planet = day_info.get('planet', 'Sun')
 
-        # Calculate auspicious times
-        sunrise_hour = 6
-        auspicious_hours = [
-            f"{(sunrise_hour + i * 2) % 24}:00"
-            for i in range(3)
-        ]
+        # Horas of the day lord (1st and 8th day hora from real sunrise)
+        auspicious_hours = day_lord_hora_strings(birth_data, target_date)
 
         return {
             'number': base_number,
             'color': colors.get(planet, 'White'),
             'gemstone': gemstones.get(planet, 'Clear Quartz'),
             'direction': directions.get(planet, 'East'),
-            'time': auspicious_hours[0],
+            'time': auspicious_hours[0] if auspicious_hours else None,
             'auspicious_hours': auspicious_hours
         }
 
@@ -832,7 +837,7 @@ class DailyInsightsEngine:
     def _get_monthly_mantra(self, zodiac_sign: str, month: int) -> str:
         """Get monthly mantra based on zodiac sign"""
         mantras = {
-            'Aries': "Om Suryaya Namaha - I embody courage and leadership",
+            'Aries': "Om Mangalaya Namaha - I embody courage and leadership",
             'Taurus': "Om Shukraya Namaha - I attract abundance and beauty",
             'Gemini': "Om Budhaya Namaha - I communicate with clarity",
             'Cancer': "Om Chandraya Namaha - I nurture and protect",
@@ -957,7 +962,7 @@ class DailyInsightsEngine:
         """Generate annual guidance"""
         themes = self.ZODIAC_DAILY_THEMES.get(zodiac_sign, {})
 
-        return f"As a {zodiac_sign}, embrace your natural {themes.get('strength', 'gifts')}. " \
+        return f"As {_an(zodiac_sign)}, embrace your natural {themes.get('strength', 'gifts')}. " \
                f"Work consciously with your tendency toward {themes.get('challenge', 'challenges')}. " \
                f"The year supports your focus on {themes.get('focus', 'growth')}."
 

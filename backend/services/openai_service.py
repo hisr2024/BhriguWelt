@@ -260,8 +260,8 @@ class OpenAIService:
                         corpus_context += "\n" + self.corpus_loader.format_principles_for_context(nadi_principles)
 
                     corpus_context += (
-                        "\n\n**IMPORTANT**: Reference these authentic sutras and folios in your predictions with "
-                        "proper citations.\n"
+                        "\n\nUse these principles only where they apply to the computed chart. Cite a principle "
+                        "only by the ID shown above; never invent sutra, folio or verse numbers.\n"
                     )
 
             # Pass user_id through to chunking

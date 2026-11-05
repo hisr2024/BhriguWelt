@@ -172,11 +172,11 @@ Generate content EXCLUSIVELY about previous incarnations, past-life memories, an
 Generate content EXCLUSIVELY about future incarnations, moksha timeline, and soul evolution trajectory.
 
 ## REQUIRED SECTIONS (Generate ONLY these):
-1. Next Immediate Incarnation - Likely era, location, circumstances, primary purpose
-2. Soul Evolution Trajectory (Next 3-5 Lives) - Projected development, themes, progress
-3. Conditions for Final Birth - Karmic completion percentage, remaining lessons, liberation practices
+1. Next Immediate Incarnation - Karmic direction for the next birth as the chart shows it (no invented era or place)
+2. Soul Evolution Trajectory (Next 3-5 Lives) - Themes the chart leaves unfinished
+3. Conditions for Final Birth - Moksha indicators in the chart, remaining lessons, liberation practices
 4. Future Life Scenarios - Trajectories based on spiritual/materialistic/balanced paths
-5. Moksha Timeline & Preparation - Estimated lifetimes until liberation, current progress
+5. Moksha Timeline & Preparation - What the chart shows about liberation (never a count of lifetimes)
 6. Higher Realms Accessibility - Eligibility for Deva realms, requirements for elevation
 7. Bodhisattva Path Potential - Capacity to return as guide/teacher, service incarnations
 8. Soul's Ultimate Destiny - Final spiritual destination, liberation pathway
@@ -745,7 +745,7 @@ Actionable Guidance:
                     'key': 'next_incarnation',
                     'title': 'Next Immediate Incarnation',
                     'bullets': [
-                        "Likely time period, location, and social circumstances",
+                        "Karmic direction the chart indicates (no invented era or place)",
                         "Primary life purpose in the next life",
                         "Karmic lessons continuing forward"
                     ]
@@ -754,16 +754,16 @@ Actionable Guidance:
                     'key': 'evolution_trajectory',
                     'title': 'Soul Evolution Trajectory (Next 3-5 Lives)',
                     'bullets': [
-                        "Projected spiritual development levels",
-                        "Major themes, purposes, and progress",
-                        "Relationships with current-life souls"
+                        "Direction indicated by Ketu, the 12th house and the Atmakaraka",
+                        "Themes the chart leaves unfinished",
+                        "What would change that direction"
                     ]
                 },
                 {
                     'key': 'final_birth_conditions',
                     'title': 'Conditions for This Being the Final Birth',
                     'bullets': [
-                        "Current karmic completion percentage",
+                        "Moksha indicators in the chart (12th, 8th, 4th houses, Ketu)",
                         "Remaining lessons before moksha",
                         "Practices that accelerate liberation"
                     ]
@@ -781,8 +781,8 @@ Actionable Guidance:
                     'key': 'moksha_timeline',
                     'title': 'Moksha Timeline & Preparation',
                     'bullets': [
-                        "Estimated lifetimes until liberation",
-                        "Current progress toward enlightenment",
+                        "What the chart shows about the pull toward liberation (no counts of lifetimes)",
+                        "Supports and obstacles named by the 12th house and Ketu",
                         "Practices to remove obstacles"
                     ]
                 },
@@ -1019,7 +1019,7 @@ Actionable Guidance:
                     'key': 'age_milestones',
                     'title': 'Specific Age Milestones',
                     'bullets': [
-                        "Key ages to watch for major changes",
+                        "Ages when computed dasha or transit windows begin (only from the given findings)",
                         "Significant rites of passage",
                         "Peak potential windows"
                     ]
@@ -1810,10 +1810,13 @@ Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_
 
     @staticmethod
     def _norm_dates(value: str) -> str:
-        return re.sub(r'\s+', ' ', str(value or '').replace('—', '–').replace('-', '–')).strip().lower()
+        text = str(value or '').replace('—', '–').replace('-', '–')
+        text = re.sub(r'\s*–\s*', '–', text)
+        return re.sub(r'\s+', ' ', text).strip().lower()
 
     def _scrub_block(self, block: Any, chart_facts: Optional[Dict[str, Any]],
-                     findings: List[Dict[str, Any]]) -> Tuple[Any, List[str], bool]:
+                     findings: List[Dict[str, Any]],
+                     used_windows: Optional[set] = None) -> Tuple[Any, List[str], bool]:
         """
         Enforce precision on one model-written section before it is shown:
           - drop every sentence whose placement/house/lord/dignity/conjunction/
@@ -1847,29 +1850,68 @@ Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_
 
         timing_key = 'timing' if block.get('timing') else ('when' if block.get('when') else None)
         timing_dropped = False
-        if timing_key and findings:
+        if timing_key:
             timing = self._norm_dates(block[timing_key])
             basis = {str(b).strip().upper() for b in (block.get('basis') or block.get('rule_ids') or [])}
-            cited = [f for f in findings if str(f.get('id', '')).upper() in basis]
+            cited = [f for f in (findings or []) if str(f.get('id', '')).upper() in basis]
             cited_text = " ".join(self._norm_dates(f"{f.get('finding', '')} {f.get('timing', '')}") for f in cited)
             body = " ".join(str(block.get(k) or '') for k in ('simple', 'technical'))
-            dates = [m.group(3) for m in self._DATE_RANGE_RE.finditer(str(block[timing_key])) if m.group(3)]
-            supported = bool(dates) and all(self._norm_dates(d) in cited_text for d in dates)
-            if not supported:
-                # Accept a dasha window whose sub-period lord the section actually discusses.
-                for f in findings:
+            # Every date in the window must be a range or month-year that a cited
+            # rule states; a bare "2027" or "sometime in 2027" is never enough.
+            dates = [self._norm_dates(m.group(3)) for m in self._DATE_RANGE_RE.finditer(str(block[timing_key]))
+                     if m.group(3)]
+            precise = [d for d in dates if '–' in d or re.match(r'[a-z]{3} \d{4}$', d)]
+            supported = bool(precise) and len(precise) == len(dates) and all(d in cited_text for d in precise)
+            if not supported and precise:
+                # A dasha window whose sub-period lord this section discusses.
+                for f in findings or []:
+                    if not str(f.get('id', '')).upper().startswith('F-DASHA'):
+                        continue
                     for m in self._DATE_RANGE_RE.finditer(f"{f.get('finding', '')} {f.get('timing', '')}"):
                         lord = m.group(2)
-                        if (lord and m.group(3) and self._norm_dates(m.group(3)) in timing
-                                and re.search(rf'\b{lord}\b', body)):
+                        if (lord and m.group(3) and '–' in self._norm_dates(m.group(3))
+                                and self._norm_dates(m.group(3)) in timing and re.search(rf'\b{lord}\b', body)):
                             supported = True
                             break
                     if supported:
                         break
+            if supported and used_windows is not None:
+                # One section per window: the same dates may not be reused elsewhere.
+                key = tuple(sorted(precise))
+                if key in used_windows:
+                    supported = False
+                else:
+                    used_windows.add(key)
             if not supported:
                 block[timing_key] = ''
                 timing_dropped = True
         return block, removed, timing_dropped
+
+    _YEAR_RE = re.compile(r'\b(19|20)\d{2}\b')
+
+    def _scrub_free_text(self, text: str, chart_facts: Optional[Dict[str, Any]],
+                         findings: List[Dict[str, Any]], extra_years: Tuple[str, ...] = ()) -> Tuple[str, List[str]]:
+        """
+        Precision pass for prose outside the structured sections (overview,
+        key insight, repaired sections): drop sentences with chart claims that
+        contradict the computed chart, and sentences naming a year that no
+        computed rule or dasha window supports.
+        """
+        if not text:
+            return text, []
+        removed: List[str] = []
+        if chart_facts:
+            text, removed = remove_false_sentences(text, chart_facts)
+        allowed = " ".join(f"{f.get('finding', '')} {f.get('timing', '')}" for f in (findings or []))
+        allowed_years = {m.group(0) for m in self._YEAR_RE.finditer(allowed)} | set(extra_years)
+        kept = []
+        for sentence in re.split(r'(?<=[.!?।])\s+', text.strip()):
+            years = {m.group(0) for m in self._YEAR_RE.finditer(sentence)}
+            if years and not years <= allowed_years:
+                removed.append(f"unsupported date: {sentence[:120]}")
+                continue
+            kept.append(sentence)
+        return " ".join(kept).strip(), removed
 
     def _derive_rule_findings(self, chart_facts: Optional[Dict[str, Any]], birth_data: Dict[str, Any], category: str) -> List[Dict[str, Any]]:
         if not chart_facts:
@@ -1947,9 +1989,11 @@ Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_
 
             seen_texts: Dict[str, str] = {}
             scrub_log: Dict[str, Dict[str, Any]] = {}
+            used_windows: set = set()
             for spec in section_specs:
                 key = spec['key']
-                block, removed_claims, timing_dropped = self._scrub_block(blocks.get(key), chart_facts, findings)
+                block, removed_claims, timing_dropped = self._scrub_block(
+                    blocks.get(key), chart_facts, findings, used_windows)
                 if removed_claims or timing_dropped:
                     scrub_log[key] = {'removed_claims': removed_claims, 'timing_dropped': timing_dropped}
                 text, detail = self._section_from_block(block)
@@ -1993,9 +2037,24 @@ Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_
                             legacy_prompt, None, allow_fallback=False, max_tokens=420, user_id=user_id
                         )
                         text = self._strip_section_header(to_readable_text(text), spec['title'])
+                        text, gone = self._scrub_free_text(
+                            text, chart_facts, findings, (str(birth_data.get('date_of_birth') or '')[:4],))
                         if text and normalize_for_dedupe(text)[:400] not in seen_texts:
                             sections[spec['key']] = text
-                            status_map[spec['key']] = {'status': 'generated', 'repaired': True}
+                            entry = {'status': 'generated', 'repaired': True}
+                            if chart_facts:
+                                report = postfilter_report(text, chart_facts)
+                                entry['precision'] = {
+                                    'verified': report['ok'],
+                                    'specific_refs': report['specific_refs'],
+                                    'mismatched_claims': report['mismatched_claims'],
+                                    'generic_hits': report['generic_hits'],
+                                }
+                                if report['mismatched_claims']:
+                                    entry['status'] = 'generated_unverified'
+                            if gone:
+                                entry['corrections'] = {'removed_claims': gone, 'timing_dropped': False}
+                            status_map[spec['key']] = entry
                     except Exception as e:
                         logger.warning(f"Section repair failed for {spec['key']}: {e}")
 
@@ -2035,9 +2094,12 @@ Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_
                     user_views[spec['key']] = views['user']
                     astrologer_views[spec['key']] = views['astrologer']
 
+            birth_year = (str(birth_data.get('date_of_birth') or '')[:4],)
+            overview, _ = self._scrub_free_text(overview, chart_facts, findings, birth_year)
+            key_insight, _ = self._scrub_free_text(key_insight, chart_facts, findings, birth_year)
             if not key_insight:
                 first = next((details[k]['simple'] for k in generated if details.get(k, {}).get('simple')), '')
-                key_insight = re.split(r'(?<=[.!?])\s+', first.strip())[0] if first else ''
+                key_insight = re.split(r'(?<=[.!?।])\s+', first.strip())[0] if first else ''
 
             sections['section_generation_status'] = status_map
             sections['user_views'] = user_views
