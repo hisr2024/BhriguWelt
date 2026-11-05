@@ -42,6 +42,14 @@ export default function BirthChartVisualization({
     'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
   ];
 
+  // The wheel's 12 segments are SIGNS (Aries at the top). House numbers count
+  // from the ascendant's sign (whole-sign houses), not from Aries.
+  const houseForSign = (signSegment: number, ascendant: string): number => {
+    const ascIndex = zodiacSigns.indexOf(ascendant);
+    if (ascIndex < 0) return signSegment;
+    return (((signSegment - 1 - ascIndex) % 12) + 12) % 12 + 1;
+  };
+
   const resolveAscendant = (data: any): string => {
     if (!data?.ascendant) return 'N/A';
     if (typeof data.ascendant === 'string') return data.ascendant;
@@ -281,7 +289,7 @@ export default function BirthChartVisualization({
               {/* House Wedge */}
               <path
                 d={getHouseWedgePath(house)}
-                fill={hoveredHouse === house ? 'url(#houseGradient)' : 'transparent'}
+                fill={hoveredHouse === house ? 'url(#houseGradient)' : houseForSign(house, normalizedChartData.ascendant) === 1 && zodiacSigns.includes(normalizedChartData.ascendant) ? 'rgba(212, 175, 95, 0.12)' : 'transparent'}
                 stroke="rgba(255, 255, 255, 0.2)"
                 strokeWidth="1"
                 onMouseEnter={() => setHoveredHouse(house)}
@@ -300,7 +308,7 @@ export default function BirthChartVisualization({
                 dominantBaseline="middle"
                 opacity="0.6"
               >
-                {house}
+                {houseForSign(house, normalizedChartData.ascendant)}
               </text>
 
               {/* Zodiac Sign */}
@@ -411,7 +419,7 @@ export default function BirthChartVisualization({
             textAnchor="middle"
             opacity="0.7"
           >
-            {normalizedChartData.nakshatra || ''}
+            {normalizedChartData.nakshatra ? `Moon · ${normalizedChartData.nakshatra}` : ''}
           </text>
         </motion.svg>
       </motion.div>

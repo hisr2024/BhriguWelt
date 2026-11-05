@@ -52,9 +52,10 @@ class BhriguPredictionCache(db.Model):
     confidence_score = db.Column(db.Float, default=0.0)
     user_rating = db.Column(db.Integer)  # 1-5 stars if user rates
 
-    # v4: readings now include Ashtakavarga/vedha/precision inputs; older
-    # entries are never served (no fallbacks).
-    HASH_VERSION_CURRENT = 'v4'
+    # v5: charts computed on worker threads used the wrong ayanamsa
+    # (Fagan-Bradley, not Lahiri) until the thread-local fix; every older
+    # entry may carry shifted lagna/dasha dates and is never served.
+    HASH_VERSION_CURRENT = 'v5'
     HASH_VERSION_FALLBACKS = ()
 
     def __repr__(self):

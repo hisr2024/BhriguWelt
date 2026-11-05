@@ -21,6 +21,10 @@ from services.wisdom_core_pipeline import (
     correction_instructions,
     format_chart_context,
     postfilter_report,
+    remove_false_sentences,
+    lordship_line,
+    HOUSE_SIGNIFICATIONS,
+    build_chart_facts as _facts_for_prompt,
     split_views,
     strict_precision_enabled,
 )
@@ -1659,6 +1663,7 @@ Reading: {label}. Stay strictly inside this category; each section covers a DIFF
 CHART FACTS (computed, authoritative):
 {self._format_birth_details(birth_data)}
 
+{self._lordship_block(birth_data)}
 RULE FINDINGS (deterministic Bhrigu/Nadi rules applied to this chart — build on these first):
 {rule_block or "- none computed"}
 {question_line}
@@ -1676,7 +1681,18 @@ Return JSON:
    "guidance": ["3 short specific actions"],
    "basis": ["rule IDs / facts used"]}}}}}}
 
-Rules: <=110 words per section; never repeat a sentence across sections; omit a section key only if no listed fact supports it.{self._accuracy_line(birth_data)}{self._language_line(birth_data)}"""
+Rules: <=110 words per section; never repeat a sentence across sections; omit a section key only if no listed fact supports it.
+Precision rules: name a house, lord, sign, dignity, conjunction or nakshatra ONLY exactly as listed above (use the HOUSE LORDS line, never work lordships out yourself).
+"timing" must come from a rule ID in that section's "basis", or be the dasha sub-period of a planet that section discusses; never reuse one window for unrelated themes; "" is better than a loosely related date.
+Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_data)}{self._language_line(birth_data)}"""
+
+    @staticmethod
+    def _lordship_block(birth_data: Dict[str, Any]) -> str:
+        try:
+            line = lordship_line(_facts_for_prompt(birth_data))
+        except Exception:
+            return ''
+        return f"HOUSE LORDS (whole-sign from the lagna): {line}\n" if line else ''
 
     @staticmethod
     def _accuracy_line(birth_data: Dict[str, Any]) -> str:
@@ -1787,6 +1803,74 @@ Rules: <=110 words per section; never repeat a sentence across sections; omit a 
         }
         return "\n\n".join(parts).strip(), detail
 
+    _DATE_RANGE_RE = re.compile(
+        r'(?:(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)[–-](Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\s+)?'
+        r'((?:[A-Z][a-z]{2}\s+)?\d{4}(?:\s*[–-]\s*(?:[A-Z][a-z]{2}\s+)?\d{4})?)'
+    )
+
+    @staticmethod
+    def _norm_dates(value: str) -> str:
+        return re.sub(r'\s+', ' ', str(value or '').replace('—', '–').replace('-', '–')).strip().lower()
+
+    def _scrub_block(self, block: Any, chart_facts: Optional[Dict[str, Any]],
+                     findings: List[Dict[str, Any]]) -> Tuple[Any, List[str], bool]:
+        """
+        Enforce precision on one model-written section before it is shown:
+          - drop every sentence whose placement/house/lord/dignity/conjunction/
+            nakshatra claim contradicts the computed chart;
+          - keep a 'timing' window only if it comes from a rule this section
+            cites, or is the dasha period of a planet this section discusses.
+        Returns (block, removed_claim_explanations, timing_dropped).
+        """
+        removed: List[str] = []
+        if not chart_facts:
+            return block, removed, False
+        if isinstance(block, str):
+            cleaned, gone = remove_false_sentences(block, chart_facts)
+            return cleaned, gone, False
+        if not isinstance(block, dict):
+            return block, removed, False
+        block = dict(block)
+        for key in ('simple', 'key_insight', 'summary', 'insight', 'text',
+                    'technical', 'technical_analysis', 'analysis', 'astrology'):
+            if isinstance(block.get(key), str) and block[key].strip():
+                block[key], gone = remove_false_sentences(block[key], chart_facts)
+                removed.extend(gone)
+        if isinstance(block.get('guidance'), list):
+            kept = []
+            for g in block['guidance']:
+                cleaned, gone = remove_false_sentences(str(g), chart_facts)
+                removed.extend(gone)
+                if cleaned:
+                    kept.append(cleaned)
+            block['guidance'] = kept
+
+        timing_key = 'timing' if block.get('timing') else ('when' if block.get('when') else None)
+        timing_dropped = False
+        if timing_key and findings:
+            timing = self._norm_dates(block[timing_key])
+            basis = {str(b).strip().upper() for b in (block.get('basis') or block.get('rule_ids') or [])}
+            cited = [f for f in findings if str(f.get('id', '')).upper() in basis]
+            cited_text = " ".join(self._norm_dates(f"{f.get('finding', '')} {f.get('timing', '')}") for f in cited)
+            body = " ".join(str(block.get(k) or '') for k in ('simple', 'technical'))
+            dates = [m.group(3) for m in self._DATE_RANGE_RE.finditer(str(block[timing_key])) if m.group(3)]
+            supported = bool(dates) and all(self._norm_dates(d) in cited_text for d in dates)
+            if not supported:
+                # Accept a dasha window whose sub-period lord the section actually discusses.
+                for f in findings:
+                    for m in self._DATE_RANGE_RE.finditer(f"{f.get('finding', '')} {f.get('timing', '')}"):
+                        lord = m.group(2)
+                        if (lord and m.group(3) and self._norm_dates(m.group(3)) in timing
+                                and re.search(rf'\b{lord}\b', body)):
+                            supported = True
+                            break
+                    if supported:
+                        break
+            if not supported:
+                block[timing_key] = ''
+                timing_dropped = True
+        return block, removed, timing_dropped
+
     def _derive_rule_findings(self, chart_facts: Optional[Dict[str, Any]], birth_data: Dict[str, Any], category: str) -> List[Dict[str, Any]]:
         if not chart_facts:
             return []
@@ -1862,9 +1946,13 @@ Rules: <=110 words per section; never repeat a sentence across sections; omit a 
                 blocks = self._split_markdown_sections(raw_text, section_specs)
 
             seen_texts: Dict[str, str] = {}
+            scrub_log: Dict[str, Dict[str, Any]] = {}
             for spec in section_specs:
                 key = spec['key']
-                text, detail = self._section_from_block(blocks.get(key))
+                block, removed_claims, timing_dropped = self._scrub_block(blocks.get(key), chart_facts, findings)
+                if removed_claims or timing_dropped:
+                    scrub_log[key] = {'removed_claims': removed_claims, 'timing_dropped': timing_dropped}
+                text, detail = self._section_from_block(block)
                 text = self._strip_section_header(text, spec['title'])
                 if not text:
                     status_map[key] = {'status': 'unavailable'}
@@ -1889,6 +1977,8 @@ Rules: <=110 words per section; never repeat a sentence across sections; omit a 
                 sections[key] = text
                 if detail:
                     details[key] = detail
+                if key in scrub_log:
+                    entry['corrections'] = scrub_log[key]
                 status_map[key] = entry
 
             # Repair only what is missing, with a hard cap, instead of
