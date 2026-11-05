@@ -89,3 +89,53 @@ def test_sarvam_request_payload(monkeypatch):
     assert p['response_format'] == {'type': 'json_object'}
     assert p['reasoning_effort'] == 'low'
     assert p['max_tokens'] == 1800   # 1000 + reasoning headroom
+
+
+def test_sarvam_reasoning_off_by_default(monkeypatch):
+    """Reasoning tokens share max_tokens on Sarvam; default must disable it explicitly."""
+    monkeypatch.setenv('SARVAM_API_KEY', 'sk_live_abc')
+    monkeypatch.delenv('SARVAM_REASONING_EFFORT', raising=False)
+    from services import openai_service as mod
+    from services import ai_quota
+    monkeypatch.setattr(ai_quota, '_get_redis_client', lambda: None)
+    sent = {}
+
+    class Resp:
+        status_code = 200
+        def raise_for_status(self): pass
+        def json(self):
+            return {'choices': [{'message': {'content': json.dumps({'overview': 'ok', 'sections': {}})},
+                                 'finish_reason': 'stop'}],
+                    'usage': {'prompt_tokens': 10, 'completion_tokens': 5, 'total_tokens': 15}}
+
+    def fake_post(url, headers=None, json=None, timeout=None, **kw):
+        sent.update(payload=json)
+        return Resp()
+
+    monkeypatch.setattr(mod.requests, 'post', fake_post)
+    svc = mod.OpenAIService()
+    svc.generate_structured('prompt', 'Return JSON', user_id='client:abc12345', max_tokens=1000)
+    assert sent['payload']['reasoning_effort'] == 'none'   # explicit: omitting means Sarvam's default
+    assert sent['payload']['max_tokens'] == 1000            # no reasoning headroom needed
+
+
+def test_sarvam_empty_answer_is_not_a_crash(monkeypatch):
+    """content=null with finish_reason=length yields no data (-> honest 503), not an exception."""
+    monkeypatch.setenv('SARVAM_API_KEY', 'sk_live_abc')
+    from services import openai_service as mod
+    from services import ai_quota
+    monkeypatch.setattr(ai_quota, '_get_redis_client', lambda: None)
+
+    class Resp:
+        status_code = 200
+        def raise_for_status(self): pass
+        def json(self):
+            return {'choices': [{'message': {'content': None, 'reasoning_content': 'thinking...'},
+                                 'finish_reason': 'length'}],
+                    'usage': {'prompt_tokens': 10, 'completion_tokens': 3000, 'total_tokens': 3010,
+                              'completion_tokens_details': {'reasoning_tokens': 3000}}}
+
+    monkeypatch.setattr(mod.requests, 'post', lambda *a, **k: Resp())
+    svc = mod.OpenAIService()
+    out = svc.generate_structured('prompt', 'Return JSON', user_id='client:abc12345', max_tokens=1000)
+    assert out['data'] is None and out['text'] == '' and out['partial'] is True

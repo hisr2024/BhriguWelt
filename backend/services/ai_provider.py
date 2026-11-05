@@ -92,9 +92,13 @@ def resolve_provider() -> AIProvider:
             openai_base = (os.getenv('OPENAI_BASE_URL') or '').strip()
             base = openai_base if 'sarvam' in openai_base else SARVAM_DEFAULT_BASE_URL
         fallbacks = [m for m in _split(os.getenv('SARVAM_MODEL_FALLBACKS', '')) if m != model]
-        effort = (os.getenv('SARVAM_REASONING_EFFORT') or 'low').strip().lower()
+        # Default 'none': the prompt already carries the computed Bhrigu/Nadi rule
+        # findings, the model only phrases them. Reasoning tokens share the
+        # max_tokens budget on Sarvam and left long readings with an empty
+        # answer (finish_reason=length). Opt in with SARVAM_REASONING_EFFORT.
+        effort = (os.getenv('SARVAM_REASONING_EFFORT') or 'none').strip().lower()
         if effort not in ('none', 'low', 'medium', 'high', 'max'):
-            effort = 'low'
+            effort = 'none'
         return AIProvider('sarvam', key, [base.rstrip('/')], model, fallbacks,
                           extra_headers={'api-subscription-key': key} if key else {},
                           reasoning_effort=effort)
