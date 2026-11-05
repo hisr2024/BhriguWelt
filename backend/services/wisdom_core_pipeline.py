@@ -330,6 +330,10 @@ def postfilter_report(text: str, facts: Dict[str, Any]) -> Dict[str, Any]:
                 f"{planet} claimed in house {claimed_house}, chart shows house {actual_house}"
             )
 
+    for _, explanation in find_false_claims(text, facts):
+        if explanation not in mismatched:
+            mismatched.append(explanation)
+
     lowered = text.lower()
     generic_hits = [p for p in GENERIC_PHRASES if p in lowered]
     hedge_hits = [p for p in HEDGE_PATTERNS if re.search(p, lowered)]
@@ -437,3 +441,143 @@ def split_views(section_text: str) -> Dict[str, str]:
         user_parts.append(blocks['lead'])
 
     return {'user': "\n\n".join(user_parts).strip() or text, 'astrologer': text}
+
+
+# ---------------------------------------------------------------------------
+# Strict claim verification: every checkable statement must match the chart.
+# ---------------------------------------------------------------------------
+
+SIGN_RULERS = {
+    'Aries': 'Mars', 'Taurus': 'Venus', 'Gemini': 'Mercury', 'Cancer': 'Moon',
+    'Leo': 'Sun', 'Virgo': 'Mercury', 'Libra': 'Venus', 'Scorpio': 'Mars',
+    'Sagittarius': 'Jupiter', 'Capricorn': 'Saturn', 'Aquarius': 'Saturn', 'Pisces': 'Jupiter',
+}
+EXALTATION = {'Sun': 'Aries', 'Moon': 'Taurus', 'Mars': 'Capricorn', 'Mercury': 'Virgo',
+              'Jupiter': 'Cancer', 'Venus': 'Pisces', 'Saturn': 'Libra'}
+DEBILITATION = {'Sun': 'Libra', 'Moon': 'Scorpio', 'Mars': 'Cancer', 'Mercury': 'Pisces',
+                'Jupiter': 'Capricorn', 'Venus': 'Virgo', 'Saturn': 'Aries'}
+OWN_SIGNS = {'Sun': ['Leo'], 'Moon': ['Cancer'], 'Mars': ['Aries', 'Scorpio'],
+             'Mercury': ['Gemini', 'Virgo'], 'Jupiter': ['Sagittarius', 'Pisces'],
+             'Venus': ['Taurus', 'Libra'], 'Saturn': ['Capricorn', 'Aquarius']}
+
+_ORD = r'(\d{1,2})(?:st|nd|rd|th)'
+_NAK_RE = '|'.join(sorted((re.escape(n) for n in NAKSHATRAS), key=len, reverse=True))
+_CLAIM_PATTERNS = [
+    # "the 7th house Rahu", "7th-house Saturn"
+    ('house', re.compile(rf'\b{_ORD}[\s-]+house\s+({_PLANET_RE})\b', re.I), (1, 2)),
+    # "Rahu in Taurus in the 9th house", "Moon sits in the 11th house"
+    ('house', re.compile(rf'\b({_PLANET_RE})\b[^.;:]{{0,40}}?\bin\s+(?:the\s+|your\s+)?{_ORD}\s+house\b', re.I), (2, 1)),
+    # "the 9th lord Venus", "9th-lord Venus"
+    ('lord', re.compile(rf'\b{_ORD}[\s-]+lord\s+({_PLANET_RE})\b', re.I), (1, 2)),
+    # "Venus, the 9th lord" / "Venus as 9th lord"
+    ('lord', re.compile(rf'\b({_PLANET_RE}),?\s+(?:the|as(?:\s+the)?)\s+{_ORD}[\s-]+lord\b', re.I), (2, 1)),
+    # "debilitated Mars", "Mars is debilitated"
+    ('debilitated', re.compile(rf'\bdebilitated\s+({_PLANET_RE})\b', re.I), (1,)),
+    ('debilitated', re.compile(rf'\b({_PLANET_RE})\s+(?:is\s+)?debilitated\b', re.I), (1,)),
+    ('exalted', re.compile(rf'\bexalted\s+({_PLANET_RE})\b', re.I), (1,)),
+    ('exalted', re.compile(rf'\b({_PLANET_RE})\s+(?:is\s+)?exalted\b', re.I), (1,)),
+    ('own', re.compile(rf'\b({_PLANET_RE})\b[^.;:]{{0,30}}?\bin\s+its\s+own\s+sign\b', re.I), (1,)),
+    # "Ketu in Scorpio conjuncts Jupiter", "Venus and Mercury are conjunct"
+    ('conjunct', re.compile(rf'\b({_PLANET_RE})\b[^.;:]{{0,30}}?\bconjunct(?:s|ion\s+with|ed\s+with)?\s+({_PLANET_RE})\b', re.I), (1, 2)),
+    ('conjunct', re.compile(rf'\b({_PLANET_RE})\s+and\s+({_PLANET_RE})\s+(?:are\s+)?conjunct\b', re.I), (1, 2)),
+    # "Moon in Ashlesha-3", "Mercury in Purva Phalguni"
+    ('nakshatra', re.compile(rf'\b({_PLANET_RE})\b[^.;:]{{0,40}}?\bin\s+({_NAK_RE})(?:[\s-]+(\d))?\b', re.I), (1, 2, 3)),
+]
+
+
+def _house_lord(facts: Dict[str, Any], house: int) -> Optional[str]:
+    lagna_idx = _sign_index(facts.get('lagna'))
+    if lagna_idx is None or not 1 <= house <= 12:
+        return None
+    return SIGN_RULERS.get(SIGNS[(lagna_idx + house - 1) % 12])
+
+
+def find_false_claims(text: str, facts: Dict[str, Any]) -> List[Tuple[str, str]]:
+    """
+    Return (matched_text, explanation) for every statement in `text` that
+    contradicts the computed chart: sign, house, lordship, dignity,
+    conjunction (same sign) and nakshatra/pada claims.
+    """
+    planets = facts.get('planets') or {}
+    found: List[Tuple[str, str]] = []
+    if not text:
+        return found
+    for kind, pattern, groups in _CLAIM_PATTERNS:
+        for m in pattern.finditer(text):
+            vals = [m.group(g) for g in groups]
+            if kind == 'house':
+                house, planet = int(vals[0]), vals[1]
+                actual = (planets.get(planet.title()) or {}).get('house')
+                if actual and 1 <= house <= 12 and house != actual:
+                    found.append((m.group(0), f"{planet.title()} is in house {actual}, not {house}"))
+            elif kind == 'lord':
+                house, planet = int(vals[0]), vals[1]
+                lord = _house_lord(facts, house)
+                if lord and planet.title() != lord:
+                    found.append((m.group(0), f"the {house}th lord is {lord}, not {planet.title()}"))
+            elif kind in ('debilitated', 'exalted', 'own'):
+                planet = vals[0].title()
+                sign = (planets.get(planet) or {}).get('sign')
+                table = {'debilitated': DEBILITATION, 'exalted': EXALTATION}.get(kind)
+                if planet in ('Rahu', 'Ketu') or not sign:
+                    continue
+                ok = sign in OWN_SIGNS.get(planet, []) if kind == 'own' else table.get(planet) == sign
+                if not ok:
+                    found.append((m.group(0), f"{planet} in {sign} is not {kind if kind != 'own' else 'in its own sign'}"))
+            elif kind == 'conjunct':
+                a, b = vals[0].title(), vals[1].title()
+                sa, sb = (planets.get(a) or {}).get('sign'), (planets.get(b) or {}).get('sign')
+                if a != b and sa and sb and sa != sb:
+                    found.append((m.group(0), f"{a} ({sa}) and {b} ({sb}) are not conjunct"))
+            elif kind == 'nakshatra':
+                planet, nak, pada = vals[0].title(), vals[1], vals[2]
+                fact = planets.get(planet) or {}
+                if fact.get('nakshatra') and nak.lower() != str(fact['nakshatra']).lower():
+                    found.append((m.group(0), f"{planet} is in {fact['nakshatra']}, not {nak}"))
+                elif pada and fact.get('pada') and int(pada) != int(fact['pada']):
+                    found.append((m.group(0), f"{planet} is in pada {fact['pada']}, not {pada}"))
+    for match in _PLACEMENT_CLAIM_RE.finditer(text):
+        planet, claimed = match.group(1).title(), match.group(2).title()
+        actual = (planets.get(planet) or {}).get('sign')
+        if actual and claimed != str(actual).title():
+            found.append((match.group(0), f"{planet} is in {actual}, not {claimed}"))
+    return found
+
+
+_SENTENCE_SPLIT_RE = re.compile(r'(?<=[.!?])\s+(?=[A-Z0-9"“(])')
+
+
+def remove_false_sentences(text: str, facts: Dict[str, Any]) -> Tuple[str, List[str]]:
+    """Drop every sentence that makes a claim contradicting the chart."""
+    if not text:
+        return text, []
+    kept: List[str] = []
+    removed: List[str] = []
+    for sentence in _SENTENCE_SPLIT_RE.split(text.strip()):
+        problems = find_false_claims(sentence, facts)
+        if problems:
+            removed.extend(p[1] for p in problems)
+        else:
+            kept.append(sentence)
+    return " ".join(kept).strip(), removed
+
+
+HOUSE_SIGNIFICATIONS = (
+    "1 self/body, 2 wealth/speech/family, 3 effort/courage/siblings, 4 home/mother/peace, "
+    "5 intellect/children/purva-punya, 6 service/debt/disease/rivals, 7 spouse/partnerships, "
+    "8 transformation/longevity/hidden, 9 dharma/fortune/guru/father, 10 karma/career/status, "
+    "11 gains/networks/elder siblings, 12 loss/expense/foreign lands/moksha"
+)
+
+
+def lordship_line(facts: Dict[str, Any]) -> str:
+    """'1st Mercury (Virgo), 2nd Venus (Libra), …' computed from the lagna."""
+    lagna_idx = _sign_index(facts.get('lagna'))
+    if lagna_idx is None:
+        return ''
+    suffix = lambda n: 'st' if n == 1 else 'nd' if n == 2 else 'rd' if n == 3 else 'th'
+    parts = []
+    for house in range(1, 13):
+        sign = SIGNS[(lagna_idx + house - 1) % 12]
+        parts.append(f"{house}{suffix(house)} {SIGN_RULERS[sign]} ({sign})")
+    return ", ".join(parts)

@@ -5,18 +5,28 @@ import { getCurrentLanguage } from '@/lib/copy';
 
 const PROFILE_HASH_PREFIX = 'profile_hash_';
 // v2: readings cached before the structured-reading fix held raw JSON bodies.
-const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_v2_';
+// v3: readings cached before the ayanamsa fix may carry shifted lagna and
+// dasha dates (server charts used Fagan-Bradley on worker threads).
+const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_v3_';
 const LEGACY_CACHE_PREFIX = 'bhrigu_prediction_';
+const OFFLINE_CACHE_PREFIX = 'offline_prediction_';
+const CACHE_EPOCH_KEY = 'bhriguwelt_reading_cache_epoch';
+const CACHE_EPOCH = '3';
 
-// One-time cleanup of pre-v2 cached readings so they don't fill storage.
+// One-time cleanup of readings cached before the current epoch.
 if (typeof window !== 'undefined') {
   try {
-    const stale: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith(LEGACY_CACHE_PREFIX) && !key.startsWith(PREDICTION_CACHE_PREFIX)) stale.push(key);
+    if (localStorage.getItem(CACHE_EPOCH_KEY) !== CACHE_EPOCH) {
+      const stale: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        const oldReading = key.startsWith(LEGACY_CACHE_PREFIX) && !key.startsWith(PREDICTION_CACHE_PREFIX);
+        if (oldReading || key.startsWith(OFFLINE_CACHE_PREFIX)) stale.push(key);
+      }
+      stale.forEach((key) => localStorage.removeItem(key));
+      localStorage.setItem(CACHE_EPOCH_KEY, CACHE_EPOCH);
     }
-    stale.forEach((key) => localStorage.removeItem(key));
   } catch {
     /* storage unavailable — nothing to clean */
   }

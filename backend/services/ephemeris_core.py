@@ -39,9 +39,17 @@ YEAR_DAYS = 365.2425
 NAK_SPAN = 360.0 / 27.0
 PLANETS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu']
 
-# The Swiss Ephemeris C library keeps global state; serialise calls so the
-# threaded gunicorn worker cannot interleave them.
+# The Swiss Ephemeris C library keeps its settings in THREAD-LOCAL storage:
+# set_sid_mode() at import only configures the main thread, and gunicorn's
+# gthread workers serve requests on other threads, which silently fell back
+# to the default Fagan-Bradley ayanamsa (~53' off Lahiri: wrong lagna,
+# nakshatra padas and dasha dates). Every call below re-asserts Lahiri inside
+# the lock, on whatever thread runs it.
 _SWE_LOCK = threading.Lock()
+
+
+def _lahiri() -> None:
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
 
 _CODES = {}
 if SWISSEPH_AVAILABLE:
@@ -88,6 +96,7 @@ def _positions_at_jd(jd: float) -> Tuple[Tuple[str, float, float, float], ...]:
     out = []
     for name, code in _CODES.items():
         with _SWE_LOCK:
+            _lahiri()
             res = swe.calc_ut(jd, code, swe.FLG_SIDEREAL | swe.FLG_SPEED)[0]
         out.append((name, res[0] % 360.0, res[1], res[3]))
     rahu = next(p for p in out if p[0] == 'Rahu')
@@ -105,13 +114,16 @@ def planet_positions(dt_utc: datetime) -> Dict[str, Dict[str, float]]:
 def ascendant(dt_utc: datetime, latitude: float, longitude: float) -> float:
     jd = julian_day(dt_utc)
     with _SWE_LOCK:
+        _lahiri()
         _cusps, ascmc = swe.houses_ex(jd, float(latitude), float(longitude), b'W', swe.FLG_SIDEREAL)
     return ascmc[0] % 360.0
 
 
 def _ayanamsa(dt_utc: datetime) -> float:
+    jd = julian_day(dt_utc)
     with _SWE_LOCK:
-        return swe.get_ayanamsa_ut(julian_day(dt_utc))
+        _lahiri()
+        return swe.get_ayanamsa_ut(jd)
 
 
 def build_chart(dt_utc: datetime, latitude: float, longitude: float) -> Dict[str, object]:
