@@ -115,7 +115,7 @@ def test_sarvam_reasoning_off_by_default(monkeypatch):
     monkeypatch.setattr(mod.requests, 'post', fake_post)
     svc = mod.OpenAIService()
     svc.generate_structured('prompt', 'Return JSON', user_id='client:abc12345', max_tokens=1000)
-    assert sent['payload']['reasoning_effort'] == 'none'   # explicit: omitting means Sarvam's default
+    assert 'reasoning_effort' in sent['payload'] and sent['payload']['reasoning_effort'] is None  # explicit null disables; omitting means 'medium'
     assert sent['payload']['max_tokens'] == 1000            # no reasoning headroom needed
 
 
@@ -139,3 +139,39 @@ def test_sarvam_empty_answer_is_not_a_crash(monkeypatch):
     svc = mod.OpenAIService()
     out = svc.generate_structured('prompt', 'Return JSON', user_id='client:abc12345', max_tokens=1000)
     assert out['data'] is None and out['text'] == '' and out['partial'] is True
+
+
+def test_sarvam_rejected_reasoning_setting_retries_with_low(monkeypatch):
+    """A 400 about reasoning_effort retries once with 'low' instead of failing the reading."""
+    monkeypatch.setenv('SARVAM_API_KEY', 'sk_live_abc')
+    monkeypatch.delenv('SARVAM_REASONING_EFFORT', raising=False)
+    from services import openai_service as mod
+    from services import ai_quota
+    monkeypatch.setattr(ai_quota, '_get_redis_client', lambda: None)
+    payloads = []
+
+    class Bad:
+        status_code = 400
+        text = '{"error": {"message": "body.reasoning_effort : Input should be low, medium or high"}}'
+        def json(self): return {'error': {'message': self.text}}
+        def raise_for_status(self):
+            raise mod.requests.exceptions.HTTPError('400 Client Error', response=self)
+
+    class Good:
+        status_code = 200
+        def raise_for_status(self): pass
+        def json(self):
+            return {'choices': [{'message': {'content': json.dumps({'overview': 'ok', 'sections': {}})},
+                                 'finish_reason': 'stop'}],
+                    'usage': {'prompt_tokens': 10, 'completion_tokens': 5, 'total_tokens': 15}}
+
+    def fake_post(url, headers=None, json=None, timeout=None, **kw):
+        payloads.append(dict(json))
+        return Bad() if len(payloads) == 1 else Good()
+
+    monkeypatch.setattr(mod.requests, 'post', fake_post)
+    svc = mod.OpenAIService()
+    out = svc.generate_structured('prompt', 'Return JSON', user_id='client:abc12345', max_tokens=1000)
+    assert out['data'] == {'overview': 'ok', 'sections': {}}
+    assert payloads[0]['reasoning_effort'] is None
+    assert payloads[-1]['reasoning_effort'] == 'low' and payloads[-1]['max_tokens'] > 1000

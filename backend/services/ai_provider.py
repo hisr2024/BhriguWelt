@@ -56,7 +56,13 @@ class AIProvider:
         return {'Authorization': f'Bearer {self.api_key}', 'Content-Type': 'application/json', **self.extra_headers}
 
     def extra_payload(self) -> Dict[str, object]:
-        return {'reasoning_effort': self.reasoning_effort} if self.reasoning_effort else {}
+        if not self.reasoning_effort:
+            return {}
+        if self.name == 'sarvam' and self.reasoning_effort == 'none':
+            # Sarvam accepts only low/medium/high as strings; reasoning is
+            # disabled by an explicit null (omitting it means 'medium').
+            return {'reasoning_effort': None}
+        return {'reasoning_effort': self.reasoning_effort}
 
 
 def _sarvam_key() -> Optional[str]:
