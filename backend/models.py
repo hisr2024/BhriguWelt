@@ -55,7 +55,7 @@ class BhriguPredictionCache(db.Model):
     # v5: charts computed on worker threads used the wrong ayanamsa
     # (Fagan-Bradley, not Lahiri) until the thread-local fix; every older
     # entry may carry shifted lagna/dasha dates and is never served.
-    HASH_VERSION_CURRENT = 'v5'
+    HASH_VERSION_CURRENT = 'v6'
     HASH_VERSION_FALLBACKS = ()
 
     def __repr__(self):

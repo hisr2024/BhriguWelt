@@ -43,6 +43,11 @@ DOMAINS: Dict[str, Tuple[List[int], List[str], str]] = {
     'home': ([4], ['Moon', 'Mars'], 'home / property'),
     'health': ([1, 6], ['Sun', 'Mars'], 'health / vitality'),
     'spiritual': ([9, 12], ['Jupiter', 'Ketu'], 'dharma / spiritual life'),
+    'education': ([4, 5], ['Mercury', 'Jupiter'], 'education / learning'),
+    'relocation': ([12, 4], ['Rahu', 'Moon'], 'relocation / foreign lands'),
+    'friends': ([11], ['Mercury'], 'friends / networks'),
+    'communication': ([3], ['Mercury'], 'communication / own effort'),
+    'purva_punya': ([5, 9], ['Jupiter', 'Ketu'], 'past-life merit (purva punya)'),
 }
 KARAKA_FROM = {'marriage': ('Venus', 7), 'career': ('Sun', 10), 'children': ('Jupiter', 5),
                'home': ('Moon', 4), 'spiritual': ('Jupiter', 9)}
@@ -60,6 +65,14 @@ CATEGORY_DOMAINS: Dict[str, List[str]] = {
 }
 
 ALL = 'all'
+
+
+class _Full(list):
+    """Domain list for full (per-section) evaluation: rules do not truncate it."""
+
+
+def _take(domains: List[str], n: int) -> List[str]:
+    return list(domains) if isinstance(domains, _Full) else list(domains)[:n]
 
 SPECIAL_ASPECTS = {'Mars': (4, 8), 'Jupiter': (5, 9), 'Saturn': (3, 10)}
 
@@ -492,7 +505,7 @@ def rule_bhavat(c: Chart, domains: List[str], categories: List[str]) -> List[Dic
         h = houses[0]
         hh = (2 * h - 2) % 12 + 1
         parts = []
-        for hx in dict.fromkeys([h, hh]):
+        for hx in dict.fromkeys([*houses, hh]):
             occ = c.occupants(c.house_sign(hx))
             lord = c.lord_of_house(hx)
             if lord not in c.lon:
@@ -509,6 +522,7 @@ def rule_bhavat(c: Chart, domains: List[str], categories: List[str]) -> List[Dic
                 parts.append(f"{_ordinal(n)} from {k} = {SIGNS[s]}{' (' + ', '.join(occ) + ')' if occ else ' (empty)'}")
         out.append(_f('F-BHAVAT-01', 'classical', 'Bhavat-bhavam & karaka-from-karaka',
                       f"{label.capitalize()}: " + '; '.join(parts), categories, 0.7, house_based=True))
+        out[-1]['domain'] = dom
     return out
 
 
@@ -576,6 +590,7 @@ def rule_dasha(c: Chart, now: datetime, domains: List[str], categories: List[str
     for dom in domains:
         houses, karakas, label = DOMAINS[dom]
         sig = set(karakas)
+        lords = {c.lord_of_house(h) for h in houses}
         for h in houses:
             sig.add(c.lord_of_house(h))
             sig.update(c.occupants(c.house_sign(h)))
@@ -584,13 +599,14 @@ def rule_dasha(c: Chart, now: datetime, domains: List[str], categories: List[str
             if p.end <= now or p.start >= horizon:
                 continue
             score = (p.maha in sig) + (p.antar in sig)
-            if score >= 2 or (score == 1 and p.antar in sig and p.antar in karakas):
+            # The sub-period of the house lord or karaka carries the house's results.
+            if score >= 2 or (score == 1 and p.antar in sig and (p.antar in karakas or p.antar in lords)):
                 scored.append((score, p))
         scored.sort(key=lambda sp: (-sp[0], sp[1].start))
         picks = sorted((p for _s, p in scored[:3]), key=lambda p: p.start)
         if picks:
             out.append(_f('F-DASHA-03', 'classical', f'Dasha windows for {label} (BS-216/224/231/236)',
-                          f"{label.capitalize()} significators {', '.join(sorted(sig))}; strongest periods: "
+                          f"{label.capitalize()} significators {', '.join(sorted(sig))}; dasha periods that activate it: "
                           + '; '.join(f"{p.label()} {_span(max(p.start, now), p.end)}" for p in picks),
                           categories, 0.8, timing=_span(max(picks[0].start, now), picks[0].end),
                           start=max(picks[0].start, now), end=picks[0].end, house_based=True))
@@ -848,7 +864,7 @@ def rule_more_yogas(c: Chart) -> List[Dict[str, Any]]:
 def rule_star_chain(c: Chart, domains: List[str], categories: List[str]) -> List[Dict[str, Any]]:
     """Planet delivers results of its nakshatra lord (Nadi star-lord principle)."""
     out = []
-    for dom in domains[:2]:
+    for dom in _take(domains, 2):
         h = DOMAINS[dom][0][0]
         lord = c.lord_of_house(h)
         if lord not in c.lon:
@@ -861,6 +877,7 @@ def rule_star_chain(c: Chart, domains: List[str], categories: List[str]) -> List
                       f"{_ordinal(h)} lord {lord} sits in {nak} (star lord {sl}); {sl} occupies {_ordinal(c.house(sl))} and owns "
                       f"{'/'.join(_ordinal(x) for x in c.owned_houses(sl)) or 'no house'} → {DOMAINS[dom][2]} results route through houses {houses}",
                       categories, 0.5, house_based=True))
+        out[-1]['domain'] = dom
     return out
 
 
@@ -938,7 +955,7 @@ def rule_double_transit(c: Chart, now: datetime, domains: List[str], categories:
     out = []
     end = now + timedelta(days=4 * 365)
     seen_houses = set()
-    for dom in domains[:3]:
+    for dom in _take(domains, 3):
         h = DOMAINS[dom][0][0]
         if h in seen_houses:  # two themes on one house would repeat the same window
             continue
@@ -1004,11 +1021,22 @@ def rule_ashtakavarga(c: Chart, now: datetime, domains: List[str], categories: L
     strong = sorted(by_house, key=lambda h: -by_house[h])[:3]
     weak = sorted(by_house, key=lambda h: by_house[h])[:2]
     dom_txt = []
-    for dom in domains[:3]:
+    for dom in _take(domains, 3):
         h = DOMAINS[dom][0][0]
         v = by_house[h]
         dom_txt.append(f"{DOMAINS[dom][2]} ({_ordinal(h)}): {v} — {'strong' if v >= 28 else 'weak' if v < 25 else 'average'}")
-    out = [_f('F-AV-01', 'classical', 'Sarvashtakavarga house strength (BPHS, Ashtakavarga chapters)',
+    per_domain = []
+    if isinstance(domains, _Full):
+        for dom in domains:
+            hs = DOMAINS[dom][0]
+            txt = ', '.join(f"{_ordinal(h)} house {by_house[h]} bindus ("
+                            f"{'strong' if by_house[h] >= 28 else 'weak' if by_house[h] < 25 else 'average'})" for h in hs)
+            per_domain.append(_f('F-AV-01', 'classical', 'Sarvashtakavarga house strength (BPHS, Ashtakavarga chapters)',
+                                 f"Ashtakavarga strength for {DOMAINS[dom][2]}: {txt}; 28 is the average{approx}",
+                                 categories, 0.55, house_based=True))
+            per_domain[-1]['domain'] = dom
+        dom_txt = dom_txt[:3]
+    out = per_domain + [_f('F-AV-01', 'classical', 'Sarvashtakavarga house strength (BPHS, Ashtakavarga chapters)',
               'SAV ' + '; '.join(dom_txt) + f". Strongest houses {', '.join(f'{_ordinal(h)} ({by_house[h]})' for h in strong)}; "
               f"weakest {', '.join(f'{_ordinal(h)} ({by_house[h]})' for h in weak)}{approx}",
               categories, 0.6, house_based=True)]
@@ -1201,6 +1229,97 @@ ACCURACY_NOTES = {
 }
 
 
+# Traditional Navagraha upayas (popular North-Indian practice; mantra = short nama mantra).
+UPAYA = {
+    'Sun': ('Sunday', 'Om Suryaya Namaha', 'wheat, jaggery or copper', 'Surya (Aditya Hridayam)', 'ruby'),
+    'Moon': ('Monday', 'Om Chandraya Namaha', 'rice, milk or white cloth', 'Shiva / Parvati', 'pearl'),
+    'Mars': ('Tuesday', 'Om Mangalaya Namaha', 'red lentils (masoor) or jaggery', 'Hanuman / Kartikeya', 'red coral'),
+    'Mercury': ('Wednesday', 'Om Budhaya Namaha', 'green moong or green cloth', 'Vishnu', 'emerald'),
+    'Jupiter': ('Thursday', 'Om Gurave Namaha', 'chana dal, turmeric or yellow cloth', 'Vishnu / Brihaspati', 'yellow sapphire'),
+    'Venus': ('Friday', 'Om Shukraya Namaha', 'white rice, sugar or white cloth', 'Lakshmi', 'diamond or white sapphire'),
+    'Saturn': ('Saturday', 'Om Shanaischaraya Namaha', 'black sesame, mustard oil or iron', 'Shani / Hanuman', 'blue sapphire'),
+    'Rahu': ('Saturday', 'Om Rahave Namaha', 'black gram (urad) or a coconut', 'Durga', 'hessonite (gomed)'),
+    'Ketu': ('Tuesday', 'Om Ketave Namaha', 'sesame or a blanket', 'Ganesha', "cat's eye"),
+}
+COMBUST_ORB = {'Moon': 12, 'Mars': 17, 'Mercury': 14, 'Jupiter': 11, 'Venus': 10, 'Saturn': 15}
+
+
+def rule_remedies(c: Chart, now: datetime) -> List[Dict[str, Any]]:
+    """Which grahas need support, with the traditional upaya for each; gemstones by lordship."""
+    cats = ['karmic_remedies', 'karma_reset', 'relationships', 'present_life']
+    needs: List[Tuple[int, str, List[str]]] = []
+    dasha_lords: List[str] = []
+    try:
+        periods = E.vimshottari(c.birth_utc, c.lon['Moon']) if c.birth_utc else []
+        maha, antar = E.current_dasha(periods, now)
+        dasha_lords = [x for x in (maha.maha if maha else None, antar.antar if antar else None) if x]
+    except Exception:
+        dasha_lords = []
+    sade_sati = False
+    if E.SWISSEPH_AVAILABLE:
+        sat = E.sign_index(E.planet_positions(now)['Saturn']['longitude'])
+        sade_sati = (sat - c.sign('Moon')) % 12 in (11, 0, 1)
+    for p in E.PLANETS:
+        if p not in c.lon:
+            continue
+        why: List[str] = []
+        score = 0
+        if p in DEBIL and DEBIL[p] == c.sign(p):
+            why.append(f"debilitated in {SIGNS[c.sign(p)]}"); score += 3
+        if p in COMBUST_ORB and 'Sun' in c.lon:
+            sep = abs((c.lon[p] - c.lon['Sun'] + 180) % 360 - 180)
+            if sep <= COMBUST_ORB[p]:
+                why.append(f"combust ({sep:.0f}° from the Sun)"); score += 2
+        h = c.house(p)
+        owned = c.owned_houses(p)
+        if h in (6, 8, 12) and not (set(owned) & {6, 8, 12}):
+            why.append(f"placed in the {_ordinal(h)} house"); score += 2
+        if p in GRAHAS7:
+            nodes = [n for n in ('Rahu', 'Ketu') if n in c.lon and c.sign(n) == c.sign(p)]
+            if nodes:
+                why.append(f"conjunct {' and '.join(nodes)}"); score += 2
+        if p == 'Saturn' and sade_sati:
+            why.append('Sade Sati is running'); score += 2
+        if why and p in dasha_lords:
+            why.append('and it rules the running dasha'); score += 2
+        if why:
+            needs.append((score, p, why))
+    needs.sort(key=lambda x: -x[0])
+    out = []
+    yantra = {'Sun': 'Surya', 'Moon': 'Chandra', 'Mars': 'Mangal', 'Mercury': 'Budh', 'Jupiter': 'Guru',
+              'Venus': 'Shukra', 'Saturn': 'Shani', 'Rahu': 'Rahu', 'Ketu': 'Ketu'}
+    for score, p, why in needs[:4]:
+        day, mantra, charity, deity, _gem = UPAYA[p]
+        out.append(_f('F-REMEDY-01', 'tradition-attributed', 'Graha shanti for an afflicted planet (traditional upaya)',
+                      f"{c.desc(p)} needs support: {', '.join(why)}. Upaya: {mantra}, 108 times on {day}s; "
+                      f"give {charity} on {day}s; worship {deity}; yantra: {yantra[p]} yantra; fast or eat once on {day}s if health allows",
+                      cats, min(0.9, 0.55 + 0.05 * score)))
+    if not out:
+        out.append(_f('F-REMEDY-01', 'tradition-attributed', 'Graha shanti (traditional upaya)',
+                      'No planet is debilitated, combust, eclipsed by a node or lost in a dusthana: no corrective '
+                      'upaya is indicated; keep the lagna lord strong with its mantra', cats, 0.5))
+    # Gemstones: only for lords of the lagna and trines; never for pure 6th/8th/12th lords.
+    good, avoid = [], []
+    for p in GRAHAS7:
+        if p not in c.lon:
+            continue
+        owned = set(c.owned_houses(p))
+        if owned & {1, 5, 9}:
+            roles = '/'.join(_ordinal(x) for x in sorted(owned))
+            caution = ' (debilitated: strengthen by mantra first)' if DEBIL[p] == c.sign(p) else ''
+            good.append(f"{UPAYA[p][4]} for {p}, lord of the {roles}{caution}")
+        elif owned & {6, 8, 12}:
+            avoid.append(f"{UPAYA[p][4]} ({p}, lord of the {'/'.join(_ordinal(x) for x in sorted(owned))})")
+    if good:
+        out.append(_f('F-REMEDY-02', 'tradition-attributed', 'Gemstones by lordship (lagna and trine lords only)',
+                      'Gemstones that suit this lagna: ' + '; '.join(good)
+                      + ('. Not advised: ' + '; '.join(avoid) if avoid else '')
+                      + '. A stone is worn only after a competent astrologer confirms it against the full chart',
+                      cats, 0.6, house_based=True))
+    return out
+
+
+
 def apply_time_accuracy(c: Chart, findings: List[Dict[str, Any]]) -> None:
     factor, note = ACCURACY_NOTES.get(c.time_accuracy, (1.0, ''))
     if factor == 1.0:
@@ -1215,13 +1334,17 @@ def apply_time_accuracy(c: Chart, findings: List[Dict[str, Any]]) -> None:
 # ---------------------------------------------------------------------------
 
 def evaluate_rules(chart_facts: Dict[str, Any], birth_data: Dict[str, Any], category: str = '',
-                   now: Optional[datetime] = None, limit: int = 18) -> List[Dict[str, Any]]:
-    """Run every rule, keep those relevant to ``category``, ranked by weight."""
+                   now: Optional[datetime] = None, limit: int = 18, full: bool = False) -> List[Dict[str, Any]]:
+    """Run every rule, keep those relevant to ``category``, ranked by weight.
+
+    ``full=True`` evaluates every life theme and returns every finding (no
+    per-rule cap), so each reading section can be given its own facts.
+    """
     c = Chart(chart_facts, birth_data)
     if not c.ok():
         return []
     now = now or E.utcnow()
-    domains = CATEGORY_DOMAINS.get(category, ['career', 'marriage'])
+    domains = _Full(DOMAINS) if full else CATEGORY_DOMAINS.get(category, ['career', 'marriage'])
     cats = [category] if category else [ALL]
     rules = [
         lambda: rule_lagna(c), lambda: rule_nodes(c), lambda: rule_karakas(c), lambda: rule_dignity(c),
@@ -1234,6 +1357,7 @@ def evaluate_rules(chart_facts: Dict[str, Any], birth_data: Dict[str, Any], cate
         lambda: rule_moksha(c), lambda: rule_lessons(c), lambda: rule_double_transit(c, now, domains, cats),
         lambda: rule_saturn_gochara(c, now), lambda: rule_nodal_return(c, now),
         lambda: rule_ashtakavarga(c, now, domains, cats),
+        lambda: rule_remedies(c, now),
     ]
     timing_categories = ('predictions', 'present_life', 'life_events')
     if not category or category in timing_categories:
@@ -1245,8 +1369,15 @@ def evaluate_rules(chart_facts: Dict[str, Any], birth_data: Dict[str, Any], cate
         except Exception as e:  # one bad rule must not drop the rest
             logger.warning("Rule failed: %s", e)
     apply_time_accuracy(c, findings)
-    relevant = [f for f in findings if ALL in f['categories'] or not category or category in f['categories']]
+    relevant = [f for f in findings
+                if full or ALL in f['categories'] or not category or category in f['categories']]
     relevant.sort(key=lambda f: -f['weight'])
+    if full:
+        try:
+            relevant.extend(compose_windows(relevant, cats)[:4])
+        except Exception as e:
+            logger.warning("Window composer failed: %s", e)
+        return sorted(relevant, key=lambda f: -f['weight'])
     # Diversity: at most two findings per rule so dated Bhrigu/Nadi techniques
     # are not crowded out by several dignity/yoga lines.
     picked: List[Dict[str, Any]] = []

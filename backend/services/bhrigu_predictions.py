@@ -14,6 +14,7 @@ from services.section_parser import get_section_parser
 from services.bhrigu_corpus_db import get_corpus_database
 from services.bhrigu_core_wisdom import BhriguCoreWisdom
 from services.structured_output import extract_json_object, normalize_for_dedupe, to_readable_text
+from services.section_routes import fact_line, route_findings
 from services.wisdom_core_pipeline import (
     InsufficientChartDataError,
     PredictionUnavailableError,
@@ -671,8 +672,8 @@ Actionable Guidance:
                     'key': 'recent_life',
                     'title': 'Most Recent Past Life (Previous Incarnation)',
                     'bullets': [
-                        "Time period, location, social status, profession",
-                        "Major life events and circumstances of passing",
+                        "Nature of the past-life role shown by Ketu's house, sign and nakshatra (no invented dates, names or places)",
+                        "What was mastered and what was left incomplete",
                         "Unfinished business carried forward"
                     ]
                 },
@@ -680,7 +681,7 @@ Actionable Guidance:
                     'key': 'significant_lives',
                     'title': 'Significant Past Lives (3-5 Major Incarnations)',
                     'bullets': [
-                        "Historical era, culture, role, key relationships",
+                        "Recurring roles shown by the Atmakaraka and Karakamsha (no invented eras or places)",
                         "Achievements or failures and karmic lessons",
                         "Connections to current life themes"
                     ]
@@ -735,8 +736,8 @@ Actionable Guidance:
                     'title': 'Past Life Spiritual Progress',
                     'bullets': [
                         "Spiritual practices from previous lives",
-                        "Temples or traditions served",
-                        "Level of enlightenment achieved"
+                        "Past-life merit (purva punya) shown by the 5th and 9th houses",
+                        "How far the practice was carried, by the 12th house and Ketu"
                     ]
                 }
             ],
@@ -790,7 +791,7 @@ Actionable Guidance:
                     'key': 'higher_realms',
                     'title': 'Higher Realms Accessibility',
                     'bullets': [
-                        "Eligibility for Deva realms or higher lokas",
+                        "Strength of the moksha houses (4th, 8th, 12th) and Ketu",
                         "Requirements for higher plane incarnations",
                         "Merit needed for elevation"
                     ]
@@ -1030,8 +1031,8 @@ Actionable Guidance:
                     'key': 'mantras',
                     'title': 'Mantras',
                     'bullets': [
-                        "Specific mantras with counts and meanings",
-                        "Pronunciation guidance",
+                        "The mantra for each planet that needs support, with its count and day",
+                        "What each mantra addresses in this chart",
                         "Best timing for recitation"
                     ]
                 },
@@ -1039,8 +1040,8 @@ Actionable Guidance:
                     'key': 'gemstones',
                     'title': 'Gemstones',
                     'bullets': [
-                        "Recommended gemstones with carats",
-                        "How and when to wear them",
+                        "Stones that suit this lagna and stones to avoid, by lordship",
+                        "Which planet each stone strengthens and why",
                         "Precautions or alternatives"
                     ]
                 },
@@ -1048,7 +1049,7 @@ Actionable Guidance:
                     'key': 'yantras',
                     'title': 'Yantras & Sacred Geometry',
                     'bullets': [
-                        "Yantras to use and activation methods",
+                        "The planetary yantra for each planet that needs support",
                         "Placement guidance",
                         "Ritual instructions"
                     ]
@@ -1077,14 +1078,14 @@ Actionable Guidance:
                     'bullets': [
                         "Primary deities to invoke",
                         "Ritual guidance and mantras",
-                        "Festival timings"
+                        "Weekday observance for each deity"
                     ]
                 },
                 {
                     'key': 'pilgrimage',
                     'title': 'Pilgrimage & Sacred Sites',
                     'bullets': [
-                        "Places that align with karmic healing",
+                        "Kind of sacred place linked to the deities of the planets needing support (no invented place names)",
                         "Timing for pilgrimage",
                         "Rituals to perform"
                     ]
@@ -1102,7 +1103,7 @@ Actionable Guidance:
                     'key': 'planetary_rituals',
                     'title': 'Planetary Rituals',
                     'bullets': [
-                        "Graha shanti or homa rituals",
+                        "Graha shanti for the planets that need support",
                         "Procedure and timing",
                         "Priest or self-performed guidance"
                     ]
@@ -1626,16 +1627,24 @@ Actionable Guidance: 3 specific bullet points.
     # ------------------------------------------------------------------
 
     READING_SYSTEM_PROMPT = (
-        "You are a Bhrigu Samhita and Nadi Jyotisha astrologer. You interpret ONLY the "
-        "computed chart facts and rule findings you are given; you never invent a "
-        "placement, degree, house, dasha or date. Every statement must trace to a listed "
-        "fact or rule ID. No generic filler, no hedging, no repetition between sections. "
+        "You are a Jyotishi reading in the Bhrigu Samhita and Bhrigu Nandi Nadi tradition. "
+        "You judge every theme in the classical order: (1) PROMISE - what the birth chart holds: "
+        "the house, its lord, its karaka, occupants, aspects, yogas and Ashtakavarga strength; "
+        "(2) ACTIVATION - the Vimshottari dasha and antardasha that switch the promise on; "
+        "(3) TRIGGER - Saturn and Jupiter gochara, the Bhrigu Chakra year, Jupiter's Nadi "
+        "progression or the Bhrigu Bindu that time it. A dated result is stated only where the "
+        "given facts show activation or a trigger; where only the promise exists, say so and give "
+        "no date. You interpret ONLY the computed facts you are given: never invent a placement, "
+        "degree, house, lordship, yoga, dasha, date, remedy or scripture reference. Write direct, "
+        "declarative sentences that say what THIS chart indicates; no generic astrology, no "
+        "filler, no flattery, no fatalism, no repetition between sections. A difficult indication "
+        "is stated plainly together with the supporting factor or upaya the facts give. "
         "Return ONE valid JSON object exactly matching the requested schema."
     )
 
     def _section_max_tokens(self, section_count: int, language: str = 'en') -> int:
-        per_section = int(os.getenv('BHRIGU_TOKENS_PER_SECTION', '260'))
-        ceiling = int(os.getenv('BHRIGU_MAX_OUTPUT_TOKENS', '3200'))
+        per_section = int(os.getenv('BHRIGU_TOKENS_PER_SECTION', '300'))
+        ceiling = int(os.getenv('BHRIGU_MAX_OUTPUT_TOKENS', '4200'))
         if not str(language or 'en').lower().startswith('en'):
             # Non-Latin scripts tokenise ~2x denser than English.
             per_section = int(per_section * 1.9)
@@ -1649,13 +1658,35 @@ Actionable Guidance: 3 specific bullet points.
         birth_data: Dict[str, Any],
         rule_block: str,
         question: Optional[str] = None,
+        section_facts: Optional[Dict[str, List[Dict[str, Any]]]] = None,
     ) -> str:
-        """One compact prompt for the whole category (replaces N section prompts)."""
+        """One prompt for the whole category; each section carries its own computed facts."""
         label = category.replace('_', ' ').title()
-        section_lines = "\n".join(
-            f'- "{spec["key"]}" ({spec["title"]}): ' + "; ".join(spec.get('bullets', [])[:3])
-            for spec in section_specs
-        )
+        # A fact used by 3+ sections is printed once and then cited by ID.
+        uses: Dict[str, int] = {}
+        by_ref: Dict[str, Dict[str, Any]] = {}
+        for facts in (section_facts or {}).values():
+            for f in facts:
+                uses[f['ref']] = uses.get(f['ref'], 0) + 1
+                by_ref[f['ref']] = f
+        common = [ref for ref, n in uses.items() if n >= 3]
+        if common:
+            rule_block = (rule_block + "\n" if rule_block else "") + "\n".join(
+                f"- {fact_line(by_ref[ref])}" for ref in common)
+        briefs = []
+        for spec in section_specs:
+            facts = (section_facts or {}).get(spec['key']) or []
+            own = [f for f in facts if f['ref'] not in common]
+            cited = [f['ref'] for f in facts if f['ref'] in common]
+            lines = "\n".join(f"    {fact_line(f)}" for f in own)
+            if cited:
+                lines += ("\n" if lines else "") + "    from the shared facts, especially: " + ", ".join(f"[{r}]" for r in cited)
+            lines = lines or "    (use the shared facts only)"
+            briefs.append(
+                f'- "{spec["key"]}" ({spec["title"]}) - cover: ' + "; ".join(spec.get('bullets', [])[:3])
+                + f"\n  FACTS FOR THIS SECTION:\n{lines}"
+            )
+        section_lines = "\n".join(briefs)
         question_line = f"\nUser question (answer it inside the most relevant section): {question.strip()}" if question and question.strip() else ""
         return f"""CATEGORY_KEY: {category}
 Reading: {label}. Stay strictly inside this category; each section covers a DIFFERENT theme.
@@ -1664,26 +1695,27 @@ CHART FACTS (computed, authoritative):
 {self._format_birth_details(birth_data)}
 
 {self._lordship_block(birth_data)}
-RULE FINDINGS (deterministic Bhrigu/Nadi rules applied to this chart — build on these first):
+SHARED FACTS (apply to every section; IDs in brackets are citable):
 {rule_block or "- none computed"}
 {question_line}
 
-SECTIONS (use these exact keys):
+SECTIONS (use these exact keys; write each section from ITS OWN facts plus the shared facts):
 {section_lines}
 
 Return JSON:
 {{"overview": "2 plain sentences: the single most important theme of this reading",
  "key_insight": "1 sentence, the sharpest chart-specific takeaway",
  "sections": {{"<key>": {{
-   "simple": "2-3 plain-language sentences, no jargon, specific to this chart",
-   "timing": "concrete window from the dasha/transit/age facts (e.g. 'Saturn–Venus period, Mar 2027–Jan 2028'), or '' if none applies",
-   "technical": "2-4 sentences: exact placements, houses, nakshatras, dasha and the rule IDs used",
-   "guidance": ["3 short specific actions"],
-   "basis": ["rule IDs / facts used"]}}}}}}
+   "simple": "3-4 plain sentences. Sentence 1 is the verdict for this theme (strong, mixed, delayed or needing effort) with the reason in everyday words; then what it means in daily life. No jargon",
+   "timing": "the window stated in this section's facts, with its period name (e.g. 'Saturn-Venus period, Mar 2027-Jan 2028'); '' when the facts give this theme no date",
+   "technical": "3-5 sentences in this order - Promise: house, lord, karaka, strength. Activation: the dasha that carries it. Trigger: the transit or Bhrigu/Nadi timing. Quote placements exactly and put the fact ID in brackets after each point; skip a step the facts do not cover",
+   "guidance": ["3 short actions, each tied to a planet, house or period named in this section; remedies only as listed in the facts"],
+   "basis": ["fact IDs used"]}}}}}}
 
-Rules: <=110 words per section; never repeat a sentence across sections; omit a section key only if no listed fact supports it.
-Precision rules: name a house, lord, sign, dignity, conjunction or nakshatra ONLY exactly as listed above (use the HOUSE LORDS line, never work lordships out yourself).
-"timing" must come from a rule ID in that section's "basis", or be the dasha sub-period of a planet that section discusses; never reuse one window for unrelated themes; "" is better than a loosely related date.
+Rules: <=140 words per section; never repeat a sentence across sections; omit a section key only if neither its facts nor the shared facts support it.
+Precision rules: name a house, lord, sign, dignity, conjunction or nakshatra ONLY exactly as listed above (use the HOUSE LORDS line, never work lordships out yourself). Dates, ages, mantras, gemstones, charities and deities come ONLY from the facts; never add your own.
+Judgement rules: house lord in a kendra or trikona, own or exalted sign, or 28+ Ashtakavarga bindus = strong; lord in the 6th, 8th or 12th, debilitated, or under 25 bindus = delayed or needing effort; say which. Results arrive when promise, dasha and transit agree; when they disagree say which one is missing.
+"timing" must be a window from that section's own facts; "" is better than a loosely related date.
 Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_data)}{self._language_line(birth_data)}"""
 
     @staticmethod
@@ -1769,8 +1801,13 @@ Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_
         return found
 
     @staticmethod
-    def _section_from_block(block: Any) -> Tuple[str, Dict[str, Any]]:
-        """Turn one decoded section into (display markdown, structured detail)."""
+    def _section_from_block(block: Any, facts: Optional[List[Dict[str, Any]]] = None) -> Tuple[str, Dict[str, Any]]:
+        """Turn one decoded section into (display markdown, structured detail).
+
+        ``facts`` are the computed findings this section was written from; they
+        are shown verbatim in the astrologer view so the basis never depends on
+        the model's wording.
+        """
         if isinstance(block, str):
             text = to_readable_text(block).strip()
             return text, {'simple': text}
@@ -1793,13 +1830,18 @@ Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_
             parts.append(f"**Key Insight:** {simple}")
         if timing:
             parts.append(f"**Timing:** {timing}")
-        if technical:
-            parts.append(f"**Technical Analysis:** {technical}")
+        fact_lines = [fact_line(f) for f in (facts or [])]
+        if technical or fact_lines:
+            body = technical
+            if fact_lines:
+                body = (body + "\n\n" if body else "") + "Chart basis (computed):\n" + "\n".join(f"- {l}" for l in fact_lines)
+            parts.append(f"**Technical Analysis:** {body}")
         if guidance:
             parts.append("Actionable Guidance:\n" + "\n".join(f"- {g}" for g in guidance))
         detail = {
             'simple': simple, 'timing': timing, 'technical': technical,
             'guidance': guidance, 'basis': [str(b) for b in basis][:8],
+            'facts': fact_lines,
         }
         return "\n\n".join(parts).strip(), detail
 
@@ -1816,7 +1858,8 @@ Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_
 
     def _scrub_block(self, block: Any, chart_facts: Optional[Dict[str, Any]],
                      findings: List[Dict[str, Any]],
-                     used_windows: Optional[set] = None) -> Tuple[Any, List[str], bool]:
+                     used_windows: Optional[set] = None,
+                     routed: bool = False) -> Tuple[Any, List[str], bool]:
         """
         Enforce precision on one model-written section before it is shown:
           - drop every sentence whose placement/house/lord/dignity/conjunction/
@@ -1853,7 +1896,9 @@ Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_
         if timing_key:
             timing = self._norm_dates(block[timing_key])
             basis = {str(b).strip().upper() for b in (block.get('basis') or block.get('rule_ids') or [])}
-            cited = [f for f in (findings or []) if str(f.get('id', '')).upper() in basis]
+            # routed: `findings` are exactly this section's facts, so all are citable.
+            cited = list(findings or []) if routed else [
+                f for f in (findings or []) if str(f.get('id', '')).upper() in basis]
             cited_text = " ".join(self._norm_dates(f"{f.get('finding', '')} {f.get('timing', '')}") for f in cited)
             body = " ".join(str(block.get(k) or '') for k in ('simple', 'technical'))
             # Every date in the window must be a range or month-year that a cited
@@ -1918,7 +1963,7 @@ Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_
             return []
         try:
             from services.bhrigu_nadi_rules import evaluate_rules
-            return evaluate_rules(chart_facts, birth_data, category=category)
+            return evaluate_rules(chart_facts, birth_data, category=category, full=True)
         except Exception as e:  # rules are additive; never block generation
             logger.warning(f"Rule evaluation failed: {e}")
             return []
@@ -1963,11 +2008,17 @@ Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_
                     raise PredictionUnavailableError('insufficient_chart_data') from e
                 logger.warning(f"Chart facts unavailable for postfilter verification: {e}")
 
-            findings = self._derive_rule_findings(chart_facts, birth_data, category)
+            all_findings = self._derive_rule_findings(chart_facts, birth_data, category)
+            shared, section_facts = route_findings(
+                category, [spec['key'] for spec in section_specs], all_findings)
+            # Only the facts the model is shown are kept, cited and verified against.
+            used_refs = {f['ref'] for f in shared} | {f['ref'] for fs in section_facts.values() for f in fs}
+            findings = [f for f in all_findings if f.get('ref') in used_refs]
             allow_fallback = not self.strict_precision
             user_id = user_id or birth_data.get('client_id')
             prompt = self._build_category_prompt(
-                category, section_specs, birth_data, self._format_rule_block(findings), question
+                category, section_specs, birth_data,
+                "\n".join(f"- {fact_line(f)}" for f in shared), question, section_facts
             )
             data, raw_text, partial = self._call_category_reading(
                 prompt, self._section_max_tokens(len(section_specs), birth_data.get('language') or 'en'),
@@ -1992,11 +2043,13 @@ Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_
             used_windows: set = set()
             for spec in section_specs:
                 key = spec['key']
+                own_facts = section_facts.get(key) or []
                 block, removed_claims, timing_dropped = self._scrub_block(
-                    blocks.get(key), chart_facts, findings, used_windows)
+                    blocks.get(key), chart_facts, shared + own_facts,
+                    None if own_facts else used_windows, routed=bool(own_facts))
                 if removed_claims or timing_dropped:
                     scrub_log[key] = {'removed_claims': removed_claims, 'timing_dropped': timing_dropped}
-                text, detail = self._section_from_block(block)
+                text, detail = self._section_from_block(block, own_facts)
                 text = self._strip_section_header(text, spec['title'])
                 if not text:
                     status_map[key] = {'status': 'unavailable'}
@@ -2009,7 +2062,11 @@ Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_
                 seen_texts[fingerprint] = key
                 entry: Dict[str, Any] = {'status': 'generated'}
                 if chart_facts:
-                    report = postfilter_report(text, chart_facts)
+                    # Verify the model's own words; the appended computed basis is true by construction.
+                    model_text = "\n".join(filter(None, [
+                        (detail or {}).get('simple'), (detail or {}).get('timing'),
+                        (detail or {}).get('technical'), *((detail or {}).get('guidance') or [])])) or text
+                    report = postfilter_report(model_text, chart_facts)
                     entry['precision'] = {
                         'verified': report['ok'],
                         'specific_refs': report['specific_refs'],
