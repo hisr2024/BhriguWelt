@@ -233,11 +233,41 @@ class HoroscopeEngine:
     def generate_daily_horoscope(
         self,
         birth_data: Dict[str, Any],
-        target_date: Optional[datetime] = None
+        target_date: Optional[datetime] = None,
+        client_tz: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Generate comprehensive daily horoscope based on Bhrigu Samhita
+        Daily horoscope. With a computed chart it is the same classical daily
+        reading as the Today page (services.daily_gochara), reshaped for this view.
         """
+        try:
+            from services.daily_gochara import reading_for
+            r = reading_for(birth_data, target_date, client_tz)
+        except Exception as e:
+            logger.warning(f"Computed daily horoscope failed: {e}")
+            r = None
+        if r:
+            asc = birth_data.get('ascendant')
+            cats = r['categories']
+            return {
+                'date': r['date'], 'day': r['day_of_week'], 'zodiac_sign': birth_data.get('zodiac_sign'),
+                'overall': {'energy': r['energy_level']['level'], 'message': r['overall'],
+                            'score': r['energy_level']['score']},
+                'sections': {k: {'message': cats[k]['message'], 'practice': cats[k].get('advice'),
+                                 'rating': cats[k]['rating']} for k in ('love', 'career', 'health', 'finance')},
+                'ratings': {k: cats[k]['rating'] for k in ('love', 'career', 'health', 'finance')},
+                'lucky_elements': r['lucky_elements'],
+                'daily_mantra': cats['spiritual']['mantra'],
+                'bhrigu_guidance': ' '.join(x for x in (r['nadi_note'], r['dasha_note'], cats['spiritual']['message']) if x),
+                'panchanga': r['panchanga'], 'do_list': r['do_list'], 'dont_list': r['dont_list'],
+                'metadata': {
+                    'zodiac_sign': birth_data.get('zodiac_sign'), 'moon_sign': birth_data.get('moon_sign'),
+                    'nakshatra': birth_data.get('nakshatra'),
+                    'ascendant': asc.get('sign') if isinstance(asc, dict) else asc,
+                    'day_ruler': r['day_ruler']['planet'], 'tradition': 'Bhrigu Samhita & Nadi Jyotisha',
+                    'computed': True, 'generated_at': datetime.utcnow().isoformat(),
+                },
+            }
         if target_date is None:
             target_date = datetime.now()
 

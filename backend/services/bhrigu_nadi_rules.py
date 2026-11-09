@@ -1229,6 +1229,94 @@ ACCURACY_NOTES = {
 }
 
 
+# Results of two-planet conjunctions: the blend of the two karakas (Bhrigu Nandi
+# Nadi reads a combination as one statement), with the classical yoga name where
+# one exists.
+CONJUNCTION_RESULTS: Dict[frozenset, str] = {frozenset(k): v for k, v in {
+    ('Sun', 'Moon'): "born near the new Moon: will and mind act as one, giving strong inner drive but emotional reserve and a need for rest",
+    ('Sun', 'Mars'): "courage, command and executive or technical ability; a quick temper; forceful father or authority figures",
+    ('Sun', 'Mercury'): "Budha-Aditya yoga: sharp intellect and skill in analysis, writing and advice; the closer Mercury is to the Sun, the more speech runs ahead of listening",
+    ('Sun', 'Jupiter'): "dharma joined to status: respect from teachers and authorities, advisory or teaching roles, a principled nature",
+    ('Sun', 'Venus'): "refinement, artistic taste and public charm; Venus near the Sun strains ease in marriage and asks for humility in love",
+    ('Sun', 'Saturn'): "duty against authority: slow, hard-won recognition, friction with father or superiors, strength built through persistence",
+    ('Sun', 'Rahu'): "eclipse pattern on the Sun: hunger for visibility, an unconventional career, tests of reputation and of the father's role",
+    ('Sun', 'Ketu'): "eclipse pattern on the Sun: detachment from status and spiritual insight; confidence in authority has to be built from within",
+    ('Moon', 'Mars'): "Chandra-Mangala yoga: enterprise and earning power, emotional intensity, impulsive reactions; a strong-willed mother",
+    ('Moon', 'Mercury'): "a quick, adaptable mind with skill in words, trade and learning; restlessness and changeable moods",
+    ('Moon', 'Jupiter'): "Gaja-Kesari yoga: sound judgement, good reputation, supportive elders and a generous nature",
+    ('Moon', 'Venus'): "love of comfort, beauty and the arts, charm and popularity; attachment to pleasure",
+    ('Moon', 'Saturn'): "Vish yoga: seriousness and emotional restraint; delays that mature into endurance; duty toward the mother",
+    ('Moon', 'Rahu'): "eclipse pattern on the Moon: strong imagination and desire, over-thinking and anxiety; foreign or unusual surroundings",
+    ('Moon', 'Ketu'): "eclipse pattern on the Moon: intuition and inwardness, emotional detachment, periods of withdrawal",
+    ('Mars', 'Mercury'): "a sharp, argumentative intellect with technical, analytical and commercial skill; hasty speech",
+    ('Mars', 'Jupiter'): "Guru-Mangala yoga: principled action, leadership and success through initiative guided by good counsel",
+    ('Mars', 'Venus'): "strong passion and attraction, artistic drive; impulsiveness in relationships",
+    ('Mars', 'Saturn'): "drive against restraint: stop-start effort, technical stamina, frustration that needs a disciplined outlet",
+    ('Mars', 'Rahu'): "Angaraka pattern: bold, risk-taking energy; anger, conflict and accidents need watching",
+    ('Mars', 'Ketu'): "sudden, piercing energy: precision in technical work and courage; abrupt actions and injuries need care",
+    ('Mercury', 'Jupiter'): "learning joined to wisdom: teaching, writing, counsel and sound judgement",
+    ('Mercury', 'Venus'): "Lakshmi-Narayana pattern: grace in speech, artistic and commercial talent, prosperity through skill",
+    ('Mercury', 'Saturn'): "methodical, deep and cautious thinking; skill in research, accounts and structure; gains from study come late but last",
+    ('Mercury', 'Rahu'): "clever, unconventional thinking and skill with technology and persuasion; exaggeration and nervousness need checking",
+    ('Mercury', 'Ketu'): "intuitive, incisive but scattered thinking; aptitude for codes, languages, mathematics or spiritual study",
+    ('Jupiter', 'Venus'): "the two teachers joined: learning, wealth and comforts; a pull between ideals and pleasure",
+    ('Jupiter', 'Saturn'): "dharma joined to karma (in Nadi reading, the self meets its work): a steady rise through responsibility and respected professional standing",
+    ('Jupiter', 'Rahu'): "Guru-Chandala pattern: unorthodox beliefs and teachers, large ambitions; judgement must be guarded against shortcuts",
+    ('Jupiter', 'Ketu'): "a strong spiritual inclination, guidance from a lineage or guru, insight; detachment from conventional goals",
+    ('Venus', 'Saturn'): "loyal, durable but delayed relationships; taste for craft, design and structure; marriage matures with age",
+    ('Venus', 'Rahu'): "strong desire for luxury and unconventional relationships; glamour, foreign or inter-cultural ties",
+    ('Venus', 'Ketu'): "detachment within relationships, refined or spiritual aesthetics; contentment comes when love is unselfish",
+    ('Saturn', 'Rahu'): "Shrapit pattern: a heavy karmic workload, delays and persistent obstacles that yield to patient, honest effort",
+    ('Saturn', 'Ketu'): "renunciate discipline: detachment from worldly reward, technical or occult depth, breaks in career direction",
+}.items()}
+
+
+def rule_conjunctions(c: Chart) -> List[Dict[str, Any]]:
+    """Every pair of planets sharing a sign: orb, house, lordships joined and the classical result."""
+    pairs = []
+    planets = [p for p in E.PLANETS if p in c.lon]
+    for i, a in enumerate(planets):
+        for b in planets[i + 1:]:
+            if c.sign(a) != c.sign(b) or frozenset((a, b)) not in CONJUNCTION_RESULTS:
+                continue
+            pairs.append((abs(c.lon[a] - c.lon[b]), a, b))
+    pairs.sort()
+    out = []
+    for orb, a, b in pairs[:5]:
+        grade = 'tight, acts strongly' if orb <= 5 else 'close' if orb <= 10 else 'wide, acts mildly'
+        sign, house = SIGNS[c.sign(a)], c.house(a)
+        owned = []
+        for p in (a, b):
+            hs = c.owned_houses(p)
+            if hs:
+                owned.append(f"{p} rules the {'/'.join(_ordinal(h) for h in hs)}")
+        notes = []
+        if 'Sun' in (a, b):
+            other = b if a == 'Sun' else a
+            if other in COMBUST_ORB and orb <= COMBUST_ORB[other]:
+                notes.append(f"{other} is combust")
+        if orb <= 1 and {a, b} <= {'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'}:
+            notes.append('planetary war (within 1°)')
+        out.append(_f('F-CONJ-01', 'tradition-attributed',
+                      'Conjunction read as one combined statement (Bhrigu Nandi Nadi; yoga names per classical usage)',
+                      f"{a} + {b} conjunct in {sign}, {_ordinal(house)} house, {orb:.0f}° apart ({grade}): "
+                      f"{CONJUNCTION_RESULTS[frozenset((a, b))]}. It acts through the {_ordinal(house)} house"
+                      + (f" and joins the houses its planets rule ({'; '.join(owned)})" if owned else '')
+                      + (f". Note: {', '.join(notes)}" if notes else ''),
+                      [ALL], 0.75 if orb <= 5 else 0.65 if orb <= 10 else 0.55, house_based=True))
+    by_sign: Dict[int, List[str]] = {}
+    for p in planets:
+        by_sign.setdefault(c.sign(p), []).append(p)
+    for sg, group in by_sign.items():
+        if len(group) >= 3:
+            h = (sg - E.sign_index(c.asc)) % 12 + 1
+            out.append(_f('F-CONJ-02', 'classical', 'Three or more planets in one sign',
+                          f"{len(group)} planets together in {SIGNS[sg]}, {_ordinal(h)} house ({', '.join(group)}): "
+                          f"the {_ordinal(h)} house is the busiest area of the chart and its matters dominate the life story",
+                          [ALL], 0.7, house_based=True))
+    return out
+
+
 # Traditional Navagraha upayas (popular North-Indian practice; mantra = short nama mantra).
 UPAYA = {
     'Sun': ('Sunday', 'Om Suryaya Namaha', 'wheat, jaggery or copper', 'Surya (Aditya Hridayam)', 'ruby'),
@@ -1357,7 +1445,7 @@ def evaluate_rules(chart_facts: Dict[str, Any], birth_data: Dict[str, Any], cate
         lambda: rule_moksha(c), lambda: rule_lessons(c), lambda: rule_double_transit(c, now, domains, cats),
         lambda: rule_saturn_gochara(c, now), lambda: rule_nodal_return(c, now),
         lambda: rule_ashtakavarga(c, now, domains, cats),
-        lambda: rule_remedies(c, now),
+        lambda: rule_remedies(c, now), lambda: rule_conjunctions(c),
     ]
     timing_categories = ('predictions', 'present_life', 'life_events')
     if not category or category in timing_categories:

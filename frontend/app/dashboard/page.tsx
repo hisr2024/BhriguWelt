@@ -18,7 +18,16 @@ type DailyInsight = {
   day_ruler?: { planet?: string; deity?: string; color?: string };
   energy_level?: { level?: string; description?: string; score?: number };
   categories?: Record<string, Category & { mantra?: string; practice?: string }>;
-  lucky_elements?: { color?: string; number?: number; direction?: string; auspicious_hours?: string[] };
+  lucky_elements?: {
+    color?: string; number?: number; direction?: string; auspicious_hours?: string[]; rahu_kalam?: string;
+  };
+  nadi_note?: string;
+  dasha_note?: string;
+  method?: string;
+  panchanga?: {
+    tithi?: string; nakshatra?: string; nakshatra_until?: string; moon_sign?: string; moon_sign_until?: string;
+    yoga?: string; tara_bala?: string; chandra_bala?: string; moon_house?: number | null; dasha?: string | null;
+  };
   do_list?: string[];
   dont_list?: string[];
 };
@@ -65,6 +74,8 @@ export default function TodayPage() {
         latitude: p.latitude,
         longitude: p.longitude,
         timezone: p.timezone,
+        // The day and its clock times are reckoned where the reader is now.
+        client_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       } as any);
       setInsight((response?.prediction ?? response?.data ?? response) as DailyInsight);
       setStatus('ready');
@@ -170,13 +181,37 @@ export default function TodayPage() {
                 </ul>
               </section>
 
+              {insight.panchanga && (
+                <section aria-labelledby="panchanga" className="nadi-card mt-4">
+                  <h2 id="panchanga" className="nadi-eyebrow !text-[0.62rem]">Today&apos;s panchanga for your chart</h2>
+                  <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
+                    {[
+                      ['Tithi', insight.panchanga.tithi],
+                      ['Nakshatra', insight.panchanga.nakshatra && `${insight.panchanga.nakshatra}${insight.panchanga.nakshatra_until ? ` · until ${insight.panchanga.nakshatra_until}` : ''}`],
+                      ['Moon', insight.panchanga.moon_sign && `${insight.panchanga.moon_sign}${insight.panchanga.moon_sign_until ? ` · until ${insight.panchanga.moon_sign_until}` : ''}`],
+                      ['Tara bala', insight.panchanga.tara_bala],
+                      ['Chandra bala', insight.panchanga.chandra_bala],
+                      ['Yoga', insight.panchanga.yoga],
+                      ['Running dasha', insight.panchanga.dasha],
+                    ].filter(([, v]) => v).map(([k, v]) => (
+                      <div key={String(k)}>
+                        <dt className="text-[0.7rem] uppercase tracking-[0.14em] text-ivory-muted">{k}</dt>
+                        <dd className="mt-0.5 text-ivory">{String(v)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  {insight.nadi_note && <p className="mt-3 text-sm leading-relaxed text-ivory-2">{insight.nadi_note}</p>}
+                  {insight.dasha_note && <p className="mt-2 text-sm leading-relaxed text-ivory-2">{insight.dasha_note}</p>}
+                </section>
+              )}
+
               {(insight.do_list?.length || insight.dont_list?.length) ? (
                 <section aria-label="Guidance for today" className="nadi-card mt-4 grid gap-5 sm:grid-cols-2">
                   {!!insight.do_list?.length && (
                     <div>
                       <p className="nadi-eyebrow !text-[0.62rem]">Favoured</p>
                       <ul className="mt-2 space-y-1.5 text-sm text-ivory-2">
-                        {insight.do_list.slice(0, 4).map((d) => <li key={d}>· {d}</li>)}
+                        {insight.do_list.slice(0, 5).map((d) => <li key={d}>· {d}</li>)}
                       </ul>
                     </div>
                   )}
@@ -184,7 +219,7 @@ export default function TodayPage() {
                     <div>
                       <p className="nadi-eyebrow !text-[0.62rem] !text-kumkum-300">Avoid</p>
                       <ul className="mt-2 space-y-1.5 text-sm text-ivory-2">
-                        {insight.dont_list.slice(0, 3).map((d) => <li key={d}>· {d}</li>)}
+                        {insight.dont_list.slice(0, 4).map((d) => <li key={d}>· {d}</li>)}
                       </ul>
                     </div>
                   )}
@@ -198,6 +233,7 @@ export default function TodayPage() {
                     ['Number', insight.lucky_elements.number],
                     ['Direction', insight.lucky_elements.direction],
                     ['Good hours', insight.lucky_elements.auspicious_hours?.slice(0, 2).join(', ')],
+                    ['Rahu kalam', insight.lucky_elements.rahu_kalam],
                   ].filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => (
                     <div key={String(k)} className="rounded-2xl border border-[color:var(--line)] px-4 py-3">
                       <dt className="text-[0.7rem] uppercase tracking-[0.14em] text-ivory-muted">{k}</dt>
@@ -207,7 +243,7 @@ export default function TodayPage() {
                 </dl>
               )}
               <p className="mt-3 text-xs text-ivory-muted">
-                From your Moon sign, nakshatra and today&apos;s planetary day lord.{' '}
+                {insight.method || 'From your Moon sign, nakshatra and today\u2019s planetary day lord.'}{' '}
                 <Link href="/horoscope" className="text-gold-300 underline underline-offset-4">Week, month and year</Link>
               </p>
             </>

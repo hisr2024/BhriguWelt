@@ -58,6 +58,7 @@ export default function HoroscopePage() {
         latitude: profile.latitude,
         longitude: profile.longitude,
         timezone: profile.timezone,
+        client_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       } as any);
       setData(response?.prediction ?? response?.data ?? response);
       setStatus('ready');
@@ -71,7 +72,7 @@ export default function HoroscopePage() {
   }, [load]);
 
   const theme = data?.weekly_theme || data?.monthly_theme || data?.yearly_theme;
-  const headline = text(theme?.title) || (data?.overall?.energy ? `${data.overall.energy} day` : null);
+  const headline = text(theme?.title) || (data?.overall?.energy ? (data.overall.energy === 'Go gently' ? 'A day to go gently' : `${data.overall.energy} day`) : null);
   const summary = text(theme?.summary) || text(data?.overall?.message);
   const sections: Array<[string, any]> = Object.entries(data?.sections ?? {}).filter(([k]) => SECTION_LABELS[k]);
   const mantra = text(data?.daily_mantra) || text(data?.weekly_mantra) || text(data?.monthly_mantra) || text(data?.yearly_mantra);
@@ -136,6 +137,24 @@ export default function HoroscopePage() {
 
           {text(data?.bhrigu_guidance) && (
             <p className="mt-5 border-l-2 border-gold-400 pl-4 text-[0.95rem] leading-relaxed text-ivory-2">{data.bhrigu_guidance}</p>
+          )}
+
+          {data?.panchanga && (
+            <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 rounded-2xl border border-[color:var(--line)] px-4 py-3 text-sm sm:grid-cols-3">
+              {[
+                ['Tithi', data.panchanga.tithi],
+                ['Nakshatra', data.panchanga.nakshatra && `${data.panchanga.nakshatra}${data.panchanga.nakshatra_until ? ` · until ${data.panchanga.nakshatra_until}` : ''}`],
+                ['Tara bala', data.panchanga.tara_bala],
+                ['Chandra bala', data.panchanga.chandra_bala],
+                ['Yoga', data.panchanga.yoga],
+                ['Running dasha', data.panchanga.dasha],
+              ].filter(([, v]) => v).map(([k, v]) => (
+                <div key={String(k)}>
+                  <dt className="text-[0.7rem] uppercase tracking-[0.14em] text-ivory-muted">{k}</dt>
+                  <dd className="mt-0.5 text-ivory">{String(v)}</dd>
+                </div>
+              ))}
+            </dl>
           )}
 
           {sections.length > 0 && (

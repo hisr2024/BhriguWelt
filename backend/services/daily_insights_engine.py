@@ -150,11 +150,32 @@ class DailyInsightsEngine:
     def generate_daily_insight(
         self,
         birth_data: Dict[str, Any],
-        target_date: Optional[datetime] = None
+        target_date: Optional[datetime] = None,
+        client_tz: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Generate comprehensive daily insight for a specific date
+        Generate the daily insight. With a computed chart this is the classical
+        daily method (services.daily_gochara); the sign-based text below is only
+        a fallback for charts without planetary positions.
         """
+        try:
+            from services.daily_gochara import reading_for
+            computed = reading_for(birth_data, target_date, client_tz)
+        except Exception as e:  # never fail the page over the precise path
+            logger.warning(f"Computed daily reading failed: {e}")
+            computed = None
+        if computed:
+            asc = birth_data.get('ascendant')
+            computed['metadata'] = {
+                'zodiac_sign': birth_data.get('zodiac_sign'),
+                'moon_sign': birth_data.get('moon_sign'),
+                'nakshatra': birth_data.get('nakshatra'),
+                'ascendant': asc.get('sign') if isinstance(asc, dict) else asc,
+                'tradition': 'Bhrigu Samhita & Nadi Jyotisha',
+                'computed': True,
+                'generated_at': datetime.utcnow().isoformat(),
+            }
+            return computed
         if target_date is None:
             target_date = datetime.now()
 

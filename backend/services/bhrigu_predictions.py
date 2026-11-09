@@ -1715,6 +1715,7 @@ Return JSON:
 Rules: <=140 words per section; never repeat a sentence across sections; omit a section key only if neither its facts nor the shared facts support it.
 Precision rules: name a house, lord, sign, dignity, conjunction or nakshatra ONLY exactly as listed above (use the HOUSE LORDS line, never work lordships out yourself). Dates, ages, mantras, gemstones, charities and deities come ONLY from the facts; never add your own.
 Judgement rules: house lord in a kendra or trikona, own or exalted sign, or 28+ Ashtakavarga bindus = strong; lord in the 6th, 8th or 12th, debilitated, or under 25 bindus = delayed or needing effort; say which. Results arrive when promise, dasha and transit agree; when they disagree say which one is missing.
+Conjunction rules: each [F-CONJ-01] fact is one combined statement. Explain every listed conjunction once, in the section whose theme matches its house or the houses its planets rule: say in 2 sentences what the pair produces in this person's life, how strongly (tight, close or wide) and through which house; never describe a conjunction that is not listed.
 "timing" must be a window from that section's own facts; "" is better than a loosely related date.
 Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_data)}{self._language_line(birth_data)}"""
 

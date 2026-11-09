@@ -8,11 +8,11 @@ const PROFILE_HASH_PREFIX = 'profile_hash_';
 // v3: readings cached before the ayanamsa fix may carry shifted lagna and
 // dasha dates (server charts used Fagan-Bradley on worker threads).
 // v4: readings are now written section-by-section from computed facts.
-const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_v4_';
+const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_v5_';
 const LEGACY_CACHE_PREFIX = 'bhrigu_prediction_';
 const OFFLINE_CACHE_PREFIX = 'offline_prediction_';
 const CACHE_EPOCH_KEY = 'bhriguwelt_reading_cache_epoch';
-const CACHE_EPOCH = '4';
+const CACHE_EPOCH = '5';
 
 // One-time cleanup of readings cached before the current epoch.
 if (typeof window !== 'undefined') {
