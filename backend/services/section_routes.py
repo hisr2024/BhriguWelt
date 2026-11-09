@@ -19,7 +19,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Sequence, Tuple
 
 # Facts every section may rely on; listed once at the top of the prompt.
-SHARED_IDS = ('F-LAGNA-01', 'F-DASHA-01', 'F-DASHA-02', 'F-SENS-01')
+SHARED_IDS = ('F-LAGNA-01', 'F-DASHA-01', 'F-DASHA-02', 'F-SENS-01', 'F-CONJ-01', 'F-CONJ-02')
 
 KARMA = ('F-NODES-01', 'F-KARAKA-01', 'F-KARAKAMSHA-01')
 Route = Tuple[Sequence[str], Sequence[str]]  # (domains, id prefixes; 'F-X:domain' pins a domain)

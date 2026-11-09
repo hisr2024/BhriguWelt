@@ -78,7 +78,8 @@ def get_daily_insight():
 
         # Generate daily insight
         engine = get_daily_insights_engine()
-        insight = engine.generate_daily_insight(birth_chart, target_date)
+        insight = engine.generate_daily_insight(
+            birth_chart, target_date, sanitize_input(data.get('client_timezone'), max_length=64) if data.get('client_timezone') else None)
 
         return prediction_response(
             insight,
@@ -311,7 +312,8 @@ def get_daily_horoscope():
                 pass
 
         engine = get_horoscope_engine()
-        horoscope = engine.generate_daily_horoscope(birth_chart, target_date)
+        horoscope = engine.generate_daily_horoscope(
+            birth_chart, target_date, sanitize_input(data.get('client_timezone'), max_length=64) if data.get('client_timezone') else None)
 
         return prediction_response(
             horoscope,
