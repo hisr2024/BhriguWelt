@@ -23,10 +23,13 @@ export interface SectionDetail {
   technical?: string;
   guidance?: string[];
   basis?: string[];
+  /** Computed chart facts this section was written from (shown verbatim). */
+  facts?: string[];
 }
 
 export interface RuleFinding {
   id: string;
+  ref?: string;
   source?: string;
   provenance?: 'classical' | 'tradition-attributed' | 'modern' | string;
   principle?: string;
@@ -63,6 +66,33 @@ type ViewMode = 'layman' | 'astrologer';
 const humanize = (key: string) =>
   key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
+/** First sentence = the verdict; the rest explains it. */
+function splitVerdict(text: string): [string, string] {
+  const match = text.match(/^(.+?[.!?।])\s+(.+)$/s);
+  return match ? [match[1] ?? text, match[2] ?? ''] : [text, ''];
+}
+
+const STEP_LABELS = ['Promise', 'Activation', 'Trigger'] as const;
+
+/** "Promise: … Activation: … Trigger: …" → labelled steps (classical judging order). */
+function splitSteps(text: string): Array<{ label: string; body: string }> {
+  const parts = text.split(/\b(Promise|Activation|Trigger):\s*/);
+  const steps: Array<{ label: string; body: string }> = [];
+  const lead = (parts[0] ?? '').trim();
+  if (lead) steps.push({ label: '', body: lead });
+  for (let i = 1; i < parts.length; i += 2) {
+    const body = (parts[i + 1] ?? '').trim();
+    if (body) steps.push({ label: parts[i] ?? '', body });
+  }
+  return steps.some((s) => (STEP_LABELS as readonly string[]).includes(s.label)) ? steps : [{ label: '', body: text }];
+}
+
+/** "[F-DASHA-03/marriage] text | timing: …" → id + text. */
+function splitFact(line: string): { id: string; text: string } {
+  const match = line.match(/^\[([^\]]+)\]\s*(.*)$/s);
+  return match ? { id: match[1] ?? '', text: match[2] ?? '' } : { id: '', text: line };
+}
+
 function SectionCard({
   sectionKey,
   title,
@@ -84,6 +114,7 @@ function SectionCard({
   const astro = viewMode === 'astrologer';
   const precision = status?.precision;
   const hasStructured = !!(detail && (detail.simple || detail.technical));
+  const verdictPreview = detail?.simple ? splitVerdict(detail.simple)[0] : '';
 
   return (
     <article
@@ -100,7 +131,7 @@ function SectionCard({
         <div className="min-w-0">
           <h3 className="text-[17px] font-semibold text-white leading-snug">{title}</h3>
           {!open && detail?.simple && (
-            <p className="mt-1 text-sm text-slate-400 line-clamp-1">{detail.simple}</p>
+            <p className="mt-1 text-sm text-slate-400 line-clamp-2">{verdictPreview}</p>
           )}
         </div>
         <ChevronDown
@@ -113,9 +144,15 @@ function SectionCard({
         <div className="px-5 pb-5 space-y-4">
           {hasStructured ? (
             <>
-              {detail?.simple && (
-                <p className="text-[15.5px] leading-7 text-slate-100">{detail.simple}</p>
-              )}
+              {detail?.simple && (() => {
+                const [verdict, rest] = splitVerdict(detail.simple);
+                return (
+                  <div>
+                    <p className="text-[16px] font-medium leading-7 text-white">{verdict}</p>
+                    {rest && <p className="mt-1.5 text-[15.5px] leading-7 text-slate-100">{rest}</p>}
+                  </div>
+                );
+              })()}
 
               {detail?.timing && (
                 <div className="flex items-start gap-2 rounded-xl bg-amber-400/[0.08] border border-amber-300/20 px-3 py-2.5">
@@ -138,19 +175,50 @@ function SectionCard({
                 </ul>
               )}
 
-              {astro && detail?.technical && (
+              {astro && (detail?.technical || (detail?.facts && detail.facts.length > 0)) && (
                 <div className="rounded-xl border border-violet-400/20 bg-violet-500/[0.07] p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-violet-300 mb-1.5">
                     Technical basis
                   </p>
-                  <p className="text-sm leading-6 text-violet-50/90">{detail.technical}</p>
-                  {detail.basis && detail.basis.length > 0 && (
+                  {detail?.technical && (
+                    <div className="space-y-1.5">
+                      {splitSteps(detail.technical).map((step, i) => (
+                        <p key={i} className="text-sm leading-6 text-violet-50/90">
+                          {step.label && <span className="font-semibold text-violet-200">{step.label}: </span>}
+                          {step.body}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {!(detail?.facts && detail.facts.length > 0) && detail?.basis && detail.basis.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {detail.basis.map((b) => (
                         <span key={b} className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-violet-400/15 text-violet-200">
                           {b}
                         </span>
                       ))}
+                    </div>
+                  )}
+                  {detail?.facts && detail.facts.length > 0 && (
+                    <div className="mt-3 border-t border-white/[0.08] pt-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-violet-300 mb-1.5">
+                        Computed from your chart
+                      </p>
+                      <ul className="space-y-1.5">
+                        {detail.facts.map((line) => {
+                          const fact = splitFact(line);
+                          return (
+                            <li key={line} className="text-[13px] leading-5 text-slate-200">
+                              {fact.id && (
+                                <span className="mr-1.5 font-mono text-[11px] px-1.5 py-0.5 rounded bg-violet-400/15 text-violet-200">
+                                  {fact.id}
+                                </span>
+                              )}
+                              {fact.text}
+                            </li>
+                          );
+                        })}
+                      </ul>
                     </div>
                   )}
                 </div>
@@ -267,9 +335,9 @@ export function ReadingView({ prediction, viewMode }: { prediction: StructuredRe
           </p>
           <ul className="divide-y divide-white/[0.06]">
             {visibleFindings.map((f) => (
-              <li key={f.id + f.finding} className="py-2.5">
+              <li key={(f.ref || f.id) + f.finding} className="py-2.5">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-violet-400/15 text-violet-200 shrink-0">{f.id}</span>
+                  <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-violet-400/15 text-violet-200 shrink-0">{f.ref || f.id}</span>
                   <span className="text-sm text-slate-100">{f.finding}</span>
                 </div>
                 {(f.timing || f.principle) && (

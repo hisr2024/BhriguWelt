@@ -7,11 +7,12 @@ const PROFILE_HASH_PREFIX = 'profile_hash_';
 // v2: readings cached before the structured-reading fix held raw JSON bodies.
 // v3: readings cached before the ayanamsa fix may carry shifted lagna and
 // dasha dates (server charts used Fagan-Bradley on worker threads).
-const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_v3_';
+// v4: readings are now written section-by-section from computed facts.
+const PREDICTION_CACHE_PREFIX = 'bhrigu_prediction_v4_';
 const LEGACY_CACHE_PREFIX = 'bhrigu_prediction_';
 const OFFLINE_CACHE_PREFIX = 'offline_prediction_';
 const CACHE_EPOCH_KEY = 'bhriguwelt_reading_cache_epoch';
-const CACHE_EPOCH = '3';
+const CACHE_EPOCH = '4';
 
 // One-time cleanup of readings cached before the current epoch.
 if (typeof window !== 'undefined') {

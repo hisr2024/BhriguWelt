@@ -54,4 +54,27 @@ describe('ReadingView', () => {
     expect(html).toContain('Verified against chart');
     expect(html).toContain('Running Rahu mahadasha');
   });
+
+  it('astrologer view: labels the judging steps and lists the computed facts', () => {
+    const withFacts = {
+      ...reading,
+      section_details: {
+        ...reading.section_details,
+        romantic_marriage: {
+          simple: 'Marriage is delayed but supported. Expect it after effort.',
+          technical: 'Promise: 7th lord in the 12th. Activation: Venus–Jupiter period. Trigger: double transit.',
+          facts: ['[F-BHAVAT-01/marriage] 7th Virgo (empty), lord Mercury in 12th'],
+        },
+      },
+    };
+    const html = renderToStaticMarkup(<ReadingView prediction={withFacts as any} viewMode="astrologer" />);
+    expect(html).toContain('Promise: </span>7th lord in the 12th.');
+    expect(html).toContain('Activation: </span>');
+    expect(html).toContain('Computed from your chart');
+    expect(html).toContain('F-BHAVAT-01/marriage');
+    // Verdict sentence is separated from the explanation.
+    expect(html).toContain('>Marriage is delayed but supported.</p>');
+    const simple = renderToStaticMarkup(<ReadingView prediction={withFacts as any} viewMode="layman" />);
+    expect(simple).not.toContain('Computed from your chart');
+  });
 });
