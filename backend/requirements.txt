@@ -26,7 +26,7 @@ requests==2.34.2
 
 # Data Processing
 pandas==3.0.1
-numpy==1.26.4
+numpy==2.4.6
 PyYAML==6.0.3
 
 # Validation & Serialization
