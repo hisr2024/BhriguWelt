@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+import os
 import threading
 from functools import lru_cache
 from typing import Dict, List, Optional, Tuple
@@ -47,9 +48,30 @@ PLANETS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu
 # the lock, on whatever thread runs it.
 _SWE_LOCK = threading.Lock()
 
+# Swiss Ephemeris data files (JPL DE431 based, 1800-2399). Without them the
+# library silently falls back to the built-in Moshier approximation, which is
+# up to ~2.4 arc-seconds off for the Moon (hours of error in dasha dates).
+EPHE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ephe')
+_THREAD = threading.local()
+
 
 def _lahiri() -> None:
+    # Like the ayanamsa, the data path is per thread: set it once on each.
+    if not getattr(_THREAD, 'ready', False):
+        if os.path.isdir(EPHE_DIR):
+            swe.set_ephe_path(EPHE_DIR)
+        _THREAD.ready = True
     swe.set_sid_mode(swe.SIDM_LAHIRI)
+
+
+def ephemeris_source() -> str:
+    """Which ephemeris actually answered: the data files or the Moshier fallback."""
+    if not SWISSEPH_AVAILABLE:
+        return 'unavailable'
+    with _SWE_LOCK:
+        _lahiri()
+        _res, flag = swe.calc_ut(2451545.0, swe.MOON, swe.FLG_SIDEREAL | swe.FLG_SWIEPH)
+    return 'Moshier (approximate)' if flag & swe.FLG_MOSEPH else 'Swiss Ephemeris (JPL DE431)'
 
 _CODES = {}
 if SWISSEPH_AVAILABLE:
@@ -133,7 +155,7 @@ def build_chart(dt_utc: datetime, latitude: float, longitude: float) -> Dict[str
         p = positions[name]
         nak, pada, lord = nakshatra_of(p['longitude'])
         planets[name] = {
-            'longitude': round(p['longitude'], 4),
+            'longitude': round(p['longitude'], 6),
             'latitude': round(p['latitude'], 4),
             'speed': round(p['speed'], 4),
             'sign': sign_of(p['longitude']),
@@ -146,9 +168,10 @@ def build_chart(dt_utc: datetime, latitude: float, longitude: float) -> Dict[str
             'retrograde': bool(p['speed'] < 0 and name not in ('Rahu', 'Ketu', 'Sun', 'Moon')),
         }
     return {
-        'ascendant': {'sign': sign_of(asc), 'degree': round(asc, 4), 'degree_in_sign': round(asc % 30.0, 4)},
+        'ascendant': {'sign': sign_of(asc), 'degree': round(asc, 6), 'degree_in_sign': round(asc % 30.0, 4)},
         'planets': planets,
-        'ayanamsa': round(_ayanamsa(dt_utc), 4),
+        'ayanamsa': round(_ayanamsa(dt_utc), 6),
+        'ephemeris': ephemeris_source(),
     }
 
 

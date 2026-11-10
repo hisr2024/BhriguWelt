@@ -179,15 +179,73 @@ export default function HoroscopePage() {
               <h2 className="text-xl text-ivory">Day by day</h2>
               <ul className="mt-2 divide-y divide-[rgba(212,175,95,0.12)]">
                 {data.daily_summaries.map((d: any) => (
-                  <li key={d.date} className="flex items-center justify-between py-2.5 text-sm">
-                    <span className="text-ivory">{d.day}</span>
-                    <span className="text-ivory-2">{d.focus}</span>
-                    <span className="text-xs text-gold-300">{d.energy}</span>
+                  <li key={d.date} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                    <span className="w-24 flex-none text-ivory">{d.day}</span>
+                    <span className="flex-1 text-ivory-2">{d.focus}</span>
+                    <span className="flex-none text-xs text-gold-300">{d.energy}</span>
                   </li>
                 ))}
               </ul>
             </section>
           )}
+
+          {Array.isArray(data?.transits) && data.transits.length > 0 && (
+            <section className="mt-6">
+              <h2 className="text-xl text-ivory">Transits against your chart</h2>
+              <ul className="mt-2 space-y-2">
+                {data.transits.map((line: string) => (
+                  <li key={line} className="border-l-2 border-[color:var(--line)] pl-3 text-sm leading-relaxed text-ivory-2">{line}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {Array.isArray(data?.quarters) && data.quarters.some((q: any) => text(q?.summary)) && (
+            <section className="mt-6">
+              <h2 className="text-xl text-ivory">Quarter by quarter</h2>
+              <ul className="mt-2 divide-y divide-[rgba(212,175,95,0.12)]">
+                {data.quarters.filter((q: any) => text(q?.summary)).map((q: any) => (
+                  <li key={q.quarter} className="py-2.5 text-sm">
+                    <span className="text-gold-300">{q.label || q.quarter}</span>
+                    <p className="mt-0.5 text-ivory-2">{q.summary}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {Array.isArray(data?.key_months) && data.key_months.some((m: any) => text(m?.note)) && (
+            <section className="mt-6">
+              <h2 className="text-xl text-ivory">Solar months to note</h2>
+              <ul className="mt-2 divide-y divide-[rgba(212,175,95,0.12)]">
+                {data.key_months.filter((m: any) => text(m?.note)).map((m: any) => (
+                  <li key={m.period} className="py-2.5 text-sm">
+                    <span className="text-gold-300">{m.period}</span>
+                    <span className="ml-2 text-xs uppercase tracking-[0.12em] text-ivory-muted">{m.kind}</span>
+                    <p className="mt-0.5 text-ivory-2">{m.note}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {[['Strong days', data?.power_days], ['Days for caution', data?.caution_days]].map(([title, list]) => (
+            Array.isArray(list) && list.some((d: any) => text(d?.reason)) && (
+              <section key={String(title)} className="mt-6">
+                <h2 className="text-xl text-ivory">{String(title)}</h2>
+                <ul className="mt-2 divide-y divide-[rgba(212,175,95,0.12)]">
+                  {list.filter((d: any) => text(d?.reason)).map((d: any) => (
+                    <li key={`${d.date}-${d.reason}`} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                      <span className="text-ivory-2">{d.reason}</span>
+                      <span className="flex-none text-xs text-gold-300">
+                        {new Date(d.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )
+          ))}
 
           {Array.isArray(data?.important_dates) && data.important_dates.length > 0 && (
             <section className="mt-6">
@@ -213,7 +271,7 @@ export default function HoroscopePage() {
           )}
 
           <p className="mt-4 text-xs text-ivory-muted">
-            Computed from your Moon sign, nakshatra and the planetary rulers of the period.
+            {text(data?.method) || 'Computed from the transits of the period against your birth chart.'}
           </p>
         </>
       )}

@@ -332,11 +332,19 @@ class HoroscopeEngine:
     def generate_weekly_horoscope(
         self,
         birth_data: Dict[str, Any],
-        start_date: Optional[datetime] = None
+        start_date: Optional[datetime] = None,
+        client_tz: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Generate weekly horoscope based on Bhrigu Samhita
         """
+        try:
+            from services import period_gochara
+            computed = period_gochara.weekly_reading(birth_data, start_date, client_tz)
+            if computed:
+                return computed
+        except Exception as e:
+            logger.warning(f"Computed weekly horoscope failed: {e}")
         if start_date is None:
             start_date = datetime.now()
 
@@ -397,11 +405,19 @@ class HoroscopeEngine:
         self,
         birth_data: Dict[str, Any],
         year: Optional[int] = None,
-        month: Optional[int] = None
+        month: Optional[int] = None,
+        client_tz: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Generate monthly horoscope based on Bhrigu Samhita
         """
+        try:
+            from services import period_gochara
+            computed = period_gochara.monthly_reading(birth_data, year, month, client_tz)
+            if computed:
+                return computed
+        except Exception as e:
+            logger.warning(f"Computed monthly horoscope failed: {e}")
         now = datetime.now()
         if year is None:
             year = now.year
@@ -458,11 +474,19 @@ class HoroscopeEngine:
     def generate_yearly_horoscope(
         self,
         birth_data: Dict[str, Any],
-        year: Optional[int] = None
+        year: Optional[int] = None,
+        client_tz: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Generate yearly horoscope based on Bhrigu Samhita
         """
+        try:
+            from services import period_gochara
+            computed = period_gochara.yearly_reading(birth_data, year, client_tz)
+            if computed:
+                return computed
+        except Exception as e:
+            logger.warning(f"Computed yearly horoscope failed: {e}")
         if year is None:
             year = datetime.now().year
 

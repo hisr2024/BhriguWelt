@@ -428,6 +428,8 @@ def daily_reading(chart: Dict[str, Any], when: Optional[datetime] = None, tz=Non
         'dont_list': dont_list[:4],
         'lucky_elements': lucky,
         'panchanga': panchanga,
+        'facts': {'score': f['score'], 'from_moon': from_moon, 'tara': f['tara'], 'tara_score': f['tara_score'],
+                  'house': house, 'moon_sign': f['moon_sign'], 'nakshatra': f['nakshatra']},
         'method': ('Computed for this moment from the Moon\'s transit against your birth chart: tithi, nakshatra, '
                    'tara bala, chandra bala, house from Lagna, Nadi links, Ashtakavarga bindus and running dasha.'),
     }

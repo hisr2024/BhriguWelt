@@ -134,7 +134,8 @@ def weekly_prediction():
             birth_chart = cached_birth_data
 
         # Generate structured weekly horoscope
-        horoscope = horoscope_engine.generate_weekly_horoscope(birth_chart)
+        horoscope = horoscope_engine.generate_weekly_horoscope(
+            birth_chart, client_tz=sanitize_input(data.get('client_timezone'), max_length=64) if data.get('client_timezone') else None)
 
         return prediction_response(
             {
@@ -210,7 +211,8 @@ def monthly_prediction():
             birth_chart = cached_birth_data
 
         # Generate structured monthly horoscope
-        horoscope = horoscope_engine.generate_monthly_horoscope(birth_chart)
+        horoscope = horoscope_engine.generate_monthly_horoscope(
+            birth_chart, client_tz=sanitize_input(data.get('client_timezone'), max_length=64) if data.get('client_timezone') else None)
 
         return prediction_response(
             {
@@ -289,7 +291,8 @@ def yearly_prediction():
             birth_chart = cached_birth_data
 
         # Generate structured yearly horoscope
-        horoscope = horoscope_engine.generate_yearly_horoscope(birth_chart)
+        horoscope = horoscope_engine.generate_yearly_horoscope(
+            birth_chart, client_tz=sanitize_input(data.get('client_timezone'), max_length=64) if data.get('client_timezone') else None)
 
         return prediction_response(
             {

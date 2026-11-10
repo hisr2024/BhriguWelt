@@ -373,7 +373,8 @@ def get_weekly_horoscope():
                 pass
 
         engine = get_horoscope_engine()
-        horoscope = engine.generate_weekly_horoscope(birth_chart, start_date)
+        horoscope = engine.generate_weekly_horoscope(
+            birth_chart, start_date, sanitize_input(data.get('client_timezone'), max_length=64) if data.get('client_timezone') else None)
 
         return prediction_response(
             horoscope,
@@ -429,7 +430,8 @@ def get_monthly_horoscope():
         month = data.get('month')
 
         engine = get_horoscope_engine()
-        horoscope = engine.generate_monthly_horoscope(birth_chart, year, month)
+        horoscope = engine.generate_monthly_horoscope(
+            birth_chart, year, month, sanitize_input(data.get('client_timezone'), max_length=64) if data.get('client_timezone') else None)
 
         return prediction_response(
             horoscope,
@@ -484,7 +486,8 @@ def get_yearly_horoscope():
         year = data.get('year')
 
         engine = get_horoscope_engine()
-        horoscope = engine.generate_yearly_horoscope(birth_chart, year)
+        horoscope = engine.generate_yearly_horoscope(
+            birth_chart, year, sanitize_input(data.get('client_timezone'), max_length=64) if data.get('client_timezone') else None)
 
         return prediction_response(
             horoscope,
