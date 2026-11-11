@@ -192,6 +192,9 @@ def zodiac_analysis():
             prompt=prompt
         )
 
+        if analysis_result.get('mode') == 'emergency_offline':
+            return error_response("The analysis could not be generated right now. Please try again shortly.", 503)
+
         logger.info("Zodiac analysis completed successfully")
         return success_response(
             data={
@@ -375,6 +378,9 @@ def compatibility_analysis():
             client_online=client_online,
             prompt=prompt
         )
+
+        if compatibility_result.get('mode') == 'emergency_offline':
+            return error_response("The analysis could not be generated right now. Please try again shortly.", 503)
 
         logger.info("Compatibility analysis completed successfully")
         return success_response(

@@ -89,3 +89,18 @@ def test_engine_serves_the_computed_readings(chart):
     assert engine.generate_weekly_horoscope(chart)['metadata']['computed']
     assert engine.generate_monthly_horoscope(chart, 2026, 11)['metadata']['computed']
     assert engine.generate_yearly_horoscope(chart, 2026)['metadata']['computed']
+
+
+def test_orchestrator_passes_period_options_once(monkeypatch):
+    """time_period used to be sent twice, so every call fell to a generic 'success' text."""
+    from services.prediction_orchestrator import PredictionOrchestrator
+    seen = {}
+
+    def fake(self, category, chart_data, language, **kw):
+        seen.update(kw)
+        return {'mode': 'offline', 'prediction': 'x'}
+
+    monkeypatch.setattr(PredictionOrchestrator, '_generate_hybrid', fake)
+    out = PredictionOrchestrator().generate_prediction(
+        category='predictions', chart_data={'zodiac_sign': 'Aries'}, time_period='weekly')
+    assert out['mode'] == 'offline' and seen['time_period'] == 'weekly'

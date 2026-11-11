@@ -183,10 +183,10 @@ class PredictionOrchestrator:
                 if relationship_type not in ['family', 'romantic', 'karmic', 'timing', 'all']:
                     relationship_type = 'all'
 
-                # Store parameters in options for downstream use
-                options['time_period'] = time_period
-                options['view_mode'] = view_mode
-                options['relationship_type'] = relationship_type
+                # These three are passed by name below; a copy in **options made
+                # every online/hybrid call fail with a duplicate-keyword TypeError.
+                for key in ('time_period', 'view_mode', 'relationship_type'):
+                    options.pop(key, None)
 
                 # Normalize mode
                 try:
