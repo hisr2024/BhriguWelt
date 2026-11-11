@@ -164,6 +164,11 @@ def generate_category_prediction(category):
             relationship_type=relationship_type
         )
 
+        if result.get('mode') == 'emergency_offline':
+            # A generic text that ignores the chart is not a reading: say so.
+            return prediction_error_response(
+                "The reading could not be generated right now. Please try again shortly.", 503)
+
         # Build structured prediction response with subcategories
         prediction_data = {
             'engine': category,
