@@ -34,7 +34,7 @@ export interface ProfileCreationResult {
   profileId?: IDBValidKey;
   birthChartData?: any;
   error?: {
-    type: 'validation' | 'timeout' | 'network' | 'server' | 'unknown';
+    type: 'validation' | 'timeout' | 'network' | 'server' | 'storage' | 'unknown';
     message: string;
     retryable: boolean;
   };
@@ -72,6 +72,18 @@ function ensureEncryptionReadiness(encryptionKey: CryptoKey | undefined): { read
   }
 
   return { ready: true };
+}
+
+/** Run an on-device step; any failure in it is a storage failure, never a network one. */
+async function onDevice<T>(step: () => Promise<T>): Promise<T> {
+  try {
+    return await step();
+  } catch (err: any) {
+    if (err?.name === 'StorageError') throw err;
+    const wrapped = new Error(err?.message || String(err));
+    wrapped.name = 'StorageError';
+    throw wrapped;
+  }
 }
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
@@ -139,6 +151,17 @@ function validateProfileData(data: ProfileData): { valid: boolean; errors: strin
  * Classifies error type for better user messaging
  */
 function classifyError(error: any): ProfileCreationResult['error'] {
+  // An error thrown while saving on the device (IndexedDB, encryption) used to
+  // be shown as "Network error" and retried, recomputing the chart each time.
+  if (error?.name === 'StorageError') {
+    return {
+      type: 'storage',
+      message: 'Your chart was calculated but could not be saved on this device. '
+        + 'Close this tab, open the app again and retry. In Safari, check that '
+        + '"Block All Cookies" is off and that you are not in Lockdown Mode.',
+      retryable: false,
+    };
+  }
   const status = error.response?.status;
   const message = error.response?.data?.message || error.response?.data?.error || error.message || 'An unexpected error occurred';
 
@@ -325,7 +348,7 @@ export async function createProfile(
     };
 
     // Save profile with consistent key 'current_profile' for easy retrieval
-    const profileId = await setItem(STORES.PROFILES, 'current_profile', profileData, encryptionKey);
+    const profileId = await onDevice(() => setItem(STORES.PROFILES, 'current_profile', profileData, encryptionKey));
 
     onProgress?.({
       step: 'saving',
@@ -348,7 +371,7 @@ export async function createProfile(
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    await setItem(STORES.REPORTS, 'current_birth_chart', reportData, encryptionKey);
+    await onDevice(() => setItem(STORES.REPORTS, 'current_birth_chart', reportData, encryptionKey));
 
     // Step 6: Complete (90-100%)
     onProgress?.({

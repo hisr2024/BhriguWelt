@@ -360,4 +360,17 @@ describe('Performance', () => {
 
     expect(duration).toBeLessThan(5000); // Should complete within 5 seconds
   }, 10000);
+
+  it('reports an on-device save failure as storage, not network, and does not recompute the chart', async () => {
+    (astrologyAPI.calculateBirthChart as jest.Mock).mockResolvedValue({ data: { planets: {} } });
+    (setItem as jest.Mock).mockRejectedValueOnce(
+      new Error('InvalidStateError: The database connection is closing.'),
+    );
+    const key = { algorithm: { name: 'AES-GCM' }, type: 'secret', extractable: false, usages: ['encrypt', 'decrypt'] } as unknown as CryptoKey;
+    const data: ProfileData = { name: 'Test User', date_of_birth: '1990-01-01', time_of_birth: '12:00', place_of_birth: 'New Delhi, India', latitude: 28.6, longitude: 77.2 };
+    const result = await createProfileWithRetry(data, { encryptionKey: key }, 2);
+    expect(result.success).toBe(false);
+    expect(result.error?.type).toBe('storage');
+    expect(astrologyAPI.calculateBirthChart).toHaveBeenCalledTimes(1);
+  });
 });
