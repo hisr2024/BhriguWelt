@@ -162,6 +162,8 @@ print("✓ Flask app initialized")
 logger.info("Configuring CORS...")
 
 PRODUCTION_FRONTEND_URLS = [
+    "https://bhriguwelt.app",
+    "https://www.bhriguwelt.app",
     "https://bhrigu-welt.vercel.app",
     "https://bhriguwelt.vercel.app",
     # Include variations for robustness
