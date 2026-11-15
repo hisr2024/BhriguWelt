@@ -48,7 +48,7 @@ class SecurityMiddleware:
                 "style-src 'self' 'unsafe-inline'; "
                 "img-src 'self' data: https:; "
                 "font-src 'self' data:; "
-                f"connect-src 'self' https://api.openai.com {frontend_url} https://*.vercel.app"
+                f"connect-src 'self' https://api.openai.com {frontend_url} https://bhriguwelt.app https://www.bhriguwelt.app https://*.vercel.app"
             )
 
         # X-Frame-Options
