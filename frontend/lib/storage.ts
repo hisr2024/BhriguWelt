@@ -94,6 +94,14 @@ const withPerformanceTracking = async <T>(
 // IndexedDB connection
 let db: IDBDatabase | null = null;
 
+/** A failure of on-device storage (IndexedDB or encryption), not of the network. */
+export class StorageError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'StorageError';
+  }
+}
+
 function generateUserId(): string {
   if (typeof window === 'undefined' || typeof window.crypto === 'undefined') {
     throw new Error('crypto is not available');
@@ -109,7 +117,30 @@ function generateUserId(): string {
 /**
  * Initialize the IndexedDB database
  */
+/**
+ * Safari (iOS especially) closes IndexedDB connections behind the page's back:
+ * after the tab is backgrounded, on memory pressure, or with "Connection to
+ * Indexed Database server lost". The cached handle then throws on every
+ * transaction() call, so check it is still usable and reopen when it is not.
+ */
+function connectionAlive(database: IDBDatabase): boolean {
+  try {
+    database.transaction(STORES.METADATA, 'readonly');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function initDB(): Promise<IDBDatabase> {
+  if (db && !connectionAlive(db)) {
+    try {
+      db.close();
+    } catch {
+      /* already closed */
+    }
+    db = null;
+  }
   return new Promise((resolve, reject) => {
     if (db) {
       resolve(db);
@@ -119,12 +150,20 @@ export async function initDB(): Promise<IDBDatabase> {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onerror = () => {
-      reject(new Error('Failed to open database'));
+      reject(new StorageError(`Failed to open the on-device database: ${request.error?.message || 'unknown error'}`));
     };
 
     request.onsuccess = () => {
-      db = request.result;
-      resolve(db);
+      const opened = request.result;
+      opened.onclose = () => {
+        if (db === opened) db = null;
+      };
+      opened.onversionchange = () => {
+        opened.close();
+        if (db === opened) db = null;
+      };
+      db = opened;
+      resolve(opened);
     };
 
     request.onupgradeneeded = (event) => {
@@ -296,11 +335,11 @@ export async function setItem(
 
       request.onerror = () => {
         console.error(`Failed to set item (key="${key}", store="${storeName}"):`, request.error);
-        reject(new Error(`Failed to store item: ${request.error}`));
+        reject(new StorageError(`Failed to store item: ${request.error}`));
       };
     } catch (error) {
       console.error(`Storage error in setItem (key="${key}", store="${storeName}"):`, error);
-      reject(error);
+      reject(new StorageError(`Failed to store item: ${(error as Error)?.message || error}`));
     }
   });
 }
