@@ -74,6 +74,29 @@ function ensureEncryptionReadiness(encryptionKey: CryptoKey | undefined): { read
   return { ready: true };
 }
 
+/**
+ * A short, non-personal detail appended to network errors so a screenshot shows
+ * what failed: the error code, the backend host and the endpoint.
+ */
+function technicalDetail(error: any): string {
+  const parts: string[] = [];
+  if (error?.code) parts.push(String(error.code));
+  else if (error?.name && error.name !== 'Error') parts.push(String(error.name));
+  const cfg = error?.config;
+  if (cfg?.url) {
+    let host = '';
+    try {
+      host = new URL(cfg.baseURL || cfg.url).host;
+    } catch {
+      host = String(cfg.baseURL || '');
+    }
+    parts.push(`${String(cfg.method || 'get').toUpperCase()} ${host}${String(cfg.url).startsWith('/') ? cfg.url : ''}`);
+  }
+  if (error?.message && !/^Network Error$/i.test(error.message)) parts.push(String(error.message).slice(0, 120));
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) parts.push('device offline');
+  return parts.length ? ` (${parts.join(' · ')})` : '';
+}
+
 /** Run an on-device step; any failure in it is a storage failure, never a network one. */
 async function onDevice<T>(step: () => Promise<T>): Promise<T> {
   try {
@@ -178,7 +201,8 @@ function classifyError(error: any): ProfileCreationResult['error'] {
   if (error.code === 'ERR_NETWORK' || !status) {
     return {
       type: 'network',
-      message: 'Network error. Please check your internet connection and try again.',
+      message: 'Network error. Please check your internet connection and try again.'
+        + technicalDetail(error),
       retryable: true,
     };
   }
