@@ -12,6 +12,7 @@ import type {
 } from './types';
 import { normalizePredictionResponse } from './api/predictionResponse';
 import { emitToast, buildIssueReportUrl } from './toast';
+import { apiBase, enableProxyMode, isProxyMode, PROXY_BASE } from './backendUrl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const API_TIMEOUT_MS = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '300000', 10); // 5 minutes (increased from 120000)
@@ -72,6 +73,11 @@ api.interceptors.request.use(
   async (config) => {
     if (process.env.NODE_ENV === 'development') {
       console.debug(`[API] ${config.method?.toUpperCase()} ${config.url}`);
+    }
+    // Direct to Render, or through the app's own domain once a device has
+    // shown it cannot reach Render directly (see lib/backendUrl.ts).
+    if (!(config as any).__viaProxy) {
+      config.baseURL = apiBase();
     }
     if (typeof navigator !== 'undefined') {
       config.headers = config.headers ?? {};
@@ -183,6 +189,25 @@ api.interceptors.response.use(
     // Initialize retry state for this config if not exists
     if (config && !retryState.has(config)) {
       retryState.set(config, { count: 0, inProgress: false });
+    }
+
+    // The request never got an answer from the backend's own address: this
+    // device or its network is blocking it. Switch to the same-origin proxy
+    // and send this request once more that way (it never reached the server,
+    // or its answer was lost, so it is safe to repeat).
+    if (
+      config &&
+      !error.response &&
+      error.code === 'ERR_NETWORK' &&
+      !(config as any).__viaProxy &&
+      config.baseURL !== PROXY_BASE &&
+      typeof window !== 'undefined' &&
+      navigator.onLine !== false
+    ) {
+      if (!isProxyMode()) enableProxyMode();
+      (config as any).__viaProxy = true;
+      config.baseURL = PROXY_BASE;
+      return api(config);
     }
 
     const state = config ? retryState.get(config)! : undefined;
