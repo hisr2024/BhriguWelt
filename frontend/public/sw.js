@@ -9,7 +9,7 @@
 //   plaintext copies.
 // Bump SW_VERSION to drop all old caches on the next activation.
 
-const SW_VERSION = 'v2';
+const SW_VERSION = 'v3';
 const STATIC_CACHE = `bhriguwelt-static-${SW_VERSION}`;
 const ASSET_CACHE = `bhriguwelt-assets-${SW_VERSION}`;
 const SHELL_CACHE = `bhriguwelt-shell-${SW_VERSION}`;
@@ -65,7 +65,7 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return; // backend API and third parties: browser default
-  if (url.pathname.startsWith('/api/')) return;      // never cache API data
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/backend/')) return; // never cache API data
 
   // Hashed build assets: cache-first.
   if (url.pathname.startsWith('/_next/static/')) {

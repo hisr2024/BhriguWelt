@@ -96,6 +96,13 @@ const nextConfig = {
     ]
   },
 
+  // Same-origin path to the Flask backend, used by devices that cannot reach
+  // the Render address directly (lib/backendUrl.ts). Never cached.
+  async rewrites() {
+    const api = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/+$/, '')
+    return [{ source: '/backend/:path*', destination: `${api}/:path*` }]
+  },
+
   async headers() {
     // Get CDN URL for CSP
     const cdnUrl = process.env.NEXT_PUBLIC_CDN_URL || '';
@@ -141,6 +148,13 @@ const nextConfig = {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
           },
+        ],
+      },
+      {
+        source: '/backend/:path*',
+        headers: [
+          { key: 'x-vercel-enable-rewrite-caching', value: '0' },
+          { key: 'Cache-Control', value: 'no-store' },
         ],
       },
       {
