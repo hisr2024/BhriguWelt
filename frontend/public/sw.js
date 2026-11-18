@@ -9,7 +9,7 @@
 //   plaintext copies.
 // Bump SW_VERSION to drop all old caches on the next activation.
 
-const SW_VERSION = 'v3';
+const SW_VERSION = 'v4';
 const STATIC_CACHE = `bhriguwelt-static-${SW_VERSION}`;
 const ASSET_CACHE = `bhriguwelt-assets-${SW_VERSION}`;
 const SHELL_CACHE = `bhriguwelt-shell-${SW_VERSION}`;
@@ -20,8 +20,8 @@ const SHELL = ['/offline', '/manifest.json'];
 const PRECACHE_ASSETS = [
   '/data/cities.json',
   '/data/wisdom_cards.json',
-  '/icons/icon-192x192.svg',
-  '/icons/icon-512x512.svg',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
 ];
 
 async function precache(cacheName, urls) {
@@ -137,8 +137,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification('BhriguWelt', {
       body: event.data ? event.data.text() : 'New insight available',
-      icon: '/icons/icon-192x192.svg',
-      badge: '/icons/icon-96x96.svg',
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-96x96.png',
       tag: 'bhriguwelt-notification',
     })
   );
