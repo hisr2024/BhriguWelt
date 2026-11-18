@@ -1,62 +1,137 @@
 {
-  "name": "BhriguWelt - Soul Journey",
+  "id": "/",
+  "name": "BhriguWelt — Bhrigu Samhita & Nadi astrology",
   "short_name": "BhriguWelt",
-  "description": "Offline-first spiritual astrology app combining ancient Vedic wisdom with modern AI",
+  "description": "Vedic astrology readings computed from your birth chart, in the tradition of Bhrigu Samhita and Nadi Jyotisha. Your data stays encrypted on your device.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0a0118",
-  "theme_color": "#00d9ff",
-  "orientation": "portrait-primary",
-  "categories": ["lifestyle", "education", "health"],
+  "background_color": "#0B0E1C",
+  "theme_color": "#0B0E1C",
+  "orientation": "portrait",
+  "categories": [
+    "lifestyle",
+    "education"
+  ],
   "lang": "en",
   "dir": "ltr",
   "icons": [
     {
-      "src": "/icons/icon-72x72.svg",
+      "src": "/icons/icon-48x48.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-72x72.png",
       "sizes": "72x72",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-96x96.svg",
+      "src": "/icons/icon-96x96.png",
       "sizes": "96x96",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-192x192.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/icons/icon-512x512.svg",
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "screenshots": [
     {
       "src": "/screenshots/home.png",
-      "sizes": "540x720",
-      "type": "image/png"
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Welcome"
+    },
+    {
+      "src": "/screenshots/today.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Today's reading from your chart"
+    },
+    {
+      "src": "/screenshots/horoscope.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Horoscope by the classical method"
     }
   ],
   "shortcuts": [
     {
-      "name": "Birth Chart",
-      "short_name": "Chart",
-      "description": "Calculate your birth chart",
-      "url": "/birth-chart",
-      "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+      "name": "Today",
+      "short_name": "Today",
+      "description": "Today's reading from your chart",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     },
     {
-      "name": "Daily Insights",
-      "short_name": "Insights",
-      "description": "View today's insights",
-      "url": "/daily-insights",
-      "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+      "name": "Birth chart",
+      "short_name": "Chart",
+      "description": "Your birth chart",
+      "url": "/birth-chart",
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
   ],
   "prefer_related_applications": false
