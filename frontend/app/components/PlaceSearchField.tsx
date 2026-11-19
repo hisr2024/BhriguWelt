@@ -37,6 +37,20 @@ export default function PlaceSearchField({ id, value, onTextChange, chosen, onCh
   const [active, setActive] = useState(-1);
   const latest = useRef(0);
   const listId = useId();
+  const box = useRef<HTMLDivElement>(null);
+
+  // On a phone the field often sits low on the screen, where the keyboard and
+  // the bottom menu would cover the suggestions: bring it to the top.
+  const reveal = () => {
+    const el = box.current;
+    if (!el || typeof window === 'undefined') return;
+    const top = el.getBoundingClientRect().top + window.scrollY - 80;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    if (open) reveal();
+  }, [open, suggestions.length]);
 
   useEffect(() => {
     const q = value.trim();
@@ -87,7 +101,7 @@ export default function PlaceSearchField({ id, value, onTextChange, chosen, onCh
   }
 
   return (
-    <div className="relative">
+    <div className="relative scroll-mt-20" ref={box}>
       <input
         id={id}
         type="text"
@@ -102,7 +116,7 @@ export default function PlaceSearchField({ id, value, onTextChange, chosen, onCh
         value={value}
         autoFocus={autoFocus}
         onChange={(e) => onTextChange(e.target.value)}
-        onFocus={() => suggestions.length && setOpen(true)}
+        onFocus={() => { reveal(); if (suggestions.length) setOpen(true); }}
         onKeyDown={(e) => {
           if (!open || !suggestions.length) return;
           if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => Math.min(a + 1, suggestions.length - 1)); }
