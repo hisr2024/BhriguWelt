@@ -17,6 +17,26 @@ from utils.errors import AstrologyDependencyError, ASTROLOGY_DEPENDENCIES
 
 logger = logging.getLogger(__name__)
 
+# Before standard time a birth was recorded in the town's own local mean time.
+# The time-zone database gives one city's mean time for the whole zone (India
+# before 1906: Calcutta/Madras time), up to 75 minutes off for the birthplace,
+# which moves the Lagna by a sign. Those eras are replaced by the birthplace's
+# own mean time, as astrologers do.
+CITY_MEAN_TIME_ZONES = {'Asia/Kolkata': ('HMT', 'MMT'), 'Asia/Dhaka': ('HMT',), 'Asia/Karachi': ()}
+
+
+def birth_moment_utc(local_naive, timezone_str: str, longitude: float, pytz_mod):
+    """(UTC datetime, clock label) for a birth recorded in local clock time."""
+    zone = pytz_mod.timezone(timezone_str)
+    local = zone.localize(local_naive)
+    abbrev = local.tzname() or ''
+    if abbrev == 'LMT' or abbrev in CITY_MEAN_TIME_ZONES.get(timezone_str, ()):
+        from datetime import timedelta as _td
+        offset = _td(seconds=round(longitude * 240))  # 4 minutes of time per degree
+        return (local_naive - offset).replace(tzinfo=pytz_mod.UTC), 'local mean time of the birthplace'
+    return local.astimezone(pytz_mod.UTC), 'standard time'
+
+
 def parse_birth_time(value: str):
     """'14:30', '14:30:00', '2:30 PM', '2:30pm' or '14.30' -> datetime.time."""
     text = str(value or '').strip().upper().replace('.', ':')
@@ -359,9 +379,7 @@ class AstrologyCalculator:
         # Parse datetime (HH:MM, HH:MM:SS or a 12-hour time with AM/PM)
         local_dt = datetime.combine(datetime.strptime(date_of_birth, "%Y-%m-%d").date(),
                                     parse_birth_time(time_of_birth))
-        timezone = self.pytz.timezone(timezone_str)
-        local_dt = timezone.localize(local_dt)
-        utc_dt = local_dt.astimezone(self.pytz.UTC)
+        utc_dt, clock = birth_moment_utc(local_dt, timezone_str, float(longitude), self.pytz)
 
         if ephemeris_core.SWISSEPH_AVAILABLE:
             # Swiss Ephemeris, Lahiri, whole-sign houses (accurate Lagna,
@@ -394,6 +412,7 @@ class AstrologyCalculator:
                 'latitude': latitude,
                 'longitude': longitude,
                 'timezone': timezone_str,
+                'clock': clock,
                 'utc': utc_dt.isoformat(),
             },
             'zodiac_sign': zodiac_sign,
@@ -554,10 +573,12 @@ class AstrologyCalculator:
         item['timezone'] = tz
         if tz and when is not None:
             try:
-                offset = self.pytz.timezone(tz).localize(when).utcoffset()
-                minutes = int(offset.total_seconds() // 60)
+                utc, clock = birth_moment_utc(when, tz, float(item['longitude']), self.pytz)
+                minutes = round((when - utc.replace(tzinfo=None)).total_seconds() / 60)
                 sign = '+' if minutes >= 0 else '-'
                 item['utc_offset'] = f"UTC{sign}{abs(minutes) // 60}:{abs(minutes) % 60:02d}"
+                if clock != 'standard time':
+                    item['utc_offset'] += ' (local mean time)'
             except Exception:
                 pass
         return item
