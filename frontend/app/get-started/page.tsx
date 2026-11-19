@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { GenderField, BirthTimeAccuracyField } from '@/app/components/BirthPrecisionFields';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Shield } from 'lucide-react';
-import { type BirthDetails } from '@/lib/api';
+import { astrologyAPI, type BirthDetails, type PlaceMatch } from '@/lib/api';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import {
   createProfileWithRetry,
@@ -13,6 +13,13 @@ import {
 } from '@/lib/services/profileCreationService';
 import ProfileCreationProgressComponent from '@/components/ProfileCreationProgress';
 import { unlockHref } from '@/lib/unlockRedirect';
+
+function formatPlaceDetail(m: PlaceMatch): string {
+  const lat = `${Math.abs(m.latitude).toFixed(2)}°${m.latitude >= 0 ? 'N' : 'S'}`;
+  const lon = `${Math.abs(m.longitude).toFixed(2)}°${m.longitude >= 0 ? 'E' : 'W'}`;
+  const zone = [m.timezone, m.utc_offset && `${m.utc_offset} at your birth time`].filter(Boolean).join(' · ');
+  return [`${lat}, ${lon}`, zone].filter(Boolean).join(' · ');
+}
 
 export default function GetStartedPage() {
   const router = useRouter();
@@ -26,6 +33,10 @@ export default function GetStartedPage() {
     place_of_birth: '',
   });
   const [manualCoordsEnabled, setManualCoordsEnabled] = useState(false);
+  // The birth place the user confirmed from the search results (exact coordinates and zone).
+  const [placeMatches, setPlaceMatches] = useState<PlaceMatch[] | null>(null);
+  const [chosenPlace, setChosenPlace] = useState<PlaceMatch | null>(null);
+  const [searchingPlace, setSearchingPlace] = useState(false);
   const [manualCoords, setManualCoords] = useState({ latitude: '', longitude: '' });
   const [creationProgress, setCreationProgress] = useState<ProfileCreationProgress | null>(null);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
@@ -52,6 +63,25 @@ export default function GetStartedPage() {
     }
   }, [encryptionLoading, isSetup, isUnlocked, router]);
 
+  const findPlace = async (): Promise<PlaceMatch[]> => {
+    setSearchingPlace(true);
+    setError('');
+    try {
+      const matches = await astrologyAPI.searchPlaces(formData.place_of_birth.trim(), formData.date_of_birth, formData.time_of_birth);
+      setPlaceMatches(matches);
+      if (matches.length === 1) setChosenPlace(matches[0]!);
+      if (matches.length === 0) {
+        setError('We could not find this place. Add the state and country (for example "Aurangabad, Maharashtra, India"), or enter latitude and longitude.');
+      }
+      return matches;
+    } catch {
+      setError('The place search is not reachable right now. Try again, or enter latitude and longitude.');
+      return [];
+    } finally {
+      setSearchingPlace(false);
+    }
+  };
+
   const runProfileCreation = async () => {
     if (!encryptionKey) {
       setError('Please unlock the app first');
@@ -67,6 +97,16 @@ export default function GetStartedPage() {
       setError('Please enter valid numeric values for latitude and longitude.');
       return;
     }
+    // The Lagna depends on the exact place: confirm it before calculating.
+    let place = chosenPlace;
+    if (!manualCoordsEnabled && !place) {
+      const matches = await findPlace();
+      if (matches.length !== 1) {
+        if (matches.length > 1) setError('Several places have this name. Choose your birth place from the list.');
+        return;
+      }
+      place = matches[0]!;
+    }
     setLoading(true);
     setError('');
     setCreationProgress(null);
@@ -77,10 +117,16 @@ export default function GetStartedPage() {
         name: formData.name,
         date_of_birth: formData.date_of_birth,
         time_of_birth: formData.time_of_birth,
-        place_of_birth: formData.place_of_birth,
+        place_of_birth: place && !manualCoordsEnabled ? place.name : formData.place_of_birth,
         gender: formData.gender,
         birth_time_accuracy: formData.birth_time_accuracy,
       };
+
+      if (place && !manualCoordsEnabled) {
+        profileData.latitude = place.latitude;
+        profileData.longitude = place.longitude;
+        if (place.timezone) profileData.timezone = place.timezone;
+      }
 
       // Only add coordinates if both are present and are valid numbers
       if (
@@ -206,8 +252,39 @@ export default function GetStartedPage() {
         {step === 4 && (
           <div>
             <label htmlFor="onb-place" className="mb-2 block text-sm text-ivory-2">Place of birth</label>
-            <input id="onb-place" type="text" required placeholder="New Delhi, India" autoComplete="address-level2" value={formData.place_of_birth} onChange={(e) => setFormData({ ...formData, place_of_birth: e.target.value })} className="nadi-input text-lg" autoFocus />
-            <p className="mt-2 text-xs text-ivory-muted">City and country.</p>
+            <input id="onb-place" type="text" required placeholder="New Delhi, India" autoComplete="address-level2" value={formData.place_of_birth} onChange={(e) => { setFormData({ ...formData, place_of_birth: e.target.value }); setChosenPlace(null); setPlaceMatches(null); }} onKeyDown={(e) => { if (e.key === 'Enter' && !chosenPlace && !manualCoordsEnabled) { e.preventDefault(); if (validatePlace(formData.place_of_birth)) findPlace(); } }} className="nadi-input text-lg" autoFocus />
+            <p className="mt-2 text-xs text-ivory-muted">City, state and country. Your rising sign (Lagna) depends on the exact place.</p>
+            {!manualCoordsEnabled && (
+              <div className="mt-3">
+                {!chosenPlace && (
+                  <button type="button" onClick={findPlace} disabled={searchingPlace || !validatePlace(formData.place_of_birth)} className="nadi-btn-ghost w-full">
+                    {searchingPlace ? 'Searching…' : 'Find place'}
+                  </button>
+                )}
+                {placeMatches && placeMatches.length > 1 && !chosenPlace && (
+                  <ul className="mt-3 space-y-2" aria-label="Matching places">
+                    {placeMatches.map((m) => (
+                      <li key={`${m.latitude},${m.longitude}`}>
+                        <button type="button" onClick={() => { setChosenPlace(m); setError(""); }} className="w-full rounded-xl border border-[color:var(--line)] px-4 py-3 text-left text-sm text-ivory hover:border-gold-400">
+                          <span className="block">{m.name}</span>
+                          <span className="mt-0.5 block text-xs text-ivory-muted">{formatPlaceDetail(m)}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {chosenPlace && (
+                  <div className="rounded-xl border border-gold-400/60 bg-[rgba(212,175,95,0.08)] px-4 py-3 text-sm">
+                    <p className="text-[0.7rem] uppercase tracking-[0.14em] text-gold-300">Chart will be cast for</p>
+                    <p className="mt-1 text-ivory">{chosenPlace.name}</p>
+                    <p className="mt-0.5 text-xs text-ivory-muted">{formatPlaceDetail(chosenPlace)}</p>
+                    {placeMatches && placeMatches.length > 1 && (
+                      <button type="button" onClick={() => setChosenPlace(null)} className="mt-2 text-xs text-gold-300 underline">Choose a different place</button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="mt-5 space-y-4">
               <label className="flex min-h-[44px] items-center gap-3 text-sm text-ivory-2">
                 <input type="checkbox" checked={manualCoordsEnabled} onChange={(e) => setManualCoordsEnabled(e.target.checked)} className="h-5 w-5 accent-[#D4AF5F]" />

@@ -320,6 +320,7 @@ export async function createProfile(
       requestData.latitude = data.latitude;
       requestData.longitude = data.longitude;
     }
+    if (data.timezone) requestData.timezone = data.timezone;
 
     onProgress?.({
       step: 'calculating',
@@ -365,6 +366,8 @@ export async function createProfile(
       placeOfBirth: data.place_of_birth,
       latitude: finalLatitude,
       longitude: finalLongitude,
+      // Saved so every later reading uses exactly the zone this chart was cast in.
+      timezone: data.timezone || result.data?.birth_details?.timezone,
       gender: data.gender,
       birthTimeAccuracy: data.birth_time_accuracy,
       createdAt: new Date().toISOString(),

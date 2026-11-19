@@ -318,6 +318,14 @@ export type {
   PredictionResult,
 } from './types';
 
+export interface PlaceMatch {
+  name: string;
+  latitude: number;
+  longitude: number;
+  timezone?: string | null;
+  utc_offset?: string;
+}
+
 // API Methods
 export const astrologyAPI = {
   calculateBirthChart: async (data: BirthDetails) => {
@@ -328,6 +336,12 @@ export const astrologyAPI = {
   getZodiacAnalysis: async (data: BirthDetails) => {
     const response = await api.post('/api/astrology/zodiac-analysis', data);
     return response.data;
+  },
+
+  /** Every place matching the text, with coordinates, time zone and the UTC offset at the birth moment. */
+  searchPlaces: async (q: string, date?: string, time?: string): Promise<PlaceMatch[]> => {
+    const response = await api.get('/api/astrology/places', { params: { q, date, time } });
+    return response.data?.data?.places ?? [];
   },
 
   getPlanetaryPositions: async (data: BirthDetails) => {

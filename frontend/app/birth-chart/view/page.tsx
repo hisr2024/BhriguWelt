@@ -268,6 +268,21 @@ export default function BirthChartViewPage() {
     .filter((planet: any) => Boolean(planet));
 
   const resolvedAscendant = resolveAscendant(chartData);
+  // Exact degree and the place/zone the chart was cast for, so it can be checked.
+  const lagnaDegree = (() => {
+    const d = chartData?.ascendant?.degree_in_sign ?? (typeof chartData?.ascendant?.degree === 'number' ? chartData.ascendant.degree % 30 : null);
+    if (typeof d !== 'number') return '';
+    const deg = Math.floor(d);
+    const min = Math.floor((d - deg) * 60);
+    return `${deg}°${String(min).padStart(2, '0')}′ ${resolvedAscendant}`;
+  })();
+  const castFor = (() => {
+    const b = chartData?.birth_details;
+    if (!b) return '';
+    const lat = typeof b.latitude === 'number' ? `${Math.abs(b.latitude).toFixed(2)}°${b.latitude >= 0 ? 'N' : 'S'}` : '';
+    const lon = typeof b.longitude === 'number' ? `${Math.abs(b.longitude).toFixed(2)}°${b.longitude >= 0 ? 'E' : 'W'}` : '';
+    return [b.place_resolved || b.place, [lat, lon].filter(Boolean).join(', '), b.timezone].filter(Boolean).join(' · ');
+  })();
   const resolvedZodiacSign = resolveZodiacSign(chartData);
   const resolvedMoonSign = resolveMoonSign(chartData);
 
@@ -499,8 +514,8 @@ ${interpretations.growth.map((g: string) => `• ${g}`).join('\n')}
 
   const interpretations = {
     sun: `Your Sun in ${resolvedZodiacSign} reveals your core essence and life force. This placement highlights where you are meant to lead, create, and express your authentic self. When you align with this energy, you feel energized, confident, and capable of inspiring others. The Sun also speaks to your sense of purpose—what you naturally gravitate toward when you want to feel alive and fulfilled.`,
-    moon: `Your Moon in ${resolvedMoonSign || 'Taurus'} describes your emotional needs, intuitive rhythms, and how you restore balance. This placement indicates the kind of environment that helps you feel safe, loved, and grounded. It also highlights how you process stress and what comforts you most during transitions. By honoring your Moon sign, you strengthen your inner resilience and emotional clarity.`,
-    ascendant: `${resolvedAscendant || 'Aries'} rising shapes your first impressions, life approach, and the lens through which people experience you. This placement signals how you move through new situations, the way you initiate action, and the persona you wear in public. It also influences your physical presence, style, and your instinctive response to opportunities.`,
+    moon: `Your Moon in ${resolvedMoonSign || 'your Moon sign'} describes your emotional needs, intuitive rhythms, and how you restore balance. This placement indicates the kind of environment that helps you feel safe, loved, and grounded. It also highlights how you process stress and what comforts you most during transitions. By honoring your Moon sign, you strengthen your inner resilience and emotional clarity.`,
+    ascendant: `${resolvedAscendant || 'Your'} rising shapes your first impressions, life approach, and the lens through which people experience you. This placement signals how you move through new situations, the way you initiate action, and the persona you wear in public. It also influences your physical presence, style, and your instinctive response to opportunities.`,
     overall: `Your birth chart reveals a multidimensional blueprint that blends destiny (the karmic themes you carry), free will (the choices you make), and timing (the cycles that activate growth). Together, your Sun, Moon, and Ascendant create a signature of purpose, emotional intelligence, and outward expression. Understanding this alignment helps you navigate relationships, career, and spiritual evolution with clarity and confidence.`,
     strengths: [
       `Natural talents in ${resolvedZodiacSign || 'your Sun sign'} themes such as leadership, creativity, and authentic self-expression.`,
@@ -548,6 +563,11 @@ ${interpretations.growth.map((g: string) => `• ${g}`).join('\n')}
             <p className="text-xl text-white/80">
               Explore the planetary positions at your birth
             </p>
+            {castFor && (
+              <p className="mx-auto mt-4 max-w-xl text-sm text-white/60" data-testid="cast-for">
+                Calculated for {castFor}
+              </p>
+            )}
           </motion.div>
 
           {/* Action Buttons */}
@@ -708,10 +728,11 @@ ${interpretations.growth.map((g: string) => `• ${g}`).join('\n')}
 
                   <GenZCard variant="gradient" className="text-center">
                     <Sparkles className="w-12 h-12 mx-auto mb-4 text-genz-mint-fresh" />
-                    <h3 className="text-xl font-bold text-white mb-2">Ascendant</h3>
+                    <h3 className="text-xl font-bold text-white mb-2">Ascendant (Lagna)</h3>
                     <p className="text-2xl font-display font-bold bg-gradient-to-r from-genz-electric-blue to-genz-hot-pink bg-clip-text text-transparent">
-                      {resolvedAscendant}
+                      {resolvedAscendant || '—'}
                     </p>
+                    {lagnaDegree && <p className="mt-1 text-sm text-white/70">{lagnaDegree}</p>}
                   </GenZCard>
                 </div>
               </motion.div>
