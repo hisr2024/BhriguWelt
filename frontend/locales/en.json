@@ -2,14 +2,14 @@
   "bhriguPrediction": {
     "sections": {
       "karmic-journey": {
-        "soul_purpose": "Soul's Primary Purpose",
-        "karmic_blueprint": "Karmic Blueprint",
-        "evolution_stage": "Soul Evolution Stage",
-        "life_mission": "Life Mission & Dharma",
-        "karmic_lessons": "Karmic Lessons",
-        "soul_connections": "Soul Group Connections",
-        "timing": "Timing of Karmic Events",
-        "spiritual_gifts": "Spiritual Gifts & Abilities"
+        "soul_purpose": "Why you were born",
+        "karmic_blueprint": "Patterns you carry from the past",
+        "evolution_stage": "Where you stand on your path",
+        "life_mission": "Your life's work and duty",
+        "karmic_lessons": "Lessons of this life",
+        "soul_connections": "Important people in your life",
+        "timing": "When big changes come",
+        "spiritual_gifts": "Your natural gifts"
       },
       "past-lives": {
         "recent_life": "Most Recent Past Life",
@@ -89,6 +89,16 @@
         "weekly": "Weekly Forecast",
         "monthly": "Monthly Outlook",
         "yearly": "Yearly Overview"
+      },
+      "karmic-debts": {
+        "debts_overview": "Your karmic debts at a glance",
+        "ancestors_father": "Debt to your father and ancestors",
+        "mother_home": "Debt to your mother and home",
+        "siblings_friends": "Debt to brothers, sisters and friends",
+        "spouse_partners": "Debt to your spouse and partners",
+        "teachers_dharma": "Debt to teachers and your own good deeds",
+        "society_service": "Debt to those who serve you and the needy",
+        "repayment": "How to repay, step by step"
       }
     }
   },
@@ -238,7 +248,7 @@
   "bhriguPages": {
     "karmicJourney": {
       "title": "Karmic Journey",
-      "description": "Discover your soul's purpose and life mission through detailed karmic analysis"
+      "description": "Why you were born, the lessons you came to learn and when life turns"
     },
     "pastLives": {
       "title": "Past Lives",
@@ -267,6 +277,10 @@
     "predictions": {
       "title": "Predictions",
       "description": "Daily, weekly, and monthly forecasts with actionable insights"
+    },
+    "karmicDebts": {
+      "title": "Karmic Debts",
+      "description": "Duties left unfinished from past actions, read from your chart, and how to repay them"
     }
   }
 }

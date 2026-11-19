@@ -149,6 +149,7 @@ def _get_prediction_generator(category_key: str):
         'life_events': bhrigu_service.generate_life_events_prediction,
         'karmic_remedies': bhrigu_service.generate_karmic_remedies_prediction,
         'karma_reset': bhrigu_service.generate_karma_reset,
+        'karmic_debts': bhrigu_service.generate_karmic_debts_prediction,
         'relationships': bhrigu_service.generate_relationships_prediction,
         'predictions': bhrigu_service.generate_general_predictions,
     }
@@ -553,6 +554,70 @@ def future_lives():
             f"Failed to generate future lives prediction: {sanitize_error(str(e))}",
             500,
             metadata={'category': 'future_lives'}
+        )
+
+
+@bp.route('/karmic-debts', methods=['POST'])
+@limiter.limit("10 per minute")
+@route_error_handler
+def karmic_debts():
+    """Generate Karmic Debts (rinas): unfinished duties shown in the chart and how to repay them."""
+    try:
+        data = request.get_json()
+        _sanitize_question_field(data)
+        calculator = get_astrology_calculator()
+        cached_birth_data = get_cached_birth_data(data)
+        if not calculator and not cached_birth_data:
+            return dependency_error_response(get_astrology_dependency_error())
+
+        if calculator:
+            validation_error = validate_birth_data(data)
+            if validation_error:
+                return error_response(validation_error, 400)
+
+        cached = BhriguPredictionCache.get_cached_prediction(
+            data, 'karmic_debts', data.get('question')
+        )
+        if cached and not data.get('force_regenerate'):
+            cached_prediction = cached.to_dict().get('prediction')
+            return prediction_response(
+                cached_prediction,
+                metadata=_build_cache_metadata(cached),
+                message="From cache"
+            )
+
+        chart_data, error = _get_chart_data(data)
+        if error:
+            return error
+        birth_data = {**data, **chart_data}
+
+        prediction = _generate_prediction(
+            "karmic_debts",
+            birth_data,
+            lambda: bhrigu_service.generate_karmic_debts_prediction(
+                birth_data, data.get('question')
+            )
+        )
+
+        BhriguPredictionCache.cache_prediction(
+            birth_data, 'karmic_debts', prediction, data.get('question'),
+            {'zodiac_sign': chart_data.get('zodiac_sign'),
+             'nakshatra': chart_data.get('nakshatra')}
+        )
+
+        return prediction_response(
+            prediction,
+            metadata=_build_chart_metadata(chart_data, category='karmic_debts')
+        )
+
+    except PredictionUnavailableError as e:
+        return _unavailable_response(e)
+    except Exception as e:
+        log_error(logger, e, "Error in karmic_debts")
+        return prediction_error_response(
+            f"Failed to generate karmic debts prediction: {sanitize_error(str(e))}",
+            500,
+            metadata={'category': 'karmic_debts'}
         )
 
 

@@ -53,6 +53,7 @@ class PredictionCache:
         'karmic_journey': 86400 * 7,  # 7 days (rarely changes)
         'past_lives': 86400 * 7,      # 7 days
         'future_lives': 86400 * 7,    # 7 days
+        'karmic_debts': 86400 * 7,    # 7 days
         'present_life': 86400,        # 24 hours
         'life_events': 86400,         # 24 hours
         'karmic_remedies': 86400 * 3, # 3 days

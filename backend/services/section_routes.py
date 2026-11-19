@@ -97,6 +97,16 @@ ROUTES: Dict[str, Dict[str, Route]] = {
         'service': ((), ('F-LESSON', 'F-BNN-03', 'F-BHAVAT-01:spiritual')),
         'meditation': ((), ('F-MOKSHA', 'F-NODES-01', 'F-BHAVAT-01:spiritual')),
     },
+    'karmic_debts': {
+        'debts_overview': ((), ('F-RINA', 'F-NODES-01')),
+        'ancestors_father': ((), ('F-RINA-PITRI', 'F-BHAVAT-01:spiritual')),
+        'mother_home': ((), ('F-RINA-MATRI', 'F-BHAVAT-01:home')),
+        'siblings_friends': ((), ('F-RINA-BHRATRI', 'F-BHAVAT-01:communication')),
+        'spouse_partners': ((), ('F-RINA-STRI', 'F-BHAVAT-01:marriage')),
+        'teachers_dharma': ((), ('F-RINA-GURU', 'F-BHAVAT-01:purva_punya')),
+        'society_service': ((), ('F-RINA-SEVA',)),
+        'repayment': ((), ('F-RINA', 'F-REMEDY-01')),
+    },
     'karma_reset': {
         'reset_overview': ((), ('F-LESSON', 'F-NODES-01', 'F-RETRO')),
         'release_practices': ((), ('F-REMEDY-01', 'F-LESSON')),

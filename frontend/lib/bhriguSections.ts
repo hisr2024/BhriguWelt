@@ -25,6 +25,16 @@ export const CATEGORY_SECTIONS: Record<string, CategorySection[]> = {
     { key: 'karmic_debts', titleKey: 'bhriguPrediction.sections.past-lives.karmic_debts', color: 'rose' },
     { key: 'spiritual_progress', titleKey: 'bhriguPrediction.sections.past-lives.spiritual_progress', color: 'amber' }
   ],
+  'karmic-debts': [
+    { key: 'debts_overview', titleKey: 'bhriguPrediction.sections.karmic-debts.debts_overview', color: 'cyan' },
+    { key: 'ancestors_father', titleKey: 'bhriguPrediction.sections.karmic-debts.ancestors_father', color: 'amber' },
+    { key: 'mother_home', titleKey: 'bhriguPrediction.sections.karmic-debts.mother_home', color: 'teal' },
+    { key: 'siblings_friends', titleKey: 'bhriguPrediction.sections.karmic-debts.siblings_friends', color: 'blue' },
+    { key: 'spouse_partners', titleKey: 'bhriguPrediction.sections.karmic-debts.spouse_partners', color: 'pink' },
+    { key: 'teachers_dharma', titleKey: 'bhriguPrediction.sections.karmic-debts.teachers_dharma', color: 'purple' },
+    { key: 'society_service', titleKey: 'bhriguPrediction.sections.karmic-debts.society_service', color: 'indigo' },
+    { key: 'repayment', titleKey: 'bhriguPrediction.sections.karmic-debts.repayment', color: 'emerald' }
+  ],
   'future-lives': [
     { key: 'next_incarnation', titleKey: 'bhriguPrediction.sections.future-lives.next_incarnation', color: 'cyan' },
     { key: 'evolution_trajectory', titleKey: 'bhriguPrediction.sections.future-lives.evolution_trajectory', color: 'purple' },
