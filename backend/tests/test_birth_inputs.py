@@ -115,3 +115,25 @@ def test_suggestions_fall_back_to_full_search(monkeypatch):
     monkeypatch.setattr(calc.geolocator, 'geocode', lambda *a, **k: [])
     found = calc.suggest_places('Pune')
     assert found and found[0]['timezone'] == 'Asia/Kolkata'  # built-in list answers
+
+
+def test_a_typo_on_the_last_letter_still_finds_the_town(monkeypatch):
+    import requests
+    calc = AstrologyCalculator()
+    hit = {'features': [{'properties': {'name': 'Esslingen am Neckar', 'state': 'Baden-Württemberg', 'country': 'Germany',
+                                        'osm_value': 'town'}, 'geometry': {'coordinates': [9.3066, 48.7406]}}]}
+
+    class Resp:
+        def __init__(self, q):
+            self.q = q
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return hit if self.q == 'Esslinge' else {'features': []}
+
+    monkeypatch.setattr(requests, 'get', lambda url, params, **k: Resp(params['q']))
+    found = calc.suggest_places('Esslingem')
+    assert found[0]['name'] == 'Esslingen am Neckar, Baden-Württemberg, Germany'
+    assert found[0]['timezone'] == 'Europe/Berlin'

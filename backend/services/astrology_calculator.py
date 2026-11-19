@@ -522,7 +522,8 @@ class AstrologyCalculator:
 
     PHOTON_URL = os.getenv('PHOTON_URL', 'https://photon.komoot.io/api/')
 
-    def suggest_places(self, query: str, limit: int = 8, when: Optional[datetime] = None) -> List[Dict[str, Any]]:
+    def suggest_places(self, query: str, limit: int = 8, when: Optional[datetime] = None,
+                       _retry: bool = False) -> List[Dict[str, Any]]:
         """Type-ahead suggestions for the birth place (cities, towns, villages).
 
         Photon (OpenStreetMap, built for search-as-you-type) is asked first;
@@ -565,6 +566,13 @@ class AstrologyCalculator:
             if cached:
                 self._set_cached_geocode(key, cached)
         if not cached:
+            # A slip on the last letter ("Esslingem") still finds the town.
+            if len(query) > 4 and not _retry:
+                retry = self.suggest_places(query[:-1], limit=limit, when=when, _retry=True)
+                if retry:
+                    return retry
+            if _retry:
+                return []
             return self.search_places(query, limit=min(limit, 6), when=when)
         return [self._with_zone(dict(place), when) for place in cached]
 
