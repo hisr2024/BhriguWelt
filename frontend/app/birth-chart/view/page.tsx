@@ -281,7 +281,8 @@ export default function BirthChartViewPage() {
     if (!b) return '';
     const lat = typeof b.latitude === 'number' ? `${Math.abs(b.latitude).toFixed(2)}°${b.latitude >= 0 ? 'N' : 'S'}` : '';
     const lon = typeof b.longitude === 'number' ? `${Math.abs(b.longitude).toFixed(2)}°${b.longitude >= 0 ? 'E' : 'W'}` : '';
-    return [b.place_resolved || b.place, [lat, lon].filter(Boolean).join(', '), b.timezone].filter(Boolean).join(' · ');
+    const clock = b.clock && b.clock !== 'standard time' ? b.clock : b.timezone;
+    return [b.place_resolved || b.place, [lat, lon].filter(Boolean).join(', '), clock].filter(Boolean).join(' · ');
   })();
   const resolvedZodiacSign = resolveZodiacSign(chartData);
   const resolvedMoonSign = resolveMoonSign(chartData);
