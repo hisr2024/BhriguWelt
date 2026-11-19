@@ -339,8 +339,8 @@ export const astrologyAPI = {
   },
 
   /** Every place matching the text, with coordinates, time zone and the UTC offset at the birth moment. */
-  searchPlaces: async (q: string, date?: string, time?: string): Promise<PlaceMatch[]> => {
-    const response = await api.get('/api/astrology/places', { params: { q, date, time } });
+  searchPlaces: async (q: string, date?: string, time?: string, suggest = false): Promise<PlaceMatch[]> => {
+    const response = await api.get('/api/astrology/places', { params: { q, date, time, suggest: suggest ? 1 : undefined } });
     return response.data?.data?.places ?? [];
   },
 

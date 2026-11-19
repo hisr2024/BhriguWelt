@@ -139,7 +139,11 @@ def search_places():
             when = _dt.combine(_dt.strptime(date_arg, '%Y-%m-%d').date(), parse_birth_time(time_arg))
         except ValueError:
             when = None
-    places = calculator.search_places(query, limit=6, when=when)
+    # ?suggest=1: type-ahead (cities, towns and villages as the user types).
+    if request.args.get('suggest'):
+        places = calculator.suggest_places(query, limit=8, when=when)
+    else:
+        places = calculator.search_places(query, limit=6, when=when)
     return success_response(data={'places': places}, message=f"{len(places)} place(s) found")
 
 

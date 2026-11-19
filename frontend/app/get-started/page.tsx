@@ -12,14 +12,8 @@ import {
   type ProfileCreationProgress,
 } from '@/lib/services/profileCreationService';
 import ProfileCreationProgressComponent from '@/components/ProfileCreationProgress';
+import PlaceSearchField, { formatPlaceDetail } from '@/app/components/PlaceSearchField';
 import { unlockHref } from '@/lib/unlockRedirect';
-
-function formatPlaceDetail(m: PlaceMatch): string {
-  const lat = `${Math.abs(m.latitude).toFixed(2)}°${m.latitude >= 0 ? 'N' : 'S'}`;
-  const lon = `${Math.abs(m.longitude).toFixed(2)}°${m.longitude >= 0 ? 'E' : 'W'}`;
-  const zone = [m.timezone, m.utc_offset && `${m.utc_offset} at your birth time`].filter(Boolean).join(' · ');
-  return [`${lat}, ${lon}`, zone].filter(Boolean).join(' · ');
-}
 
 export default function GetStartedPage() {
   const router = useRouter();
@@ -36,7 +30,7 @@ export default function GetStartedPage() {
   // The birth place the user confirmed from the search results (exact coordinates and zone).
   const [placeMatches, setPlaceMatches] = useState<PlaceMatch[] | null>(null);
   const [chosenPlace, setChosenPlace] = useState<PlaceMatch | null>(null);
-  const [searchingPlace, setSearchingPlace] = useState(false);
+  const [, setSearchingPlace] = useState(false);
   const [manualCoords, setManualCoords] = useState({ latitude: '', longitude: '' });
   const [creationProgress, setCreationProgress] = useState<ProfileCreationProgress | null>(null);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
@@ -252,38 +246,32 @@ export default function GetStartedPage() {
         {step === 4 && (
           <div>
             <label htmlFor="onb-place" className="mb-2 block text-sm text-ivory-2">Place of birth</label>
-            <input id="onb-place" type="text" required placeholder="New Delhi, India" autoComplete="address-level2" value={formData.place_of_birth} onChange={(e) => { setFormData({ ...formData, place_of_birth: e.target.value }); setChosenPlace(null); setPlaceMatches(null); }} onKeyDown={(e) => { if (e.key === 'Enter' && !chosenPlace && !manualCoordsEnabled) { e.preventDefault(); if (validatePlace(formData.place_of_birth)) findPlace(); } }} className="nadi-input text-lg" autoFocus />
-            <p className="mt-2 text-xs text-ivory-muted">City, state and country. Your rising sign (Lagna) depends on the exact place.</p>
-            {!manualCoordsEnabled && (
-              <div className="mt-3">
-                {!chosenPlace && (
-                  <button type="button" onClick={findPlace} disabled={searchingPlace || !validatePlace(formData.place_of_birth)} className="nadi-btn-ghost w-full">
-                    {searchingPlace ? 'Searching…' : 'Find place'}
-                  </button>
-                )}
-                {placeMatches && placeMatches.length > 1 && !chosenPlace && (
-                  <ul className="mt-3 space-y-2" aria-label="Matching places">
-                    {placeMatches.map((m) => (
-                      <li key={`${m.latitude},${m.longitude}`}>
-                        <button type="button" onClick={() => { setChosenPlace(m); setError(""); }} className="w-full rounded-xl border border-[color:var(--line)] px-4 py-3 text-left text-sm text-ivory hover:border-gold-400">
-                          <span className="block">{m.name}</span>
-                          <span className="mt-0.5 block text-xs text-ivory-muted">{formatPlaceDetail(m)}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {chosenPlace && (
-                  <div className="rounded-xl border border-gold-400/60 bg-[rgba(212,175,95,0.08)] px-4 py-3 text-sm">
-                    <p className="text-[0.7rem] uppercase tracking-[0.14em] text-gold-300">Chart will be cast for</p>
-                    <p className="mt-1 text-ivory">{chosenPlace.name}</p>
-                    <p className="mt-0.5 text-xs text-ivory-muted">{formatPlaceDetail(chosenPlace)}</p>
-                    {placeMatches && placeMatches.length > 1 && (
-                      <button type="button" onClick={() => setChosenPlace(null)} className="mt-2 text-xs text-gold-300 underline">Choose a different place</button>
-                    )}
-                  </div>
-                )}
-              </div>
+            {manualCoordsEnabled ? (
+              <input id="onb-place" type="text" required placeholder="New Delhi, India" value={formData.place_of_birth} onChange={(e) => setFormData({ ...formData, place_of_birth: e.target.value })} className="nadi-input text-lg" />
+            ) : (
+              <PlaceSearchField
+                id="onb-place"
+                value={formData.place_of_birth}
+                onTextChange={(text) => { setFormData({ ...formData, place_of_birth: text }); setPlaceMatches(null); }}
+                chosen={chosenPlace}
+                onChoose={(place) => { setChosenPlace(place); if (place) setError(''); }}
+                date={formData.date_of_birth}
+                time={formData.time_of_birth}
+                autoFocus
+              />
+            )}
+            <p className="mt-2 text-xs text-ivory-muted">Type a few letters and choose your town or village. Your rising sign (Lagna) depends on the exact place.</p>
+            {placeMatches && placeMatches.length > 1 && !chosenPlace && !manualCoordsEnabled && (
+              <ul className="mt-3 space-y-2" aria-label="Matching places">
+                {placeMatches.map((m) => (
+                  <li key={`${m.latitude},${m.longitude}`}>
+                    <button type="button" onClick={() => { setChosenPlace(m); setFormData({ ...formData, place_of_birth: m.name }); setError(''); }} className="w-full rounded-xl border border-[color:var(--line)] px-4 py-3 text-left text-sm text-ivory hover:border-gold-400">
+                      <span className="block">{m.name}</span>
+                      <span className="mt-0.5 block text-xs text-ivory-muted">{formatPlaceDetail(m)}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
             <div className="mt-5 space-y-4">
               <label className="flex min-h-[44px] items-center gap-3 text-sm text-ivory-2">

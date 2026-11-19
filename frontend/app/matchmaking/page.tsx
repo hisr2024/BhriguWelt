@@ -15,6 +15,8 @@ import { useEncryption } from '@/lib/context/EncryptionContext';
 import { loadCurrentProfile } from '@/lib/profileHelpers';
 import { api } from '@/lib/api';
 import { unlockHref } from '@/lib/unlockRedirect';
+import PlaceSearchField from '@/app/components/PlaceSearchField';
+import type { PlaceMatch } from '@/lib/api';
 
 interface MatchResult {
   total_score: number;
@@ -47,6 +49,11 @@ type PersonInput = {
   longitude?: number;
   timezone?: string;
 };
+
+const chosenFrom = (p: PersonInput): PlaceMatch | null =>
+  typeof p.latitude === 'number' && typeof p.longitude === 'number'
+    ? { name: p.place_of_birth, latitude: p.latitude, longitude: p.longitude, timezone: p.timezone }
+    : null;
 
 export default function MatchmakingPage() {
   const [step, setStep] = useState<'input' | 'loading' | 'result'>('input');
@@ -239,14 +246,20 @@ export default function MatchmakingPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-white/50" />
-                  <input
-                    type="text"
-                    placeholder="Place of Birth"
-                    aria-label="Person 1 place of birth"
-                    value={person1.place_of_birth}
-                    onChange={(e) => setPerson1({ ...person1, place_of_birth: e.target.value, latitude: undefined, longitude: undefined, timezone: undefined })}
-                    className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50"
-                  />
+                  <div className="flex-1" aria-label="Person 1 place of birth">
+                    <PlaceSearchField
+                      id="person1-place"
+                      value={person1.place_of_birth}
+                      onTextChange={(text) => setPerson1((p) => ({ ...p, place_of_birth: text }))}
+                      chosen={chosenFrom(person1)}
+                      onChoose={(place) => setPerson1((p) => place
+                        ? { ...p, place_of_birth: place.name, latitude: place.latitude, longitude: place.longitude, timezone: place.timezone || undefined }
+                        : { ...p, latitude: undefined, longitude: undefined, timezone: undefined })}
+                      date={person1.date_of_birth}
+                      time={person1.time_of_birth}
+                      placeholder="Place of birth"
+                    />
+                  </div>
                 </div>
               </div>
             </GenZCard>
@@ -291,14 +304,20 @@ export default function MatchmakingPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-white/50" />
-                  <input
-                    type="text"
-                    placeholder="Place of Birth"
-                    aria-label="Person 2 place of birth"
-                    value={person2.place_of_birth}
-                    onChange={(e) => setPerson2({ ...person2, place_of_birth: e.target.value, latitude: undefined, longitude: undefined, timezone: undefined })}
-                    className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50"
-                  />
+                  <div className="flex-1" aria-label="Person 2 place of birth">
+                    <PlaceSearchField
+                      id="person2-place"
+                      value={person2.place_of_birth}
+                      onTextChange={(text) => setPerson2((p) => ({ ...p, place_of_birth: text }))}
+                      chosen={chosenFrom(person2)}
+                      onChoose={(place) => setPerson2((p) => place
+                        ? { ...p, place_of_birth: place.name, latitude: place.latitude, longitude: place.longitude, timezone: place.timezone || undefined }
+                        : { ...p, latitude: undefined, longitude: undefined, timezone: undefined })}
+                      date={person2.date_of_birth}
+                      time={person2.time_of_birth}
+                      placeholder="Place of birth"
+                    />
+                  </div>
                 </div>
               </div>
             </GenZCard>

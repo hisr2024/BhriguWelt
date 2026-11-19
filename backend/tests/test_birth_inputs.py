@@ -57,3 +57,41 @@ def test_place_search_lists_every_match_with_its_zone_and_offset(monkeypatch):
     india = next(p for p in found if 'Bihar' in p['name'])
     assert nepal['timezone'] == 'Asia/Kathmandu' and nepal['utc_offset'] == 'UTC+5:45'
     assert india['timezone'] == 'Asia/Kolkata' and india['utc_offset'] == 'UTC+5:30'
+
+
+def test_suggestions_label_town_state_country_and_skip_houses(monkeypatch):
+    import requests
+    calc = AstrologyCalculator()
+    payload = {'features': [
+        {'properties': {'name': 'Aurangabad', 'county': 'Aurangabad', 'state': 'Maharashtra', 'country': 'India', 'osm_value': 'city'},
+         'geometry': {'coordinates': [75.3433, 19.8762]}},
+        {'properties': {'name': 'Aurangabad', 'state': 'Bihar', 'country': 'India', 'osm_value': 'town'},
+         'geometry': {'coordinates': [84.3742, 24.7522]}},
+        {'properties': {'name': 'Aurangabad House', 'state': 'Delhi', 'country': 'India', 'osm_value': 'house'},
+         'geometry': {'coordinates': [77.2, 28.6]}},
+    ]}
+
+    class Resp:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return payload
+
+    monkeypatch.setattr(requests, 'get', lambda *a, **k: Resp())
+    found = calc.suggest_places('Aurangab', when=datetime(1990, 5, 15, 10, 30))
+    assert [p['name'] for p in found] == ['Aurangabad, Maharashtra, India', 'Aurangabad, Bihar, India']
+    assert all(p['timezone'] == 'Asia/Kolkata' and p['utc_offset'] == 'UTC+5:30' for p in found)
+
+
+def test_suggestions_fall_back_to_full_search(monkeypatch):
+    import requests
+    calc = AstrologyCalculator()
+
+    def down(*a, **k):
+        raise requests.ConnectionError('photon down')
+
+    monkeypatch.setattr(requests, 'get', down)
+    monkeypatch.setattr(calc.geolocator, 'geocode', lambda *a, **k: [])
+    found = calc.suggest_places('Pune')
+    assert found and found[0]['timezone'] == 'Asia/Kolkata'  # built-in list answers

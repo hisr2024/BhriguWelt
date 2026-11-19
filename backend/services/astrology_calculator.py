@@ -499,20 +499,68 @@ class AstrologyCalculator:
                     unique.append(place)
             cached = unique
             self._set_cached_geocode(key, cached)
-        results = []
-        for place in cached:
-            tz = self._timezone_at(place['latitude'], place['longitude'])
-            item = dict(place, timezone=tz)
-            if tz and when is not None:
-                try:
-                    offset = self.pytz.timezone(tz).localize(when).utcoffset()
-                    minutes = int(offset.total_seconds() // 60)
-                    sign = '+' if minutes >= 0 else '-'
-                    item['utc_offset'] = f"UTC{sign}{abs(minutes) // 60}:{abs(minutes) % 60:02d}"
-                except Exception:
-                    pass
-            results.append(item)
-        return results
+        return [self._with_zone(dict(place), when) for place in cached]
+
+    PHOTON_URL = os.getenv('PHOTON_URL', 'https://photon.komoot.io/api/')
+
+    def suggest_places(self, query: str, limit: int = 8, when: Optional[datetime] = None) -> List[Dict[str, Any]]:
+        """Type-ahead suggestions for the birth place (cities, towns, villages).
+
+        Photon (OpenStreetMap, built for search-as-you-type) is asked first;
+        when it is unreachable the full search (Nominatim, then the built-in
+        list) answers instead, so the field never comes back empty because of
+        one provider.
+        """
+        query = (query or '').strip()
+        if len(query) < 2:
+            return []
+        key = f"suggest::{query.lower()}::{limit}"
+        cached = self._get_cached_geocode(key)
+        if cached is None:
+            cached = []
+            try:
+                import requests
+                resp = requests.get(self.PHOTON_URL, params={'q': query, 'limit': limit * 2, 'lang': 'en', 'osm_tag': 'place'},
+                                    headers={'User-Agent': 'BhriguWelt/1.0 (https://bhriguwelt.app)'}, timeout=4)
+                resp.raise_for_status()
+                for feat in resp.json().get('features', []):
+                    props = feat.get('properties') or {}
+                    coords = (feat.get('geometry') or {}).get('coordinates') or []
+                    if len(coords) != 2 or not props.get('name'):
+                        continue
+                    if props.get('osm_value') in ('house', 'isolated_dwelling', 'farm', 'plot', 'square', 'neighbourhood', 'quarter', 'city_block'):
+                        continue
+                    region = [x for x in (props.get('county') or props.get('district'), props.get('state'), props.get('country'))
+                              if x and x != props['name']]
+                    parts = [props['name']] + [x for i, x in enumerate(region) if x not in region[:i]]
+                    cached.append({'name': ', '.join(parts), 'latitude': round(float(coords[1]), 5),
+                                   'longitude': round(float(coords[0]), 5), 'kind': props.get('osm_value')})
+            except Exception as exc:
+                logger.info("Place suggestions unavailable for %s: %s", query, exc)
+            unique: List[Dict[str, Any]] = []
+            for place in cached:
+                if all(abs(place['latitude'] - u['latitude']) > 0.05 or abs(place['longitude'] - u['longitude']) > 0.05
+                       for u in unique):
+                    unique.append(place)
+            cached = unique[:limit]
+            if cached:
+                self._set_cached_geocode(key, cached)
+        if not cached:
+            return self.search_places(query, limit=min(limit, 6), when=when)
+        return [self._with_zone(dict(place), when) for place in cached]
+
+    def _with_zone(self, item: Dict[str, Any], when: Optional[datetime]) -> Dict[str, Any]:
+        tz = self._timezone_at(item['latitude'], item['longitude'])
+        item['timezone'] = tz
+        if tz and when is not None:
+            try:
+                offset = self.pytz.timezone(tz).localize(when).utcoffset()
+                minutes = int(offset.total_seconds() // 60)
+                sign = '+' if minutes >= 0 else '-'
+                item['utc_offset'] = f"UTC{sign}{abs(minutes) // 60}:{abs(minutes) % 60:02d}"
+            except Exception:
+                pass
+        return item
 
     def _get_builtin_geocode(self, place_key: str) -> Dict[str, float]:
         """
