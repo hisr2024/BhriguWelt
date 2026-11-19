@@ -9,7 +9,7 @@
 //   plaintext copies.
 // Bump SW_VERSION to drop all old caches on the next activation.
 
-const SW_VERSION = 'v4';
+const SW_VERSION = 'v5';
 const STATIC_CACHE = `bhriguwelt-static-${SW_VERSION}`;
 const ASSET_CACHE = `bhriguwelt-assets-${SW_VERSION}`;
 const SHELL_CACHE = `bhriguwelt-shell-${SW_VERSION}`;
