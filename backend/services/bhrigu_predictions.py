@@ -594,78 +594,38 @@ Actionable Guidance:
     # Defines the structure and required sections for each category
     SECTION_SPECS = {
         'karmic_journey': [
-                {
-                    'key': 'soul_purpose',
-                    'title': "Soul's Primary Purpose",
-                    'bullets': [
-                        "Fundamental reason this soul incarnated in this lifetime",
-                        "Unique dharmic path and cosmic mission",
-                        "Core spiritual lessons to master"
-                    ]
-                },
-                {
-                    'key': 'karmic_blueprint',
-                    'title': 'Karmic Blueprint',
-                    'bullets': [
-                        "Main karmic patterns and past-life imprints",
-                        "Influence of Jupiter, Saturn, Rahu, and Ketu",
-                        "Key yogas shaping destiny"
-                    ]
-                },
-                {
-                    'key': 'evolution_stage',
-                    'title': 'Soul Evolution Stage',
-                    'bullets': [
-                        "Current stage in soul evolution",
-                        "Indicators of maturity or remaining lessons",
-                        "Progress toward moksha"
-                    ]
-                },
-                {
-                    'key': 'life_mission',
-                    'title': 'Life Mission & Dharma',
-                    'bullets': [
-                        "Primary life mission across career, service, and dharma",
-                        "How to align daily choices with higher purpose",
-                        "Key responsibilities for this incarnation"
-                    ]
-                },
-                {
-                    'key': 'karmic_lessons',
-                    'title': 'Karmic Lessons in This Lifetime',
-                    'bullets': [
-                        "Top lessons the soul must integrate",
-                        "Recurring challenges and their spiritual purpose",
-                        "Behavioral shifts needed for growth"
-                    ]
-                },
-                {
-                    'key': 'soul_connections',
-                    'title': 'Soul Group Connections',
-                    'bullets': [
-                        "Key soulmates and soul family indicators",
-                        "Relationship dynamics tied to karma",
-                        "Recognition signs for karmic connections"
-                    ]
-                },
-                {
-                    'key': 'timing',
-                    'title': 'Timing of Karmic Events',
-                    'bullets': [
-                        "Major activation periods and turning points",
-                        "Dasha and transit timing insights",
-                        "Upcoming windows for growth"
-                    ]
-                },
-                {
-                    'key': 'spiritual_gifts',
-                    'title': 'Spiritual Gifts & Abilities',
-                    'bullets': [
-                        "Innate talents carried from past lives",
-                        "Spiritual practices best suited",
-                        "Hidden capabilities to awaken"
-                    ]
-                }
+                {'key': 'soul_purpose', 'aliases': ["Soul's Primary Purpose"], 'title': 'Why you were born',
+                 'bullets': ["The main purpose this chart shows for your life, in simple words",
+                             "What gives your life meaning and direction",
+                             "The one lesson you came to learn"]},
+                {'key': 'karmic_blueprint', 'aliases': ['Karmic Blueprint'], 'title': 'Patterns you carry from the past',
+                 'bullets': ["Habits and tendencies the chart shows you were born with",
+                             "Which of them help you and which hold you back",
+                             "How they show up in everyday life"]},
+                {'key': 'evolution_stage', 'aliases': ['Soul Evolution Stage'], 'title': 'Where you stand on your path',
+                 'bullets': ["How far along your inner growth the chart places you",
+                             "Signs of maturity and what is still to learn",
+                             "What moves you forward from here"]},
+                {'key': 'life_mission', 'aliases': ['Life Mission & Dharma'], 'title': "Your life's work and duty",
+                 'bullets': ["The kind of work and service that suits you",
+                             "Your main responsibilities in this life",
+                             "How to bring daily choices in line with them"]},
+                {'key': 'karmic_lessons', 'aliases': ['Karmic Lessons in This Lifetime'], 'title': 'Lessons of this life',
+                 'bullets': ["The main lessons the chart shows",
+                             "Difficulties that keep coming back, and why",
+                             "One change in behaviour that helps most"]},
+                {'key': 'soul_connections', 'aliases': ['Soul Group Connections'], 'title': 'Important people in your life',
+                 'bullets': ["The kind of people who matter most in your life",
+                             "Bonds that feel familiar or fated",
+                             "How to recognise them"]},
+                {'key': 'timing', 'aliases': ['Timing of Karmic Events'], 'title': 'When big changes come',
+                 'bullets': ["The periods when life turns, with dates from the facts only",
+                             "What each period brings",
+                             "The next important window"]},
+                {'key': 'spiritual_gifts', 'aliases': ['Spiritual Gifts & Abilities'], 'title': 'Your natural gifts',
+                 'bullets': ["Talents you were born with",
+                             "The spiritual practice that suits you",
+                             "Abilities still waiting to be used"]},
             ],
             'past_lives': [
                 {
@@ -1136,6 +1096,40 @@ Actionable Guidance:
                     ]
                 }
             ],
+            'karmic_debts': [
+                {'key': 'debts_overview', 'title': 'Your karmic debts at a glance',
+                 'bullets': ["Which debts this chart shows clearly, which only lightly and which not at all",
+                             "Explain the idea simply: a debt is an unfinished duty to a person or group, carried from past actions",
+                             "Name the one debt that matters most and why"]},
+                {'key': 'ancestors_father', 'title': 'Debt to your father and ancestors',
+                 'bullets': ["Whether this debt is shown, and the plain reason from the chart",
+                             "How it may show up in daily life with the father, elders or family line",
+                             "How and when to repay it"]},
+                {'key': 'mother_home', 'title': 'Debt to your mother and home',
+                 'bullets': ["Whether this debt is shown, and the plain reason from the chart",
+                             "How it may show up with the mother or at home",
+                             "How and when to repay it"]},
+                {'key': 'siblings_friends', 'title': 'Debt to brothers, sisters and friends',
+                 'bullets': ["Whether this debt is shown, and the plain reason from the chart",
+                             "How it may show up with siblings and close friends",
+                             "How and when to repay it"]},
+                {'key': 'spouse_partners', 'title': 'Debt to your spouse and partners',
+                 'bullets': ["Whether this debt is shown, and the plain reason from the chart",
+                             "How it may show up in marriage or partnerships",
+                             "How and when to repay it"]},
+                {'key': 'teachers_dharma', 'title': 'Debt to teachers and your own good deeds',
+                 'bullets': ["Whether this debt is shown, and the plain reason from the chart",
+                             "How it may show up with teachers, learning or children",
+                             "How and when to repay it"]},
+                {'key': 'society_service', 'title': 'Debt to those who serve you and the needy',
+                 'bullets': ["Whether this debt is shown, and the plain reason from the chart",
+                             "How it may show up with workers, money owed or the poor",
+                             "How and when to repay it"]},
+                {'key': 'repayment', 'title': 'How to repay, step by step',
+                 'bullets': ["A simple weekly plan built only from the repayments listed in the facts",
+                             "Which debt to start with and in which period",
+                             "What changes in life as the debts are settled"]},
+            ],
             'karma_reset': [
                 {
                     'key': 'reset_overview',
@@ -1382,6 +1376,7 @@ Actionable Guidance:
             'life_events': self.generate_life_events_prediction,
             'karmic_remedies': self.generate_karmic_remedies_prediction,
             'karma_reset': self.generate_karma_reset,
+            'karmic_debts': self.generate_karmic_debts_prediction,
             'relationships': self.generate_relationships_prediction,
             'predictions': self.generate_general_predictions
         }
@@ -1541,6 +1536,11 @@ Actionable Guidance: 3 specific bullet points.
                 "Choose one spiritual practice to commit to for the next 21 days.",
                 "Note one recurring life lesson and plan a small change this week."
             ],
+            'karmic_debts': [
+                "Start with the debt marked most clearly and keep its weekly practice for 21 days.",
+                "Settle one practical obligation this week: a call, a visit or a payment you owe.",
+                "Note any change in that relationship at the end of the month."
+            ],
             'past_lives': [
                 "Journal recurring themes that feel familiar or karmic.",
                 "Release one outdated fear through a short meditation ritual.",
@@ -1639,6 +1639,16 @@ Actionable Guidance: 3 specific bullet points.
         "declarative sentences that say what THIS chart indicates; no generic astrology, no "
         "filler, no flattery, no fatalism, no repetition between sections. A difficult indication "
         "is stated plainly together with the supporting factor or upaya the facts give. "
+        "AUDIENCE: ordinary people with no knowledge of astrology. In 'overview', 'key_insight', "
+        "'simple' and 'guidance' write the way a wise elder explains things to family: short "
+        "sentences (at most 20 words), everyday words, no Sanskrit or technical terms. Never use "
+        "there: bindu, Ashtakavarga, karaka, bhava, lagna lord, kendra, trikona, dusthana, "
+        "dasha, antardasha, pratyantar, gochara, vedha, tara bala, chandra bala, navamsa, D9, "
+        "atmakaraka, karakamsha, pada, combust, debilitated, exalted, aspect. Say instead: "
+        "'planetary period', 'Saturn's present movement', 'a weak placement', 'a very strong "
+        "placement', 'Saturn's influence falls on'. Planet names, sign names and a house with "
+        "its meaning (e.g. 'your 7th house of marriage') are fine. Technical terms belong only "
+        "in 'technical', which is for astrologers. "
         "Return ONE valid JSON object exactly matching the requested schema."
     )
 
@@ -1703,13 +1713,13 @@ SECTIONS (use these exact keys; write each section from ITS OWN facts plus the s
 {section_lines}
 
 Return JSON:
-{{"overview": "2 plain sentences: the single most important theme of this reading",
- "key_insight": "1 sentence, the sharpest chart-specific takeaway",
+{{"overview": "2 short, plain sentences an ordinary person understands at once: the single most important theme of this reading",
+ "key_insight": "1 short sentence in everyday words, the sharpest chart-specific takeaway",
  "sections": {{"<key>": {{
-   "simple": "3-4 plain sentences. Sentence 1 is the verdict for this theme (strong, mixed, delayed or needing effort) with the reason in everyday words; then what it means in daily life. No jargon",
+   "simple": "3-4 short sentences in everyday words for someone who knows no astrology. Sentence 1 is the verdict for this theme (strong, mixed, delayed or needing effort) with the reason in plain words; then what it means in daily life. No technical or Sanskrit terms",
    "timing": "the window stated in this section's facts, with its period name (e.g. 'Saturn-Venus period, Mar 2027-Jan 2028'); '' when the facts give this theme no date",
    "technical": "3-5 sentences in this order - Promise: house, lord, karaka, strength. Activation: the dasha that carries it. Trigger: the transit or Bhrigu/Nadi timing. Quote placements exactly and put the fact ID in brackets after each point; skip a step the facts do not cover",
-   "guidance": ["3 short actions, each tied to a planet, house or period named in this section; remedies only as listed in the facts"],
+   "guidance": ["3 short, practical actions in plain words, each tied to a planet, house or period named in this section; remedies only as listed in the facts"],
    "basis": ["fact IDs used"]}}}}}}
 
 Rules: <=140 words per section; never repeat a sentence across sections; omit a section key only if neither its facts nor the shared facts support it.
@@ -1776,6 +1786,7 @@ Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_
     def _split_markdown_sections(text: str, section_specs: List[Dict[str, Any]]) -> Dict[str, str]:
         """Map '## Title' blocks of a markdown reply onto section keys."""
         by_title = {spec['title'].lower(): spec['key'] for spec in section_specs}
+        by_title.update({alias.lower(): spec['key'] for spec in section_specs for alias in spec.get('aliases', ())})
         by_key = {spec['key'].lower(): spec['key'] for spec in section_specs}
         found: Dict[str, str] = {}
         current = None
@@ -2031,6 +2042,7 @@ Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_
             if isinstance(data, dict):
                 raw_sections = data.get('sections') if isinstance(data.get('sections'), dict) else {}
                 title_to_key = {spec['title'].lower(): spec['key'] for spec in section_specs}
+                title_to_key.update({alias.lower(): spec['key'] for spec in section_specs for alias in spec.get('aliases', ())})
                 for k, v in raw_sections.items():
                     key = k if k in title_to_key.values() else title_to_key.get(str(k).lower(), str(k).lower().replace(' ', '_'))
                     blocks[key] = v
@@ -2380,6 +2392,41 @@ Use classical house meanings: {HOUSE_SIGNIFICATIONS}.{self._accuracy_line(birth_
                 'error': 'generation_failed',
                 'metadata': {'error': str(e)},
                 'generated_at': datetime.utcnow().isoformat()
+            }
+
+    def generate_karmic_debts_prediction(self, birth_data: Dict[str, Any],
+                                         question: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Karmic Debts (rinas): which duties to father, mother, siblings, spouse,
+        teachers and society the chart shows as unfinished, and how to repay them.
+        Every debt is computed (services.bhrigu_nadi_rules.rule_rinas).
+        """
+        try:
+            fallback = self._get_fallback_if_unavailable('karmic_debts', birth_data)
+            if fallback:
+                return fallback
+            prediction_payload = self._generate_sectioned_prediction('karmic_debts', birth_data, question)
+            metadata = self._generate_metadata(birth_data, 'karmic_debts')
+            metadata['chunking'] = prediction_payload.get('chunking', False)
+            return {
+                'category': 'karmic_debts',
+                'title': 'Your Karmic Debts',
+                'full_analysis': prediction_payload['full_analysis'],
+                **prediction_payload['sections'],
+                'metadata': metadata,
+                'generated_at': datetime.utcnow().isoformat(),
+            }
+        except PredictionUnavailableError:
+            raise
+        except Exception as e:
+            logger.error(f"Karmic debts prediction failed: {e}", exc_info=True)
+            return self._get_fallback_if_unavailable('karmic_debts', birth_data) or {
+                'category': 'karmic_debts',
+                'title': 'Your Karmic Debts',
+                'full_analysis': 'Prediction temporarily unavailable. Please try again.',
+                'error': 'generation_failed',
+                'metadata': {'error': str(e)},
+                'generated_at': datetime.utcnow().isoformat(),
             }
 
     def generate_present_life_prediction(self, birth_data: Dict[str, Any],

@@ -55,6 +55,13 @@ TARAS = [
     ('Ati-Mitra', 2, 'the most friendly star: support comes easily; good for all undertakings'),
 ]
 
+# Plain names for the nine taras, for readers who do not know the terms.
+TARA_PLAIN = {
+    'Janma': 'your birth star', 'Sampat': 'the star of wealth', 'Vipat': 'the star of danger',
+    'Kshema': 'the star of well-being', 'Pratyari': 'the star of obstacles', 'Sadhaka': 'the star of success',
+    'Vadha': 'the harshest star', 'Mitra': 'a friendly star', 'Ati-Mitra': 'the most friendly star',
+}
+
 # Moon's transit counted from the natal Moon (results per Phaladeepika ch. 26).
 CHANDRA = {
     1: (1, 'comfort, good food and ease of mind'),
@@ -64,7 +71,7 @@ CHANDRA = {
     5: (0, 'worry and obstacles in plans; think before deciding'),
     6: (2, 'good health and the upper hand over rivals and debts'),
     7: (2, 'respect, pleasant company and gain through others'),
-    8: (-3, 'Chandrashtama: mental strain and mishaps; the weakest two and a quarter days of the month'),
+    8: (-3, 'your weakest two and a quarter days of the month (Chandrashtama): mental strain and mishaps are likelier'),
     9: (0, 'fatigue and delays; duties feel heavy'),
     10: (2, 'success and recognition in work'),
     11: (2, 'gains, good news and fulfilled wishes'),
@@ -89,6 +96,12 @@ DAY_COLOUR = {'Sun': 'Red or saffron', 'Moon': 'White', 'Mars': 'Red', 'Mercury'
 DAY_DIRECTION = {'Sun': 'East', 'Moon': 'North-west', 'Mars': 'South', 'Mercury': 'North', 'Jupiter': 'North-east',
                  'Venus': 'South-east', 'Saturn': 'West'}
 RAHU_KALAM_PART = [2, 7, 5, 6, 4, 3, 8]  # Monday..Sunday: which eighth of the day
+
+
+def period_names(maha: Optional[str], antar: Optional[str] = None, praty: Optional[str] = None) -> str:
+    """'Rahu (main period), Sun (sub-period), Jupiter (short period)' for readers who do not know 'dasha'."""
+    parts = [f"{p} ({label})" for p, label in ((maha, 'main period'), (antar, 'sub-period'), (praty, 'short period')) if p]
+    return ', '.join(parts)
 
 
 def _ordinal(n: int) -> str:
@@ -281,33 +294,34 @@ def daily_reading(chart: Dict[str, Any], when: Optional[datetime] = None, tz=Non
     until_nak = _fmt_local(f['nakshatra_until'], tz)
     until_sign = _fmt_local(f['sign_until'], tz)
 
-    headline = (f"The Moon is in {f['moon_sign']} ({f['nakshatra']}, pada {f['pada']}), "
-                f"{_ordinal(from_moon)} from your natal Moon — {f['chandra_text']}.")
-    tara_line = f"Tara bala is {f['tara']} — {f['tara_text']}."
-    # Chandra bala and tara bala are read together; when they disagree the day is mixed.
+    headline = (f"Today the Moon is in {f['moon_sign']}, in the {f['nakshatra']} star. "
+                f"Counted from your birth Moon it is in the {_ordinal(from_moon)} place: {f['chandra_text']}.")
+    tara_line = f"Today's star for you is {f['tara']}, {f['tara_text']}."
+    # The Moon's place and the day's star are read together; when they disagree the day is mixed.
     if from_moon == 8 and f['tara_score'] > 0:
-        tara_line += ' Chandrashtama outweighs the good star: keep to routine matters.'
+        tara_line += ' The weak Moon outweighs the good star: keep to routine matters.'
     elif f['chandra_score'] > 0 > f['tara_score']:
         tara_line += ' The Moon is well placed but the star is not: act, but with care.'
     elif f['tara_score'] > 0 > f['chandra_score']:
         tara_line += ' The star helps but the Moon is weak: modest goals succeed.'
-    house_line = (f"From your Lagna the Moon crosses the {_ordinal(house)} house, so the day turns on "
-                  f"{HOUSE_TOPIC[house]}." if house else '')
+    house_line = (f"In your birth chart the Moon passes through your {_ordinal(house)} house today, "
+                  f"so the day turns on {HOUSE_TOPIC[house]}." if house else '')
 
     link_line = ''
     if f['links']:
-        parts = [f"{verb} your natal {p} ({PLANET_THEME[p]})" for p, verb in f['links'][:4]]
-        link_line = "In Nadi reading the transit Moon " + '; '.join(parts) + ", bringing those matters forward today."
+        plain = {'joins': 'meets', 'is in trine to': 'supports', 'opposes': 'faces'}
+        parts = [f"{plain.get(verb, verb)} your birth {p} ({PLANET_THEME[p]})" for p, verb in f['links'][:4]]
+        link_line = "By the Nadi method, the Moon today " + '; '.join(parts) + ", bringing those matters forward."
 
     def area(houses_good, houses_hard, karakas, good_moon, hard_moon, topic) -> Dict[str, Any]:
         delta = 0
         reasons = []
         if from_moon in good_moon:
             delta += 1
-            reasons.append(f"Moon {_ordinal(from_moon)} from natal Moon supports {topic}")
+            reasons.append(f"the Moon, {_ordinal(from_moon)} from your birth Moon, supports {topic}")
         if from_moon in hard_moon:
             delta -= 1
-            reasons.append(f"Moon {_ordinal(from_moon)} from natal Moon weighs on {topic}")
+            reasons.append(f"the Moon, {_ordinal(from_moon)} from your birth Moon, weighs on {topic}")
         if house in houses_good:
             delta += 1
             reasons.append(f"it lights your {_ordinal(house)} house")
@@ -317,7 +331,7 @@ def daily_reading(chart: Dict[str, Any], when: Optional[datetime] = None, tz=Non
         touched = [k for k in karakas if k in linked]
         if touched:
             names = touched[0] if len(touched) == 1 else ', '.join(touched[:-1]) + ' and ' + touched[-1]
-            reasons.append(f"it meets natal {names}")
+            reasons.append(f"it meets your birth {names}")
         rating = _rating(base, delta)
         plural = topic.endswith('s')
         tone = (('are' if plural else 'is') + ' well supported' if rating >= 4
@@ -346,7 +360,7 @@ def daily_reading(chart: Dict[str, Any], when: Optional[datetime] = None, tz=Non
                          else 'Avoid lending, large purchases and speculation today.' if finance['rating'] <= 2
                          else 'Routine transactions only; check details twice.')
 
-    tithi_line = f"{f['tithi']} tithi ({f['tithi_class']}): {TITHI_CLASS_USE[f['tithi_class']]}."
+    tithi_line = f"Lunar day (tithi): {f['tithi']}, {TITHI_CLASS_USE[f['tithi_class']]}."
     if f['tithi_name'] == 'Ekadashi':
         tithi_line += ' Ekadashi favours fasting and worship of Vishnu.'
     elif f['tithi_name'] == 'Amavasya':
@@ -357,39 +371,38 @@ def daily_reading(chart: Dict[str, Any], when: Optional[datetime] = None, tz=Non
         'rating': 4 if f['tithi_name'] in ('Ekadashi', 'Purnima', 'Amavasya') else 3,
         'message': tithi_line,
         'mantra': planet_mantra(f['day_lord']),
-        'practice': f"{f['day_lord']} rules the day: recite its mantra 108 times; nakshatra lord is {f['nakshatra_lord']}.",
+        'practice': f"{f['day_lord']} rules today: recite its mantra 108 times.",
     }
 
     do_list, dont_list = [], []
     weak_moon = from_moon == 8
     if good_tara and not weak_moon:
-        do_list.append(f"Use the {f['tara']} tara for the work that matters most to you")
+        do_list.append(f"Today's star is good for you: use it for the work that matters most")
     elif good_tara:
         pass
     else:
-        dont_list.append(f"{f['tara']} tara: avoid starting new ventures, signing or confronting; finish what is pending")
+        dont_list.append("Today's star is not in your favour: avoid starting new ventures, signing or confronting; finish what is pending")
     if from_moon == 8:
-        dont_list.append(f"Chandrashtama until {until_sign}: no major decisions, arguments or risky travel")
+        dont_list.append(f"Your weak Moon days (Chandrashtama) last until {until_sign}: no major decisions, arguments or risky travel")
     elif f['chandra_score'] > 0:
         do_list.append(f"Act on {CHANDRA[from_moon][1].split(';')[0]} while the Moon stays in {f['moon_sign']} (until {until_sign})")
     if house:
         do_list.append(f"Give time to {HOUSE_TOPIC[house]}")
     if f['tithi_class'] == 'Rikta' or f['tithi_name'] == 'Amavasya':
-        dont_list.append('Do not begin long-term undertakings on this tithi; clear, repay and complete instead')
+        dont_list.append('Do not begin long-term undertakings on this lunar day; clear, repay and complete instead')
     elif not weak_moon:
-        do_list.append(f"{f['tithi_class']} tithi: {TITHI_CLASS_USE[f['tithi_class']]}")
+        do_list.append(f"Today's lunar day is {TITHI_CLASS_USE[f['tithi_class']]}")
     if f['yoga'] in HARSH_YOGAS:
-        dont_list.append(f"{f['yoga']} yoga: keep important starts for another day")
+        dont_list.append(f"Today's combination ({f['yoga']}) is unfavourable: keep important starts for another day")
     if f['bindus'] is not None and f['bindus'] <= 3:
-        dont_list.append(f"The Moon has only {f['bindus']} of 8 bindus in {f['moon_sign']}: do not over-commit")
+        dont_list.append(f"The Moon is weak for you in {f['moon_sign']}: do not over-commit")
     do_list.append(f"Recite {planet_mantra(f['day_lord'])} ({f['day_lord']}'s day)")
 
     dasha_line = ''
     if f['maha']:
-        chain = ' – '.join(x for x in (f['maha'], f['antar'], f['pratyantar']) if x)
-        dasha_line = f"Running dasha: {chain}."
+        dasha_line = "Your planetary periods now: " + period_names(f['maha'], f['antar'], f['pratyantar']) + "."
         if f['day_lord'] in (f['antar'], f['pratyantar']):
-            dasha_line += f" Today's lord {f['day_lord']} is one of your running period lords, so the day carries extra weight."
+            dasha_line += f" {f['day_lord']} rules both today and one of your current periods, so the day carries extra weight."
 
     lucky: Dict[str, Any] = {'color': DAY_COLOUR[f['day_lord']], 'direction': DAY_DIRECTION[f['day_lord']]}
     if place:
@@ -410,7 +423,7 @@ def daily_reading(chart: Dict[str, Any], when: Optional[datetime] = None, tz=Non
         'nakshatra': f"{f['nakshatra']} (pada {f['pada']})", 'nakshatra_until': until_nak,
         'moon_sign': f['moon_sign'], 'moon_sign_until': until_sign,
         'yoga': f['yoga'], 'day_lord': f['day_lord'],
-        'tara_bala': f['tara'], 'chandra_bala': f"{_ordinal(from_moon)} from natal Moon",
+        'tara_bala': f"{f['tara']} ({TARA_PLAIN[f['tara']]})", 'chandra_bala': f"{_ordinal(from_moon)} from your birth Moon",
         'moon_house': house, 'moon_bindus': f['bindus'],
         'dasha': ' – '.join(x for x in (f['maha'], f['antar'], f['pratyantar']) if x) or None,
     }
@@ -430,8 +443,8 @@ def daily_reading(chart: Dict[str, Any], when: Optional[datetime] = None, tz=Non
         'panchanga': panchanga,
         'facts': {'score': f['score'], 'from_moon': from_moon, 'tara': f['tara'], 'tara_score': f['tara_score'],
                   'house': house, 'moon_sign': f['moon_sign'], 'nakshatra': f['nakshatra']},
-        'method': ('Computed for this moment from the Moon\'s transit against your birth chart: tithi, nakshatra, '
-                   'tara bala, chandra bala, house from Lagna, Nadi links, Ashtakavarga bindus and running dasha.'),
+        'method': ('Worked out for this moment from where the Moon is today compared with your birth chart: '
+                   'the lunar day, the day\'s star, the Moon\'s place from your birth Moon and your planetary periods.'),
     }
 
 

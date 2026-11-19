@@ -2,14 +2,14 @@
   "bhriguPrediction": {
     "sections": {
       "karmic-journey": {
-        "soul_purpose": "आत्मा का मुख्य उद्देश्य",
-        "karmic_blueprint": "कर्मिक खाका",
-        "evolution_stage": "आत्मा विकास चरण",
-        "life_mission": "जीवन मिशन और धर्म",
-        "karmic_lessons": "कर्मिक पाठ",
-        "soul_connections": "आत्मा समूह संबंध",
-        "timing": "कर्मिक घटनाओं का समय",
-        "spiritual_gifts": "आध्यात्मिक उपहार और क्षमताएं"
+        "soul_purpose": "आपका जन्म क्यों हुआ",
+        "karmic_blueprint": "पिछले कर्मों से आए स्वभाव",
+        "evolution_stage": "आप अपनी राह पर कहाँ हैं",
+        "life_mission": "जीवन का कार्य और कर्तव्य",
+        "karmic_lessons": "इस जीवन की सीख",
+        "soul_connections": "जीवन के महत्वपूर्ण लोग",
+        "timing": "बड़े बदलाव कब आते हैं",
+        "spiritual_gifts": "आपकी स्वाभाविक प्रतिभाएँ"
       },
       "past-lives": {
         "recent_life": "सबसे हाल का पूर्व जन्म",
@@ -89,6 +89,16 @@
         "weekly": "साप्ताहिक पूर्वानुमान",
         "monthly": "मासिक दृष्टिकोण",
         "yearly": "वार्षिक अवलोकन"
+      },
+      "karmic-debts": {
+        "debts_overview": "आपके कर्म-ऋण एक नज़र में",
+        "ancestors_father": "पिता और पूर्वजों का ऋण (पितृ ऋण)",
+        "mother_home": "माता और घर का ऋण (मातृ ऋण)",
+        "siblings_friends": "भाई-बहन और मित्रों का ऋण",
+        "spouse_partners": "जीवनसाथी का ऋण",
+        "teachers_dharma": "गुरु और अपने शुभ कर्मों का ऋण",
+        "society_service": "सेवकों और ज़रूरतमंदों का ऋण",
+        "repayment": "ऋण कैसे चुकाएँ"
       }
     }
   },
@@ -267,6 +277,10 @@
     "predictions": {
       "title": "भविष्यवाणियाँ",
       "description": "दैनिक, साप्ताहिक और मासिक पूर्वानुमान व उपयोगी इनसाइट्स"
+    },
+    "karmicDebts": {
+      "title": "कर्म ऋण",
+      "description": "पिछले कर्मों से बचे अधूरे कर्तव्य, आपकी कुंडली से, और उन्हें चुकाने के उपाय"
     }
   }
 }

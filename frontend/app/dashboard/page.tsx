@@ -7,7 +7,7 @@ import { useEncryption } from '@/lib/context/EncryptionContext';
 import { loadCurrentProfile } from '@/lib/profileHelpers';
 import { insightsAPI } from '@/lib/api';
 import {
-  ArrowIcon, ChartIcon, HourglassIcon, LeafIcon, SunIcon, UnionIcon, WheelIcon,
+  ArrowIcon, ChartIcon, FlameIcon, HourglassIcon, LeafIcon, SunIcon, UnionIcon, WheelIcon,
 } from '@/components/nadi/icons';
 import { unlockHref } from '@/lib/unlockRedirect';
 
@@ -40,7 +40,9 @@ const CATEGORY_ORDER: Array<[string, string]> = [
 ];
 
 const CONTINUE = [
-  { href: '/bhrigu-predictions/karmic-journey', title: 'Karmic journey', note: "Your soul's purpose and lessons", icon: WheelIcon },
+  { href: '/bhrigu-predictions/karmic-journey', title: 'Karmic journey', note: 'Why you were born and what you came to learn', icon: WheelIcon },
+  { href: '/bhrigu-predictions/past-lives', title: 'Past lives', note: 'What you bring from before this birth', icon: LeafIcon },
+  { href: '/bhrigu-predictions/karmic-debts', title: 'Karmic debts', note: 'Duties left unfinished, and how to repay them', icon: FlameIcon },
   { href: '/bhrigu-predictions/life-events', title: 'Life events', note: 'Dated windows from your chart', icon: HourglassIcon },
   { href: '/horoscope', title: 'Horoscope', note: 'This week, month and year', icon: SunIcon },
   { href: '/birth-chart', title: 'Birth chart', note: 'Planets, houses and dashas', icon: ChartIcon },
@@ -186,13 +188,13 @@ export default function TodayPage() {
                   <h2 id="panchanga" className="nadi-eyebrow !text-[0.62rem]">Today&apos;s panchanga for your chart</h2>
                   <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
                     {[
-                      ['Tithi', insight.panchanga.tithi],
-                      ['Nakshatra', insight.panchanga.nakshatra && `${insight.panchanga.nakshatra}${insight.panchanga.nakshatra_until ? ` · until ${insight.panchanga.nakshatra_until}` : ''}`],
+                      ['Lunar day (tithi)', insight.panchanga.tithi],
+                      ["Moon's star (nakshatra)", insight.panchanga.nakshatra && `${insight.panchanga.nakshatra}${insight.panchanga.nakshatra_until ? ` · until ${insight.panchanga.nakshatra_until}` : ''}`],
                       ['Moon', insight.panchanga.moon_sign && `${insight.panchanga.moon_sign}${insight.panchanga.moon_sign_until ? ` · until ${insight.panchanga.moon_sign_until}` : ''}`],
-                      ['Tara bala', insight.panchanga.tara_bala],
-                      ['Chandra bala', insight.panchanga.chandra_bala],
-                      ['Yoga', insight.panchanga.yoga],
-                      ['Running dasha', insight.panchanga.dasha],
+                      ["Today's star for you", insight.panchanga.tara_bala],
+                      ['Moon from your birth Moon', insight.panchanga.chandra_bala],
+                      ["Day's yoga", insight.panchanga.yoga],
+                      ['Your planetary period', insight.panchanga.dasha],
                     ].filter(([, v]) => v).map(([k, v]) => (
                       <div key={String(k)}>
                         <dt className="text-[0.7rem] uppercase tracking-[0.14em] text-ivory-muted">{k}</dt>

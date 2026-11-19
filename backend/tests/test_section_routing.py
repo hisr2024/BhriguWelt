@@ -119,3 +119,25 @@ def test_section_timing_is_checked_against_its_own_facts(chart, findings, monkey
     prompt = svc.openai_service.prompt
     assert 'FACTS FOR THIS SECTION' in prompt and 'Promise:' in prompt
     assert prompt.index('"children_family"') < prompt.index('F-BHAVAT-01/children')
+
+
+def test_karmic_debts_are_computed_for_every_relationship(chart):
+    found = evaluate_rules(build_chart_facts(chart), chart, category='karmic_debts', full=True)
+    rinas = {f['id']: f for f in found if f['id'].startswith('F-RINA-')}
+    assert set(rinas) == {f'F-RINA-{k}' for k in ('PITRI', 'MATRI', 'BHRATRI', 'STRI', 'GURU', 'SEVA')}
+    for f in rinas.values():
+        level = 'clear' if 'no debt shown' in f['finding'] else 'marked' if ': marked' in f['finding'] else 'mild'
+        if level != 'clear':
+            # a shown debt always says why, how it is repaid, and when it presses
+            assert ' — ' in f['finding'] and 'Traditional repayment' in f['finding'], f['id']
+            assert f['timing'], f['id']
+    # 1994-03-14: Sun with Saturn and Rahu in the 9th — the ancestral debt is marked.
+    assert ': marked' in rinas['F-RINA-PITRI']['finding']
+    _, per_section = route_findings('karmic_debts', [s['key'] for s in BhriguPredictionsService.SECTION_SPECS['karmic_debts']], found)
+    assert 'F-RINA-PITRI' in {f['id'] for f in per_section['ancestors_father']}
+    assert 'F-RINA-STRI' in {f['id'] for f in per_section['spouse_partners']}
+
+
+def test_reading_prompt_asks_for_plain_words():
+    prompt = BhriguPredictionsService.READING_SYSTEM_PROMPT
+    assert 'ordinary people' in prompt and 'bindu' in prompt and "'technical'" in prompt

@@ -16,8 +16,9 @@ import { unlockHref } from '@/lib/unlockRedirect';
 type Reading = { slug: string; title: string; note: string; icon: ComponentType<{ size?: number }> };
 
 const READINGS: Reading[] = [
-  { slug: 'karmic-journey', title: 'Karmic journey', note: "Your soul's purpose and life lessons", icon: WheelIcon },
-  { slug: 'past-lives', title: 'Past lives', note: 'Karma carried into this birth', icon: LeafIcon },
+  { slug: 'karmic-journey', title: 'Karmic journey', note: 'Why you were born and what you came to learn', icon: WheelIcon },
+  { slug: 'past-lives', title: 'Past lives', note: 'What you bring from before this birth', icon: LeafIcon },
+  { slug: 'karmic-debts', title: 'Karmic debts', note: 'Duties left unfinished, and how to repay them', icon: FlameIcon },
   { slug: 'present-life', title: 'Present life', note: 'Where you stand now and what comes next', icon: LotusIcon },
   { slug: 'life-events', title: 'Life events', note: 'Dated windows from your dashas and transits', icon: HourglassIcon },
   { slug: 'relationships', title: 'Relationships', note: 'Bonds, marriage and their timing', icon: UnionIcon },

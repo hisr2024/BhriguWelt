@@ -89,6 +89,16 @@
         "weekly": "Weekly Forecast",
         "monthly": "Monthly Outlook",
         "yearly": "Yearly Overview"
+      },
+      "karmic-debts": {
+        "debts_overview": "Your karmic debts at a glance",
+        "ancestors_father": "Debt to your father and ancestors",
+        "mother_home": "Debt to your mother and home",
+        "siblings_friends": "Debt to brothers, sisters and friends",
+        "spouse_partners": "Debt to your spouse and partners",
+        "teachers_dharma": "Debt to teachers and your own good deeds",
+        "society_service": "Debt to those who serve you and the needy",
+        "repayment": "How to repay, step by step"
       }
     }
   },
@@ -267,6 +277,10 @@
     "predictions": {
       "title": "Predictions",
       "description": "Daily, weekly, and monthly forecasts with actionable insights"
+    },
+    "karmicDebts": {
+      "title": "Karmic Debts",
+      "description": "Duties left unfinished from past actions, read from your chart, and how to repay them"
     }
   }
 }

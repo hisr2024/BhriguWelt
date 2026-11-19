@@ -141,6 +141,7 @@ export type ReportType =
   | 'birth-chart'
   | 'karmic-journey'
   | 'past-lives'
+  | 'karmic-debts'
   | 'future-lives'
   | 'present-life'
   | 'life-events'

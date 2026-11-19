@@ -171,18 +171,19 @@ def transit_state(planet: str, natal: Dict[str, Any], tsigns: Dict[str, int],
 def transit_line(st: Dict[str, Any], span: str = '') -> str:
     p = st['planet']
     if st['good'] and st['blockers']:
-        verdict = (f"a favourable house, but obstructed by {' and '.join(st['blockers'])} in the vedha house, "
-                   f"so the good result waits")
+        verdict = (f"a good position, but {' and '.join(st['blockers'])} "
+                   f"{'blocks' if len(st['blockers']) == 1 else 'block'} it for now, so the good result waits")
     elif st['good']:
-        verdict = f"a favourable house: {GOOD[p]}"
+        verdict = f"a good position: {GOOD[p]}"
     else:
-        verdict = f"not a favourable house: {HARD[p]}"
-    line = f"{p} in {SIGNS[st['sign']]}{' ' + span if span else ''} is {_ord(st['from_moon'])} from your Moon, {verdict}."
+        verdict = f"a testing position: {HARD[p]}"
+    line = f"{p} in {SIGNS[st['sign']]}{' ' + span if span else ''} is {_ord(st['from_moon'])} from your birth Moon, {verdict}."
     if st['bindus'] is not None:
-        grade = 'strong' if st['bindus'] >= 5 else 'weak' if st['bindus'] <= 3 else 'average'
-        line += f" It holds {st['bindus']} of 8 bindus there ({grade})."
+        line += (' It is strong for you in this sign.' if st['bindus'] >= 5
+                 else ' It is weak for you in this sign.' if st['bindus'] <= 3
+                 else ' Its strength for you in this sign is average.')
     if st['house']:
-        line += f" From your Lagna it crosses the {_ord(st['house'])} house: {D.HOUSE_TOPIC[st['house']]}."
+        line += f" In your chart it passes through the {_ord(st['house'])} house: {D.HOUSE_TOPIC[st['house']]}."
     return line
 
 
@@ -200,22 +201,22 @@ def area_section(key: str, natal: Dict[str, Any], tsigns: Dict[str, int], planet
         for p in planets:
             if tsigns[p] == hs:
                 if p in BENEFICS:
-                    plus.append(f"{p} transits your {_ord(h)} house")
+                    plus.append(f"{p} is passing through your {_ord(h)} house")
                 elif h in (10, 11):
                     plus.append(f"{p} in your {_ord(h)} house rewards hard work with results")
                 else:
-                    minus.append(f"{p} transits your {_ord(h)} house")
+                    minus.append(f"{p} is passing through your {_ord(h)} house")
         if tsigns['Jupiter'] != hs and aspects_from('Jupiter', tsigns['Jupiter'], hs):
-            plus.append(f"Jupiter aspects your {_ord(h)} house from {SIGNS[tsigns['Jupiter']]}")
+            plus.append(f"Jupiter's helpful influence falls on your {_ord(h)} house")
         if tsigns['Saturn'] != hs and aspects_from('Saturn', tsigns['Saturn'], hs):
-            minus.append(f"Saturn aspects your {_ord(h)} house from {SIGNS[tsigns['Saturn']]}, asking for patience")
+            minus.append(f"Saturn's influence falls on your {_ord(h)} house, asking for patience")
         lord = E.SIGN_LORDS[hs]
         if use_lord or lord in SLOW:
             st = transit_state(lord, natal, tsigns, bav, slow_only=not use_lord)
             if st['good'] and not st['blockers']:
-                plus.append(f"your {_ord(h)} lord {lord} is well placed, {_ord(st['from_moon'])} from the Moon")
+                plus.append(f"{lord}, which rules your {_ord(h)} house, is well placed")
             elif st['from_moon'] in (8, 12):
-                minus.append(f"your {_ord(h)} lord {lord} is {_ord(st['from_moon'])} from the Moon")
+                minus.append(f"{lord}, which rules your {_ord(h)} house, is in a weak position")
     score = len(plus) - len(minus)
     tone = ('well supported' if score >= 1 else 'under pressure' if score <= -1
             else 'mixed' if plus else 'steady')
@@ -227,8 +228,8 @@ def area_section(key: str, natal: Dict[str, Any], tsigns: Dict[str, int], planet
             summary += ' Against: ' + '; '.join(minus) + '.'
     else:
         names = ' and '.join(_ord(h) for h in houses)
-        summary = (f"{label} {verb} steady {period}: no slow planet touches your {names} house, "
-                   "so results follow the running dasha.")
+        summary = (f"{label} {verb} steady {period}: no slow-moving planet touches your {names} house, "
+                   "so results follow your current planetary period.")
     return {'summary': summary, 'rating': max(1, min(5, 3 + score)), 'basis': (tuple(plus), tuple(minus))}
 
 
@@ -257,16 +258,17 @@ def dasha_in(natal: Dict[str, Any], start: datetime, end: datetime, pratyantar: 
     changes: List[Tuple[datetime, str]] = []
     for p in periods:
         if start < p.start <= end:
-            changes.append((p.start, f"{p.maha}–{p.antar} antardasha begins"))
+            changes.append((p.start, f"{p.maha}–{p.antar} sub-period begins"))
         if pratyantar and p.end > start and p.start <= end:
             for lord, a, _b in _pratyantars(p):
                 if start < a <= end and a != p.start:
-                    changes.append((a, f"{p.maha}–{p.antar}–{lord} pratyantar begins"))
+                    changes.append((a, f"{p.maha}–{p.antar}–{lord} short period begins"))
     praty = None
     if antar:
         praty = next((lord for lord, a, b in _pratyantars(antar) if a <= start < b), None)
     chain = [x for x in (maha.maha if maha else None, antar.antar if antar else None, praty if pratyantar else None) if x]
-    return {'running': ' – '.join(chain) or None, 'changes': sorted(changes),
+    return {'running': ' – '.join(chain) or None, 'plain': D.period_names(*chain) if chain else None,
+            'changes': sorted(changes),
             'maha': maha.maha if maha else None, 'antar': antar.antar if antar else None,
             'antar_end': antar.end if antar else None}
 
@@ -281,9 +283,10 @@ def bcp(natal: Dict[str, Any], when: datetime) -> Optional[Dict[str, Any]]:
     occupants = [p for p, lon in natal['lons'].items() if int(lon // 30) == sign]
     lord = E.SIGN_LORDS[sign]
     lord_house = (int(natal['lons'][lord] // 30) - natal['asc_sign']) % 12 + 1 if lord in natal['lons'] else None
-    text = (f"year {running} of life activates your {_ord(h)} house ({SIGNS[sign]}: "
-            f"{', '.join(occupants) if occupants else 'no planets'}), so {D.HOUSE_TOPIC[h]} lead"
-            + (f"; its lord {lord} sits in your {_ord(lord_house)} house" if lord_house else ''))
+    text = (f"your {_ord(running)} year of life lights up your {_ord(h)} house"
+            + (f" (holding {', '.join(occupants)})" if occupants else '')
+            + f", so {D.HOUSE_TOPIC[h]} come first"
+            + (f"; its ruler {lord} sits in your {_ord(lord_house)} house" if lord_house else ''))
     return {'running': running, 'house': h, 'text': text}
 
 
@@ -348,7 +351,7 @@ def weekly_reading(chart: Dict[str, Any], start_date: Optional[datetime] = None,
 
     def tag(r: Dict[str, Any]) -> str:
         f = r['facts']
-        lead = 'Chandrashtama' if f['from_moon'] == 8 else f"{f['tara']} tara"
+        lead = 'Weak Moon day' if f['from_moon'] == 8 else D.TARA_PLAIN[f['tara']].capitalize()
         return f"{lead} · {HOUSE_SHORT[f['house']]}" if f['house'] else lead
 
     summaries = [{'date': d.isoformat(), 'day': d.strftime('%A'), 'energy': r['energy_level']['level'],
@@ -360,7 +363,7 @@ def weekly_reading(chart: Dict[str, Any], start_date: Optional[datetime] = None,
 
     def why(r: Dict[str, Any]) -> str:
         f = r['facts']
-        return f"Moon is {_ord(f['from_moon'])} from your natal Moon ({f['tara']} tara)"
+        return f"Moon is {_ord(f['from_moon'])} from your birth Moon, under {D.TARA_PLAIN[f['tara']]}"
 
     sections: Dict[str, Any] = {}
     for key, (label, verb, _houses) in AREAS.items():
@@ -386,11 +389,11 @@ def weekly_reading(chart: Dict[str, Any], start_date: Optional[datetime] = None,
     ashtama = [d.strftime('%A') for d, r in days if r['facts']['from_moon'] == 8]
     summary = route + '.'
     if ashtama:
-        summary += f" Chandrashtama falls on {_join(ashtama)}: keep those days for routine work."
+        summary += f" Your weak Moon days (Chandrashtama) fall on {_join(ashtama)}: keep them for routine work."
     dasha = dasha_in(natal, start, end, True)
     guidance = [transit_line(transit_state(p, natal, tsigns, bav)) for p in ('Jupiter', 'Saturn')]
     if dasha['running']:
-        guidance.insert(0, f"Running dasha: {dasha['running']}.")
+        guidance.insert(0, f"Your planetary periods now: {dasha['plain']}.")
     title = 'An even week' if even else f"Strongest on {best[0].strftime('%A')}; go gently on {worst[0].strftime('%A')}"
     return {
         'week_start': monday.isoformat(), 'week_end': (monday + timedelta(days=6)).isoformat(),
@@ -401,7 +404,7 @@ def weekly_reading(chart: Dict[str, Any], start_date: Optional[datetime] = None,
         'important_dates': _events(tz, start, end, natal, MONTHLY, True, True),
         'weekly_mantra': planet_mantra(dasha['antar']) if dasha['antar'] else days[0][1]['categories']['spiritual']['mantra'],
         'bhrigu_guidance': ' '.join(guidance),
-        'method': 'Seven daily readings, each taken at local noon; dates found on Swiss Ephemeris positions.',
+        'method': 'Seven daily readings, each taken at local noon; every date is calculated from exact planetary positions.',
         'metadata': _meta(chart, {'dasha': dasha['running']}),
     }
 
@@ -438,33 +441,33 @@ def monthly_reading(chart: Dict[str, Any], year: Optional[int] = None, month: Op
         f = D.daily_facts(chart, _utc(tz, d), tz)
         if f:
             scored.append((d, f))
-    power = [{'date': d.isoformat(), 'reason': f"{f['tara']} tara, Moon {_ord(f['from_moon'])} from your natal Moon"}
+    power = [{'date': d.isoformat(), 'reason': f"{D.TARA_PLAIN[f['tara']].capitalize()}; Moon {_ord(f['from_moon'])} from your birth Moon"}
              for d, f in scored if f['score'] >= 4 and f['from_moon'] != 8][:8]
     eighth = (moon_sign + 7) % 12
     caution = [{'date': _day(a, tz), 'until': _day(b - timedelta(minutes=1), tz),
-                'reason': f"Chandrashtama: Moon in {SIGNS[eighth]} "
+                'reason': f"Weak Moon days (Chandrashtama): Moon in {SIGNS[eighth]} "
                           + (f"until {_nice(b, tz)}" if a <= start else f"from {_nice(a, tz)}" if b >= end
                              else f"from {_nice(a, tz)} to {_nice(b, tz)}")}
                for a, b, s in sign_spans('Moon', start, end) if s == eighth]
 
     sun = states['Sun']
     dasha = dasha_in(natal, start, end, True)
-    title = (f"Sun {_ord(sun['from_moon'])} from your Moon: "
+    title = (f"Sun {_ord(sun['from_moon'])} from your birth Moon: "
              + ('a month that favours effort and recognition' if sun['good'] and not sun['blockers']
                 else 'a month for steady work rather than display'))
     summary = transits[0]
     guidance = []
     if dasha['running']:
-        guidance.append(f"Running dasha: {dasha['running']}.")
+        guidance.append(f"Your planetary periods now: {dasha['plain']}.")
         if dasha['antar'] and states.get(dasha['antar']):
             st = states[dasha['antar']]
-            guidance.append(f"Your antardasha lord {dasha['antar']} transits {SIGNS[st['sign']]}, "
-                            f"{_ord(st['from_moon'])} from your Moon, "
+            guidance.append(f"{dasha['antar']}, which rules your current sub-period, is in {SIGNS[st['sign']]}, "
+                            f"{_ord(st['from_moon'])} from your birth Moon, "
                             + ('which helps its period deliver.' if st['good'] and not st['blockers']
                                else 'so its period works through effort this month.'))
     year_house = bcp(natal, mid)
     if year_house:
-        guidance.append(f"By Bhrigu Chakra Paddhati, {year_house['text']}.")
+        guidance.append(f"In the Bhrigu year-cycle, {year_house['text']}.")
     return {
         'month': month, 'year': year, 'month_name': calendar.month_name[month], 'zodiac_sign': chart.get('zodiac_sign'),
         'monthly_theme': {'title': title, 'summary': summary},
@@ -474,7 +477,7 @@ def monthly_reading(chart: Dict[str, Any], year: Optional[int] = None, month: Op
         'monthly_mantra': planet_mantra(dasha['antar']) if dasha['antar'] else planet_mantra('Sun'),
         'monthly_ritual': None,
         'bhrigu_guidance': ' '.join(guidance),
-        'method': 'Planets judged at mid-month from your natal Moon and Lagna; every date found on Swiss Ephemeris positions.',
+        'method': 'Each planet is judged at mid-month from your birth Moon and birth chart; every date is calculated from exact planetary positions.',
         'metadata': _meta(chart, {'dasha': dasha['running']}),
     }
 
@@ -514,12 +517,13 @@ def yearly_reading(chart: Dict[str, Any], year: Optional[int] = None,
             if p == 'Rahu':
                 transits.append(transit_line(transit_state('Ketu', natal, tsigns, bav), span_text(a, b)))
             if p == 'Saturn' and st['from_moon'] in (12, 1, 2):
-                phase = {12: 'first phase (12th from the Moon)', 1: 'peak phase (over the Moon)',
-                         2: 'last phase (2nd from the Moon)'}[st['from_moon']]
-                sade.append(f"Sade Sati, {phase}, {span_text(a, b)}")
+                phase = {12: 'first phase', 1: 'peak phase', 2: 'last phase'}[st['from_moon']]
+                sade.append(f"Sade Sati, Saturn's seven-and-a-half-year passage over your birth Moon, {phase}, {span_text(a, b)}")
             elif p == 'Saturn' and st['from_moon'] in (4, 8):
-                name = 'Kantaka Shani (4th from the Moon)' if st['from_moon'] == 4 else 'Ashtama Shani (8th from the Moon)'
-                sade.append(f"{name} {span_text(a, b)}")
+                name = ("Saturn 4th from your birth Moon (Kantaka Shani): heavier duties at home and work"
+                        if st['from_moon'] == 4 else
+                        "Saturn 8th from your birth Moon (Ashtama Shani): a testing time; avoid risks")
+                sade.append(f"{name}, {span_text(a, b)}")
 
     mid = _utc(tz, date(year, 7, 1))
     mid_signs = _signs_at(mid)
@@ -559,26 +563,26 @@ def yearly_reading(chart: Dict[str, Any], year: Optional[int] = None,
         dq = dasha_in(natal, qmid, qmid, False)
         bits = []
         if dq['running']:
-            bits.append(f"{dq['running']} period runs")
+            bits.append(f"{dq['running']} period")
         for p in ('Jupiter', 'Saturn'):
             st = transit_state(p, natal, qs, bav, slow_only=True)
-            bits.append(f"{p} in {SIGNS[st['sign']]} is {_ord(st['from_moon'])} from your Moon"
-                        + (' (favourable)' if st['good'] and not st['blockers']
-                           else ' (favourable house, obstructed)' if st['good'] else ''))
+            bits.append(f"{p} in {SIGNS[st['sign']]} is {_ord(st['from_moon'])} from your birth Moon"
+                        + (' (good)' if st['good'] and not st['blockers']
+                           else ' (good, but blocked for now)' if st['good'] else ''))
         quarters.append({'quarter': f"Q{q + 1}", 'label': f"{calendar.month_abbr[3 * q + 1]} to {calendar.month_abbr[3 * q + 3]}",
                          'summary': '; '.join(bits) + '.'})
 
     dasha = dasha_in(natal, start, end, False)
     guidance = []
     if dasha['running']:
-        guidance.append(f"The year opens in the {dasha['running']} period.")
+        guidance.append(f"The year opens in these planetary periods: {dasha['plain']}.")
     y0, y1 = bcp(natal, start), bcp(natal, end - timedelta(days=1))
     if y0 and y1 and y0['running'] != y1['running']:
         birthday = natal['birth_utc'].astimezone(tz)
         turn = f"{birthday.day} {birthday.strftime('%b')}"
-        guidance.append(f"By Bhrigu Chakra Paddhati, until your birthday on {turn}, {y0['text']}. From {turn}, {y1['text']}.")
+        guidance.append(f"In the Bhrigu year-cycle, until your birthday on {turn}, {y0['text']}. From {turn}, {y1['text']}.")
     elif y1:
-        guidance.append(f"By Bhrigu Chakra Paddhati, {y1['text']}.")
+        guidance.append(f"In the Bhrigu year-cycle, {y1['text']}.")
     guidance += [s + '.' for s in sade]
 
     jup = transit_state('Jupiter', natal, mid_signs, bav, slow_only=True)
@@ -591,11 +595,11 @@ def yearly_reading(chart: Dict[str, Any], year: Optional[int] = None,
         return f"{planet} in {', then '.join(names)}"
 
     title = f"{route('Jupiter')}; {route('Saturn')}"
-    tone = (f"At mid-year Jupiter is {_ord(jup['from_moon'])} and Saturn {_ord(sat['from_moon'])} from your Moon. ")
+    tone = (f"At mid-year Jupiter is {_ord(jup['from_moon'])} and Saturn {_ord(sat['from_moon'])} from your birth Moon. ")
     tone += ('Both slow planets favour you.' if jup['good'] and sat['good']
             else 'Jupiter supports growth while Saturn asks for patience.' if jup['good']
             else 'Saturn rewards discipline while Jupiter gives less than usual.' if sat['good']
-            else 'Neither is in a favourable house: build steadily and rely on the dasha lords.')
+            else 'Neither is in a good position: build steadily; your planetary periods carry the year.')
     return {
         'year': year, 'zodiac_sign': chart.get('zodiac_sign'),
         'yearly_theme': {'title': title, 'summary': tone},
@@ -604,6 +608,6 @@ def yearly_reading(chart: Dict[str, Any], year: Optional[int] = None,
         'yearly_mantra': planet_mantra(dasha['maha']) if dasha['maha'] else planet_mantra('Jupiter'),
         'annual_ritual': None,
         'bhrigu_guidance': ' '.join(guidance),
-        'method': 'Slow planets judged from your natal Moon and Lagna for each stay in a sign; every date found on Swiss Ephemeris positions.',
+        'method': 'Jupiter, Saturn, Rahu and Ketu are judged from your birth Moon and birth chart for each sign they stay in; every date is calculated from exact planetary positions.',
         'metadata': _meta(chart, {'dasha': dasha['running']}),
     }

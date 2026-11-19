@@ -60,6 +60,7 @@ CATEGORY_DOMAINS: Dict[str, List[str]] = {
     'life_events': ['marriage', 'career', 'wealth', 'children', 'home', 'health'],
     'karmic_remedies': ['health', 'spiritual'],
     'karma_reset': ['spiritual'],
+    'karmic_debts': ['spiritual', 'home', 'marriage'],
     'relationships': ['marriage', 'children'],
     'predictions': ['career', 'wealth', 'marriage', 'health'],
 }
@@ -1332,6 +1333,107 @@ UPAYA = {
 COMBUST_ORB = {'Moon': 12, 'Mars': 17, 'Mercury': 14, 'Jupiter': 11, 'Venus': 10, 'Saturn': 15}
 
 
+# ---------------------------------------------------------------------------
+# Karmic debts (rinas)
+#
+# Each debt is read from the relationship's natural significator (karaka) and
+# its house, with the Parashari karakas: Sun/9th father and ancestors,
+# Moon/4th mother, Mars/3rd siblings, Venus/7th spouse, Jupiter/5th teachers
+# and one's own merit, Saturn/6th servants, the poor and creditors. A debt is
+# shown when the karaka or the house is afflicted: karaka debilitated or
+# combust, joined or aspected by Saturn/Rahu/Ketu, the house holding Saturn,
+# Rahu or Ketu, or its lord fallen into the 6th, 8th or 12th. The debt framing
+# (rina) is the traditional reading of these afflictions.
+# ---------------------------------------------------------------------------
+RINAS = [
+    ('PITRI', 'Pitri rina', 'father, forefathers and ancestors', 'Sun', 9,
+     'honour your father and elders; offer water to the ancestors (tarpana) on Amavasya'),
+    ('MATRI', 'Matri rina', 'mother and the home', 'Moon', 4,
+     'serve and support your mother or mother-figures; keep the home peaceful'),
+    ('BHRATRI', 'Bhratri rina', 'brothers, sisters and close friends', 'Mars', 3,
+     'help siblings and friends without keeping score; settle old quarrels'),
+    ('STRI', 'Stri rina', 'spouse and partners', 'Venus', 7,
+     'treat your spouse or partner with respect and fairness; keep promises made to them'),
+    ('GURU', 'Guru rina', 'teachers, elders and your own good deeds', 'Jupiter', 5,
+     'respect teachers; teach or share what you know freely; study a sacred text'),
+    ('SEVA', 'Seva rina', 'people who serve you, the poor and anyone you owe', 'Saturn', 6,
+     'repay debts on time; treat workers fairly; serve the poor and elderly'),
+]
+DEBT_MALEFICS = ('Saturn', 'Rahu', 'Ketu')
+
+
+def _karaka_period(c: Chart, planet: str, now: datetime) -> Optional[Tuple[datetime, datetime, str]]:
+    """The running or next Vimshottari period of ``planet`` (maha or antar), within 12 years."""
+    if not c.birth_utc or planet not in E.DASHA_SEQ:
+        return None
+    try:
+        periods = E.vimshottari(c.birth_utc, c.lon['Moon'])
+    except Exception:
+        return None
+    horizon = now + timedelta(days=12 * 365)
+    found: List[Tuple[datetime, int, datetime, datetime, str]] = []
+    for maha in E.maha_periods(periods):
+        if maha.maha == planet and maha.end > now and maha.start < horizon:
+            found.append((max(maha.start, now), 0, maha.start, maha.end, f"{planet} main period"))
+    for p in periods:
+        if p.antar == planet and p.maha != planet and p.end > now and p.start < horizon:
+            found.append((max(p.start, now), 1, p.start, p.end, f"{p.maha}–{planet} period"))
+            break
+    if not found:
+        return None
+    _key, _rank, a, b, label = min(found)  # whichever comes first; a main period wins a tie
+    return a, b, label
+
+
+def rule_rinas(c: Chart, now: datetime) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    cats = ['karmic_debts', 'past_lives', 'karmic_remedies']
+    sun = c.lon.get('Sun')
+    for key, name, who, karaka, house, repay in RINAS:
+        if karaka not in c.lon:
+            continue
+        reasons: List[str] = []
+        ks = c.sign(karaka)
+        if DEBIL.get(karaka) == ks:
+            reasons.append(f"{karaka} is debilitated in {SIGNS[ks]}")
+        orb = COMBUST_ORB.get(karaka)
+        if orb and sun is not None and karaka != 'Sun' and E.angular_distance(c.lon[karaka], sun) <= orb:
+            reasons.append(f"{karaka} is combust (within {orb}° of the Sun)")
+        joined = [m for m in DEBT_MALEFICS if m != karaka and m in c.lon and c.sign(m) == ks]
+        if joined:
+            reasons.append(f"{karaka} is joined by {', '.join(joined)}")
+        if karaka != 'Saturn' and 'Saturn' in c.lon and 'Saturn' not in joined and c.aspects_sign('Saturn', ks):
+            reasons.append(f"Saturn aspects {karaka}")
+        hs = c.house_sign(house)
+        sitting = [m for m in DEBT_MALEFICS if m != karaka and m in c.lon and c.sign(m) == hs]
+        if sitting:
+            reasons.append(f"{', '.join(sitting)} {'sits' if len(sitting) == 1 else 'sit'} in the {_ordinal(house)} house")
+        lord = c.lord_of_house(house)
+        if lord in c.lon and c.house(lord) in (6, 8, 12):
+            reasons.append(f"the {_ordinal(house)} lord {lord} is in the {_ordinal(c.house(lord))} house")
+        if lord in c.lon and DEBIL.get(lord) == c.sign(lord) and lord != karaka:
+            reasons.append(f"the {_ordinal(house)} lord {lord} is debilitated")
+        level = 'marked' if len(reasons) >= 2 else 'mild' if reasons else 'clear'
+        day, mantra, donation, deity, _gem = UPAYA[karaka]
+        if level == 'clear':
+            text = (f"{name} ({who}): no debt shown — {karaka} and the {_ordinal(house)} house "
+                    f"({SIGNS[hs]}) are free of affliction; this relationship supports you")
+        else:
+            text = (f"{name} ({who}): {level} — " + '; '.join(reasons)
+                    + f". Traditional repayment: {repay}; on {day}s give {donation}, recite {mantra}, worship {deity}")
+        when = _karaka_period(c, karaka, now) if level != 'clear' else None
+        timing = start = end = None
+        if when:
+            a, b, label = when
+            timing, start, end = f"{label}, {_span(a, b)}", a, b
+            text += f". The debt asks most to be settled in the {label} ({_span(a, b)})"
+        weight = {'marked': 0.75, 'mild': 0.5, 'clear': 0.3}[level]
+        out.append(_f(f'F-RINA-{key}', 'tradition-attributed',
+                      f'Karmic debt ({name}) from karaka {karaka} and the {_ordinal(house)} house',
+                      text, cats, weight, timing=timing or '', start=start, end=end, house_based=True))
+    return out
+
+
 def rule_remedies(c: Chart, now: datetime) -> List[Dict[str, Any]]:
     """Which grahas need support, with the traditional upaya for each; gemstones by lordship."""
     cats = ['karmic_remedies', 'karma_reset', 'relationships', 'present_life']
@@ -1445,7 +1547,7 @@ def evaluate_rules(chart_facts: Dict[str, Any], birth_data: Dict[str, Any], cate
         lambda: rule_moksha(c), lambda: rule_lessons(c), lambda: rule_double_transit(c, now, domains, cats),
         lambda: rule_saturn_gochara(c, now), lambda: rule_nodal_return(c, now),
         lambda: rule_ashtakavarga(c, now, domains, cats),
-        lambda: rule_remedies(c, now), lambda: rule_conjunctions(c),
+        lambda: rule_remedies(c, now), lambda: rule_conjunctions(c), lambda: rule_rinas(c, now),
     ]
     timing_categories = ('predictions', 'present_life', 'life_events')
     if not category or category in timing_categories:

@@ -245,6 +245,7 @@ class EnhancedValidator:
             'karmic_journey',
             'past_lives',
             'future_lives',
+            'karmic_debts',
             'present_life',
             'life_events',
             'karmic_remedies',

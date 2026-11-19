@@ -757,6 +757,12 @@ export const bhriguPredictionsAPI = {
     return response.data;
   },
 
+  /** Karmic debts (rinas) computed from the chart, and how to repay them. */
+  getKarmicDebts: async (data: BirthDetails & { question?: string; force_regenerate?: boolean }) => {
+    const response = await api.post<PredictionResult>('/api/bhrigu-predictions/karmic-debts', data);
+    return response.data;
+  },
+
   /**
    * Get Future Lives prediction
    * Envision soul's evolution and future incarnations

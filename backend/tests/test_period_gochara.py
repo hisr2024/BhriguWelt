@@ -50,19 +50,19 @@ def test_week_is_seven_computed_days(chart):
     assert r['week_start'] == '2026-11-09' and len(r['daily_summaries']) == 7
     scores = {d['day']: d['score'] for d in r['daily_summaries']}
     assert scores[r['best_day']] == max(scores.values()) and scores[r['challenging_day']] == min(scores.values())
-    assert all('tara' in d['focus'] or 'Chandrashtama' in d['focus'] for d in r['daily_summaries'])
-    assert r['metadata']['computed'] and 'Running dasha' in r['bhrigu_guidance']
+    assert all(('star' in d['focus']) or d['focus'].startswith('Weak Moon') for d in r['daily_summaries'])
+    assert r['metadata']['computed'] and 'Your planetary periods now' in r['bhrigu_guidance']
 
 
 def test_month_flags_chandrashtama_and_judges_from_the_moon(chart):
     r = P.monthly_reading(chart, 2026, 11, 'Europe/Berlin')
     # Natal Moon in Sagittarius: the 8th sign from it is Cancer.
     assert r['caution_days'] and all('Moon in Cancer' in c['reason'] for c in r['caution_days'])
-    assert r['monthly_theme']['title'].startswith('Sun 11th from your Moon')
+    assert r['monthly_theme']['title'].startswith('Sun 11th from your birth Moon')
     assert any(e['event'].startswith('Sun enters Scorpio') for e in r['important_dates'])
     assert set(r['sections']) == {'career', 'love', 'health', 'finance'}
     assert all('basis' not in s for s in r['sections'].values())
-    assert 'Bhrigu Chakra Paddhati' in r['bhrigu_guidance']
+    assert 'Bhrigu year-cycle' in r['bhrigu_guidance']
 
 
 def test_year_reads_each_stay_of_the_slow_planets(chart):
@@ -104,3 +104,27 @@ def test_orchestrator_passes_period_options_once(monkeypatch):
     out = PredictionOrchestrator().generate_prediction(
         category='predictions', chart_data={'zodiac_sign': 'Aries'}, time_period='weekly')
     assert out['mode'] == 'offline' and seen['time_period'] == 'weekly'
+
+
+JARGON = ('bindu', 'vedha', 'lagna', 'natal', 'antardasha', 'pratyantar', 'tara bala', 'chandra bala', 'aspects')
+
+
+def _texts(obj):
+    if isinstance(obj, str):
+        yield obj
+    elif isinstance(obj, dict):
+        for k, v in obj.items():
+            if k not in ('metadata', 'panchanga', 'facts'):
+                yield from _texts(v)
+    elif isinstance(obj, (list, tuple)):
+        for v in obj:
+            yield from _texts(v)
+
+
+def test_horoscopes_are_written_for_ordinary_readers(chart):
+    from services.daily_gochara import reading_for
+    readings = [reading_for(chart, datetime(2026, 11, d), 'Europe/Berlin') for d in range(1, 31)]
+    readings += [P.weekly_reading(chart, datetime(2026, 11, 11), 'Europe/Berlin'),
+                 P.monthly_reading(chart, 2026, 11, 'Europe/Berlin'), P.yearly_reading(chart, 2026, 'Europe/Berlin')]
+    text = ' '.join(t for r in readings for t in _texts(r)).lower()
+    assert not [w for w in JARGON if w in text]

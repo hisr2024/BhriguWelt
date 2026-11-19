@@ -673,7 +673,7 @@ def health():
             'cache_enabled': True
         },
         'prediction_categories': [
-            'karmic_journey', 'past_lives', 'future_lives', 'present_life',
+            'karmic_journey', 'past_lives', 'karmic_debts', 'future_lives', 'present_life',
             'life_events', 'karmic_remedies', 'relationships', 'predictions'
         ]
     })
