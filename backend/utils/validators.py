@@ -116,15 +116,12 @@ def validate_time(time_str: str, field_name: str = "time") -> Tuple[bool, Option
     if not time_str:
         return False, f"{field_name} is required"
 
-    # Try both formats
-    for fmt in ['%H:%M', '%H:%M:%S']:
-        try:
-            datetime.strptime(time_str, fmt)
-            return True, None
-        except ValueError:
-            continue
-
-    return False, f"{field_name} must be in HH:MM or HH:MM:SS format"
+    from services.astrology_calculator import parse_birth_time
+    try:
+        parse_birth_time(time_str)
+        return True, None
+    except ValueError:
+        return False, f"{field_name} must be HH:MM (24-hour, e.g. 14:30) or h:mm AM/PM"
 
 
 def validate_place(place_str: str, field_name: str = "place") -> Tuple[bool, Optional[str]]:

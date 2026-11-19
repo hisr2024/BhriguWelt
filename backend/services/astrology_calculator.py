@@ -11,11 +11,22 @@ import logging
 import math
 
 from services import ephemeris_core
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Optional
 
 from utils.errors import AstrologyDependencyError, ASTROLOGY_DEPENDENCIES
 
 logger = logging.getLogger(__name__)
+
+def parse_birth_time(value: str):
+    """'14:30', '14:30:00', '2:30 PM', '2:30pm' or '14.30' -> datetime.time."""
+    text = str(value or '').strip().upper().replace('.', ':')
+    for fmt in ('%H:%M', '%H:%M:%S', '%I:%M %p', '%I:%M%p', '%I:%M:%S %p', '%I:%M:%S%p'):
+        try:
+            return datetime.strptime(text, fmt).time()
+        except ValueError:
+            continue
+    raise ValueError(f"Time of birth must look like 14:30 or 2:30 PM (got {value!r})")
+
 
 class AstrologyCalculator:
     """Core Vedic astrology calculation engine"""
@@ -345,9 +356,9 @@ class AstrologyCalculator:
             )
             timezone_str = "UTC"
 
-        # Parse datetime
-        dt_str = f"{date_of_birth} {time_of_birth}"
-        local_dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
+        # Parse datetime (HH:MM, HH:MM:SS or a 12-hour time with AM/PM)
+        local_dt = datetime.combine(datetime.strptime(date_of_birth, "%Y-%m-%d").date(),
+                                    parse_birth_time(time_of_birth))
         timezone = self.pytz.timezone(timezone_str)
         local_dt = timezone.localize(local_dt)
         utc_dt = local_dt.astimezone(self.pytz.UTC)
@@ -379,6 +390,7 @@ class AstrologyCalculator:
                 'date': date_of_birth,
                 'time': time_of_birth,
                 'place': place,
+                'place_resolved': (geocoded_coords or {}).get('display_name'),
                 'latitude': latitude,
                 'longitude': longitude,
                 'timezone': timezone_str,
@@ -410,11 +422,12 @@ class AstrologyCalculator:
         # Try Nominatim with retry logic (max 3 attempts)
         for attempt in range(3):
             try:
-                location = self.geolocator.geocode(place, timeout=10)
+                location = self.geolocator.geocode(place, timeout=10, language='en')
                 if location:
                     coords = {
                         'latitude': location.latitude,
-                        'longitude': location.longitude
+                        'longitude': location.longitude,
+                        'display_name': getattr(location, 'address', None),
                     }
                     self._set_cached_geocode(place_key, coords)
                     return coords
@@ -450,6 +463,104 @@ class AstrologyCalculator:
             return builtin_coords
 
         return None
+
+    def search_places(self, query: str, limit: int = 6, when: Optional[datetime] = None) -> List[Dict[str, Any]]:
+        """Every place matching ``query``, so the user can pick the right one.
+
+        Many birth places share a name (Aurangabad in Bihar and Maharashtra,
+        Patan in Gujarat and Nepal); the first geocoder hit can be hundreds of
+        kilometres and a time zone away, which moves the Lagna. Each result
+        carries its coordinates, time zone and, when ``when`` (local birth
+        time) is given, the UTC offset in force at that moment.
+        """
+        query = (query or '').strip()
+        if len(query) < 2:
+            return []
+        key = f"search::{query.lower()}::{limit}"
+        cached = self._get_cached_geocode(key)
+        if cached is None:
+            found: List[Dict[str, Any]] = []
+            try:
+                locations = self.geolocator.geocode(query, exactly_one=False, limit=limit, timeout=10, language='en') or []
+                for loc in locations:
+                    found.append({'name': getattr(loc, 'address', None) or query,
+                                  'latitude': round(float(loc.latitude), 5), 'longitude': round(float(loc.longitude), 5)})
+            except Exception as exc:
+                logger.warning("Place search failed for %s: %s", query, exc)
+            if not found:
+                builtin = self._get_builtin_geocode(query.lower())
+                if builtin:
+                    found.append({'name': query, 'latitude': builtin['latitude'], 'longitude': builtin['longitude']})
+            # The same town often comes back several times (city, district, admin area).
+            unique: List[Dict[str, Any]] = []
+            for place in found:
+                if all(abs(place['latitude'] - u['latitude']) > 0.05 or abs(place['longitude'] - u['longitude']) > 0.05
+                       for u in unique):
+                    unique.append(place)
+            cached = unique
+            self._set_cached_geocode(key, cached)
+        return [self._with_zone(dict(place), when) for place in cached]
+
+    PHOTON_URL = os.getenv('PHOTON_URL', 'https://photon.komoot.io/api/')
+
+    def suggest_places(self, query: str, limit: int = 8, when: Optional[datetime] = None) -> List[Dict[str, Any]]:
+        """Type-ahead suggestions for the birth place (cities, towns, villages).
+
+        Photon (OpenStreetMap, built for search-as-you-type) is asked first;
+        when it is unreachable the full search (Nominatim, then the built-in
+        list) answers instead, so the field never comes back empty because of
+        one provider.
+        """
+        query = (query or '').strip()
+        if len(query) < 2:
+            return []
+        key = f"suggest::{query.lower()}::{limit}"
+        cached = self._get_cached_geocode(key)
+        if cached is None:
+            cached = []
+            try:
+                import requests
+                resp = requests.get(self.PHOTON_URL, params={'q': query, 'limit': limit * 2, 'lang': 'en', 'osm_tag': 'place'},
+                                    headers={'User-Agent': 'BhriguWelt/1.0 (https://bhriguwelt.app)'}, timeout=4)
+                resp.raise_for_status()
+                for feat in resp.json().get('features', []):
+                    props = feat.get('properties') or {}
+                    coords = (feat.get('geometry') or {}).get('coordinates') or []
+                    if len(coords) != 2 or not props.get('name'):
+                        continue
+                    if props.get('osm_value') in ('house', 'isolated_dwelling', 'farm', 'plot', 'square', 'neighbourhood', 'quarter', 'city_block'):
+                        continue
+                    region = [x for x in (props.get('county') or props.get('district'), props.get('state'), props.get('country'))
+                              if x and x != props['name']]
+                    parts = [props['name']] + [x for i, x in enumerate(region) if x not in region[:i]]
+                    cached.append({'name': ', '.join(parts), 'latitude': round(float(coords[1]), 5),
+                                   'longitude': round(float(coords[0]), 5), 'kind': props.get('osm_value')})
+            except Exception as exc:
+                logger.info("Place suggestions unavailable for %s: %s", query, exc)
+            unique: List[Dict[str, Any]] = []
+            for place in cached:
+                if all(abs(place['latitude'] - u['latitude']) > 0.05 or abs(place['longitude'] - u['longitude']) > 0.05
+                       for u in unique):
+                    unique.append(place)
+            cached = unique[:limit]
+            if cached:
+                self._set_cached_geocode(key, cached)
+        if not cached:
+            return self.search_places(query, limit=min(limit, 6), when=when)
+        return [self._with_zone(dict(place), when) for place in cached]
+
+    def _with_zone(self, item: Dict[str, Any], when: Optional[datetime]) -> Dict[str, Any]:
+        tz = self._timezone_at(item['latitude'], item['longitude'])
+        item['timezone'] = tz
+        if tz and when is not None:
+            try:
+                offset = self.pytz.timezone(tz).localize(when).utcoffset()
+                minutes = int(offset.total_seconds() // 60)
+                sign = '+' if minutes >= 0 else '-'
+                item['utc_offset'] = f"UTC{sign}{abs(minutes) // 60}:{abs(minutes) % 60:02d}"
+            except Exception:
+                pass
+        return item
 
     def _get_builtin_geocode(self, place_key: str) -> Dict[str, float]:
         """

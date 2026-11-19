@@ -121,6 +121,32 @@ def calculate_birth_chart():
         log_error(logger, e, "Birth chart calculation")
         return server_error_response("Failed to calculate birth chart. Please try again.")
 
+@bp.route('/places', methods=['GET'])
+def search_places():
+    """Places matching ?q=, each with coordinates, time zone and (given ?date=&time=) the UTC offset at birth."""
+    query = sanitize_input(request.args.get('q', ''), max_length=120)
+    if len(query.strip()) < 2:
+        return error_response("Type at least two letters of the birth place", 400)
+    calculator = get_astrology_calculator()
+    if not calculator:
+        return dependency_error_response(get_astrology_dependency_error())
+    when = None
+    date_arg, time_arg = request.args.get('date'), request.args.get('time')
+    if date_arg and time_arg:
+        try:
+            from datetime import datetime as _dt
+            from services.astrology_calculator import parse_birth_time
+            when = _dt.combine(_dt.strptime(date_arg, '%Y-%m-%d').date(), parse_birth_time(time_arg))
+        except ValueError:
+            when = None
+    # ?suggest=1: type-ahead (cities, towns and villages as the user types).
+    if request.args.get('suggest'):
+        places = calculator.suggest_places(query, limit=8, when=when)
+    else:
+        places = calculator.search_places(query, limit=6, when=when)
+    return success_response(data={'places': places}, message=f"{len(places)} place(s) found")
+
+
 @bp.route('/zodiac-analysis', methods=['POST'])
 def zodiac_analysis():
     """Get detailed zodiac sign analysis with AI-powered insights"""

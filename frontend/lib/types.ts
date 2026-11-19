@@ -12,6 +12,8 @@ export interface BirthDetails {
   place_of_birth: string;
   latitude?: number;
   longitude?: number;
+  /** IANA time zone of the birth place (e.g. Asia/Kolkata), from the place the user picked. */
+  timezone?: string;
   language?: string;
   gender?: Gender;
   birth_time_accuracy?: BirthTimeAccuracy;

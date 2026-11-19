@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { GenderField, BirthTimeAccuracyField } from '@/app/components/BirthPrecisionFields';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Shield } from 'lucide-react';
-import { type BirthDetails } from '@/lib/api';
+import { astrologyAPI, type BirthDetails, type PlaceMatch } from '@/lib/api';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import {
   createProfileWithRetry,
@@ -12,6 +12,7 @@ import {
   type ProfileCreationProgress,
 } from '@/lib/services/profileCreationService';
 import ProfileCreationProgressComponent from '@/components/ProfileCreationProgress';
+import PlaceSearchField, { formatPlaceDetail } from '@/app/components/PlaceSearchField';
 import { unlockHref } from '@/lib/unlockRedirect';
 
 export default function GetStartedPage() {
@@ -26,6 +27,10 @@ export default function GetStartedPage() {
     place_of_birth: '',
   });
   const [manualCoordsEnabled, setManualCoordsEnabled] = useState(false);
+  // The birth place the user confirmed from the search results (exact coordinates and zone).
+  const [placeMatches, setPlaceMatches] = useState<PlaceMatch[] | null>(null);
+  const [chosenPlace, setChosenPlace] = useState<PlaceMatch | null>(null);
+  const [, setSearchingPlace] = useState(false);
   const [manualCoords, setManualCoords] = useState({ latitude: '', longitude: '' });
   const [creationProgress, setCreationProgress] = useState<ProfileCreationProgress | null>(null);
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
@@ -52,6 +57,25 @@ export default function GetStartedPage() {
     }
   }, [encryptionLoading, isSetup, isUnlocked, router]);
 
+  const findPlace = async (): Promise<PlaceMatch[]> => {
+    setSearchingPlace(true);
+    setError('');
+    try {
+      const matches = await astrologyAPI.searchPlaces(formData.place_of_birth.trim(), formData.date_of_birth, formData.time_of_birth);
+      setPlaceMatches(matches);
+      if (matches.length === 1) setChosenPlace(matches[0]!);
+      if (matches.length === 0) {
+        setError('We could not find this place. Add the state and country (for example "Aurangabad, Maharashtra, India"), or enter latitude and longitude.');
+      }
+      return matches;
+    } catch {
+      setError('The place search is not reachable right now. Try again, or enter latitude and longitude.');
+      return [];
+    } finally {
+      setSearchingPlace(false);
+    }
+  };
+
   const runProfileCreation = async () => {
     if (!encryptionKey) {
       setError('Please unlock the app first');
@@ -67,6 +91,16 @@ export default function GetStartedPage() {
       setError('Please enter valid numeric values for latitude and longitude.');
       return;
     }
+    // The Lagna depends on the exact place: confirm it before calculating.
+    let place = chosenPlace;
+    if (!manualCoordsEnabled && !place) {
+      const matches = await findPlace();
+      if (matches.length !== 1) {
+        if (matches.length > 1) setError('Several places have this name. Choose your birth place from the list.');
+        return;
+      }
+      place = matches[0]!;
+    }
     setLoading(true);
     setError('');
     setCreationProgress(null);
@@ -77,10 +111,16 @@ export default function GetStartedPage() {
         name: formData.name,
         date_of_birth: formData.date_of_birth,
         time_of_birth: formData.time_of_birth,
-        place_of_birth: formData.place_of_birth,
+        place_of_birth: place && !manualCoordsEnabled ? place.name : formData.place_of_birth,
         gender: formData.gender,
         birth_time_accuracy: formData.birth_time_accuracy,
       };
+
+      if (place && !manualCoordsEnabled) {
+        profileData.latitude = place.latitude;
+        profileData.longitude = place.longitude;
+        if (place.timezone) profileData.timezone = place.timezone;
+      }
 
       // Only add coordinates if both are present and are valid numbers
       if (
@@ -206,8 +246,33 @@ export default function GetStartedPage() {
         {step === 4 && (
           <div>
             <label htmlFor="onb-place" className="mb-2 block text-sm text-ivory-2">Place of birth</label>
-            <input id="onb-place" type="text" required placeholder="New Delhi, India" autoComplete="address-level2" value={formData.place_of_birth} onChange={(e) => setFormData({ ...formData, place_of_birth: e.target.value })} className="nadi-input text-lg" autoFocus />
-            <p className="mt-2 text-xs text-ivory-muted">City and country.</p>
+            {manualCoordsEnabled ? (
+              <input id="onb-place" type="text" required placeholder="New Delhi, India" value={formData.place_of_birth} onChange={(e) => setFormData({ ...formData, place_of_birth: e.target.value })} className="nadi-input text-lg" />
+            ) : (
+              <PlaceSearchField
+                id="onb-place"
+                value={formData.place_of_birth}
+                onTextChange={(text) => { setFormData({ ...formData, place_of_birth: text }); setPlaceMatches(null); }}
+                chosen={chosenPlace}
+                onChoose={(place) => { setChosenPlace(place); if (place) setError(''); }}
+                date={formData.date_of_birth}
+                time={formData.time_of_birth}
+                autoFocus
+              />
+            )}
+            <p className="mt-2 text-xs text-ivory-muted">Type a few letters and choose your town or village. Your rising sign (Lagna) depends on the exact place.</p>
+            {placeMatches && placeMatches.length > 1 && !chosenPlace && !manualCoordsEnabled && (
+              <ul className="mt-3 space-y-2" aria-label="Matching places">
+                {placeMatches.map((m) => (
+                  <li key={`${m.latitude},${m.longitude}`}>
+                    <button type="button" onClick={() => { setChosenPlace(m); setFormData({ ...formData, place_of_birth: m.name }); setError(''); }} className="w-full rounded-xl border border-[color:var(--line)] px-4 py-3 text-left text-sm text-ivory hover:border-gold-400">
+                      <span className="block">{m.name}</span>
+                      <span className="mt-0.5 block text-xs text-ivory-muted">{formatPlaceDetail(m)}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
             <div className="mt-5 space-y-4">
               <label className="flex min-h-[44px] items-center gap-3 text-sm text-ivory-2">
                 <input type="checkbox" checked={manualCoordsEnabled} onChange={(e) => setManualCoordsEnabled(e.target.checked)} className="h-5 w-5 accent-[#D4AF5F]" />
