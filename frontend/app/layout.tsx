@@ -44,7 +44,11 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   keywords: ['vedic astrology', 'bhrigu samhita', 'nadi jyotish', 'dasha', 'karmic astrology', 'birth chart'],
   applicationName: 'BhriguWelt',
-  alternates: { canonical: '/' },
+  // No site-wide canonical: each page is its own canonical URL (a root '/'
+  // canonical told search engines every page was a copy of the home page).
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } }
+    : {}),
   openGraph: {
     type: 'website',
     siteName: 'BhriguWelt',
