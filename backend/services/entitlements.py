@@ -245,8 +245,15 @@ def stripe_client():
         raise BillingNotConfigured('Stripe is not set up on the server')
     import stripe
     stripe.api_key = key
+    # Managed Payments (Stripe as merchant of record) needs a 2026 API version.
+    stripe.api_version = os.getenv('STRIPE_API_VERSION', '2026-04-22.dahlia')
     stripe.max_network_retries = 2
     return stripe
+
+
+def stripe_managed_payments() -> bool:
+    """Stripe as merchant of record: Stripe collects and remits VAT/GST."""
+    return os.getenv('STRIPE_MANAGED_PAYMENTS', 'true').strip().lower() in ('1', 'true', 'yes', 'on')
 
 
 def stripe_status(customer_id: str) -> Dict[str, Any]:
