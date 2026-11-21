@@ -16,6 +16,7 @@
 import { useMemo, useState } from 'react';
 import { ChevronDown, Clock, CheckCircle2, ShieldCheck, AlertTriangle, ScrollText } from 'lucide-react';
 import { MarkdownRenderer } from '@/app/components/MarkdownRenderer';
+import { ListenButton } from '@/app/components/ListenButton';
 
 export interface SectionDetail {
   simple?: string;
@@ -278,11 +279,27 @@ export function ReadingView({ prediction, viewMode }: { prediction: StructuredRe
   );
 
   const findings = prediction.rule_findings || [];
+
+  // What "Listen" reads: the plain-language reading, in the order shown.
+  const narration = () => {
+    const parts: string[] = [];
+    if (prediction.overview) parts.push(prediction.overview);
+    if (prediction.key_insight) parts.push(prediction.key_insight);
+    for (const s of sections) {
+      const body = s.detail?.simple || prediction.user_views?.[s.key] || '';
+      if (!body) continue;
+      parts.push(`${s.title}.`, body);
+      if (s.detail?.guidance?.length) parts.push(s.detail.guidance.join('. '));
+    }
+    return parts.join('\n\n');
+  };
+
   const [showAllRules, setShowAllRules] = useState(false);
   const visibleFindings = showAllRules ? findings : findings.slice(0, 6);
 
   return (
     <div className="space-y-5">
+      <ListenButton getText={narration} label="Listen to this reading" />
       {(prediction.overview || prediction.key_insight) && (
         <section className="rounded-3xl p-6 bg-gradient-to-br from-cyan-500/[0.12] via-indigo-500/[0.08] to-fuchsia-500/[0.10] border border-white/10">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-300 mb-2">Your reading</p>

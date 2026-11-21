@@ -442,6 +442,19 @@ class BhriguSessionLog(db.Model):
         return f'<BhriguSession {self.session_id}>'
 
 
+class VoiceUsage(db.Model):
+    """Characters of read-aloud voice used per subscriber per month
+    (used only when Redis is not configured)."""
+    __tablename__ = 'voice_usage'
+
+    id = db.Column(db.Integer, primary_key=True)
+    subscriber = db.Column(db.String(64), nullable=False)
+    period = db.Column(db.String(7), nullable=False)  # YYYY-MM
+    chars = db.Column(db.Integer, default=0, nullable=False)
+
+    __table_args__ = (db.UniqueConstraint('subscriber', 'period', name='uq_voice_usage_period'),)
+
+
 def init_db(app):
     """Initialize database with app context"""
     db.init_app(app)

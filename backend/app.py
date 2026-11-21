@@ -181,6 +181,7 @@ STANDARD_CORS_HEADERS = [
     "X-AI-Mode",
     "X-Client-Online",
     "X-Client-Id",
+    "X-BW-Entitlement",
     "X-Uncompressed-Content-Length",
     "Content-Encoding",
     "X-API-Key",
@@ -248,7 +249,7 @@ CORS(
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
             "allow_headers": STANDARD_CORS_HEADERS,
             "supports_credentials": True,
-            "expose_headers": ["X-Correlation-ID"],
+            "expose_headers": ["X-Correlation-ID", "X-Voice-Seconds-Left", "X-Voice-Engine"],
             "max_age": 86400,
         },
         r"/health": {
@@ -522,7 +523,19 @@ if daily_insights_routes:
     app.register_blueprint(daily_insights_routes.bp)
     logger.info("✓ Daily insights and horoscope blueprint registered")
 
+from routes import billing_routes
+app.register_blueprint(billing_routes.bp)
+app.register_blueprint(billing_routes.voice_bp)
+logger.info("✓ Billing and voice blueprints registered")
+
 logger.info("✓ All blueprints registered")
+
+
+# Premium gate: only active once BILLING_ENFORCE is switched on, so nothing is
+# locked before the stores are set up. Free: Today, the chart, the Karmic
+# journey reading and the daily horoscope.
+from services import premium_gate
+app.before_request(premium_gate.check)
 
 # Apply rate limiting to specific endpoints
 logger.info("Applying rate limiting to prediction endpoints...")

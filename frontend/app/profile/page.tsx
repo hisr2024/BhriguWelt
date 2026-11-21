@@ -14,6 +14,7 @@ import { useEncryptedStorage } from '@/lib/hooks/useEncryptedStorage';
 import type { Profile } from '@/lib/types';
 import { GenderField, BirthTimeAccuracyField } from '@/app/components/BirthPrecisionFields';
 import { unlockHref } from '@/lib/unlockRedirect';
+import { PremiumCard } from '@/app/components/PremiumCard';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -135,6 +136,7 @@ export default function ProfilePage() {
 
         {/* Profile Info */}
         <div className="max-w-2xl mx-auto space-y-6 mb-12">
+          <PremiumCard />
           {currentProfile && (
             <GenZCard variant="glass">
               <div className="flex items-center justify-between mb-6">
