@@ -123,6 +123,21 @@ export default function ReadingsHubPage() {
         ))}
       </ul>
 
+      <Link
+        href="/astrologers"
+        className="nadi-leaf mt-6 flex items-center gap-4 !py-4"
+        aria-label="Talk to an astrologer, coming soon"
+      >
+        <span className="grid h-11 w-11 flex-none place-items-center rounded-xl border border-[color:var(--line)] text-gold-300">
+          <UnionIcon size={22} />
+        </span>
+        <span className="flex-1">
+          <span className="block font-display text-xl text-ivory">Talk to an astrologer</span>
+          <span className="mt-0.5 block text-sm text-ivory-2">Verified Vedic astrologers who see your chart before you ask</span>
+        </span>
+        <span className="nadi-chip flex-none !text-[0.65rem]">Coming soon</span>
+      </Link>
+
       <Link href="/ai-chat" className="nadi-btn-ghost mt-6 w-full sm:w-auto">
         <AskIcon size={18} /> Ask a question about your chart
       </Link>
