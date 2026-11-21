@@ -147,14 +147,22 @@ def stripe_checkout():
         'success_url': f'{origin}/premium/success?session_id={{CHECKOUT_SESSION_ID}}',
         'cancel_url': f'{origin}/premium',
         'allow_promotion_codes': True,
-        'billing_address_collection': 'auto',
         'metadata': {'app': 'bhriguwelt', 'plan': plan},
     }
+    managed = ent.stripe_managed_payments()
+    if managed:
+        # Stripe is the seller of record and handles tax, so tax and
+        # address parameters are Stripe's to set, not ours.
+        params['managed_payments'] = {'enabled': True}
+    else:
+        params['billing_address_collection'] = 'auto'
     trial = int(os.getenv('PREMIUM_TRIAL_DAYS', '7'))
     if trial > 0:
         params['subscription_data'] = {'trial_period_days': trial}
     currency = (payload.get('currency') or '').lower()
     try:
+        if managed:
+            raise LookupError  # Stripe picks the buyer's currency itself
         prices = _stripe_prices_public() or {}
         if currency and currency in (prices.get(plan) or {}).get('options', {}):
             params['currency'] = currency

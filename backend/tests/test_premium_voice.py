@@ -161,6 +161,13 @@ def test_checkout_redirect_origin_is_allowlisted(client, monkeypatch):
     assert kwargs['success_url'].startswith('https://bhriguwelt.app/premium/success')
     assert kwargs['subscription_data'] == {'trial_period_days': 7}
     assert kwargs['line_items'][0]['price'] == 'price_y'
+    assert kwargs['managed_payments'] == {'enabled': True}
+    assert 'billing_address_collection' not in kwargs and 'currency' not in kwargs
+
+    monkeypatch.setenv('STRIPE_MANAGED_PAYMENTS', 'false')
+    client.post('/api/billing/stripe/checkout', json={'plan': 'monthly'})
+    kwargs = fake.checkout.Session.create.call_args.kwargs
+    assert 'managed_payments' not in kwargs and kwargs['billing_address_collection'] == 'auto'
 
 
 def test_play_verify_issues_token(client, monkeypatch):

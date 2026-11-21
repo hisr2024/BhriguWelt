@@ -87,6 +87,9 @@ services:
         sync: false
       - key: STRIPE_PRICE_YEARLY
         sync: false
+      # Stripe as merchant of record (handles VAT/GST); set false to sell directly.
+      - key: STRIPE_MANAGED_PAYMENTS
+        value: "true"
       - key: GOOGLE_PLAY_PACKAGE
         value: app.bhriguwelt.twa
       - key: GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
