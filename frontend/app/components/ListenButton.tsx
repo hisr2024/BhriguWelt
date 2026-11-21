@@ -104,6 +104,10 @@ export function ListenButton({
     audioRef.current = audio;
     audio.src = url;
     audio.onended = () => setState('idle');
+    audio.onerror = () => {
+      setState('idle');
+      setNote('This device could not play the voice. Please try again.');
+    };
     audio.onpause = () => setState((s) => (s === 'playing' ? 'paused' : s));
     audio.onplay = () => setState('playing');
     audio.play().catch(() => setState('paused'));
@@ -112,7 +116,7 @@ export function ListenButton({
   const onClick = useCallback(async () => {
     const audio = audioRef.current;
     if (state === 'playing' && audio) return audio.pause();
-    if (state === 'paused' && audio) return void audio.play();
+    if (state === 'paused' && audio) return void audio.play().catch(() => setState('paused'));
     if (state === 'loading') return;
 
     const text = getText().trim();

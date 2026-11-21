@@ -115,6 +115,8 @@ const nextConfig = {
       `style-src 'self' 'unsafe-inline' ${cdnUrl}`,
       `img-src 'self' data: https: ${cdnUrl}`,
       `font-src 'self' data: ${cdnUrl}`,
+      // "Listen" plays the read-aloud MP3 from an in-memory blob.
+      "media-src 'self' blob:",
       "connect-src 'self' http: https:",
       "frame-ancestors 'none'",
       "base-uri 'self'",
