@@ -1,5 +1,6 @@
 'use client';
 
+import { PremiumGate } from '@/app/components/PremiumGate';
 import { UnionIcon } from '@/components/nadi/icons';
 
 import { useState, useEffect } from 'react';
@@ -56,6 +57,14 @@ const chosenFrom = (p: PersonInput): PlaceMatch | null =>
     : null;
 
 export default function MatchmakingPage() {
+  return (
+    <PremiumGate title="Matchmaking">
+      <MatchmakingInner />
+    </PremiumGate>
+  );
+}
+
+function MatchmakingInner() {
   const [step, setStep] = useState<'input' | 'loading' | 'result'>('input');
   const [person1, setPerson1] = useState<PersonInput>({
     name: '',

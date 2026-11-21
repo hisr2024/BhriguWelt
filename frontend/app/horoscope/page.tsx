@@ -8,6 +8,9 @@ import { loadCurrentProfile } from '@/lib/profileHelpers';
 import { insightsAPI, type InsightScope } from '@/lib/api';
 import { BackIcon } from '@/components/nadi/icons';
 import { unlockHref } from '@/lib/unlockRedirect';
+import { usePremium } from '@/lib/premium';
+import { PremiumInvite } from '@/app/components/PremiumGate';
+import { ListenButton } from '@/app/components/ListenButton';
 
 const SCOPES: Array<{ id: InsightScope; label: string; aliases: string[] }> = [
   { id: 'daily', label: 'Today', aliases: ['daily', 'today', 'day'] },
@@ -38,6 +41,9 @@ export default function HoroscopePage() {
   const [scope, setScope] = useState<InsightScope>(scopeFromParam(params?.scope));
   const [data, setData] = useState<any>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error' | 'no-profile'>('loading');
+  const premium = usePremium();
+  // The day stays free; week, month and year are Premium once enforced.
+  const locked = scope !== 'daily' && !premium.loading && !premium.unlocked;
 
   useEffect(() => {
     if (encryptionLoading) return;
@@ -47,6 +53,7 @@ export default function HoroscopePage() {
 
   const load = useCallback(async () => {
     if (!encryptionKey) return;
+    if (scope !== 'daily' && (premium.loading || !premium.unlocked)) return;
     setStatus('loading');
     try {
       const profile = await loadCurrentProfile(encryptionKey);
@@ -65,7 +72,7 @@ export default function HoroscopePage() {
     } catch {
       setStatus('error');
     }
-  }, [encryptionKey, scope]);
+  }, [encryptionKey, scope, premium.loading, premium.unlocked]);
 
   useEffect(() => {
     load();
@@ -103,7 +110,9 @@ export default function HoroscopePage() {
         ))}
       </div>
 
-      {status === 'loading' && (
+      {locked && <PremiumInvite title={HEADINGS[scope]} trialDays={premium.config?.trial_days ?? 7} />}
+
+      {!locked && status === 'loading' && (
         <div className="mt-6 space-y-3" aria-busy="true">
           {[0, 1, 2].map((i) => <div key={i} className="h-24 animate-pulse rounded-2xl bg-[rgba(212,175,95,0.06)]" />)}
         </div>
@@ -116,7 +125,7 @@ export default function HoroscopePage() {
         </div>
       )}
 
-      {status === 'error' && (
+      {!locked && status === 'error' && (
         <div role="alert" className="nadi-card mt-6 text-center">
           <p className="font-display text-xl text-ivory">This horoscope couldn&apos;t be loaded.</p>
           <p className="mt-1 text-sm text-ivory-2">Check your connection and try again.</p>
@@ -124,7 +133,7 @@ export default function HoroscopePage() {
         </div>
       )}
 
-      {status === 'ready' && data && (
+      {!locked && status === 'ready' && data && (
         <>
           <section className="nadi-leaf mt-6">
             <p className="nadi-eyebrow !text-[0.62rem]">
@@ -133,6 +142,13 @@ export default function HoroscopePage() {
             </p>
             {headline && <p className="mt-1 font-display text-xl text-gold-200">{headline}</p>}
             {summary && <p className="mt-1 font-display text-[1.1rem] italic leading-snug text-ivory">{summary}</p>}
+            <ListenButton
+              className="mt-4"
+              label={`Listen to ${HEADINGS[scope].toLowerCase()}`}
+              getText={() => [headline, summary, text(data?.bhrigu_guidance),
+                ...sections.map(([key, sec]) => `${SECTION_LABELS[key]}. ${text(sec?.summary) || text(sec?.message) || text(sec?.insight) || ''}`),
+                mantra].filter(Boolean).join('\n\n')}
+            />
           </section>
 
           {text(data?.bhrigu_guidance) && (

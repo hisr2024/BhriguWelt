@@ -16,6 +16,8 @@ import { SectionIcon } from '@/lib/sectionIcons';
 import { parsePredictionResponse, type ParsedPrediction, type PredictionSection as ParsedSection } from '@/lib/predictionParser';
 import { MarkdownRenderer } from '@/app/components/MarkdownRenderer';
 import { ReadingView, isStructuredReading, type StructuredReading } from '@/app/components/predictions/ReadingView';
+import { PremiumGate } from '@/app/components/PremiumGate';
+import { FREE_READINGS } from '@/lib/premium';
 
 const SECTION_LANGUAGES: Language[] = ['en', 'hi'];
 
@@ -362,7 +364,16 @@ const extractTiming = (prediction: any): string => {
   return 'Timing details available in full analysis below';
 };
 
-export default function BhriguPredictionView({
+/** Premium readings are only requested once the reader may see them. */
+export default function BhriguPredictionView(props: BhriguPredictionViewProps) {
+  return (
+    <PremiumGate free={FREE_READINGS.has(props.category)} title={props.title}>
+      <BhriguPredictionViewInner {...props} />
+    </PremiumGate>
+  );
+}
+
+function BhriguPredictionViewInner({
   category,
   title,
   description,

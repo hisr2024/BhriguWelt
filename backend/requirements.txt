@@ -52,3 +52,7 @@ pytest==9.0.3
 pytest-flask==1.3.0
 pytest-mock==3.12.0
 fakeredis==2.35.1  # For testing Redis functionality
+
+# Premium subscriptions (Stripe on the web, Google Play in the Android app)
+stripe==12.5.1
+google-auth==2.40.3

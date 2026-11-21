@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { ListenButton } from '@/app/components/ListenButton';
 import { useRouter } from 'next/navigation';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { loadCurrentProfile } from '@/lib/profileHelpers';
@@ -51,6 +52,22 @@ const CONTINUE = [
 
 function formatToday() {
   return new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+/** What "Listen" reads on Today: the leaf, then each area, then do / avoid. */
+function todayNarration(insight: DailyInsight | null): string {
+  if (!insight) return '';
+  const parts: string[] = [];
+  const leaf = insight.energy_level?.description || insight.categories?.spiritual?.message;
+  if (leaf) parts.push(leaf);
+  for (const [key, label] of CATEGORY_ORDER) {
+    const c = insight.categories?.[key];
+    if (c?.message) parts.push(`${label}. ${c.message}${c.advice ? ` ${c.advice}` : ''}`);
+  }
+  if (insight.do_list?.length) parts.push(`Favoured today. ${insight.do_list.slice(0, 5).join('. ')}.`);
+  if (insight.dont_list?.length) parts.push(`Best avoided. ${insight.dont_list.slice(0, 4).join('. ')}.`);
+  if (insight.categories?.spiritual?.mantra) parts.push(insight.categories.spiritual.mantra);
+  return parts.join('\n\n');
 }
 
 export default function TodayPage() {
@@ -157,6 +174,7 @@ export default function TodayPage() {
                 {insight?.categories?.spiritual?.mantra && (
                   <p className="mt-2 text-sm text-gold-200">{insight.categories.spiritual.mantra}</p>
                 )}
+                <ListenButton className="mt-4" label="Listen to today" getText={() => todayNarration(insight)} />
               </>
             )}
           </section>

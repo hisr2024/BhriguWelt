@@ -28,6 +28,15 @@ export default function TermsPage() {
       <Section title="Fair use">
         <p>Do not misuse the service, attempt to overload it or access it by automated means beyond normal use.</p>
       </Section>
+      <Section title="Premium subscription">
+        <p>
+          Premium is a subscription billed monthly or yearly, with a free trial where offered. It renews automatically
+          until you cancel. In the Android app it is billed and cancelled through Google Play; on the website through
+          Stripe (Manage or cancel on the Premium page). Cancelling stops the next renewal; access continues until the
+          end of the period already paid. Listening is included up to the monthly minutes shown on the Premium page.
+          Your statutory rights, including any right of withdrawal, are not affected.
+        </p>
+      </Section>
       <Section title="Availability">
         <p>We aim to keep the service available but do not guarantee uninterrupted access or that every reading can be generated at all times.</p>
       </Section>

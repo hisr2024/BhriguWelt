@@ -13,6 +13,7 @@ import type {
 import { normalizePredictionResponse } from './api/predictionResponse';
 import { emitToast, buildIssueReportUrl } from './toast';
 import { apiBase, enableProxyMode, isProxyMode, PROXY_BASE } from './backendUrl';
+import { readEntitlement } from './entitlementStore';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const API_TIMEOUT_MS = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '300000', 10); // 5 minutes (increased from 120000)
@@ -85,6 +86,10 @@ api.interceptors.request.use(
       const clientId = getClientId();
       if (clientId) {
         config.headers['X-Client-Id'] = clientId;
+      }
+      const entitlement = readEntitlement();
+      if (entitlement) {
+        config.headers['X-BW-Entitlement'] = entitlement;
       }
     }
 

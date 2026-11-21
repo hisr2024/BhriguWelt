@@ -76,6 +76,39 @@ services:
       - key: REDIS_MAX_RECONNECT_ATTEMPTS
         value: "10"
 
+      # Premium subscriptions. Nothing is locked until BILLING_ENFORCE=true.
+      - key: BILLING_ENFORCE
+        value: "false"
+      - key: PREMIUM_TRIAL_DAYS
+        value: "7"
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PRICE_MONTHLY
+        sync: false
+      - key: STRIPE_PRICE_YEARLY
+        sync: false
+      - key: GOOGLE_PLAY_PACKAGE
+        value: app.bhriguwelt.twa
+      - key: GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: FROM_EMAIL
+        value: noreply@bhriguwelt.app
+
+      # Read-aloud voice: sarvam (Bulbul, uses SARVAM_API_KEY) or svara
+      # (Kenpath svara-TTS on your own GPU server; falls back to Sarvam).
+      - key: TTS_ENGINE
+        value: sarvam
+      - key: TTS_SARVAM_MODEL
+        value: bulbul:v3
+      - key: VOICE_MONTHLY_MINUTES
+        value: "30"
+      - key: SVARA_TTS_URL
+        sync: false
+      - key: SVARA_TTS_KEY
+        sync: false
+
       # Frontend URL (for CORS)
       - key: FRONTEND_URL
         value: https://bhrigu-welt.vercel.app
