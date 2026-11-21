@@ -8,12 +8,14 @@ import { readVoiceChoice, saveVoiceChoice, type VoiceChoice } from '@/app/compon
 
 /** "Me" page: Premium status and the reading voice. */
 export function PremiumCard() {
-  const { status, loading } = usePremium();
+  const { status, loading, config } = usePremium();
   const [voice, setVoice] = useState<VoiceChoice>('female');
 
   useEffect(() => setVoice(readVoiceChoice()), []);
 
   if (loading) return null;
+  // Before Premium is on sale there is nothing to show here.
+  if (!status.active && !(config?.stripe.available || config?.play.available)) return null;
   return (
     <section className="nadi-card" aria-labelledby="premium-card-title">
       <div className="flex items-center justify-between gap-3">

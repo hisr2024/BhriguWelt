@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Headphones, Loader2, Pause, Play } from 'lucide-react';
 import { api } from '@/lib/api';
 import { readEntitlement } from '@/lib/entitlementStore';
+import { loadBillingConfig } from '@/lib/premium';
 
 const VOICE_KEY = 'bhriguwelt_voice';
 
@@ -76,6 +77,19 @@ export function ListenButton({
   const urlRef = useRef<string | null>(null);
   const [state, setState] = useState<'idle' | 'loading' | 'playing' | 'paused'>('idle');
   const [note, setNote] = useState<string | null>(null);
+  // Shown only once listening can actually be had: a subscriber, or Premium
+  // on sale with the voice switched on. No dead-end buttons before launch.
+  const [offered, setOffered] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    loadBillingConfig().then((c) => {
+      if (!alive) return;
+      const onSale = Boolean(c?.voice.available && (c.stripe.available || c.play.available));
+      setOffered(Boolean(readEntitlement()) || onSale);
+    });
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => () => {
     audioRef.current?.pause();
@@ -135,6 +149,7 @@ export function ListenButton({
     }
   }, [getText, lang, play, router, state]);
 
+  if (!offered) return null;
   const Icon = state === 'loading' ? Loader2 : state === 'playing' ? Pause : state === 'paused' ? Play : Headphones;
   const text = state === 'loading' ? 'Preparing voice…' : state === 'playing' ? 'Pause' : state === 'paused' ? 'Resume' : label;
 
