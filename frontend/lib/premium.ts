@@ -294,3 +294,10 @@ export async function confirmRestore(token: string): Promise<PremiumStatus> {
   saveEntitlement(r.data.entitlement);
   return r.data as PremiumStatus;
 }
+
+export async function redeemAccessCode(code: string): Promise<PremiumStatus> {
+  const r = await api.post('/api/billing/review/redeem', { code });
+  if (r.status >= 300 || !r.data?.entitlement) throw new PurchaseError('This code is not valid.');
+  saveEntitlement(r.data.entitlement);
+  return r.data as PremiumStatus;
+}

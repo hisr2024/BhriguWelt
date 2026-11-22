@@ -273,6 +273,20 @@ def restore_confirm():
     return jsonify({**result, 'entitlement': ent.issue_token('stripe', customer)})
 
 
+@bp.route('/review/redeem', methods=['POST'])
+def review_redeem():
+    """App-store reviewers: an access code (REVIEW_ACCESS_CODE) unlocks
+    Premium on their device without a purchase."""
+    import hashlib
+    code = ((request.get_json(silent=True) or {}).get('code') or '')[:128]
+    if not ent.review_code_matches(code):
+        time.sleep(1)  # slow down guessing
+        return jsonify({'error': 'invalid_code'}), 400
+    ref = hashlib.sha256(ent.review_code().encode()).hexdigest()[:16]
+    return jsonify({'active': True, 'source': 'review', 'plan': 'review',
+                    'entitlement': ent.issue_token('review', ref)})
+
+
 # ── voice ────────────────────────────────────────────────────────────────
 
 @voice_bp.route('/speak', methods=['POST'])

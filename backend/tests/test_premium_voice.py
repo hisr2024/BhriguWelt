@@ -255,3 +255,17 @@ def test_speak_requires_premium_and_meters(client, monkeypatch, tmp_path):
     store[ent.subscriber_key(ent.read_token(token))] = 26500
     r = client.post('/api/voice/speak', json={'text': 'hello'}, headers={'X-BW-Entitlement': token})
     assert r.status_code == 429
+
+
+def test_review_code(client, monkeypatch):
+    monkeypatch.setenv('SECRET_KEY', 's')
+    monkeypatch.delenv('REVIEW_ACCESS_CODE', raising=False)
+    assert client.post('/api/billing/review/redeem', json={'code': 'x'}).status_code == 400
+    monkeypatch.setenv('REVIEW_ACCESS_CODE', 'PLAY-REVIEW-2026')
+    monkeypatch.setattr('time.sleep', lambda s: None)
+    assert client.post('/api/billing/review/redeem', json={'code': 'wrong'}).status_code == 400
+    data = client.post('/api/billing/review/redeem', json={'code': 'PLAY-REVIEW-2026'}).get_json()
+    tok = data['entitlement']
+    assert ent.status_for(ent.read_token(tok))['active']
+    monkeypatch.setenv('REVIEW_ACCESS_CODE', 'CHANGED-CODE-1')
+    assert not ent.status_for(ent.read_token(tok))['active']

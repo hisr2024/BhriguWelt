@@ -88,6 +88,9 @@ services:
       - key: STRIPE_PRICE_YEARLY
         sync: false
       # Stripe as merchant of record (handles VAT/GST); set false to sell directly.
+      # App-store reviewers unlock Premium with this code (8+ characters).
+      - key: REVIEW_ACCESS_CODE
+        sync: false
       - key: STRIPE_MANAGED_PAYMENTS
         value: "true"
       - key: GOOGLE_PLAY_PACKAGE

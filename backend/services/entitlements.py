@@ -115,7 +115,7 @@ def read_token(token: Optional[str]) -> Optional[Dict[str, str]]:
         data = URLSafeTimedSerializer(_secret(), salt=TOKEN_SALT).loads(token)
     except BadSignature:
         return None
-    if not isinstance(data, dict) or data.get('s') not in ('play', 'stripe') or not data.get('r'):
+    if not isinstance(data, dict) or data.get('s') not in ('play', 'stripe', 'review') or not data.get('r'):
         return None
     return data
 
@@ -287,9 +287,30 @@ def stripe_status(customer_id: str) -> Dict[str, Any]:
 
 # ── entry point ──────────────────────────────────────────────────────────
 
+def review_code() -> str:
+    return (os.getenv('REVIEW_ACCESS_CODE') or '').strip()
+
+
+def review_code_matches(code: str) -> bool:
+    import hmac
+    expected = review_code()
+    return bool(expected) and len(expected) >= 8 and hmac.compare_digest(code.strip(), expected)
+
+
+def review_status(ref: str) -> Dict[str, Any]:
+    # Active only while the code that issued it is still configured, so
+    # removing or changing REVIEW_ACCESS_CODE ends every reviewer pass.
+    import hashlib
+    code = review_code()
+    ok = bool(code) and ref == hashlib.sha256(code.encode()).hexdigest()[:16]
+    return {'active': ok, 'source': 'review', 'plan': 'review' if ok else None}
+
+
 def status_for(entitlement: Optional[Dict[str, str]], fresh: bool = False) -> Dict[str, Any]:
     if not entitlement:
         return {'active': False}
+    if entitlement['s'] == 'review':
+        return review_status(entitlement['r'])
     key = f"{entitlement['s']}:{entitlement['r']}"
     if not fresh:
         hit = _cached(key)
