@@ -9,7 +9,7 @@
 //   plaintext copies.
 // Bump SW_VERSION to drop all old caches on the next activation.
 
-const SW_VERSION = 'v5';
+const SW_VERSION = 'v6';
 const STATIC_CACHE = `bhriguwelt-static-${SW_VERSION}`;
 const ASSET_CACHE = `bhriguwelt-assets-${SW_VERSION}`;
 const SHELL_CACHE = `bhriguwelt-shell-${SW_VERSION}`;
@@ -133,20 +133,40 @@ self.addEventListener('sync', (event) => {
   }
 });
 
+// Morning and evening notifications (payload: {title, body, url, tag}).
 self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { body: event.data ? event.data.text() : '' };
+  }
   event.waitUntil(
-    self.registration.showNotification('BhriguWelt', {
-      body: event.data ? event.data.text() : 'New insight available',
+    self.registration.showNotification(data.title || 'BhriguWelt', {
+      body: data.body || 'Your leaf for today is ready.',
       icon: '/icons/icon-192x192.png',
       badge: '/icons/icon-96x96.png',
-      tag: 'bhriguwelt-notification',
+      tag: data.tag || 'bhriguwelt',
+      renotify: false,
+      data: { url: typeof data.url === 'string' && data.url.startsWith('/') ? data.url : '/dashboard' },
     })
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  event.waitUntil(self.clients.openWindow('/'));
+  const url = new URL(event.notification.data?.url || '/dashboard', self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+          if ('navigate' in client) client.navigate(url).catch(() => undefined);
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    })
+  );
 });
 
 self.addEventListener('message', (event) => {

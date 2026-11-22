@@ -455,6 +455,44 @@ class VoiceUsage(db.Model):
     __table_args__ = (db.UniqueConstraint('subscriber', 'period', name='uq_voice_usage_period'),)
 
 
+class PushSubscription(db.Model):
+    """A device that asked for the morning and evening notifications.
+
+    Holds no birth data: only the push endpoint, the reader's time zone and
+    times, and (optionally) the index of their natal Moon sign and nakshatra,
+    which personalise the message.
+    """
+    __tablename__ = 'push_subscription'
+
+    id = db.Column(db.Integer, primary_key=True)
+    endpoint = db.Column(db.Text, nullable=False)
+    endpoint_hash = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    p256dh = db.Column(db.String(255), nullable=False)
+    auth = db.Column(db.String(255), nullable=False)
+    tz = db.Column(db.String(64), nullable=False, default='UTC')
+    morning = db.Column(db.Boolean, nullable=False, default=True)
+    evening = db.Column(db.Boolean, nullable=False, default=True)
+    morning_at = db.Column(db.String(5), nullable=False, default='07:00')  # HH:MM local
+    evening_at = db.Column(db.String(5), nullable=False, default='20:00')
+    moon_sign = db.Column(db.Integer, nullable=True)  # 0..11
+    moon_nakshatra = db.Column(db.Integer, nullable=True)  # 0..26
+    last_morning = db.Column(db.String(10), nullable=True)  # local date YYYY-MM-DD
+    last_evening = db.Column(db.String(10), nullable=True)
+    failures = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class AppKeyPair(db.Model):
+    """Server key pairs made once and kept (e.g. the Web Push VAPID key)."""
+    __tablename__ = 'app_key_pair'
+
+    name = db.Column(db.String(32), primary_key=True)
+    public_key = db.Column(db.Text, nullable=False)
+    private_key = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
 class UserAccount(db.Model):
     """A signed-in BhriguWelt user (Google or e-mail code; no passwords)."""
     __tablename__ = 'user_account'

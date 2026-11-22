@@ -56,6 +56,7 @@ fakeredis==2.35.1  # For testing Redis functionality
 # Premium subscriptions (Stripe on the web, Google Play in the Android app)
 stripe==12.5.1
 google-auth==2.40.3
+pywebpush==2.0.3
 
 # Accounts: PostgreSQL driver and encryption of synced profiles
 psycopg[binary]==3.2.9

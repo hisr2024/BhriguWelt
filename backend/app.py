@@ -538,6 +538,13 @@ app.register_blueprint(billing_routes.bp)
 app.register_blueprint(billing_routes.voice_bp)
 from routes import account_routes
 app.register_blueprint(account_routes.bp)
+from routes import notification_routes
+app.register_blueprint(notification_routes.bp)
+try:
+    from services import notifications as _notifications
+    _notifications.start_loop(app)
+except Exception as e:
+    log_exception(logger, e, context="Notification loop not started")
 logger.info("✓ Billing and voice blueprints registered")
 
 logger.info("✓ All blueprints registered")

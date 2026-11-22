@@ -98,6 +98,12 @@ services:
       - key: EMAIL_FROM
         value: BhriguWelt <noreply@bhriguwelt.app>
 
+      # Morning/evening notifications (Web Push). Optional: without these the
+      # server makes a key pair once and keeps it in the database.
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
       # App-store reviewers unlock Premium with this code (8+ characters).
       - key: REVIEW_ACCESS_CODE
         sync: false
