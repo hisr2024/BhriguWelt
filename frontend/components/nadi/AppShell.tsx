@@ -22,7 +22,7 @@ export const TABS: Tab[] = [
 ];
 
 /** Screens without app navigation: landing, onboarding, lock screens, legal. */
-const BARE_ROUTES = ['/', '/get-started', '/setup-passcode', '/unlock', '/offline', '/privacy', '/terms', '/impressum'];
+const BARE_ROUTES = ['/', '/get-started', '/setup-passcode', '/unlock', '/offline', '/privacy', '/terms', '/impressum', '/delete-account'];
 
 const isActive = (pathname: string, tab: Tab) =>
   tab.match.some((m) => pathname === m || pathname.startsWith(`${m}/`));
