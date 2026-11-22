@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Check, Headphones, Sparkles } from 'lucide-react';
 import {
-  buyOnPlay, buyOnWeb, inPlayApp, openWebPortal, playPrices, PurchaseError, requestRestoreEmail,
+  buyOnPlay, buyOnWeb, inPlayApp, openWebPortal, playPrices, PurchaseError, redeemAccessCode, requestRestoreEmail,
   restoreOnPlay, usePremium, webPrices, type DisplayPrice, type Plan,
 } from '@/lib/premium';
 import { BackIcon } from '@/components/nadi/icons';
@@ -25,6 +25,8 @@ export default function PremiumPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [showCode, setShowCode] = useState(false);
 
   useEffect(() => {
     if (!config) return;
@@ -78,6 +80,20 @@ export default function PremiumPage() {
         await requestRestoreEmail(email);
         setMessage('If that address has a subscription, a sign-in link is on its way. It works for 30 minutes.');
       }
+    } catch (err) {
+      setMessage(err instanceof PurchaseError ? err.message : 'Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function redeem() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await redeemAccessCode(code);
+      await refresh(true);
+      setMessage('Premium is open on this device.');
     } catch (err) {
       setMessage(err instanceof PurchaseError ? err.message : 'Please try again.');
     } finally {
@@ -221,6 +237,31 @@ export default function PremiumPage() {
             </form>
           ) : (
             <p className="mt-2 text-sm text-ivory-2">Open BhriguWelt on the device where you subscribed.</p>
+          )}
+        </section>
+      )}
+
+      {!status.active && (
+        <section className="mt-8">
+          {showCode ? (
+            <form className="flex flex-col gap-2 sm:flex-row" onSubmit={(e) => { e.preventDefault(); redeem(); }}>
+              <label htmlFor="access-code" className="sr-only">Access code</label>
+              <input
+                id="access-code"
+                required
+                autoCapitalize="characters"
+                autoComplete="off"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="Access code"
+                className="h-12 flex-1 rounded-xl border border-[color:var(--line)] bg-transparent px-4 text-ivory placeholder:text-ivory-muted"
+              />
+              <button type="submit" disabled={busy} className="nadi-btn-ghost h-12">Apply</button>
+            </form>
+          ) : (
+            <button type="button" onClick={() => setShowCode(true)} className="h-11 text-sm text-ivory-2 underline underline-offset-4">
+              Have an access code?
+            </button>
           )}
         </section>
       )}
