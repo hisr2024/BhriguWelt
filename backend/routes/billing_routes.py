@@ -21,7 +21,7 @@ import time
 from flask import Blueprint, Response, jsonify, request
 
 from services import entitlements as ent
-from services import tts_service, voice_usage
+from services import mailer, tts_service, voice_usage
 from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -40,6 +40,17 @@ def _return_origin(payload) -> str:
     if _ALLOWED_RETURN.match(origin) or (extra and origin == extra):
         return origin
     return 'https://bhriguwelt.app'
+
+
+def _link_to_account(source: str, ref: str) -> None:
+    """A purchase made or restored while signed in belongs to that account."""
+    try:
+        from services import accounts
+        user = accounts.current_user(request)
+        if user:
+            accounts.link_purchase(user, source, ref)
+    except Exception as exc:  # never fail a purchase over account linking
+        logger.warning('Could not link purchase to account: %s', exc)
 
 
 def _not_configured(store: str):
@@ -85,7 +96,7 @@ def config():
         'play': {'available': ent.play_configured(), 'package': ent.play_package(),
                  'products': ent.play_products()},
         'stripe': {'available': ent.stripe_configured(), 'prices': prices},
-        'restore_by_email': bool(os.getenv('SENDGRID_API_KEY')) and ent.stripe_configured(),
+        'restore_by_email': mailer.configured() and ent.stripe_configured(),
         'voice': {'available': tts_service.configured(), 'engine': tts_service.engine_name()},
     })
 
@@ -125,6 +136,7 @@ def play_verify():
     if not result.get('active'):
         return jsonify({'active': False, 'error': 'not_active', 'state': result.get('state')}), 402
     entitlement_token = ent.issue_token('play', token, result.get('product_id'))
+    _link_to_account('play', token)
     ent.forget({'s': 'play', 'r': token})
     return jsonify({**result, 'entitlement': entitlement_token})
 
@@ -196,6 +208,7 @@ def stripe_complete():
         return jsonify({'error': 'not_complete'}), 402
     customer = session['customer']
     ent.forget({'s': 'stripe', 'r': customer})
+    _link_to_account('stripe', customer)
     result = ent.status_for({'s': 'stripe', 'r': customer}, fresh=True)
     return jsonify({**result, 'entitlement': ent.issue_token('stripe', customer)})
 
@@ -224,7 +237,7 @@ def restore():
     email = (payload.get('email') or '').strip().lower()
     if not _EMAIL.match(email):
         return jsonify({'error': 'valid email required'}), 400
-    if not (ent.stripe_configured() and os.getenv('SENDGRID_API_KEY')):
+    if not (ent.stripe_configured() and mailer.configured()):
         return jsonify({'error': 'restore_unavailable'}), 503
     origin = _return_origin(payload)
     # Same answer whether or not the address has a subscription, so this
@@ -242,20 +255,15 @@ def restore():
 
 
 def _send_restore_mail(email: str, link: str) -> None:
-    from sendgrid import SendGridAPIClient
-    from sendgrid.helpers.mail import Mail
-    message = Mail(
-        from_email=os.getenv('FROM_EMAIL', 'noreply@bhriguwelt.app'),
-        to_emails=email,
-        subject='Your BhriguWelt Premium sign-in link',
-        html_content=(
-            '<p>Namaste,</p><p>Tap the button below on the phone or computer where you '
-            'want BhriguWelt Premium. The link works for 30 minutes.</p>'
-            f'<p><a href="{link}" style="background:#C9A55C;color:#0B0E1C;padding:12px 20px;'
-            'border-radius:8px;text-decoration:none;font-weight:600">Open Premium</a></p>'
-            '<p>If you did not ask for this, you can ignore this e-mail.</p>'),
+    mailer.send(
+        email,
+        'Your BhriguWelt Premium sign-in link',
+        mailer.button_html(
+            'Tap the button below on the phone or computer where you want BhriguWelt Premium. '
+            'The link works for 30 minutes.',
+            link, 'Open Premium', 'If you did not ask for this, you can ignore this e-mail.'),
+        f'Open this link on the device where you want BhriguWelt Premium (valid 30 minutes): {link}',
     )
-    SendGridAPIClient(os.environ['SENDGRID_API_KEY']).send(message)
 
 
 @bp.route('/restore/confirm', methods=['POST'])
@@ -270,6 +278,7 @@ def restore_confirm():
         return _not_configured('stripe')
     if not result.get('active'):
         return jsonify({'error': 'not_active'}), 402
+    _link_to_account('stripe', customer)
     return jsonify({**result, 'entitlement': ent.issue_token('stripe', customer)})
 
 

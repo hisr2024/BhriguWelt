@@ -111,12 +111,14 @@ const nextConfig = {
       "default-src 'self'",
       // Note: 'unsafe-inline' is required for Next.js and Framer Motion inline styles
       // 'unsafe-eval' removed for better security - not needed for production
-      `script-src 'self' 'unsafe-inline' ${cdnUrl}`,
-      `style-src 'self' 'unsafe-inline' ${cdnUrl}`,
+      `script-src 'self' 'unsafe-inline' https://accounts.google.com ${cdnUrl}`,
+      `style-src 'self' 'unsafe-inline' https://accounts.google.com ${cdnUrl}`,
       `img-src 'self' data: https: ${cdnUrl}`,
       `font-src 'self' data: ${cdnUrl}`,
       // "Listen" plays the read-aloud MP3 from an in-memory blob.
       "media-src 'self' blob:",
+      // Google sign-in button and its pop-up.
+      "frame-src 'self' https://accounts.google.com",
       "connect-src 'self' http: https:",
       "frame-ancestors 'none'",
       "base-uri 'self'",

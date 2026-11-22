@@ -88,6 +88,16 @@ services:
       - key: STRIPE_PRICE_YEARLY
         sync: false
       # Stripe as merchant of record (handles VAT/GST); set false to sell directly.
+      # Accounts (optional sign-in). DATABASE_URL = Internal URL of bhriguwelt-db.
+      - key: DATABASE_URL
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        value: BhriguWelt <noreply@bhriguwelt.app>
+
       # App-store reviewers unlock Premium with this code (8+ characters).
       - key: REVIEW_ACCESS_CODE
         sync: false

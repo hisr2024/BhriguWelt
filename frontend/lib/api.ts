@@ -14,6 +14,7 @@ import { normalizePredictionResponse } from './api/predictionResponse';
 import { emitToast, buildIssueReportUrl } from './toast';
 import { apiBase, enableProxyMode, isProxyMode, PROXY_BASE } from './backendUrl';
 import { readEntitlement } from './entitlementStore';
+import { readSession } from './accountStore';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const API_TIMEOUT_MS = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '300000', 10); // 5 minutes (increased from 120000)
@@ -90,6 +91,10 @@ api.interceptors.request.use(
       const entitlement = readEntitlement();
       if (entitlement) {
         config.headers['X-BW-Entitlement'] = entitlement;
+      }
+      const session = readSession();
+      if (session) {
+        config.headers['X-BW-Auth'] = session;
       }
     }
 
