@@ -210,6 +210,12 @@ export default function PremiumPage() {
 
       {message && <p role="status" className="mt-4 text-center text-sm text-gold-200">{message}</p>}
 
+      <p className="mt-6 text-center text-sm text-ivory-2">
+        <Link href="/account" className="underline underline-offset-4">
+          Sign in to keep Premium on all your devices
+        </Link>
+      </p>
+
       {!status.active && store && (
         <section className="mt-10 border-t border-[rgba(212,175,95,0.12)] pt-6">
           <h2 className="text-lg text-ivory">Already subscribed?</h2>

@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from './api';
 import { readEntitlement, saveEntitlement } from './entitlementStore';
+import { readSession } from './accountStore';
 
 export type Plan = 'monthly' | 'yearly';
 
@@ -83,6 +84,7 @@ export async function inPlayApp(): Promise<boolean> {
 // ── config & status ──────────────────────────────────────────────────────
 
 let configPromise: Promise<BillingConfig | null> | null = null;
+let accountChecked = false;
 
 export function loadBillingConfig(force = false): Promise<BillingConfig | null> {
   if (!configPromise || force) {
@@ -112,6 +114,12 @@ export function usePremium() {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async (fresh = false) => {
+    // Signed in: pick up Premium bought on another device (once per page load).
+    if (readSession() && !accountChecked) {
+      accountChecked = true;
+      const { refreshAccount } = await import('./account');
+      await refreshAccount();
+    }
     const [c, s] = await Promise.all([loadBillingConfig(), loadPremiumStatus(fresh)]);
     setConfig(c);
     setStatus(s);

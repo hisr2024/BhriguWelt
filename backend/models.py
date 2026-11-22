@@ -455,6 +455,56 @@ class VoiceUsage(db.Model):
     __table_args__ = (db.UniqueConstraint('subscriber', 'period', name='uq_voice_usage_period'),)
 
 
+class UserAccount(db.Model):
+    """A signed-in BhriguWelt user (Google or e-mail code; no passwords)."""
+    __tablename__ = 'user_account'
+
+    id = db.Column(db.String(36), primary_key=True)
+    email = db.Column(db.String(320), unique=True, nullable=False, index=True)
+    google_sub = db.Column(db.String(64), unique=True, nullable=True)
+    name = db.Column(db.String(120))
+    token_version = db.Column(db.Integer, default=1, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    last_login_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class LoginCode(db.Model):
+    """One-time e-mail sign-in code (only its hash is stored)."""
+    __tablename__ = 'login_code'
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(320), nullable=False, index=True)
+    code_hash = db.Column(db.String(64), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    attempts = db.Column(db.Integer, default=0, nullable=False)
+    used = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
+class AccountPurchase(db.Model):
+    """A Play or Stripe subscription linked to an account."""
+    __tablename__ = 'account_purchase'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(36), db.ForeignKey('user_account.id', ondelete='CASCADE'),
+                        nullable=False, index=True)
+    source = db.Column(db.String(16), nullable=False)
+    ref = db.Column(db.String(1024), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (db.UniqueConstraint('source', 'ref', name='uq_account_purchase'),)
+
+
+class AccountProfiles(db.Model):
+    """The user's birth profiles, encrypted at rest (one blob per user)."""
+    __tablename__ = 'account_profiles'
+
+    user_id = db.Column(db.String(36), db.ForeignKey('user_account.id', ondelete='CASCADE'),
+                        primary_key=True)
+    data = db.Column(db.Text, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
 def init_db(app):
     """Initialize database with app context"""
     db.init_app(app)

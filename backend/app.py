@@ -141,15 +141,24 @@ if not JWT_SECRET_KEY:
 
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['JWT_SECRET_KEY'] = JWT_SECRET_KEY
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///bhriguwelt.db')
+def _database_url() -> str:
+    url = os.getenv('DATABASE_URL', 'sqlite:///bhriguwelt.db')
+    # Render gives postgres:// or postgresql://; SQLAlchemy needs the psycopg 3 driver named.
+    for prefix in ('postgres://', 'postgresql://'):
+        if url.startswith(prefix):
+            return 'postgresql+psycopg://' + url[len(prefix):]
+    return url
+
+
+app.config['SQLALCHEMY_DATABASE_URI'] = _database_url()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Database connection pool configuration
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_size': int(os.getenv('DB_POOL_SIZE', '10')),  # Number of connections to maintain
+    'pool_size': int(os.getenv('DB_POOL_SIZE', '3')),  # Number of connections to maintain
     'pool_recycle': int(os.getenv('DB_POOL_RECYCLE', '3600')),  # Recycle connections after 1 hour
     'pool_pre_ping': True,  # Test connections before using them
-    'max_overflow': int(os.getenv('DB_MAX_OVERFLOW', '20')),  # Max connections beyond pool_size
+    'max_overflow': int(os.getenv('DB_MAX_OVERFLOW', '5')),  # Max connections beyond pool_size
     'pool_timeout': int(os.getenv('DB_POOL_TIMEOUT', '30')),  # Timeout waiting for connection
 }
 
@@ -182,6 +191,7 @@ STANDARD_CORS_HEADERS = [
     "X-Client-Online",
     "X-Client-Id",
     "X-BW-Entitlement",
+    "X-BW-Auth",
     "X-Uncompressed-Content-Length",
     "Content-Encoding",
     "X-API-Key",
@@ -526,6 +536,8 @@ if daily_insights_routes:
 from routes import billing_routes
 app.register_blueprint(billing_routes.bp)
 app.register_blueprint(billing_routes.voice_bp)
+from routes import account_routes
+app.register_blueprint(account_routes.bp)
 logger.info("✓ Billing and voice blueprints registered")
 
 logger.info("✓ All blueprints registered")

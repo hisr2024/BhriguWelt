@@ -15,6 +15,7 @@ import type { Profile } from '@/lib/types';
 import { GenderField, BirthTimeAccuracyField } from '@/app/components/BirthPrecisionFields';
 import { unlockHref } from '@/lib/unlockRedirect';
 import { PremiumCard } from '@/app/components/PremiumCard';
+import { AccountCard } from '@/app/components/AccountCard';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -136,6 +137,7 @@ export default function ProfilePage() {
 
         {/* Profile Info */}
         <div className="max-w-2xl mx-auto space-y-6 mb-12">
+          <AccountCard />
           <PremiumCard />
           {currentProfile && (
             <GenZCard variant="glass">
