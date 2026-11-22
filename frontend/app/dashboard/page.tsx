@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ListenButton } from '@/app/components/ListenButton';
+import { NotificationsPrompt } from '@/app/components/NotificationsCard';
 import { useRouter } from 'next/navigation';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { loadCurrentProfile } from '@/lib/profileHelpers';
@@ -178,6 +179,8 @@ export default function TodayPage() {
               </>
             )}
           </section>
+
+          {status === 'ready' && <NotificationsPrompt />}
 
           {status === 'ready' && insight && (
             <>
