@@ -1,0 +1,82 @@
+{
+  "total_tests": 5,
+  "passed": 5,
+  "failed": 0,
+  "details": [
+    {
+      "category": "Karmic Journey",
+      "status": "PASS",
+      "section_count": 8,
+      "expected_sections": 8,
+      "checks": {
+        "has_category": true,
+        "has_title": true,
+        "has_full_analysis": true,
+        "has_metadata": true,
+        "has_generated_at": true,
+        "has_sections": true
+      },
+      "content_length": 4661
+    },
+    {
+      "category": "Past Lives",
+      "status": "PASS",
+      "section_count": 8,
+      "expected_sections": 8,
+      "checks": {
+        "has_category": true,
+        "has_title": true,
+        "has_full_analysis": true,
+        "has_metadata": true,
+        "has_generated_at": true,
+        "has_sections": true
+      },
+      "content_length": 5309
+    },
+    {
+      "category": "Future Lives",
+      "status": "PASS",
+      "section_count": 8,
+      "expected_sections": 8,
+      "checks": {
+        "has_category": true,
+        "has_title": true,
+        "has_full_analysis": true,
+        "has_metadata": true,
+        "has_generated_at": true,
+        "has_sections": true
+      },
+      "content_length": 5309
+    },
+    {
+      "category": "Present Life",
+      "status": "PASS",
+      "section_count": 10,
+      "expected_sections": 10,
+      "checks": {
+        "has_category": true,
+        "has_title": true,
+        "has_full_analysis": true,
+        "has_metadata": true,
+        "has_generated_at": true,
+        "has_sections": true
+      },
+      "content_length": 5309
+    },
+    {
+      "category": "Karmic Remedies",
+      "status": "PASS",
+      "section_count": 12,
+      "expected_sections": 12,
+      "checks": {
+        "has_category": true,
+        "has_title": true,
+        "has_full_analysis": true,
+        "has_metadata": true,
+        "has_generated_at": true,
+        "has_sections": true
+      },
+      "content_length": 5309
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "total_tests": 5,
+  "passed": 0,
+  "failed": 5,
+  "details": [
+    {
+      "category": "Karmic Journey",
+      "status": "ERROR",
+      "error": "AI prediction generation is temporarily unavailable. No generalised fallback was served because precise, chart-grounded predictions are required (reason: services_unavailable). Please retry shortly."
+    },
+    {
+      "category": "Past Lives",
+      "status": "ERROR",
+      "error": "AI prediction generation is temporarily unavailable. No generalised fallback was served because precise, chart-grounded predictions are required (reason: services_unavailable). Please retry shortly."
+    },
+    {
+      "category": "Future Lives",
+      "status": "ERROR",
+      "error": "AI prediction generation is temporarily unavailable. No generalised fallback was served because precise, chart-grounded predictions are required (reason: services_unavailable). Please retry shortly."
+    },
+    {
+      "category": "Present Life",
+      "status": "ERROR",
+      "error": "AI prediction generation is temporarily unavailable. No generalised fallback was served because precise, chart-grounded predictions are required (reason: services_unavailable). Please retry shortly."
+    },
+    {
+      "category": "Karmic Remedies",
+      "status": "ERROR",
+      "error": "AI prediction generation is temporarily unavailable. No generalised fallback was served because precise, chart-grounded predictions are required (reason: services_unavailable). Please retry shortly."
+    }
+  ]
+}
