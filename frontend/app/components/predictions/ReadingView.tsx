@@ -17,6 +17,7 @@ import { useMemo, useState } from 'react';
 import { ChevronDown, Clock, CheckCircle2, ShieldCheck, AlertTriangle, ScrollText } from 'lucide-react';
 import { MarkdownRenderer } from '@/app/components/MarkdownRenderer';
 import { ListenButton } from '@/app/components/ListenButton';
+import { plainTiming } from '@/lib/viewMode';
 
 export interface SectionDetail {
   simple?: string;
@@ -160,7 +161,7 @@ function SectionCard({
                   <Clock className="w-4 h-4 mt-0.5 text-amber-300 shrink-0" aria-hidden="true" />
                   <p className="text-sm text-amber-100">
                     <span className="font-semibold text-amber-200">When: </span>
-                    {detail.timing}
+                    {astro ? detail.timing : plainTiming(detail.timing)}
                   </p>
                 </div>
               )}
@@ -323,7 +324,7 @@ export function ReadingView({ prediction, viewMode }: { prediction: StructuredRe
             {timeline.slice(0, astro ? 12 : 5).map((t) => (
               <li key={t.key} className="flex flex-col sm:flex-row sm:items-baseline sm:gap-3">
                 <span className="text-sm font-medium text-white sm:w-44 shrink-0">{t.title}</span>
-                <span className="text-sm text-slate-300">{t.timing}</span>
+                <span className="text-sm text-slate-300">{astro ? t.timing : plainTiming(t.timing)}</span>
               </li>
             ))}
           </ol>

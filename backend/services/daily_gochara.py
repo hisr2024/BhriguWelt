@@ -77,6 +77,46 @@ CHANDRA = {
     11: (2, 'gains, good news and fulfilled wishes'),
     12: (-1, 'expenses, tiredness and a need for rest'),
 }
+# Plain-language results for the Simple view: what the day brings, with no astrology terms.
+CHANDRA_SIMPLE = {
+    1: 'You feel at ease today, with comfort and a calm mind.',
+    2: 'Watch your spending and your words today.',
+    3: 'Effort pays off today: you have courage and things move.',
+    4: 'You may feel unsettled at home or in your mind, so keep expectations low.',
+    5: 'Plans may meet small obstacles, so think before you decide.',
+    6: 'You have the upper hand today: good for health and for clearing problems.',
+    7: 'People are good to you today: pleasant company and help from others.',
+    8: 'These are your low days of the month. Stress and small mishaps are more likely, so keep things simple.',
+    9: 'You may feel tired and things may run late.',
+    10: 'Work goes well today: success and recognition are likely.',
+    11: 'A day of gains: good news and wishes coming true.',
+    12: 'Spending and tiredness are likely, so rest more.',
+}
+TARA_SIMPLE = {
+    'Janma': 'Body and mind are sensitive today, so keep your routine simple.',
+    'Sampat': 'It is good for money matters, buying and starting things.',
+    'Vipat': 'Avoid risks, new ventures and arguments.',
+    'Kshema': 'It is good for health, home and steady progress.',
+    'Pratyari': 'Expect some pushback and do not force things.',
+    'Sadhaka': 'Your efforts succeed, so do the important work today.',
+    'Vadha': 'Put off big decisions, travel and confrontations.',
+    'Mitra': 'It is good for meetings, partnerships and asking for what you need.',
+    'Ati-Mitra': 'Help comes easily, and almost anything you take up goes well.',
+}
+TITHI_SIMPLE = {
+    'Nanda': 'Good for celebrations, learning and pleasant work',
+    'Bhadra': 'Good for steady, lasting work: home, health, agreements',
+    'Jaya': 'Good for anything that needs courage: competition, negotiation, travel',
+    'Rikta': 'Better for finishing, clearing and repaying than for beginning',
+    'Purna': 'Good for completing things and for all important work',
+}
+
+
+def simple_verdict(score: int) -> str:
+    return ('A strong day for you' if score >= 3 else 'A good day for you' if score >= 1
+            else 'A mixed day for you' if score >= -1 else 'A day to go gently')
+
+
 HOUSE_TOPIC = {
     1: 'yourself, body and appearance', 2: 'money, food, speech and family', 3: 'effort, messages, short trips and siblings',
     4: 'home, mother, vehicle and inner peace', 5: 'children, study, advice and creative work',
@@ -348,7 +388,7 @@ def daily_reading(chart: Dict[str, Any], when: Optional[datetime] = None, tz=Non
 
     good_tara = f['tara_score'] > 0
     career['advice'] = ('Take up the important task and ask for what you need.' if career['rating'] >= 4
-                        else 'Clear routine and pending work; hold new proposals for a better star.' if career['rating'] <= 2
+                        else 'Clear routine and pending work; hold new proposals for a better day.' if career['rating'] <= 2
                         else 'Proceed with planned work; avoid forcing decisions.')
     love['advice'] = ('A good day to meet, talk things through and make plans together.' if love['rating'] >= 4
                       else 'Listen more than you speak; postpone sensitive conversations.' if love['rating'] <= 2
@@ -428,12 +468,59 @@ def daily_reading(chart: Dict[str, Any], when: Optional[datetime] = None, tz=Non
         'dasha': ' – '.join(x for x in (f['maha'], f['antar'], f['pratyantar']) if x) or None,
     }
     summary = ' '.join(x for x in (headline, tara_line, house_line) if x)
+
+    # --- Simple view: results only, in everyday words -----------------------
+    def simple_area(cat: Dict[str, Any], topic: str) -> Dict[str, Any]:
+        plural = topic.endswith('s')
+        r = cat['rating']
+        tone = (('are' if plural else 'is') + ' well supported today' if r >= 4
+                else ('are' if plural else 'is') + ' steady today' if r == 3
+                else ('need' if plural else 'needs') + ' care today')
+        return {'rating': r, 'message': f"{topic.capitalize()} {tone}.", 'advice': cat.get('advice', '')}
+
+    s_parts = [simple_verdict(f['score']) + '.', CHANDRA_SIMPLE[from_moon]]
+    if from_moon != 8:
+        s_parts.append(TARA_SIMPLE[f['tara']])
+    if house:
+        s_parts.append(f"Today is mostly about {HOUSE_TOPIC[house]}.")
+    s_do, s_dont = [], []
+    if good_tara and not weak_moon:
+        s_do.append('Do the work that matters most to you today')
+    elif not good_tara:
+        s_dont.append('Avoid starting new ventures, signing or confronting; finish what is pending')
+    if weak_moon:
+        s_dont.append(f"Until {until_sign}: no major decisions, arguments or risky travel")
+    if house:
+        s_do.append(f"Give time to {HOUSE_TOPIC[house]}")
+    if f['tithi_name'] == 'Amavasya':
+        s_dont.append('Do not begin long-term undertakings today; remember your ancestors and give in charity')
+    elif f['tithi_class'] == 'Rikta':
+        s_dont.append('Do not begin long-term undertakings today; clear, repay and complete instead')
+    elif not weak_moon:
+        s_do.append(TITHI_SIMPLE[f['tithi_class']])
+    if f['tithi_name'] == 'Ekadashi':
+        s_do.append('A good day for fasting and prayer')
+    elif f['tithi_name'] == 'Purnima':
+        s_do.append('A good day for prayer, charity and gatherings')
+    if f['yoga'] in HARSH_YOGAS:
+        s_dont.append('Keep important starts for another day')
+    if f['bindus'] is not None and f['bindus'] <= 3:
+        s_dont.append('Do not over-commit today')
+    s_do.append(f"Recite {planet_mantra(f['day_lord'])}")
+    simple = {
+        'verdict': simple_verdict(f['score']),
+        'summary': ' '.join(s_parts),
+        'categories': {'career': simple_area(career, 'work'), 'love': simple_area(love, 'relationships'),
+                       'health': simple_area(health, 'health'), 'finance': simple_area(finance, 'money matters')},
+        'do_list': s_do[:5], 'dont_list': s_dont[:4],
+    }
     return {
         'date': f['local'].strftime('%Y-%m-%d'),
         'day_of_week': f['local'].strftime('%A'),
         'day_ruler': {'planet': f['day_lord'], 'color': DAY_COLOUR[f['day_lord']]},
         'energy_level': {'level': level, 'score': pct, 'description': summary},
         'overall': summary,
+        'simple': simple,
         'nadi_note': link_line,
         'dasha_note': dasha_line,
         'categories': {'career': career, 'love': love, 'health': health, 'finance': finance, 'spiritual': spiritual},

@@ -252,9 +252,12 @@ class HoroscopeEngine:
             return {
                 'date': r['date'], 'day': r['day_of_week'], 'zodiac_sign': birth_data.get('zodiac_sign'),
                 'overall': {'energy': r['energy_level']['level'], 'message': r['overall'],
+                            'simple_title': r['simple']['verdict'], 'simple': r['simple']['summary'],
                             'score': r['energy_level']['score']},
-                'sections': {k: {'message': cats[k]['message'], 'practice': cats[k].get('advice'),
+                'sections': {k: {'message': cats[k]['message'], 'simple': r['simple']['categories'][k]['message'],
+                                 'practice': cats[k].get('advice'),
                                  'rating': cats[k]['rating']} for k in ('love', 'career', 'health', 'finance')},
+                'simple': r['simple'],
                 'ratings': {k: cats[k]['rating'] for k in ('love', 'career', 'health', 'finance')},
                 'lucky_elements': r['lucky_elements'],
                 'daily_mantra': cats['spiritual']['mantra'],
