@@ -322,6 +322,14 @@ def _meta(chart: Dict[str, Any], extra: Dict[str, Any]) -> Dict[str, Any]:
     return meta
 
 
+def _tone_simple(label: str, verb: str, rating: int, period: str) -> str:
+    """Plain result for one life area: no planets, houses or periods named."""
+    tone = ('well supported' if rating >= 4 else 'steady' if rating == 3 else 'under pressure')
+    advice = {'well supported': 'A good time to push ahead.', 'steady': 'Keep going as you are.',
+              'under pressure': 'Go slowly and avoid big risks.'}[tone]
+    return f"{label} {verb} {tone}{' ' + period if period else ''}. {advice}"
+
+
 def _join(names: List[str]) -> str:
     return names[0] if len(names) == 1 else ', '.join(names[:-1]) + ' and ' + names[-1]
 
@@ -355,6 +363,7 @@ def weekly_reading(chart: Dict[str, Any], start_date: Optional[datetime] = None,
         return f"{lead} · {HOUSE_SHORT[f['house']]}" if f['house'] else lead
 
     summaries = [{'date': d.isoformat(), 'day': d.strftime('%A'), 'energy': r['energy_level']['level'],
+                  'simple': r['simple']['verdict'] + (f" · {HOUSE_SHORT[r['facts']['house']]}" if r['facts']['house'] else ''),
                   'focus': tag(r), 'moon': f"{r['facts']['moon_sign']}, {r['facts']['nakshatra']}",
                   'score': r['facts']['score']} for d, r in days]
     ranked = sorted(days, key=lambda x: x[1]['facts']['score'])
@@ -379,7 +388,10 @@ def weekly_reading(chart: Dict[str, Any], start_date: Optional[datetime] = None,
             lo = next(x for x in days if x[1]['categories'][key]['rating'] == lo_r)
             summary = (f"Best on {_join(good_days)} ({hi_r} of 5): on {good_days[0]} the {why(hi[1])}. "
                        f"Go gently on {_join(hard_days)} ({lo_r} of 5): on {hard_days[0]} the {why(lo[1])}.")
-        sections[key] = {'summary': summary, 'key_day': None if lo_r == hi_r else hi[0].strftime('%A'),
+        simple = (f"{label} {verb} even through the week; no single day stands out." if lo_r == hi_r
+                  else f"Best on {_join(good_days)}. Go gently on {_join(hard_days)}.")
+        sections[key] = {'summary': summary, 'simple': simple,
+                         'key_day': None if lo_r == hi_r else hi[0].strftime('%A'),
                          'rating': round(sum(r['categories'][key]['rating'] for _d, r in days) / 7)}
 
     first, last = days[0][1]['facts'], days[-1][1]['facts']
@@ -395,10 +407,14 @@ def weekly_reading(chart: Dict[str, Any], start_date: Optional[datetime] = None,
     if dasha['running']:
         guidance.insert(0, f"Your planetary periods now: {dasha['plain']}.")
     title = 'An even week' if even else f"Strongest on {best[0].strftime('%A')}; go gently on {worst[0].strftime('%A')}"
+    simple_summary = ('The days of this week are much alike for you.' if even else
+                      f"Plan important things for {best[0].strftime('%A')} and keep {worst[0].strftime('%A')} light.")
+    if ashtama:
+        simple_summary += f" Your low days fall on {_join(ashtama)}: keep them for routine work."
     return {
         'week_start': monday.isoformat(), 'week_end': (monday + timedelta(days=6)).isoformat(),
         'zodiac_sign': chart.get('zodiac_sign'),
-        'weekly_theme': {'title': title, 'summary': summary},
+        'weekly_theme': {'title': title, 'summary': summary, 'simple': simple_summary},
         'sections': sections, 'daily_summaries': summaries,
         'best_day': best[0].strftime('%A'), 'challenging_day': worst[0].strftime('%A'),
         'important_dates': _events(tz, start, end, natal, MONTHLY, True, True),
@@ -432,8 +448,9 @@ def monthly_reading(chart: Dict[str, Any], year: Optional[int] = None, month: Op
     states = {p: transit_state(p, natal, tsigns, bav) for p in MONTHLY}
     transits = [transit_line(states[p]) for p in ('Sun', 'Jupiter', 'Saturn', 'Mars', 'Venus', 'Mercury', 'Rahu')]
     sections = {k: v for k in AREAS if (v := area_section(k, natal, tsigns, MONTHLY, bav, 'this month'))}
-    for sec in sections.values():
+    for key, sec in sections.items():
         sec.pop('basis', None)
+        sec['simple'] = _tone_simple(AREAS[key][0], AREAS[key][1], sec['rating'], 'this month')
 
     scored = []
     for i in range(n_days):
@@ -441,10 +458,11 @@ def monthly_reading(chart: Dict[str, Any], year: Optional[int] = None, month: Op
         f = D.daily_facts(chart, _utc(tz, d), tz)
         if f:
             scored.append((d, f))
-    power = [{'date': d.isoformat(), 'reason': f"{D.TARA_PLAIN[f['tara']].capitalize()}; Moon {_ord(f['from_moon'])} from your birth Moon"}
+    power = [{'date': d.isoformat(), 'simple': 'A strong day for you: use it for what matters most', 'reason': f"{D.TARA_PLAIN[f['tara']].capitalize()}; Moon {_ord(f['from_moon'])} from your birth Moon"}
              for d, f in scored if f['score'] >= 4 and f['from_moon'] != 8][:8]
     eighth = (moon_sign + 7) % 12
     caution = [{'date': _day(a, tz), 'until': _day(b - timedelta(minutes=1), tz),
+                'simple': 'Your low days: keep to routine, no big decisions or risky travel',
                 'reason': f"Weak Moon days (Chandrashtama): Moon in {SIGNS[eighth]} "
                           + (f"until {_nice(b, tz)}" if a <= start else f"from {_nice(a, tz)}" if b >= end
                              else f"from {_nice(a, tz)} to {_nice(b, tz)}")}
@@ -456,6 +474,11 @@ def monthly_reading(chart: Dict[str, Any], year: Optional[int] = None, month: Op
              + ('a month that favours effort and recognition' if sun['good'] and not sun['blockers']
                 else 'a month for steady work rather than display'))
     summary = transits[0]
+    month_good = sun['good'] and not sun['blockers']
+    simple_title = ('A month that favours effort and recognition' if month_good
+                    else 'A month for steady work rather than display')
+    simple_summary = ('Expect ' + GOOD['Sun'] + '.' if month_good
+                      else 'Watch for ' + HARD['Sun'] + '. Work quietly and it passes.')
     guidance = []
     if dasha['running']:
         guidance.append(f"Your planetary periods now: {dasha['plain']}.")
@@ -470,7 +493,7 @@ def monthly_reading(chart: Dict[str, Any], year: Optional[int] = None, month: Op
         guidance.append(f"In the Bhrigu year-cycle, {year_house['text']}.")
     return {
         'month': month, 'year': year, 'month_name': calendar.month_name[month], 'zodiac_sign': chart.get('zodiac_sign'),
-        'monthly_theme': {'title': title, 'summary': summary},
+        'monthly_theme': {'title': title, 'summary': summary, 'simple_title': simple_title, 'simple': simple_summary},
         'sections': sections, 'transits': transits[1:],
         'important_dates': _events(tz, start, end, natal, MONTHLY, True, True),
         'power_days': power, 'caution_days': caution,
@@ -543,6 +566,8 @@ def yearly_reading(chart: Dict[str, Any], year: Optional[int] = None,
         done = [area_section(k, natal, ts, SLOW, bav, span_text(a, b), use_lord=False) for a, b, ts, _basis in groups]
         if done:
             sections[k] = {'summary': ' '.join(d['summary'] for d in done),
+                           'simple': ' '.join(_tone_simple(AREAS[k][0], AREAS[k][1], d['rating'], span_text(a, b))
+                                              for d, (a, b, _ts, _bs) in zip(done, groups)),
                            'rating': round(sum(d['rating'] for d in done) / len(done))}
 
     key_months = []
@@ -551,6 +576,8 @@ def yearly_reading(chart: Dict[str, Any], year: Optional[int] = None,
         kind = 'favourable' if from_moon in GOOD_FROM_MOON['Sun'] else 'caution' if from_moon in (8, 12) else None
         if kind:
             key_months.append({'period': f"{_nice(a, tz, False)} to {_nice(b, tz, False)}", 'kind': kind,
+                               'simple': ('Expect ' if kind == 'favourable' else 'Watch for ')
+                                         + (GOOD['Sun'] if kind == 'favourable' else HARD['Sun']),
                                'note': f"Sun in {SIGNS[sign]}, {_ord(from_moon)} from your Moon: "
                                        + (GOOD['Sun'] if kind == 'favourable' else HARD['Sun'])})
 
@@ -564,12 +591,17 @@ def yearly_reading(chart: Dict[str, Any], year: Optional[int] = None,
         bits = []
         if dq['running']:
             bits.append(f"{dq['running']} period")
+        q_good = 0
         for p in ('Jupiter', 'Saturn'):
             st = transit_state(p, natal, qs, bav, slow_only=True)
+            q_good += 1 if st['good'] and not st['blockers'] else 0
             bits.append(f"{p} in {SIGNS[st['sign']]} is {_ord(st['from_moon'])} from your birth Moon"
                         + (' (good)' if st['good'] and not st['blockers']
                            else ' (good, but blocked for now)' if st['good'] else ''))
         quarters.append({'quarter': f"Q{q + 1}", 'label': f"{calendar.month_abbr[3 * q + 1]} to {calendar.month_abbr[3 * q + 3]}",
+                         'simple': ('A supportive quarter: push ahead with plans.' if q_good == 2
+                                    else 'A mixed quarter: some things move, others need patience.' if q_good == 1
+                                    else 'A slow quarter: build steadily and avoid big risks.'),
                          'summary': '; '.join(bits) + '.'})
 
     dasha = dasha_in(natal, start, end, False)
@@ -600,9 +632,17 @@ def yearly_reading(chart: Dict[str, Any], year: Optional[int] = None,
             else 'Jupiter supports growth while Saturn asks for patience.' if jup['good']
             else 'Saturn rewards discipline while Jupiter gives less than usual.' if sat['good']
             else 'Neither is in a good position: build steadily; your planetary periods carry the year.')
+    simple_title, simple_summary = (
+        ('A year that favours you', 'Growth and steady reward both come this year. Use it for your bigger plans.')
+        if jup['good'] and sat['good'] else
+        ('A year of growth that asks for patience', 'Good openings come, but results take time. Stay patient and keep at it.')
+        if jup['good'] else
+        ('A year that rewards discipline', 'Hard, steady work pays this year. Do not expect quick gains.')
+        if sat['good'] else
+        ('A year to build steadily', 'Progress is slower this year. Build step by step and avoid big risks.'))
     return {
         'year': year, 'zodiac_sign': chart.get('zodiac_sign'),
-        'yearly_theme': {'title': title, 'summary': tone},
+        'yearly_theme': {'title': title, 'summary': tone, 'simple_title': simple_title, 'simple': simple_summary},
         'sections': sections, 'transits': transits, 'quarters': quarters, 'key_months': key_months,
         'important_dates': _events(tz, start, end, natal, ('Jupiter', 'Saturn', 'Rahu', 'Mars'), False, False),
         'yearly_mantra': planet_mantra(dasha['maha']) if dasha['maha'] else planet_mantra('Jupiter'),

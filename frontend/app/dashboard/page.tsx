@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ListenButton } from '@/app/components/ListenButton';
 import { NotificationsPrompt } from '@/app/components/NotificationsCard';
+import { ViewModeToggle } from '@/app/components/ViewModeToggle';
+import { useViewMode } from '@/lib/viewMode';
 import { useRouter } from 'next/navigation';
 import { useEncryption } from '@/lib/context/EncryptionContext';
 import { loadCurrentProfile } from '@/lib/profileHelpers';
@@ -32,6 +34,11 @@ type DailyInsight = {
   };
   do_list?: string[];
   dont_list?: string[];
+  /** Results only, in everyday words (Simple view). */
+  simple?: {
+    verdict?: string; summary?: string; categories?: Record<string, Category>;
+    do_list?: string[]; dont_list?: string[];
+  };
 };
 
 const CATEGORY_ORDER: Array<[string, string]> = [
@@ -56,17 +63,20 @@ function formatToday() {
 }
 
 /** What "Listen" reads on Today: the leaf, then each area, then do / avoid. */
-function todayNarration(insight: DailyInsight | null): string {
+function todayNarration(insight: DailyInsight | null, astro = false): string {
   if (!insight) return '';
   const parts: string[] = [];
-  const leaf = insight.energy_level?.description || insight.categories?.spiritual?.message;
+  const simple = astro ? undefined : insight.simple;
+  const leaf = simple?.summary || insight.energy_level?.description || insight.categories?.spiritual?.message;
   if (leaf) parts.push(leaf);
+  const dos = simple?.do_list || insight.do_list;
+  const donts = simple?.dont_list || insight.dont_list;
   for (const [key, label] of CATEGORY_ORDER) {
-    const c = insight.categories?.[key];
+    const c = simple?.categories?.[key] || insight.categories?.[key];
     if (c?.message) parts.push(`${label}. ${c.message}${c.advice ? ` ${c.advice}` : ''}`);
   }
-  if (insight.do_list?.length) parts.push(`Favoured today. ${insight.do_list.slice(0, 5).join('. ')}.`);
-  if (insight.dont_list?.length) parts.push(`Best avoided. ${insight.dont_list.slice(0, 4).join('. ')}.`);
+  if (dos?.length) parts.push(`Favoured today. ${dos.slice(0, 5).join('. ')}.`);
+  if (donts?.length) parts.push(`Best avoided. ${donts.slice(0, 4).join('. ')}.`);
   if (insight.categories?.spiritual?.mantra) parts.push(insight.categories.spiritual.mantra);
   return parts.join('\n\n');
 }
@@ -115,6 +125,11 @@ export default function TodayPage() {
   }, [encryptionKey, loadInsight]);
 
   const firstName = (profile?.name || '').split(' ')[0];
+  const { astro } = useViewMode();
+  // Simple view: results only. Astrologer view: the same day with its chart reasoning.
+  const simple = astro ? undefined : insight?.simple;
+  const doList = simple?.do_list || insight?.do_list;
+  const dontList = simple?.dont_list || insight?.dont_list;
 
   return (
     <div className="mx-auto w-full max-w-2xl px-5 pb-10 pt-6 md:pt-10">
@@ -153,7 +168,7 @@ export default function TodayPage() {
         <>
           <section aria-labelledby="leaf-heading" className="nadi-leaf mt-6">
             <p id="leaf-heading" className="nadi-eyebrow !text-[0.62rem]">
-              Today&apos;s leaf{insight?.day_ruler?.planet ? ` · day of ${insight.day_ruler.planet}` : ''}
+              Today&apos;s leaf{astro && insight?.day_ruler?.planet ? ` · day of ${insight.day_ruler.planet}` : ''}
             </p>
             {status === 'loading' || status === 'idle' ? (
               <div className="mt-3 space-y-2" aria-busy="true">
@@ -170,12 +185,12 @@ export default function TodayPage() {
             ) : (
               <>
                 <p className="mt-2 font-display text-[1.15rem] italic leading-snug text-ivory">
-                  {insight?.energy_level?.description || insight?.categories?.spiritual?.message}
+                  {simple?.summary || insight?.energy_level?.description || insight?.categories?.spiritual?.message}
                 </p>
                 {insight?.categories?.spiritual?.mantra && (
                   <p className="mt-2 text-sm text-gold-200">{insight.categories.spiritual.mantra}</p>
                 )}
-                <ListenButton className="mt-4" label="Listen to today" getText={() => todayNarration(insight)} />
+                <ListenButton className="mt-4" label="Listen to today" getText={() => todayNarration(insight, astro)} />
               </>
             )}
           </section>
@@ -185,13 +200,13 @@ export default function TodayPage() {
           {status === 'ready' && insight && (
             <>
               <section aria-labelledby="glance" className="mt-8">
-                <div className="flex items-baseline justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <h2 id="glance" className="text-xl text-ivory">Today at a glance</h2>
-                  {insight.energy_level?.level && <span className="nadi-chip">{insight.energy_level.level} energy</span>}
+                  <ViewModeToggle />
                 </div>
                 <ul className="mt-3 grid gap-3 sm:grid-cols-2">
                   {CATEGORY_ORDER.map(([key, label]) => {
-                    const c = insight.categories?.[key];
+                    const c = simple?.categories?.[key] || insight.categories?.[key];
                     if (!c?.message) return null;
                     return (
                       <li key={key} className="nadi-card !p-4">
@@ -204,7 +219,7 @@ export default function TodayPage() {
                 </ul>
               </section>
 
-              {insight.panchanga && (
+              {astro && insight.panchanga && (
                 <section aria-labelledby="panchanga" className="nadi-card mt-4">
                   <h2 id="panchanga" className="nadi-eyebrow !text-[0.62rem]">Today&apos;s panchanga for your chart</h2>
                   <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
@@ -228,21 +243,21 @@ export default function TodayPage() {
                 </section>
               )}
 
-              {(insight.do_list?.length || insight.dont_list?.length) ? (
+              {(doList?.length || dontList?.length) ? (
                 <section aria-label="Guidance for today" className="nadi-card mt-4 grid gap-5 sm:grid-cols-2">
-                  {!!insight.do_list?.length && (
+                  {!!doList?.length && (
                     <div>
                       <p className="nadi-eyebrow !text-[0.62rem]">Favoured</p>
                       <ul className="mt-2 space-y-1.5 text-sm text-ivory-2">
-                        {insight.do_list.slice(0, 5).map((d) => <li key={d}>· {d}</li>)}
+                        {doList.slice(0, 5).map((d) => <li key={d}>· {d}</li>)}
                       </ul>
                     </div>
                   )}
-                  {!!insight.dont_list?.length && (
+                  {!!dontList?.length && (
                     <div>
                       <p className="nadi-eyebrow !text-[0.62rem] !text-kumkum-300">Avoid</p>
                       <ul className="mt-2 space-y-1.5 text-sm text-ivory-2">
-                        {insight.dont_list.slice(0, 4).map((d) => <li key={d}>· {d}</li>)}
+                        {dontList.slice(0, 4).map((d) => <li key={d}>· {d}</li>)}
                       </ul>
                     </div>
                   )}
@@ -256,7 +271,7 @@ export default function TodayPage() {
                     ['Number', insight.lucky_elements.number],
                     ['Direction', insight.lucky_elements.direction],
                     ['Good hours', insight.lucky_elements.auspicious_hours?.slice(0, 2).join(', ')],
-                    ['Rahu kalam', insight.lucky_elements.rahu_kalam],
+                    [astro ? 'Rahu kalam' : 'Avoid starting things', insight.lucky_elements.rahu_kalam],
                   ].filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => (
                     <div key={String(k)} className="rounded-2xl border border-[color:var(--line)] px-4 py-3">
                       <dt className="text-[0.7rem] uppercase tracking-[0.14em] text-ivory-muted">{k}</dt>
@@ -266,7 +281,9 @@ export default function TodayPage() {
                 </dl>
               )}
               <p className="mt-3 text-xs text-ivory-muted">
-                {insight.method || 'From your Moon sign, nakshatra and today\u2019s planetary day lord.'}{' '}
+                {astro
+                  ? (insight.method || 'From your Moon sign, nakshatra and today\u2019s planetary day lord.')
+                  : 'Worked out for you from your birth chart and today\u2019s sky.'}{' '}
                 <Link href="/horoscope" className="text-gold-300 underline underline-offset-4">Week, month and year</Link>
               </p>
             </>

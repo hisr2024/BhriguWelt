@@ -11,6 +11,8 @@ import { unlockHref } from '@/lib/unlockRedirect';
 import { usePremium } from '@/lib/premium';
 import { PremiumInvite } from '@/app/components/PremiumGate';
 import { ListenButton } from '@/app/components/ListenButton';
+import { ViewModeToggle } from '@/app/components/ViewModeToggle';
+import { useViewMode } from '@/lib/viewMode';
 
 const SCOPES: Array<{ id: InsightScope; label: string; aliases: string[] }> = [
   { id: 'daily', label: 'Today', aliases: ['daily', 'today', 'day'] },
@@ -78,9 +80,17 @@ export default function HoroscopePage() {
     load();
   }, [load]);
 
+  const { astro } = useViewMode();
   const theme = data?.weekly_theme || data?.monthly_theme || data?.yearly_theme;
-  const headline = text(theme?.title) || (data?.overall?.energy ? (data.overall.energy === 'Go gently' ? 'A day to go gently' : `${data.overall.energy} day`) : null);
-  const summary = text(theme?.summary) || text(data?.overall?.message);
+  const techHeadline = text(theme?.title) || (data?.overall?.energy ? (data.overall.energy === 'Go gently' ? 'A day to go gently' : `${data.overall.energy} day`) : null);
+  const techSummary = text(theme?.summary) || text(data?.overall?.message);
+  // Simple view: results only, in everyday words. Astrologer view: with the chart reasoning.
+  const headline = astro ? techHeadline : text(theme?.simple_title) || text(data?.overall?.simple_title) || (data?.weekly_theme ? techHeadline : null) || techHeadline;
+  const summary = astro ? techSummary : text(theme?.simple) || text(data?.overall?.simple) || techSummary;
+  const sectionText = (sec: any) => (!astro && text(sec?.simple)) || text(sec?.summary) || text(sec?.message) || text(sec?.insight);
+  const PLAIN_EVENT = /full moon|new moon|purnima|amavasya|ekadashi|eclipse/i;
+  const dates: any[] = Array.isArray(data?.important_dates)
+    ? data.important_dates.filter((d: any) => astro || PLAIN_EVENT.test(String(d?.event || ''))) : [];
   const sections: Array<[string, any]> = Object.entries(data?.sections ?? {}).filter(([k]) => SECTION_LABELS[k]);
   const mantra = text(data?.daily_mantra) || text(data?.weekly_mantra) || text(data?.monthly_mantra) || text(data?.yearly_mantra);
 
@@ -90,7 +100,10 @@ export default function HoroscopePage() {
         <BackIcon size={18} /> Today
       </Link>
       <p className="nadi-eyebrow mt-2">Horoscope</p>
-      <h1 className="mt-1 text-3xl text-ivory md:text-4xl">{HEADINGS[scope]}</h1>
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-3xl text-ivory md:text-4xl">{HEADINGS[scope]}</h1>
+        <ViewModeToggle />
+      </div>
 
       <div role="tablist" aria-label="Period" className="mt-5 flex gap-2 overflow-x-auto pb-1">
         {SCOPES.map((s) => (
@@ -137,25 +150,25 @@ export default function HoroscopePage() {
         <>
           <section className="nadi-leaf mt-6">
             <p className="nadi-eyebrow !text-[0.62rem]">
-              {[data?.metadata?.moon_sign && `Moon in ${data.metadata.moon_sign}`, data?.metadata?.nakshatra, data?.metadata?.day_ruler && `day of ${data.metadata.day_ruler}`]
-                .filter(Boolean).join(' · ') || 'Bhrigu Samhita'}
+              {(astro && [data?.metadata?.moon_sign && `Moon in ${data.metadata.moon_sign}`, data?.metadata?.nakshatra, data?.metadata?.day_ruler && `day of ${data.metadata.day_ruler}`]
+                .filter(Boolean).join(' · ')) || 'From your birth chart'}
             </p>
             {headline && <p className="mt-1 font-display text-xl text-gold-200">{headline}</p>}
             {summary && <p className="mt-1 font-display text-[1.1rem] italic leading-snug text-ivory">{summary}</p>}
             <ListenButton
               className="mt-4"
               label={`Listen to ${HEADINGS[scope].toLowerCase()}`}
-              getText={() => [headline, summary, text(data?.bhrigu_guidance),
-                ...sections.map(([key, sec]) => `${SECTION_LABELS[key]}. ${text(sec?.summary) || text(sec?.message) || text(sec?.insight) || ''}`),
+              getText={() => [headline, summary, astro ? text(data?.bhrigu_guidance) : null,
+                ...sections.map(([key, sec]) => `${SECTION_LABELS[key]}. ${sectionText(sec) || ''}`),
                 mantra].filter(Boolean).join('\n\n')}
             />
           </section>
 
-          {text(data?.bhrigu_guidance) && (
+          {astro && text(data?.bhrigu_guidance) && (
             <p className="mt-5 border-l-2 border-gold-400 pl-4 text-[0.95rem] leading-relaxed text-ivory-2">{data.bhrigu_guidance}</p>
           )}
 
-          {data?.panchanga && (
+          {astro && data?.panchanga && (
             <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 rounded-2xl border border-[color:var(--line)] px-4 py-3 text-sm sm:grid-cols-3">
               {[
                 ['Lunar day (tithi)', data.panchanga.tithi],
@@ -181,7 +194,7 @@ export default function HoroscopePage() {
                     <p className="nadi-eyebrow !text-[0.62rem]">{SECTION_LABELS[key]}</p>
                     {sec?.key_day && <span className="text-xs text-ivory-muted">Key day: {sec.key_day}</span>}
                   </div>
-                  <p className="mt-1.5 text-[0.95rem] text-ivory">{text(sec?.summary) || text(sec?.message) || text(sec?.insight)}</p>
+                  <p className="mt-1.5 text-[0.95rem] text-ivory">{sectionText(sec)}</p>
                   {[sec?.opportunity, sec?.focus, sec?.caution, sec?.practice, sec?.challenges].filter(text).slice(0, 2).map((line: string) => (
                     <p key={line} className="mt-1 text-sm text-ivory-2">{line}</p>
                   ))}
@@ -197,7 +210,7 @@ export default function HoroscopePage() {
                 {data.daily_summaries.map((d: any) => (
                   <li key={d.date} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                     <span className="w-24 flex-none text-ivory">{d.day}</span>
-                    <span className="flex-1 text-ivory-2">{d.focus}</span>
+                    <span className="flex-1 text-ivory-2">{(!astro && d.simple) || d.focus}</span>
                     <span className="flex-none text-xs text-gold-300">{d.energy}</span>
                   </li>
                 ))}
@@ -205,7 +218,7 @@ export default function HoroscopePage() {
             </section>
           )}
 
-          {Array.isArray(data?.transits) && data.transits.length > 0 && (
+          {astro && Array.isArray(data?.transits) && data.transits.length > 0 && (
             <section className="mt-6">
               <h2 className="text-xl text-ivory">Transits against your chart</h2>
               <ul className="mt-2 space-y-2">
@@ -223,7 +236,7 @@ export default function HoroscopePage() {
                 {data.quarters.filter((q: any) => text(q?.summary)).map((q: any) => (
                   <li key={q.quarter} className="py-2.5 text-sm">
                     <span className="text-gold-300">{q.label || q.quarter}</span>
-                    <p className="mt-0.5 text-ivory-2">{q.summary}</p>
+                    <p className="mt-0.5 text-ivory-2">{(!astro && text(q.simple)) || q.summary}</p>
                   </li>
                 ))}
               </ul>
@@ -232,13 +245,13 @@ export default function HoroscopePage() {
 
           {Array.isArray(data?.key_months) && data.key_months.some((m: any) => text(m?.note)) && (
             <section className="mt-6">
-              <h2 className="text-xl text-ivory">Solar months to note</h2>
+              <h2 className="text-xl text-ivory">{astro ? 'Solar months to note' : 'Months to note'}</h2>
               <ul className="mt-2 divide-y divide-[rgba(212,175,95,0.12)]">
                 {data.key_months.filter((m: any) => text(m?.note)).map((m: any) => (
                   <li key={m.period} className="py-2.5 text-sm">
                     <span className="text-gold-300">{m.period}</span>
                     <span className="ml-2 text-xs uppercase tracking-[0.12em] text-ivory-muted">{m.kind}</span>
-                    <p className="mt-0.5 text-ivory-2">{m.note}</p>
+                    <p className="mt-0.5 text-ivory-2">{(!astro && text(m.simple)) || m.note}</p>
                   </li>
                 ))}
               </ul>
@@ -252,7 +265,7 @@ export default function HoroscopePage() {
                 <ul className="mt-2 divide-y divide-[rgba(212,175,95,0.12)]">
                   {list.filter((d: any) => text(d?.reason)).map((d: any) => (
                     <li key={`${d.date}-${d.reason}`} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                      <span className="text-ivory-2">{d.reason}</span>
+                      <span className="text-ivory-2">{(!astro && text(d.simple)) || d.reason}</span>
                       <span className="flex-none text-xs text-gold-300">
                         {new Date(d.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                       </span>
@@ -263,11 +276,11 @@ export default function HoroscopePage() {
             )
           ))}
 
-          {Array.isArray(data?.important_dates) && data.important_dates.length > 0 && (
+          {dates.length > 0 && (
             <section className="mt-6">
               <h2 className="text-xl text-ivory">Dates to note</h2>
               <ul className="mt-2 divide-y divide-[rgba(212,175,95,0.12)]">
-                {data.important_dates.map((d: any) => (
+                {dates.map((d: any) => (
                   <li key={`${d.date}-${d.event}`} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                     <span className="text-ivory">{d.event}</span>
                     <span className="flex-none text-xs text-gold-300">
@@ -287,7 +300,9 @@ export default function HoroscopePage() {
           )}
 
           <p className="mt-4 text-xs text-ivory-muted">
-            {text(data?.method) || 'Computed from the transits of the period against your birth chart.'}
+            {astro
+              ? (text(data?.method) || 'Computed from the transits of the period against your birth chart.')
+              : 'Worked out for you from your birth chart and the sky of this period.'}
           </p>
         </>
       )}
