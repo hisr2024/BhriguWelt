@@ -81,6 +81,35 @@ function todayNarration(insight: DailyInsight | null, astro = false): string {
   return parts.join('\n\n');
 }
 
+/** Week, month and year as three small tiles; each names the exact period it covers. */
+function PeriodTiles() {
+  const now = new Date();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const day = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  const tiles = [
+    { href: '/horoscope/weekly', label: 'Week', value: `${day(monday)} \u2013 ${day(sunday)}` },
+    { href: '/horoscope/monthly', label: 'Month', value: now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) },
+    { href: '/horoscope/yearly', label: 'Year', value: String(now.getFullYear()) },
+  ];
+  return (
+    <nav aria-label="Week, month and year" className="mt-4 grid grid-cols-3 gap-2">
+      {tiles.map((t) => (
+        <Link
+          key={t.href}
+          href={t.href}
+          className="flex min-h-[4.25rem] flex-col justify-center rounded-xl border border-[color:var(--line)] px-3 py-2 text-left transition-colors hover:border-gold-300 focus-visible:border-gold-300"
+        >
+          <span className="nadi-eyebrow !text-[0.6rem]">{t.label}</span>
+          <span className="mt-1 text-sm leading-tight text-ivory">{t.value}</span>
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
 export default function TodayPage() {
   const router = useRouter();
   const { encryptionKey, isSetup, isLoading: encryptionLoading, isUnlocked } = useEncryption();
@@ -283,9 +312,9 @@ export default function TodayPage() {
               <p className="mt-3 text-xs text-ivory-muted">
                 {astro
                   ? (insight.method || 'From your Moon sign, nakshatra and today\u2019s planetary day lord.')
-                  : 'Worked out for you from your birth chart and today\u2019s sky.'}{' '}
-                <Link href="/horoscope" className="text-gold-300 underline underline-offset-4">Week, month and year</Link>
+                  : 'Worked out for you from your birth chart and today\u2019s sky.'}
               </p>
+              <PeriodTiles />
             </>
           )}
 
