@@ -204,8 +204,8 @@ def rule_birth_star_transits(c: Chart, now: datetime) -> List[Dict[str, Any]]:
                 if (w[1] - w[0]).days >= 12]
         if not wins:
             continue
-        idx = at(wins[0][0] + (wins[0][1] - wins[0][0]) / 2)
-        same = [w for w in wins if at(w[0] + (w[1] - w[0]) / 2) == idx and (w[0] - wins[0][0]).days < 700][:3]
+        idx = at(wins[0][0])  # a window always starts inside one of the three stars; its middle may not (retrograde)
+        same = [w for w in wins if at(w[0]) == idx and (w[0] - wins[0][0]).days < 700][:3]
         s, e = same[0][0], same[-1][1]
         sharp = _merge(E.conjunction_windows(planet, idx * E.NAK_SPAN + quarter * NAV + NAV / 2.0,
                                              s - timedelta(days=8), e + timedelta(days=8), orb=NAV / 2.0), e)
