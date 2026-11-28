@@ -17,8 +17,8 @@ import { useViewMode } from '@/lib/viewMode';
 const SCOPES: Array<{ id: InsightScope; label: string; aliases: string[] }> = [
   { id: 'daily', label: 'Today', aliases: ['daily', 'today', 'day'] },
   { id: 'weekly', label: 'This week', aliases: ['weekly', 'week'] },
-  { id: 'monthly', label: 'This month', aliases: ['monthly', 'month'] },
-  { id: 'yearly', label: 'This year', aliases: ['yearly', 'year'] },
+  { id: 'monthly', label: new Date().toLocaleDateString('en-GB', { month: 'long' }), aliases: ['monthly', 'month'] },
+  { id: 'yearly', label: `Year ${new Date().getFullYear()}`, aliases: ['yearly', 'year'] },
 ];
 
 const HEADINGS: Record<InsightScope, string> = {
