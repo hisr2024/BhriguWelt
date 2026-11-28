@@ -78,6 +78,16 @@ Weights (0–1) are ranking priors. They are never shown as percentages or proba
 | F-DASHA-04 | classical | The sub-period lord counted from the main-period lord: kendra or trine works smoothly, 6th, 8th or 12th brings friction, the rest is moderate; natural friendship is noted (BPHS, antardasha chapters) | ✔ |
 | F-YOGINI-01 | classical | Yogini dasha, a second 36-year cycle: Mangala 1, Pingala 2, Dhanya 3, Bhramari 4, Bhadrika 5, Ulka 6, Siddha 7, Sankata 8 years; the first is (birth star + 3) mod 8, with the balance from the Moon's place in the star | ✔ |
 | F-MURTI-01 | tradition-attributed | Murti nirnaya: the grade of the current Saturn and Jupiter transits from the Moon's sign at the minute the planet entered, counted from the birth Moon: 1, 6, 11 gold; 2, 5, 9 silver; 3, 7, 10 copper; 4, 8, 12 iron | ✔ |
+| F-NADI-01 | tradition-attributed | Pushkara navamsa, the 24 nourishing ninths: in fire signs the 7th and 9th navamsa, earth the 3rd and 5th, air the 6th and 8th, water the 1st and 3rd (table from Vidya Madhaviyam). Any planet there gives its good results more readily; Jupiter there in a kendra or trine is named for fortune, with a health caution when that navamsa sign is the 6th, 8th or 12th house; all seven there is named for wealth and fame (Chandra Kala Nadi vv. 77, 79). The three that are also vargottama and a Pushkara rising degree are Patel's own observations (chs. 5, 7). All as cited by C. S. Patel, *Predicting through Navamsa and Nadi Astrology* | – |
+| F-NADI-02 | tradition-attributed | Saturn's sign and navamsa exchanged in transit: born in sign A with navamsa B, Saturn passing the navamsa of A inside sign B, about once in 30 years. The verse names a rise in fortune for the person and a brother or sister; Patel records it can instead mark a hard turning point (Chandra Kala Nadi v. 2191, ch. 9). Skipped when Saturn is vargottama or when sign B holds no navamsa of A | ✔ |
+| F-NADI-03 | tradition-attributed | Saturn or Rahu in the birth star, the 10th or the 19th star (Janma, Karma, Adhana): quarrels with relatives and strain of mind. Dated for the whole star, with the stretch inside the Moon's own quarter of the star marked as the strongest (Chandra Kala Nadi vv. 3021–23, ch. 6) | ✔ |
+| F-NADI-04 | tradition-attributed | Jupiter in the birth star, the 10th or the 19th star: auspicious events (Chandra Kala Nadi v. 3023) | ✔ |
+| F-NADI-05 | tradition-attributed | Sub-periods named for great happiness: of the navamsa lord of the Lagna lord, of a planet placed with the 7th lord, and of the navamsa lord of the 5th lord (Deva Keralam, Book 2, v. 245) | ✔ |
+| F-NADI-06 | tradition-attributed | The running sub-period lord against the Lagna lord: friend brings gain, adversary brings anguish in undertakings, neutral is middling, a temporary friend (2nd, 3rd, 4th, 10th, 11th or 12th from the Lagna lord) is very favourable (Deva Keralam vv. 4853–54). When the main-period lord sits in the 8th house, a benefic's sub-period brings worry and a malefic's brings relief and gain (Book 3, v. 3611) | ✔ |
+| F-NADI-07 | tradition-attributed | The lords of the stars holding Saturn and Mars at birth: their periods ask for care with debts, theft, worry and health (Chandra Kala Nadi v. 3043) | ✔ |
+| F-NADI-08 | tradition-attributed | Wealth-giving planets: those that aspect, occupy or own the 2nd house, in that order, with their next sub-periods; a large gain needs two of them to meet in transit (Daivagnabharanam ch. 10, v. 74) | ✔ |
+| F-NADI-09 | tradition-attributed | A planet's transit counted from its own birth sign (nijakranti): Jupiter in the 5th from itself for children, Saturn in the 9th from itself for luck, retrograde Mars in the 4th from itself for land (Jyotish Tattvam ch. 10, vv. 25–26). The fast planets of the same verse (Moon, Mercury, Venus) recur every year and are not dated | ✔ |
+| F-NADI-10 | tradition-attributed | Saturn in the birth Moon's sign: the Mars sub-period inside it is a heavy stretch, the Rahu sub-period more so (Chandra Kala Nadi v. 3806). Shown only when such a sub-period falls inside the transit | ✔ |
 
 Sources and provenance for every technique: `core_wisdom/techniques/`.
 
@@ -109,12 +119,25 @@ Both are optional fields on the get-started form and the profile page. Both are 
 - **Gochara vedha table** re-read against Phaladeepika ch. 26: all seven planets agree.
 - **Bhrigu Bindu:** matches the worked examples of the source.
 
+## Nadi Jyotisha pass (28 Nov 2026)
+
+Source read: C. S. Patel, *Predicting through Navamsa and Nadi Astrology*, which quotes the Chandra Kala Nadi (Deva Keralam) and allied Sanskrit texts verse by verse. Each of F-NADI-01 to F-NADI-10 was read twice from that book before coding, and is tested against the book's own table or example where it gives one (the Pushkara table, the Saturn example of v. 2191) and against a hand-worked chart otherwise.
+
+- All ten carry the label *tradition-attributed*: the verses reach us through one modern author's citations, not through a critical edition.
+- "Star quarters" in vv. 3021–23 is read as the Moon's own quarter of the star. The whole star is dated and that quarter is marked as the strongest stretch, so either reading is covered.
+- The second clause of Book 2, v. 245 is printed as "a planet posited in the sign together with the 7th lord" and is read as a planet in the same sign as the 7th lord.
+
 ## Reviewed and not adopted
 
 - **Bhrigu Saral Paddhati (Saptarishis Astrology, from 2009).** Its rules ("Jupiter disturbs the 10th and 6th from itself", "Jupiter with Saturn spoils Aries") say that "at least one signification" changes, without saying which or when; its authors add that it does not work in every chart. Too loose to raise precision.
 - **Nadi amsha (the 150th division, Chandra Kala Nadi).** Published sources disagree on the counting order (movable/fixed/dual against odd/even) and the result verses are not available as data. An amsha number without its reading adds nothing a reader can use.
 - **Bhrigu Nandi Nadi friend and enemy groups.** Known in the tradition, but the exact table could not be checked against a source in this pass.
 - **Length-of-life statements** (Bhrigu Sutram 8th house; 64th navamsa; 22nd drekkana): left out on purpose.
+- **Saturn in the 2nd to 5th stars from the birth star** (Chandra Kala Nadi vv. 3018–19: defeat, calamity, fear of death) and the bereavement clause of v. 77: left out on purpose. Counted star by star they would also mark Saturn as adverse for most of every cycle.
+- **Other planets' sign and navamsa exchange.** The verse (v. 2191) names Saturn only. Patel suggests studying the others the same way but states no result, so only Saturn is computed.
+- **Pushkara degrees** (21°, 14°, 24°, 7°, Muhurta Darpana): a device for choosing a moment. They fall inside the Pushkara navamsas already computed, which the tests confirm.
+- **Marriage-day and childbirth transit yogas** (Sankata Nidhi 6.102; Jataka Parijata 16.25) and the transit meeting of a planet's sign lord and navamsa lord (v. 3272): they rest on fast planets and recur many times a year, so they cannot date an event on their own.
+- **Nadi readings of Patel's own** (for example Rahu crossing the Sun–Mercury–Venus arc): observations from a few charts, not verses.
 - **Palm-leaf Nadi readings and the Bhrigu Samhita horoscope collection itself.** These are libraries of individual readings, not a rule set. No critical edition exists, so they cannot be reproduced or verified by calculation.
 
 ## Still open
