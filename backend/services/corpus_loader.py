@@ -12,6 +12,15 @@ from utils.logger import setup_logger, log_exception
 logger = setup_logger(__name__)
 
 
+def unverified_corpus_allowed() -> bool:
+    """The bundled principle files (data/*_principles.yml) cite folios and palm
+    leaves that could not be traced to any published source. They are kept for
+    reference but are not shown to the model as "authentic source material"
+    unless this is switched on deliberately. Readings are written from the
+    computed rule findings (services/bhrigu_nadi_rules.py) instead."""
+    return os.getenv('ALLOW_UNVERIFIED_CORPUS', '').strip().lower() in ('1', 'true', 'yes')
+
+
 class CorpusLoader:
     """Load and access Bhrigu Samhita and Nadi Jyotisha corpus data"""
     
@@ -96,6 +105,8 @@ class CorpusLoader:
         Returns:
             List of relevant principle dictionaries
         """
+        if not unverified_corpus_allowed():
+            return []  # entries carry citations that could not be verified against a source
         if not self.bhrigu_data or "principles" not in self.bhrigu_data:
             return []
         
@@ -128,6 +139,8 @@ class CorpusLoader:
         Returns:
             List of relevant principle dictionaries
         """
+        if not unverified_corpus_allowed():
+            return []  # entries carry citations that could not be verified against a source
         if not self.nadi_data or "principles" not in self.nadi_data:
             return []
         
@@ -143,6 +156,8 @@ class CorpusLoader:
     
     def get_past_life_engines(self, context: Dict[str, Any], limit: int = 3) -> List[Dict]:
         """Get relevant past life engine patterns"""
+        if not unverified_corpus_allowed():
+            return []  # entries carry citations that could not be verified against a source
         if not self.bhrigu_data or "past_life_engines" not in self.bhrigu_data:
             return []
         
@@ -151,6 +166,8 @@ class CorpusLoader:
     
     def get_future_engines(self, context: Dict[str, Any], limit: int = 3) -> List[Dict]:
         """Get relevant future life engine patterns"""
+        if not unverified_corpus_allowed():
+            return []  # entries carry citations that could not be verified against a source
         if not self.bhrigu_data or "future_engines" not in self.bhrigu_data:
             return []
         
@@ -159,6 +176,8 @@ class CorpusLoader:
     
     def get_remedies(self, context: Dict[str, Any], limit: int = 5) -> List[Dict]:
         """Get relevant remedies from both Bhrigu and Nadi sources"""
+        if not unverified_corpus_allowed():
+            return []  # entries carry citations that could not be verified against a source
         remedies = []
         
         if self.bhrigu_data and "remedies" in self.bhrigu_data:
