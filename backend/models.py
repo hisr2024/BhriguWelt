@@ -125,7 +125,7 @@ class BhriguPredictionCache(db.Model):
             # Readings written before the strict Simple-view wording are not reused.
             optional_parts.append("simple:2")
             # ... and before the sourced Bhrigu Sutram / Nadi-aspect rules were added.
-            optional_parts.append("rules:2")
+            optional_parts.append("rules:3")
         data_parts = [part for part in base_parts if part not in (None, '')]
         data_parts.extend(part for part in optional_parts if part not in (None, ''))
         data_parts.append(version)

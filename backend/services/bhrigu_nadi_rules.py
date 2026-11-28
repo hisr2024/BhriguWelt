@@ -1571,8 +1571,9 @@ def apply_time_accuracy(c: Chart, findings: List[Dict[str, Any]]) -> None:
 # ---------------------------------------------------------------------------
 
 def _more_rules(c: 'Chart', now: datetime) -> List[Dict[str, Any]]:
-    from services.bhrigu_nadi_more import more_rules  # imported late: that module imports this one
-    return more_rules(c, now)
+    from services.bhrigu_nadi_more import more_rules  # imported late: these modules import this one
+    from services.classical_more import classical_rules
+    return more_rules(c, now) + classical_rules(c, now)
 
 
 def evaluate_rules(chart_facts: Dict[str, Any], birth_data: Dict[str, Any], category: str = '',
