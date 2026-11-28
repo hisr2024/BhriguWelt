@@ -32,12 +32,12 @@ Weights (0–1) are ranking priors. They are never shown as percentages or proba
 | F-LAGNA-01 | classical | Lagna degree and nakshatra; Lagna lord's sign, house, nakshatra; occupants | – |
 | F-NODES-01 | classical | Rahu/Ketu sign, degree and house; conjunct planets; the karmic axis | – |
 | F-KARAKA-01 | classical | Jaimini 7-karaka scheme: Atmakaraka, Amatyakaraka, Darakaraka; 12th from the Atmakaraka | – |
-| F-DIGNITY-01 | classical | Exaltation, debilitation (with neecha-bhanga check), own sign | – |
+| F-DIGNITY-01 | classical | Exaltation (with the degree of deepest exaltation), debilitation, own sign and the moolatrikona portion (BPHS ch. 3). Neecha-bhanga: lord of the debilitation sign, or the planet exalted there, in a kendra from the Lagna or the Moon; or exaltation in the navamsa (Phaladeepika ch. 7) | – |
 | F-RETRO-01 | modern reading | Retrograde grahas at birth | – |
 | F-PARIVARTANA-01 | classical | Sign exchange, classified Maha / Khala / Dainya | – |
 | F-YOGA-01 | classical | Gajakesari and Pancha Mahapurusha, both tested against the chart | – |
 | F-BHAVAT-01 | classical | For each domain: house H, Hth from H, and Hth from the natural karaka | – |
-| F-BNN-02 | tradition-attributed | Jiva karaka (Jupiter for male charts, Venus for female) and its trine/2nd/12th/7th links. Needs the optional `gender` input; never guessed | – |
+| F-BNN-02 | tradition-attributed | Jiva karaka (Jupiter for male charts, Venus for female) and its links by R. G. Rao's Nadi aspects: same sign and trines (same direction), 7th and 3rd/11th (opposite direction), 2nd and 12th. Needs the optional `gender` input; never guessed | – |
 | F-BNN-03 | tradition-attributed | Saturn as karma karaka and its links. A retrograde planet also acts from the previous sign | – |
 | F-DASHA-01 | classical | Vimshottari maha/antar dasha with birth balance; next two antardashas | ✔ |
 | F-DASHA-02 | classical | Activation by the dasha lord: house it occupies, houses it owns, its star lord's house | ✔ |
@@ -45,8 +45,8 @@ Weights (0–1) are ranking priors. They are never shown as percentages or proba
 | F-TRANSIT-01 | classical | Saturn/Jupiter within 1° of natal Moon, Sun and Lagna degree, next 5 years | ✔ |
 | F-SADESATI-01 | classical | Saturn in the 12th/1st/2nd sign from the Moon (rising, peak, setting phases) | ✔ |
 | F-GOCHARA-01 | classical | Jupiter's sign counted from the Moon (Phaladeepika ch. 26) | ✔ |
-| F-BB-01 | tradition-attributed | Bhrigu Bindu (Rahu→Moon midpoint); Saturn/Jupiter conjunctions with it over 10 years | ✔ |
-| F-BCP-01 | tradition-attributed | Bhrigu Chakra Paddhati: running year N activates house ((N−1) mod 12)+1 | ✔ |
+| F-BB-01 | tradition-attributed | Bhrigu Bindu = Rahu + half the arc from Rahu forward to the Moon (C. S. Patel, *Predicting through Navamsa and Nadi Astrology*, ch. 13, method 1; his worked examples are unit tests). Crossings by Saturn, Jupiter, Rahu and Ketu over 10 years within 100′, and their aspects (Jupiter 5/7/9, Saturn 3/7/10, nodes 5/9) over 4 years; a crossing outranks an aspect | ✔ |
+| F-BCP-01 | tradition-attributed | Bhrigu Chakra Paddhati: running year N activates house ((N−1) mod 12)+1; its occupants, its lord's house, the planets aspecting it and the round of the wheel | ✔ |
 | F-BNN-01 | tradition-attributed | Jupiter progressed one sign per year, and the natal planets it links | ✔ |
 | F-SENS-01 | modern | Re-computes the chart at ±15/30 min (±60 if approximate); flags a Lagna or Moon-sign change. If the time is unknown, checks whether the Moon's nakshatra changes that day | – |
 | F-D9-01 / 02 | classical | Navamsa: vargottama planets; Venus and 7th lord in D9 | – |
@@ -63,6 +63,10 @@ Weights (0–1) are ranking priors. They are never shown as percentages or proba
 | F-GOCHARA-04 | classical | Sun, Mars, Mercury and Venus (60 days) and the nodes: house from Moon, vedha-blocked days, bindus | ✔ |
 | F-NODES-02 | modern | Nodal return of Rahu to its natal degree | ✔ |
 | F-WINDOW-01 | modern | Ranks up to three distinct windows where dated rules overlap | ✔ |
+| F-BSUTRA-01 | tradition-attributed | Bhrigu Sutram: the year of life in which a planet's house result is said to show (39 sutras that state an age, with their stated conditions). Upcoming years are dated; past years are listed as check-points for the birth time. Not applied when the birth time is unknown | ✔ |
+| F-BNN-04 | tradition-attributed | Field of work from the planets connected with Saturn, the karma karaka (same sign, trine, 7th). Planet meanings are the classical karakatvas (Phaladeepika ch. 5) | – |
+| F-BNN-05 | tradition-attributed | Bhrigu Nandi Nadi timing: windows in the next 4 years when transit Jupiter joins the direction of a natal karaka (Saturn = work, Venus = home/vehicles and the wife, Mercury = land/study, Mars = the husband) and when Jupiter and Saturn both connect with it; states whether the birth chart supports it | ✔ |
+| F-MATURITY-01 | tradition-attributed | Maturity ages: Jupiter 16, Sun 22, Moon 24, Venus 25, Mars 28, Mercury 32, Saturn 36, Rahu 42, Ketu 48; the planet maturing now or next | ✔ |
 
 Sources and provenance for every technique: `core_wisdom/techniques/`.
 
@@ -84,8 +88,26 @@ See `backend/tests/test_bhrigu_nadi_rules.py`.
 
 Both are optional fields on the get-started form and the profile page. Both are part of the server cache key.
 
+## Counter-checks (28 Nov 2026)
+
+- **Astronomy.** 300 random charts (1930–2025, latitudes −55° to +60°) compared with an independent ephemeris (PyEphem) and first-principles formulas: planets within 0.6–2.6″, mean node 0.15″, Lagna 0.33″. The remaining difference is the reference's own accuracy. The engine's sidereal longitudes are free of nutation, as a star-fixed zodiac requires.
+- **Lahiri ayanamsa** at J2000: 23°51′25.5″.
+- **Vimshottari** recomputed independently from the Moon's longitude: identical to the second; the nine periods sum to 120 years.
+- **Signs, nakshatras, padas, navamsa:** no mismatch in 2,700 placements.
+- **Ashtakavarga:** every chart gives the classical totals 48/49/39/54/56/52/39 (337).
+- **Gochara vedha table** re-read against Phaladeepika ch. 26: all seven planets agree.
+- **Bhrigu Bindu:** matches the worked examples of the source.
+
+## Reviewed and not adopted
+
+- **Bhrigu Saral Paddhati (Saptarishis Astrology, from 2009).** Its rules ("Jupiter disturbs the 10th and 6th from itself", "Jupiter with Saturn spoils Aries") say that "at least one signification" changes, without saying which or when; its authors add that it does not work in every chart. Too loose to raise precision.
+- **Nadi amsha (the 150th division, Chandra Kala Nadi).** Published sources disagree on the counting order (movable/fixed/dual against odd/even) and the result verses are not available as data. An amsha number without its reading adds nothing a reader can use.
+- **Bhrigu Nandi Nadi friend and enemy groups.** Known in the tradition, but the exact table could not be checked against a source in this pass.
+- **Length-of-life statements** (Bhrigu Sutram 8th house; 64th navamsa; 22nd drekkana): left out on purpose.
+- **Palm-leaf Nadi readings and the Bhrigu Samhita horoscope collection itself.** These are libraries of individual readings, not a rule set. No critical edition exists, so they cannot be reproduced or verified by calculation.
+
 ## Still open
 
 - Sodhya pinda: the rasi multipliers differ between editions, so it is left out until a source is chosen.
-- `vedic_yogas_calculator.py` still marks 27 yogas active regardless of the chart, so don't use it for readings.
-- `backend/data/*_principles.yml` and `docs/bhrigu_references.md` contain folio numbers we could not verify.
+- `vedic_yogas_calculator.py` still marks 27 yogas active regardless of the chart. No live code uses it; don't use it for readings.
+- `backend/data/*_principles.yml` and `docs/bhrigu_references.md` contain folio numbers we could not verify. They no longer reach any prompt unless `ALLOW_UNVERIFIED_CORPUS=true` (`services/corpus_loader.py`).

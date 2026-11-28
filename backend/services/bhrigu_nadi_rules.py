@@ -33,6 +33,10 @@ SIGN_LORDS = E.SIGN_LORDS
 GRAHAS7 = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']
 EXALT = {'Sun': 0, 'Moon': 1, 'Mars': 9, 'Mercury': 5, 'Jupiter': 3, 'Venus': 11, 'Saturn': 6}
 DEBIL = {p: (s + 6) % 12 for p, s in EXALT.items()}
+# Degree of deepest exaltation and the moolatrikona portion (sign, from°, to°) — BPHS ch. 3.
+DEEP_EXALT = {'Sun': 10, 'Moon': 3, 'Mars': 28, 'Mercury': 15, 'Jupiter': 5, 'Venus': 27, 'Saturn': 20}
+MOOLATRIKONA = {'Sun': (4, 0, 20), 'Moon': (1, 3, 30), 'Mars': (0, 0, 12), 'Mercury': (5, 15, 20),
+                'Jupiter': (8, 0, 10), 'Venus': (6, 0, 15), 'Saturn': (10, 0, 20)}
 
 # Domain → (houses, natural karakas). Used by bhavat-bhavam and dasha windows.
 DOMAINS: Dict[str, Tuple[List[int], List[str], str]] = {
@@ -449,11 +453,24 @@ def rule_dignity(c: Chart) -> List[Dict[str, Any]]:
                  else 'own sign' if SIGN_LORDS[s] == p else '')
         if state:
             note = ''
+            deg = c.lon[p] % 30.0
+            if s == MOOLATRIKONA[p][0] and MOOLATRIKONA[p][1] <= deg < MOOLATRIKONA[p][2]:
+                note = '; in its moolatrikona portion' if state == 'own sign' else '; in the moolatrikona portion of the sign'
+            elif state == 'exalted':
+                note = f"; deepest exaltation at {DEEP_EXALT[p]}° (it is at {deg:.0f}°)"
             if state == 'debilitated':
-                cancel = [q for q in (SIGN_LORDS[s], next(k for k, v in EXALT.items() if v == s) if s in EXALT.values() else None)
-                          if q and q in c.lon and c.house(q) in (1, 4, 7, 10)]
+                # Neecha-bhanga (Phaladeepika ch. 7): the lord of the debilitation sign, or the
+                # planet exalted in that sign, in a kendra from the Lagna or the Moon; or the
+                # debilitated planet exalted in the navamsa.
+                givers = [q for q in (SIGN_LORDS[s], next((k for k, v in EXALT.items() if v == s), None))
+                          if q and q in c.lon and q != p]
+                cancel = [f"{q} in a kendra from the {c.reference}" for q in givers if c.house(q) in (1, 4, 7, 10)]
+                cancel += [f"{q} in a kendra from the Moon" for q in givers
+                           if c.house(q) not in (1, 4, 7, 10) and (c.sign(q) - c.sign('Moon')) % 3 == 0]
+                if navamsa_sign(c.lon[p]) == EXALT[p]:
+                    cancel.append('it is exalted in the navamsa')
                 if cancel:
-                    note = f"; neecha-bhanga: {', '.join(cancel)} in a kendra from the {c.reference}"
+                    note = f"; neecha-bhanga: {'; '.join(cancel)}"
             # Rank so the per-rule cap keeps the strongest placements:
             # exalted > uncancelled debilitation > cancelled > own sign.
             weight = {'exalted': 0.7, 'debilitated': 0.6 if note else 0.66, 'own sign': 0.55}[state]
@@ -528,13 +545,16 @@ def rule_bhavat(c: Chart, domains: List[str], categories: List[str]) -> List[Dic
 
 
 def rule_bnn_links(c: Chart) -> List[Dict[str, Any]]:
-    """Bhrigu Nandi Nadi: links of a planet to planets in trine, 2nd, 12th, 7th signs."""
+    """Bhrigu Nandi Nadi (R. G. Rao's Nadi aspects): a planet is linked with planets
+    in the same direction (its sign and the trines), the opposite direction
+    (7th, and more weakly 3rd/11th) and the adjoining signs (2nd, 12th)."""
     def links(p: str) -> str:
         groups = []
         bases = [(c.sign(p), '')] + ([((c.sign(p) - 1) % 12, f"from {SIGNS[(c.sign(p) - 1) % 12]} (retrograde)")] if c.retro(p) else [])
         for b, tag in bases:
             found = []
-            for label, off in (('with', 0), ('trine', 4), ('trine', 8), ('2nd', 1), ('12th', 11), ('7th', 6)):
+            for label, off in (('with', 0), ('trine', 4), ('trine', 8), ('7th', 6), ('3rd', 2), ('11th', 10),
+                               ('2nd', 1), ('12th', 11)):
                 for q in c.occupants((b + off) % 12, exclude=(p,)):
                     found.append(f"{label} {q}")
             if found:
@@ -665,6 +685,17 @@ def rule_transits(c: Chart, now: datetime) -> List[Dict[str, Any]]:
     return out
 
 
+# Bhrigu Bindu transits per C. S. Patel, "Predicting through Navamsa and Nadi
+# Astrology", ch. 13: conjunction is more potent than aspect; Jupiter aspects by
+# 5th/7th/9th, Saturn by 3rd/7th/10th, Rahu and Ketu by 5th/9th; the effect
+# runs from 100 minutes of arc before the point to 100 after. Jupiter gives
+# favourable results, Saturn unfavourable, the nodes sudden and large ones.
+BB_ORB = 100.0 / 60.0
+BB_ASPECTS = {'Jupiter': (5, 7, 9), 'Saturn': (3, 7, 10), 'Rahu': (5, 9), 'Ketu': (5, 9)}
+BB_NATURE = {'Jupiter': 'favourable: a wish is fulfilled', 'Saturn': 'testing: duty and restructuring',
+             'Rahu': 'sudden and large, from an unexpected side', 'Ketu': 'sudden and large, with a letting go'}
+
+
 def rule_bhrigu_bindu(c: Chart, now: datetime) -> List[Dict[str, Any]]:
     if 'Rahu' not in c.lon:
         return []
@@ -672,18 +703,32 @@ def rule_bhrigu_bindu(c: Chart, now: datetime) -> List[Dict[str, Any]]:
     nak, pada, lord = E.nakshatra_of(bb)
     h = (E.sign_index(bb) - E.sign_index(c.asc)) % 12 + 1
     text = f"Bhrigu Bindu {E.fmt_dms(bb)} in {_ordinal(h)} house ({nak}-{pada}, sign lord {SIGN_LORDS[E.sign_index(bb)]})"
+    near = [p for p in E.PLANETS if p in c.lon and abs((c.lon[p] - bb + 180.0) % 360.0 - 180.0) <= 3.0]
+    if near:
+        text += f"; {', '.join(near)} sits on it at birth"
     timing, start, end_bb = '', None, None
     if E.SWISSEPH_AVAILABLE:
-        hits = []
-        for planet in ('Saturn', 'Jupiter'):
-            for a, b in E.conjunction_windows(planet, bb, now, now + timedelta(days=10 * 365), orb=1.0)[:3]:
+        hits, looks = [], []
+        for planet in ('Saturn', 'Jupiter', 'Rahu', 'Ketu'):
+            for a, b in E.conjunction_windows(planet, bb, now, now + timedelta(days=10 * 365), orb=BB_ORB)[:2]:
                 hits.append((a, b, planet))
+            for n in BB_ASPECTS[planet]:
+                if planet in ('Rahu', 'Ketu') and n == 7:
+                    continue
+                point = (bb - (n - 1) * 30.0) % 360.0
+                for a, b in E.conjunction_windows(planet, point, now, now + timedelta(days=4 * 365), orb=BB_ORB)[:1]:
+                    looks.append((a, b, planet, n))
         hits.sort()
+        looks.sort()
         if hits:
-            text += '; activated by ' + ', '.join(f"{p} {_span(a, b)}" for a, b, p in hits[:4])
+            text += '; crossed by ' + ', '.join(f"{p} {_span(a, b)} ({BB_NATURE[p]})" for a, b, p in hits[:4])
             timing, start = f"{hits[0][2]} {_span(hits[0][0], hits[0][1])}", hits[0][0]
             end_bb = hits[0][1]
-    return [_f('F-BB-01', 'tradition-attributed', 'Bhrigu Bindu (Rahu–Moon midpoint) and its transits',
+        if looks:
+            text += ('; aspected (weaker than a crossing) by '
+                     + ', '.join(f"{p} ({_ordinal(n)} aspect) {_span(a, b)}" for a, b, p, n in looks[:3]))
+    return [_f('F-BB-01', 'tradition-attributed',
+               'Bhrigu Bindu (Rahu–Moon midpoint) and its transits (C. S. Patel, Nadi Astrology ch. 13)',
                text, [ALL], 0.6, timing=timing, start=start, end=end_bb if start else None)]
 
 
@@ -695,6 +740,7 @@ def rule_bcp(c: Chart, now: datetime) -> List[Dict[str, Any]]:
     h = (running - 1) % 12 + 1
     occ = c.occupants(c.house_sign(h))
     lord = c.lord_of_house(h)
+    asp = [p for p in c.aspecting(c.house_sign(h)) if p not in occ]
     try:
         start = c.birth_utc.replace(year=c.birth_utc.year + int(age))
     except ValueError:  # 29 Feb
@@ -702,7 +748,8 @@ def rule_bcp(c: Chart, now: datetime) -> List[Dict[str, Any]]:
     end = start.replace(year=start.year + 1) if not (start.month == 2 and start.day == 29) else start + timedelta(days=365)
     return [_f('F-BCP-01', 'tradition-attributed', f'Bhrigu Chakra Paddhati (one house per year from the {c.reference})',
                f"Running year {running} activates the {_ordinal(h)} house ({SIGNS[c.house_sign(h)]}"
-               f"{': ' + ', '.join(occ) if occ else ', empty'}); its lord {lord} sits in {_ordinal(c.house(lord))}",
+               f"{': ' + ', '.join(occ) if occ else ', empty'}); its lord {lord} sits in {_ordinal(c.house(lord))}"
+               + (f"; aspected by {', '.join(asp)}" if asp else '') + f" (round {(running - 1) // 12 + 1} of the wheel)",
                ['present_life', 'predictions', 'life_events', 'karmic_journey'], 0.5,
                timing=_span(start, end), start=start, end=end, house_based=True)]
 
@@ -1523,6 +1570,11 @@ def apply_time_accuracy(c: Chart, findings: List[Dict[str, Any]]) -> None:
 
 # ---------------------------------------------------------------------------
 
+def _more_rules(c: 'Chart', now: datetime) -> List[Dict[str, Any]]:
+    from services.bhrigu_nadi_more import more_rules  # imported late: that module imports this one
+    return more_rules(c, now)
+
+
 def evaluate_rules(chart_facts: Dict[str, Any], birth_data: Dict[str, Any], category: str = '',
                    now: Optional[datetime] = None, limit: int = 18, full: bool = False) -> List[Dict[str, Any]]:
     """Run every rule, keep those relevant to ``category``, ranked by weight.
@@ -1548,6 +1600,7 @@ def evaluate_rules(chart_facts: Dict[str, Any], birth_data: Dict[str, Any], cate
         lambda: rule_saturn_gochara(c, now), lambda: rule_nodal_return(c, now),
         lambda: rule_ashtakavarga(c, now, domains, cats),
         lambda: rule_remedies(c, now), lambda: rule_conjunctions(c), lambda: rule_rinas(c, now),
+        lambda: _more_rules(c, now),
     ]
     timing_categories = ('predictions', 'present_life', 'life_events')
     if not category or category in timing_categories:

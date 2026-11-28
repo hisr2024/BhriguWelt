@@ -22,14 +22,14 @@ from typing import Any, Dict, List, Sequence, Tuple
 SHARED_IDS = ('F-LAGNA-01', 'F-DASHA-01', 'F-DASHA-02', 'F-SENS-01', 'F-CONJ-01', 'F-CONJ-02')
 
 KARMA = ('F-NODES-01', 'F-KARAKA-01', 'F-KARAKAMSHA-01')
-Route = Tuple[Sequence[str], Sequence[str]]  # (domains, id prefixes; 'F-X:domain' pins a domain)
+Route = Tuple[Sequence[str], Sequence[str]]  # (domains, id prefixes; 'F-X:domain' pins a domain, 'F-X*' takes any)
 
 ROUTES: Dict[str, Dict[str, Route]] = {
     'karmic_journey': {
         'soul_purpose': (('spiritual',), ('F-KARAKA-01', 'F-KARAKAMSHA-01', 'F-NODES-01')),
         'karmic_blueprint': ((), ('F-NODES-01', 'F-RETRO', 'F-YOGA', 'F-PARIVARTANA', 'F-BNN-03')),
         'evolution_stage': ((), ('F-MOKSHA', 'F-KARAKAMSHA-01', 'F-D9-01', 'F-DIGNITY')),
-        'life_mission': (('career',), ('F-BNN-03', 'F-KARAKA-01')),
+        'life_mission': (('career',), ('F-BNN-03', 'F-BNN-04', 'F-KARAKA-01')),
         'karmic_lessons': ((), ('F-LESSON', 'F-RETRO', 'F-SADESATI', 'F-GOCHARA-03')),
         'soul_connections': ((), ('F-BHAVAT-01:marriage', 'F-D9-02', 'F-KARAKA-01', 'F-STAR-01:marriage')),
         'timing': ((), ('F-DASHA-03:spiritual', 'F-NODES-02', 'F-BB', 'F-BCP', 'F-TRANSIT-01', 'F-WINDOW')),
@@ -57,8 +57,8 @@ ROUTES: Dict[str, Dict[str, Route]] = {
         'ultimate_destiny': ((), ('F-KARAKAMSHA-01', 'F-MOKSHA', 'F-NODES-01')),
     },
     'present_life': {
-        'current_phase': ((), ('F-BCP', 'F-BNN-01', 'F-GOCHARA-01', 'F-GOCHARA-02', 'F-SADESATI', 'F-AV-02')),
-        'career': (('career',), ('F-BNN-03',)),
+        'current_phase': ((), ('F-BCP', 'F-BNN-01', 'F-MATURITY', 'F-GOCHARA-01', 'F-GOCHARA-02', 'F-SADESATI', 'F-AV-02')),
+        'career': (('career',), ('F-BNN-03', 'F-BNN-04')),
         'relationships': (('marriage',), ('F-D9-02',)),
         'health': (('health',), ('F-SADESATI',)),
         'finances': (('wealth',), ('F-YOGA-05',)),
@@ -66,12 +66,12 @@ ROUTES: Dict[str, Dict[str, Route]] = {
         'education': (('education',), ()),
         'life_purpose': ((), ('F-KARAKA-01', 'F-NODES-01', 'F-KARAKAMSHA-01', 'F-BNN-03')),
         'challenges': ((), ('F-SADESATI', 'F-GOCHARA-02', 'F-GOCHARA-03', 'F-LESSON', 'F-YOGA-03', 'F-REMEDY-01')),
-        'timing': ((), ('F-WINDOW', 'F-TRANSIT-01', 'F-BB', 'F-AV-04', 'F-BCP')),
+        'timing': ((), ('F-WINDOW', 'F-TRANSIT-01', 'F-BB', 'F-BNN-05*', 'F-AV-04', 'F-BCP')),
     },
     'life_events': {
         'yearly_forecast': ((), ('F-BCP', 'F-BNN-01', 'F-GOCHARA-01', 'F-GOCHARA-02', 'F-AV-02', 'F-SADESATI')),
         'marriage_timing': (('marriage',), ('F-D9-02',)),
-        'career_milestones': (('career',), ()),
+        'career_milestones': (('career',), ('F-BNN-04',)),
         'children_family': (('children',), ()),
         'financial_events': (('wealth',), ('F-YOGA-05',)),
         'health_alerts': (('health',), ('F-SADESATI',)),
@@ -81,7 +81,7 @@ ROUTES: Dict[str, Dict[str, Route]] = {
         'favorable_periods': ((), ('F-WINDOW', 'F-AV-04', 'F-BB', 'F-YOGA-01', 'F-YOGA-03')),
         'challenging_periods': ((), ('F-SADESATI', 'F-GOCHARA-03', 'F-GOCHARA-02', 'F-TRANSIT-01', 'F-AV-03')),
         'transits': ((), ('F-TRANSIT-01', 'F-GOCHARA-01', 'F-GOCHARA-04', 'F-AV-02', 'F-NODES-02')),
-        'age_milestones': ((), ('F-BCP', 'F-BNN-01', 'F-BNN-02', 'F-BB', 'F-NODES-02')),
+        'age_milestones': ((), ('F-BSUTRA*', 'F-MATURITY', 'F-BCP', 'F-BNN-01', 'F-BNN-02', 'F-BB', 'F-NODES-02')),
     },
     'karmic_remedies': {
         'mantras': ((), ('F-REMEDY-01',)),
@@ -130,7 +130,7 @@ ROUTES: Dict[str, Dict[str, Route]] = {
         'daily': ((), ('F-GOCHARA-04', 'F-GOCHARA-01', 'F-GOCHARA-02')),
         'weekly': ((), ('F-GOCHARA-04', 'F-AV-02')),
         'monthly': ((), ('F-GOCHARA-04', 'F-AV-04', 'F-TRANSIT-01')),
-        'yearly': ((), ('F-BCP', 'F-BNN-01', 'F-SADESATI', 'F-WINDOW', 'F-GOCHARA-03')),
+        'yearly': ((), ('F-BCP', 'F-BNN-01', 'F-MATURITY', 'F-BSUTRA*', 'F-SADESATI', 'F-WINDOW', 'F-GOCHARA-03')),
     },
 }
 
@@ -154,6 +154,9 @@ def _matches(f: Dict[str, Any], domains: Sequence[str], prefixes: Sequence[str])
         if ':' in prefix:
             rule, pinned = prefix.split(':', 1)
             if dom == pinned and f['id'].startswith(rule):
+                return True
+        elif prefix.endswith('*'):  # the rule family whatever theme its finding carries
+            if f['id'].startswith(prefix[:-1]):
                 return True
         elif not dom and f['id'].startswith(prefix):
             return True
