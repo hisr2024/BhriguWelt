@@ -110,6 +110,17 @@ def test_birth_star_and_its_trines_are_the_same_lords_stars():
     assert 'auspicious' in found['F-NADI-04:Jupiter']['finding']
 
 
+def test_star_transit_survives_a_retrograde_gap_in_the_middle_of_a_window():
+    # Found by the back-test: the planet had stepped out of the star at the midpoint of a joined window.
+    born = datetime(1926, 6, 1, 17, 30, tzinfo=timezone.utc)
+    lons = {p: v['longitude'] for p, v in E.planet_positions(born).items()}
+    for now in (datetime(1953, 10, 27, 12, tzinfo=timezone.utc), datetime(1971, 4, 3, 12, tzinfo=timezone.utc)):
+        for f in N.rule_birth_star_transits(make(lons, birth=born), now):
+            planet = f['finding'].split(' ')[0]
+            start = datetime.fromisoformat(f['start']).replace(tzinfo=timezone.utc)
+            assert E.nakshatra_of(lon_of(planet, start))[0] in f['finding']
+
+
 def test_happy_sub_periods_follow_book_two_verse_245():
     named = N.happy_period_lords(make(BASE))
     # Lagna lord Moon in Sagittarius navamsa: Jupiter. Rahu sits with the 7th lord Saturn.

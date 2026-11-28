@@ -127,6 +127,30 @@ Source read: C. S. Patel, *Predicting through Navamsa and Nadi Astrology*, which
 - "Star quarters" in vv. 3021–23 is read as the Moon's own quarter of the star. The whole star is dated and that quarter is marked as the strongest stretch, so either reading is covered.
 - The second clause of Book 2, v. 245 is printed as "a planet posited in the sign together with the 7th lord" and is read as a planet in the same sign as the 7th lord.
 
+## Back-test against documented lives (28 Nov 2026)
+
+**Result: the dated windows did not beat chance.** Read this before describing the app's predictions as accurate.
+
+Method. 20 people who wrote an autobiography or memoir and whose birth time is on record (Astro-Databank AA or A; each chart cross-checked by its known rising sign). 168 dated events from the public record: 29 marriages, 47 births of children, 59 achievements (elections won, breakthroughs, prizes) and 33 setbacks (defeats, divorces, resignations). For each event the engine was run as if the reading were made one year earlier, and the facts routed to the matching reading section were checked: did any dated window hold the event? The control asked the same of placebo dates 2 to 5 years either side of each real event (1,211 placebo dates).
+
+| Event, and the section tested | Events | Real dates inside a window | Placebo dates inside a window | Difference (95% range) |
+|---|---|---|---|---|
+| Marriage, `marriage_timing` | 29 | 65.5% | 72.6% | −7.0 (−24 to +12) |
+| Birth of a child, `children_family` | 47 | 44.7% | 43.0% | +1.7 (−15 to +18) |
+| Achievement, `career_milestones` | 59 | 71.2% | 65.6% | +5.6 (−3 to +14) |
+| Achievement, `favorable_periods` | 59 | 40.7% | 30.5% | +10.2 (−4 to +24) |
+| Setback, `challenging_periods` | 33 | 54.5% | 53.7% | +0.8 (−18 to +21) |
+| **All events, own section** | **168** | **59.5%** | **58.8%** | **+0.7 (−6 to +8)** |
+
+- Achievements fell inside "challenging" windows 54.2% of the time, the same as setbacks (54.5%): the windows do not tell good periods from hard ones.
+- Lead times of six months and two years give the same picture (overall −2.8 and +1.1).
+- No single rule family (dasha of significators, double transit, Nadi sub-periods, BNN transits, Sade Sati, star transits) held real dates clearly more often than placebo dates.
+- The windows are wide: a random date lands inside one about 59% of the time. A hit therefore says little.
+
+Limits. 168 events can detect an edge of roughly 8 points or more, not a smaller one. Achievements lean positive in all three runs but stay inside the noise; about four times as many events would be needed to tell. 18 of the 20 people are Western, because reliable Indian birth times are rare. Age-based rules (Bhrigu Sutram years, Bhrigu Chakra) and the daily leaf were not tested. Springsteen was left out because his rising degree is 29.98° Taurus.
+
+Reproduce: `backend/scripts/backtest/run.py`. A new timing rule should be run through it before it is given more weight.
+
 ## Reviewed and not adopted
 
 - **Bhrigu Saral Paddhati (Saptarishis Astrology, from 2009).** Its rules ("Jupiter disturbs the 10th and 6th from itself", "Jupiter with Saturn spoils Aries") say that "at least one signification" changes, without saying which or when; its authors add that it does not work in every chart. Too loose to raise precision.
